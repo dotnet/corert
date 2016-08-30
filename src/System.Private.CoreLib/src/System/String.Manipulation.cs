@@ -894,6 +894,315 @@ namespace System
             }
         }
 
+        // Creates an array of strings by splitting this string at each
+        // occurrence of a separator.  The separator is searched for, and if found,
+        // the substring preceding the occurrence is stored as the first element in
+        // the array of strings.  We then continue in this manner by searching
+        // the substring that follows the occurrence.  On the other hand, if the separator
+        // is not found, the array of strings will contain this instance as its only element.
+        // If the separator is null
+        // whitespace (i.e., Character.IsWhitespace) is used as the separator.
+        //
+        public String[] Split(params char[] separator)
+        {
+            return Split(separator, Int32.MaxValue, StringSplitOptions.None);
+        }
+
+        // Creates an array of strings by splitting this string at each
+        // occurrence of a separator.  The separator is searched for, and if found,
+        // the substring preceding the occurrence is stored as the first element in
+        // the array of strings.  We then continue in this manner by searching
+        // the substring that follows the occurrence.  On the other hand, if the separator
+        // is not found, the array of strings will contain this instance as its only element.
+        // If the separator is the empty string (i.e., String.Empty), then
+        // whitespace (i.e., Character.IsWhitespace) is used as the separator.
+        // If there are more than count different strings, the last n-(count-1)
+        // elements are concatenated and added as the last String.
+        //
+        public string[] Split(char[] separator, int count)
+        {
+            return Split(separator, count, StringSplitOptions.None);
+        }
+
+        public String[] Split(char[] separator, StringSplitOptions options)
+        {
+            return Split(separator, Int32.MaxValue, options);
+        }
+
+        public String[] Split(char[] separator, int count, StringSplitOptions options)
+        {
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count",
+                    SR.ArgumentOutOfRange_NegativeCount);
+
+            if (options < StringSplitOptions.None || options > StringSplitOptions.RemoveEmptyEntries)
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, options));
+
+            bool omitEmptyEntries = (options == StringSplitOptions.RemoveEmptyEntries);
+
+            if ((count == 0) || (omitEmptyEntries && this.Length == 0))
+            {
+                return Array.Empty<String>();
+            }
+
+            if (count == 1)
+            {
+                return new String[] { this };
+            }
+
+            int[] sepList = new int[Length];
+            int numReplaces = MakeSeparatorList(separator, sepList);
+
+            // Handle the special case of no replaces.
+            if (0 == numReplaces)
+            {
+                return new String[] { this };
+            }
+
+            if (omitEmptyEntries)
+            {
+                return SplitOmitEmptyEntries(sepList, null, numReplaces, count);
+            }
+            else
+            {
+                return SplitKeepEmptyEntries(sepList, null, numReplaces, count);
+            }
+        }
+
+        public String[] Split(String[] separator, StringSplitOptions options)
+        {
+            return Split(separator, Int32.MaxValue, options);
+        }
+
+        public String[] Split(String[] separator, Int32 count, StringSplitOptions options)
+        {
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException("count",
+                    SR.ArgumentOutOfRange_NegativeCount);
+            }
+
+            if (options < StringSplitOptions.None || options > StringSplitOptions.RemoveEmptyEntries)
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options));
+            }
+
+            bool omitEmptyEntries = (options == StringSplitOptions.RemoveEmptyEntries);
+
+            if (separator == null || separator.Length == 0)
+            {
+                return Split((char[])null, count, options);
+            }
+
+            if ((count == 0) || (omitEmptyEntries && this.Length == 0))
+            {
+                return Array.Empty<String>();
+            }
+
+            if (count == 1)
+            {
+                return new String[] { this };
+            }
+
+            int[] sepList = new int[Length];
+            int[] lengthList = new int[Length];
+            int numReplaces = MakeSeparatorList(separator, sepList, lengthList);
+
+            //Handle the special case of no replaces.
+            if (0 == numReplaces)
+            {
+                return new String[] { this };
+            }
+
+            if (omitEmptyEntries)
+            {
+                return SplitOmitEmptyEntries(sepList, lengthList, numReplaces, count);
+            }
+            else
+            {
+                return SplitKeepEmptyEntries(sepList, lengthList, numReplaces, count);
+            }
+        }
+
+        // Note a special case in this function:
+        //     If there is no separator in the string, a string array which only contains 
+        //     the original string will be returned regardless of the count. 
+        //
+
+        private String[] SplitKeepEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 numReplaces, int count)
+        {
+            int currIndex = 0;
+            int arrIndex = 0;
+
+            count--;
+            int numActualReplaces = (numReplaces < count) ? numReplaces : count;
+
+            //Allocate space for the new array.
+            //+1 for the string from the end of the last replace to the end of the String.
+            String[] splitStrings = new String[numActualReplaces + 1];
+
+            for (int i = 0; i < numActualReplaces && currIndex < Length; i++)
+            {
+                splitStrings[arrIndex++] = Substring(currIndex, sepList[i] - currIndex);
+                currIndex = sepList[i] + ((lengthList == null) ? 1 : lengthList[i]);
+            }
+
+            //Handle the last string at the end of the array if there is one.
+            if (currIndex < Length && numActualReplaces >= 0)
+            {
+                splitStrings[arrIndex] = Substring(currIndex);
+            }
+            else if (arrIndex == numActualReplaces)
+            {
+                //We had a separator character at the end of a string.  Rather than just allowing
+                //a null character, we'll replace the last element in the array with an empty string.
+                splitStrings[arrIndex] = String.Empty;
+            }
+
+            return splitStrings;
+        }
+
+
+        // This function will not keep the Empty String 
+        private String[] SplitOmitEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 numReplaces, int count)
+        {
+            // Allocate array to hold items. This array may not be 
+            // filled completely in this function, we will create a 
+            // new array and copy string references to that new array.
+
+            int maxItems = (numReplaces < count) ? (numReplaces + 1) : count;
+            String[] splitStrings = new String[maxItems];
+
+            int currIndex = 0;
+            int arrIndex = 0;
+
+            for (int i = 0; i < numReplaces && currIndex < Length; i++)
+            {
+                if (sepList[i] - currIndex > 0)
+                {
+                    splitStrings[arrIndex++] = Substring(currIndex, sepList[i] - currIndex);
+                }
+                currIndex = sepList[i] + ((lengthList == null) ? 1 : lengthList[i]);
+                if (arrIndex == count - 1)
+                {
+                    // If all the remaining entries at the end are empty, skip them
+                    while (i < numReplaces - 1 && currIndex == sepList[++i])
+                    {
+                        currIndex += ((lengthList == null) ? 1 : lengthList[i]);
+                    }
+                    break;
+                }
+            }
+
+            //Handle the last string at the end of the array if there is one.
+            if (currIndex < Length)
+            {
+                splitStrings[arrIndex++] = Substring(currIndex);
+            }
+
+            String[] stringArray = splitStrings;
+            if (arrIndex != maxItems)
+            {
+                stringArray = new String[arrIndex];
+                for (int j = 0; j < arrIndex; j++)
+                {
+                    stringArray[j] = splitStrings[j];
+                }
+            }
+            return stringArray;
+        }
+
+        //--------------------------------------------------------------------    
+        // This function returns the number of the places within this instance where 
+        // characters in Separator occur.
+        // Args: separator  -- A string containing all of the split characters.
+        //       sepList    -- an array of ints for split char indicies.
+        //--------------------------------------------------------------------    
+        private unsafe int MakeSeparatorList(char[] separator, int[] sepList)
+        {
+            int foundCount = 0;
+
+            if (separator == null || separator.Length == 0)
+            {
+                fixed (char* pwzChars = &_firstChar)
+                {
+                    //If they passed null or an empty string, look for whitespace.
+                    for (int i = 0; i < Length && foundCount < sepList.Length; i++)
+                    {
+                        if (Char.IsWhiteSpace(pwzChars[i]))
+                        {
+                            sepList[foundCount++] = i;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                int sepListCount = sepList.Length;
+                int sepCount = separator.Length;
+                //If they passed in a string of chars, actually look for those chars.
+                fixed (char* pwzChars = &_firstChar, pSepChars = separator)
+                {
+                    for (int i = 0; i < Length && foundCount < sepListCount; i++)
+                    {
+                        char* pSep = pSepChars;
+                        for (int j = 0; j < sepCount; j++, pSep++)
+                        {
+                            if (pwzChars[i] == *pSep)
+                            {
+                                sepList[foundCount++] = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return foundCount;
+        }
+
+        //--------------------------------------------------------------------    
+        // This function returns the number of the places within this instance where 
+        // instances of separator strings occur.
+        // Args: separators -- An array containing all of the split strings.
+        //       sepList    -- an array of ints for split string indicies.
+        //       lengthList -- an array of ints for split string lengths.
+        //--------------------------------------------------------------------    
+        private unsafe int MakeSeparatorList(String[] separators, int[] sepList, int[] lengthList)
+        {
+            int foundCount = 0;
+            int sepListCount = sepList.Length;
+            int sepCount = separators.Length;
+
+            fixed (char* pwzChars = &_firstChar)
+            {
+                for (int i = 0; i < Length && foundCount < sepListCount; i++)
+                {
+                    for (int j = 0; j < separators.Length; j++)
+                    {
+                        String separator = separators[j];
+                        if (String.IsNullOrEmpty(separator))
+                        {
+                            continue;
+                        }
+                        Int32 currentSepLength = separator.Length;
+                        if (pwzChars[i] == separator[0] && currentSepLength <= Length - i)
+                        {
+                            if (currentSepLength == 1
+                                || String.CompareOrdinal(this, i, separator, 0, currentSepLength) == 0)
+                            {
+                                sepList[foundCount] = i;
+                                lengthList[foundCount] = currentSepLength;
+                                foundCount++;
+                                i += currentSepLength - 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return foundCount;
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
