@@ -472,20 +472,6 @@ namespace System
             }
         }
 
-        unsafe private static void FillStringChecked(String dest, int destPos, String src)
-        {
-            if (src.Length > dest.Length - destPos)
-            {
-                throw new IndexOutOfRangeException();
-            }
-
-            fixed (char* pDest = &dest._firstChar)
-                fixed (char* pSrc = &src._firstChar)
-            {
-                wstrcpy(pDest + destPos, pSrc, src.Length);
-            }
-        }
-
         internal static unsafe void wstrcpy(char* dmem, char* smem, int charCount)
         {
             Buffer.Memmove((byte*)dmem, (byte*)smem, ((uint)charCount) * 2);

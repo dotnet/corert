@@ -16,6 +16,20 @@ namespace System
         private const int TrimTail = 1;
         private const int TrimBoth = 2;
 
+        unsafe private static void FillStringChecked(String dest, int destPos, String src)
+        {
+            if (src.Length > dest.Length - destPos)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
+            fixed (char* pDest = &dest._firstChar)
+                fixed (char* pSrc = &src._firstChar)
+            {
+                wstrcpy(pDest + destPos, pSrc, src.Length);
+            }
+        }
+
         public static String Concat(Object arg0)
         {
             if (arg0 == null)
