@@ -31,9 +31,9 @@ namespace System.Reflection
         public bool IsPrivate => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Private;
         public bool IsPublic => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
 
-        public virtual bool IsSecurityCritical => false;
-        public virtual bool IsSecuritySafeCritical => false;
-        public virtual bool IsSecurityTransparent => true;
+        public virtual bool IsSecurityCritical { get { throw new NotImplementedException(); } }
+        public virtual bool IsSecuritySafeCritical { get { throw new NotImplementedException(); } }
+        public virtual bool IsSecurityTransparent { get { throw new NotImplementedException(); } }
 
         public abstract RuntimeFieldHandle FieldHandle { get; }
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetFieldFromHandle(handle);
@@ -57,8 +57,7 @@ namespace System.Reflection
 
         public abstract object GetValue(object obj);
 
-        // @todo: https://github.com/dotnet/corert/issues/1688 - this should be passing Type.DefaultBinder - blocked by toolchain bug
-        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, null /*Type.DefaultBinder*/, null);
+        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type._GetDefaultBinder(), null);
         public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
 
         public virtual object GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }

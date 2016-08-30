@@ -169,6 +169,25 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         /// <summary>
+        /// Searches for the specified method, using the specified binding constraints.
+        /// </summary>
+        /// <param name="type">Type on which to perform lookup</param>
+        /// <param name="name">The string containing the name of the method to get. </param>
+        /// <param name="bindingAttr">A bitmask comprised of one or more BindingFlags that specify how the search is conducted
+        /// -or- 
+        /// Zero, to return an empty array. </param>
+        /// <returns>An array of MethodInfo objects representing all the public methods defined for the current Type
+        /// -or- 
+        /// An empty array of type MethodInfo, if no public methods are defined for the current Type.</returns>
+        public static MethodInfo[] GetMethods(Type type, string name, BindingFlags bindingAttr)
+        {
+            GetTypeInfoOrThrow(type);
+
+            IEnumerable<MethodInfo> methods = MemberEnumerator.GetMembers<MethodInfo>(type, name, bindingAttr);
+            return methods.ToArray();
+        }
+
+        /// <summary>
         /// Searches for the specified nested type, using the specified binding constraints.
         /// </summary>
         /// <param name="type">Type on which to perform lookup</param>
@@ -213,6 +232,25 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             GetTypeInfoOrThrow(type);
 
             IEnumerable<PropertyInfo> properties = MemberEnumerator.GetMembers<PropertyInfo>(type, MemberEnumerator.AnyName, bindingAttr);
+            return properties.ToArray();
+        }
+
+        /// <summary>
+        /// Searches for the specified property, using the specified binding constraints.
+        /// </summary>
+        /// <param name="type">Type on which to perform lookup</param>
+        /// <param name="name">The string containing the name of the property to get. </param>
+        /// <param name="bindingAttr">A bitmask comprised of one or more BindingFlags that specify how the search is conducted
+        /// -or- 
+        /// Zero, to return an empty array. </param>
+        /// <returns>An array of PropertyInfo objects representing all the public property defined for the current Type
+        /// -or- 
+        /// An empty array of type PropertyInfo, if no properties matching the constraints are found.</returns>
+        public static PropertyInfo[] GetProperties(this Type type, string name, BindingFlags bindingAttr)
+        {
+            GetTypeInfoOrThrow(type);
+
+            IEnumerable<PropertyInfo> properties = MemberEnumerator.GetMembers<PropertyInfo>(type, name, bindingAttr);
             return properties.ToArray();
         }
 

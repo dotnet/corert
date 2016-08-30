@@ -17,6 +17,10 @@ using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
 
+using CharSet = System.Runtime.InteropServices.CharSet;
+using LayoutKind = System.Runtime.InteropServices.LayoutKind;
+using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -109,6 +113,19 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_Namespace(this);
 #endif
                 return null;  // Reflection-blocked framework types report themselves as existing in the "root" namespace.
+            }
+        }
+
+        public sealed override StructLayoutAttribute StructLayoutAttribute
+        {
+            get
+            {
+                return new StructLayoutAttribute(LayoutKind.Auto)
+                {
+                    CharSet = CharSet.Ansi,
+                    Pack = 8,
+                    Size = 0,
+                };
             }
         }
 

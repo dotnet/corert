@@ -50,7 +50,7 @@ namespace System.Reflection
         public virtual Type[] GetOptionalCustomModifiers() => Array.Empty<Type>();
         public virtual Type[] GetRequiredCustomModifiers() => Array.Empty<Type>();
 
-        public virtual int MetadataToken { get { throw new NotImplementedException(); } }
+        public virtual int MetadataToken => MetadataToken_ParamDef;
 
         public object GetRealObject(StreamingContext context) { throw new NotImplementedException(); }
 
@@ -62,5 +62,7 @@ namespace System.Reflection
         protected MemberInfo MemberImpl;
         protected string NameImpl;
         protected int PositionImpl;
+
+        private const int MetadataToken_ParamDef = 0x08000000;
     }
 }

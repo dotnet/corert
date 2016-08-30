@@ -207,6 +207,14 @@ namespace System.Reflection.Runtime.Assemblies
             return result;
         }
 
+        public sealed override bool ReflectionOnly
+        {
+            get
+            {
+                return false; // ReflectionOnly loading not supported.
+            }
+        }
+
         internal QScopeDefinition Scope { get; }
 
         internal IEnumerable<QScopeDefinition> OverflowScopes { get; }

@@ -43,6 +43,14 @@ namespace System.Reflection.Runtime.ParameterInfos
 
         public abstract override bool HasDefaultValue { get; }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override MemberInfo Member
         {
             get

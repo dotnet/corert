@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
@@ -93,6 +94,14 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_Namespace(this);
 #endif
                 return _key.ElementType.Namespace;
+            }
+        }
+
+        public sealed override StructLayoutAttribute StructLayoutAttribute
+        {
+            get
+            {
+                return null;
             }
         }
 

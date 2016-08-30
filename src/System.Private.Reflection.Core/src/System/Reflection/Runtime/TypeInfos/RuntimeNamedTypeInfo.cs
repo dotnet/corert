@@ -20,6 +20,10 @@ using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
 
+using CharSet = System.Runtime.InteropServices.CharSet;
+using LayoutKind = System.Runtime.InteropServices.LayoutKind;
+using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -201,6 +205,55 @@ namespace System.Reflection.Runtime.TypeInfos
             if (_typeDefinition.GenericParameters.GetEnumerator().MoveNext())
                 return this.AsType();
             return base.GetGenericTypeDefinition();
+        }
+
+        public sealed override StructLayoutAttribute StructLayoutAttribute
+        {
+            get
+            {
+                const int DefaultPackingSize = 8;
+
+                // Note: CoreClr checks HasElementType and IsGenericParameter in addition to IsInterface but those properties cannot be true here as this
+                // RuntimeTypeInfo subclass is solely for TypeDef types.)
+                if (IsInterface)
+                    return null;
+
+                TypeAttributes attributes = Attributes;
+
+                LayoutKind layoutKind;
+                switch (attributes & TypeAttributes.LayoutMask)
+                {
+                    case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
+                    case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
+                    case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                    default: layoutKind = LayoutKind.Auto;  break;
+                }
+
+                CharSet charSet;
+                switch (attributes & TypeAttributes.StringFormatMask)
+                {
+                    case TypeAttributes.AnsiClass: charSet = CharSet.Ansi; break;
+                    case TypeAttributes.AutoClass: charSet = CharSet.Auto; break;
+                    case TypeAttributes.UnicodeClass: charSet = CharSet.Unicode; break;
+                    default: charSet = CharSet.None;  break;
+                }
+
+                int pack = _typeDefinition.PackingSize;
+                int size = unchecked((int)(_typeDefinition.Size));
+
+                // Metadata parameter checking should not have allowed 0 for packing size.
+                // The runtime later converts a packing size of 0 to 8 so do the same here
+                // because it's more useful from a user perspective. 
+                if (pack == 0)
+                    pack = DefaultPackingSize;
+
+                return new StructLayoutAttribute(layoutKind)
+                {
+                    CharSet = charSet,
+                    Pack = pack,
+                    Size = size,
+                };
+            }
         }
 
         public sealed override string ToString()

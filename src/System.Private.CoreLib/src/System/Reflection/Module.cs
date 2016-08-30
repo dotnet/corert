@@ -122,9 +122,53 @@ namespace System.Reflection
 
         public override string ToString() => ScopeName;
 
-        public static readonly TypeFilter FilterTypeName = delegate (Type m, object filterCriteria) { throw new NotImplementedException(); };
-        public static readonly TypeFilter FilterTypeNameIgnoreCase = delegate (Type m, object filterCriteria) { throw new NotImplementedException(); };
+        public static readonly TypeFilter FilterTypeName = FilterTypeNameImpl;
+        public static readonly TypeFilter FilterTypeNameIgnoreCase = FilterTypeNameIgnoreCaseImpl;
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+
+        // FilterTypeName 
+        // This method will filter the class based upon the name.  It supports
+        //    a trailing wild card.
+        private static bool FilterTypeNameImpl(Type cls, object filterCriteria)
+        {
+            // Check that the criteria object is a String object
+            if (filterCriteria == null || !(filterCriteria is string))
+                throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
+
+            string str = (string)filterCriteria;
+
+            // Check to see if this is a prefix or exact match requirement
+            if (str.Length > 0 && str[str.Length - 1] == '*')
+            {
+                str = str.Substring(0, str.Length - 1);
+                return cls.Name.StartsWith(str, StringComparison.Ordinal);
+            }
+
+            return cls.Name.Equals(str);
+        }
+
+        // FilterFieldNameIgnoreCase
+        // This method filter the Type based upon name, it ignores case.
+        private static bool FilterTypeNameIgnoreCaseImpl(Type cls, object filterCriteria)
+        {
+            // Check that the criteria object is a String object
+            if (filterCriteria == null || !(filterCriteria is string))
+                throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
+
+            string str = (string)filterCriteria;
+
+            // Check to see if this is a prefix or exact match requirement
+            if (str.Length > 0 && str[str.Length - 1] == '*')
+            {
+                str = str.Substring(0, str.Length - 1);
+                string name = cls.Name;
+                if (name.Length >= str.Length)
+                    return (string.Compare(name, 0, str, 0, str.Length, StringComparison.OrdinalIgnoreCase) == 0);
+                else
+                    return false;
+            }
+            return (string.Compare(str, cls.Name, StringComparison.OrdinalIgnoreCase) == 0);
+        }
     }
 }

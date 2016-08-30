@@ -240,4 +240,22 @@
   <data name="TypeIsNotReflectable" xml:space="preserve">
     <value>Type instance is not IReflectable.</value>
   </data>
+  <data name="Arg_EmptyArray" xml:space="preserve">
+    <value>Array may not be empty.</value>
+  </data>
+  <data name="MissingMember" xml:space="preserve">
+    <value>Member not found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
+    <value>Ambiguous match found.</value>
+  </data>
+  <data name="PlatformNotSupported_InterfaceMap" xml:space="preserve">
+    <value>GetRuntimeInterfaceMap() is not supported on this runtime.</value>
+  </data>
+  <data name="NoMetadataTokenAvailable" xml:space="preserve">
+    <value>There is no metadata token available for the given member.</value>
+  </data>
+  <data name="ModuleVersionIdNotSupported" xml:space="preserve">
+    <value>Module version IDs (MVIDs) cannot be retrieved on this platform.</value>
+  </data>
 </root>

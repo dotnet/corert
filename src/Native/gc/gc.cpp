@@ -36705,8 +36705,8 @@ void initGCShadow()
     if (len > (size_t)(g_GCShadowEnd - g_GCShadow)) 
     {
         deleteGCShadow();
-        g_GCShadowEnd = g_GCShadow = (uint8_t*) GCToOSInterface::VirtualCommit(0, len);
-        if (g_GCShadow)
+        g_GCShadowEnd = g_GCShadow = (uint8_t*) GCToOSInterface::VirtualReserve(0, len, 0, 0);
+        if (g_GCShadow && GCToOSInterface::VirtualCommit(g_GCShadow, len))
         {
             g_GCShadowEnd += len;
         }
@@ -36717,9 +36717,10 @@ void initGCShadow()
             // running we need to be in a state that will not trigger any 
             // additional AVs while we fail to allocate a shadow segment, i.e. 
             // ensure calls to updateGCShadow() checkGCWriteBarrier() don't AV
+            deleteGCShadow();
             return;
         }
-        }
+    }
 
     // save the value of g_lowest_address at this time.  If this value changes before
     // the next call to checkGCWriteBarrier() it means we extended the heap (with a
