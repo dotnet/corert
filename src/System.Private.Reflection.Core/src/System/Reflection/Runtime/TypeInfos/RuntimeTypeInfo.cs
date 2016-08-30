@@ -17,10 +17,13 @@ using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
+using Internal.Reflection.Augments;
 
 using Internal.Metadata.NativeFormat;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
+
+using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -371,13 +374,33 @@ namespace System.Reflection.Runtime.TypeInfos
             return cachedData.GetDeclaredProperty(name);
         }
 
-        public sealed override Type[] GetGenericArguments()
+        public sealed override MemberInfo[] GetDefaultMembers()
         {
-            if (IsConstructedGenericType)
-                return GenericTypeArguments;
-            if (IsGenericTypeDefinition)
-                return GenericTypeParameters;
-            return Array.Empty<Type>();
+            Type defaultMemberAttributeType = typeof(DefaultMemberAttribute);
+            for (Type type = this; type != null; type = type.BaseType)
+            {
+                foreach (CustomAttributeData attribute in type.CustomAttributes)
+                {
+                    if (attribute.AttributeType == defaultMemberAttributeType)
+                    {
+                        // NOTE: Neither indexing nor cast can fail here. Any attempt to use fewer than 1 argument
+                        // or a non-string argument would correctly trigger MissingMethodException before
+                        // we reach here as that would be an attempt to reference a non-existent DefaultMemberAttribute
+                        // constructor.
+                        Debug.Assert(attribute.ConstructorArguments.Count == 1 && attribute.ConstructorArguments[0].Value is string);
+
+                        string memberName = (string)(attribute.ConstructorArguments[0].Value);
+                        return GetMember(memberName);
+                    }
+                }
+            }
+
+            return Array.Empty<MemberInfo>();
+        }
+
+        public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_InterfaceMap);
         }
 
         //
@@ -504,14 +527,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsGenericType
-        {
-            get
-            {
-                return IsConstructedGenericType || IsGenericTypeDefinition;
-            }
-        }
-
         //
         // Left unsealed as generic type definitions must override.
         //
@@ -523,11 +538,11 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsSerializable
+        public sealed override int MetadataToken
         {
             get
             {
-                return 0 != (this.Attributes & TypeAttributes.Serializable);
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
             }
         }
 
@@ -678,6 +693,8 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public abstract override StructLayoutAttribute StructLayoutAttribute { get; }
+
         public abstract override string ToString();
 
         public sealed override RuntimeTypeHandle TypeHandle
@@ -722,6 +739,11 @@ namespace System.Reflection.Runtime.TypeInfos
         protected override bool HasElementTypeImpl()
         {
             return false;
+        }
+
+        protected sealed override TypeCode GetTypeCodeImpl()
+        {
+            return ReflectionAugments.GetRuntimeTypeCode(this);
         }
 
         protected abstract int InternalGetHashCode();

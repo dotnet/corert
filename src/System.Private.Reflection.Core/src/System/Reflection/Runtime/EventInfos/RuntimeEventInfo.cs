@@ -147,6 +147,14 @@ namespace System.Reflection.Runtime.EventInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override Module Module
         {
             get

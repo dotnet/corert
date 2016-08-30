@@ -2,20 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Collections.Generic;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Collections.Generic;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Runtime.Augments;
-using global::Internal.Runtime.TypeLoader;
+using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.Execution.Binder;
-using global::Internal.Reflection.Execution.PayForPlayExperience;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Execution.PayForPlayExperience;
+using Internal.Reflection.Extensions.NonPortable;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -103,7 +102,10 @@ namespace Internal.Reflection.Execution
                 throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, type));
 
             MethodBase[] candidatesArray = candidates.ToArray();
-            ConstructorInfo match = (ConstructorInfo)(DefaultBinder.BindToMethod(candidatesArray, ref args));
+            Binder binder = Type._GetDefaultBinder();
+            object ignore;
+            BindingFlags bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
+            ConstructorInfo match = (ConstructorInfo)binder.BindToMethod(bindingAttr, candidatesArray, ref args, null, null, null, out ignore);
             Object newObject = match.Invoke(args);
             return newObject;
         }
@@ -451,6 +453,11 @@ namespace Internal.Reflection.Execution
         public sealed override bool SupportsReflection(Type type)
         {
             return _executionDomain.SupportsReflection(type);
+        }
+
+        public sealed override MethodInfo GetDelegateMethod(Delegate del)
+        {
+            return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
         }
 
         private ExecutionDomain _executionDomain;

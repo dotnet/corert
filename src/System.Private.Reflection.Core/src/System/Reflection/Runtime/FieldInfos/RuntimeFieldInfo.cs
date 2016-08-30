@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.BindingFlagSupport;
 
 using Internal.Metadata.NativeFormat;
 
@@ -113,6 +114,14 @@ namespace System.Reflection.Runtime.FieldInfos
             return fieldAccessor.GetField(obj);
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override Module Module
         {
             get
@@ -141,8 +150,7 @@ namespace System.Reflection.Runtime.FieldInfos
                 ReflectionTrace.FieldInfo_SetValue(this, obj, value);
 #endif
 
-            // @todo: https://github.com/dotnet/corert/issues/1688 - this should be checking for Type.DefaultBinder - blocked by toolchain bug
-            if (invokeAttr != BindingFlags.Default || binder != null /* Type.DefaultBinder */ || culture != null)
+            if (invokeAttr != BindingFlags.Default || !(binder is DefaultBinder) || culture != null)
                 throw new NotImplementedException();
 
             FieldAccessor fieldAccessor = this.FieldAccessor;

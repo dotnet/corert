@@ -78,5 +78,14 @@ namespace System.Reflection.Runtime.General
         {
             return new ReadOnlyCollection<T>(enumeration.ToArray());
         }
+
+        public static MethodInfo FilterAccessor(this MethodInfo accessor, bool nonPublic)
+        {
+            if (nonPublic)
+                return accessor;
+            if (accessor.IsPublic)
+                return accessor;
+            return null;
+        }
     }
 }

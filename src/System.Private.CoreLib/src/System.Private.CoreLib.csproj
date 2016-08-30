@@ -225,6 +225,7 @@
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="System\Convert.cs" />
     <Compile Include="System\DataMisalignedException.cs" />
+    <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
     <Compile Include="System\FormattableString.cs" />
