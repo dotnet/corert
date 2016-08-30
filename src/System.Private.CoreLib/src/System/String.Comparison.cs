@@ -907,5 +907,67 @@ namespace System
                 return true;
             return !OrdinalCompareEqualLengthStrings(a, b);
         }
+
+        // Determines whether a specified string is a prefix of the current instance
+        //
+        public Boolean StartsWith(String value)
+        {
+            if ((Object)value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
+            return StartsWith(value, StringComparison.CurrentCulture);
+        }
+
+        public Boolean StartsWith(String value, StringComparison comparisonType)
+        {
+            if ((Object)value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
+
+            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
+            {
+                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+            }
+
+            if ((Object)this == (Object)value)
+            {
+                return true;
+            }
+
+            if (value.Length == 0)
+            {
+                return true;
+            }
+
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return FormatProvider.IsPrefix(this, value);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return FormatProvider.IsPrefixIgnoreCase(this, value);
+
+                case StringComparison.Ordinal:
+                    if (this.Length < value.Length || _firstChar != value._firstChar)
+                    {
+                        return false;
+                    }
+                    return (value.Length == 1) ?
+                            true :                 // First char is the same and thats all there is to compare  
+                            StartsWithOrdinalHelper(this, value);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    if (this.Length < value.Length)
+                    {
+                        return false;
+                    }
+                    return FormatProvider.CompareOrdinalIgnoreCase(this, 0, value.Length, value, 0, value.Length) == 0;
+
+                default:
+                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+            }
+        }
     }
 }
