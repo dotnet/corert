@@ -28,7 +28,7 @@ namespace System.Text
             }
         }
 
-        unsafe private static int InternalGetCodePageFromName(string name)
+        private static int InternalGetCodePageFromName(string name)
         {
             int left = 0;
             int right = s_encodingNameIndices.Length - 2;
@@ -97,7 +97,7 @@ namespace System.Text
             return s1.Length - length;
         }
 
-        unsafe internal static string GetWebNameFromCodePage(int codePage)
+        internal static string GetWebNameFromCodePage(int codePage)
         {
             return CodePageToWebNameCache.Instance.GetOrAdd(codePage);
         }
@@ -112,7 +112,7 @@ namespace System.Text
             }
         }
 
-        unsafe internal static string GetEnglishNameFromCodePage(int codePage)
+        internal static string GetEnglishNameFromCodePage(int codePage)
         {
             return CodePageToEnglishNameCache.Instance.GetOrAdd(codePage);
         }
@@ -127,7 +127,7 @@ namespace System.Text
             }
         }
 
-        unsafe private static string GetNameFromCodePage(int codePage, string names, int[] indices)
+        private static string GetNameFromCodePage(int codePage, string names, int[] indices)
         {
             string name;
 
@@ -141,10 +141,7 @@ namespace System.Text
                 {
                     Contract.Assert(i < indices.Length - 1);
 
-                    fixed (char* pChar = names)
-                    {
-                        name = new String(pChar, indices[i], indices[i + 1] - indices[i]);
-                    }
+                    name = names.Substring(indices[i], indices[i + 1] - indices[i]);
 
                     return name;
                 }
