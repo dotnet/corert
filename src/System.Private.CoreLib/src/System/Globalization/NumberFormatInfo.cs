@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -40,6 +41,7 @@ namespace System.Globalization
     // CurrencySymbol            "$"      String used as local monetary symbol.
     //
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     sealed public class NumberFormatInfo : IFormatProvider, ICloneable
     {
@@ -93,7 +95,7 @@ namespace System.Globalization
         }
 
 
-        static private void VerifyDecimalSeparator(String decSep, String propertyName)
+        private static void VerifyDecimalSeparator(String decSep, String propertyName)
         {
             if (decSep == null)
             {
@@ -108,7 +110,7 @@ namespace System.Globalization
             Contract.EndContractBlock();
         }
 
-        static private void VerifyGroupSeparator(String groupSep, String propertyName)
+        private static void VerifyGroupSeparator(String groupSep, String propertyName)
         {
             if (groupSep == null)
             {
@@ -258,7 +260,7 @@ namespace System.Globalization
         // Every element in the groupSize array should be between 1 and 9
         // excpet the last element could be zero.
         //
-        static internal void CheckGroupSize(String propName, int[] groupSize)
+        internal static void CheckGroupSize(String propName, int[] groupSize)
         {
             for (int i = 0; i < groupSize.Length; i++)
             {

@@ -784,7 +784,7 @@ namespace System.Globalization
                 {
                     // Change the calendar of DTFI to the specified calendar of this CultureInfo.
                     DateTimeFormatInfo temp = new DateTimeFormatInfo(this.m_cultureData, this.Calendar);
-                    temp.m_isReadOnly = _isReadOnly;
+                    temp._isReadOnly = _isReadOnly;
                     System.Threading.Interlocked.MemoryBarrier();
                     dateTimeInfo = temp;
                 }

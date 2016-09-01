@@ -66,7 +66,7 @@ namespace System.Globalization
 
         // The culture name used to create this DTFI.
 
-        internal String m_name = null;
+        private String _name = null;
 
         // The language name of the culture used to create this DTFI.
         private String _langName = null;
@@ -81,59 +81,59 @@ namespace System.Globalization
         // Caches for various properties.
         //
 
-        internal String amDesignator = null;
-        internal String pmDesignator = null;
+        private String amDesignator = null;
+        private String pmDesignator = null;
 
-        internal String dateSeparator = null;            // derived from short date (whidbey expects, arrowhead doesn't)
+        private String dateSeparator = null;            // derived from short date (whidbey expects, arrowhead doesn't)
 
-        internal String generalShortTimePattern = null;     // short date + short time (whidbey expects, arrowhead doesn't)
+        private String generalShortTimePattern = null;     // short date + short time (whidbey expects, arrowhead doesn't)
 
-        internal String generalLongTimePattern = null;     // short date + long time (whidbey expects, arrowhead doesn't)
+        private String generalLongTimePattern = null;     // short date + long time (whidbey expects, arrowhead doesn't)
 
-        internal String timeSeparator = null;            // derived from long time (whidbey expects, arrowhead doesn't)
-        internal String monthDayPattern = null;
+        private String timeSeparator = null;            // derived from long time (whidbey expects, arrowhead doesn't)
+        private String monthDayPattern = null;
         // added in .NET Framework Release {2.0SP1/3.0SP1/3.5RTM}
-        internal String dateTimeOffsetPattern = null;
+        private String dateTimeOffsetPattern = null;
 
         //
         // The following are constant values.
         //
-        internal const String rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
+        private const String rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
         // The sortable pattern is based on ISO 8601.
-        internal const String sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
-        internal const String universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
+        private const String sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
+        private const String universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
 
         //
         // The following are affected by calendar settings.
         //
-        internal Calendar calendar = null;
+        private Calendar calendar = null;
 
-        internal int firstDayOfWeek = -1;
-        internal int calendarWeekRule = -1;
-
-
-        internal String fullDateTimePattern = null;        // long date + long time (whidbey expects, arrowhead doesn't)
-
-        internal String[] abbreviatedDayNames = null;
+        private int firstDayOfWeek = -1;
+        private int calendarWeekRule = -1;
 
 
-        internal String[] m_superShortDayNames = null;
+        private String fullDateTimePattern = null;        // long date + long time (whidbey expects, arrowhead doesn't)
 
-        internal String[] dayNames = null;
-        internal String[] abbreviatedMonthNames = null;
-        internal String[] monthNames = null;
+        private String[] abbreviatedDayNames = null;
+
+
+        private String[] m_superShortDayNames = null;
+
+        private String[] dayNames = null;
+        private String[] abbreviatedMonthNames = null;
+        private String[] monthNames = null;
         // Cache the genitive month names that we retrieve from the data table.
 
-        internal String[] genitiveMonthNames = null;
+        private String[] genitiveMonthNames = null;
 
         // Cache the abbreviated genitive month names that we retrieve from the data table.
 
-        internal String[] m_genitiveAbbreviatedMonthNames = null;
+        private String[] m_genitiveAbbreviatedMonthNames = null;
 
         // Cache the month names of a leap year that we retrieve from the data table.
 
-        internal String[] leapYearMonthNames = null;
+        private String[] leapYearMonthNames = null;
 
         // For our "patterns" arrays we have 2 variables, a string and a string[]
         //
@@ -142,44 +142,45 @@ namespace System.Globalization
         // When we initially construct our string[], we set the string to string[0]
 
         // The "default" Date/time patterns 
-        internal String longDatePattern = null;
-        internal String shortDatePattern = null;
-        internal String yearMonthPattern = null;
-        internal String longTimePattern = null;
-        internal String shortTimePattern = null;
+        private String longDatePattern = null;
+        private String shortDatePattern = null;
+        private String yearMonthPattern = null;
+        private String longTimePattern = null;
+        private String shortTimePattern = null;
 
-        private String[] _allYearMonthPatterns = null;
-        internal String[] allShortDatePatterns = null;
-        internal String[] allLongDatePatterns = null;
-        internal String[] allShortTimePatterns = null;
-        internal String[] allLongTimePatterns = null;
+        private String[] allYearMonthPatterns = null;
+
+        private String[] allShortDatePatterns = null;
+        private String[] allLongDatePatterns = null;
+        private String[] allShortTimePatterns = null;
+        private String[] allLongTimePatterns = null;
 
         // Cache the era names for this DateTimeFormatInfo instance.
-        internal String[] m_eraNames = null;
-        internal String[] m_abbrevEraNames = null;
-        internal String[] m_abbrevEnglishEraNames = null;
+        private String[] m_eraNames = null;
+        private String[] m_abbrevEraNames = null;
+        private String[] m_abbrevEnglishEraNames = null;
 
-        internal CalendarId[] optionalCalendars = null;
+        private CalendarId[] optionalCalendars = null;
 
         private const int DEFAULT_ALL_DATETIMES_SIZE = 132;
 
         // CultureInfo updates this
-        internal bool m_isReadOnly = false;
+        internal bool _isReadOnly = false;
 
         // This flag gives hints about if formatting/parsing should perform special code path for things like
         // genitive form or leap year month names.
 
-        internal DateTimeFormatFlags formatFlags = DateTimeFormatFlags.NotInitialized;
+        private DateTimeFormatFlags formatFlags = DateTimeFormatFlags.NotInitialized;
 
         private String CultureName
         {
             get
             {
-                if (m_name == null)
+                if (_name == null)
                 {
-                    m_name = _cultureData.CultureName;
+                    _name = _cultureData.CultureName;
                 }
-                return (m_name);
+                return (_name);
             }
         }
 
@@ -350,8 +351,8 @@ namespace System.Globalization
             this.allShortDatePatterns = cultureData.ShortDates(calendarId);
             Contract.Assert(this.allShortDatePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some short date patterns");
 
-            _allYearMonthPatterns = cultureData.YearMonths(calendarId);
-            Contract.Assert(_allYearMonthPatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some year month patterns");
+            this.allYearMonthPatterns = cultureData.YearMonths(calendarId);
+            Contract.Assert(this.allYearMonthPatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some year month patterns");
         }
 
         // This was synthesized by Whidbey so we knew what words might appear in the middle of a date string
@@ -373,7 +374,7 @@ namespace System.Globalization
                 {
                     DateTimeFormatInfo info = new DateTimeFormatInfo();
                     info.Calendar.SetReadOnlyState(true);
-                    info.m_isReadOnly = true;
+                    info._isReadOnly = true;
                     s_invariantInfo = info;
                 }
                 return (s_invariantInfo);
@@ -443,7 +444,7 @@ namespace System.Globalization
             // We can use the data member calendar in the setter, instead of the property Calendar,
             // since the cloned copy should have the same state as the original copy.
             n.calendar = (Calendar)this.Calendar.Clone();
-            n.m_isReadOnly = false;
+            n._isReadOnly = false;
             return n;
         }
 
@@ -533,7 +534,7 @@ namespace System.Globalization
 
                             allShortDatePatterns = null;
                             allLongDatePatterns = null;
-                            _allYearMonthPatterns = null;
+                            allYearMonthPatterns = null;
                             dateTimeOffsetPattern = null;
 
                             // The defaults need reset as well:
@@ -1258,7 +1259,7 @@ namespace System.Globalization
         //
         // Check if a string array contains a null value, and throw ArgumentNullException with parameter name "value"
         //
-        static private void CheckNullValue(String[] values, int length)
+        private static void CheckNullValue(String[] values, int length)
         {
             Contract.Requires(values != null, "value != null");
             Contract.Requires(values.Length >= length);
@@ -1416,7 +1417,7 @@ namespace System.Globalization
 
         // Whitespaces that we allow in the month names.
         // U+00a0 is non-breaking space.
-        private static char[] s_monthSpaces = { ' ', '\u00a0' };
+        private static readonly char[] s_monthSpaces = { ' ', '\u00a0' };
 
         internal bool HasSpacesInMonthNames
         {
@@ -1544,7 +1545,7 @@ namespace System.Globalization
         }
 
         // Get all possible combination of inputs
-        static private String[] GetCombinedPatterns(String[] patterns1, String[] patterns2, String connectString)
+        private static String[] GetCombinedPatterns(String[] patterns1, String[] patterns2, String connectString)
         {
             Contract.Requires(patterns1 != null);
             Contract.Requires(patterns2 != null);
@@ -1783,15 +1784,15 @@ namespace System.Globalization
         {
             get
             {
-                if (_allYearMonthPatterns == null)
+                if (this.allYearMonthPatterns == null)
                 {
                     Contract.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.UnclonedYearMonthPatterns] Expected Calendar.ID > 0");
-                    _allYearMonthPatterns = _cultureData.YearMonths(this.Calendar.ID);
-                    Contract.Assert(_allYearMonthPatterns.Length > 0,
+                    this.allYearMonthPatterns = _cultureData.YearMonths(this.Calendar.ID);
+                    Contract.Assert(this.allYearMonthPatterns.Length > 0,
                         "[DateTimeFormatInfo.UnclonedYearMonthPatterns] Expected some year month patterns");
                 }
 
-                return _allYearMonthPatterns;
+                return this.allYearMonthPatterns;
             }
         }
 
@@ -1882,7 +1883,7 @@ namespace System.Globalization
             // We can use the data member calendar in the setter, instead of the property Calendar,
             // since the cloned copy should have the same state as the original copy.
             newInfo.calendar = Calendar.ReadOnly(dtfi.Calendar);
-            newInfo.m_isReadOnly = true;
+            newInfo._isReadOnly = true;
             return (newInfo);
         }
 
@@ -1890,7 +1891,7 @@ namespace System.Globalization
         {
             get
             {
-                return (m_isReadOnly);
+                return (_isReadOnly);
             }
         }
 
@@ -1999,7 +2000,7 @@ namespace System.Globalization
                 if (_compareInfo == null)
                 {
                     // We use the regular GetCompareInfo here to make sure the created CompareInfo object is stored in the
-                    // CompareInfo cache. otherwise we would just create CompareInfo using m_cultureData.
+                    // CompareInfo cache. otherwise we would just create CompareInfo using _cultureData.
                     _compareInfo = CompareInfo.GetCompareInfo(_cultureData.SCOMPAREINFO);
                 }
 
@@ -2325,7 +2326,7 @@ namespace System.Globalization
                                 InsertHash(temp, symbol, TokenType.IgnorableSymbol, 0);
                                 if (this.DateSeparator.Trim(null).Equals(symbol))
                                 {
-                                    // The date separator is the same as the ingorable symbol.
+                                    // The date separator is the same as the ignorable symbol.
                                     useDateSepAsIgnorableSymbol = true;
                                 }
                                 break;

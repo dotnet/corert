@@ -20,7 +20,8 @@ namespace System.Globalization
     **      UmAlQura    1318/01/01   1500/12/30
     */
 
-    public class UmAlQuraCalendar : Calendar
+    [Serializable]
+    public partial class UmAlQuraCalendar : Calendar
     {
         internal const int MinCalendarYear = 1318;
         internal const int MaxCalendarYear = 1500;
@@ -40,7 +41,7 @@ namespace System.Globalization
 
         private static DateMapping[] InitDateMapping()
         {
-            short[] s_rawData = new short[] 
+            short[] rawData = new short[] 
             {
                 //These data is taken from Tables/Excel/UmAlQura.xls please make sure that the two places are in sync
                 /*  DaysPerM     GY      GM     GD     D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12    
@@ -228,15 +229,15 @@ namespace System.Globalization
                 1499*/0x06AA,    2075,     12,    9,/* 0    1    0    1    0    1    0    1    0    1    1    0    12/9/2075
                 1500*/0x0E93,    2076,     11,   27,/* 1    1    0    0    1    0    0    1    0    1    1    1    11/27/2076
                 1501*/     0,    2077,     11,   17,/* 0    0    0    0    0    0    0    0    0    0    0    0    11/17/2077
-   */       };
+    */      };
             // Direct inline initialization of DateMapping array would produce a lot of code bloat.
 
             // We take advantage of C# compiler compiles inline initialization of primitive type array into very compact code.
             // So we start with raw data stored in primitive type array, and initialize the DateMapping out of it
 
-            DateMapping[] mapping = new DateMapping[s_rawData.Length / 4];
+            DateMapping[] mapping = new DateMapping[rawData.Length / 4];
             for (int i = 0; i < mapping.Length; i++)
-                mapping[i] = new DateMapping(s_rawData[i * 4], s_rawData[i * 4 + 1], s_rawData[i * 4 + 2], s_rawData[i * 4 + 3]);
+                mapping[i] = new DateMapping(rawData[i * 4], rawData[i * 4 + 1], rawData[i * 4 + 2], rawData[i * 4 + 3]);
             return mapping;
         }
 
@@ -248,30 +249,10 @@ namespace System.Globalization
         internal const int DatePartMonth = 2;
         internal const int DatePartDay = 3;
 
-        //internal static Calendar m_defaultInstance;
-
 
         // This is the minimal Gregorian date that we support in the UmAlQuraCalendar.
         internal static DateTime minDate = new DateTime(1900, 4, 30);
         internal static DateTime maxDate = new DateTime((new DateTime(2077, 11, 16, 23, 59, 59, 999)).Ticks + 9999);
-
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of UmAlQuraCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance() {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new UmAlQuraCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-
 
         public override DateTime MinSupportedDateTime
         {
@@ -281,7 +262,6 @@ namespace System.Globalization
             }
         }
 
-
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -289,9 +269,6 @@ namespace System.Globalization
                 return (maxDate);
             }
         }
-
-
-        // Construct an instance of UmAlQura calendar.
 
         public UmAlQuraCalendar()
         {
@@ -373,7 +350,7 @@ namespace System.Globalization
             return GregorianCalendar.GetAbsoluteDate(yg, mg, dg);
         }
 
-        static internal void CheckTicksRange(long ticks)
+        internal static void CheckTicksRange(long ticks)
         {
             if (ticks < minDate.Ticks || ticks > maxDate.Ticks)
             {
@@ -387,7 +364,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckEraRange(int era)
+        internal static void CheckEraRange(int era)
         {
             if (era != CurrentEra && era != UmAlQuraEra)
             {
@@ -395,7 +372,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckYearRange(int year, int era)
+        internal static void CheckYearRange(int year, int era)
         {
             CheckEraRange(era);
             if (year < MinCalendarYear || year > MaxCalendarYear)
@@ -410,7 +387,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckYearMonthRange(int year, int month, int era)
+        internal static void CheckYearMonthRange(int year, int month, int era)
         {
             CheckYearRange(year, era);
             if (month < 1 || month > 12)
@@ -641,7 +618,7 @@ namespace System.Globalization
                 return 30;
         }
 
-        static internal int RealGetDaysInYear(int year)
+        internal static int RealGetDaysInYear(int year)
         {
             int days = 0, b;
 

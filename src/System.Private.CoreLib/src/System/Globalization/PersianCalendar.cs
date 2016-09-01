@@ -24,6 +24,7 @@ namespace System.Globalization
      **      Persian     0001/01/01   9378/10/13
      */
 
+    [Serializable]
     public class PersianCalendar : Calendar
     {
         public static readonly int PersianEra = 1;
@@ -48,24 +49,6 @@ namespace System.Globalization
         internal static DateTime minDate = new DateTime(622, 3, 22);
         internal static DateTime maxDate = DateTime.MaxValue;
 
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of PersianCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance() {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new PersianCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-
-
         public override DateTime MinSupportedDateTime
         {
             get
@@ -73,7 +56,6 @@ namespace System.Globalization
                 return (minDate);
             }
         }
-
 
         public override DateTime MaxSupportedDateTime
         {
@@ -138,7 +120,7 @@ namespace System.Globalization
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
         }
 
-        static internal void CheckTicksRange(long ticks)
+        internal static void CheckTicksRange(long ticks)
         {
             if (ticks < minDate.Ticks || ticks > maxDate.Ticks)
             {
@@ -152,7 +134,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckEraRange(int era)
+        internal static void CheckEraRange(int era)
         {
             if (era != CurrentEra && era != PersianEra)
             {
@@ -160,7 +142,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckYearRange(int year, int era)
+        internal static void CheckYearRange(int year, int era)
         {
             CheckEraRange(era);
             if (year < 1 || year > MaxCalendarYear)
@@ -175,7 +157,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckYearMonthRange(int year, int month, int era)
+        internal static void CheckYearMonthRange(int year, int month, int era)
         {
             CheckYearRange(year, era);
             if (year == MaxCalendarYear)

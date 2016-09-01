@@ -20,6 +20,7 @@ namespace System.Globalization
     **      KoreanLunisolar    918/01/01          2050/13/29
     */
 
+    [Serializable]
     public class KoreanLunisolarCalendar : EastAsianLunisolarCalendar
     {
         //
@@ -27,8 +28,6 @@ namespace System.Globalization
         //
 
         public const int GregorianEra = 1;
-
-        //internal static Calendar m_defaultInstance;
 
         internal const int MIN_LUNISOLAR_YEAR = 918;
         internal const int MAX_LUNISOLAR_YEAR = 2050;
@@ -1291,30 +1290,9 @@ namespace System.Globalization
             return year;
         }
 
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of KoreanLunisolarCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance()
-        {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new KoreanLunisolarCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-        // Construct an instance of KoreanLunisolar calendar.
-
         public KoreanLunisolarCalendar()
         {
         }
-
-
 
         public override int GetEra(DateTime time)
         {
