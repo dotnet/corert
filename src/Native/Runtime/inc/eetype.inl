@@ -461,7 +461,7 @@ inline void EEType::set_GenericComposition(GenericComposition *pGenericCompositi
     *(GenericComposition **)((UInt8*)this + cbOffset) = pGenericComposition;
 }
 
-inline EEType::GenericComposition *EEType::get_GenericComposition()
+inline GenericComposition *EEType::get_GenericComposition()
 {
     ASSERT(IsGeneric());
 
@@ -479,7 +479,7 @@ inline UInt32 EEType::get_GenericArity()
     return pGenericComposition->GetArity();
 }
 
-inline EEType** EEType::get_GenericArguments()
+inline EETypeRef* EEType::get_GenericArguments()
 {
     GenericComposition *pGenericComposition = get_GenericComposition();
 
@@ -852,19 +852,19 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
 }
 #endif
 
-inline size_t EEType::GenericComposition::GetArgumentOffset(UInt32 index)
+inline size_t GenericComposition::GetArgumentOffset(UInt32 index)
 {
     ASSERT(index < m_arity);
     return offsetof(GenericComposition, m_arguments[index]);
 }
 
-inline GenericVarianceType *EEType::GenericComposition::GetVariance()
+inline GenericVarianceType *GenericComposition::GetVariance()
 {
     ASSERT(m_hasVariance);
     return (GenericVarianceType *)(((UInt8 *)this) + offsetof(GenericComposition, m_arguments[m_arity]));
 }
 
-inline void EEType::GenericComposition::SetVariance(UInt32 index, GenericVarianceType variance)
+inline void GenericComposition::SetVariance(UInt32 index, GenericVarianceType variance)
 {
     ASSERT(index < m_arity);
     GenericVarianceType *pVariance = GetVariance();
