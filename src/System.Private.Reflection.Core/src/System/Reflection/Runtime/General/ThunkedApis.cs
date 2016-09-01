@@ -83,12 +83,35 @@ namespace System.Reflection.Runtime.EventInfos
     }
 }
 
+namespace System.Reflection.Runtime.FieldInfos
+{
+    internal sealed partial class RuntimeFieldInfo
+    {
+        public sealed override object GetRawConstantValue()
+        {
+            if (!IsLiteral)
+                throw new InvalidOperationException();
+
+            object value = GetValue(null);
+            return value.ToRawValue();
+        }
+    }
+}
+
 namespace System.Reflection.Runtime.MethodInfos
 {
     internal abstract partial class RuntimeMethodInfo
     {
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
         public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes => ReturnParameter;
+    }
+}
+
+namespace System.Reflection.Runtime.ParameterInfos
+{
+    internal abstract partial class RuntimeParameterInfo
+    {
+        public sealed override object RawDefaultValue => DefaultValue.ToRawValue();
     }
 }
 
@@ -115,6 +138,8 @@ namespace System.Reflection.Runtime.PropertyInfos
                 accessors[index++] = setter;
             return accessors;
         }
+
+        public sealed override object GetRawConstantValue() => GetConstantValue().ToRawValue();
     }
 }
 
@@ -133,6 +158,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
         public sealed override Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
+
+        public sealed override string GetEnumName(object value) => Enum.GetName(this, value);
+        public sealed override string[] GetEnumNames() => Enum.GetNames(this);
+        public sealed override Type GetEnumUnderlyingType() => Enum.GetUnderlyingType(this);
+        public sealed override Array GetEnumValues() => Enum.GetValues(this);
+        public sealed override bool IsEnumDefined(object value) => Enum.IsDefined(this, value);
 
         public sealed override Type GetInterface(string name, bool ignoreCase)
         {

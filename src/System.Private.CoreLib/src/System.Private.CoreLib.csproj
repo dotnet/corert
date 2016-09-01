@@ -175,6 +175,7 @@
     <Compile Include="System\Reflection\TypeFilter.cs" />
     <Compile Include="System\Reflection\TypeInfo.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\Action.cs" />
     <Compile Include="System\Activator.cs" />

@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.MethodInfos;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
@@ -40,6 +41,50 @@ namespace System.Reflection.Runtime.CustomAttributes
                     lazyAttributeType = _lazyAttributeType = _customAttribute.GetAttributeTypeHandle(_reader).Resolve(_reader, new TypeContext(null, null));
                 }
                 return lazyAttributeType;
+            }
+        }
+
+        public sealed override ConstructorInfo Constructor
+        {
+            get
+            {
+                MetadataReader reader = _reader;
+                HandleType constructorHandleType = _customAttribute.Constructor.HandleType;
+
+                if (constructorHandleType == HandleType.QualifiedMethod)
+                {
+                    QualifiedMethod qualifiedMethod = _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
+                    TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
+                    MethodHandle methodHandle = qualifiedMethod.Method;
+                    RuntimeNamedTypeInfo attributeType = RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+                    return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, attributeType, attributeType);
+                }
+                else if (constructorHandleType == HandleType.MemberReference)
+                {
+                    MemberReference memberReference = _customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
+
+                    // There is no chance a custom attribute type will be an open type specification so we can safely pass in the empty context here.
+                    TypeContext typeContext = new TypeContext(Array.Empty<RuntimeTypeInfo>(), Array.Empty<RuntimeTypeInfo>());
+                    RuntimeTypeInfo attributeType = memberReference.Parent.Resolve(reader, typeContext);
+                    MethodSignature sig = memberReference.Signature.ParseMethodSignature(reader);
+                    HandleCollection parameters = sig.Parameters;
+                    int numParameters = parameters.Count;
+                    if (numParameters == 0)
+                        return ResolveAttributeConstructor(attributeType, Array.Empty<Type>());
+
+                    Type[] expectedParameterTypes = new Type[numParameters];
+                    int index = 0;
+                    foreach (Handle _parameterHandle in parameters)
+                    {
+                        Handle parameterHandle = _parameterHandle;
+                        expectedParameterTypes[index++] = parameterHandle.WithoutCustomModifiers(reader).Resolve(reader, attributeType.TypeContext);
+                    }
+                    return ResolveAttributeConstructor(attributeType, expectedParameterTypes);
+                }
+                else
+                {
+                    throw new BadImageFormatException();
+                }
             }
         }
 
