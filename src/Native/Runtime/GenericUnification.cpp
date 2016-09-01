@@ -15,7 +15,7 @@
 #include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "GenericUnification.h"
-#include "EEType.h"
+#include "eetype.h"
 
 bool GenericUnificationHashtable::GrowTable(UInt32 minSize)
 {
