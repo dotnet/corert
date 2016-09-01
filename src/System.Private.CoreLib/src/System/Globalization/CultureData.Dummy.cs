@@ -77,11 +77,6 @@ namespace System.Globalization
             return new string [] { "h:mm:ss tt", "h:mm tt" };
         }
 
-        private static bool IsCustomCultureId(int cultureId)
-        {
-            return false;
-        }
-
         private int GetFirstDayOfWeek()
         {
             return 0;

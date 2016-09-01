@@ -17,11 +17,6 @@ namespace System.Globalization
             return true;
         }
 
-        internal static CalendarData GetCalendarData(CalendarId calendarId)
-        {
-            return CultureInfo.InvariantCulture.m_cultureData.GetCalendar(calendarId);
-        }
-
         internal static int GetCalendars(String localeName, bool useUserOverride, CalendarId[] calendars)
         {
             return 1;

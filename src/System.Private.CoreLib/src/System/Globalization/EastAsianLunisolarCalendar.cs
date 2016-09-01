@@ -13,7 +13,7 @@ namespace System.Globalization
     //
     ////////////////////////////////////////////////////////////////////////////
 
-
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class EastAsianLunisolarCalendar : Calendar
     {
@@ -164,8 +164,6 @@ namespace System.Globalization
             }
             throw new ArgumentOutOfRangeException("era", SR.ArgumentOutOfRange_InvalidEraValue);
         }
-
-        // Construct an instance of EastAsianLunisolar calendar.
 
         internal EastAsianLunisolarCalendar()
         {

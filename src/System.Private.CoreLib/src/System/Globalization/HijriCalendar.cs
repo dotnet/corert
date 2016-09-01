@@ -44,6 +44,7 @@ namespace System.Globalization
     **      Hijri       0001/01/01   9666/04/03
     */
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public partial class HijriCalendar : Calendar
     {
@@ -58,8 +59,6 @@ namespace System.Globalization
         internal const int MaxAdvancedHijri = 2;
 
         internal static readonly int[] HijriMonthDays = { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
-
-        //internal static Calendar m_defaultInstance;
 
         private int _hijriAdvance = Int32.MinValue;
 
@@ -91,24 +90,6 @@ namespace System.Globalization
                 return (calendarMaxValue);
             }
         }
-
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of HijriCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance() {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new HijriCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-        // Construct an instance of Hijri calendar.
 
         public HijriCalendar()
         {
@@ -222,7 +203,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckTicksRange(long ticks)
+        internal static void CheckTicksRange(long ticks)
         {
             if (ticks < calendarMinValue.Ticks || ticks > calendarMaxValue.Ticks)
             {
@@ -236,7 +217,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckEraRange(int era)
+        internal static void CheckEraRange(int era)
         {
             if (era != CurrentEra && era != HijriEra)
             {
@@ -244,7 +225,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckYearRange(int year, int era)
+        internal static void CheckYearRange(int year, int era)
         {
             CheckEraRange(era);
             if (year < 1 || year > MaxCalendarYear)
@@ -259,7 +240,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckYearMonthRange(int year, int month, int era)
+        internal static void CheckYearMonthRange(int year, int month, int era)
         {
             CheckYearRange(year, era);
             if (year == MaxCalendarYear)

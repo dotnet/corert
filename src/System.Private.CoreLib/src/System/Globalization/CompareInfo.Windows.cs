@@ -367,7 +367,7 @@ namespace System.Globalization
             if ((options & CompareOptions.StringSort) != 0) { nativeCompareFlags |= SORT_STRINGSORT; }
 
             // TODO: Can we try for GetNativeCompareFlags to never
-            // take Ordinal or OridnalIgnoreCase.  This value is not part of Win32, we just handle it special
+            // take Ordinal or OrdinalIgnoreCase.  This value is not part of Win32, we just handle it special
             // in some places.
             // Suffix & Prefix shouldn't use this, make sure to turn off the NORM_LINGUISTIC_CASING flag
             if (options == CompareOptions.Ordinal) { nativeCompareFlags = COMPARE_OPTIONS_ORDINAL; }

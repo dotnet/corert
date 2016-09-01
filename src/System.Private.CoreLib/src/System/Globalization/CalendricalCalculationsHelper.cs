@@ -23,19 +23,19 @@ namespace System.Globalization
         private const int SecondsPerMinute = 60;
         private const int MinutesPerDegree = 60;
 
-        private static long s_startOf1810 = GetNumberOfDays(new DateTime(1810, 1, 1));
-        private static long s_startOf1900Century = GetNumberOfDays(new DateTime(1900, 1, 1));
+        private static readonly long StartOf1810 = GetNumberOfDays(new DateTime(1810, 1, 1));
+        private static readonly long StartOf1900Century = GetNumberOfDays(new DateTime(1900, 1, 1));
 
-        private static double[] s_coefficients1900to1987 = new double[] { -0.00002, 0.000297, 0.025184, -0.181133, 0.553040, -0.861938, 0.677066, -0.212591 };
-        private static double[] s_coefficients1800to1899 = new double[] { -0.000009, 0.003844, 0.083563, 0.865736, 4.867575, 15.845535, 31.332267, 38.291999, 28.316289, 11.636204, 2.043794 };
-        private static double[] s_coefficients1700to1799 = new double[] { 8.118780842, -0.005092142, 0.003336121, -0.0000266484 };
-        private static double[] s_coefficients1620to1699 = new double[] { 196.58333, -4.0675, 0.0219167 };
-        private static double[] s_lambdaCoefficients = new double[] { 280.46645, 36000.76983, 0.0003032 };
-        private static double[] s_anomalyCoefficients = new double[] { 357.52910, 35999.05030, -0.0001559, -0.00000048 };
-        private static double[] s_eccentricityCoefficients = new double[] { 0.016708617, -0.000042037, -0.0000001236 };
-        private static double[] s_coefficients = new double[] { Angle(23, 26, 21.448), Angle(0, 0, -46.8150), Angle(0, 0, -0.00059), Angle(0, 0, 0.001813) };
-        private static double[] s_coefficientsA = new double[] { 124.90, -1934.134, 0.002063 };
-        private static double[] s_coefficientsB = new double[] { 201.11, 72001.5377, 0.00057 };
+        private static readonly double[] s_coefficients1900to1987 = new double[] { -0.00002, 0.000297, 0.025184, -0.181133, 0.553040, -0.861938, 0.677066, -0.212591 };
+        private static readonly double[] s_coefficients1800to1899 = new double[] { -0.000009, 0.003844, 0.083563, 0.865736, 4.867575, 15.845535, 31.332267, 38.291999, 28.316289, 11.636204, 2.043794 };
+        private static readonly double[] s_coefficients1700to1799 = new double[] { 8.118780842, -0.005092142, 0.003336121, -0.0000266484 };
+        private static readonly double[] s_coefficients1620to1699 = new double[] { 196.58333, -4.0675, 0.0219167 };
+        private static readonly double[] s_lambdaCoefficients = new double[] { 280.46645, 36000.76983, 0.0003032 };
+        private static readonly double[] s_anomalyCoefficients = new double[] { 357.52910, 35999.05030, -0.0001559, -0.00000048 };
+        private static readonly double[] s_eccentricityCoefficients = new double[] { 0.016708617, -0.000042037, -0.0000001236 };
+        private static readonly double[] s_coefficients = new double[] { Angle(23, 26, 21.448), Angle(0, 0, -46.8150), Angle(0, 0, -0.00059), Angle(0, 0, 0.001813) };
+        private static readonly double[] s_coefficientsA = new double[] { 124.90, -1934.134, 0.002063 };
+        private static readonly double[] s_coefficientsB = new double[] { 201.11, 72001.5377, 0.00057 };
 
         private static double RadiansFromDegrees(double degree)
         {
@@ -98,7 +98,7 @@ namespace System.Globalization
             internal CorrectionAlgorithm _algorithm;
         };
 
-        private static EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable = new EphemerisCorrectionAlgorithmMap[]
+        private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable = new EphemerisCorrectionAlgorithmMap[]
         {
             // lowest year that starts algorithm, algorithm to use
             new EphemerisCorrectionAlgorithmMap(2020, CorrectionAlgorithm.Default),
@@ -147,7 +147,7 @@ namespace System.Globalization
         private static double CenturiesFrom1900(int gregorianYear)
         {
             long july1stOfYear = GetNumberOfDays(new DateTime(gregorianYear, 7, 1));
-            return (double)(july1stOfYear - s_startOf1900Century) / DaysInUniformLengthCentury;
+            return (double)(july1stOfYear - StartOf1900Century) / DaysInUniformLengthCentury;
         }
 
         // the following formulas defines a polynomial function which gives us the amount that the earth is slowing down for specific year ranges
@@ -155,7 +155,7 @@ namespace System.Globalization
         {
             Contract.Assert(gregorianYear < 1620 || 2020 <= gregorianYear);
             long january1stOfYear = GetNumberOfDays(new DateTime(gregorianYear, 1, 1));
-            double daysSinceStartOf1810 = january1stOfYear - s_startOf1810;
+            double daysSinceStartOf1810 = january1stOfYear - StartOf1810;
             double x = TwelveHours + daysSinceStartOf1810;
             return ((Math.Pow(x, 2) / 41048480) - 15) / SecondsPerDay;
         }

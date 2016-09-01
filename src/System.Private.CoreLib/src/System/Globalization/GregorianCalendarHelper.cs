@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Globalization
 {
     // Gregorian Calendars use Era Info
+    [Serializable]
     internal class EraInfo
     {
         internal int era;          // The value of the era.

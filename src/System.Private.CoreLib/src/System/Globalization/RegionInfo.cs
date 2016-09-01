@@ -33,12 +33,12 @@ namespace System.Globalization
         //
         // Name of this region (ie: es-US): serialized, the field used for deserialization
         //
-        internal String m_name;
+        internal String _name;
 
         //
         // The CultureData instance that we are going to read data from.
         //
-        internal CultureData m_cultureData;
+        internal CultureData _cultureData;
 
         //
         // The RegionInfo for our current region
@@ -71,8 +71,8 @@ namespace System.Globalization
             //
             // For CoreCLR we only want the region names that are full culture names
             //
-            this.m_cultureData = CultureData.GetCultureDataForRegion(name, true);
-            if (this.m_cultureData == null)
+            _cultureData = CultureData.GetCultureDataForRegion(name, true);
+            if (_cultureData == null)
                 throw new ArgumentException(
                     String.Format(
                         CultureInfo.CurrentCulture,
@@ -80,7 +80,7 @@ namespace System.Globalization
 
 
             // Not supposed to be neutral
-            if (this.m_cultureData.IsNeutralCulture)
+            if (_cultureData.IsNeutralCulture)
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidNeutralRegionName, name), "name");
 
             SetName(name);
@@ -88,17 +88,17 @@ namespace System.Globalization
 
         internal RegionInfo(CultureData cultureData)
         {
-            this.m_cultureData = cultureData;
-            this.m_name = this.m_cultureData.SREGIONNAME;
+            _cultureData = cultureData;
+            _name = _cultureData.SREGIONNAME;
         }
 
         private void SetName(string name)
         {
             // when creating region by culture name, we keep the region name as the culture name so regions
             // created by custom culture names can be differentiated from built in regions.
-            this.m_name = name.Equals(this.m_cultureData.SREGIONNAME, StringComparison.OrdinalIgnoreCase) ?
-                                this.m_cultureData.SREGIONNAME :
-                                this.m_cultureData.CultureName;
+            this._name = name.Equals(_cultureData.SREGIONNAME, StringComparison.OrdinalIgnoreCase) ?
+                                _cultureData.SREGIONNAME :
+                                _cultureData.CultureName;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ namespace System.Globalization
                     temp = new RegionInfo(CultureInfo.CurrentCulture.m_cultureData);
 
                     // Need full name for custom cultures
-                    temp.m_name = temp.m_cultureData.SREGIONNAME;
+                    temp._name = temp._cultureData.SREGIONNAME;
                     s_currentRegionInfo = temp;
                 }
                 return temp;
@@ -138,8 +138,8 @@ namespace System.Globalization
         {
             get
             {
-                Contract.Assert(m_name != null, "Expected RegionInfo.m_name to be populated already");
-                return (m_name);
+                Contract.Assert(_name != null, "Expected RegionInfo._name to be populated already");
+                return (_name);
             }
         }
 
@@ -154,7 +154,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_cultureData.SENGCOUNTRY);
+                return (_cultureData.SENGCOUNTRY);
             }
         }
 
@@ -171,7 +171,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_cultureData.SLOCALIZEDCOUNTRY);
+                return (_cultureData.SLOCALIZEDCOUNTRY);
             }
         }
 
@@ -189,7 +189,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_cultureData.SNATIVECOUNTRY);
+                return (_cultureData.SNATIVECOUNTRY);
             }
         }
 
@@ -204,7 +204,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_cultureData.SISO3166CTRYNAME);
+                return (_cultureData.SISO3166CTRYNAME);
             }
         }
 
@@ -219,7 +219,7 @@ namespace System.Globalization
         {
             get
             {
-                int value = this.m_cultureData.IMEASURE;
+                int value = _cultureData.IMEASURE;
                 return (value == 0);
             }
         }
@@ -235,7 +235,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_cultureData.SCURRENCY);
+                return (_cultureData.SCURRENCY);
             }
         }
 
@@ -250,7 +250,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_cultureData.SINTLSYMBOL);
+                return (_cultureData.SINTLSYMBOL);
             }
         }
 

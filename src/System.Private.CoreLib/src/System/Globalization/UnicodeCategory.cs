@@ -4,6 +4,7 @@
 
 namespace System.Globalization
 {
+    [Serializable]
     public enum UnicodeCategory
     {
         UppercaseLetter = 0,
