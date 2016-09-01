@@ -65,7 +65,6 @@ namespace System.Reflection.Runtime.FieldInfos
     {
         public sealed override RuntimeFieldHandle FieldHandle { get { throw new NotImplementedException(); } }
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
-        public sealed override object GetRawConstantValue() { throw new NotImplementedException(); }
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
         public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
         public sealed override bool IsSecurityCritical { get { throw new NotImplementedException(); } }
@@ -112,7 +111,6 @@ namespace System.Reflection.Runtime.ParameterInfos
     {
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
-        public sealed override object RawDefaultValue { get { throw new NotImplementedException(); } }
     }
 }
 
@@ -122,7 +120,6 @@ namespace System.Reflection.Runtime.PropertyInfos
     {
         public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
-        public sealed override object GetRawConstantValue() { throw new NotImplementedException(); }
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
     }
 }
@@ -131,14 +128,8 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public sealed override string GetEnumName(object value) { throw new NotImplementedException(); }
-        public sealed override string[] GetEnumNames() { throw new NotImplementedException(); }
-        public sealed override Type GetEnumUnderlyingType() { throw new NotImplementedException(); }
-        public sealed override Array GetEnumValues() { throw new NotImplementedException(); }
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotImplementedException(); }
         public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotImplementedException(); }
-        public sealed override bool IsEnumDefined(object value) { throw new NotImplementedException(); }
-        public sealed override bool IsEquivalentTo(Type other) { throw new NotImplementedException(); }
         public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
     }
 }

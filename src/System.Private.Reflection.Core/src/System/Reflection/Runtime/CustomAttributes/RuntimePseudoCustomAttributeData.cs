@@ -41,6 +41,23 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
         }
 
+        public sealed override ConstructorInfo Constructor
+        {
+            get
+            {
+                int numArguments = _constructorArguments.Count;
+                if (numArguments == 0)
+                    return ResolveAttributeConstructor(_attributeType, Array.Empty<Type>());
+
+                Type[] expectedParameterTypes = new Type[numArguments];
+                for (int i = 0; i < numArguments; i++)
+                {
+                    expectedParameterTypes[i] = _constructorArguments[i].ArgumentType;
+                }
+                return ResolveAttributeConstructor(_attributeType, expectedParameterTypes);
+            }
+        }
+
         internal sealed override String AttributeTypeString
         {
             get

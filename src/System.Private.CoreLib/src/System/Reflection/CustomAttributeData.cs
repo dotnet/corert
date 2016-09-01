@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Collections.Generic;
+using RuntimeImplementedCustomAttributeData = System.Reflection.Runtime.CustomAttributes.RuntimeImplementedCustomAttributeData;
 
 namespace System.Reflection
 {
@@ -11,7 +12,17 @@ namespace System.Reflection
     {
         protected CustomAttributeData() { }
 
-        public Type AttributeType => Constructor.DeclaringType;
+        public Type AttributeType
+        {
+            get
+            {
+                RuntimeImplementedCustomAttributeData runtimeImplementedCustomAttributeData = this as RuntimeImplementedCustomAttributeData;
+                if (runtimeImplementedCustomAttributeData != null)
+                    return runtimeImplementedCustomAttributeData.AttributeType;
+
+                return Constructor.DeclaringType;
+            }
+        }
 
         public virtual ConstructorInfo Constructor => null;
         public virtual IList<CustomAttributeTypedArgument> ConstructorArguments { get { throw new NullReferenceException(); } }
