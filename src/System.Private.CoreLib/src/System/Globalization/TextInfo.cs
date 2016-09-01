@@ -29,6 +29,13 @@ namespace System.Globalization
         ////                        Internal Information                        //
         ////--------------------------------------------------------------------//
 
+        private enum Tristate : byte
+        {
+            NotInitialized,
+            True,
+            False,
+        }
+
         ////
         ////  Variables.
         ////
@@ -36,22 +43,12 @@ namespace System.Globalization
         private String _listSeparator;
         private bool _isReadOnly = false;
 
-        ////
-        //// In Whidbey we had several names:
-        ////      m_win32LangID is the name of the culture, but only used for (de)serialization.
-        ////      customCultureName is the name of the creating custom culture (if custom)  In combination with m_win32LangID
-        ////              this is authoratative, ie when deserializing.
-        ////      m_cultureTableRecord was the data record of the creating culture.  (could have different name if custom)
-        ////      m_textInfoID is the LCID of the textinfo itself (no longer used)
-        ////      m_name is the culture name (from cultureinfo.name)
-        ////
-        //// In Silverlight/Arrowhead this is slightly different:
-        ////      m_cultureName is the name of the creating culture.  Note that we consider this authoratative,
+        ////      _cultureName is the name of the creating culture.  Note that we consider this authoratative,
         ////              if the culture's textinfo changes when deserializing, then behavior may change.
         ////              (ala Whidbey behavior).  This is the only string Arrowhead needs to serialize.
-        ////      m_cultureData is the data that backs this class.
-        ////      m_textInfoName is the actual name of the textInfo (from cultureData.STEXTINFO)
-        ////              this can be the same as m_cultureName on Silverlight since the OS knows
+        ////      _cultureData is the data that backs this class.
+        ////      _textInfoName is the actual name of the textInfo (from cultureData.STEXTINFO)
+        ////              this can be the same as _cultureName on Silverlight since the OS knows
         ////              how to do the sorting. However in the desktop, when we call the sorting dll, it doesn't
         ////              know how to resolve custom locle names to sort ids so we have to have alredy resolved this.
         ////      
@@ -59,7 +56,7 @@ namespace System.Globalization
         private readonly String _cultureName;      // Name of the culture that created this text info
         private readonly CultureData _cultureData;      // Data record for the culture that made us, not for this textinfo
         private readonly String _textInfoName;     // Name of the text info we're using (ie: m_cultureData.STEXTINFO)
-        private bool? _isAsciiCasingSameAsInvariant;
+        private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
         internal static TextInfo Invariant
@@ -236,9 +233,9 @@ namespace System.Globalization
             return ChangeCase(str, toUpper: false);
         }
 
-        static private Char ToLowerAsciiInvariant(Char c)
+        private static Char ToLowerAsciiInvariant(Char c)
         {
-            if ('A' <= c && c <= 'Z')
+            if ((uint)(c - 'A') <= (uint)('Z' - 'A'))
             {
                 c = (Char)(c | 0x20);
             }
@@ -269,9 +266,9 @@ namespace System.Globalization
             return ChangeCase(str, toUpper: true);
         }
 
-        static private Char ToUpperAsciiInvariant(Char c)
+        private static Char ToUpperAsciiInvariant(Char c)
         {
-            if ('a' <= c && c <= 'z')
+            if ((uint)(c - 'a') <= (uint)('z' - 'a'))
             {
                 c = (Char)(c & ~0x20);
             }
@@ -287,13 +284,13 @@ namespace System.Globalization
         {
             get
             {
-                if (_isAsciiCasingSameAsInvariant == null)
+                if (_isAsciiCasingSameAsInvariant == Tristate.NotInitialized)
                 {
                     _isAsciiCasingSameAsInvariant = CultureInfo.GetCultureInfo(_textInfoName).CompareInfo.Compare("abcdefghijklmnopqrstuvwxyz",
                                                                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                                                                             CompareOptions.IgnoreCase) == 0;
+                                                                             CompareOptions.IgnoreCase) == 0 ? Tristate.True : Tristate.False;
                 }
-                return (bool)_isAsciiCasingSameAsInvariant;
+                return _isAsciiCasingSameAsInvariant == Tristate.True;
             }
         }
 
@@ -367,7 +364,7 @@ namespace System.Globalization
                 throw new ArgumentNullException("str");
             }
 
-            // FUTURE: This code assumes that ASCII casing is safe for whatever context is passed in.
+            // This code assumes that ASCII casing is safe for whatever context is passed in.
             // this is true today, because we only ever call these methods on Invariant.  It would be ideal to refactor
             // these methods so they were correct by construction and we could only ever use Invariant.
 
