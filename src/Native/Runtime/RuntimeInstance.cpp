@@ -26,6 +26,7 @@
 #include "eetype.h"
 #include "varint.h"
 #include "DebugEventSource.h"
+#include "GenericUnification.h"
 
 #include "CommonMacros.inl"
 #include "slist.inl"
@@ -273,6 +274,7 @@ RuntimeInstance::RuntimeInstance() :
     m_pStandaloneExeModule(NULL),
     m_pStaticGCRefsDescChunkList(NULL),
     m_pThreadStaticGCRefsDescChunkList(NULL),
+    m_pGenericUnificationHashtable(NULL),
     m_conservativeStackReportingEnabled(false)
 {
 }
@@ -538,12 +540,12 @@ bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
         assert(pEEType->IsGeneric());
 
         // prepare generic composition
-        size_t cbGenericCompositionSize = EEType::GenericComposition::GetSize((UInt16)arity, pTemplateType->HasGenericVariance());
+        size_t cbGenericCompositionSize = GenericComposition::GetSize((UInt16)arity, pTemplateType->HasGenericVariance());
         pGenericCompositionMemory = new (nothrow) UInt8[cbGenericCompositionSize];
         if (pGenericCompositionMemory == NULL)
             return false;
 
-        EEType::GenericComposition *pGenericComposition = (EEType::GenericComposition *)(UInt8 *)pGenericCompositionMemory;
+        GenericComposition *pGenericComposition = (GenericComposition *)(UInt8 *)pGenericCompositionMemory;
         pGenericComposition->Init((UInt16)arity, pTemplateType->HasGenericVariance());
 
         // fill in variance flags
@@ -602,6 +604,18 @@ bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
     pNonGcStaticData.SuppressRelease();
     pGcStaticData.SuppressRelease();
     return true;
+}
+
+bool RuntimeInstance::UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCount, void **pIndirCells, UInt32 indirCellCount)
+{
+    if (m_pGenericUnificationHashtable == nullptr)
+    {
+        m_pGenericUnificationHashtable = new GenericUnificationHashtable();
+        if (m_pGenericUnificationHashtable == nullptr)
+            return false;
+    }
+
+    return m_pGenericUnificationHashtable->UnifyDescs(descs, descCount, (UIntTarget*)pIndirCells, indirCellCount);
 }
 
 COOP_PINVOKE_HELPER(bool, RhCreateGenericInstanceDescForType2, (EEType *        pEEType,
@@ -704,6 +718,7 @@ COOP_PINVOKE_HELPER(PTR_VOID, RhGetRuntimeHelperForType, (EEType * pEEType, int 
     case RuntimeHelperKind::CastClass:
         if (pEEType->IsArray())
             return INDIRECTION(RhTypeCast_CheckCastArray);
+
         else if (pEEType->IsInterface())
             return INDIRECTION(RhTypeCast_CheckCastInterface);
         else

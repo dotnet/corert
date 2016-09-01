@@ -10,6 +10,8 @@ struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 struct ModuleHeader;
 enum GenericVarianceType : UInt8;
+struct GenericUnificationDesc;
+class GenericUnificationHashtable;
 
 class RuntimeInstance
 {
@@ -101,6 +103,8 @@ class RuntimeInstance
     // Lock protecting above lists
     ReaderWriterLock            m_StaticGCRefLock;
 
+    GenericUnificationHashtable *m_pGenericUnificationHashtable;
+
     bool                        m_conservativeStackReportingEnabled;
 
     RuntimeInstance();
@@ -174,6 +178,8 @@ public:
                                     StaticGcDesc *       pGcStaticsDesc,
                                     StaticGcDesc *       pThreadStaticsDesc,
                                     UInt32*              pGenericVarianceFlags);
+
+    bool UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCount, void  **pIndirCells, UInt32 indirCellCount);
 
 #ifdef FEATURE_PROFILING
     void InitProfiling(ModuleHeader *pModuleHeader);

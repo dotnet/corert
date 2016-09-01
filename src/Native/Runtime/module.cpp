@@ -93,6 +93,18 @@ Module * Module::Create(ModuleHeader *pModuleHeader)
     Module::DoCustomImports(pModuleHeader);
 #endif // FEATURE_CUSTOM_IMPORTS
 
+    // do generic unification
+    if (pModuleHeader->CountOfGenericUnificationDescs > 0)
+    {
+        if (!GetRuntimeInstance()->UnifyGenerics((GenericUnificationDesc *)pModuleHeader->GetGenericUnificationDescs(),
+                                                 pModuleHeader->CountOfGenericUnificationDescs,
+                                                 (void **)pModuleHeader->GetGenericUnificationIndirCells(),
+                                                 pModuleHeader->CountOfGenericUnificationIndirCells))
+        {
+            return NULL;
+        }
+    }
+
 #ifdef _DEBUG
 #ifdef LOG_MODULE_LOAD_VERIFICATION
     printf("\nModule: 0x%p\n", pNewModule->m_hOsModuleHandle);
