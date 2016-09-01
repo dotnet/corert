@@ -131,5 +131,9 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotImplementedException(); }
         public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotImplementedException(); }
         public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
+
+        public sealed override bool IsSecurityCritical { get { throw new NotImplementedException(); } }
+        public sealed override bool IsSecuritySafeCritical { get { throw new NotImplementedException(); } }
+        public sealed override bool IsSecurityTransparent { get { throw new NotImplementedException(); } }
     }
 }

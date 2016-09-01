@@ -159,6 +159,7 @@
     <Compile Include="System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="System\Reflection\MethodInfo.cs" />
     <Compile Include="System\Reflection\Module.cs" />
+    <Compile Include="System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="System\Reflection\ParameterAttributes.cs" />
     <Compile Include="System\Reflection\ParameterInfo.cs" />
     <Compile Include="System\Reflection\ParameterModifier.cs" />
@@ -225,6 +226,7 @@
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="System\Convert.cs" />
+    <Compile Include="System\ContextBoundObject.cs" />
     <Compile Include="System\DataMisalignedException.cs" />
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
@@ -363,6 +365,7 @@
     <Compile Include="System\Reflection\Missing.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\Reflection\ProcessorArchitecture.cs" />
+    <Compile Include="System\ResolveEventArgs.cs" />
     <Compile Include="System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
