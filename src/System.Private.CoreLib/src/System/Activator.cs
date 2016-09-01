@@ -93,6 +93,11 @@ namespace System
         {
             return RuntimeAugments.Callbacks.ActivatorCreateInstance(type, args);
         }
+
+        public static object CreateInstance(Type type, bool nonPublic)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 

@@ -58,7 +58,7 @@ struct ModuleHeader
 
     enum ModuleHeaderConstants : UInt32
     {
-        CURRENT_VERSION             = 2,            // Version of the module header protocol. Increment on
+        CURRENT_VERSION             = 3,            // Version of the module header protocol. Increment on
                                                     // breaking changes
         DELTA_SHORTCUT_TABLE_SIZE   = 16,
         MAX_REGIONS                 = 8,            // Max number of regions described by the Regions array
@@ -133,6 +133,12 @@ struct ModuleHeader
     UInt32          CountCustomImportDescriptors;    // count of entries in the above array
 #endif // FEATURE_CUSTOM_IMPORTS
 
+    UInt32          RraGenericUnificationDescs;
+    UInt32          CountOfGenericUnificationDescs;
+
+    UInt32          RraGenericUnificationIndirCells;
+    UInt32          CountOfGenericUnificationIndirCells;
+
     // Macro to generate an inline accessor for RRA-based fields.
 #ifdef RHDUMP
 #define DEFINE_GET_ACCESSOR(_field, _region)\
@@ -185,6 +191,9 @@ struct ModuleHeader
 #ifdef FEATURE_CUSTOM_IMPORTS
     DEFINE_GET_ACCESSOR(CustomImportDescriptors,    RDATA_REGION);
 #endif // FEATURE_CUSTOM_IMPORTS
+
+    DEFINE_GET_ACCESSOR(GenericUnificationDescs,    RDATA_REGION);
+    DEFINE_GET_ACCESSOR(GenericUnificationIndirCells,DATA_REGION);
 
 #ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
@@ -632,3 +641,135 @@ struct ThreadStaticFieldOffsets
     UInt32 FieldOffset;                 // Offset of a thread static field from the start of its containing type's TLS fields block
                                         // (in other words, the address of a field is 'TLS block + StartingOffsetInTlsBlock + FieldOffset')
 };
+
+#ifndef RHDUMP
+// as System::__Canon is not exported by the SharedLibrary.dll, it is represented by a special "pointer" for generic unification
+#ifdef BINDER
+static const UIntTarget CANON_EETYPE = 42;
+#else
+static const EEType * CANON_EETYPE = (EEType *)42;
+#endif
+#endif
+
+#ifndef RHDUMP
+// flags describing what a generic unification descriptor (below) describes or contains
+enum GenericUnificationFlags
+{
+    GUF_IS_METHOD       = 0x01,         // GUD represents a method, not a type
+    GUF_EETYPE          = 0x02,         // GUD has an indirection cell for the eetype itself
+    GUF_DICT            = 0x04,         // GUD has an indirection cell for the dictionary
+    GUF_GC_STATICS      = 0x08,         // GUD has 2 indirection cells for the gc statics and their gc desc
+    GUF_NONGC_STATICS   = 0x10,         // GUD has an indirection cell for the non gc statics
+    GUF_THREAD_STATICS  = 0x20,         // GUD has 3 indirection cells for the tls index, the tls offset and the tls gc desc
+    GUF_METHOD_BODIES   = 0x40,         // GUD has indirection cells for method bodies
+    GUF_UNBOXING_STUBS  = 0x80,         // GUD has indirection cells for unboxing/instantiating stubs
+};
+
+class GenericComposition;
+
+// describes a generic type or method for the purpose of generic unification
+struct GenericUnificationDesc
+{
+    UInt32              m_hashCode;                     // hash code of the type or method
+    UInt32              m_flags : 8;                    // GenericUnificationFlags (above)
+    UInt32              m_indirCellCountOrOrdinal : 24; // # indir cells used or method ordinal
+#ifdef BINDER
+    UIntTarget          m_openType;                     // ref to open type
+    UIntTarget          m_genericComposition;           // ref to generic composition
+                                                        // (including type args of the enclosing type)
+#else
+    EETypeRef           m_openType;                     // ref to open type
+    GenericComposition *m_genericComposition;           // ref to generic composition
+                                                        // (including type args of the enclosing type)
+#endif // BINDER
+
+    inline UInt32 GetIndirCellIndex(GenericUnificationFlags flags)
+    {
+#ifdef BINDER
+        assert((m_flags & flags) != 0);
+#endif // BINDER
+        UInt32 indirCellIndex = 0;
+
+        if (flags == GUF_EETYPE)
+            return indirCellIndex;
+        if (m_flags & GUF_EETYPE)
+            indirCellIndex += 1;
+
+        if (flags == GUF_DICT)
+            return indirCellIndex;
+        if (m_flags & GUF_DICT)
+            indirCellIndex += 1;
+
+        if (flags == GUF_GC_STATICS)
+            return indirCellIndex;
+        if (m_flags & GUF_GC_STATICS)
+            indirCellIndex += 2;
+
+        if (flags == GUF_NONGC_STATICS)
+            return indirCellIndex;
+        if (m_flags & GUF_NONGC_STATICS)
+            indirCellIndex += 1;
+
+        if (flags == GUF_THREAD_STATICS)
+            return indirCellIndex;
+        if (m_flags & GUF_THREAD_STATICS)
+            indirCellIndex += 3;
+
+        if (flags == GUF_METHOD_BODIES)
+            return indirCellIndex;
+
+#ifdef BINDER
+        // not legal to have unboxing stubs without method bodies
+        assert((m_flags & (GUF_METHOD_BODIES| GUF_UNBOXING_STUBS)) == (GUF_METHOD_BODIES | GUF_UNBOXING_STUBS));
+#endif // BINDER
+        if (flags & GUF_UNBOXING_STUBS)
+        {
+            // the remainining indirection cells should be for method bodies and instantiating/unboxing stubs
+            // where each method has an associated instantiating/unboxing stub
+            UInt32 remainingIndirCellCount = m_indirCellCountOrOrdinal - indirCellIndex;
+            // thus the number of remaining indirection cells should be divisible by 2
+            assert(remainingIndirCellCount % 2 == 0);
+            // the method bodies come first, followed by the unboxing stubs
+            return indirCellIndex + remainingIndirCellCount/2;
+        }
+
+#ifdef BINDER
+        assert(!"bad GUF flag parameter");
+#endif // BINDER
+        return indirCellIndex;
+    }
+
+#ifdef BINDER
+    inline void SetIndirCellCount(UInt32 indirCellCount)
+    {
+        // generic unification descs for methods always have 1 indirection cell
+        assert(!(m_flags & GUF_IS_METHOD));
+        m_indirCellCountOrOrdinal = indirCellCount;
+        assert(m_indirCellCountOrOrdinal == indirCellCount);
+    }
+
+    inline void SetOrdinal(UInt32 ordinal)
+    {
+        assert(m_flags & GUF_IS_METHOD);
+        m_indirCellCountOrOrdinal = ordinal;
+        assert(m_indirCellCountOrOrdinal == ordinal);
+    }
+#endif // !BINDER
+
+    inline UInt32 GetIndirCellCount()
+    {
+        // generic unification descs for methods always have 1 indirection cell
+        return (m_flags & GUF_IS_METHOD) ? 1 : m_indirCellCountOrOrdinal;
+    }
+
+    inline UInt32 GetOrdinal()
+    {
+        // For methods, we need additional identification, for types, we don't
+        // However, we need to make sure no type can match a method, so for
+        // types we return a value that would be never legal for a method
+        return (m_flags & GUF_IS_METHOD) ? m_indirCellCountOrOrdinal : ~0;
+    }
+
+    bool Equals(GenericUnificationDesc *that);
+};
+#endif

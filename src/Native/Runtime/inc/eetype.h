@@ -15,6 +15,7 @@ class OptionalFields;
 class ModuleManager;
 struct EETypeRef;
 enum GenericVarianceType : UInt8;
+class GenericComposition;
 
 //-------------------------------------------------------------------------------------------------
 // Array of these represents the interfaces implemented by a type
@@ -553,7 +554,6 @@ public:
     // Retrieve the generic type definition EEType for this generic instance
     EETypeRef & get_GenericDefinition();
 
-    class GenericComposition;
     inline void set_GenericComposition(GenericComposition *);
     inline GenericComposition *get_GenericComposition();
 
@@ -561,7 +561,7 @@ public:
     UInt32 get_GenericArity();
 
     // Retrieve the generic arguments to this type
-    EEType** get_GenericArguments();
+    EETypeRef * get_GenericArguments();
 
     // Retrieve the generic variance associated with this type
     GenericVarianceType* get_GenericVariance();
@@ -655,53 +655,55 @@ public:
     EEType * GetArrayBaseType();
 #endif // !defined(BINDER) && !defined(DACCESS_COMPILE)
 
-    class GenericComposition
-    {
-        UInt16              m_arity;
-        UInt8               m_hasVariance;
+#endif // !RHDUMP
+};
+
+class GenericComposition
+{
+    UInt16              m_arity;
+    UInt8               m_hasVariance;
 #ifdef BINDER
-        UIntTarget          m_arguments[/*arity*/1];  // to make the size come out right for cross-bind
+    UIntTarget          m_arguments[/*arity*/1];  // to make the size come out right for cross-bind
 #else
-        EEType             *m_arguments[/*arity*/1];
+    EEType             *m_arguments[/*arity*/1];
 #endif
-        GenericVarianceType m_variance[/*arity*/1];
+    GenericVarianceType m_variance[/*arity*/1];
 
-    public:
-        static size_t GetSize(UInt16 arity, bool hasVariance)
-        {
-            size_t cbSize = offsetof(GenericComposition, m_arguments[arity]);
-            if (hasVariance)
-                cbSize += sizeof(GenericVarianceType)*arity;
+public:
+    static size_t GetSize(UInt16 arity, bool hasVariance)
+    {
+        size_t cbSize = offsetof(GenericComposition, m_arguments[arity]);
+        if (hasVariance)
+            cbSize += sizeof(GenericVarianceType)*arity;
 
-            return cbSize;
-        }
+        return cbSize;
+    }
 
-        void Init(UInt16 arity, bool hasVariance)
-        {
-            memset(this, 0, GetSize(arity, hasVariance));
-            m_arity = arity;
-            m_hasVariance = hasVariance;
-        }
+    void Init(UInt16 arity, bool hasVariance)
+    {
+        memset(this, 0, GetSize(arity, hasVariance));
+        m_arity = arity;
+        m_hasVariance = hasVariance;
+    }
 
-        UInt32 GetArity()
-        {
-            return m_arity;
-        }
+    UInt32 GetArity()
+    {
+        return m_arity;
+    }
 
-        size_t GetArgumentOffset(UInt32 index);
+    size_t GetArgumentOffset(UInt32 index);
 
 #ifndef BINDER
-        EEType **GetArguments()
-        {
-            return m_arguments;
-        }
+    EETypeRef *GetArguments()
+    {
+        return (EETypeRef *)m_arguments;
+    }
 #endif
-        GenericVarianceType *GetVariance();
+    GenericVarianceType *GetVariance();
 
-        void SetVariance(UInt32 index, GenericVarianceType variance);
-    };
+    void SetVariance(UInt32 index, GenericVarianceType variance);
 
-#endif // !RHDUMP
+    bool Equals(GenericComposition *that);
 };
 
 #pragma warning(pop)

@@ -156,6 +156,18 @@ namespace System.Reflection.Runtime.General
             }
         }
 
+        // If a typedef/ref/spec handle has one or more custom modifiers wrapped around it, unwrap it. All we care about is the actual type.
+        public static Handle WithoutCustomModifiers(this Handle h, MetadataReader reader)
+        {
+            HandleType handleType;
+            while ((handleType = h.HandleType) == HandleType.ModifiedType)
+            {
+                h = h.ToModifiedTypeHandle(reader).GetModifiedType(reader).Type;
+            }
+            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification);
+            return h;
+        }
+
         public static MethodSignature ParseMethodSignature(this Handle handle, MetadataReader reader)
         {
             return handle.ToMethodSignatureHandle(reader).GetMethodSignature(reader);

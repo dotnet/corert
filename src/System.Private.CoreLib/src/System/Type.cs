@@ -99,6 +99,9 @@ namespace System
 
         public bool IsCOMObject => IsCOMObjectImpl();
         protected abstract bool IsCOMObjectImpl();
+        public bool IsContextful => IsContextfulImpl();
+        protected virtual bool IsContextfulImpl() => typeof(ContextBoundObject).IsAssignableFrom(this);
+
         public bool IsEnum => IsSubclassOf(typeof(Enum));
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => typeof(MarshalByRefObject).IsAssignableFrom(this);
@@ -106,6 +109,10 @@ namespace System
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType => IsValueTypeImpl();
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
+
+        public virtual bool IsSecurityCritical { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecuritySafeCritical { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
 
         public virtual StructLayoutAttribute StructLayoutAttribute { get { throw new NotSupportedException(); } }
         public ConstructorInfo TypeInitializer => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, Type.EmptyTypes, null);
@@ -222,6 +229,10 @@ namespace System
         public static Type GetType(string typeName) => GetType(typeName, throwOnError: false, ignoreCase: false);
         public static Type GetType(string typeName, bool throwOnError) => GetType(typeName, throwOnError: throwOnError, ignoreCase: false);
         public static Type GetType(string typeName, bool throwOnError, bool ignoreCase) => RuntimeAugments.Callbacks.GetType(typeName, throwOnError, ignoreCase);
+
+        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver) => GetType(typeName, assemblyResolver, typeResolver, throwOnError: false, ignoreCase: false);
+        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError) => GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: false);
+        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase) { throw new NotImplementedException(); }
 
         public virtual RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
         [Intrinsic]

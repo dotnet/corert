@@ -36,6 +36,8 @@ namespace System.Reflection.Runtime.Assemblies
         public sealed override Type GetType(string name, bool throwOnError) => base.GetType(name, throwOnError);
         public sealed override bool IsDynamic => base.IsDynamic;
         public sealed override string ToString() => base.ToString();
+
+        public sealed override event ModuleResolveEventHandler ModuleResolve { add { base.ModuleResolve += value; } remove { base.ModuleResolve -= value; } }
 #endif //DEBUG
     }
 }
@@ -133,11 +135,13 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override Type[] FindInterfaces(TypeFilter filter, object filterCriteria) => base.FindInterfaces(filter, filterCriteria);
         public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria) => base.FindMembers(memberType, bindingAttr, filter, filterCriteria);
         public sealed override EventInfo[] GetEvents() => base.GetEvents();
+        protected sealed override bool IsContextfulImpl() => base.IsContextfulImpl();
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
         protected sealed override bool IsMarshalByRefImpl() => base.IsMarshalByRefImpl();
         public sealed override MemberTypes MemberType => base.MemberType;
         public sealed override bool IsInstanceOfType(object o) => base.IsInstanceOfType(o);
         public sealed override bool IsSerializable => base.IsSerializable;
+        public sealed override bool IsEquivalentTo(Type other) => base.IsEquivalentTo(other); // Note: If we enable COM type equivalence, this is no longer the correct implementation.
 #endif //DEBUG
     }
 }

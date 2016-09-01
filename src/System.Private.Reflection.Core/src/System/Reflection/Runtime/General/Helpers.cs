@@ -12,6 +12,7 @@ using System.Reflection.Runtime.TypeInfos;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;
+using Internal.Runtime.Augments;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.General
@@ -86,6 +87,14 @@ namespace System.Reflection.Runtime.General
             if (accessor.IsPublic)
                 return accessor;
             return null;
+        }
+
+        public static object ToRawValue(this object defaultValueOrLiteral)
+        {
+            Enum e = defaultValueOrLiteral as Enum;
+            if (e != null)
+                return RuntimeAugments.GetEnumValue(e);
+            return defaultValueOrLiteral;
         }
     }
 }

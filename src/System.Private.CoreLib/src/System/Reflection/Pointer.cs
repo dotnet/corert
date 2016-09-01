@@ -10,6 +10,10 @@ namespace System.Reflection
 {
     public sealed unsafe class Pointer : ISerializable
     {
+        public Pointer()
+        {
+        }
+
         private Pointer(void* ptr, Type ptrType)
         {
             _ptr = ptr;

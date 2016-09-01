@@ -12,6 +12,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Reflection;
+using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -82,12 +83,35 @@ namespace System.Reflection.Runtime.EventInfos
     }
 }
 
+namespace System.Reflection.Runtime.FieldInfos
+{
+    internal sealed partial class RuntimeFieldInfo
+    {
+        public sealed override object GetRawConstantValue()
+        {
+            if (!IsLiteral)
+                throw new InvalidOperationException();
+
+            object value = GetValue(null);
+            return value.ToRawValue();
+        }
+    }
+}
+
 namespace System.Reflection.Runtime.MethodInfos
 {
     internal abstract partial class RuntimeMethodInfo
     {
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
         public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes => ReturnParameter;
+    }
+}
+
+namespace System.Reflection.Runtime.ParameterInfos
+{
+    internal abstract partial class RuntimeParameterInfo
+    {
+        public sealed override object RawDefaultValue => DefaultValue.ToRawValue();
     }
 }
 
@@ -114,6 +138,8 @@ namespace System.Reflection.Runtime.PropertyInfos
                 accessors[index++] = setter;
             return accessors;
         }
+
+        public sealed override object GetRawConstantValue() => GetConstantValue().ToRawValue();
     }
 }
 
@@ -132,6 +158,63 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
         public sealed override Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
+
+        public sealed override string GetEnumName(object value) => Enum.GetName(this, value);
+        public sealed override string[] GetEnumNames() => Enum.GetNames(this);
+        public sealed override Type GetEnumUnderlyingType() => Enum.GetUnderlyingType(this);
+        public sealed override Array GetEnumValues() => Enum.GetValues(this);
+        public sealed override bool IsEnumDefined(object value) => Enum.IsDefined(this, value);
+
+        public sealed override Type GetInterface(string name, bool ignoreCase)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            string simpleName;
+            string ns;
+            SplitTypeName(name, out simpleName, out ns);
+
+            Type match = null;
+            foreach (Type ifc in ImplementedInterfaces)
+            {
+                string ifcSimpleName = ifc.Name;
+                bool simpleNameMatches = ignoreCase
+                    ? (0 == CultureInfo.InvariantCulture.CompareInfo.Compare(simpleName, ifcSimpleName, CompareOptions.IgnoreCase))  // @todo: This could be expressed simpler but the necessary parts of String api not yet ported.
+                    : simpleName.Equals(ifcSimpleName);
+                if (!simpleNameMatches)
+                    continue;
+
+                // This check exists for desktop compat: 
+                //   (1) caller can optionally omit namespace part of name in pattern- we'll still match. 
+                //   (2) ignoreCase:true does not apply to the namespace portion.
+                if (ns != null && !ns.Equals(ifc.Namespace))
+                    continue;
+                if (match != null)
+                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                match = ifc;
+            }
+            return match;
+        }
+
+        private static void SplitTypeName(string fullname, out string name, out string ns)
+        {
+            Debug.Assert(fullname != null);
+
+            // Get namespace
+            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
+            if (nsDelimiter != -1)
+            {
+                ns = fullname.Substring(0, nsDelimiter);
+                int nameLength = fullname.Length - ns.Length - 1;
+                name = fullname.Substring(nsDelimiter + 1, nameLength);
+                Debug.Assert(fullname.Equals(ns + "." + name));
+            }
+            else
+            {
+                ns = null;
+                name = fullname;
+            }
+        }
     }
 }
 

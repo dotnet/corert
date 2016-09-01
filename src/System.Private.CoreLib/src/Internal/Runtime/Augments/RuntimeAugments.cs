@@ -357,6 +357,11 @@ namespace Internal.Runtime.Augments
         }
 #endif
 
+        public static object GetEnumValue(Enum e)
+        {
+            return e.GetValue();
+        }
+
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
             EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;
