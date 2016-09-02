@@ -530,6 +530,8 @@
     <Compile Include="System\Threading\SpinLock.cs" />
     <Compile Include="System\Threading\SpinWait.cs" />
     <Compile Include="System\Threading\SynchronizationContext.cs" />
+    <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Threading\SynchronizationLockException.cs" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
@@ -550,6 +552,8 @@
     <Compile Include="System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
     <Compile Include="System\Threading\ThreadLocal.cs" />
     <Compile Include="System\Threading\ThreadPool.cs" />
+    <Compile Include="System\Threading\ThreadPool.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="System\Threading\ThreadPool.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Threading\Timeout.cs" />
     <Compile Include="System\Threading\TimeoutHelper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
@@ -633,7 +637,6 @@
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
-
   </ItemGroup>
   <ItemGroup>
     <!-- CORERT-TODO: Port to Unix -->
