@@ -36,8 +36,6 @@ namespace System.Reflection.Runtime.Assemblies
         public sealed override Type GetType(string name, bool throwOnError) => base.GetType(name, throwOnError);
         public sealed override bool IsDynamic => base.IsDynamic;
         public sealed override string ToString() => base.ToString();
-
-        public sealed override event ModuleResolveEventHandler ModuleResolve { add { base.ModuleResolve += value; } remove { base.ModuleResolve -= value; } }
 #endif //DEBUG
     }
 }
