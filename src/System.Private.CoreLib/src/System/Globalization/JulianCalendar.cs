@@ -18,6 +18,7 @@ namespace System.Globalization
     //*      Gregorian   0001/01/01   9999/12/31
     //*      Julia       0001/01/03   9999/10/19
 
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class JulianCalendar : Calendar
     {
@@ -32,8 +33,6 @@ namespace System.Globalization
         private const int JulianDaysPerYear = 365;
         // Number of days in 4 years
         private const int JulianDaysPer4Years = JulianDaysPerYear * 4 + 1;
-
-        //internal static Calendar m_defaultInstance;
 
         private static readonly int[] s_daysToMonth365 =
         {
@@ -80,24 +79,6 @@ namespace System.Globalization
         //    }
         //}
 
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of JulianCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance() {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new JulianCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-        // Construct an instance of gregorian calendar.
-
         public JulianCalendar()
         {
             // There is no system setting of TwoDigitYear max, so set the value here.
@@ -112,7 +93,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckEraRange(int era)
+        internal static void CheckEraRange(int era)
         {
             if (era != CurrentEra && era != JulianEra)
             {
@@ -135,7 +116,7 @@ namespace System.Globalization
             }
         }
 
-        static internal void CheckMonthRange(int month)
+        internal static void CheckMonthRange(int month)
         {
             if (month < 1 || month > 12)
             {
@@ -143,7 +124,7 @@ namespace System.Globalization
             }
         }
 
-        /*=================================GetDefaultInstance==========================
+        /*===================================CheckDayRange============================
         **Action: Check for if the day value is valid.
         **Returns:
         **Arguments:
@@ -153,7 +134,7 @@ namespace System.Globalization
         **  sure year/month values are correct.
         ============================================================================*/
 
-        static internal void CheckDayRange(int year, int month, int day)
+        internal static void CheckDayRange(int year, int month, int day)
         {
             if (year == 1 && month == 1)
             {
@@ -182,7 +163,7 @@ namespace System.Globalization
 
         // Returns a given date part of this DateTime. This method is used
         // to compute the year, day-of-year, month, or day part.
-        static internal int GetDatePart(long ticks, int part)
+        internal static int GetDatePart(long ticks, int part)
         {
             // Gregorian 1/1/0001 is Julian 1/3/0001. Remember DateTime(0) is refered to Gregorian 1/1/0001.
             // The following line convert Gregorian ticks to Julian ticks.
@@ -225,7 +206,7 @@ namespace System.Globalization
         }
 
         // Returns the tick count corresponding to the given year, month, and day.
-        static internal long DateToTicks(int year, int month, int day)
+        internal static long DateToTicks(int year, int month, int day)
         {
             int[] days = (year % 4 == 0) ? s_daysToMonth366 : s_daysToMonth365;
             int y = year - 1;

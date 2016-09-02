@@ -61,7 +61,7 @@ namespace System.Globalization
         internal const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
 
 
-        internal int m_currentEraValue = -1;
+        private int _currentEraValue = -1;
 
 
         private bool _isReadOnly = false;
@@ -193,12 +193,12 @@ namespace System.Globalization
             get
             {
                 // The following code assumes that the current era value can not be -1.
-                if (m_currentEraValue == -1)
+                if (_currentEraValue == -1)
                 {
                     Contract.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
-                    m_currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
+                    _currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
                 }
-                return (m_currentEraValue);
+                return (_currentEraValue);
             }
         }
 

@@ -103,7 +103,7 @@ namespace System.Globalization
         {
             get
             {
-                Contract.Assert(_name != null, "CompareInfo.Name Expected m_name to be set");
+                Contract.Assert(_name != null, "CompareInfo.Name Expected _name to be set");
                 if (_name == "zh-CHT" || _name == "zh-CHS")
                 {
                     return _name;
@@ -347,15 +347,13 @@ namespace System.Globalization
                     SR.ArgumentNull_String);
             }
             Contract.EndContractBlock();
-            int prefixLen = prefix.Length;
-            int sourceLength = source.Length;
 
-            if (prefixLen == 0)
+            if (prefix.Length == 0)
             {
                 return (true);
             }
 
-            if (sourceLength == 0)
+            if (source.Length == 0)
             {
                 return false;
             }
@@ -399,15 +397,13 @@ namespace System.Globalization
                     SR.ArgumentNull_String);
             }
             Contract.EndContractBlock();
-            int suffixLen = suffix.Length;
-            int sourceLength = source.Length;
 
-            if (suffixLen == 0)
+            if (suffix.Length == 0)
             {
                 return (true);
             }
 
-            if (sourceLength == 0)
+            if (source.Length == 0)
             {
                 return false;
             }
@@ -718,7 +714,7 @@ namespace System.Globalization
                 return source.LastIndexOf(value.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase);
             }
 
-            return LastIndexOfCore(source, new string(value, 1), startIndex, count, options);
+            return LastIndexOfCore(source, value.ToString(), startIndex, count, options);
         }
 
 

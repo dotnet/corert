@@ -377,7 +377,7 @@ namespace System.Globalization
                 // Create the date word array.
                 m_dateWords = new LowLevelList<String>();
             }
-            // Add the ingorable symbol into the ArrayList.
+            // Add the ignorable symbol into the ArrayList.
             String temp = IgnorableSymbolChar + text;
             if (!m_dateWords.Contains(temp))
             {
@@ -500,7 +500,6 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        // auto-generated
         internal String[] GetDateWordsOfDTFI(DateTimeFormatInfo dtfi)
         {
             // Enumarate all LongDatePatterns, and get the DateWords and scan for month postfix.
