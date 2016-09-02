@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
 /*=============================================================================
 **
 ** Class: ThreadPool
@@ -29,12 +27,9 @@
  * of the previous stack information.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
+
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -552,8 +547,6 @@ namespace System.Threading
         {
             //
             // If we have not yet requested #procs threads from the VM, then request a new thread.
-            // Note that there is a separate count in the VM which will also be incremented in this case, 
-            // which is handled by RequestWorkerThread.
             //
             int count = numOutstandingThreadRequests;
             while (count < ThreadPoolGlobals.processorCount)
@@ -561,7 +554,7 @@ namespace System.Threading
                 int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
                 if (prev == count)
                 {
-                    NativeThreadPool.QueueDispatch();
+                    ThreadPool.QueueDispatch();
                     break;
                 }
                 count = prev;
@@ -571,10 +564,8 @@ namespace System.Threading
         internal void MarkThreadRequestSatisfied()
         {
             //
-            // The VM has called us, so one of our outstanding thread requests has been satisfied.
+            // One of our outstanding thread requests has been satisfied.
             // Decrement the count so that future calls to EnsureThreadRequested will succeed.
-            // Note that there is a separate count in the VM which has already been decremented by the VM
-            // by the time we reach this point.
             //
             int count = numOutstandingThreadRequests;
             while (count > 0)
@@ -699,9 +690,6 @@ namespace System.Threading
             // From this point on, we are responsible for requesting another thread if we stop working for any
             // reason, and we believe there might still be work in the queue.
             //
-            // Note that if this thread is aborted before we get a chance to request another one, the VM will
-            // record a thread request on our behalf.  So we don't need to worry about getting aborted right here.
-            //
             workQueue.MarkThreadRequestSatisfied();
 
             //
@@ -722,59 +710,47 @@ namespace System.Threading
                 //
                 while ((Environment.TickCount - quantumStartTime) < tpQuantum)
                 {
-                    //
-                    // Dequeue and EnsureThreadRequested must be protected from ThreadAbortException.  
-                    // These are fast, so this will not delay aborts/AD-unloads for very long.
-                    //
-                    try { }
-                    finally
-                    {
-                        bool missedSteal = false;
-                        workQueue.Dequeue(tl, out workItem, out missedSteal);
-
-                        if (workItem == null)
-                        {
-                            //
-                            // No work.  We're going to return to the VM once we leave this protected region.
-                            // If we missed a steal, though, there may be more work in the queue.
-                            // Instead of looping around and trying again, we'll just request another thread.  This way
-                            // we won't starve other AppDomains while we spin trying to get locks, and hopefully the thread
-                            // that owns the contended work-stealing queue will pick up its own workitems in the meantime, 
-                            // which will be more efficient than this thread doing it anyway.
-                            //
-                            needAnotherThread = missedSteal;
-                        }
-                        else
-                        {
-                            //
-                            // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
-                            // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
-                            //
-                            workQueue.EnsureThreadRequested();
-                        }
-                    }
+                    bool missedSteal = false;
+                    workQueue.Dequeue(tl, out workItem, out missedSteal);
 
                     if (workItem == null)
                     {
-                        // no more work to do
-                        return;
+                        //
+                        // No work.  We're going to return to the VM once we leave this protected region.
+                        // If we missed a steal, though, there may be more work in the queue.
+                        // Instead of looping around and trying again, we'll just request another thread.  This way
+                        // we won't starve other AppDomains while we spin trying to get locks, and hopefully the thread
+                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime, 
+                        // which will be more efficient than this thread doing it anyway.
+                        //
+                        needAnotherThread = missedSteal;
                     }
                     else
                     {
                         //
-                        // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
+                        // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
+                        // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
                         //
-                        //RuntimeHelpers.PrepareConstrainedRegions();
-                        try
-                        {
-                            SynchronizationContext.SetSynchronizationContext(null);
-                            workItem.ExecuteWorkItem();
-                        }
-                        finally
-                        {
-                            workItem = null;
-                            SynchronizationContext.SetSynchronizationContext(null);
-                        }
+                        workQueue.EnsureThreadRequested();
+                    }
+                }
+
+                if (workItem == null)
+                {
+                    // no more work to do
+                    return;
+                }
+                else
+                {
+                    try
+                    {
+                        SynchronizationContext.SetSynchronizationContext(null);
+                        workItem.ExecuteWorkItem();
+                    }
+                    finally
+                    {
+                        workItem = null;
+                        SynchronizationContext.SetSynchronizationContext(null);
                     }
                 }
             }
@@ -822,20 +798,15 @@ namespace System.Threading
                     bool done = false;
                     while (!done)
                     {
-                        // Ensure that we won't be aborted between LocalPop and Enqueue.
-                        try { }
-                        finally
+                        IThreadPoolWorkItem cb = null;
+                        if (workStealingQueue.LocalPop(out cb))
                         {
-                            IThreadPoolWorkItem cb = null;
-                            if (workStealingQueue.LocalPop(out cb))
-                            {
-                                Contract.Assert(null != cb);
-                                workQueue.Enqueue(cb, true);
-                            }
-                            else
-                            {
-                                done = true;
-                            }
+                            Contract.Assert(null != cb);
+                            workQueue.Enqueue(cb, true);
+                        }
+                        else
+                        {
+                            done = true;
                         }
                     }
                 }
@@ -993,7 +964,7 @@ namespace System.Threading
         }
     }
 
-    internal static class ThreadPool
+    internal static partial class ThreadPool
     {
         public static void QueueUserWorkItem(
              WaitCallback callBack,     // NOTE: we do not expose options that allow the callback to be queued as an APC
@@ -1161,30 +1132,4 @@ namespace System.Threading
             });
         }
     }
-
-    internal static class NativeThreadPool
-    {
-        private static volatile bool s_dispatchCallbackSet;
-
-        private static void Dispatch()
-        {
-            ThreadPoolWorkQueue.Dispatch();
-        }
-
-        internal static void QueueDispatch()
-        {
-            if (!s_dispatchCallbackSet)
-            {
-                WinRTInterop.Callbacks.SetThreadpoolDispatchCallback(Dispatch);
-                s_dispatchCallbackSet = true;
-            }
-            WinRTInterop.Callbacks.SubmitThreadpoolDispatchCallback();
-        }
-
-        internal static void QueueLongRunningWork(Action callback)
-        {
-            WinRTInterop.Callbacks.SubmitLongRunningThreadpoolWork(callback);
-        }
-    }
 }
-
