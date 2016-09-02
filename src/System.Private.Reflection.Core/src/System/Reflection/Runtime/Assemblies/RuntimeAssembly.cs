@@ -207,6 +207,10 @@ namespace System.Reflection.Runtime.Assemblies
             return result;
         }
 
+#pragma warning disable 0067  // Silence warning about ModuleResolve not being used.
+        public sealed override event ModuleResolveEventHandler ModuleResolve;
+#pragma warning restore 0067
+
         public sealed override bool ReflectionOnly
         {
             get
