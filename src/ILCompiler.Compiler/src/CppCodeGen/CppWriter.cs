@@ -865,8 +865,8 @@ namespace ILCompiler.CppCodeGen
                 {
                     GetFormattedByteArray(byteData, divisionStartIndex, divisionStartIndex + nodeDataSections[i].SectionSize, nodeDataDecl);
                     nodeDataDecl.Append(",");
-                    divisionStartIndex += nodeDataSections[i].SectionSize;
                 }
+                divisionStartIndex += nodeDataSections[i].SectionSize;
                 nodeDataDecl.AppendLine();
                 nodeDataDecl.Exdent();
             }
