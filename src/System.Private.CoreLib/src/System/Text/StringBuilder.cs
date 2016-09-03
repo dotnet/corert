@@ -1345,6 +1345,7 @@ namespace System.Text
             int pos = 0;
             int len = format.Length;
             char ch = '\x0';
+            StringBuilder unescapedItemFormat = null;
 
             ICustomFormatter cf = null;
             if (provider != null)
@@ -1422,51 +1423,69 @@ namespace System.Text
 
                 while (pos < len && (ch = format[pos]) == ' ') pos++;
                 Object arg = args[index];
-                StringBuilder fmt = null;
+                String itemFormat = null;
                 if (ch == ':')
                 {
                     pos++;
+                    int startPos = pos;
+
                     while (true)
                     {
                         if (pos == len) FormatError();
                         ch = format[pos];
                         pos++;
-                        if (ch == '{')
+                        if (ch == '}' || ch == '{')
                         {
-                            if (pos < len && format[pos] == '{')  // Treat as escape character for {{
-                                pos++;
-                            else
-                                FormatError();
-                        }
-                        else if (ch == '}')
-                        {
-                            if (pos < len && format[pos] == '}')  // Treat as escape character for }}
-                                pos++;
+                            if (ch == '{')
+                            {
+                                if (pos < len && format[pos] == '{')  // Treat as escape character for {{
+                                    pos++;
+                                else 
+                                    FormatError();
+                            }
                             else
                             {
-                                pos--;
-                                break;
+                                if (pos < len && format[pos] == '}')  // Treat as escape character for }}
+                                    pos++; 
+                                else 
+                                { 
+                                    pos--; 
+                                    break; 
+                                } 
                             }
                         }
 
-                        if (fmt == null)
+                        // Reaching here means the brace has been escaped 
+                        // so we need to build up the format string in segments 
+                        if (unescapedItemFormat == null)
                         {
-                            fmt = new StringBuilder();
+                            unescapedItemFormat = new StringBuilder();
                         }
-                        fmt.Append(ch);
+                        unescapedItemFormat.Append(format, startPos, pos - startPos - 1);
+                        startPos = pos;
                     }
+
+                    if (unescapedItemFormat == null || unescapedItemFormat.Length == 0) 
+                    { 
+                        if (startPos != pos) 
+                        { 
+                            // There was no brace escaping, extract the item format as a single string 
+                            itemFormat = format.Substring(startPos, pos - startPos); 
+                         } 
+                    } 
+                    else 
+                    { 
+                        unescapedItemFormat.Append(format, startPos, pos - startPos); 
+                        itemFormat = unescapedItemFormat.ToString(); 
+                        unescapedItemFormat.Clear(); 
+                     }
                 }
                 if (ch != '}') FormatError();
                 pos++;
-                String sFmt = null;
                 String s = null;
                 if (cf != null)
                 {
-                    if (fmt != null)
-                    {
-                        sFmt = fmt.ToString();
-                    }
-                    s = cf.Format(sFmt, arg, provider);
+                    s = cf.Format(itemFormat, arg, provider);
                 }
 
                 if (s == null)
@@ -1474,11 +1493,7 @@ namespace System.Text
                     IFormattable formattableArg = arg as IFormattable;
                     if (formattableArg != null)
                     {
-                        if (sFmt == null && fmt != null)
-                        {
-                            sFmt = fmt.ToString();
-                        }
-                        s = formattableArg.ToString(sFmt, provider);
+                        s = formattableArg.ToString(itemFormat, provider);
                     }
                     else if (arg != null)
                     {
