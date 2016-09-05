@@ -64,8 +64,25 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->funcFlags = *lsdaPtr;
     ++lsdaPtr;
 
+    PTR_UInt8 ehInfoPtr = NULL;
+    if (pMethodInfo->funcFlags & UBF_FUNC_HAS_EHINFO)
+    {
+        // main function contains the EH info blob in its LSDA, funclets just refer
+        // to the main function's blob
+        if (offsetFromMainFunction == 0)
+        {
+            ehInfoPtr = lsdaPtr;
+        }
+        else
+        {
+            Int32 relAddr = *dac_cast<PTR_Int32>(lsdaPtr);
+            lsdaPtr += sizeof(Int32);
+            ehInfoPtr = lsdaPtr + relAddr;
+        }
+    }
+
     pMethodInfo->pMethodStartAddress = (PTR_VOID)(startAddress - offsetFromMainFunction);
-    pMethodInfo->pEhInfo = (pMethodInfo->funcFlags & UBF_FUNC_HAS_EHINFO) ? lsdaPtr : NULL;
+    pMethodInfo->pEhInfo = ehInfoPtr;
     pMethodInfo->executionAborted = false;
 
     return true;
