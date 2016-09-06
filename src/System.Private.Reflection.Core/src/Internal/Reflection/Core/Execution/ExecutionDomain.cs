@@ -13,9 +13,6 @@ using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using Internal.Metadata.NativeFormat;
 
-using Internal.Reflection.Core;
-using Internal.Reflection.Core.Execution;
-
 namespace Internal.Reflection.Core.Execution
 {
     //
@@ -32,7 +29,7 @@ namespace Internal.Reflection.Core.Execution
         //
         // Retrieves a type by name. Helper to implement Type.GetType();
         //
-        public Type GetType(String typeName, bool throwOnError, bool ignoreCase, IEnumerable<String> defaultAssemblyNames)
+        public Type GetType(String typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, IList<string> defaultAssemblyNames)
         {
             if (typeName == null)
                 throw new ArgumentNullException();
@@ -45,57 +42,71 @@ namespace Internal.Reflection.Core.Execution
                     return null;
             }
 
-            AssemblyQualifiedTypeName assemblyQualifiedTypeName;
-            try
-            {
-                assemblyQualifiedTypeName = TypeParser.ParseAssemblyQualifiedTypeName(typeName);
-            }
-            catch (ArgumentException)
-            {
-                // Input string was a syntactically invalid type name.
-                if (throwOnError)
-                    throw;
+            TypeName parsedName = TypeParser.ParseAssemblyQualifiedTypeName(typeName, throwOnError: throwOnError);
+            if (parsedName == null)
                 return null;
-            }
+            CoreAssemblyResolver coreAssemblyResolver = CreateCoreAssemblyResolver(assemblyResolver);
+            CoreTypeResolver coreTypeResolver = CreateCoreTypeResolver(typeResolver, defaultAssemblyNames, throwOnError: throwOnError, ignoreCase: ignoreCase);
+            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
 
-            if (assemblyQualifiedTypeName.AssemblyName != null)
+            return parsedName.ResolveType(null, getTypeOptions);
+        }
+
+        private static CoreAssemblyResolver CreateCoreAssemblyResolver(Func<AssemblyName, Assembly> assemblyResolver)
+        {
+            if (assemblyResolver == null)
             {
-                defaultAssemblyNames = new String[] { null };
-            }
-
-            Exception lastTypeLoadException = null;
-            foreach (String assemblyName in defaultAssemblyNames)
-            {
-                RuntimeAssembly defaultAssembly;
-                if (assemblyName == null)
-                {
-                    defaultAssembly = null;
-                }
-                else
-                {
-                    RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(assemblyName);
-                    Exception e = RuntimeAssembly.TryGetRuntimeAssembly(runtimeAssemblyName, out defaultAssembly);
-                    if (e != null)
-                        continue;   // A default assembly such as "System.Runtime" might not "exist" in an app that opts heavily out of pay-for-play metadata. Just go on to the next one.
-                }
-
-                RuntimeTypeInfo result;
-                Exception typeLoadException = assemblyQualifiedTypeName.TryResolve(defaultAssembly, ignoreCase, out result);
-                if (typeLoadException == null)
-                    return result;
-                lastTypeLoadException = typeLoadException;
-            }
-
-            if (throwOnError)
-            {
-                if (lastTypeLoadException == null)
-                    throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFoundByGetType, typeName));
-                else
-                    throw lastTypeLoadException;
+                return RuntimeAssembly.GetRuntimeAssemblyIfExists;
             }
             else
             {
-                return null;
+                return delegate (RuntimeAssemblyName runtimeAssemblyName)
+                {
+                    AssemblyName assemblyName = runtimeAssemblyName.ToAssemblyName();
+                    Assembly assembly = assemblyResolver(assemblyName);
+                    return assembly;
+                };
+            }
+        }
+
+        private static CoreTypeResolver CreateCoreTypeResolver(Func<Assembly, string, bool, Type> typeResolver, IList<string> defaultAssemblyNames, bool throwOnError, bool ignoreCase)
+        {
+            if (typeResolver == null)
+            {
+                return delegate (Assembly containingAssemblyIfAny, string coreTypeName)
+                {
+                    if (containingAssemblyIfAny != null)
+                    {
+                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                    }
+                    else
+                    {
+                        foreach (string defaultAssemblyName in defaultAssemblyNames)
+                        {
+                            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(defaultAssemblyName);
+                            RuntimeAssembly defaultAssembly = RuntimeAssembly.GetRuntimeAssembly(runtimeAssemblyName);
+                            Type resolvedType = defaultAssembly.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                            if (resolvedType != null)
+                                return resolvedType;
+                        }
+
+                        if (throwOnError && defaultAssemblyNames.Count > 0)
+                        {
+                            // Though we don't have to throw a TypeLoadException exception (that's our caller's job), we can throw a more specific exception than he would so just do it.
+                            throw Helpers.CreateTypeLoadException(coreTypeName, defaultAssemblyNames[0]);
+                        }
+                        return null;
+                    }
+                };
+            }
+            else
+            {
+                return delegate (Assembly containingAssemblyIfAny, string coreTypeName)
+                {
+                    string escapedName = coreTypeName.EscapeTypeNameIdentifier();
+                    Type type = typeResolver(containingAssemblyIfAny, escapedName, ignoreCase);
+                    return type;
+                };
             }
         }
 

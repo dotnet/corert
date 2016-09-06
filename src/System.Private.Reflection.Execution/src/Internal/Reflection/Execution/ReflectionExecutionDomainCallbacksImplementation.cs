@@ -110,9 +110,9 @@ namespace Internal.Reflection.Execution
             return newObject;
         }
 
-        public sealed override Type GetType(String typeName, bool throwOnError, bool ignoreCase)
+        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
         {
-            return _executionDomain.GetType(typeName, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
+            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
         }
 
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)

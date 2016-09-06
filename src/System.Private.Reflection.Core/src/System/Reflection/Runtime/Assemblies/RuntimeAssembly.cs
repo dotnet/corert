@@ -182,29 +182,29 @@ namespace System.Reflection.Runtime.Assemblies
             if (name.Length == 0)
                 throw new ArgumentException();
 
-            AssemblyQualifiedTypeName assemblyQualifiedTypeName;
-            try
+            TypeName typeName = TypeParser.ParseAssemblyQualifiedTypeName(name, throwOnError: throwOnError);
+            if (typeName == null)
+                return null;
+            if (typeName is AssemblyQualifiedTypeName)
             {
-                assemblyQualifiedTypeName = TypeParser.ParseAssemblyQualifiedTypeName(name);
-                if (assemblyQualifiedTypeName.AssemblyName != null)
+                if (throwOnError)
                     throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);  // Cannot specify an assembly qualifier in a typename passed to Assembly.GetType()
-            }
-            catch (ArgumentException)
-            {
-                if (throwOnError)
-                    throw;
-                return null;
-            }
+                else
+                    return null;
+            } 
 
-            RuntimeTypeInfo result;
-            Exception typeLoadException = assemblyQualifiedTypeName.TypeName.TryResolve(this, ignoreCase, out result);
-            if (typeLoadException != null)
-            {
-                if (throwOnError)
-                    throw typeLoadException;
-                return null;
-            }
-            return result;
+            CoreAssemblyResolver coreAssemblyResolver = RuntimeAssembly.GetRuntimeAssemblyIfExists;
+            CoreTypeResolver coreTypeResolver =
+                delegate (Assembly containingAssemblyIfAny, string coreTypeName)
+                {
+                    if (containingAssemblyIfAny == null)
+                        return GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                    else
+                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                };
+            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
+
+            return typeName.ResolveType(this, getTypeOptions);
         }
 
 #pragma warning disable 0067  // Silence warning about ModuleResolve not being used.
@@ -217,6 +217,21 @@ namespace System.Reflection.Runtime.Assemblies
             {
                 return false; // ReflectionOnly loading not supported.
             }
+        }
+
+        /// <summary>
+        /// Helper routine for the more general Type.GetType() family of apis.
+        ///
+        /// Resolves top-level named types only. No nested types. No constructed types.
+        ///
+        /// Returns null if the type does not exist. Throws for all other error cases.
+        /// </summary>
+        internal RuntimeTypeInfo GetTypeCore(string fullName, bool ignoreCase)
+        {
+            if (ignoreCase)
+                return GetTypeCoreCaseInsensitive(fullName);
+            else
+                return GetTypeCoreCaseSensitive(fullName);
         }
 
         internal QScopeDefinition Scope { get; }

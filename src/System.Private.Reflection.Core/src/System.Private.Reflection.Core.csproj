@@ -41,6 +41,8 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.LimitedBinder.cs" />
@@ -120,6 +122,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.BindingFlags.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\TypeInfoCachedData.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\GetTypeOptions.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeParser.cs" />
