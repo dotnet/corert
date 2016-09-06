@@ -66,11 +66,7 @@ namespace System
         {
             get
             {
-#if REAL_MULTIDIM_ARRAYS
                 return this.EETypePtr.BaseSize == SZARRAY_BASE_SIZE;
-#else
-                return !(this is MDArray);
-#endif
             }
         }
 
@@ -196,12 +192,8 @@ namespace System
         // C# may optimize away the pinned local, producing incorrect results.
         static internal unsafe byte* GetAddrOfPinnedArrayFromEETypeField(IntPtr* ppEEType)
         {
-#if REAL_MULTIDIM_ARRAYS
             // -POINTER_SIZE to account for the sync block
             return (byte*)ppEEType + new EETypePtr(*ppEEType).BaseSize - POINTER_SIZE;
-#else
-            return (byte*)ppEEType + sizeof(EETypePtr) + ((1 + PADDING) * sizeof(int));
-#endif
         }
 
 #if CORERT
@@ -289,9 +281,6 @@ namespace System
             int destinationRank = destinationArray.Rank;
             if (sourceRank != destinationRank)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
-
-            sourceArray = sourceArray.FlattenedArray;
-            destinationArray = destinationArray.FlattenedArray;
 
             if ((sourceIndex < 0) || (destinationIndex < 0) || (length < 0))
                 throw new ArgumentOutOfRangeException();
@@ -866,29 +855,21 @@ namespace System
         public static void Clear(Array array, int index, int length)
         {
             if (!RuntimeImports.TryArrayClear(array, index, length))
-                ClearImpl(array, index, length);
+                ReportClearErrors(array, index, length);
         }
 
-        private static unsafe void ClearImpl(Array array, int index, int length)
+        private static unsafe void ReportClearErrors(Array array, int index, int length)
         {
             if (array == null)
                 throw new ArgumentNullException("array");
-
-            array = array.FlattenedArray;
 
             if (index < 0 || index > array.Length || length < 0 || length > array.Length)
                 throw new IndexOutOfRangeException();
             if (length > (array.Length - index))
                 throw new IndexOutOfRangeException();
 
-#if REAL_MULTIDIM_ARRAYS
             // The above checks should have covered all the reasons why Clear would fail.
-            // NOTE: ONCE WE GET RID OF THE IFDEFS, WE SHOULD RENAME THIS METHOD.
             Debug.Assert(false);
-#else
-            bool success = RuntimeImports.TryArrayClear(array, index, length);
-            Debug.Assert(success);
-#endif
         }
 
         // We impose limits on maximum array length in each dimension to allow efficient 
@@ -908,20 +889,10 @@ namespace System
         {
             get
             {
-#if REAL_MULTIDIM_ARRAYS
                 return this.EETypePtr.ArrayRank;
-#else
-                MDArray mdArray = this as MDArray;
-                if (mdArray != null)
-                {
-                    return mdArray.MDRank;
-                }
-                return 1;
-#endif
             }
         }
 
-#if REAL_MULTIDIM_ARRAYS
         // Allocate new multidimensional array of given dimensions. Assumes that that pLengths is immutable.
         internal unsafe static Array NewMultiDimArray(EETypePtr eeType, int * pLengths, int rank)
         {
@@ -954,7 +925,6 @@ namespace System
 
             return ret;
         }
-#endif // REAL_MULTIDIM_ARRAYS
 
         // Number of elements in the Array.
         int ICollection.Count
@@ -2234,7 +2204,6 @@ namespace System
 
         public int GetLowerBound(int dimension)
         {
-#if REAL_MULTIDIM_ARRAYS
             if (!IsSzArray)
             {
                 int rank = Rank;
@@ -2250,19 +2219,7 @@ namespace System
                     }
                 }
             }
-#else
-            MDArray mdArray = this as MDArray;
-            if (mdArray != null)
-            {
-                if ((dimension >= mdArray.MDRank) || (dimension < 0))
-                    throw new IndexOutOfRangeException();
 
-                return 0;
-            }
-
-            if (this.Rank != 1)
-                throw new PlatformNotSupportedException(SR.Rank_MultiDimNotSupported);
-#endif
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return 0;
@@ -2270,7 +2227,6 @@ namespace System
 
         public int GetUpperBound(int dimension)
         {
-#if REAL_MULTIDIM_ARRAYS
             if (!IsSzArray)
             {
                 int rank = Rank;
@@ -2288,16 +2244,7 @@ namespace System
                     }
                 }
             }
-#else
-            MDArray mdArray = this as MDArray;
-            if (mdArray != null)
-            {
-                return mdArray.MDGetUpperBound(dimension);
-            }
 
-            if (this.Rank != 1)
-                throw new PlatformNotSupportedException(SR.Rank_MultiDimNotSupported);
-#endif
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return Length - 1;
@@ -2325,30 +2272,20 @@ namespace System
             return true;
         }
 
-#if REAL_MULTIDIM_ARRAYS
         public unsafe Object GetValue(int index)
         {
             if (!IsSzArray)
+            {
+                if (Rank != 1)
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+
                 return GetValue(&index, 1);
-
-            EETypePtr pElementEEType = ElementEEType;
-            if (pElementEEType.IsValueType)
-            {
-                if ((uint)index >= (uint)Length)
-                    throw new IndexOutOfRangeException();
-
-                nuint elementSize = ElementSize;
-                fixed (IntPtr* pThisArray = &m_pEEType)
-                {
-                    byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (nuint)index * elementSize;
-                    return RuntimeImports.RhBox(pElementEEType, pElement);
-                }
             }
-            else
-            {
-                object[] objArray = this as object[];
-                return objArray[index];
-            }
+
+            if ((uint)index >= (uint)Length)
+                throw new IndexOutOfRangeException();
+
+            return GetValueWithFlattenedIndex_NoErrorCheck(index);
         }
 
         public unsafe Object GetValue(params int[] indices)
@@ -2377,20 +2314,26 @@ namespace System
                 int* pLowerBounds = (int*)(pThisArray + 1) + 1 + PADDING + rank;
 
                 int flattenedIndex = 0;
-                int factor = 1;
                 for (int i = 0; i < rank; i++)
                 {
                     int index = pIndices[i] - pLowerBounds[i];
                     int length = pLengths[i];
                     if ((uint)index >= (uint)length)
                         throw new IndexOutOfRangeException();
-                    flattenedIndex = flattenedIndex * factor + index;
-                    factor = factor * length;
+                    flattenedIndex = (length * flattenedIndex) + index;
                 }
 
                 if ((uint)flattenedIndex >= (uint)Length)
                     throw new IndexOutOfRangeException();
 
+                return GetValueWithFlattenedIndex_NoErrorCheck(flattenedIndex);
+            }
+        }
+
+        private unsafe Object GetValueWithFlattenedIndex_NoErrorCheck(int flattenedIndex)
+        {
+            fixed (IntPtr* pThisArray = &m_pEEType)
+            {
                 byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (nuint)flattenedIndex * ElementSize;
 
                 EETypePtr pElementEEType = ElementEEType;
@@ -2409,6 +2352,9 @@ namespace System
         {
             if (!IsSzArray)
             {
+                if (Rank != 1)
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+
                 SetValue(value, &index, 1);
                 return;
             }
@@ -2453,10 +2399,16 @@ namespace System
                 throw new ArgumentNullException("indices");
 
             if (IsSzArray && indices.Length == 1)
+            {
                 SetValue(value, indices[0]);
+                return;
+            }
 
             fixed (int* pIndices = indices)
+            {
                 SetValue(value, pIndices, indices.Length);
+                return;
+            }
         }
 
         private unsafe void SetValue(Object value, int* pIndices, int rank)
@@ -2473,15 +2425,13 @@ namespace System
                 int* pLowerBounds = (int*)(pThisArray + 1) + 1 + PADDING + rank;
 
                 int flattenedIndex = 0;
-                int factor = 1;
                 for (int i = 0; i < rank; i++)
                 {
                     int index = pIndices[i] - pLowerBounds[i];
                     int length = pLengths[i];
                     if ((uint)index >= (uint)length)
                         throw new IndexOutOfRangeException();
-                    flattenedIndex = flattenedIndex * factor + index;
-                    factor = factor * length;
+                    flattenedIndex = (length * flattenedIndex) + index;
                 }
 
                 if ((uint)flattenedIndex >= (uint)Length)
@@ -2515,110 +2465,10 @@ namespace System
                 }
             }
         }
-#else // REAL_MULTIDIM_ARRAYS
-        public unsafe Object GetValue(int index)
-        {
-            if (!IsSzArray)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
-
-            EETypePtr pElementEEType = ElementEEType;
-            if (pElementEEType.IsValueType)
-            {
-                if (index < 0 || index >= Length)
-                    throw new IndexOutOfRangeException();
-
-                nuint elementSize = ElementSize;
-                fixed (IntPtr* pThisArray = &m_pEEType)
-                {
-                    byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (nuint)index * elementSize;
-                    return RuntimeImports.RhBox(pElementEEType, pElement);
-                }
-            }
-            else
-            {
-                object[] objArray = this as object[];
-                return objArray[index];
-            }
-        }
-
-        public Object GetValue(params int[] indices)
-        {
-            if (indices == null)
-                throw new ArgumentNullException("indices");
-
-            MDArray mdArray = this as MDArray;
-            if (mdArray != null)
-            {
-                return mdArray.MDGetValue(indices);
-            }
-
-            if (indices.Length != 1)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            return GetValue(indices[0]);
-        }
-
-        public unsafe void SetValue(Object value, int index)
-        {
-            if (!IsSzArray)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
-
-            if (index < 0 || index >= Length)
-                throw new IndexOutOfRangeException();
-
-            EETypePtr pElementEEType = ElementEEType;
-            if (pElementEEType.IsValueType)
-            {
-                // Unlike most callers of InvokeUtils.ChangeType(), Array.SetValue() does *not* permit conversion from a primitive to an Enum.
-                if (value != null && !(value.EETypePtr == pElementEEType) && pElementEEType.IsEnum)
-                    throw new InvalidCastException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), Type.GetTypeFromHandle(new RuntimeTypeHandle(pElementEEType))));
-
-                value = InvokeUtils.CheckArgument(value, pElementEEType, InvokeUtils.CheckArgumentSemantics.ArraySet);
-                Debug.Assert(value == null || RuntimeImports.AreTypesAssignable(value.EETypePtr, pElementEEType));
-
-                nuint elementSize = ElementSize;
-                fixed (IntPtr* pThisArray = &m_pEEType)
-                {
-                    byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (nuint)index * elementSize;
-                    RuntimeImports.RhUnbox(value, pElement, pElementEEType);
-                }
-            }
-            else
-            {
-                object[] objArray = this as object[];
-                try
-                {
-                    objArray[index] = value;
-                }
-                catch (ArrayTypeMismatchException)
-                {
-                    throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
-                }
-            }
-        }
-
-        public void SetValue(Object value, params int[] indices)
-        {
-            if (indices == null)
-                throw new ArgumentNullException("indices");
-
-            MDArray mdArray = this as MDArray;
-            if (mdArray != null)
-            {
-                mdArray.MDSetValue(value, indices);
-                return;
-            }
-
-            if (indices.Length != 1)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            SetValue(value, indices[0]);
-        }
-#endif // REAL_MULTIDIM_ARRAYS
 
         public IEnumerator GetEnumerator()
         {
-            return new SZArrayEnumerator(this);
+            return new ArrayEnumerator(this);
         }
 
         internal EETypePtr ElementEEType
@@ -2658,34 +2508,15 @@ namespace System
             }
         }
 
-        // Exposes the "flattened view" of a multidim array if necessary.
-        // This is used to implement api's that accept multidim arrays and operate on them
-        // as if they were actually SZArrays that concatenate the rows of the multidim array.
-        //
-        // The return value of this helper is guaranteed to be an SZArray.
-        private Array FlattenedArray
-        {
-            get
-            {
-#if !REAL_MULTIDIM_ARRAYS
-                // NOTE: ONCE WE GET RID OF THE IFDEFS, WE SHOULD DELETE THIS METHOD.
-                MDArray mdArray = this as MDArray;
-                if (mdArray != null)
-                    return mdArray.MDFlattenedArray;
-#endif
-                return this;
-            }
-        }
-
-        private sealed class SZArrayEnumerator : IEnumerator, ICloneable
+        private sealed class ArrayEnumerator : IEnumerator, ICloneable
         {
             private Array _array;
             private int _index;
             private int _endIndex; // cache array length, since it's a little slow.
 
-            internal SZArrayEnumerator(Array array)
+            internal ArrayEnumerator(Array array)
             {
-                _array = array.FlattenedArray;
+                _array = array;
                 _index = -1;
                 _endIndex = array.Length;
             }
@@ -2706,7 +2537,7 @@ namespace System
                 {
                     if (_index < 0) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_index >= _endIndex) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                    return _array.GetValue(_index);
+                    return _array.GetValueWithFlattenedIndex_NoErrorCheck(_index);
                 }
             }
 
@@ -2917,4 +2748,12 @@ namespace System
             }
         }
     }
+
+#if CORERT
+    public class MDArray
+    {
+        public const int MinRank = 1;
+        public const int MaxRank = 32;
+    }
+#endif
 }

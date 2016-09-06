@@ -10,6 +10,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Internal.NativeFormat
 {
@@ -42,6 +43,33 @@ namespace Internal.NativeFormat
             return hash1 ^ hash2;
         }
 
+        // This function may be needed in a portion of the codebase which is too low level to use 
+        // globalization, ergo, we cannot call ToString on the integer.
+        private static string IntToString(int arg)
+        {
+            // This IntToString function is only expected to be used for MDArrayRanks, and therefore is only for positive numbers
+            Debug.Assert(arg > 0);
+            StringBuilder sb = new StringBuilder(1);
+
+            while (arg != 0)
+            {
+                sb.Append((char)('0' + (arg % 10)));
+                arg = arg / 10;
+            }
+
+            // Reverse the string
+            int sbLen = sb.Length;
+            int pivot = sbLen / 2;
+            for (int i = 0; i < pivot; i++)
+            {
+                int iToSwapWith = sbLen - i - 1;
+                char temp = sb[i];
+                sb[i] = sb[iToSwapWith];
+                sb[iToSwapWith] = temp;
+            }
+
+            return sb.ToString();
+        }
 
         public static int ComputeArrayTypeHashCode(int elementTypeHashcode, int rank)
         {
@@ -49,14 +77,14 @@ namespace Internal.NativeFormat
             // carefully crafted to be the same as the hashcodes of their implementation generic types.
 
             int hashCode;
-            if (rank == 1)
+            if (rank == -1)
             {
                 hashCode = unchecked((int)0xd5313557u);
                 Debug.Assert(hashCode == ComputeNameHashCode("System.Array`1"));
             }
             else
             {
-                hashCode = ComputeNameHashCode("System.MDArrayRank" + rank.ToString() + "`1");
+                hashCode = ComputeNameHashCode("System.MDArrayRank" + IntToString(rank) + "`1");
             }
 
             hashCode = (hashCode + _rotl(hashCode, 13)) ^ elementTypeHashcode;

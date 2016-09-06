@@ -63,7 +63,6 @@ namespace Internal.Reflection.Core.Execution
         public abstract bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle);
 
         public abstract bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle);
 
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
         public abstract bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle);

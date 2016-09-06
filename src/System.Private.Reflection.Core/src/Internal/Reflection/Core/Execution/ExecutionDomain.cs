@@ -178,7 +178,7 @@ namespace Internal.Reflection.Core.Execution
         public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
         {
             RuntimeTypeHandle elementTypeHandle;
-            if (!ExecutionEnvironment.TryGetMultiDimArrayTypeElementType(typeHandle, rank, out elementTypeHandle))
+            if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
             return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle).AsType();

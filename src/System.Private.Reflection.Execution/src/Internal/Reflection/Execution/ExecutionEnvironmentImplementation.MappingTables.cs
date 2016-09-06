@@ -366,7 +366,7 @@ namespace Internal.Reflection.Execution
 
             // For non-dynamic arrays try to look up the array type in the ArrayMap blobs;
             // attempt to dynamically create a new one if that doesn't succeeed.
-            return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, out arrayTypeHandle);
+            return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, false, -1, out arrayTypeHandle);
         }
 
         //
@@ -404,58 +404,13 @@ namespace Internal.Reflection.Execution
             {
                 throw new NotSupportedException(SR.NotSupported_OpenType);
             }
+            
+            if ((rank < MDArray.MinRank) || (rank > MDArray.MaxRank))
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_NoMultiDims, rank));
+            }
 
-            Debug.Assert(rank > 0);
-#if !CORERT
-            arrayTypeHandle = new RuntimeTypeHandle();
-
-            RuntimeTypeHandle mdArrayTypeHandle;
-            if (!RuntimeAugments.GetMdArrayRankTypeHandleIfSupported(rank, out mdArrayTypeHandle))
-                return false;
-
-            // We can call directly into the type loader, bypassing the constraint validator because we know
-            // MDArrays have no constraints. This also prevents us from hitting a MissingMetadataException
-            // due to MDArray not being metadata enabled.
-            return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(mdArrayTypeHandle, new RuntimeTypeHandle[] { elementTypeHandle }, out arrayTypeHandle);
-#else
-            // CORERT-TODO: Arrays on CoreRT are different
-            throw new NotImplementedException();
-#endif
-        }
-
-        //
-        // Given a RuntimeTypeHandle for any array type E[,,], return a RuntimeTypeHandle for type E, if the pay-for-play policy denotes E[,,] as browsable. 
-        // It is used to implement Type.GetElementType().
-        //
-        // Preconditions:
-        //      arrayTypeHandle is a valid RuntimeTypeHandle of type array.
-        //
-        // Calling this with rank 1 is not equivalent to calling TryGetArrayTypeElementType()! 
-        //
-        public unsafe sealed override bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle)
-        {
-            Debug.Assert(rank > 0);
-
-#if !CORERT
-            elementTypeHandle = new RuntimeTypeHandle();
-
-            RuntimeTypeHandle expectedMdArrayTypeHandle;
-            if (!RuntimeAugments.GetMdArrayRankTypeHandleIfSupported(rank, out expectedMdArrayTypeHandle))
-                return false;
-            RuntimeTypeHandle actualMdArrayTypeHandle;
-            RuntimeTypeHandle[] elementTypeHandles;
-            if (!TryGetConstructedGenericTypeComponents(arrayTypeHandle, out actualMdArrayTypeHandle, out elementTypeHandles))
-                return false;
-            if (!(actualMdArrayTypeHandle.Equals(expectedMdArrayTypeHandle)))
-                return false;
-            if (elementTypeHandles.Length != 1)
-                return false;
-            elementTypeHandle = elementTypeHandles[0];
-            return true;
-#else
-            // CORERT-TODO: Arrays on CoreRT are different
-            throw new NotImplementedException();
-#endif
+            return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, true, rank, out arrayTypeHandle);
         }
 
         //
