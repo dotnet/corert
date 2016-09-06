@@ -18,6 +18,8 @@ If you changed `c:\corert\src\ILCompiler\repro\project.json`
 build.cmd clean
 ```
 
+_Note: The size of NuGet packages is approximately 2.75 GB, so download might take a few moments based on the speed of your internet connection. The build artifacts require additional ~1 GB, thus make sure you have at least 4 GB of free space._
+
 ## Using RyuJIT ##
 
 1. Open c:\corert\src\ILCompiler\ILCompiler.sln in VS
