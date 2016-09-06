@@ -65,7 +65,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
         internal static MissingMetadataException CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
         {
             Debug.Assert(rank == 1 || isMultiDim);
-            String s = CreateArrayTypeStringIfAvailable(elementType, isMultiDim, rank);
+            String s = CreateArrayTypeStringIfAvailable(elementType, rank);
             return CreateFromString(s);
         }
 
@@ -175,26 +175,13 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             {
                 if (type.IsArray)
                 {
-                    int rank = type.GetArrayRank();
-                    if (rank == 1)
-                    {
-                        // Multidims of rank 1 are not supported on Project N so we can safely assume this is not the multidim case.
-                        // Unfortunately, I can't assert it here because Reflection doesn't have any api to distinguish these cases.
-                        return CreateArrayTypeStringIfAvailable(type.GetElementType(), false, 1);
-                    }
-                    else
-                    {
-                        // Multidim arrays. This is the one case where GetElementType() isn't pay-for-play safe so 
-                        // talk to the diagnostic mapping tables directly if possible or give up.
-                        if (!hasRuntimeTypeHandle)
-                            return null;
+                    // Multidim arrays. This is the one case where GetElementType() isn't pay-for-play safe so 
+                    // talk to the diagnostic mapping tables directly if possible or give up.
+                    if (!hasRuntimeTypeHandle)
+                        return null;
 
-                        RuntimeTypeHandle elementTypeHandle;
-                        if (!DiagnosticMappingTables.TryGetMultiDimArrayTypeElementType(runtimeTypeHandle, rank, out elementTypeHandle))
-                            return null;
-                        Type elementType = Type.GetTypeFromHandle(elementTypeHandle);
-                        return CreateArrayTypeStringIfAvailable(elementType, true, rank);
-                    }
+                    int rank = type.GetArrayRank();
+                    return CreateArrayTypeStringIfAvailable(type.GetElementType(), rank);
                 }
                 else
                 {
@@ -246,15 +233,11 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             }
         }
 
-        private static String CreateArrayTypeStringIfAvailable(Type elementType, bool isMultiDim, int rank)
+        private static String CreateArrayTypeStringIfAvailable(Type elementType, int rank)
         {
-            Debug.Assert(rank == 1 || isMultiDim);
             String s = elementType.ToDisplayStringIfAvailable(null);
             if (s == null)
                 return null;
-
-            if (isMultiDim && rank != 2)
-                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_NoMultiDims, rank));
 
             return s + "[" + new String(',', rank - 1) + "]";  // This does not bother to display multidims of rank 1 correctly since we bail on that case in the prior statement.
         }

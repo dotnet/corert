@@ -140,18 +140,12 @@ namespace Internal.Runtime.Augments
                 }
             }
 
-#if REAL_MULTIDIM_ARRAYS
             // Create a local copy of the lenghts that cannot be motified by the caller
             int * pLengths = stackalloc int[lengths.Length];
             for (int i = 0; i < lengths.Length; i++)
                 pLengths[i] = lengths[i];
 
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
-#else
-            MDArray mdArray = (MDArray)(NewObject(typeHandleForArrayType));
-            mdArray.MDInitialize(lengths);
-            return mdArray;
-#endif
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
@@ -335,27 +329,6 @@ namespace Internal.Runtime.Augments
             StaticClassConstructionContext* context = (StaticClassConstructionContext*)staticClassConstructionContext;
             ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
-
-#if !REAL_MULTIDIM_ARRAYS
-        public static bool GetMdArrayRankTypeHandleIfSupported(int rank, out RuntimeTypeHandle mdArrayTypeHandle)
-        {
-            switch (rank)
-            {
-                case 2:
-                    mdArrayTypeHandle = typeof(MDArrayRank2<>).TypeHandle;
-                    return true;
-                case 3:
-                    mdArrayTypeHandle = typeof(MDArrayRank3<>).TypeHandle;
-                    return true;
-                case 4:
-                    mdArrayTypeHandle = typeof(MDArrayRank4<>).TypeHandle;
-                    return true;
-                default:
-                    mdArrayTypeHandle = default(RuntimeTypeHandle);
-                    return false;
-            }
-        }
-#endif
 
         public static object GetEnumValue(Enum e)
         {

@@ -264,24 +264,13 @@ namespace System
             }
         }
 
-#if REAL_MULTIDIM_ARRAYS
         internal int ArrayRank
         {
             get
             {
-                Debug.Assert(this.IsArray);
-
-                int boundsSize = (int)this.BaseSize - Array.SZARRAY_BASE_SIZE;
-                if (boundsSize > 0)
-                {
-                    // Multidim array case: Base size includes space for two Int32s
-                    // (upper and lower bound) per each dimension of the array.
-                    return boundsSize / (2 * sizeof(int));
-                }
-                return 1;
+                return _value->ArrayRank;
             }
         }
-#endif
 
         internal InterfaceCollection Interfaces
         {
@@ -302,15 +291,6 @@ namespace System
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = new EETypePtr((IntPtr)_value->NonArrayBaseType);
-#if !REAL_MULTIDIM_ARRAYS
-                if (baseEEType == EETypePtr.EETypePtrOf<MDArrayRank2>() ||
-                    baseEEType == EETypePtr.EETypePtrOf<MDArrayRank3>() ||
-                    baseEEType == EETypePtr.EETypePtrOf<MDArrayRank4>())
-                {
-                    return EETypePtr.EETypePtrOf<Array>();
-                }
-#endif
-
                 return baseEEType;
             }
         }

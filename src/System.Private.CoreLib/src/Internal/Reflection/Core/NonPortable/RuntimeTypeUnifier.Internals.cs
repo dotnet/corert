@@ -45,14 +45,6 @@ namespace Internal.Reflection.Core.NonPortable
                     }
                     else if (eeType.IsGeneric)
                     {
-#if !REAL_MULTIDIM_ARRAYS
-                        if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank2>()))
-                             return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, 2);
-                        if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank3>()))
-                             return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, 3);
-                       if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank4>()))
-                             return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, 4);
-#endif
                         return callbacks.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
                     }
                     else
@@ -62,14 +54,10 @@ namespace Internal.Reflection.Core.NonPortable
                 }
                 else if (eeType.IsArray)
                 {
-#if REAL_MULTIDIM_ARRAYS
                     if (!eeType.IsSzArray)
                         return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, eeType.ArrayRank);
                     else
                         return callbacks.GetArrayTypeForHandle(runtimeTypeHandle);
-#else
-                    return callbacks.GetArrayTypeForHandle(runtimeTypeHandle);
-#endif
                 }
                 else if (eeType.IsPointer)
                 {

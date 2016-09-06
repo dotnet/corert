@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -19,439 +21,211 @@ namespace System
     //      * Debugger
     //      * Reflection APIs
     //
-    // When building this solution (Nov 2014) there were applications in the
-    // Windows app store that contained references to Arrays up to seven
-    // dimensions. Because of this there will be simpler but slower paths for
-    // the eight+ dimension arrays.
+    // When building this solution (Aug 2016) we only built support for MDArrays
+    // from rank 2 to 4 to match previously shipped behavior. 
     //
     // The desktop CLR supports arrays of up to 32 dimensions so that provides
     // an upper limit on how much this needs to be built out.
-
-    // MDArray is a middle man class to help reflection.
-    public abstract class MDArray : Array
+    
+    public class MDArray
     {
-        public abstract int MDGetUpperBound(int dimension);
-        public abstract void MDSetValue(Object value, params int[] indices);
-        public abstract Object MDGetValue(params int[] indices);
-        public abstract int MDRank { get; }
-        public abstract void MDInitialize(int[] indices);
-
-        // Exposes access to the SZArray that represents the "flattened view" of the array.
-        // This is used to implement api's that accept multidim arrays and operate on them
-        // as if they were actually SZArrays that concatenate the rows of the multidim array.
-        internal abstract Array MDFlattenedArray { get; }
+        public const int MinRank = 2;
+        public const int MaxRank = 4;
     }
 
-    public abstract class MDArrayRank2 : MDArray
+    [StructLayout(LayoutKind.Sequential)]
+    public class MDArrayRank2<T>
     {
-        public sealed override int MDRank
-        {
-            get
-            {
-                return 2;
-            }
-        }
-    }
-
-    public class MDArrayRank2<T> : MDArrayRank2
-    {
-        // Do not use field initializers on these fields. The implementation of CreateInstance() bypasses the normal constructor
-        // and calls MDInitialize() directly, so MDInitialize() must explicitly initialize all of the fields.
-
-        // The compiler takes a dependency on field ordering of this type, m_array must be first.
-        private T[] _array;
-
-        // Debugger(DBI) takes dependency on the ordering and layout of these fields.
-        // Please update DBI whenever these fields are updated or moved around.
-        // see ICorDebugArrayValue methods in rh\src\debug\dbi\values.cpp
+        private IntPtr _count;
         private int _upperBound1;
         private int _upperBound2;
 
-        // NoInlining is currently required because NUTC does not support inling of this constructor
-        // during static initialization of multi-dimensional arrays.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public MDArrayRank2(int length1, int length2)
+        public static T[,] Ctor(int length1, int length2)
         {
-            Initialize(length1, length2);
-        }
-
-        public override Object MDGetValue(params int[] indices)
-        {
-            if (indices.Length != 2)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            CheckBounds(indices[0], indices[1]);
-
-            return _array[ComputeIndex(indices[0], indices[1])];
-        }
-
-        public T Get(int index1, int index2)
-        {
-            CheckBounds(index1, index2);
-
-            return _array[ComputeIndex(index1, index2)];
-        }
-
-        public override void MDSetValue(object value, params int[] indices)
-        {
-            if (indices.Length != 2)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            CheckBounds(indices[0], indices[1]);
-
-            _array.SetValue(value, ComputeIndex(indices[0], indices[1]));
-        }
-
-        public override int MDGetUpperBound(int dimension)
-        {
-            switch (dimension)
-            {
-                case 0:
-                    return _upperBound1 - 1;
-                case 1:
-                    return _upperBound2 - 1;
-                default:
-                    throw new IndexOutOfRangeException();
-            }
-        }
-
-        public sealed override void MDInitialize(int[] indices)
-        {
-            Initialize(indices[0], indices[1]);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public void CheckBounds(int index1, int index2)
-        {
-            if ((index1 < 0) || (index1 >= _upperBound1))
-            {
-                throw new IndexOutOfRangeException();
-            }
-            if ((index2 < 0) || (index2 >= _upperBound2))
-            {
-                throw new IndexOutOfRangeException();
-            }
-        }
-
-        // This logic is duplicated in Redhawk DBI (implementation of ICorDebugArrayValue::GetElement)
-        // We should update it too whenever this method changes.
-        public int ComputeIndex(int index1, int index2)
-        {
-            // This arithmatic is unchecked because it is not possible to create
-            // an array that would satisfy bounds checks AND overflow the math
-            // here.
-            return (_upperBound2 * index1) + index2;
-        }
-
-        public void Set(int index1, int index2, T value)
-        {
-            CheckBounds(index1, index2);
-
-            _array[ComputeIndex(index1, index2)] = value;
-        }
-
-        internal sealed override Array MDFlattenedArray
-        {
-            get
-            {
-                return _array;
-            }
-        }
-
-        private void Initialize(int length1, int length2)
-        {
-            if (length1 < 0 || length2 < 0)
+            if ((length1 < 0) || (length2 < 0))
                 throw new OverflowException();
+            MDArrayRank2<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank2<T>>(RuntimeImports.RhNewArray(typeof(T[,]).TypeHandle.ToEETypePtr(), checked(length1 * length2)));
 
-            _array = new T[checked(length1 * length2)];
-            _upperBound1 = length1;
-            _upperBound2 = length2;
-            SetLength(_array.Length);
+            newArray._upperBound1 = length1;
+            newArray._upperBound2 = length2;
+            return RuntimeHelpers.UncheckedCast<T[,]>(newArray);
         }
-    }
 
-    public abstract class MDArrayRank3 : MDArray
-    {
-        public sealed override int MDRank
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ByReference<T> InternalAddress(T[,] array, int index1, int index2)
         {
-            get
+            MDArrayRank2<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank2<T>>(array);
+            if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
+                throw new IndexOutOfRangeException();
+            if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
+                throw new IndexOutOfRangeException();
+
+            int index = (index1 * mdArrayObj._upperBound2) + index2;
+
+            int offset = ByReference<T>.SizeOfT() * index + 2 * 8;
+            ByReference<int> _upperBound1Ref = ByReference<int>.FromRef(ref mdArrayObj._upperBound1);
+            return ByReference<int>.Cast<T>(ByReference<int>.AddRaw(_upperBound1Ref, offset));
+        }
+
+        public static ByReference<T> Address(T[,] array, int index1, int index2)
+        {
+            ByReference<T> returnValue = InternalAddress(array, index1, index2);
+            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
             {
-                return 3;
+                if (!typeof(T).TypeHandle.Equals(new RuntimeTypeHandle(array.EETypePtr.ArrayElementType)))
+                    throw new ArrayTypeMismatchException();
             }
+            return returnValue;
+        }
+
+        public static T Get(T[,] array, int index1, int index2)
+        {
+            return ByReference<T>.Load(InternalAddress(array, index1, index2));
+        }
+
+        public static void Set(T[,] array, int index1, int index2, T value)
+        {
+            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            {
+                RuntimeImports.RhCheckArrayStore(array, value);
+            }
+
+            ByReference<T>.Store(InternalAddress(array, index1, index2), value);
         }
     }
 
-    public class MDArrayRank3<T> : MDArrayRank3
+    [StructLayout(LayoutKind.Sequential)]
+    public class MDArrayRank3<T>
     {
-        // Do not use field initializers on these fields. The implementation of CreateInstance() bypasses the normal constructor
-        // and calls MDInitialize() directly, so MDInitialize() must explicitly initialize all of the fields.
-
-        // The compiler takes a dependency on field ordering of this type, m_array must be first.
-        private T[] _array;
-
-        // Debugger(DBI) takes dependency on the ordering and layout of these fields.
-        // Please update DBI whenever these fields are updated or moved around.
-        // see ICorDebugArrayValue methods in rh\src\debug\dbi\values.cpp
+        private IntPtr _count;
         private int _upperBound1;
         private int _upperBound2;
         private int _upperBound3;
 
-        // NoInlining is currently required because NUTC does not support inling of this constructor
-        // during static initialization of multi-dimensional arrays.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public MDArrayRank3(int length1, int length2, int length3)
+        public static T[,,] Ctor(int length1, int length2, int length3)
         {
-            Initialize(length1, length2, length3);
-        }
-
-        public override Object MDGetValue(params int[] indices)
-        {
-            if (indices.Length != 3)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            CheckBounds(indices[0], indices[1], indices[2]);
-
-            return _array[ComputeIndex(indices[0], indices[1], indices[2])];
-        }
-
-        public T Get(int index1, int index2, int index3)
-        {
-            CheckBounds(index1, index2, index3);
-
-            return _array[ComputeIndex(index1, index2, index3)];
-        }
-
-        public override void MDSetValue(object value, params int[] indices)
-        {
-            if (indices.Length != 3)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            CheckBounds(indices[0], indices[1], indices[2]);
-
-            _array.SetValue(value, ComputeIndex(indices[0], indices[1], indices[2]));
-        }
-
-        public override int MDGetUpperBound(int dimension)
-        {
-            switch (dimension)
-            {
-                case 0:
-                    return _upperBound1 - 1;
-                case 1:
-                    return _upperBound2 - 1;
-                case 2:
-                    return _upperBound3 - 1;
-                default:
-                    throw new IndexOutOfRangeException();
-            }
-        }
-
-        public sealed override void MDInitialize(int[] indices)
-        {
-            Initialize(indices[0], indices[1], indices[2]);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public void CheckBounds(int index1, int index2, int index3)
-        {
-            if ((index1 < 0) || (index1 >= _upperBound1))
-            {
-                throw new IndexOutOfRangeException();
-            }
-            if ((index2 < 0) || (index2 >= _upperBound2))
-            {
-                throw new IndexOutOfRangeException();
-            }
-            if ((index3 < 0) || (index3 >= _upperBound3))
-            {
-                throw new IndexOutOfRangeException();
-            }
-        }
-
-        // This logic is duplicated in Redhawk DBI (implementation of ICorDebugArrayValue::GetElement)
-        // We should update it too whenever this method changes.
-        public int ComputeIndex(int index1, int index2, int index3)
-        {
-            // This arithmatic is unchecked because it is not possible to create
-            // an array that would satisfy bounds checks AND overflow the math
-            // here.
-            return (_upperBound3 * _upperBound2 * index1) +
-                   (_upperBound3 * index2) +
-                    index3;
-        }
-
-        public void Set(int index1, int index2, int index3, T value)
-        {
-            CheckBounds(index1, index2, index3);
-
-            _array[ComputeIndex(index1, index2, index3)] = value;
-        }
-
-        internal sealed override Array MDFlattenedArray
-        {
-            get
-            {
-                return _array;
-            }
-        }
-
-        private void Initialize(int length1, int length2, int length3)
-        {
-            if (length1 < 0 || length2 < 0 || length3 < 0)
+            if ((length1 < 0) || (length2 < 0) || (length3 < 0))
                 throw new OverflowException();
+            MDArrayRank3<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank3<T>>(RuntimeImports.RhNewArray(typeof(T[,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3)));
 
-            _array = new T[checked(length1 * length2 * length3)];
-            _upperBound1 = length1;
-            _upperBound2 = length2;
-            _upperBound3 = length3;
-            SetLength(_array.Length);
+            newArray._upperBound1 = length1;
+            newArray._upperBound2 = length2;
+            newArray._upperBound3 = length3;
+            return RuntimeHelpers.UncheckedCast<T[,,]>(newArray);
         }
-    }
 
-    public abstract class MDArrayRank4 : MDArray
-    {
-        public sealed override int MDRank
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ByReference<T> InternalAddress(T[,,] array, int index1, int index2, int index3)
         {
-            get
+            MDArrayRank3<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank3<T>>(array);
+            if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
+                throw new IndexOutOfRangeException();
+            if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
+                throw new IndexOutOfRangeException();
+            if ((index3 < 0) || (index3 >= mdArrayObj._upperBound3))
+                throw new IndexOutOfRangeException();
+
+            int index = (((index1 * mdArrayObj._upperBound2) + index2) * mdArrayObj._upperBound3) + index3;
+
+            int offset = ByReference<T>.SizeOfT() * index + 3 * 8;
+            ByReference<int> _upperBound1Ref = ByReference<int>.FromRef(ref mdArrayObj._upperBound1);
+            return ByReference<int>.Cast<T>(ByReference<int>.AddRaw(_upperBound1Ref, offset));
+        }
+
+        public static ByReference<T> Address(T[,,] array, int index1, int index2, int index3)
+        {
+            ByReference<T> returnValue = InternalAddress(array, index1, index2, index3);
+            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
             {
-                return 4;
+                if (!typeof(T).TypeHandle.Equals(new RuntimeTypeHandle(array.EETypePtr.ArrayElementType)))
+                    throw new ArrayTypeMismatchException();
             }
+            return returnValue;
+        }
+
+        public static T Get(T[,,] array, int index1, int index2, int index3)
+        {
+            return ByReference<T>.Load(InternalAddress(array, index1, index2, index3));
+        }
+
+        public static void Set(T[,,] array, int index1, int index2, int index3, T value)
+        {
+            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            {
+                RuntimeImports.RhCheckArrayStore(array, value);
+            }
+
+            ByReference<T>.Store(InternalAddress(array, index1, index2, index3), value);
         }
     }
 
-    public class MDArrayRank4<T> : MDArrayRank4
+    [StructLayout(LayoutKind.Sequential)]
+    public class MDArrayRank4<T>
     {
-        // Do not use field initializers on these fields. The implementation of CreateInstance() bypasses the normal constructor
-        // and calls MDInitialize() directly, so MDInitialize() must explicitly initialize all of the fields.
-
-        // The compiler takes a dependency on field ordering of this type, m_array must be first.
-        private T[] _array;
-
-        // Debugger(DBI) takes dependency on the ordering and layout of these fields.
-        // Please update DBI whenever these fields are updated or moved around.
-        // see ICorDebugArrayValue methods in rh\src\debug\dbi\values.cpp
+        private IntPtr _count;
         private int _upperBound1;
         private int _upperBound2;
         private int _upperBound3;
         private int _upperBound4;
 
-        // NoInlining is currently required because NUTC does not support inlining of this constructor
-        // during static initialization of multi-dimensional arrays. See Dev12 Bug 743787.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public MDArrayRank4(int length1, int length2, int length3, int length4)
+        public static T[,,,] Ctor(int length1, int length2, int length3, int length4)
         {
-            Initialize(length1, length2, length3, length4);
-        }
-
-        public override Object MDGetValue(params int[] indices)
-        {
-            if (indices.Length != 4)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            CheckBounds(indices[0], indices[1], indices[2], indices[3]);
-
-            return _array[ComputeIndex(indices[0], indices[1], indices[2], indices[3])];
-        }
-
-        public T Get(int index1, int index2, int index3, int index4)
-        {
-            CheckBounds(index1, index2, index3, index4);
-
-            return _array[ComputeIndex(index1, index2, index3, index4)];
-        }
-
-        public override void MDSetValue(object value, params int[] indices)
-        {
-            if (indices.Length != 4)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
-            CheckBounds(indices[0], indices[1], indices[2], indices[3]);
-
-            _array.SetValue(value, ComputeIndex(indices[0], indices[1], indices[2], indices[3]));
-        }
-
-        public override int MDGetUpperBound(int dimension)
-        {
-            switch (dimension)
-            {
-                case 0:
-                    return _upperBound1 - 1;
-                case 1:
-                    return _upperBound2 - 1;
-                case 2:
-                    return _upperBound3 - 1;
-                case 3:
-                    return _upperBound4 - 1;
-                default:
-                    throw new IndexOutOfRangeException();
-            }
-        }
-
-        public sealed override void MDInitialize(int[] indices)
-        {
-            Initialize(indices[0], indices[1], indices[2], indices[3]);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public void CheckBounds(int index1, int index2, int index3, int index4)
-        {
-            if ((index1 < 0) || (index1 >= _upperBound1))
-            {
-                throw new IndexOutOfRangeException();
-            }
-            if ((index2 < 0) || (index2 >= _upperBound2))
-            {
-                throw new IndexOutOfRangeException();
-            }
-            if ((index3 < 0) || (index3 >= _upperBound3))
-            {
-                throw new IndexOutOfRangeException();
-            }
-            if ((index4 < 0) || (index4 >= _upperBound4))
-            {
-                throw new IndexOutOfRangeException();
-            }
-        }
-
-        // This logic is duplicated in Redhawk DBI (implementation of ICorDebugArrayValue::GetElement)
-        // We should update it too whenever this method changes.
-        public int ComputeIndex(int index1, int index2, int index3, int index4)
-        {
-            // This arithmatic is unchecked because it is not possible to create
-            // an array that would satisfy bounds checks AND overflow the math
-            // here.
-            return (_upperBound4 * _upperBound3 * _upperBound2 * index1) +
-                   (_upperBound4 * _upperBound3 * index2) +
-                   (_upperBound4 * index3) +
-                    index4;
-        }
-
-        public void Set(int index1, int index2, int index3, int index4, T value)
-        {
-            CheckBounds(index1, index2, index3, index4);
-
-            _array[ComputeIndex(index1, index2, index3, index4)] = value;
-        }
-
-        internal sealed override Array MDFlattenedArray
-        {
-            get
-            {
-                return _array;
-            }
-        }
-
-        private void Initialize(int length1, int length2, int length3, int length4)
-        {
-            if (length1 < 0 || length2 < 0 || length3 < 0 || length4 < 0)
+            if ((length1 < 0) || (length2 < 0) || (length3 < 0) || (length4 < 0))
                 throw new OverflowException();
+            MDArrayRank4<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank4<T>>(RuntimeImports.RhNewArray(typeof(T[,,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3 * length4)));
 
-            _array = new T[checked(length1 * length2 * length3 * length4)];
-            _upperBound1 = length1;
-            _upperBound2 = length2;
-            _upperBound3 = length3;
-            _upperBound4 = length4;
-            SetLength(_array.Length);
+            newArray._upperBound1 = length1;
+            newArray._upperBound2 = length2;
+            newArray._upperBound3 = length3;
+            newArray._upperBound4 = length4;
+            return RuntimeHelpers.UncheckedCast<T[,,,]>(newArray);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ByReference<T> InternalAddress(T[,,,] array, int index1, int index2, int index3, int index4)
+        {
+            MDArrayRank4<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank4<T>>(array);
+            if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
+                throw new IndexOutOfRangeException();
+            if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
+                throw new IndexOutOfRangeException();
+            if ((index3 < 0) || (index3 >= mdArrayObj._upperBound3))
+                throw new IndexOutOfRangeException();
+            if ((index4 < 0) || (index4 >= mdArrayObj._upperBound4))
+                throw new IndexOutOfRangeException();
+
+            int index = (((((index1 * mdArrayObj._upperBound2) + index2) * mdArrayObj._upperBound3) + index3) * mdArrayObj._upperBound4) + index4;
+
+
+            int offset = ByReference<T>.SizeOfT() * index + 4 * 8;
+            ByReference<int> _upperBound1Ref = ByReference<int>.FromRef(ref mdArrayObj._upperBound1);
+            return ByReference<int>.Cast<T>(ByReference<int>.AddRaw(_upperBound1Ref, offset));
+        }
+
+        public static ByReference<T> Address(T[,,,] array, int index1, int index2, int index3, int index4)
+        {
+            ByReference<T> returnValue = InternalAddress(array, index1, index2, index3, index4);
+            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            {
+                if (!typeof(T).TypeHandle.Equals(new RuntimeTypeHandle(array.EETypePtr.ArrayElementType)))
+                    throw new ArrayTypeMismatchException();
+            }
+            return returnValue;
+        }
+
+        public static T Get(T[,,,] array, int index1, int index2, int index3, int index4)
+        {
+            return ByReference<T>.Load(InternalAddress(array, index1, index2, index3, index4));
+        }
+
+        public static void Set(T[,,,] array, int index1, int index2, int index3, int index4, T value)
+        {
+            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            {
+                RuntimeImports.RhCheckArrayStore(array, (object)value);
+            }
+
+            ByReference<T>.Store(InternalAddress(array, index1, index2, index3, index4), value);
         }
     }
 }

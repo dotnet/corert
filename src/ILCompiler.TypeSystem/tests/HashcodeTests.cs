@@ -49,7 +49,7 @@ namespace TypeSystemTests
 
             ArrayType objectArray = _context.GetArrayType(objectType);
 
-            Assert.Equal(TypeHashingAlgorithms.ComputeArrayTypeHashCode(objectType.GetHashCode(), 1), objectArray.GetHashCode());
+            Assert.Equal(TypeHashingAlgorithms.ComputeArrayTypeHashCode(objectType.GetHashCode(), -1), objectArray.GetHashCode());
         }
 
         [Fact]

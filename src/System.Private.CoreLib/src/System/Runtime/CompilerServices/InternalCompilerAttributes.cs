@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         public static extern T Load(ByReference<T> pointer);
 
         [Intrinsic]
-        private static extern void Store(ByReference<T> pointer, T value);
+        internal static extern void Store(ByReference<T> pointer, T value);
 
         public static T LoadAtIndex(ByReference<T> pointer, int index)
         {
@@ -66,7 +66,7 @@ namespace System.Runtime.CompilerServices
         // Pointer arithmetic
         //
         [Intrinsic]
-        private static extern ByReference<T> AddRaw(ByReference<T> pointer, int rawOffset);
+        internal static extern ByReference<T> AddRaw(ByReference<T> pointer, int rawOffset);
 
         [Intrinsic]
         private static extern ByReference<T> SubRaw(ByReference<T> pointer, int rawOffset);
@@ -77,7 +77,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         private static extern int SizeOfTUnsigned();
 
-        private static int SizeOfT()
+        internal static int SizeOfT()
         {
             unchecked
             {

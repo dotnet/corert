@@ -24,7 +24,8 @@ namespace Internal.TypeSystem
 
         public override int GetHashCode()
         {
-            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(this.ElementType.GetHashCode(), _rank == -1 ? 1 : _rank);
+            // ComputeArrayTypeHashCode expects -1 for an SzArray
+            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(this.ElementType.GetHashCode(), _rank);
         }
 
         public override DefType BaseType
