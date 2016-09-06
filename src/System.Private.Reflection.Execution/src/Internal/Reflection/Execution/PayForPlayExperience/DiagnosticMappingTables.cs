@@ -166,24 +166,6 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             return true;
         }
 
-        public static bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle)
-        {
-            elementTypeHandle = default(RuntimeTypeHandle);
-            if (rank != 2)
-                return false;
-
-            // Rank 2 arrays are really generic type of type MDArrayRank2<T>.
-            RuntimeTypeHandle genericTypeDefinitionHandle;
-            RuntimeTypeHandle[] genericTypeArgumentHandles;
-            if (!DiagnosticMappingTables.TryGetConstructedGenericTypeComponents(arrayTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                return false;
-            // This should really be an assert but this is used for generating diagnostic info so it's better to persevere and hope something useful gets printed out.
-            if (genericTypeArgumentHandles.Length != 1)
-                return false;
-            elementTypeHandle = genericTypeArgumentHandles[0];
-            return true;
-        }
-
         public static bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
         {
             targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);

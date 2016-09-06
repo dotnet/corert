@@ -26,7 +26,7 @@
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;REAL_MULTIDIM_ARRAYS;$(DefineConstants)</DefineConstants>
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
     <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>

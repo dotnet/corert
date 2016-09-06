@@ -141,7 +141,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        public bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             throw new NotImplementedException();
         }

@@ -62,19 +62,19 @@ public void System.Array.CopyTo(System.Array array, int index)
 public static System.Runtime.InteropServices.GCHandle System.Runtime.InteropServices.GCHandle.Alloc(object value, System.Runtime.InteropServices.GCHandleType type)
 
 # ByReference<T>
-private static extern System.Runtime.CompilerServices.ByReference<T> System.Runtime.CompilerServices.ByReference<T>.AddRaw(System.Runtime.CompilerServices.ByReference<T> pointer, int rawOffset)
+internal static extern System.Runtime.CompilerServices.ByReference<T> System.Runtime.CompilerServices.ByReference<T>.AddRaw(System.Runtime.CompilerServices.ByReference<T> pointer, int rawOffset)
 public static extern System.Runtime.CompilerServices.ByReference<T1> System.Runtime.CompilerServices.ByReference<T>.Cast<T1>(System.Runtime.CompilerServices.ByReference<T> pointer)
 public static extern System.Runtime.CompilerServices.ByReference<T> System.Runtime.CompilerServices.ByReference<T>.FromRef(ref T pointer)
 public static extern T System.Runtime.CompilerServices.ByReference<T>.Load(System.Runtime.CompilerServices.ByReference<T> pointer)
 private static extern bool System.Runtime.CompilerServices.ByReference<T>.PointerEquals(System.Runtime.CompilerServices.ByReference<T> value1, System.Runtime.CompilerServices.ByReference<T> value2)
 private static extern int System.Runtime.CompilerServices.ByReference<T>.SizeOfTUnsigned()
-private static extern void System.Runtime.CompilerServices.ByReference<T>.Store(System.Runtime.CompilerServices.ByReference<T> pointer, T value)
+internal static extern void System.Runtime.CompilerServices.ByReference<T>.Store(System.Runtime.CompilerServices.ByReference<T> pointer, T value)
 private static extern System.Runtime.CompilerServices.ByReference<T> System.Runtime.CompilerServices.ByReference<T>.SubRaw(System.Runtime.CompilerServices.ByReference<T> pointer, int rawOffset)
 public static extern System.UIntPtr System.Runtime.CompilerServices.ByReference<T>.ToPointer(System.Runtime.CompilerServices.ByReference<T> pointer)
 private static extern int System.Runtime.CompilerServices.ByReference<T>.UncheckedMul(int a, int b)
 public static System.Runtime.CompilerServices.ByReference<T> System.Runtime.CompilerServices.ByReference<T>.Add(System.Runtime.CompilerServices.ByReference<T> pointer, int offset)
 public static T System.Runtime.CompilerServices.ByReference<T>.LoadAtIndex(System.Runtime.CompilerServices.ByReference<T> pointer, int index)
-private static int System.Runtime.CompilerServices.ByReference<T>.SizeOfT()
+internal static int System.Runtime.CompilerServices.ByReference<T>.SizeOfT()
 internal static void System.Runtime.CompilerServices.ByReference<T>.StoreAtIndex(System.Runtime.CompilerServices.ByReference<T> pointer, int index, T value)
 
 # System.SR

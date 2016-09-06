@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             m_value = value;
         }
 
-        internal long Value
+        public long Value
         {
             get { return m_value; }
         }

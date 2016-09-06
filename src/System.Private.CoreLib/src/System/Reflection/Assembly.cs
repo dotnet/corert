@@ -102,7 +102,7 @@ namespace System.Reflection
             throw new NotImplementedException(); //return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
         }
 
-        public virtual event ModuleResolveEventHandler ModuleResolve;
+        public virtual event ModuleResolveEventHandler ModuleResolve { add { throw NotImplemented.ByDesign; } remove { throw NotImplemented.ByDesign; } }
 
         public virtual Module ManifestModule { get { throw NotImplemented.ByDesign; } }
         public virtual Module GetModule(string name) { throw NotImplemented.ByDesign; }
