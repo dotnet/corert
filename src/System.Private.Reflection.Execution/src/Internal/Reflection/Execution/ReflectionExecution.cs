@@ -69,19 +69,28 @@ namespace Internal.Reflection.Execution
         // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
         // a default assembly name.
         //
-        public static Type GetType(String typeName, String callingAssemblyName, bool throwOnError, bool ignoreCase)
+        public static Type GetType(string typeName, string callingAssemblyName, bool throwOnError, bool ignoreCase)
+        {
+            return ExtensibleGetType(typeName, callingAssemblyName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
+        }
+
+        //
+        // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
+        // a default assembly name.
+        //
+        public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
         {
             LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
             defaultAssemblies.Add(callingAssemblyName);
             defaultAssemblies.AddRange(DefaultAssemblyNamesForGetType);
-            return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, throwOnError, ignoreCase, defaultAssemblies);
+            return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
         internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
 
         //@todo: Is there a better way than hard-coding?
         internal const String DefaultAssemblyNameForGetType = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
-        internal static IEnumerable<String> DefaultAssemblyNamesForGetType;
+        internal static IList<string> DefaultAssemblyNamesForGetType;
     }
 }
 

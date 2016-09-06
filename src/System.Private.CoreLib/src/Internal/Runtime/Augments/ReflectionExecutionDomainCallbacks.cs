@@ -33,7 +33,7 @@ namespace Internal.Runtime.Augments
 
         // Api's that are exposed in System.Runtime but are really reflection apis.
         public abstract Object ActivatorCreateInstance(Type type, Object[] args);
-        public abstract Type GetType(String typeName, bool throwOnError, bool ignoreCase);
+        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase);
 
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator);

@@ -2,18 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Dispensers;
-using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.PropertyInfos;
 
 using Internal.Reflection.Core;
@@ -36,6 +31,9 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeAssembly
     {
+        /// <summary>
+        /// Returns non-null or throws.
+        /// </summary>
         internal static RuntimeAssembly GetRuntimeAssembly(RuntimeAssemblyName assemblyRefName)
         {
             RuntimeAssembly result;
@@ -45,9 +43,17 @@ namespace System.Reflection.Runtime.Assemblies
             return result;
         }
 
+        /// <summary>
+        /// Returns null if no assembly matches the assemblyRefName. Throws for other error cases.
+        /// </summary>
+        internal static RuntimeAssembly GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
+        {
+            return s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+        }
+
         internal static Exception TryGetRuntimeAssembly(RuntimeAssemblyName assemblyRefName, out RuntimeAssembly result)
         {
-            result = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            result = GetRuntimeAssemblyIfExists(assemblyRefName);
             if (result != null)
                 return null;
             else
@@ -324,110 +330,3 @@ namespace System.Reflection.Runtime.CustomAttributes
         }
     }
 }
-
-namespace System.Reflection.Runtime.TypeParsing
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // Name looks of namespace types. (Affects both type reference resolution and Type.GetType() calls.)
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NamespaceTypeName : NamedTypeName
-    {
-        public sealed override Exception TryResolve(RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
-        {
-            result = s_runtimeNamespaceTypeByNameDispenser.GetOrAdd(new NamespaceTypeNameKey(currentAssembly, this));
-            if (result != null)
-                return null;
-            if (!ignoreCase)
-                return new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, this.ToString(), currentAssembly.FullName));
-
-            return TryResolveCaseInsensitive(currentAssembly, out result);
-        }
-
-        private static readonly Dispenser<NamespaceTypeNameKey, RuntimeTypeInfo> s_runtimeNamespaceTypeByNameDispenser =
-            DispenserFactory.CreateDispenserV<NamespaceTypeNameKey, RuntimeTypeInfo>(
-                DispenserScenario.AssemblyAndNamespaceTypeName_Type,
-                delegate (NamespaceTypeNameKey key)
-                {
-                    RuntimeTypeInfo result;
-                    Exception typeLoadException = key.NamespaceTypeName.UncachedTryResolveCaseSensitive(key.RuntimeAssembly, out result);
-                    if (typeLoadException != null)
-                        return null;
-                    else
-                        return result;
-                }
-            );
-
-        private static LowLevelDictionary<String, QHandle> GetCaseInsensitiveTypeDictionary(RuntimeAssembly assembly)
-        {
-            return s_caseInsensitiveTypeDictionaryDispenser.GetOrAdd(assembly);
-        }
-
-        private static readonly Dispenser<RuntimeAssembly, LowLevelDictionary<String, QHandle>> s_caseInsensitiveTypeDictionaryDispenser =
-            DispenserFactory.CreateDispenserV<RuntimeAssembly, LowLevelDictionary<String, QHandle>>(
-                DispenserScenario.RuntimeAssembly_CaseInsensitiveTypeDictionary,
-                CreateCaseInsensitiveTypeDictionary
-            );
-
-
-        //
-        // Hash key for resolving NamespaceTypeNames to RuntimeTypes.
-        //
-        private struct NamespaceTypeNameKey : IEquatable<NamespaceTypeNameKey>
-        {
-            public NamespaceTypeNameKey(RuntimeAssembly runtimeAssembly, NamespaceTypeName namespaceTypeName)
-            {
-                _runtimeAssembly = runtimeAssembly;
-                _namespaceTypeName = namespaceTypeName;
-            }
-
-            public RuntimeAssembly RuntimeAssembly
-            {
-                get
-                {
-                    return _runtimeAssembly;
-                }
-            }
-
-            public NamespaceTypeName NamespaceTypeName
-            {
-                get
-                {
-                    return _namespaceTypeName;
-                }
-            }
-
-            public override bool Equals(Object obj)
-            {
-                if (!(obj is NamespaceTypeNameKey))
-                    return false;
-                return Equals((NamespaceTypeNameKey)obj);
-            }
-
-            public bool Equals(NamespaceTypeNameKey other)
-            {
-                if (!(_namespaceTypeName._name.Equals(other._namespaceTypeName._name)))
-                    return false;
-                if (!(_namespaceTypeName._namespaceParts.Length == other._namespaceTypeName._namespaceParts.Length))
-                    return false;
-                int count = _namespaceTypeName._namespaceParts.Length;
-                for (int i = 0; i < count; i++)
-                {
-                    if (!(_namespaceTypeName._namespaceParts[i] == other._namespaceTypeName._namespaceParts[i]))
-                        return false;
-                }
-                if (!(_runtimeAssembly.Equals(other._runtimeAssembly)))
-                    return false;
-                return true;
-            }
-
-            public override int GetHashCode()
-            {
-                return _namespaceTypeName._name.GetHashCode();
-            }
-
-            private readonly RuntimeAssembly _runtimeAssembly;
-            private readonly NamespaceTypeName _namespaceTypeName;
-        }
-    }
-}
-

@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection.Runtime.Assemblies;
 
@@ -18,7 +17,25 @@ namespace System.Reflection.Runtime.TypeParsing
         //
         // Parses a typename. The typename may be optionally postpended with a "," followed by a legal assembly name.
         //
-        public static AssemblyQualifiedTypeName ParseAssemblyQualifiedTypeName(String s)
+        public static TypeName ParseAssemblyQualifiedTypeName(string s, bool throwOnError)
+        {
+            if (throwOnError)
+                return ParseAssemblyQualifiedTypeName(s);
+
+            try
+            {
+                return ParseAssemblyQualifiedTypeName(s);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        }
+
+        //
+        // Parses a typename. The typename may be optionally postpended with a "," followed by a legal assembly name.
+        //
+        private static TypeName ParseAssemblyQualifiedTypeName(String s)
         {
             // Desktop compat: a whitespace-only "typename" qualified by an assembly name throws an ArgumentException rather than
             // a TypeLoadException.
@@ -36,7 +53,7 @@ namespace System.Reflection.Runtime.TypeParsing
                 NonQualifiedTypeName typeName = parser.ParseNonQualifiedTypeName();
                 TokenType token = parser._lexer.GetNextToken();
                 if (token == TokenType.End)
-                    return new AssemblyQualifiedTypeName(typeName, null);
+                    return typeName;
                 if (token == TokenType.Comma)
                 {
                     RuntimeAssemblyName assemblyName = parser._lexer.GetNextAssemblyName();
@@ -166,13 +183,7 @@ namespace System.Reflection.Runtime.TypeParsing
         private NamespaceTypeName ParseNamespaceTypeName()
         {
             String fullName = _lexer.GetNextIdentifier();
-            String[] parts = fullName.Split('.');
-            int numNamespaceParts = parts.Length - 1;
-            String[] namespaceParts = new String[numNamespaceParts];
-            for (int i = 0; i < numNamespaceParts; i++)
-                namespaceParts[numNamespaceParts - i - 1] = parts[i];
-            String name = parts[numNamespaceParts];
-            return new NamespaceTypeName(namespaceParts, name);
+            return new NamespaceTypeName(fullName);
         }
 
         //
@@ -184,7 +195,7 @@ namespace System.Reflection.Runtime.TypeParsing
             if (token == TokenType.Other)
             {
                 NonQualifiedTypeName nonQualifiedTypeName = ParseNonQualifiedTypeName();
-                return new AssemblyQualifiedTypeName(nonQualifiedTypeName, null);
+                return nonQualifiedTypeName;
             }
             else if (token == TokenType.OpenSqBracket)
             {
@@ -198,7 +209,10 @@ namespace System.Reflection.Runtime.TypeParsing
                 }
                 if (token != TokenType.CloseSqBracket)
                     throw new ArgumentException();
-                return new AssemblyQualifiedTypeName(typeName, assemblyName);
+                if (assemblyName == null)
+                    return typeName;
+                else
+                    return new AssemblyQualifiedTypeName(typeName, assemblyName);
             }
             else
                 throw new ArgumentException();
