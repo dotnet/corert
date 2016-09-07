@@ -3,14 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class mincore
     {
-        [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
-        internal extern static unsafe void GetSystemTimeAsFileTime(long* lpSystemTimeAsFileTime);
+        [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
+        internal extern static IntPtr CreateThreadpoolTimer(IntPtr pfnti, IntPtr pv, IntPtr pcbe);
+
+        [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
+        internal extern static unsafe IntPtr SetThreadpoolTimer(IntPtr pti, long* pftDueTime, uint msPeriod, uint msWindowLength);
     }
 }
