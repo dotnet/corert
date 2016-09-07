@@ -46,7 +46,7 @@ namespace System
             // the types are the same, obj should also be a
             // MulticastDelegate
             Contract.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
-            var d = RuntimeHelpers.UncheckedCast<MulticastDelegate>(obj);
+            var d = Unsafe.As<MulticastDelegate>(obj);
 
             // there are 2 kind of delegate kinds for comparision
             // 1- Multicast (m_helperObject is Delegate[])

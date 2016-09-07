@@ -292,7 +292,7 @@ namespace System.Runtime.InteropServices
 
         public static T UncheckedCast<T>(object obj) where T : class
         {
-            return RuntimeHelpers.UncheckedCast<T>(obj);
+            return Unsafe.As<T>(obj);
         }
 
         public static bool IsArray(RuntimeTypeHandle type)

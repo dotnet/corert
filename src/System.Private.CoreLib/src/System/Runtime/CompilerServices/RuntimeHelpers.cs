@@ -128,13 +128,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // unchecked cast, performs no dynamic type checking
-        internal static T UncheckedCast<T>(Object value) where T : class
-        {
-            // TODO: Replace all uses of RuntimeHelpers.UncheckedCast with Unsafe.As
-            return Unsafe.As<T>(value);
-        }
-
         [ThreadStatic]
         private static unsafe byte* t_sufficientStackLimit;
 

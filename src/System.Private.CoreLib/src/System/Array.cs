@@ -2585,30 +2585,19 @@ namespace System
     //
     public class Array<T> : Array, IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyList<T>
     {
-        private static T[] UnsafeCast(Array<T> array)
-        {
-            return RuntimeHelpers.UncheckedCast<T[]>(array);
-        }
-
-        private static object Id(object array)
-        {
-            return array;
-        }
-
         public new IEnumerator<T> GetEnumerator()
         {
             // get length so we don't have to call the Length property again in ArrayEnumerator constructor
             // and avoid more checking there too.
             int length = this.Length;
-            return length == 0 ? ArrayEnumerator.Empty : new ArrayEnumerator(UnsafeCast(this), length);
+            return length == 0 ? ArrayEnumerator.Empty : new ArrayEnumerator(Unsafe.As<T[]>(this), length);
         }
 
         public int Count
         {
             get
             {
-                T[] _this = UnsafeCast(this);
-                return _this.Length;
+                return this.Length;
             }
         }
 
@@ -2632,30 +2621,12 @@ namespace System
 
         public bool Contains(T item)
         {
-            return Array.IndexOf(UnsafeCast(this), item) != -1;
+            return Array.IndexOf(Unsafe.As<T[]>(this), item) != -1;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            T[] _this = UnsafeCast(this);
-            if (array == null)
-                throw new ArgumentNullException("array");
-            if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException();
-            int thisLength = _this.Length;
-            int otherLength = array.Length;
-            if ((otherLength - arrayIndex) < thisLength)
-                throw new ArgumentException();
-
-            if (!array.EETypePtr.HasPointers)
-            {
-                Array.CopyImplValueTypeArrayNoInnerGcRefs(_this, 0, array, arrayIndex, thisLength);
-            }
-            else
-            {
-                for (int idx = 0; idx < thisLength; idx++)
-                    array[arrayIndex + idx] = _this[idx];
-            }
+            Array.Copy(Unsafe.As<T[]>(this), 0, array, arrayIndex, this.Length);
         }
 
         public bool Remove(T item)
@@ -2667,10 +2638,9 @@ namespace System
         {
             get
             {
-                T[] _this = UnsafeCast(this);
                 try
                 {
-                    return _this[index];
+                    return Unsafe.As<T[]>(this)[index];
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -2679,10 +2649,9 @@ namespace System
             }
             set
             {
-                T[] _this = UnsafeCast(this);
                 try
                 {
-                    _this[index] = value;
+                    Unsafe.As<T[]>(this)[index] = value;
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -2693,7 +2662,7 @@ namespace System
 
         public int IndexOf(T item)
         {
-            return Array.IndexOf(UnsafeCast(this), item);
+            return Array.IndexOf(Unsafe.As<T[]>(this), item);
         }
 
         public void Insert(int index, T item)
