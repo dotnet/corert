@@ -180,8 +180,8 @@ namespace System.Reflection
             return Load(name);
         }
 
-        public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new NotImplementedException(); }
-        public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new NotImplementedException(); }
-        public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new NotImplementedException(); }
+        public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
     }
 }

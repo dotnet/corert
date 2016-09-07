@@ -31,9 +31,10 @@ namespace System.Reflection
         public bool IsPrivate => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Private;
         public bool IsPublic => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
 
-        public virtual bool IsSecurityCritical { get { throw new NotImplementedException(); } }
-        public virtual bool IsSecuritySafeCritical { get { throw new NotImplementedException(); } }
-        public virtual bool IsSecurityTransparent { get { throw new NotImplementedException(); } }
+        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
+        public virtual bool IsSecurityCritical => true;
+        public virtual bool IsSecuritySafeCritical => false;
+        public virtual bool IsSecurityTransparent => false;
 
         public abstract RuntimeFieldHandle FieldHandle { get; }
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetFieldFromHandle(handle);

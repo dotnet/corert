@@ -9,8 +9,7 @@
 **
 ==============================================================*/
 
-using global::System;
-using global::Internal.Reflection.Augments;
+using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -18,7 +17,18 @@ namespace System.Reflection
     {
         public static TypeInfo GetTypeInfo(this Type type)
         {
-            return ReflectionAugments.ReflectionCoreCallbacks.GetTypeInfo(type);
+            IReflectableType reflectableType = type as IReflectableType;
+            if (reflectableType != null)
+                return reflectableType.GetTypeInfo();
+
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            // This is bizarre but compatible with the desktop which casts "type" to IReflectableType without checking and
+            // thus, throws an InvalidCastException.
+            object ignore = (IReflectableType)type;
+            Debug.Fail("Did not expect to get here.");
+            throw new InvalidOperationException();
         }
     }
 }

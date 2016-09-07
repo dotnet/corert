@@ -357,7 +357,7 @@ namespace System
 
         public static bool operator !=(Type left, Type right) => !(left == right);
 
-        public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new NotImplementedException(); }
+        public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();

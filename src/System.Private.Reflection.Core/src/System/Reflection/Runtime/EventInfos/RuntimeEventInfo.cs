@@ -54,14 +54,6 @@ namespace System.Reflection.Runtime.EventInfos
             _event = eventHandle.GetEvent(_reader);
         }
 
-        public sealed override void AddEventHandler(Object target, Delegate handler)
-        {
-            MethodInfo addMethod = this.AddMethod;
-            if (!addMethod.IsPublic)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
-            addMethod.Invoke(target, new Object[] { handler });
-        }
-
         public sealed override MethodInfo AddMethod
         {
             get
@@ -195,14 +187,6 @@ namespace System.Reflection.Runtime.EventInfos
                 }
                 return null;
             }
-        }
-
-        public sealed override void RemoveEventHandler(Object target, Delegate handler)
-        {
-            MethodInfo removeMethod = this.RemoveMethod;
-            if (!removeMethod.IsPublic)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
-            removeMethod.Invoke(target, new Object[] { handler });
         }
 
         public sealed override MethodInfo RemoveMethod

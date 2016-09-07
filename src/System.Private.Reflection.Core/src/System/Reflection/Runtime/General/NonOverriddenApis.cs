@@ -68,6 +68,8 @@ namespace System.Reflection.Runtime.EventInfos
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
         public sealed override bool IsMulticast => base.IsMulticast;
+        public sealed override void AddEventHandler(object target, Delegate handler) => base.AddEventHandler(target, handler);
+        public sealed override void RemoveEventHandler(object target, Delegate handler) => base.RemoveEventHandler(target, handler);
 #endif //DEBUG
     }
 }
@@ -78,6 +80,9 @@ namespace System.Reflection.Runtime.FieldInfos
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
+        public sealed override bool IsSecurityCritical => base.IsSecurityCritical;
+        public sealed override bool IsSecuritySafeCritical => base.IsSecuritySafeCritical;
+        public sealed override bool IsSecurityTransparent => base.IsSecurityTransparent;
 #endif //DEBUG
     }
 }
