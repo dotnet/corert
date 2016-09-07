@@ -44,17 +44,17 @@ namespace System
         {
             if ((length1 < 0) || (length2 < 0))
                 throw new OverflowException();
-            MDArrayRank2<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank2<T>>(RuntimeImports.RhNewArray(typeof(T[,]).TypeHandle.ToEETypePtr(), checked(length1 * length2)));
+            MDArrayRank2<T> newArray = Unsafe.As<MDArrayRank2<T>>(RuntimeImports.RhNewArray(typeof(T[,]).TypeHandle.ToEETypePtr(), checked(length1 * length2)));
 
             newArray._upperBound1 = length1;
             newArray._upperBound2 = length2;
-            return RuntimeHelpers.UncheckedCast<T[,]>(newArray);
+            return Unsafe.As<T[,]>(newArray);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ByReference<T> InternalAddress(T[,] array, int index1, int index2)
         {
-            MDArrayRank2<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank2<T>>(array);
+            MDArrayRank2<T> mdArrayObj = Unsafe.As<MDArrayRank2<T>>(array);
             if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
                 throw new IndexOutOfRangeException();
             if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
@@ -106,18 +106,18 @@ namespace System
         {
             if ((length1 < 0) || (length2 < 0) || (length3 < 0))
                 throw new OverflowException();
-            MDArrayRank3<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank3<T>>(RuntimeImports.RhNewArray(typeof(T[,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3)));
+            MDArrayRank3<T> newArray = Unsafe.As<MDArrayRank3<T>>(RuntimeImports.RhNewArray(typeof(T[,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3)));
 
             newArray._upperBound1 = length1;
             newArray._upperBound2 = length2;
             newArray._upperBound3 = length3;
-            return RuntimeHelpers.UncheckedCast<T[,,]>(newArray);
+            return Unsafe.As<T[,,]>(newArray);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ByReference<T> InternalAddress(T[,,] array, int index1, int index2, int index3)
         {
-            MDArrayRank3<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank3<T>>(array);
+            MDArrayRank3<T> mdArrayObj = Unsafe.As<MDArrayRank3<T>>(array);
             if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
                 throw new IndexOutOfRangeException();
             if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
@@ -172,19 +172,19 @@ namespace System
         {
             if ((length1 < 0) || (length2 < 0) || (length3 < 0) || (length4 < 0))
                 throw new OverflowException();
-            MDArrayRank4<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank4<T>>(RuntimeImports.RhNewArray(typeof(T[,,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3 * length4)));
+            MDArrayRank4<T> newArray = Unsafe.As<MDArrayRank4<T>>(RuntimeImports.RhNewArray(typeof(T[,,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3 * length4)));
 
             newArray._upperBound1 = length1;
             newArray._upperBound2 = length2;
             newArray._upperBound3 = length3;
             newArray._upperBound4 = length4;
-            return RuntimeHelpers.UncheckedCast<T[,,,]>(newArray);
+            return Unsafe.As<T[,,,]>(newArray);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ByReference<T> InternalAddress(T[,,,] array, int index1, int index2, int index3, int index4)
         {
-            MDArrayRank4<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank4<T>>(array);
+            MDArrayRank4<T> mdArrayObj = Unsafe.As<MDArrayRank4<T>>(array);
             if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
                 throw new IndexOutOfRangeException();
             if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
