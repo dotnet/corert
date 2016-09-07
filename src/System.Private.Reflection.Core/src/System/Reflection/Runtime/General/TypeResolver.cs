@@ -193,7 +193,14 @@ namespace System.Reflection.Runtime.General
             {
                 NamespaceReferenceHandle namespaceReferenceHandle = parent.ToNamespaceReferenceHandle(reader);
                 string fullName = namespaceReferenceHandle.ToFullyQualifiedTypeName(name, reader);
-                ScopeReferenceHandle scopeReferenceHandle = namespaceReferenceHandle.GetNamespaceReference(reader).ParentScopeOrNamespace.ToExpectedScopeReferenceHandle(reader);
+                Handle parentHandleToSearch = parent;
+
+                while (parentHandleToSearch.HandleType != HandleType.ScopeReference)
+                {
+                    parentHandleToSearch = parentHandleToSearch.ToNamespaceReferenceHandle(reader).GetNamespaceReference(reader).ParentScopeOrNamespace;
+                }
+                ScopeReferenceHandle scopeReferenceHandle = parentHandleToSearch.ToScopeReferenceHandle(reader);
+
                 RuntimeAssemblyName assemblyName = scopeReferenceHandle.ToRuntimeAssemblyName(reader);
                 RuntimeAssembly runtimeAssembly;
                 exception = RuntimeAssembly.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
