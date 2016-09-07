@@ -79,5 +79,8 @@ namespace System.Reflection
         }
 
         public static bool operator !=(MethodBase left, MethodBase right) => !(left == right);
+
+        // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
+        public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
     }
 }

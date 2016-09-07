@@ -67,7 +67,6 @@
     <Compile Include="Shared\DebugAnnotations.cs" />
     <Compile Include="Shared\Dictionary.cs" />
     <Compile Include="Shared\DictionaryBase.cs" />
-    <Compile Include="Shared\EventRegistrationToken.cs" />
     <Compile Include="Shared\FixedHashTable.cs" />
     <Compile Include="Shared\GCEventProvider.cs" />
     <Compile Include="Shared\HashSet.cs" />
@@ -155,6 +154,7 @@
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="Interop\Interop.Memory.cs" />
   </ItemGroup>
 

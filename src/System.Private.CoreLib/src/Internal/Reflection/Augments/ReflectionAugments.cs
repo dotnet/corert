@@ -112,7 +112,6 @@ namespace Internal.Reflection.Augments
     //
     public abstract class ReflectionCoreCallbacks
     {
-        public abstract TypeInfo GetTypeInfo(Type type);
         public abstract Assembly Load(AssemblyName refName);
 
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle);
