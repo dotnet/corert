@@ -637,6 +637,11 @@
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
       <Link>Interop\Windows\mincore\Interop.ThreadPool.cs</Link>
     </Compile>
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Threading\Timer.WinRT.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Threading\Timer.Win32.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
+      <Link>Interop\Windows\mincore\Interop.Timer.cs</Link>
+    </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
@@ -678,6 +683,7 @@
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Threading\ThreadPool.Unix.cs" />
+    <Compile Include="System\Threading\Timer.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
     </Compile>
