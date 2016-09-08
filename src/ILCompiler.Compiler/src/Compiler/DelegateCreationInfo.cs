@@ -80,25 +80,27 @@ namespace ILCompiler
             if (targetMethod.Signature.IsStatic)
             {
                 MethodDesc invokeThunk;
+                MethodDesc initMethod;
+
                 if (!closed)
                 {
                     // Open delegate to a static method
                     invokeThunk = delegateInfo.Thunks[DelegateThunkKind.OpenStaticThunk];
+                    initMethod = systemDelegate.GetKnownMethod("InitializeOpenStaticThunk", null);
                 }
                 else
                 {
                     // Closed delegate to a static method (i.e. delegate to an extension method that locks the first parameter)
                     invokeThunk = delegateInfo.Thunks[DelegateThunkKind.ClosedStaticThunk];
+                    initMethod = systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null);
                 }
 
                 var instantiatedDelegateType = delegateType as InstantiatedType;
                 if (instantiatedDelegateType != null)
                     invokeThunk = context.GetMethodForInstantiatedType(invokeThunk, instantiatedDelegateType);
 
-                // We use InitializeClosedStaticThunk for both because RyuJIT generates same code for both,
-                // but passes null as the first parameter for the open one.
                 return new DelegateCreationInfo(
-                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null)),
+                    factory.MethodEntrypoint(initMethod),
                     factory.MethodEntrypoint(targetMethod),
                     factory.MethodEntrypoint(invokeThunk));
             }
