@@ -67,8 +67,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return false;
             }
 
-            ParameterInfo[] p1 = method1.GetParameters();
-            ParameterInfo[] p2 = method2.GetParameters();
+            ParameterInfo[] p1 = method1.GetParametersNoCopy();
+            ParameterInfo[] p2 = method2.GetParametersNoCopy();
             if (p1.Length != p2.Length)
             {
                 return false;

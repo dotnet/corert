@@ -44,7 +44,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if ((ctor.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != (MethodAttributes.Public))
                     continue;
 
-                ParameterInfo[] parameters = ctor.GetParameters();
+                ParameterInfo[] parameters = ctor.GetParametersNoCopy();
                 if (parameters.Length != constructorArguments.Count)
                     continue;
                 int i;

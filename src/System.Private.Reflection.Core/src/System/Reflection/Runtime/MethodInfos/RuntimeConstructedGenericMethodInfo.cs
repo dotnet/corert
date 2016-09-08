@@ -157,9 +157,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeParameterInfo[] GetRuntimeParametersAndReturn(RuntimeMethodInfo contextMethod)
+        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
         {
-            return _genericMethodDefinition.GetRuntimeParametersAndReturn(this);
+            return _genericMethodDefinition.GetRuntimeParameters(this, out returnParameter);
         }
 
         private readonly RuntimeNamedMethodInfo _genericMethodDefinition;

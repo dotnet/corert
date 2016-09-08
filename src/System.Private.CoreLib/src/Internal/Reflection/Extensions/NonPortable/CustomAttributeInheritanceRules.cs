@@ -234,7 +234,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 MethodInfo methodParent = new MethodCustomAttributeSearcher().GetParent(method);
                 if (methodParent == null)
                     return null;
-                return methodParent.GetParameters()[e.Position];
+                return methodParent.GetParametersNoCopy()[e.Position];
             }
 
             public static readonly ParameterCustomAttributeSearcher Default = new ParameterCustomAttributeSearcher();

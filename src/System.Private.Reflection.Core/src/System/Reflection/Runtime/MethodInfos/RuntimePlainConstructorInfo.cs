@@ -150,11 +150,12 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.ComputeToString(this, Array.Empty<RuntimeTypeInfo>());
         }
 
-        protected sealed override RuntimeParameterInfo[] RuntimeParametersAndReturn
+        protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {
             get
             {
-                return _common.GetRuntimeParametersAndReturn(this, Array.Empty<RuntimeTypeInfo>());
+                RuntimeParameterInfo ignore;
+                return _lazyParameters ?? (_lazyParameters = _common.GetRuntimeParameters(this, Array.Empty<RuntimeTypeInfo>(), out ignore));
             }
         }
 
@@ -172,6 +173,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        private volatile RuntimeParameterInfo[] _lazyParameters;
         private readonly RuntimeMethodCommon _common;
     }
 }

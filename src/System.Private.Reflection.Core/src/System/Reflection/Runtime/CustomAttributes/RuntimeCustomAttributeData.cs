@@ -101,7 +101,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 if (candidate.IsStatic)
                     continue;
 
-                ParameterInfo[] candidateParameters = candidate.GetParameters();
+                ParameterInfo[] candidateParameters = candidate.GetParametersNoCopy();
                 if (parameterCount != candidateParameters.Length)
                     continue;
 

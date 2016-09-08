@@ -22,13 +22,13 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo
     {
-        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
             _syntheticMethodId = syntheticMethodId;
             _declaringType = declaringType;
             _options = options;
             _invoker = invoker;
-            _runtimeParameterTypesAndReturn = runtimeParameterTypesAndReturn;
+            _runtimeParameterTypes = runtimeParameterTypes;
         }
 
         public sealed override MethodAttributes Attributes
@@ -110,24 +110,27 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return RuntimeMethodCommon.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParametersAndReturn);
+            // A constructor's "return type" is always System.Void and we don't want to allocate a ParameterInfo object to record that revelation. 
+            // In deference to that, ComputeToString() lets us pass null as a synonym for "void."
+            return RuntimeMethodCommon.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParameters, returnParameter: null);
         }
 
-        protected sealed override RuntimeParameterInfo[] RuntimeParametersAndReturn
+        protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {
             get
             {
-                RuntimeParameterInfo[] runtimeParametersAndReturn = _lazyRuntimeParametersAndReturn;
-                if (runtimeParametersAndReturn == null)
+                RuntimeParameterInfo[] parameters = _lazyParameters;
+                if (parameters == null)
                 {
-                    runtimeParametersAndReturn = new RuntimeParameterInfo[_runtimeParameterTypesAndReturn.Length];
-                    for (int i = 0; i < runtimeParametersAndReturn.Length; i++)
+                    RuntimeTypeInfo[] runtimeParameterTypes = _runtimeParameterTypes;
+                    parameters = new RuntimeParameterInfo[runtimeParameterTypes.Length];
+                    for (int i = 0; i < parameters.Length; i++)
                     {
-                        runtimeParametersAndReturn[i] = RuntimeSyntheticParameterInfo.GetRuntimeSyntheticParameterInfo(this, i - 1, _runtimeParameterTypesAndReturn[i]);
+                        parameters[i] = RuntimeSyntheticParameterInfo.GetRuntimeSyntheticParameterInfo(this, i, runtimeParameterTypes[i]);
                     }
-                    _lazyRuntimeParametersAndReturn = runtimeParametersAndReturn;
+                    _lazyParameters = parameters;
                 }
-                return runtimeParametersAndReturn;
+                return parameters;
             }
         }
 
@@ -135,9 +138,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                RuntimeTypeHandle[] runtimeParameterTypeHandles = new RuntimeTypeHandle[_runtimeParameterTypesAndReturn.Length - 1];
-                for (int i = 1; i < _runtimeParameterTypesAndReturn.Length; i++)
-                    runtimeParameterTypeHandles[i - 1] = _runtimeParameterTypesAndReturn[i].TypeHandle;
+                RuntimeTypeInfo[] runtimeParameterTypes = _runtimeParameterTypes;
+                RuntimeTypeHandle[] runtimeParameterTypeHandles = new RuntimeTypeHandle[runtimeParameterTypes.Length];
+                for (int i = 0; i < runtimeParameterTypes.Length; i++)
+                    runtimeParameterTypeHandles[i] = runtimeParameterTypes[i].TypeHandle;
                 return ReflectionCoreExecution.ExecutionEnvironment.GetSyntheticMethodInvoker(
                     _declaringType.TypeHandle,
                     runtimeParameterTypeHandles,
@@ -146,11 +150,11 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        private volatile RuntimeParameterInfo[] _lazyRuntimeParametersAndReturn;
+        private volatile RuntimeParameterInfo[] _lazyParameters;
 
         private readonly SyntheticMethodId _syntheticMethodId;
         private readonly RuntimeTypeInfo _declaringType;
-        private readonly RuntimeTypeInfo[] _runtimeParameterTypesAndReturn;
+        private readonly RuntimeTypeInfo[] _runtimeParameterTypes;
         private readonly InvokerOptions _options;
         private readonly Func<Object, Object[], Object> _invoker;
     }

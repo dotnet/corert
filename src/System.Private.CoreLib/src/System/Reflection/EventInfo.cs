@@ -45,7 +45,7 @@ namespace System.Reflection
             get
             {
                 MethodInfo m = GetAddMethod(true);
-                ParameterInfo[] p = m.GetParameters();
+                ParameterInfo[] p = m.GetParametersNoCopy();
                 Type del = typeof(Delegate);
                 for (int i = 0; i < p.Length; i++)
                 {

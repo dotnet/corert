@@ -74,15 +74,15 @@ namespace System.Reflection.Runtime.MethodInfos
         // Compute the ToString() value in a pay-to-play-safe way.
         public String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
         {
-            RuntimeParameterInfo[] runtimeParametersAndReturn = this.GetRuntimeParametersAndReturn(contextMethod, methodTypeArguments);
-            return ComputeToString(contextMethod, methodTypeArguments, runtimeParametersAndReturn);
+            RuntimeParameterInfo returnParameter;
+            RuntimeParameterInfo[] parameters = this.GetRuntimeParameters(contextMethod, methodTypeArguments, out returnParameter);
+            return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
         }
 
-
-        public static String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] runtimeParametersAndReturn)
+        public static String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] parameters, RuntimeParameterInfo returnParameter)
         {
             StringBuilder sb = new StringBuilder(30);
-            sb.Append(runtimeParametersAndReturn[0].ParameterTypeString);
+            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterTypeString);  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
             sb.Append(' ');
             sb.Append(contextMethod.Name);
             if (methodTypeArguments.Length != 0)
@@ -101,7 +101,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 sb.Append(']');
             }
             sb.Append('(');
-            sb.Append(ComputeParametersString(runtimeParametersAndReturn, 1));
+            sb.Append(ComputeParametersString(parameters));
             sb.Append(')');
 
             return sb.ToString();
@@ -109,14 +109,14 @@ namespace System.Reflection.Runtime.MethodInfos
 
         // Used by method and property ToString() methods to display the list of parameter types. Replicates the behavior of MethodBase.ConstructParameters()
         // but in a pay-to-play-safe way.
-        public static String ComputeParametersString(RuntimeParameterInfo[] runtimeParametersAndReturn, int startIndex)
+        public static String ComputeParametersString(RuntimeParameterInfo[] parameters)
         {
             StringBuilder sb = new StringBuilder(30);
-            for (int i = startIndex; i < runtimeParametersAndReturn.Length; i++)
+            for (int i = 0; i < parameters.Length; i++)
             {
-                if (i != startIndex)
+                if (i != 0)
                     sb.Append(", ");
-                String parameterTypeString = runtimeParametersAndReturn[i].ParameterTypeString;
+                String parameterTypeString = parameters[i].ParameterTypeString;
 
                 // Legacy: Why use "ByRef" for by ref parameters? What language is this? 
                 // VB uses "ByRef" but it should precede (not follow) the parameter name.
@@ -181,7 +181,7 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         //
-        // Returns the ParameterInfo objects for the return parameter (in element 0), and the method parameters (in elements 1..length).
+        // Returns the ParameterInfo objects for the method parameters and return parameter.
         //
         // The ParameterInfo objects will report "contextMethod" as their Member property and use it to get type variable information from
         // the contextMethod's declaring type. The actual metadata, however, comes from "this."
@@ -190,7 +190,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         // Does not array-copy.
         //
-        public RuntimeMethodParameterInfo[] GetRuntimeParametersAndReturn(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
+        public RuntimeParameterInfo[] GetRuntimeParameters(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter)
         {
             MetadataReader reader = _reader;
             TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
@@ -205,7 +205,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
             int count = typeSignatures.Length;
 
-            RuntimeMethodParameterInfo[] result = new RuntimeMethodParameterInfo[count];
+            VirtualRuntimeParameterInfoArray result = new VirtualRuntimeParameterInfoArray(count);
             foreach (ParameterHandle parameterHandle in _method.Parameters)
             {
                 Parameter parameterRecord = parameterHandle.GetParameter(_reader);
@@ -233,7 +233,9 @@ namespace System.Reflection.Runtime.MethodInfos
                         typeContext);
                 }
             }
-            return result;
+
+            returnParameter = result.First;
+            return result.Remainder;
         }
 
         public String Name
@@ -298,5 +300,35 @@ namespace System.Reflection.Runtime.MethodInfos
         private readonly MetadataReader _reader;
 
         private readonly Method _method;
+
+        // Helper for GetRuntimeParameters() - array mimic that supports an efficient "array.Skip(1).ToArray()" operation.
+        private struct VirtualRuntimeParameterInfoArray
+        {
+            public VirtualRuntimeParameterInfoArray(int count)
+                : this()
+            {
+                Debug.Assert(count >= 1);
+                Remainder = (count == 1) ? Array.Empty<RuntimeParameterInfo>() : new RuntimeParameterInfo[count - 1];
+            }
+
+            public RuntimeParameterInfo this[int index]
+            {
+                get
+                {
+                    return index == 0 ? First : Remainder[index - 1];
+                }
+                
+                set
+                {
+                    if (index == 0)
+                        First = value;
+                    else
+                        Remainder[index - 1] = value;
+                }
+            }
+
+            public RuntimeParameterInfo First { get; private set; }
+            public RuntimeParameterInfo[] Remainder { get; }
+        }
     }
 }
