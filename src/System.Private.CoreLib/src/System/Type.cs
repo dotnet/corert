@@ -367,13 +367,8 @@ namespace System
         public static readonly MemberFilter FilterName = FilterNameImpl;
         public static readonly MemberFilter FilterNameIgnoreCase = FilterNameIgnoreCaseImpl;
 
-        public static Binder DefaultBinder => _GetDefaultBinder();
+        public static Binder DefaultBinder => s_defaultBinder ?? (s_defaultBinder = ReflectionAugments.ReflectionCoreCallbacks.CreateDefaultBinder());
         private static volatile Binder s_defaultBinder;
-
-        // @todo: https://github.com/dotnet/corert/issues/1688: Hack: For some reason, referencing a property that returns a Binder on System.Type confuses the toolchain.
-        // Until that's fixed, we'll workaround by using a method.
-        [CLSCompliant(false)]
-        public static Binder _GetDefaultBinder() => s_defaultBinder ?? (s_defaultBinder = ReflectionAugments.ReflectionCoreCallbacks.CreateDefaultBinder());
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
     }

@@ -102,7 +102,7 @@ namespace Internal.Reflection.Execution
                 throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, type));
 
             MethodBase[] candidatesArray = candidates.ToArray();
-            Binder binder = Type._GetDefaultBinder();
+            Binder binder = Type.DefaultBinder;
             object ignore;
             BindingFlags bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
             ConstructorInfo match = (ConstructorInfo)binder.BindToMethod(bindingAttr, candidatesArray, ref args, null, null, null, out ignore);

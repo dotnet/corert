@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new NotImplementedException();
 
             if (binder == null)
-                binder = Type._GetDefaultBinder();
+                binder = Type.DefaultBinder;
             ConstructorInfo[] candidates = GetConstructors(bindingAttr);
             return (ConstructorInfo)binder.SelectMethod(bindingAttr, candidates, types, modifiers);
         }
@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (callConvention != CallingConventions.Any)
                     throw new NotImplementedException();
                 if (binder == null)
-                    binder = Type._GetDefaultBinder();
+                    binder = Type.DefaultBinder;
                 MethodInfo[] candidates = LowLevelTypeExtensions.GetMethods(this, name, bindingAttr);
                 return (MethodInfo)binder.SelectMethod(bindingAttr, candidates, types, modifiers);
             }
@@ -95,7 +95,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 // Group #2: This group of api takes a set of parameter types, a return type (both cannot be null) and an optional binder. 
                 if (binder == null)
-                    binder = Type._GetDefaultBinder();
+                    binder = Type.DefaultBinder;
                 PropertyInfo[] candidates = LowLevelTypeExtensions.GetProperties(this, name, bindingAttr);
                 return binder.SelectProperty(bindingAttr, candidates, returnType, types, modifiers);
             }

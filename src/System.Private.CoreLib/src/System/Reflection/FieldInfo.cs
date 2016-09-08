@@ -58,7 +58,7 @@ namespace System.Reflection
 
         public abstract object GetValue(object obj);
 
-        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type._GetDefaultBinder(), null);
+        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
         public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
 
         public virtual object GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
