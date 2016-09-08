@@ -6276,14 +6276,6 @@ namespace System.Threading.Tasks
         // that can SO in 20 inlines on a typical 1MB stack size probably needs to be revisited anyway.
         private const int MAX_UNCHECKED_INLINING_DEPTH = 20;
 
-        private UInt64 m_lastKnownWatermark;
-        private static int s_pageSize;
-
-        // We are conservative here. We assume that the platform needs a whole 64KB to
-        // respond to stack overflow. This means that for very small stacks (e.g. 128KB) 
-        // we'll fail a lot of stack checks incorrectly.
-        private const long STACK_RESERVED_SPACE = 4096 * 16;
-
         /// <summary>
         /// This method needs to be called before attempting inline execution on the current thread. 
         /// If false is returned, it means we are too close to the end of the stack and should give up inlining.
@@ -6292,8 +6284,8 @@ namespace System.Threading.Tasks
         /// </summary>
         internal bool TryBeginInliningScope()
         {
-            // If we're still under the 'safe' limit we'll just skip the stack probe to save p/invoke calls
-            if (m_inliningDepth < MAX_UNCHECKED_INLINING_DEPTH || CheckForSufficientStack())
+            // If we're still under the 'safe' limit we'll just skip the stack probe to save the call
+            if (m_inliningDepth < MAX_UNCHECKED_INLINING_DEPTH || RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
                 m_inliningDepth++;
                 return true;
@@ -6315,49 +6307,6 @@ namespace System.Threading.Tasks
             if (m_inliningDepth < 0) m_inliningDepth = 0;
         }
 
-        private unsafe bool CheckForSufficientStack()
-        {
-            // see if we already have the system page size info recorded
-            int pageSize = s_pageSize;
-            if (pageSize == 0)
-            {
-                // If not we need to query it from GetSystemInfo()
-                // Note that this happens only once for the process lifetime                
-                Interop.mincore.SYSTEM_INFO sysInfo;
-                Interop.mincore.GetNativeSystemInfo(out sysInfo);
-
-                s_pageSize = pageSize = (int)sysInfo.dwPageSize;
-            }
-
-            Interop.mincore.MEMORY_BASIC_INFORMATION stackInfo = new Interop.mincore.MEMORY_BASIC_INFORMATION();
-
-            // We subtract one page for our request. VirtualQuery rounds UP to the next page.
-            // Unfortunately, the stack grows down. If we're on the first page (last page in the
-            // VirtualAlloc), we'll be moved to the next page, which is off the stack! 
-
-            IntPtr currentAddr = new IntPtr(&stackInfo - pageSize);
-            UInt64 current64 = (UInt64)currentAddr.ToInt64();
-
-            // Check whether we previously recorded a deeper stack than where we currently are,
-            // If so we don't need to do the P/Invoke to VirtualQuery
-            if (m_lastKnownWatermark != 0 && current64 > m_lastKnownWatermark)
-                return true;
-
-            // Actual stack probe. P/Invoke to query for the current stack allocation information.            
-            Interop.mincore.VirtualQuery((IntPtr)currentAddr, out stackInfo, (UIntPtr)(sizeof(Interop.mincore.MEMORY_BASIC_INFORMATION)));
-
-            // If the current address minus the base (remember: the stack grows downward in the
-            // address space) is greater than the number of bytes requested plus the reserved
-            // space at the end, the request has succeeded.
-
-            if ((current64 - ((UInt64)stackInfo.AllocationBase.ToInt64())) > STACK_RESERVED_SPACE)
-            {
-                m_lastKnownWatermark = current64;
-                return true;
-            }
-
-            return false;
-        }
     }  // class StackGuard
 
     // Special internal struct that we use to signify that we are not interested in

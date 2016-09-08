@@ -644,9 +644,6 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs">
-      <Link>Interop\Windows\mincore\Interop.VirtualQuery.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
       <Link>Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
