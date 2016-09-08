@@ -156,15 +156,15 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             bool useGetter = CanRead;
             RuntimeMethodInfo accessor = (useGetter ? Getter : Setter);
-            RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.GetRuntimeParametersAndReturn(accessor);
-            int count = runtimeMethodParameterInfos.Length - 1;  // Subtract one for the return parameter.
+            RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.RuntimeParameters;
+            int count = runtimeMethodParameterInfos.Length;
             if (!useGetter)
                 count--;  // If we're taking the parameters off the setter, subtract one for the "value" parameter.
             if (count == 0)
                 return Array.Empty<ParameterInfo>();
             ParameterInfo[] result = new ParameterInfo[count];
             for (int i = 0; i < count; i++)
-                result[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i + 1]);
+                result[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i]);
             return result;
         }
 
@@ -310,7 +310,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 for (int i = 0; i < indexParameters.Length; i++)
                     indexRuntimeParameters[i] = (RuntimeParameterInfo)(indexParameters[i]);
                 sb.Append(" [");
-                sb.Append(RuntimeMethodCommon.ComputeParametersString(indexRuntimeParameters, 0));
+                sb.Append(RuntimeMethodCommon.ComputeParametersString(indexRuntimeParameters));
                 sb.Append(']');
             }
 

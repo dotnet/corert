@@ -609,7 +609,7 @@ namespace Internal.Reflection.Execution
 
         private IntPtr GetDynamicMethodInvokerThunk(RuntimeTypeHandle[] argHandles, MethodBase methodInfo)
         {
-            ParameterInfo[] parameters = methodInfo.GetParameters();
+            ParameterInfo[] parameters = methodInfo.GetParametersNoCopy();
             // last entry in argHandles is the return type if the type is not typeof(void)
             Debug.Assert(parameters.Length == argHandles.Length || parameters.Length == (argHandles.Length - 1));
 
@@ -1597,7 +1597,7 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    ParameterInfo[] parameters = _methodBase.GetParameters();
+                    ParameterInfo[] parameters = _methodBase.GetParametersNoCopy();
                     LowLevelList<RuntimeTypeHandle> result = new LowLevelList<RuntimeTypeHandle>(parameters.Length);
 
                     for (int i = 0; i < parameters.Length; i++)
@@ -1637,7 +1637,7 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    ParameterInfo[] parameters = _methodBase.GetParameters();
+                    ParameterInfo[] parameters = _methodBase.GetParametersNoCopy();
                     bool[] result = new bool[parameters.Length + 1];
 
                     MethodInfo reflectionMethodInfo = _methodBase as MethodInfo;
@@ -1673,8 +1673,8 @@ namespace Internal.Reflection.Execution
                 {
                     Debug.Assert(_metadataReader != null && !_methodHandle.Equals(default(MethodHandle)));
 
-                    _returnTypeAndParametersHandlesCache = new Handle[_methodBase.GetParameters().Length + 1];
-                    _returnTypeAndParametersTypesCache = new Type[_methodBase.GetParameters().Length + 1];
+                    _returnTypeAndParametersHandlesCache = new Handle[_methodBase.GetParametersNoCopy().Length + 1];
+                    _returnTypeAndParametersTypesCache = new Type[_methodBase.GetParametersNoCopy().Length + 1];
 
                     MethodSignature signature = _methodHandle.GetMethod(_metadataReader).Signature.GetMethodSignature(_metadataReader);
 
@@ -1688,7 +1688,7 @@ namespace Internal.Reflection.Execution
                     foreach (Handle paramSigHandle in signature.Parameters)
                     {
                         _returnTypeAndParametersHandlesCache[index] = paramSigHandle;
-                        _returnTypeAndParametersTypesCache[index] = _methodBase.GetParameters()[index - 1].ParameterType;
+                        _returnTypeAndParametersTypesCache[index] = _methodBase.GetParametersNoCopy()[index - 1].ParameterType;
                         index++;
                     }
                 }

@@ -52,13 +52,18 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodBase_GetParameters(this);
 #endif
 
-            RuntimeParameterInfo[] runtimeParametersAndReturn = this.RuntimeParametersAndReturn;
-            if (runtimeParametersAndReturn.Length == 1)
+            RuntimeParameterInfo[] parameters = RuntimeParameters;
+            if (parameters.Length == 0)
                 return Array.Empty<ParameterInfo>();
-            ParameterInfo[] result = new ParameterInfo[runtimeParametersAndReturn.Length - 1];
+            ParameterInfo[] result = new ParameterInfo[parameters.Length];
             for (int i = 0; i < result.Length; i++)
-                result[i] = runtimeParametersAndReturn[i + 1];
+                result[i] = parameters[i];
             return result;
+        }
+
+        public sealed override ParameterInfo[] GetParametersNoCopy()
+        {
+            return RuntimeParameters;
         }
 
         public abstract override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
@@ -157,7 +162,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected abstract RuntimeParameterInfo[] RuntimeParametersAndReturn { get; }
+        protected abstract RuntimeParameterInfo[] RuntimeParameters { get; }
 
         protected abstract MethodInvoker UncachedMethodInvoker { get; }
 

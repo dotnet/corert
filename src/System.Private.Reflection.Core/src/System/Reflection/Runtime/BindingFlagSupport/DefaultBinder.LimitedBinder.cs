@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     
                 for (i = 0; i < candidates.Length; i++)
                 {
-                    ParameterInfo[] par = candidates[i].GetParameters();
+                    ParameterInfo[] par = candidates[i].GetParametersNoCopy();
     
                     // args.Length + 1 takes into account the possibility of a last paramArray that can be omitted
                     paramOrder[i] = new int[(par.Length > args.Length) ? par.Length : args.Length];
@@ -105,7 +105,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         continue;
     
                     // Validate the parameters.
-                    ParameterInfo[] par = candidates[i].GetParameters();
+                    ParameterInfo[] par = candidates[i].GetParametersNoCopy();
     
                     #region Match method by parameter count
                     if (par.Length == 0)
@@ -279,7 +279,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     #region Found only one method
                     // If the parameters and the args are not the same length or there is a paramArray
                     //  then we need to create a argument array.
-                    ParameterInfo[] parms = candidates[0].GetParameters();
+                    ParameterInfo[] parms = candidates[0].GetParametersNoCopy();
     
                     if (parms.Length == args.Length)
                     {
@@ -353,7 +353,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     
                 // If the parameters and the args are not the same length or there is a paramArray
                 //  then we need to create a argument array.
-                ParameterInfo[] parameters = candidates[currentMin].GetParameters();
+                ParameterInfo[] parameters = candidates[currentMin].GetParametersNoCopy();
                 if (parameters.Length == args.Length)
                 {
                     if (paramArrayTypes[currentMin] != null)
@@ -419,7 +419,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 int CurIdx = 0;
                 for (i = 0; i < candidates.Length; i++)
                 {
-                    ParameterInfo[] par = candidates[i].GetParameters();
+                    ParameterInfo[] par = candidates[i].GetParametersNoCopy();
                     if (par.Length != types.Length)
                         continue;
                     for (j = 0; j < types.Length; j++)
@@ -740,8 +740,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                                                       Type[] types, Object[] args)
             {
                 // Find the most specific method based on the parameters.
-                int res = FindMostSpecific(m1.GetParameters(), paramOrder1, paramArrayType1,
-                                           m2.GetParameters(), paramOrder2, paramArrayType2, types, args);
+                int res = FindMostSpecific(m1.GetParametersNoCopy(), paramOrder1, paramArrayType1,
+                                           m2.GetParametersNoCopy(), paramOrder2, paramArrayType2, types, args);
     
                 // If the match was not ambigous then return the result.
                 if (res != 0)
@@ -797,8 +797,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     
             private static bool CompareMethodSigAndName(MethodBase m1, MethodBase m2)
             {
-                ParameterInfo[] params1 = m1.GetParameters();
-                ParameterInfo[] params2 = m2.GetParameters();
+                ParameterInfo[] params1 = m1.GetParametersNoCopy();
+                ParameterInfo[] params2 = m2.GetParametersNoCopy();
     
                 if (params1.Length != params2.Length)
                     return false;
