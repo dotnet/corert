@@ -724,24 +724,15 @@ namespace System.Threading
                         // which will be more efficient than this thread doing it anyway.
                         //
                         needAnotherThread = missedSteal;
+                        return;
                     }
-                    else
-                    {
-                        //
-                        // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
-                        // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
-                        //
-                        workQueue.EnsureThreadRequested();
-                    }
-                }
 
-                if (workItem == null)
-                {
-                    // no more work to do
-                    return;
-                }
-                else
-                {
+                    //
+                    // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
+                    // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
+                    //
+                    workQueue.EnsureThreadRequested();
+
                     try
                     {
                         SynchronizationContext.SetSynchronizationContext(null);
