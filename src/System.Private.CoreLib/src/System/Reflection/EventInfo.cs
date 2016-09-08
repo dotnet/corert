@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using EventRegistrationToken = System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken;
+
 namespace System.Reflection
 {
     public abstract class EventInfo : MemberInfo
@@ -55,8 +57,32 @@ namespace System.Reflection
             }
         }
 
-        public virtual void AddEventHandler(object target, Delegate handler) { throw new NotImplementedException(); }
-        public virtual void RemoveEventHandler(object target, Delegate handler) { throw new NotImplementedException(); }
+        public virtual void AddEventHandler(object target, Delegate handler)
+        {
+            MethodInfo addMethod = GetAddMethod(nonPublic: false);
+
+            if (addMethod == null)
+                throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
+
+            if (addMethod.ReturnType == typeof(EventRegistrationToken))
+                throw new InvalidOperationException(SR.InvalidOperation_NotSupportedOnWinRTEvent);
+
+            addMethod.Invoke(target, new object[] { handler });
+        }
+
+        public virtual void RemoveEventHandler(object target, Delegate handler)
+        {
+            MethodInfo removeMethod = GetRemoveMethod(nonPublic: false);
+
+            if (removeMethod == null)
+                throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
+
+            ParameterInfo[] parameters = removeMethod.GetParametersNoCopy();
+            if (parameters[0].ParameterType == typeof(EventRegistrationToken))
+                throw new InvalidOperationException(SR.InvalidOperation_NotSupportedOnWinRTEvent);
+
+            removeMethod.Invoke(target, new object[] { handler });
+        }
 
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();

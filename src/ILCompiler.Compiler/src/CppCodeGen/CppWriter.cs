@@ -618,12 +618,6 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        private void OutputMethod(CppGenerationBuffer sb, MethodDesc m)
-        {
-            sb.AppendLine();
-            sb.Append(GetCppMethodDeclaration(m, false));
-        }
-
         private void AppendSlotTypeDef(CppGenerationBuffer sb, MethodDesc method)
         {
             MethodSignature methodSignature = method.Signature;
@@ -826,6 +820,7 @@ namespace ILCompiler.CppCodeGen
 
             return nodeCode.ToString();
         }
+
         private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, byte[] byteData, DependencyNode node, int offset)
         {
             CppGenerationBuffer nodeDataDecl = new CppGenerationBuffer();
@@ -863,7 +858,7 @@ namespace ILCompiler.CppCodeGen
                 }
                 else
                 {
-                    GetFormattedByteArray(byteData, divisionStartIndex, divisionStartIndex + nodeDataSections[i].SectionSize, nodeDataDecl);
+                    AppendFormattedByteArray(nodeDataDecl, byteData, divisionStartIndex, divisionStartIndex + nodeDataSections[i].SectionSize);
                     nodeDataDecl.Append(",");
                 }
                 divisionStartIndex += nodeDataSections[i].SectionSize;
@@ -872,6 +867,7 @@ namespace ILCompiler.CppCodeGen
             }
             return nodeDataDecl.ToString();
         }
+
         private String GetCodeForNodeStruct(List<NodeDataSection> nodeDataDivs, DependencyNode node)
         {
             CppGenerationBuffer nodeStructDecl = new CppGenerationBuffer();
@@ -903,7 +899,8 @@ namespace ILCompiler.CppCodeGen
 
             return nodeStructDecl.ToString();
         }
-        private void GetFormattedByteArray(byte[] array, int startIndex, int endIndex, CppGenerationBuffer sb)
+
+        private void AppendFormattedByteArray(CppGenerationBuffer sb, byte[] array, int startIndex, int endIndex)
         {
             sb.Append("{");
             sb.Append("0x");
@@ -955,17 +952,15 @@ namespace ILCompiler.CppCodeGen
         /// <param name="nodes">A set of dependency nodes</param>
         /// <param name="entrypoint">Code entrypoint</param>
         /// <param name="factory">Associated NodeFactory instance</param>
-        /// <param name="definitions">Text buffer in which the type and method definitions will be written</param>
-        /// <param name="implementation">Text buffer in which the method implementations will be written</param>
-        public void OutputNodes(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory, CppGenerationBuffer definitions, CppGenerationBuffer implementation)
+        private void OutputNodes(IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer methodTables = new CppGenerationBuffer();
             CppGenerationBuffer optionalFields = new CppGenerationBuffer();
-            DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
-            // Output well-known types to avoid build errors
+            DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes, factory);
 
+            // Output well-known types to avoid build errors
             if (_wellKnownTypeNodes != null)
             {
                 foreach (var wellKnownTypeNode in _wellKnownTypeNodes)
@@ -973,27 +968,21 @@ namespace ILCompiler.CppCodeGen
                     OutputTypeNode(wellKnownTypeNode, factory, forwardDefinitions, typeDefinitions, methodTables);
                 }
             }
+
             // Iterate through nodes
             foreach (var node in nodeIterator.GetNodes())
             {
                 if (node is EETypeNode && !_emittedTypes.Contains(((EETypeNode)node).Type))
                     OutputTypeNode(node as EETypeNode, factory, forwardDefinitions, typeDefinitions, methodTables);
 
-                else if (node is CppMethodCodeNode)
-                    OutputMethodNode(node as CppMethodCodeNode, implementation);
-
                 else if (node is EETypeOptionalFieldsNode)
                     optionalFields.Append(GetCodeForObjectNode(node as EETypeOptionalFieldsNode, factory));
             }
 
-            definitions.Append(forwardDefinitions.ToString());
-            forwardDefinitions.Clear();
-            definitions.Append(typeDefinitions.ToString());
-            typeDefinitions.Clear();
-            definitions.Append(methodTables.ToString());
-            methodTables.Clear();
-            definitions.Append(optionalFields.ToString());
-            optionalFields.Clear();
+            Out.Write(forwardDefinitions.ToString());
+            Out.Write(typeDefinitions.ToString());
+            Out.Write(methodTables.ToString());
+            Out.Write(optionalFields.ToString());
         }
 
         /// <summary>
@@ -1001,33 +990,38 @@ namespace ILCompiler.CppCodeGen
         /// </summary>
         /// <param name="methodCodeNode">The code node to be output</param>
         /// <param name="methodImplementations">The buffer in which to write out the C++ code</param>
-        private void OutputMethodNode(CppMethodCodeNode methodCodeNode, CppGenerationBuffer methodImplementations)
+        private void OutputMethodNode(CppMethodCodeNode methodCodeNode)
         {
-            methodImplementations.AppendLine();
-            methodImplementations.Append(methodCodeNode.CppCode);
+            Out.WriteLine();
+            Out.Write(methodCodeNode.CppCode);
 
             var alternateName = _compilation.NodeFactory.GetSymbolAlternateName(methodCodeNode);
             if (alternateName != null)
             {
-                methodImplementations.AppendLine();
-                methodImplementations.Append(GetCppMethodDeclaration(methodCodeNode.Method, true, alternateName));
-                methodImplementations.AppendLine();
-                methodImplementations.Append("{");
-                methodImplementations.Indent();
-                methodImplementations.AppendLine();
+                CppGenerationBuffer sb = new CppGenerationBuffer();
+
+                sb.AppendLine();
+                sb.Append(GetCppMethodDeclaration(methodCodeNode.Method, true, alternateName));
+                sb.AppendLine();
+                sb.Append("{");
+                sb.Indent();
+                sb.AppendLine();
                 if (!methodCodeNode.Method.Signature.ReturnType.IsVoid)
                 {
-                    methodImplementations.Append("return ");
+                    sb.Append("return ");
                 }
-                methodImplementations.Append(GetCppMethodDeclarationName(methodCodeNode.Method.OwningType, GetCppMethodName(methodCodeNode.Method)));
-                methodImplementations.Append("(");
-                methodImplementations.Append(GetCppMethodCallParamList(methodCodeNode.Method));
-                methodImplementations.Append(");");
-                methodImplementations.Exdent();
-                methodImplementations.AppendLine();
-                methodImplementations.Append("}");
+                sb.Append(GetCppMethodDeclarationName(methodCodeNode.Method.OwningType, GetCppMethodName(methodCodeNode.Method)));
+                sb.Append("(");
+                sb.Append(GetCppMethodCallParamList(methodCodeNode.Method));
+                sb.Append(");");
+                sb.Exdent();
+                sb.AppendLine();
+                sb.Append("}");
+
+                Out.Write(sb.ToString());
             }
         }
+
         private void OutputTypeNode(IEETypeNode typeNode, NodeFactory factory, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions, CppGenerationBuffer methodTable)
         {
             if (_emittedTypes == null)
@@ -1124,16 +1118,18 @@ namespace ILCompiler.CppCodeGen
                     _statics.AppendLine();
                     _statics.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
                 }
+            }
 
-                List<MethodDesc> methodList;
-                if (_methodLists.TryGetValue(nodeType, out methodList))
+            List<MethodDesc> methodList;
+            if (_methodLists.TryGetValue(nodeType, out methodList))
+            {
+                foreach (var m in methodList)
                 {
-                    foreach (var m in methodList)
-                    {
-                        OutputMethod(typeDefinitions, m);
-                    }
+                    typeDefinitions.AppendLine();
+                    typeDefinitions.Append(GetCppMethodDeclaration(m, false));
                 }
             }
+
             typeDefinitions.AppendEmptyLine();
             typeDefinitions.Append("};");
             typeDefinitions.AppendEmptyLine();
@@ -1156,9 +1152,75 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        public void OutputCode(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory)
+        private void OutputExternCSignatures()
         {
             var sb = new CppGenerationBuffer();
+
+            foreach (var externC in _externCSignatureMap)
+            {
+                string importName = externC.Key;
+                // TODO: hacky special-case
+                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
+                {
+                    sb.AppendLine();
+                    sb.Append(GetCppMethodDeclaration(null, false, importName, externC.Value));
+                }
+            }
+
+            Out.Write(sb.ToString());
+        }
+
+        private void OutputMainMethodStub(MethodDesc entrypoint)
+        {
+            var sb = new CppGenerationBuffer();
+
+            // Stub for main method
+            sb.AppendLine();
+            if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+            {
+                sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
+            }
+            else
+            {
+                sb.Append("int main(int argc, char * argv[]) {");
+            }
+            sb.Indent();
+
+            sb.AppendLine();
+            sb.Append("if (__initialize_runtime() != 0)");
+            sb.Indent();
+            sb.AppendLine();
+            sb.Append("return -1;");
+            sb.Exdent();
+            sb.AppendEmptyLine();
+            sb.AppendLine();
+            sb.Append("ReversePInvokeFrame frame;");
+            sb.AppendLine();
+            sb.Append("__reverse_pinvoke(&frame);");
+
+            sb.AppendEmptyLine();
+            sb.AppendLine();
+            sb.Append("int ret = ");
+            sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
+            sb.Append("(argc, (intptr_t)argv);");
+
+            sb.AppendEmptyLine();
+            sb.AppendLine();
+            sb.Append("__reverse_pinvoke_return(&frame);");
+            sb.AppendLine();
+            sb.Append("__shutdown_runtime();");
+
+            sb.AppendLine();
+            sb.Append("return ret;");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("}");
+
+            Out.Write(sb.ToString());
+        }
+
+        public void OutputCode(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory)
+        {
             BuildMethodLists(nodes);
 
             ExpandTypes();
@@ -1166,7 +1228,6 @@ namespace ILCompiler.CppCodeGen
             Out.WriteLine("#include \"common.h\"");
             Out.WriteLine("#include \"CppCodeGen.h\"");
             Out.WriteLine();
-
 
             _statics = new CppGenerationBuffer();
             _statics.Indent();
@@ -1176,11 +1237,8 @@ namespace ILCompiler.CppCodeGen
             _threadStatics.Indent();
             _gcThreadStatics = new CppGenerationBuffer();
             _gcThreadStatics.Indent();
-            var methodImplementations = new CppGenerationBuffer();
 
-            OutputNodes(nodes, entrypoint, factory, sb, methodImplementations);
-            Out.Write(sb.ToString());
-            sb.Clear();
+            OutputNodes(nodes, factory);
 
             Out.Write("struct {");
             Out.Write(_statics.ToString());
@@ -1194,69 +1252,19 @@ namespace ILCompiler.CppCodeGen
             Out.Write(_gcStatics.ToString());
             Out.Write("} __gcThreadStatics;");
 
+            OutputExternCSignatures();
 
-            foreach (var externC in _externCSignatureMap)
+            foreach (var node in nodes)
             {
-                string importName = externC.Key;
-                // TODO: hacky special-case
-                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
-                {
-                    sb.AppendLine();
-                    sb.Append(GetCppMethodDeclaration(null, false, importName, externC.Value));
-                }
+                if (node is CppMethodCodeNode)
+                    OutputMethodNode(node as CppMethodCodeNode);
             }
-            Out.Write(sb.ToString());
-            sb.Clear();
-
-            Out.Write(methodImplementations.ToString());
-            methodImplementations.Clear();
 
             if (entrypoint != null)
             {
-                // Stub for main method
-                sb.AppendLine();
-                if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
-                {
-                    sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
-                }
-                else
-                {
-                    sb.Append("int main(int argc, char * argv[]) {");
-                }
-                sb.Indent();
-
-                sb.AppendLine();
-                sb.Append("if (__initialize_runtime() != 0)");
-                sb.Indent();
-                sb.AppendLine();
-                sb.Append("return -1;");
-                sb.Exdent();
-                sb.AppendEmptyLine();
-                sb.AppendLine();
-                sb.Append("ReversePInvokeFrame frame;");
-                sb.AppendLine();
-                sb.Append("__reverse_pinvoke(&frame);");
-
-                sb.AppendEmptyLine();
-                sb.AppendLine();
-                sb.Append("int ret = ");
-                sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
-                sb.Append("(argc, (intptr_t)argv);");
-
-                sb.AppendEmptyLine();
-                sb.AppendLine();
-                sb.Append("__reverse_pinvoke_return(&frame);");
-                sb.AppendLine();
-                sb.Append("__shutdown_runtime();");
-
-                sb.AppendLine();
-                sb.Append("return ret;");
-                sb.Exdent();
-                sb.AppendLine();
-                sb.Append("}");
+                OutputMainMethodStub(entrypoint);
             }
-            Out.Write(sb.ToString());
-            sb.Clear();
+
             Out.Dispose();
         }
     }

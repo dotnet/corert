@@ -167,7 +167,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_Namespace(this);
 #endif
 
-                return EscapeIdentifier(NamespaceChain.NameSpace);
+                return NamespaceChain.NameSpace.EscapeTypeNameIdentifier();
             }
         }
 
@@ -347,7 +347,7 @@ namespace System.Reflection.Runtime.TypeInfos
             ConstantStringValueHandle nameHandle = _typeDefinition.Name;
             string name = nameHandle.GetString(_reader);
 
-            return EscapeIdentifier(name);
+            return name.EscapeTypeNameIdentifier();
         }
 
         internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
@@ -498,27 +498,6 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 return new Tuple<Guid>(Guid.NewGuid());
             }
-        }
-
-        private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
-        // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.
-        // Current link is http://msdn.microsoft.com/en-us/library/yfsftwz6(v=vs.110).aspx
-        private static string EscapeIdentifier(string identifier)
-        {
-            // Some characters in a type name need to be escaped
-            if (identifier != null && identifier.IndexOfAny(s_charsToEscape) != -1)
-            {
-                StringBuilder sbEscapedName = new StringBuilder(identifier);
-                sbEscapedName.Replace("\\", "\\\\");
-                sbEscapedName.Replace("+", "\\+");
-                sbEscapedName.Replace("[", "\\[");
-                sbEscapedName.Replace("]", "\\]");
-                sbEscapedName.Replace("*", "\\*");
-                sbEscapedName.Replace("&", "\\&");
-                sbEscapedName.Replace(",", "\\,");
-                identifier = sbEscapedName.ToString();
-            }
-            return identifier;
         }
     }
 }

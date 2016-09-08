@@ -421,6 +421,7 @@
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\ThunkPool.cs" />
     <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <Compile Include="System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
     <Compile Include="System\SerializableAttribute.cs" />

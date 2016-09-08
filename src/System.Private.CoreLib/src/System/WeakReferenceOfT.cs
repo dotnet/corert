@@ -86,7 +86,7 @@ namespace System
             if (default(IntPtr) == h)
                 return null;
 
-            T target = RuntimeHelpers.UncheckedCast<T>(RuntimeImports.RhHandleGet(h));
+            T target = Unsafe.As<T>(RuntimeImports.RhHandleGet(h));
 
             if (target == null)
             {

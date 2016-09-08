@@ -1660,4 +1660,10 @@
   <data name="InvalidFilterCriteriaException_CritInt" xml:space="preserve">
     <value>An Int32 must be provided for the filter criteria.</value>
   </data>
+  <data name="InvalidOperation_NotSupportedOnWinRTEvent" xml:space="preserve">
+    <value>Adding or removing event handlers dynamically is not supported on WinRT events.</value>
+  </data>
+  <data name="PlatformNotSupported_ReflectionOnly" xml:space="preserve">
+    <value>ReflectionOnly loading is not supported on this platform.</value>
+  </data>
 </root>

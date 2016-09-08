@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.TypeParsing;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
@@ -597,9 +596,9 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public static AssemblyQualifiedTypeName ToAssemblyQualifiedTypeName(this NamespaceReferenceHandle namespaceReferenceHandle, String typeName, MetadataReader reader)
+        public static string ToFullyQualifiedTypeName(this NamespaceReferenceHandle namespaceReferenceHandle, string typeName, MetadataReader reader)
         {
-            LowLevelList<String> namespaceParts = new LowLevelList<String>(8);
+            StringBuilder fullName = new StringBuilder();
             NamespaceReference namespaceReference;
             for (;;)
             {
@@ -607,13 +606,12 @@ namespace System.Reflection.Runtime.General
                 String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
                 if (namespacePart == null)
                     break;
-                namespaceParts.Add(namespacePart);
+                fullName.Append(namespacePart);
+                fullName.Append('.');
                 namespaceReferenceHandle = namespaceReference.ParentScopeOrNamespace.ToExpectedNamespaceReferenceHandle(reader);
             }
-
-            ScopeReferenceHandle scopeReferenceHandle = namespaceReference.ParentScopeOrNamespace.ToExpectedScopeReferenceHandle(reader);
-            RuntimeAssemblyName assemblyName = scopeReferenceHandle.ToRuntimeAssemblyName(reader);
-            return new AssemblyQualifiedTypeName(new NamespaceTypeName(namespaceParts.ToArray(), typeName), assemblyName);
+            fullName.Append(typeName);
+            return fullName.ToString();
         }
 
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)

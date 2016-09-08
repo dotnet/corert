@@ -165,6 +165,11 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override Array GetEnumValues() => Enum.GetValues(this);
         public sealed override bool IsEnumDefined(object value) => Enum.IsDefined(this, value);
 
+        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
+        public sealed override bool IsSecurityCritical => true;
+        public sealed override bool IsSecuritySafeCritical => false;
+        public sealed override bool IsSecurityTransparent => false;
+
         public sealed override Type GetInterface(string name, bool ignoreCase)
         {
             if (name == null)

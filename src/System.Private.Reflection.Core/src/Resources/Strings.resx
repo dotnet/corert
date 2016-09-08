@@ -144,11 +144,11 @@
   <data name="Reflection_CustomReflectionObjectsNotSupported" xml:space="preserve">
     <value>The object '{0}' was created by a custom ReflectionContext and cannot be used here.</value>
   </data>
-  <data name="TypeLoad_TypeNotFoundByGetType" xml:space="preserve">
+  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
     <value>The type '{0}' cannot be found.</value>
   </data>
-  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
-    <value>The type '{0}' cannot be found in the metadata for '{1}'.</value>
+  <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
+    <value>The type '{0}' cannot be found in assembly '{1}'.</value>
   </data>
   <data name="TypeLoad_BadEscape" xml:space="preserve">
     <value>An invalid escape sequence was found inside a type name.</value>
@@ -257,5 +257,8 @@
   </data>
   <data name="ModuleVersionIdNotSupported" xml:space="preserve">
     <value>Module version IDs (MVIDs) cannot be retrieved on this platform.</value>
+  </data>
+  <data name="FileNotFound_ResolveAssembly" xml:space="preserve">
+    <value>Could not resolve assembly '{0}'.</value>
   </data>
 </root>

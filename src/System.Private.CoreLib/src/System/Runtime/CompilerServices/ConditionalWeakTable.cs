@@ -375,7 +375,7 @@ namespace System.Runtime.CompilerServices
             {
                 object secondary;
                 int entryIndex = FindEntry(key, out secondary);
-                value = RuntimeHelpers.UncheckedCast<TValue>(secondary);
+                value = Unsafe.As<TValue>(secondary);
                 return (entryIndex != -1);
             }
 
@@ -513,7 +513,7 @@ namespace System.Runtime.CompilerServices
                     {
                         for (int entriesIndex = _buckets[bucket]; entriesIndex != -1; entriesIndex = _entries[entriesIndex].next)
                         {
-                            TKey thisKey = RuntimeHelpers.UncheckedCast<TKey>(_entries[entriesIndex].depHnd.GetPrimary());
+                            TKey thisKey = Unsafe.As<TKey>(_entries[entriesIndex].depHnd.GetPrimary());
                             if (thisKey != null)
                             {
                                 list.Add(thisKey);
@@ -546,7 +546,7 @@ namespace System.Runtime.CompilerServices
                             // expired key as a live key with a null value.)
                             if (primary != null)
                             {
-                                list.Add(RuntimeHelpers.UncheckedCast<TValue>(secondary));
+                                list.Add(Unsafe.As<TValue>(secondary));
                             }
                         }
                     }
@@ -572,8 +572,8 @@ namespace System.Runtime.CompilerServices
                         if (Object.Equals(thisKey, key))
                         {
                             GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
-                            value = RuntimeHelpers.UncheckedCast<TValue>(thisValue);
-                            return RuntimeHelpers.UncheckedCast<TKey>(thisKey);
+                            value = Unsafe.As<TValue>(thisValue);
+                            return Unsafe.As<TKey>(thisKey);
                         }
                     }
                 }

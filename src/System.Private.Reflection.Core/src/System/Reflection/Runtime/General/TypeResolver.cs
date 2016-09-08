@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -190,11 +191,27 @@ namespace System.Reflection.Runtime.General
             // If we got here, the typeReference was to a non-nested type. 
             if (parentType == HandleType.NamespaceReference)
             {
-                AssemblyQualifiedTypeName assemblyQualifiedTypeName = parent.ToNamespaceReferenceHandle(reader).ToAssemblyQualifiedTypeName(name, reader);
-                RuntimeTypeInfo runtimeType;
-                exception = assemblyQualifiedTypeName.TryResolve(null, /*ignoreCase: */false, out runtimeType);
+                NamespaceReferenceHandle namespaceReferenceHandle = parent.ToNamespaceReferenceHandle(reader);
+                string fullName = namespaceReferenceHandle.ToFullyQualifiedTypeName(name, reader);
+                Handle parentHandleToSearch = parent;
+
+                while (parentHandleToSearch.HandleType != HandleType.ScopeReference)
+                {
+                    parentHandleToSearch = parentHandleToSearch.ToNamespaceReferenceHandle(reader).GetNamespaceReference(reader).ParentScopeOrNamespace;
+                }
+                ScopeReferenceHandle scopeReferenceHandle = parentHandleToSearch.ToScopeReferenceHandle(reader);
+
+                RuntimeAssemblyName assemblyName = scopeReferenceHandle.ToRuntimeAssemblyName(reader);
+                RuntimeAssembly runtimeAssembly;
+                exception = RuntimeAssembly.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
                 if (exception != null)
                     return null;
+                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, ignoreCase: false);
+                if (runtimeType == null)
+                {
+                    exception = Helpers.CreateTypeLoadException(fullName, assemblyName.FullName);
+                    return null;
+                }
                 return runtimeType;
             }
 
