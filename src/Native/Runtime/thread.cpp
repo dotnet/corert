@@ -833,12 +833,6 @@ void Thread::ClearSuppressGcStress()
 
 #endif //!DACCESS_COMPILE
 
-bool Thread::IsWithinStackBounds(PTR_VOID p)
-{
-    ASSERT((m_pStackLow != 0) && (m_pStackHigh != 0));
-    return (m_pStackLow <= p) && (p < m_pStackHigh);
-}
-
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_GC_STRESS
 #ifdef _X86_ // the others are implemented in assembly code to avoid trashing the argument registers
