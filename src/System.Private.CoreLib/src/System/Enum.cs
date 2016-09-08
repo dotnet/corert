@@ -660,12 +660,12 @@ namespace System
             return result;
         }
 
-        public static TEnum Parse<TEnum>(String value)
+        public static TEnum Parse<TEnum>(String value) where TEnum : struct
         {
             return Parse<TEnum>(value, ignoreCase: false);
         }
 
-        public static TEnum Parse<TEnum>(String value, bool ignoreCase)
+        public static TEnum Parse<TEnum>(String value, bool ignoreCase) where TEnum : struct
         {
             Object result;
             Exception exception;
