@@ -8,10 +8,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-
-//using System.Security.Permissions;
-
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -117,7 +114,7 @@ namespace System.Threading
             }
 
             Interlocked.CompareExchange(ref target, value, null);
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
             return target;
         }
 

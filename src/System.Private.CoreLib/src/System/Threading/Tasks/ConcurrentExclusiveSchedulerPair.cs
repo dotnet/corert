@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Security;
 
 namespace System.Threading.Tasks
 {
@@ -215,13 +214,13 @@ namespace System.Threading.Tasks
                 ThreadPool.QueueUserWorkItem(state =>
                 {
                     var localCs = (CompletionState)state; // don't use 'cs', as it'll force a closure
-                    Contract.Assert(!localCs.Task.IsCompleted, "Completion should only happen once.");
+                    Debug.Assert(!localCs.Task.IsCompleted, "Completion should only happen once.");
 
                     var exceptions = localCs.m_exceptions;
                     bool success = (exceptions != null && exceptions.Count > 0) ?
                         localCs.TrySetException(exceptions) :
                         localCs.TrySetResult(default(VoidTaskResult));
-                    Contract.Assert(success, "Expected to complete completion task.");
+                    Debug.Assert(success, "Expected to complete completion task.");
                 }, cs);
             }
         }
@@ -338,7 +337,7 @@ namespace System.Threading.Tasks
                 // Check to see if all tasks have completed and if completion has been requested.
                 CleanupStateIfCompletingAndQuiesced();
             }
-            else Contract.Assert(m_processingCount == EXCLUSIVE_PROCESSING_SENTINEL, "The processing count must be the sentinel if it's not >= 0.");
+            else Debug.Assert(m_processingCount == EXCLUSIVE_PROCESSING_SENTINEL, "The processing count must be the sentinel if it's not >= 0.");
         }
 
         /// <summary>
@@ -353,7 +352,7 @@ namespace System.Threading.Tasks
             try
             {
                 // Note that we're processing exclusive tasks on the current thread
-                Contract.Assert(m_threadProcessingMode.Value == ProcessingMode.NotCurrentlyProcessing,
+                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.NotCurrentlyProcessing,
                     "This thread should not yet be involved in this pair's processing.");
                 m_threadProcessingMode.Value = ProcessingMode.ProcessingExclusiveTask;
 
@@ -372,7 +371,7 @@ namespace System.Threading.Tasks
             finally
             {
                 // We're no longer processing exclusive tasks on the current thread
-                Contract.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingExclusiveTask,
+                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingExclusiveTask,
                     "Somehow we ended up escaping exclusive mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
@@ -383,7 +382,7 @@ namespace System.Threading.Tasks
                     // There might be more concurrent tasks available, for example, if concurrent tasks arrived
                     // after we exited the loop, or if we exited the loop while concurrent tasks were still
                     // available but we hit our maxItemsPerTask limit.
-                    Contract.Assert(m_processingCount == EXCLUSIVE_PROCESSING_SENTINEL, "The processing mode should not have deviated from exclusive.");
+                    Debug.Assert(m_processingCount == EXCLUSIVE_PROCESSING_SENTINEL, "The processing mode should not have deviated from exclusive.");
                     m_processingCount = 0;
                     ProcessAsyncIfNecessary(true);
                 }
@@ -401,7 +400,7 @@ namespace System.Threading.Tasks
             try
             {
                 // Note that we're processing concurrent tasks on the current thread
-                Contract.Assert(m_threadProcessingMode.Value == ProcessingMode.NotCurrentlyProcessing,
+                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.NotCurrentlyProcessing,
                     "This thread should not yet be involved in this pair's processing.");
                 m_threadProcessingMode.Value = ProcessingMode.ProcessingConcurrentTasks;
 
@@ -431,7 +430,7 @@ namespace System.Threading.Tasks
             finally
             {
                 // We're no longer processing concurrent tasks on the current thread
-                Contract.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingConcurrentTasks,
+                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingConcurrentTasks,
                     "Somehow we ended up escaping concurrent mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
@@ -442,7 +441,7 @@ namespace System.Threading.Tasks
                     // There might be more concurrent tasks available, for example, if concurrent tasks arrived
                     // after we exited the loop, or if we exited the loop while concurrent tasks were still
                     // available but we hit our maxItemsPerTask limit.
-                    Contract.Assert(m_processingCount > 0, "The procesing mode should not have deviated from concurrent.");
+                    Debug.Assert(m_processingCount > 0, "The procesing mode should not have deviated from concurrent.");
                     if (m_processingCount > 0) --m_processingCount;
                     ProcessAsyncIfNecessary(true);
                 }
@@ -515,7 +514,7 @@ namespace System.Threading.Tasks
             /// <param name="task">The task to be queued.</param>
             protected internal override void QueueTask(Task task)
             {
-                Contract.Assert(task != null, "Infrastructure should have provided a non-null task.");
+                Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
                 using (LockHolder.Hold(m_pair.ValueLock))
                 {
                     // If the scheduler has already had completion requested, no new work is allowed to be scheduled
@@ -531,7 +530,7 @@ namespace System.Threading.Tasks
             /// <param name="task">The task to be executed.</param>
             internal void ExecuteTask(Task task)
             {
-                Contract.Assert(task != null, "Infrastructure should have provided a non-null task.");
+                Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
                 base.TryExecuteTask(task);
             }
 
@@ -541,7 +540,7 @@ namespace System.Threading.Tasks
             /// <returns>true if the task could be executed; otherwise, false.</returns>
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
             {
-                Contract.Assert(task != null, "Infrastructure should have provided a non-null task.");
+                Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
 
                 // If the scheduler has had completion requested, no new work is allowed to be scheduled.
                 // A non-locked read on m_completionRequested (in CompletionRequested) is acceptable here because:
@@ -612,7 +611,7 @@ namespace System.Threading.Tasks
                 }
                 catch
                 {
-                    Contract.Assert(t.IsFaulted, "Task should be faulted due to the scheduler faulting it and throwing the exception.");
+                    Debug.Assert(t.IsFaulted, "Task should be faulted due to the scheduler faulting it and throwing the exception.");
                     var ignored = t.Exception;
                     throw;
                 }
@@ -716,7 +715,7 @@ namespace System.Threading.Tasks
         internal static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
             Contract.Requires(syncObj != null, "The monitor object to check must be provided.");
-            Contract.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
+            Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
         }
 
         /// <summary>Gets the options to use for tasks.</summary>

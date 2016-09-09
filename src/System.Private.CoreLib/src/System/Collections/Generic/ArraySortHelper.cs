@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.Versioning;
 
 namespace System.Collections.Generic
 {
@@ -44,8 +41,8 @@ namespace System.Collections.Generic
 
         public static void Sort(T[] keys, int index, int length, IComparer<T> comparer)
         {
-            Contract.Assert(keys != null, "Check the arguments in the caller!");
-            Contract.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(keys != null, "Check the arguments in the caller!");
+            Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
 
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -335,8 +332,8 @@ namespace System.Collections.Generic
 
         public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
         {
-            Contract.Assert(keys != null, "Check the arguments in the caller!");  // Precondition on interface method
-            Contract.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(keys != null, "Check the arguments in the caller!");  // Precondition on interface method
+            Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
 
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.

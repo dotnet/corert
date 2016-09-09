@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 using System;
-using System.Threading;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
+using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
@@ -34,7 +30,7 @@ namespace System.Runtime.InteropServices
 
             internal ComWeakReference(ref IntPtr pUnk)
             {
-                Contract.Assert(pUnk != IntPtr.Zero);
+                Debug.Assert(pUnk != IntPtr.Zero);
 
                 m_pComWeakRef = pUnk;
                 pUnk = IntPtr.Zero;
@@ -111,7 +107,7 @@ namespace System.Runtime.InteropServices
         /// <param name="target"></param>
         public static unsafe void SetTarget(object weakReference, object target)
         {
-            Contract.Assert(weakReference != null);
+            Debug.Assert(weakReference != null);
 
             // Check if this weakReference is already associated with a native target.
             ComWeakReference pOldComWeakReference;
@@ -168,7 +164,7 @@ namespace System.Runtime.InteropServices
         /// <returns></returns>
         public static object GetTarget(object weakReference)
         {
-            Contract.Assert(weakReference != null);
+            Debug.Assert(weakReference != null);
 
             ComWeakReference comWeakRef;
             if (s_COMWeakReferenceTable.TryGetValue(weakReference, out comWeakRef))

@@ -456,7 +456,7 @@ namespace System.Collections.Generic.Internal
         private void Resize(int newSize)
         {
 #if !RHTESTCL
-            Contract.Assert(newSize >= entries.Length);
+            Debug.Assert(newSize >= entries.Length);
 #endif
 
             Entry[] newEntries = ResizeBase1(newSize);

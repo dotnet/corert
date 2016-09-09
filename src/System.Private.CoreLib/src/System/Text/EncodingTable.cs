@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -35,8 +36,8 @@ namespace System.Text
             int index;
             int result;
 
-            Contract.Assert(s_encodingNameIndices.Length == s_codePagesByName.Length + 1);
-            Contract.Assert(s_encodingNameIndices[s_encodingNameIndices.Length - 1] == s_encodingNames.Length);
+            Debug.Assert(s_encodingNameIndices.Length == s_codePagesByName.Length + 1);
+            Debug.Assert(s_encodingNameIndices[s_encodingNameIndices.Length - 1] == s_encodingNames.Length);
 
             name = name.ToLowerInvariant();
 
@@ -46,7 +47,7 @@ namespace System.Text
             {
                 index = ((right - left) / 2) + left;
 
-                Contract.Assert(index < s_encodingNameIndices.Length - 1);
+                Debug.Assert(index < s_encodingNameIndices.Length - 1);
                 result = CompareOrdinal(name, s_encodingNames, s_encodingNameIndices[index], s_encodingNameIndices[index + 1] - s_encodingNameIndices[index]);
                 if (result == 0)
                 {
@@ -68,7 +69,7 @@ namespace System.Text
             //Walk the remaining elements (it'll be 3 or fewer).
             for (; left <= right; left++)
             {
-                Contract.Assert(left < s_encodingNameIndices.Length - 1);
+                Debug.Assert(left < s_encodingNameIndices.Length - 1);
                 if (CompareOrdinal(name, s_encodingNames, s_encodingNameIndices[left], s_encodingNameIndices[left + 1] - s_encodingNameIndices[left]) == 0)
                 {
                     return (s_codePagesByName[left]);
@@ -131,15 +132,15 @@ namespace System.Text
         {
             string name;
 
-            Contract.Assert(s_mappedCodePages.Length + 1 == indices.Length);
-            Contract.Assert(indices[indices.Length - 1] == names.Length);
+            Debug.Assert(s_mappedCodePages.Length + 1 == indices.Length);
+            Debug.Assert(indices[indices.Length - 1] == names.Length);
 
             //This is a linear search, but we probably won't be doing it very often.
             for (int i = 0; i < s_mappedCodePages.Length; i++)
             {
                 if (s_mappedCodePages[i] == codePage)
                 {
-                    Contract.Assert(i < indices.Length - 1);
+                    Debug.Assert(i < indices.Length - 1);
 
                     name = names.Substring(indices[i], indices[i + 1] - indices[i]);
 

@@ -13,12 +13,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Diagnostics.Contracts;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
-using System.Threading;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -210,9 +207,9 @@ namespace System.Threading.Tasks
         /// <remarks>Unlike the public methods, this method doesn't currently validate that its arguments are correct.</remarks>
         internal bool TrySetException(IEnumerable<ExceptionDispatchInfo> exceptions)
         {
-            Contract.Assert(exceptions != null);
+            Debug.Assert(exceptions != null);
 #if DEBUG
-            foreach (var edi in exceptions) Contract.Assert(edi != null, "Contents must be non-null");
+            foreach (var edi in exceptions) Debug.Assert(edi != null, "Contents must be non-null");
 #endif
 
             bool rval = m_task.TrySetException(exceptions);

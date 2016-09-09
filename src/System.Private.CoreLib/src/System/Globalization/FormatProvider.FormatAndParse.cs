@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -47,7 +42,7 @@ namespace System.Globalization
                     return false;
                 }
                 Char* p = number.digits;
-                Contract.Assert(p != null, "");
+                Debug.Assert(p != null, "");
 
                 UInt32 n = 0;
                 while (--i >= 0)
@@ -74,7 +69,7 @@ namespace System.Globalization
                                 }
                                 else
                                 {
-                                    Contract.Assert(*p >= 'a' && *p <= 'f', "");
+                                    Debug.Assert(*p >= 'a' && *p <= 'f', "");
                                     newN += (UInt32)((*p - 'a') + 10);
                                 }
                             }
@@ -101,7 +96,7 @@ namespace System.Globalization
                     return false;
                 }
                 Char* p = number.digits;
-                Contract.Assert(p != null, "");
+                Debug.Assert(p != null, "");
 
                 UInt64 n = 0;
                 while (--i >= 0)
@@ -128,7 +123,7 @@ namespace System.Globalization
                                 }
                                 else
                                 {
-                                    Contract.Assert(*p >= 'a' && *p <= 'f', "");
+                                    Debug.Assert(*p >= 'a' && *p <= 'f', "");
                                     newN += (UInt64)((*p - 'a') + 10);
                                 }
                             }
@@ -155,7 +150,7 @@ namespace System.Globalization
                     return false;
                 }
                 char* p = number.digits;
-                Contract.Assert(p != null, "");
+                Debug.Assert(p != null, "");
                 Int32 n = 0;
                 while (--i >= 0)
                 {
@@ -196,7 +191,7 @@ namespace System.Globalization
                     return false;
                 }
                 char* p = number.digits;
-                Contract.Assert(p != null, "");
+                Debug.Assert(p != null, "");
                 Int64 n = 0;
                 while (--i >= 0)
                 {
@@ -237,7 +232,7 @@ namespace System.Globalization
                     return false;
                 }
                 char* p = number.digits;
-                Contract.Assert(p != null, "");
+                Debug.Assert(p != null, "");
                 UInt32 n = 0;
                 while (--i >= 0)
                 {
@@ -269,7 +264,7 @@ namespace System.Globalization
                     return false;
                 }
                 char* p = number.digits;
-                Contract.Assert(p != null, "");
+                Debug.Assert(p != null, "");
                 UInt64 n = 0;
                 while (--i >= 0)
                 {
@@ -501,7 +496,7 @@ namespace System.Globalization
                     throw new ArgumentNullException("String");
                 }
                 Contract.EndContractBlock();
-                Contract.Assert(info != null, "");
+                Debug.Assert(info != null, "");
                 fixed (char* stringPointer = str)
                 {
                     char* p = stringPointer;

@@ -658,7 +658,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             private static object GetInstanceKey(Action<EventRegistrationToken> removeMethod)
             {
                 object target = removeMethod.Target;
-                Contract.Assert(target == null || target is __ComObject, "Must be an RCW");
+                Debug.Assert(target == null || target is __ComObject, "Must be an RCW");
 
                 if (target == null)
                 {
@@ -863,7 +863,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         // with the same value equality would have the same hash code
                         object key = registrationTokens.registrationTable.FindEquivalentKeyUnsafe(handler, out tokens);
 
-                        Contract.Assert((key != null && tokens != null) || (key == null && tokens == null),
+                        Debug.Assert((key != null && tokens != null) || (key == null && tokens == null),
                                         "key and tokens must be both null or non-null");
                         if (tokens == null)
                         {
@@ -1066,7 +1066,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 internal void ReleaseReaderLock()
                 {
                     EnterMyLock();
-                    Contract.Assert(owners > 0, "ReleasingReaderLock: releasing lock and no read lock taken");
+                    Debug.Assert(owners > 0, "ReleasingReaderLock: releasing lock and no read lock taken");
                     --owners;
                     ExitAndWakeUpAppropriateWaiters();
                 }
@@ -1074,7 +1074,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 internal void ReleaseWriterLock()
                 {
                     EnterMyLock();
-                    Contract.Assert(owners == -1, "Calling ReleaseWriterLock when no write lock is held");
+                    Debug.Assert(owners == -1, "Calling ReleaseWriterLock when no write lock is held");
                     owners++;
                     ExitAndWakeUpAppropriateWaiters();
                 }
@@ -1087,8 +1087,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 /// </summary>
                 private void LazyCreateEvent(ref EventWaitHandle waitEvent, bool makeAutoResetEvent)
                 {
-                    Contract.Assert(myLock != 0, "Lock must be held");
-                    Contract.Assert(waitEvent == null, "Wait event must be null");
+                    Debug.Assert(myLock != 0, "Lock must be held");
+                    Debug.Assert(waitEvent == null, "Wait event must be null");
 
                     ExitMyLock();
                     EventWaitHandle newEvent;
@@ -1107,7 +1107,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 /// </summary>
                 private void WaitOnEvent(EventWaitHandle waitEvent, ref uint numWaiters, int millisecondsTimeout)
                 {
-                    Contract.Assert(myLock != 0, "Lock must be held");
+                    Debug.Assert(myLock != 0, "Lock must be held");
 
                     waitEvent.Reset();
                     numWaiters++;
@@ -1135,7 +1135,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 /// </summary>
                 private void ExitAndWakeUpAppropriateWaiters()
                 {
-                    Contract.Assert(myLock != 0, "Lock must be held");
+                    Debug.Assert(myLock != 0, "Lock must be held");
 
                     if (owners == 0 && numWriteWaiters > 0)
                     {
@@ -1173,7 +1173,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
                 private void ExitMyLock()
                 {
-                    Contract.Assert(myLock != 0, "Exiting spin lock that is not held");
+                    Debug.Assert(myLock != 0, "Exiting spin lock that is not held");
                     myLock = 0;
                 }
             };

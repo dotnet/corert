@@ -5,8 +5,7 @@
 #pragma warning disable 0420 //passing volatile field by reference
 
 
-using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -70,8 +69,8 @@ namespace System.Threading
             //
             if (Interlocked.CompareExchange(ref _state, Locked, Uncontended) == Uncontended)
             {
-                Contract.Assert(_owningThreadId == 0);
-                Contract.Assert(_recursionCount == 0);
+                Debug.Assert(_owningThreadId == 0);
+                Debug.Assert(_recursionCount == 0);
                 _owningThreadId = currentThreadId;
                 return;
             }
@@ -80,7 +79,7 @@ namespace System.Threading
             // Fall back to the slow path for contention
             //
             bool success = TryAcquireContended(currentThreadId, Timeout.Infinite);
-            Contract.Assert(success);
+            Debug.Assert(success);
         }
 
         public bool TryAcquire(TimeSpan timeout)
@@ -103,8 +102,8 @@ namespace System.Threading
             //
             if (Interlocked.CompareExchange(ref _state, Locked, Uncontended) == Uncontended)
             {
-                Contract.Assert(_owningThreadId == 0);
-                Contract.Assert(_recursionCount == 0);
+                Debug.Assert(_owningThreadId == 0);
+                Debug.Assert(_recursionCount == 0);
                 _owningThreadId = currentThreadId;
                 return true;
             }
@@ -181,14 +180,14 @@ namespace System.Threading
 
             while (true)
             {
-                Contract.Assert(_state >= WaiterCountIncrement);
+                Debug.Assert(_state >= WaiterCountIncrement);
 
                 bool waitSucceeded = ev.WaitOne(timeoutTracker.Remaining);
 
                 while (true)
                 {
                     int oldState = _state;
-                    Contract.Assert(oldState >= WaiterCountIncrement);
+                    Debug.Assert(oldState >= WaiterCountIncrement);
 
                     // Clear the "waiter woken" bit.
                     int newState = oldState & ~WaiterWoken;
@@ -220,9 +219,9 @@ namespace System.Threading
             }
 
         GotTheLock:
-            Contract.Assert((_state | Locked) != 0);
-            Contract.Assert(_owningThreadId == 0);
-            Contract.Assert(_recursionCount == 0);
+            Debug.Assert((_state | Locked) != 0);
+            Debug.Assert(_owningThreadId == 0);
+            Debug.Assert(_recursionCount == 0);
             _owningThreadId = currentThreadId;
             return true;
         }
@@ -250,7 +249,7 @@ namespace System.Threading
                 int currentManagedThreadId = Environment.CurrentManagedThreadId;
                 bool acquired = (currentManagedThreadId == _owningThreadId);
                 if (acquired)
-                    Contract.Assert((_state & Locked) != 0);
+                    Debug.Assert((_state & Locked) != 0);
                 return acquired;
             }
         }
@@ -269,7 +268,7 @@ namespace System.Threading
 
         internal uint ReleaseAll()
         {
-            Contract.Assert(IsAcquired);
+            Debug.Assert(IsAcquired);
 
             uint recursionCount = _recursionCount;
             _recursionCount = 0;
@@ -282,7 +281,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ReleaseCore()
         {
-            Contract.Assert(_recursionCount == 0);
+            Debug.Assert(_recursionCount == 0);
             _owningThreadId = 0;
 
             //
@@ -299,8 +298,8 @@ namespace System.Threading
 
         private void ReleaseContended()
         {
-            Contract.Assert(_recursionCount == 0);
-            Contract.Assert(_owningThreadId == 0);
+            Debug.Assert(_recursionCount == 0);
+            Debug.Assert(_owningThreadId == 0);
 
             while (true)
             {
@@ -331,7 +330,7 @@ namespace System.Threading
         internal void Reacquire(uint previousRecursionCount)
         {
             Acquire();
-            Contract.Assert(_recursionCount == 0);
+            Debug.Assert(_recursionCount == 0);
             _recursionCount = previousRecursionCount;
         }
 

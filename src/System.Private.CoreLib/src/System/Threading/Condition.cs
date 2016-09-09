@@ -5,8 +5,7 @@
 #pragma warning disable 0420 //passing volatile fields by ref
 
 
-using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -38,29 +37,29 @@ namespace System.Threading
 
         private unsafe void AssertIsInList(Waiter waiter)
         {
-            Contract.Assert(_waitersHead != null && _waitersTail != null);
-            Contract.Assert((_waitersHead == waiter) == (waiter.prev == null));
-            Contract.Assert((_waitersTail == waiter) == (waiter.next == null));
+            Debug.Assert(_waitersHead != null && _waitersTail != null);
+            Debug.Assert((_waitersHead == waiter) == (waiter.prev == null));
+            Debug.Assert((_waitersTail == waiter) == (waiter.next == null));
 
             for (Waiter current = _waitersHead; current != null; current = current.next)
                 if (current == waiter)
                     return;
-            Contract.Assert(false, "Waiter is not in the waiter list");
+            Debug.Assert(false, "Waiter is not in the waiter list");
         }
 
         private unsafe void AssertIsNotInList(Waiter waiter)
         {
-            Contract.Assert(waiter.next == null && waiter.prev == null);
-            Contract.Assert((_waitersHead == null) == (_waitersTail == null));
+            Debug.Assert(waiter.next == null && waiter.prev == null);
+            Debug.Assert((_waitersHead == null) == (_waitersTail == null));
 
             for (Waiter current = _waitersHead; current != null; current = current.next)
                 if (current == waiter)
-                    Contract.Assert(false, "Waiter is in the waiter list, but should not be");
+                    Debug.Assert(false, "Waiter is in the waiter list, but should not be");
         }
 
         private unsafe void AddWaiter(Waiter waiter)
         {
-            Contract.Assert(_lock.IsAcquired);
+            Debug.Assert(_lock.IsAcquired);
             AssertIsNotInList(waiter);
 
             waiter.prev = _waitersTail;
@@ -75,7 +74,7 @@ namespace System.Threading
 
         private unsafe void RemoveWaiter(Waiter waiter)
         {
-            Contract.Assert(_lock.IsAcquired);
+            Debug.Assert(_lock.IsAcquired);
             AssertIsInList(waiter);
 
             if (waiter.next != null)
@@ -132,7 +131,7 @@ namespace System.Threading
             finally
             {
                 _lock.Reacquire(recursionCount);
-                Contract.Assert(_lock.IsAcquired);
+                Debug.Assert(_lock.IsAcquired);
 
                 if (!waiter.signalled)
                 {

@@ -13,13 +13,10 @@
 
 #pragma warning disable 0420
 
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Diagnostics;
-using System.Threading;
-using System.Diagnostics.Contracts;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
@@ -72,7 +69,7 @@ namespace System
         // 2- Flag to m_threadSafeObj if ExecutionAndPublication mode and the value is known to be initialized
         private static Func<T> s_ALREADY_INVOKED_SENTINEL = delegate
         {
-            Contract.Assert(false, "ALREADY_INVOKED_SENTINEL should never be invoked.");
+            Debug.Assert(false, "ALREADY_INVOKED_SENTINEL should never be invoked.");
             return default(T);
         };
 
@@ -310,7 +307,7 @@ namespace System
                     }
 
                     LazyInternalExceptionHolder exc = _boxed as LazyInternalExceptionHolder;
-                    Contract.Assert(_boxed != null);
+                    Debug.Assert(_boxed != null);
                     exc.m_edi.Throw();
                 }
 
@@ -364,7 +361,7 @@ namespace System
                     if (threadSafeObj != (object)s_ALREADY_INVOKED_SENTINEL)
                         Monitor.Enter(threadSafeObj, ref lockTaken);
                     else
-                        Contract.Assert(_boxed != null);
+                        Debug.Assert(_boxed != null);
 
                     if (_boxed == null)
                     {
@@ -378,7 +375,7 @@ namespace System
                         if (boxed == null) // it is not Boxed, so it is a LazyInternalExceptionHolder
                         {
                             LazyInternalExceptionHolder exHolder = _boxed as LazyInternalExceptionHolder;
-                            Contract.Assert(exHolder != null);
+                            Debug.Assert(exHolder != null);
                             exHolder.m_edi.Throw();
                         }
                     }
@@ -389,7 +386,7 @@ namespace System
                         Monitor.Exit(threadSafeObj);
                 }
             }
-            Contract.Assert(boxed != null);
+            Debug.Assert(boxed != null);
             return boxed.m_value;
         }
 

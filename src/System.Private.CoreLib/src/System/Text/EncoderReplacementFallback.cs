@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -188,7 +187,7 @@ namespace System.Text
             }
 
             // Now make sure its in the expected range
-            Contract.Assert(_fallbackIndex < _strDefault.Length && _fallbackIndex >= 0,
+            Debug.Assert(_fallbackIndex < _strDefault.Length && _fallbackIndex >= 0,
                             "Index exceeds buffer range");
 
             return _strDefault[_fallbackIndex];

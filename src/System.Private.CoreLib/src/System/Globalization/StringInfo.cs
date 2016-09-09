@@ -12,9 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -141,8 +140,8 @@ namespace System.Globalization
 
         internal static int GetCurrentTextElementLen(String str, int index, int len, ref UnicodeCategory ucCurrent, ref int currentCharCount)
         {
-            Contract.Assert(index >= 0 && len >= 0, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
-            Contract.Assert(index < len, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
+            Debug.Assert(index >= 0 && len >= 0, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
+            Debug.Assert(index < len, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
             if (index + currentCharCount == len)
             {
                 // This is the last character/surrogate in the string.

@@ -438,7 +438,7 @@ namespace System
         {
             get
             {
-                Contract.Assert(IsGCPressureSet, "GCPressureRange.Unknown");
+                Debug.Assert(IsGCPressureSet, "GCPressureRange.Unknown");
 
                 switch (m_flags & ComObjectFlags.GCPressureWinRT_Mask)
                 {
@@ -2119,7 +2119,7 @@ namespace System.Runtime.InteropServices
                 m_type = type;
             }
 
-            Contract.Assert(!IsUnknown, "m_type can't be null");
+            Debug.Assert(!IsUnknown, "m_type can't be null");
         }
 
         /// <summary>
@@ -2182,7 +2182,7 @@ namespace System.Runtime.InteropServices
         /// <returns></returns>
         private ComMarshalingType GetComMarshalingBehaviorAtRuntime()
         {
-            Contract.Assert(IsUnknown, "ComMarshalingType is not ComMarshalingType.Uknown");
+            Debug.Assert(IsUnknown, "ComMarshalingType is not ComMarshalingType.Uknown");
 
             if (McgComHelpers.IsFreeThreaded(m_pComPtr))
             {
@@ -2257,7 +2257,7 @@ namespace System.Runtime.InteropServices
         /// <returns>A AddRef-ed interface pointer that can be used under current context</returns>
         private IntPtr GetAddRefedComPointerForCurrentContext()
         {
-            Contract.Assert(IsStandard, "ComMarshalingType is not standard");
+            Debug.Assert(IsStandard, "ComMarshalingType is not standard");
             bool failedBefore = false;
             IntPtr pStream = IntPtr.Zero;
 

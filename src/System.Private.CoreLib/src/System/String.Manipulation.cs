@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
 
@@ -128,8 +127,8 @@ namespace System
             {
                 string s = strings[i];
 
-                Contract.Assert(s != null);
-                Contract.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
+                Debug.Assert(s != null);
+                Debug.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
 
                 FillStringChecked(result, position, s);
                 position += s.Length;

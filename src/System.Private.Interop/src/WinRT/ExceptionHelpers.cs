@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
+
 using Internal.Runtime.Augments;
 
 namespace System.Runtime.InteropServices
@@ -21,7 +22,7 @@ namespace System.Runtime.InteropServices
         {
             internal static bool GetErrorDetails(System.IntPtr pRestrictedErrorInfo, out string errMsg, out int hr, out string resErrMsg, out string errCapSid)
             {
-                Contract.Assert(pRestrictedErrorInfo != IntPtr.Zero);
+                Debug.Assert(pRestrictedErrorInfo != IntPtr.Zero);
                 IntPtr pErrDes, pResErrDes, pErrCapSid;
 
                 pErrDes = pResErrDes = pErrCapSid = IntPtr.Zero;
@@ -66,7 +67,7 @@ namespace System.Runtime.InteropServices
 
             internal static void GetReference(System.IntPtr pRestrictedErrorInfo, out string errReference)
             {
-                Contract.Assert(pRestrictedErrorInfo != IntPtr.Zero);
+                Debug.Assert(pRestrictedErrorInfo != IntPtr.Zero);
                 IntPtr pReference = IntPtr.Zero;
                 errReference = null;
 

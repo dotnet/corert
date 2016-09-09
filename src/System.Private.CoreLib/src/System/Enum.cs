@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using System.Runtime;
-using System.Collections;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
 using System.Collections.Concurrent;
-
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime;
+using System.Text;
 
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.NonPortable;
@@ -288,7 +284,7 @@ namespace System
                     }
 
                 default:
-                    Contract.Assert(false, "Invalid Object type in Format");
+                    Debug.Assert(false, "Invalid Object type in Format");
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
@@ -373,7 +369,7 @@ namespace System
                     }
 
                 default:
-                    Contract.Assert(false, "Invalid Object type in Format");
+                    Debug.Assert(false, "Invalid Object type in Format");
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
@@ -1214,7 +1210,7 @@ namespace System
                 return TypeCode.Char;
             }
 
-            Contract.Assert(false, "Unknown underlying type.");
+            Debug.Assert(false, "Unknown underlying type.");
             throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
         }
 

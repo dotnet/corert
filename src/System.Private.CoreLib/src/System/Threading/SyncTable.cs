@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -168,9 +168,9 @@ namespace System.Threading
                     }
 
                     // Found a free entry to assign
-                    Contract.Assert(!s_entries[syncIndex].Owner.IsAllocated);
-                    Contract.Assert(s_entries[syncIndex].Lock == null);
-                    Contract.Assert(s_entries[syncIndex].HashCode == 0);
+                    Debug.Assert(!s_entries[syncIndex].Owner.IsAllocated);
+                    Debug.Assert(s_entries[syncIndex].Lock == null);
+                    Debug.Assert(s_entries[syncIndex].HashCode == 0);
 
                     // Set up the new entry.  We should not fail after this point.
                     s_entries[syncIndex].Lock = lck;
@@ -199,8 +199,8 @@ namespace System.Threading
         /// </summary>
         private static int EnsureFreeEntry()
         {
-            Contract.Assert(s_freeEntriesLock.IsAcquired);
-            Contract.Assert((s_freeEntryList == 0) && (s_unusedEntryIndex == s_entries.Length));
+            Debug.Assert(s_freeEntriesLock.IsAcquired);
+            Debug.Assert((s_freeEntryList == 0) && (s_unusedEntryIndex == s_entries.Length));
 
             int syncIndex;
 
@@ -230,7 +230,7 @@ namespace System.Threading
                 // No entries were recycled; must grow the table.
                 // This call may throw OOM; keep the state valid.
                 Grow();
-                Contract.Assert(s_unusedEntryIndex < s_entries.Length);
+                Debug.Assert(s_unusedEntryIndex < s_entries.Length);
                 syncIndex = s_unusedEntryIndex++;
             }
             return syncIndex;
@@ -242,7 +242,7 @@ namespace System.Threading
         /// </summary>
         private static int RecycleDeadEntries()
         {
-            Contract.Assert(s_freeEntriesLock.IsAcquired);
+            Debug.Assert(s_freeEntriesLock.IsAcquired);
 
             using (LockHolder.Hold(s_usedEntriesLock))
             {
@@ -281,7 +281,7 @@ namespace System.Threading
             {
                 // We do not care if the s_unusedEntryIndex value is stale here; it suffices that
                 // the s_entries reference is locked and s_unusedEntryIndex points within that array.
-                Contract.Assert(s_unusedEntryIndex <= s_entries.Length);
+                Debug.Assert(s_unusedEntryIndex <= s_entries.Length);
 
                 for (int idx = s_unusedEntryIndex; --idx > 0;)
                 {
@@ -302,7 +302,7 @@ namespace System.Threading
         /// </summary>
         private static void Grow()
         {
-            Contract.Assert(s_freeEntriesLock.IsAcquired);
+            Debug.Assert(s_freeEntriesLock.IsAcquired);
 
             int oldSize = s_entries.Length;
             int newSize = CalculateNewSize(oldSize);
@@ -325,8 +325,8 @@ namespace System.Threading
         /// </summary>
         private static int CalculateNewSize(int oldSize)
         {
-            Contract.Assert(oldSize > 0);
-            Contract.Assert(ObjectHeader.MASK_HASHCODE_INDEX < int.MaxValue);
+            Debug.Assert(oldSize > 0);
+            Debug.Assert(ObjectHeader.MASK_HASHCODE_INDEX < int.MaxValue);
             int newSize;
 
             if (oldSize <= DoublingSizeThreshold)
@@ -337,7 +337,7 @@ namespace System.Threading
             else
             {
                 // For bigger tables use a smaller factor 1.5
-                Contract.Assert(oldSize > 1);
+                Debug.Assert(oldSize > 1);
                 newSize = unchecked(oldSize + (oldSize >> 1));
             }
 
@@ -370,7 +370,7 @@ namespace System.Threading
         /// </summary>
         public static int SetHashCode(int syncIndex, int hashCode)
         {
-            Contract.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
+            Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
 
             // Acquire the lock to ensure we are updating the latest version of s_entries.  This
             // lock may be avoided if we store the hash code and Monitor synchronization data in
@@ -393,8 +393,8 @@ namespace System.Threading
         /// </summary>
         public static void MoveHashCodeToNewEntry(int syncIndex, int hashCode)
         {
-            Contract.Assert(s_freeEntriesLock.IsAcquired);
-            Contract.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
+            Debug.Assert(s_freeEntriesLock.IsAcquired);
+            Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
             s_entries[syncIndex].HashCode = hashCode;
         }
 
