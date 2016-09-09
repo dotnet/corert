@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -35,7 +29,7 @@ namespace System.Threading
     //
     // Note that all instance methods of this class require that the caller hold a lock on TimerQueue.Instance.
     //
-    class TimerQueue
+    internal partial class TimerQueue
     {
         #region singleton pattern implementation
 
@@ -79,12 +73,8 @@ namespace System.Threading
             }
         }
 
-        Delegate m_nativeTimerCallback;
-
-        Object m_nativeTimer;
-
         int m_currentNativeTimerStartTicks;
-        uint m_currentNativeTimerDuration;
+        uint m_currentNativeTimerDuration = UInt32.MaxValue;
 
         private void EnsureAppDomainTimerFiresBy(uint requestedDuration)
         {
@@ -99,7 +89,7 @@ namespace System.Threading
             const uint maxPossibleDuration = 0x0fffffff;
             uint actualDuration = Math.Min(requestedDuration, maxPossibleDuration);
 
-            if (m_nativeTimer != null)
+            if (m_currentNativeTimerDuration != UInt32.MaxValue)
             {
                 uint elapsed = (uint)(TickCount - m_currentNativeTimerStartTicks);
                 if (elapsed >= m_currentNativeTimerDuration)
@@ -110,34 +100,10 @@ namespace System.Threading
                     return; //the timer will fire earlier than this request
             }
 
-            if (m_nativeTimerCallback == null)
-            {
-                Contract.Assert(m_nativeTimer == null);
-                m_nativeTimerCallback = WinRTInterop.Callbacks.CreateTimerDelegate(new Action(AppDomainTimerCallback));
-            }
-
-            Object previousNativeTimer = m_nativeTimer;
-            m_nativeTimer = WinRTInterop.Callbacks.CreateTimer(m_nativeTimerCallback, TimeSpan.FromMilliseconds(actualDuration));
-            if (previousNativeTimer != null)
-                WinRTInterop.Callbacks.ReleaseTimer(previousNativeTimer, true);
+            SetTimer(actualDuration);
+            m_currentNativeTimerDuration = actualDuration;
 
             m_currentNativeTimerStartTicks = TickCount;
-            m_currentNativeTimerDuration = actualDuration;
-        }
-
-        //
-        // The VM calls this when the native timer fires.
-        //
-        internal static void AppDomainTimerCallback()
-        {
-            try
-            {
-                Instance.FireNextTimers();
-            }
-            catch (Exception ex)
-            {
-                RuntimeAugments.ReportUnhandledException(ex);
-            }
         }
 
         #endregion
@@ -160,101 +126,89 @@ namespace System.Threading
             // to the ThreadPool.
             //
             TimerQueueTimer timerToFireOnThisThread = null;
-            Object previousTimer = null;
 
             using (LockHolder.Hold(Lock))
             {
-                // prevent ThreadAbort while updating state
-                try { }
-                finally
+                //
+                // since we got here, that means our previous timer has fired.
+                //
+                ReleaseTimer();
+                m_currentNativeTimerDuration = UInt32.MaxValue;
+
+                bool haveTimerToSchedule = false;
+                uint nextAppDomainTimerDuration = uint.MaxValue;
+
+                int nowTicks = TickCount;
+
+                //
+                // Sweep through all timers.  The ones that have reached their due time
+                // will fire.  We will calculate the next native timer due time from the
+                // other timers.
+                //
+                TimerQueueTimer timer = m_timers;
+                while (timer != null)
                 {
-                    //
-                    // since we got here, that means our previous timer has fired.
-                    //
-                    previousTimer = m_nativeTimer;
-                    m_nativeTimer = null;
+                    Contract.Assert(timer.m_dueTime != Timer.UnsignedInfiniteTimeout);
 
-                    bool haveTimerToSchedule = false;
-                    uint nextAppDomainTimerDuration = uint.MaxValue;
-
-                    int nowTicks = TickCount;
-
-                    //
-                    // Sweep through all timers.  The ones that have reached their due time
-                    // will fire.  We will calculate the next native timer due time from the
-                    // other timers.
-                    //
-                    TimerQueueTimer timer = m_timers;
-                    while (timer != null)
+                    uint elapsed = (uint)(nowTicks - timer.m_startTicks);
+                    if (elapsed >= timer.m_dueTime)
                     {
-                        Contract.Assert(timer.m_dueTime != Timer.UnsignedInfiniteTimeout);
+                        //
+                        // Remember the next timer in case we delete this one
+                        //
+                        TimerQueueTimer nextTimer = timer.m_next;
 
-                        uint elapsed = (uint)(nowTicks - timer.m_startTicks);
-                        if (elapsed >= timer.m_dueTime)
+                        if (timer.m_period != Timer.UnsignedInfiniteTimeout)
                         {
-                            //
-                            // Remember the next timer in case we delete this one
-                            //
-                            TimerQueueTimer nextTimer = timer.m_next;
+                            timer.m_startTicks = nowTicks;
+                            timer.m_dueTime = timer.m_period;
 
-                            if (timer.m_period != Timer.UnsignedInfiniteTimeout)
+                            //
+                            // This is a repeating timer; schedule it to run again.
+                            //
+                            if (timer.m_dueTime < nextAppDomainTimerDuration)
                             {
-                                timer.m_startTicks = nowTicks;
-                                timer.m_dueTime = timer.m_period;
-
-                                //
-                                // This is a repeating timer; schedule it to run again.
-                                //
-                                if (timer.m_dueTime < nextAppDomainTimerDuration)
-                                {
-                                    haveTimerToSchedule = true;
-                                    nextAppDomainTimerDuration = timer.m_dueTime;
-                                }
+                                haveTimerToSchedule = true;
+                                nextAppDomainTimerDuration = timer.m_dueTime;
                             }
-                            else
-                            {
-                                //
-                                // Not repeating; remove it from the queue
-                                //
-                                DeleteTimer(timer);
-                            }
-
-                            //
-                            // If this is the first timer, we'll fire it on this thread.  Otherwise, queue it
-                            // to the ThreadPool.
-                            //
-                            if (timerToFireOnThisThread == null)
-                                timerToFireOnThisThread = timer;
-                            else
-                                QueueTimerCompletion(timer);
-
-                            timer = nextTimer;
                         }
                         else
                         {
                             //
-                            // This timer hasn't fired yet.  Just update the next time the native timer fires.
+                            // Not repeating; remove it from the queue
                             //
-                            uint remaining = timer.m_dueTime - elapsed;
-                            if (remaining < nextAppDomainTimerDuration)
-                            {
-                                haveTimerToSchedule = true;
-                                nextAppDomainTimerDuration = remaining;
-                            }
-                            timer = timer.m_next;
+                            DeleteTimer(timer);
                         }
+
+                        //
+                        // If this is the first timer, we'll fire it on this thread.  Otherwise, queue it
+                        // to the ThreadPool.
+                        //
+                        if (timerToFireOnThisThread == null)
+                            timerToFireOnThisThread = timer;
+                        else
+                            QueueTimerCompletion(timer);
+
+                        timer = nextTimer;
                     }
-
-                    if (haveTimerToSchedule)
-                        EnsureAppDomainTimerFiresBy(nextAppDomainTimerDuration);
+                    else
+                    {
+                        //
+                        // This timer hasn't fired yet.  Just update the next time the native timer fires.
+                        //
+                        uint remaining = timer.m_dueTime - elapsed;
+                        if (remaining < nextAppDomainTimerDuration)
+                        {
+                            haveTimerToSchedule = true;
+                            nextAppDomainTimerDuration = remaining;
+                        }
+                        timer = timer.m_next;
+                    }
                 }
-            }
 
-            //
-            // Release the previous timer object outside of the lock!
-            //
-            if (previousTimer != null)
-                WinRTInterop.Callbacks.ReleaseTimer(previousTimer, false);
+                if (haveTimerToSchedule)
+                    EnsureAppDomainTimerFiresBy(nextAppDomainTimerDuration);
+            }
 
             //
             // Fire the user timer outside of the lock!
@@ -399,21 +353,16 @@ namespace System.Threading
                 if (m_canceled)
                     throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
 
-                // prevent ThreadAbort while updating state
-                try { }
-                finally
-                {
-                    m_period = period;
+                m_period = period;
 
-                    if (dueTime == Timer.UnsignedInfiniteTimeout)
-                    {
-                        TimerQueue.Instance.DeleteTimer(this);
-                        success = true;
-                    }
-                    else
-                    {
-                        success = TimerQueue.Instance.UpdateTimer(this, dueTime, period);
-                    }
+                if (dueTime == Timer.UnsignedInfiniteTimeout)
+                {
+                    TimerQueue.Instance.DeleteTimer(this);
+                    success = true;
+                }
+                else
+                {
+                    success = TimerQueue.Instance.UpdateTimer(this, dueTime, period);
                 }
             }
 
@@ -425,100 +374,21 @@ namespace System.Threading
         {
             using (LockHolder.Hold(TimerQueue.Instance.Lock))
             {
-                // prevent ThreadAbort while updating state
-                try { }
-                finally
+                if (!m_canceled)
                 {
-                    if (!m_canceled)
-                    {
-                        m_canceled = true;
-                        TimerQueue.Instance.DeleteTimer(this);
-                    }
+                    m_canceled = true;
+                    TimerQueue.Instance.DeleteTimer(this);
                 }
             }
         }
 
-
-        //public bool Close(WaitHandle toSignal)
-        //{
-        //    bool success;
-        //    bool shouldSignal = false;
-
-        //    using (LockHolder.Hold(TimerQueue.Instance.Lock))
-        //    {
-        //        // prevent ThreadAbort while updating state
-        //        try { }
-        //        finally
-        //        {
-        //            if (m_canceled)
-        //            {
-        //                success = false;
-        //            }
-        //            else
-        //            {
-        //                m_canceled = true;
-        //                m_notifyWhenNoCallbacksRunning = toSignal;
-        //                TimerQueue.Instance.DeleteTimer(this);
-
-        //                if (m_callbacksRunning == 0)
-        //                    shouldSignal = true;
-
-        //                success = true;
-        //            }
-        //        }
-        //    }
-
-        //    if (shouldSignal)
-        //        SignalNoCallbacksRunning();
-
-        //    return success;
-        //}
-
-
         internal void Fire()
         {
-            bool canceled = false;
-
-            //using (LockHolder.Hold(TimerQueue.Instance.Lock))
-            //{
-            //    // prevent ThreadAbort while updating state
-            //    try { }
-            //    finally
-            //    {
-            canceled = m_canceled;
-            //        if (!canceled)
-            //            m_callbacksRunning++;
-            //    }
-            //}
-
-            if (canceled)
+            if (m_canceled)
                 return;
 
             CallCallback();
-            //bool shouldSignal = false;
-            //using (LockHolder.Hold(TimerQueue.Instance.Lock))
-            //{
-            //    // prevent ThreadAbort while updating state
-            //    try { }
-            //    finally
-            //    {
-            //        m_callbacksRunning--;
-            //        if (m_canceled && m_callbacksRunning == 0 && m_notifyWhenNoCallbacksRunning != null)
-            //            shouldSignal = true;
-            //    }
-            //}
-
-                //if (shouldSignal)
-                //    SignalNoCallbacksRunning();
         }
-
-        //internal void SignalNoCallbacksRunning()
-        //{
-        //    SafeHandle handle = m_notifyWhenNoCallbacksRunning.SafeWaitHandle;
-        //    handle.DangerousAddRef();
-        //    Interop.kernel32.SetEvent(handle.DangerousGetHandle());
-        //    handle.DangerousRelease();
-        //}
 
         internal void CallCallback()
         {
@@ -559,19 +429,6 @@ namespace System.Threading
 
         ~TimerHolder()
         {
-            //
-            // If shutdown has started, another thread may be suspended while holding the timer lock.
-            // So we can't safely close the timer.  
-            //
-            // Similarly, we should not close the timer during AD-unload's live-object finalization phase.
-            // A rude abort may have prevented us from releasing the lock.
-            //
-            // Note that in either case, the Timer still won't fire, because ThreadPool threads won't be
-            // allowed to run in this AppDomain.
-            //
-            if (Environment.HasShutdownStarted /*|| AppDomain.CurrentDomain.IsFinalizingForUnload()*/)
-                return;
-
             m_timer.Close();
         }
 
@@ -580,13 +437,6 @@ namespace System.Threading
             m_timer.Close();
             GC.SuppressFinalize(this);
         }
-        //public bool Close(WaitHandle notifyObject)
-        //{
-        //    bool result = m_timer.Close(notifyObject);
-        //    GC.SuppressFinalize(this);
-        //    return result;
-        //}
-
     }
 
 
@@ -674,15 +524,6 @@ namespace System.Threading
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
         }
-
-        //public bool Dispose(WaitHandle notifyObject)
-        //{
-        //    if (notifyObject==null)
-        //        throw new ArgumentNullException("notifyObject");
-        //    Contract.EndContractBlock();
-
-        //    return m_timer.Close(notifyObject);
-        //}
 
         public void Dispose()
         {

@@ -51,7 +51,7 @@ namespace System.Threading.Tasks
 
             if ((task.Options & TaskCreationOptions.LongRunning) != 0)
             {
-                NativeThreadPool.QueueLongRunningWork(() => task.ExecuteEntry(false));
+                ThreadPool.QueueLongRunningWork(() => task.ExecuteEntry(false));
             }
             else
             {

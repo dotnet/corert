@@ -531,6 +531,8 @@
     <Compile Include="System\Threading\SpinLock.cs" />
     <Compile Include="System\Threading\SpinWait.cs" />
     <Compile Include="System\Threading\SynchronizationContext.cs" />
+    <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Threading\SynchronizationLockException.cs" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
@@ -631,10 +633,19 @@
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
       <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
     </Compile>
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Threading\ThreadPool.WinRT.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Threading\ThreadPool.Win32.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
+      <Link>Interop\Windows\mincore\Interop.ThreadPool.cs</Link>
+    </Compile>
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Threading\Timer.WinRT.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Threading\Timer.Win32.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
+      <Link>Interop\Windows\mincore\Interop.Timer.cs</Link>
+    </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
-
   </ItemGroup>
   <ItemGroup>
     <!-- CORERT-TODO: Port to Unix -->
@@ -669,6 +680,8 @@
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\Threading\ThreadPool.Unix.cs" />
+    <Compile Include="System\Threading\Timer.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
     </Compile>

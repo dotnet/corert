@@ -79,14 +79,15 @@ namespace System.Text
         // Creates a new empty string builder (i.e., it represents String.Empty)
         // with the default capacity (16 characters).
         public StringBuilder()
-            : this(DefaultCapacity)
         {
+            m_MaxCapacity = int.MaxValue;
+            m_ChunkChars = new char[DefaultCapacity];
         }
 
         // Create a new empty string builder (i.e., it represents String.Empty)
         // with the specified capacity.
         public StringBuilder(int capacity)
-            : this(String.Empty, capacity)
+            : this(capacity, int.MaxValue)
         {
         }
 
@@ -254,9 +255,9 @@ namespace System.Text
                             int chunkLength = chunk.m_ChunkLength;
 
                             // Check that we will not overrun our boundaries. 
-                            if ((uint)(chunkLength + chunkOffset) <= ret.Length && (uint)chunkLength <= (uint)sourceArray.Length)
+                            if ((uint)(chunkLength + chunkOffset) <= (uint)ret.Length && (uint)chunkLength <= (uint)sourceArray.Length)
                             {
-                                fixed (char* sourcePtr = sourceArray)
+                                fixed (char* sourcePtr = &sourceArray[0])
                                     string.wstrcpy(destinationPtr + chunkOffset, sourcePtr, chunkLength);
                             }
                             else
@@ -266,9 +267,10 @@ namespace System.Text
                         }
                         chunk = chunk.m_ChunkPrevious;
                     } while (chunk != null);
+
+                    return ret;
                 }
             }
-            return ret;
         }
 
 
@@ -326,7 +328,7 @@ namespace System.Text
                                 char[] sourceArray = chunk.m_ChunkChars;
 
                                 // Check that we will not overrun our boundaries. 
-                                if ((uint)(chunkCount + curDestIndex) <= length && (uint)(chunkCount + chunkStartIndex) <= (uint)sourceArray.Length)
+                                if ((uint)(chunkCount + curDestIndex) <= (uint)length && (uint)(chunkCount + chunkStartIndex) <= (uint)sourceArray.Length)
                                 {
                                     fixed (char* sourcePtr = &sourceArray[chunkStartIndex])
                                         string.wstrcpy(destinationPtr + curDestIndex, sourcePtr, chunkCount);
@@ -339,9 +341,10 @@ namespace System.Text
                         }
                         chunk = chunk.m_ChunkPrevious;
                     }
+
+                    return ret;
                 }
             }
-            return ret;
         }
 
         // Convenience method for sb.Length=0;
@@ -515,9 +518,12 @@ namespace System.Text
             unsafe
             {
                 fixed (char* valueChars = &value[startIndex])
+                {
                     Append(valueChars, charCount);
+
+                    return this;
+                }
             }
-            return this;
         }
 
 
@@ -607,9 +613,12 @@ namespace System.Text
             unsafe
             {
                 fixed (char* valueChars = value)
+                {
                     Append(valueChars + startIndex, count);
+
+                    return this;
+                }
             }
-            return this;
         }
 
 
@@ -867,9 +876,10 @@ namespace System.Text
                         ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
                         --count;
                     }
+
+                    return this;
                 }
             }
-            return this;
         }
 
         // Removes the specified characters from this string builder.
@@ -1335,6 +1345,7 @@ namespace System.Text
             int pos = 0;
             int len = format.Length;
             char ch = '\x0';
+            StringBuilder unescapedItemFormat = null;
 
             ICustomFormatter cf = null;
             if (provider != null)
@@ -1412,51 +1423,69 @@ namespace System.Text
 
                 while (pos < len && (ch = format[pos]) == ' ') pos++;
                 Object arg = args[index];
-                StringBuilder fmt = null;
+                String itemFormat = null;
                 if (ch == ':')
                 {
                     pos++;
+                    int startPos = pos;
+
                     while (true)
                     {
                         if (pos == len) FormatError();
                         ch = format[pos];
                         pos++;
-                        if (ch == '{')
+                        if (ch == '}' || ch == '{')
                         {
-                            if (pos < len && format[pos] == '{')  // Treat as escape character for {{
-                                pos++;
-                            else
-                                FormatError();
-                        }
-                        else if (ch == '}')
-                        {
-                            if (pos < len && format[pos] == '}')  // Treat as escape character for }}
-                                pos++;
+                            if (ch == '{')
+                            {
+                                if (pos < len && format[pos] == '{')  // Treat as escape character for {{
+                                    pos++;
+                                else 
+                                    FormatError();
+                            }
                             else
                             {
-                                pos--;
-                                break;
+                                if (pos < len && format[pos] == '}')  // Treat as escape character for }}
+                                    pos++; 
+                                else 
+                                { 
+                                    pos--; 
+                                    break; 
+                                } 
                             }
-                        }
 
-                        if (fmt == null)
-                        {
-                            fmt = new StringBuilder();
+                            // Reaching here means the brace has been escaped 
+                            // so we need to build up the format string in segments 
+                            if (unescapedItemFormat == null)
+                            {
+                                unescapedItemFormat = new StringBuilder();
+                            }
+                            unescapedItemFormat.Append(format, startPos, pos - startPos - 1);
+                            startPos = pos;
                         }
-                        fmt.Append(ch);
                     }
+
+                    if (unescapedItemFormat == null || unescapedItemFormat.Length == 0) 
+                    { 
+                        if (startPos != pos) 
+                        { 
+                            // There was no brace escaping, extract the item format as a single string 
+                            itemFormat = format.Substring(startPos, pos - startPos); 
+                         } 
+                    } 
+                    else 
+                    { 
+                        unescapedItemFormat.Append(format, startPos, pos - startPos); 
+                        itemFormat = unescapedItemFormat.ToString(); 
+                        unescapedItemFormat.Clear(); 
+                     }
                 }
                 if (ch != '}') FormatError();
                 pos++;
-                String sFmt = null;
                 String s = null;
                 if (cf != null)
                 {
-                    if (fmt != null)
-                    {
-                        sFmt = fmt.ToString();
-                    }
-                    s = cf.Format(sFmt, arg, provider);
+                    s = cf.Format(itemFormat, arg, provider);
                 }
 
                 if (s == null)
@@ -1464,11 +1493,7 @@ namespace System.Text
                     IFormattable formattableArg = arg as IFormattable;
                     if (formattableArg != null)
                     {
-                        if (sFmt == null && fmt != null)
-                        {
-                            sFmt = fmt.ToString();
-                        }
-                        s = formattableArg.ToString(sFmt, provider);
+                        s = formattableArg.ToString(itemFormat, provider);
                     }
                     else if (arg != null)
                     {
@@ -2021,7 +2046,7 @@ namespace System.Text
             {
                 unsafe
                 {
-                    fixed (char* chunkCharsPtr = chunk.m_ChunkChars)
+                    fixed (char* chunkCharsPtr = &chunk.m_ChunkChars[0])
                     {
                         ThreadSafeCopy(chunkCharsPtr, newChunk.m_ChunkChars, 0, copyCount1);
 

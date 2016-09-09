@@ -353,6 +353,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             ObjectNode.ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+            string mainEhInfoSymbolName = null;
 
             int i = 0;
             foreach (var frameInfo in frameInfos)
@@ -414,7 +415,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     // emit last byte from the blob - the function kind
                     byte funcKind = blob[len - 1];
-                    if (ehInfo != null)
+                    if ((ehInfo != null) || (mainEhInfoSymbolName != null))
                     {
                         funcKind |= 0x04;
                     }
@@ -426,8 +427,14 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         Debug.Assert(ehInfo.Alignment == 1);
                         Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
+                        mainEhInfoSymbolName = "_ehInfo" + _currentNodeName;
+                        EmitSymbolDef(mainEhInfoSymbolName);
                         EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                         ehInfo = null;
+                    }
+                    else if (mainEhInfoSymbolName != null)
+                    {
+                        EmitSymbolRef(mainEhInfoSymbolName, RelocType.IMAGE_REL_BASED_REL32);
                     }
 
                     // For Unix, we build CFI blob map for each offset.

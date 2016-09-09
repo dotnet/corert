@@ -660,6 +660,20 @@ namespace System
             return result;
         }
 
+        public static TEnum Parse<TEnum>(String value) where TEnum : struct
+        {
+            return Parse<TEnum>(value, ignoreCase: false);
+        }
+
+        public static TEnum Parse<TEnum>(String value, bool ignoreCase) where TEnum : struct
+        {
+            Object result;
+            Exception exception;
+            if (!TryParseEnum(typeof(TEnum), value, ignoreCase, out result, out exception))
+                throw exception;
+            return (TEnum)result;
+        }
+
         public static unsafe Object ToObject(Type enumType, Object value)
         {
             if (enumType == null)
@@ -681,6 +695,18 @@ namespace System
 
             EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
             return RuntimeImports.RhBox(enumEEType, &rawValue);  //@todo: Not big-endian compatible.
+        }
+
+        public static bool TryParse(Type enumType, String value, bool ignoreCase, out Object result)
+        {
+            Exception exception;
+            return TryParseEnum(enumType, value, ignoreCase, out result, out exception);
+        }
+
+        public static bool TryParse(Type enumType, String value, out Object result)
+        {
+            Exception exception;
+            return TryParseEnum(enumType, value, false, out result, out exception);
         }
 
         public static bool TryParse<TEnum>(String value, bool ignoreCase, out TEnum result) where TEnum : struct
