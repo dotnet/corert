@@ -69,7 +69,7 @@ for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
     if exist "!__SourceFolder!\project.json" (
-        %CoreRT_CliDir%\dotnet restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "!__SourceFolder!"
+        %CoreRT_CliDir%\dotnet restore --source "https://dotnet.myget.org/F/dotnet-core" "!__SourceFolder!"
 
         set __Mode=Jit
         call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!

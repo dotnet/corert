@@ -22,7 +22,7 @@ runtest()
 
 restore()
 {
-    ${CoreRT_CliBinDir}/dotnet restore --quiet $1 --source "https://dotnet.myget.org/F/dotnet-core"
+    ${CoreRT_CliBinDir}/dotnet restore $1 --source "https://dotnet.myget.org/F/dotnet-core"
 }
 
 compiletest()

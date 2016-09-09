@@ -1,7 +1,8 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.5.0-rc2-23911",
-    "System.Collections.Immutable": "1.2.0-rc2-23911"
+    "NETStandard.Library": "1.6.0",
+    "System.Xml.ReaderWriter": "4.0.11",
+    "System.Collections.Immutable": "1.2.0"
   },
   "frameworks": {
     "netstandard1.3": {}

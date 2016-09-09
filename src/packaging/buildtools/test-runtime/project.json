@@ -1,29 +1,32 @@
 {
-    "dependencies": {
-      "NETStandard.Library": "1.5.0-rc2-23911",
-      "Microsoft.NETCore.TestHost": "1.0.0-rc2-23911",
-      "Microsoft.NETCore.Console": "1.0.0-rc2-23911",
-      "System.IO.Compression": "4.1.0-rc2-23911",
-      "coveralls.io": "1.4",
-      "OpenCover": "4.6.166",
-      "ReportGenerator": "2.3.1",
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.0.4",
+    "Microsoft.NETCore.TestHost": "1.0.0",
 
-      "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0023",
-      "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0023",
+    "coveralls.io": "1.4",
+    "OpenCover": "4.6.519",
+    "ReportGenerator": "2.4.3",
 
-      "xunit": "2.1.0",
-      "xunit.console.netcore": "1.0.2-prerelease-00101",
-      "xunit.runner.utility": "2.1.0"
-    },
-    "frameworks": {
-       "dnxcore50": {
-         "imports": "portable-net45+win8"
-       }
-    },
-    "runtimes": {
-       "win7-x64": { },
-       "win7-x86": { },
-       "ubuntu.14.04-x64": {},
-       "osx.10.10-x64": {}
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0040",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
+
+    "xunit": "2.1.0",
+    "xunit.console.netcore": "1.0.2-prerelease-00101",
+    "xunit.runner.utility": "2.1.0"
+  },
+  "frameworks": {
+    "dnxcore50": {
+      "imports": [
+        "netstandard1.6",
+        "portable-net45+win8"
+      ]
     }
+  },
+  "runtimes": {
+    "win7-x64": { },
+    "win7-x86": { },
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {}
+  }
 }
