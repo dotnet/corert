@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
-using System.Runtime;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -45,7 +45,7 @@ namespace System
             // Since this is a MulticastDelegate and we know
             // the types are the same, obj should also be a
             // MulticastDelegate
-            Contract.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
+            Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
             var d = Unsafe.As<MulticastDelegate>(obj);
 
             // there are 2 kind of delegate kinds for comparision

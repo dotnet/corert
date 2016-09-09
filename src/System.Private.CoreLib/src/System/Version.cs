@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using NumberStyles = System.Globalization.NumberStyles;
 
 namespace System
 {
@@ -488,10 +488,10 @@ namespace System
                         {
                             return e;
                         }
-                        Contract.Assert(false, "Int32.Parse() did not throw exception but TryParse failed: " + m_exceptionArgument);
+                        Debug.Assert(false, "Int32.Parse() did not throw exception but TryParse failed: " + m_exceptionArgument);
                         return new FormatException(SR.Format_InvalidString);
                     default:
-                        Contract.Assert(false, "Unmatched case in Version.GetVersionParseException() for value: " + m_failure);
+                        Debug.Assert(false, "Unmatched case in Version.GetVersionParseException() for value: " + m_failure);
                         return new ArgumentException(SR.Arg_VersionString);
                 }
             }

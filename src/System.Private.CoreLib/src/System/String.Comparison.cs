@@ -280,7 +280,7 @@ namespace System
 
             // NOTE: This may be subject to change if eliminating the check
             // in the callers makes them small enough to be inlined
-            Contract.Assert(strA._firstChar == strB._firstChar,
+            Debug.Assert(strA._firstChar == strB._firstChar,
                 "For performance reasons, callers of this method should " +
                 "check/short-circuit beforehand if the first char is the same.");
 
@@ -387,7 +387,7 @@ namespace System
                 if (*a != *b) return *a - *b;
 
                 DiffOffset1:
-                Contract.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
+                Debug.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
                 return *(a + 1) - *(b + 1);
             }
         }
@@ -395,11 +395,11 @@ namespace System
         internal unsafe static int CompareOrdinalHelper(string strA, int indexA, int countA, string strB, int indexB, int countB)
         {
             // Argument validation should be handled by callers.
-            Contract.Assert(strA != null && strB != null);
-            Contract.Assert(indexA >= 0 && indexB >= 0);
-            Contract.Assert(countA >= 0 && countB >= 0);
-            Contract.Assert(countA <= strA.Length - indexA);
-            Contract.Assert(countB <= strB.Length - indexB);
+            Debug.Assert(strA != null && strB != null);
+            Debug.Assert(indexA >= 0 && indexB >= 0);
+            Debug.Assert(countA >= 0 && countB >= 0);
+            Debug.Assert(countA <= strA.Length - indexA);
+            Debug.Assert(countB <= strB.Length - indexB);
 
             // Set up the loop variables.
             fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)

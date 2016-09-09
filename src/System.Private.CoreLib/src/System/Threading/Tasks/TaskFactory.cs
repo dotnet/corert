@@ -14,11 +14,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
 using System.Collections.Generic;
-using System.Security;
-using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
@@ -1607,7 +1604,7 @@ namespace System.Threading.Tasks
 
                     TrySetResult(_tasks);
                 }
-                Contract.Assert(_count >= 0, "Count should never go below 0");
+                Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
             /// <summary>
@@ -1679,7 +1676,7 @@ namespace System.Threading.Tasks
 
                     TrySetResult(_tasks);
                 }
-                Contract.Assert(_count >= 0, "Count should never go below 0");
+                Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
             /// <summary>

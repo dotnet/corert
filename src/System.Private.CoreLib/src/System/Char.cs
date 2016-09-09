@@ -12,12 +12,10 @@
 **
 ===========================================================*/
 
-using System;
-using System.Globalization;
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -94,7 +92,7 @@ namespace System
         // Return the Unicode category for Unicode character <= 0x00ff.      
         private static UnicodeCategory GetLatin1UnicodeCategory(char ch)
         {
-            Contract.Assert(IsLatin1(ch), "Char.GetLatin1UnicodeCategory(): ch should be <= 007f");
+            Debug.Assert(IsLatin1(ch), "Char.GetLatin1UnicodeCategory(): ch should be <= 007f");
             return (UnicodeCategory)(s_categoryForLatin1[(int)ch]);
         }
 
@@ -874,8 +872,8 @@ namespace System
 
         internal static bool IsUnicodeWhiteSpace(String s, int index)
         {
-            Contract.Assert(s != null, "s!=null");
-            Contract.Assert(index >= 0 && index < s.Length, "index >= 0 && index < s.Length");
+            Debug.Assert(s != null, "s!=null");
+            Debug.Assert(index >= 0 && index < s.Length, "index >= 0 && index < s.Length");
 
             UnicodeCategory uc = FormatProvider.GetUnicodeCategory(s, index);
             // In Unicode 3.0, U+2028 is the only character which is under the category "LineSeparator".

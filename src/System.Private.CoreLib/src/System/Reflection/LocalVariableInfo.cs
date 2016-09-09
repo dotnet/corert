@@ -9,8 +9,7 @@
 **
 ==============================================================*/
 
-using global::System;
-using global::System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -41,7 +40,7 @@ namespace System.Reflection
             get
             {
                 // Don't laugh - this is really how the desktop behaves if you don't override.
-                Contract.Assert(false, "type must be set!");
+                Debug.Assert(false, "type must be set!");
                 return null;
             }
         }

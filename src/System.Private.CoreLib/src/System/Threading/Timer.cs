@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -66,7 +69,7 @@ namespace System.Threading
                 ulong time100ns;
 
                 bool result = Interop.mincore.QueryUnbiasedInterruptTime(out time100ns);
-                Contract.Assert(result);
+                Debug.Assert(result);
 
                 // convert to 100ns to milliseconds, and truncate to 32 bits.
                 return (int)(uint)(time100ns / 10000);
@@ -148,7 +151,7 @@ namespace System.Threading
                 TimerQueueTimer timer = m_timers;
                 while (timer != null)
                 {
-                    Contract.Assert(timer.m_dueTime != Timer.UnsignedInfiniteTimeout);
+                    Debug.Assert(timer.m_dueTime != Timer.UnsignedInfiniteTimeout);
 
                     uint elapsed = (uint)(nowTicks - timer.m_startTicks);
                     if (elapsed >= timer.m_dueTime)

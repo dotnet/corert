@@ -11,13 +11,11 @@
 **
 =============================================================================*/
 
-using System.Threading;
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -104,7 +102,7 @@ namespace System.Threading
 
         internal static int WaitOneNative(SafeWaitHandle waitableSafeHandle, long millisecondsTimeout)
         {
-            Contract.Assert(millisecondsTimeout >= -1 && millisecondsTimeout <= int.MaxValue);
+            Debug.Assert(millisecondsTimeout >= -1 && millisecondsTimeout <= int.MaxValue);
 
             waitableSafeHandle.DangerousAddRef();
             try

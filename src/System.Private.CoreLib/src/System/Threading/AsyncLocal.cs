@@ -2,14 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-//
-
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Security;
+using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -77,7 +70,7 @@ namespace System.Threading
 
         void IAsyncLocal.OnValueChanged(object previousValueObj, object currentValueObj, bool contextChanged)
         {
-            Contract.Assert(m_valueChangedHandler != null);
+            Debug.Assert(m_valueChangedHandler != null);
             T previousValue = previousValueObj == null ? default(T) : (T)previousValueObj;
             T currentValue = currentValueObj == null ? default(T) : (T)currentValueObj;
             m_valueChangedHandler(new AsyncLocalValueChangedArgs<T>(previousValue, currentValue, contextChanged));

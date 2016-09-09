@@ -12,12 +12,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -103,7 +98,7 @@ namespace System.Globalization
         {
             get
             {
-                Contract.Assert(_name != null, "CompareInfo.Name Expected _name to be set");
+                Debug.Assert(_name != null, "CompareInfo.Name Expected _name to be set");
                 if (_name == "zh-CHT" || _name == "zh-CHS")
                 {
                     return _name;
@@ -286,8 +281,8 @@ namespace System.Globalization
         //
         internal static unsafe int CompareOrdinalIgnoreCase(string strA, int indexA, int lengthA, string strB, int indexB, int lengthB)
         {
-            Contract.Assert(indexA + lengthA <= strA.Length);
-            Contract.Assert(indexB + lengthB <= strB.Length);
+            Debug.Assert(indexA + lengthA <= strA.Length);
+            Debug.Assert(indexB + lengthB <= strB.Length);
 
             int length = Math.Min(lengthA, lengthB);
             int range = length;

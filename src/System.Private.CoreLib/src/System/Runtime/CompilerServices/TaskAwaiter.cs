@@ -39,13 +39,11 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Internal.Threading.Tasks.Tracing;
 
 // NOTE: For performance reasons, initialization is not verified.  If a developer
@@ -141,7 +139,7 @@ namespace System.Runtime.CompilerServices
             if (!task.IsCompleted)
             {
                 bool taskCompleted = task.InternalWait(Timeout.Infinite, default(CancellationToken));
-                Contract.Assert(taskCompleted, "With an infinite timeout, the task should have always completed.");
+                Debug.Assert(taskCompleted, "With an infinite timeout, the task should have always completed.");
             }
 
             // Now that we're done, alert the debugger if so requested
@@ -169,7 +167,7 @@ namespace System.Runtime.CompilerServices
                     if (oceEdi != null)
                     {
                         oceEdi.Throw();
-                        Contract.Assert(false, "Throw() should have thrown");
+                        Debug.Assert(false, "Throw() should have thrown");
                     }
                     throw new TaskCanceledException(task);
 
@@ -180,12 +178,12 @@ namespace System.Runtime.CompilerServices
                     if (edis.Count > 0)
                     {
                         edis[0].Throw();
-                        Contract.Assert(false, "Throw() should have thrown");
+                        Debug.Assert(false, "Throw() should have thrown");
                         break; // Necessary to compile: non-reachable, but compiler can't determine that
                     }
                     else
                     {
-                        Contract.Assert(false, "There should be exceptions if we're Faulted.");
+                        Debug.Assert(false, "There should be exceptions if we're Faulted.");
                         throw task.Exception;
                     }
             }
@@ -223,7 +221,7 @@ namespace System.Runtime.CompilerServices
         {
             Contract.Requires(task != null, "Need a task to wait on");
             Contract.Requires(continuation != null, "Need a continuation to invoke when the wait completes");
-            Contract.Assert(TaskTrace.Enabled, "Should only be used when ETW tracing is enabled");
+            Debug.Assert(TaskTrace.Enabled, "Should only be used when ETW tracing is enabled");
 
             // ETW event for Task Wait Begin
             var currentTaskAtBegin = Task.InternalCurrent;

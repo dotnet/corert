@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Globalization
 {
@@ -31,7 +31,7 @@ namespace System.Globalization
 
         private unsafe string ChangeCase(string s, bool toUpper)
         {
-            Contract.Assert(s != null);
+            Debug.Assert(s != null);
 
             //
             //  Get the length of the string.
@@ -76,7 +76,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
 
-                Contract.Assert(ret == nLengthInput, "Expected getting the same length of the original string");
+                Debug.Assert(ret == nLengthInput, "Expected getting the same length of the original string");
                 return result;
             }
         }

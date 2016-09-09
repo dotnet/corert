@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -34,7 +35,7 @@ namespace System.Text
         {
             // Validate parameters
 
-            Contract.Assert(encoding != null); // this parameter should only be affected internally, so just do a debug check here
+            Debug.Assert(encoding != null); // this parameter should only be affected internally, so just do a debug check here
             if (chars == null)
             {
                 throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
@@ -60,7 +61,7 @@ namespace System.Text
 
         public unsafe static int GetByteCount(Encoding encoding, string s)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (s == null)
             {
                 string paramName = encoding is ASCIIEncoding ? "chars" : "s"; // ASCIIEncoding calls the string chars
@@ -83,7 +84,7 @@ namespace System.Text
 
         public unsafe static int GetByteCount(Encoding encoding, char* chars, int count)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (chars == null)
             {
                 throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
@@ -100,7 +101,7 @@ namespace System.Text
 
         public unsafe static int GetBytes(Encoding encoding, string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (s == null || bytes == null)
             {
                 string stringName = encoding is ASCIIEncoding ? "chars" : "s"; // ASCIIEncoding calls the first parameter chars
@@ -136,7 +137,7 @@ namespace System.Text
 
         public unsafe static int GetBytes(Encoding encoding, char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (chars == null || bytes == null)
             {
                 throw new ArgumentNullException(chars == null ? "chars" : "bytes", SR.ArgumentNull_Array);
@@ -176,7 +177,7 @@ namespace System.Text
 
         public unsafe static int GetBytes(Encoding encoding, char* chars, int charCount, byte* bytes, int byteCount)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
             {
                 throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
@@ -192,7 +193,7 @@ namespace System.Text
 
         public unsafe static int GetCharCount(Encoding encoding, byte[] bytes, int index, int count)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (bytes == null)
             {
                 throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
@@ -218,7 +219,7 @@ namespace System.Text
 
         public unsafe static int GetCharCount(Encoding encoding, byte* bytes, int count)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (bytes == null)
             {
                 throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
@@ -234,7 +235,7 @@ namespace System.Text
 
         public unsafe static int GetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
             {
                 throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
@@ -272,7 +273,7 @@ namespace System.Text
 
         public unsafe static int GetChars(Encoding encoding, byte* bytes, int byteCount, char* chars, int charCount)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
             {
                 throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
@@ -288,7 +289,7 @@ namespace System.Text
 
         public unsafe static string GetString(Encoding encoding, byte[] bytes, int index, int count)
         {
-            Contract.Assert(encoding != null);
+            Debug.Assert(encoding != null);
             if (bytes == null)
             {
                 throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);

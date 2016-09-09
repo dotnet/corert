@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-// 
-//
-
 /*============================================================
 **
 ** Class:  ExecutionContext
@@ -16,10 +11,9 @@
 **
 ** 
 ===========================================================*/
-using System;
+
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Security;
+using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -179,7 +173,7 @@ namespace System.Threading
             if (needChangeNotifications)
             {
                 if (hadPreviousValue)
-                    Contract.Assert(current.m_localChangeNotifications.Contains(local));
+                    Debug.Assert(current.m_localChangeNotifications.Contains(local));
                 else
                     current.m_localChangeNotifications.Add(local);
 

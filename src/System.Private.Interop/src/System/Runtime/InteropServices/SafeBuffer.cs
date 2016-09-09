@@ -381,7 +381,7 @@ namespace System.Runtime.InteropServices
 
         private static InvalidOperationException NotInitialized()
         {
-            Contract.Assert(false, "Uninitialized SafeBuffer!  Someone needs to call Initialize before using this instance!");
+            Debug.Assert(false, "Uninitialized SafeBuffer!  Someone needs to call Initialize before using this instance!");
             return new InvalidOperationException(SR.InvalidOperation_MustCallInitialize);
         }
 

@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security;
-using System.Threading;
+using System.Diagnostics;
 using System.Globalization;
-using System.Diagnostics.Contracts;
+using System.Threading;
 
 namespace System.Text
 {
@@ -122,7 +120,7 @@ namespace System.Text
         // Don't touch ref chars unless we succeed
         internal unsafe virtual bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
-            Contract.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (this.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
@@ -177,7 +175,7 @@ namespace System.Text
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*
         {
-            Contract.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (this.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))

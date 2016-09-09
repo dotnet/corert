@@ -15,12 +15,7 @@
 #pragma warning disable 0420
 
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Threading;
-using System.Security;
-using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -283,7 +278,7 @@ namespace System.Threading.Tasks
         {
             // Protected constructor. It's here to ensure all user implemented TaskSchedulers will be 
             // registered in the active schedulers list.
-            Contract.Assert(s_activeTaskSchedulers != null, "Expected non-null s_activeTaskSchedulers");
+            Debug.Assert(s_activeTaskSchedulers != null, "Expected non-null s_activeTaskSchedulers");
             s_activeTaskSchedulers.Add(this, null);
         }
 
@@ -532,14 +527,14 @@ namespace System.Threading.Tasks
         /// <returns>An array of <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> instances.</returns> 
         //internal static TaskScheduler[] GetTaskSchedulersForDebugger()
         //{
-        //    Contract.Assert(s_activeTaskSchedulers != null, "Expected non-null s_activeTaskSchedulers");
+        //    Debug.Assert(s_activeTaskSchedulers != null, "Expected non-null s_activeTaskSchedulers");
 
         //    ICollection<TaskScheduler> schedulers = s_activeTaskSchedulers.Keys;
         //    var arr = new TaskScheduler[schedulers.Count];
         //    schedulers.CopyTo(arr, 0);
         //    foreach (var scheduler in arr)
         //    {
-        //        Contract.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");
+        //        Debug.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");
         //        int tmp = scheduler.Id; // force Ids for debugger
         //    }
         //    return arr;
