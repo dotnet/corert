@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -105,7 +103,7 @@ namespace System.Globalization
                 Number -= 5000;
             }
 
-            Contract.Assert(Number > 0 && Number <= 999, "Number is out of range."); ;
+            Debug.Assert(Number > 0 && Number <= 999, "Number is out of range."); ;
 
             //
             //  Get the Hundreds.

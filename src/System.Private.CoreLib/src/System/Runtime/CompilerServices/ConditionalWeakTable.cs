@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -246,7 +246,7 @@ namespace System.Runtime.CompilerServices
         //----------------------------------------------------------------------------------------
         private void CreateEntry(TKey key, TValue value)
         {
-            Contract.Assert(_lock.IsAcquired);
+            Debug.Assert(_lock.IsAcquired);
 
             Container c = _container;
             if (!c.HasCapacity)
@@ -312,7 +312,7 @@ namespace System.Runtime.CompilerServices
         {
             internal Container()
             {
-                Contract.Assert(IsPowerOfTwo(InitialCapacity));
+                Debug.Assert(IsPowerOfTwo(InitialCapacity));
                 int size = InitialCapacity;
                 _buckets = new int[size];
                 for (int i = 0; i < _buckets.Length; i++)
@@ -344,7 +344,7 @@ namespace System.Runtime.CompilerServices
             //----------------------------------------------------------------------------------------
             internal void CreateEntryNoResize(TKey key, TValue value)
             {
-                Contract.Assert(HasCapacity);
+                Debug.Assert(HasCapacity);
 
                 VerifyIntegrity();
                 _invalid = true;
@@ -467,7 +467,7 @@ namespace System.Runtime.CompilerServices
             
             internal Container Resize(int newSize)
             {
-                Contract.Assert(IsPowerOfTwo(newSize));
+                Debug.Assert(IsPowerOfTwo(newSize));
 
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.

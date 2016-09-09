@@ -6,11 +6,10 @@
 // This is used internally to create best fit behavior as per the original windows best fit behavior.
 //
 
-using System;
-using System.Globalization;
-using System.Text;
-using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Threading;
 
 namespace System.Text
 {
@@ -103,7 +102,7 @@ namespace System.Text
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect
             // character in our array.
             // Shouldn't be able to get here for all of our code pages, table would have to be messed up.
-            Contract.Assert(_iCount < 1, "[InternalEncoderBestFitFallbackBuffer.Fallback(non surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", FormatProvider.InvariantCulture) + " caused recursive fallback");
+            Debug.Assert(_iCount < 1, "[InternalEncoderBestFitFallbackBuffer.Fallback(non surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", FormatProvider.InvariantCulture) + " caused recursive fallback");
 
             _iCount = _iSize = 1;
             _cBestFit = TryBestFit(charUnknown);
@@ -130,7 +129,7 @@ namespace System.Text
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect
             // character in our array.  0 is processing last character, < 0 is not falling back
             // Shouldn't be able to get here, table would have to be messed up.
-            Contract.Assert(_iCount < 1, "[InternalEncoderBestFitFallbackBuffer.Fallback(surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", FormatProvider.InvariantCulture) + " caused recursive fallback");
+            Debug.Assert(_iCount < 1, "[InternalEncoderBestFitFallbackBuffer.Fallback(surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", FormatProvider.InvariantCulture) + " caused recursive fallback");
 
             // Go ahead and get our fallback, surrogates don't have best fit
             _cBestFit = '?';
@@ -211,7 +210,7 @@ namespace System.Text
                 if (cTest == cUnknown)
                 {
                     // We found it
-                    Contract.Assert(index + 1 < _oFallback.arrayBestFit.Length,
+                    Debug.Assert(index + 1 < _oFallback.arrayBestFit.Length,
                         "[InternalEncoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
                     return _oFallback.arrayBestFit[index + 1];
                 }
@@ -232,7 +231,7 @@ namespace System.Text
                 if (_oFallback.arrayBestFit[index] == cUnknown)
                 {
                     // We found it
-                    Contract.Assert(index + 1 < _oFallback.arrayBestFit.Length,
+                    Debug.Assert(index + 1 < _oFallback.arrayBestFit.Length,
                         "[InternalEncoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
                     return _oFallback.arrayBestFit[index + 1];
                 }

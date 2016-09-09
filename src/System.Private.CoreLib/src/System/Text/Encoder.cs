@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -201,7 +200,7 @@ namespace System.Text
             // Do the work
             int result = GetBytes(arrChar, 0, charCount, arrByte, 0, flush);
 
-            Contract.Assert(result <= byteCount, "Returned more bytes than we have space for");
+            Debug.Assert(result <= byteCount, "Returned more bytes than we have space for");
 
             // Copy the byte array
             // WARNING: We MUST make sure that we don't copy too many bytes.  We can't

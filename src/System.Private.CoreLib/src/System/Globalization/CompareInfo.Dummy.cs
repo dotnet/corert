@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Globalization
 {
@@ -148,10 +148,10 @@ namespace System.Globalization
             char valueChar;     // Character for case lookup in value
             int lastSourceStart;
 
-            Contract.Assert(source != null);
-            Contract.Assert(value != null);
-            Contract.Assert(sourceCount>= 0);
-            Contract.Assert(valueCount >= 0);
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
+            Debug.Assert(sourceCount>= 0);
+            Debug.Assert(valueCount >= 0);
 
             if(valueCount == 0)
             {

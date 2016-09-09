@@ -12,17 +12,13 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using Internal.Runtime.Augments;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Runtime;
 using System.Runtime.ExceptionServices;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Internal.Runtime.Augments;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
 using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
@@ -530,7 +526,7 @@ namespace System.Runtime.CompilerServices
             if (task == null)
             {
                 m_task = GetTaskForResult(result);
-                Contract.Assert(m_task != null, "GetTaskForResult should never return null");
+                Debug.Assert(m_task != null, "GetTaskForResult should never return null");
             }
             // Slow path: complete the existing task.
             else
@@ -702,7 +698,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Creates an array of cached tasks for the values in the range [INCLUSIVE_MIN,EXCLUSIVE_MAX).</summary>
         private static Task<Int32>[] CreateInt32Tasks()
         {
-            Contract.Assert(EXCLUSIVE_INT32_MAX >= INCLUSIVE_INT32_MIN, "Expected max to be at least min");
+            Debug.Assert(EXCLUSIVE_INT32_MAX >= INCLUSIVE_INT32_MIN, "Expected max to be at least min");
             var tasks = new Task<Int32>[EXCLUSIVE_INT32_MAX - INCLUSIVE_INT32_MIN];
             for (int i = 0; i < tasks.Length; i++)
             {

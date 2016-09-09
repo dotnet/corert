@@ -12,10 +12,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Security;
-using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
@@ -798,7 +795,7 @@ namespace System.Threading.Tasks
                 }, state);
                 if (asyncResult.CompletedSynchronously)
                 {
-                    Contract.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
+                    Debug.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
                     FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: false);
                 }
             }
@@ -910,7 +907,7 @@ namespace System.Threading.Tasks
                 }, state);
                 if (asyncResult.CompletedSynchronously)
                 {
-                    Contract.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
+                    Debug.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
                     FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: false);
                 }
             }
@@ -1030,7 +1027,7 @@ namespace System.Threading.Tasks
                 }, state);
                 if (asyncResult.CompletedSynchronously)
                 {
-                    Contract.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
+                    Debug.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
                     FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: false);
                 }
             }
@@ -1158,7 +1155,7 @@ namespace System.Threading.Tasks
                 }, state);
                 if (asyncResult.CompletedSynchronously)
                 {
-                    Contract.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
+                    Debug.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
                     FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: false);
                 }
             }
@@ -1195,9 +1192,9 @@ namespace System.Threading.Tasks
             where TInstance : class
         {
             // Validate arguments, but only with asserts, as this is an internal only implementation.
-            Contract.Assert(thisRef != null, "Expected a non-null thisRef");
-            Contract.Assert(beginMethod != null, "Expected a non-null beginMethod");
-            Contract.Assert(endMethod != null, "Expected a non-null endMethod");
+            Debug.Assert(thisRef != null, "Expected a non-null thisRef");
+            Debug.Assert(beginMethod != null, "Expected a non-null beginMethod");
+            Debug.Assert(endMethod != null, "Expected a non-null endMethod");
 
             // Create the promise and start the operation.
             // No try/catch is necessary here as we want exceptions to bubble out, and because
@@ -1210,7 +1207,7 @@ namespace System.Threading.Tasks
             // If it completed synchronously, we'll handle that here.
             if (asyncResult.CompletedSynchronously)
             {
-                Contract.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
+                Debug.Assert(asyncResult.IsCompleted, "If the operation completed synchronously, it must be completed.");
                 promise.Complete(thisRef, endMethod, asyncResult, requiresSynchronization: false);
             }
 
@@ -1290,7 +1287,7 @@ namespace System.Threading.Tasks
                 TInstance thisRef, Func<TInstance, IAsyncResult, TResult> endMethod, IAsyncResult asyncResult,
                 bool requiresSynchronization)
             {
-                Contract.Assert(!IsCompleted, "The task should not have been completed yet.");
+                Debug.Assert(!IsCompleted, "The task should not have been completed yet.");
 
                 // Run the end method and complete the task
                 bool successfullySet = false;
@@ -1319,7 +1316,7 @@ namespace System.Threading.Tasks
                 {
                     successfullySet = TrySetException(exc);
                 }
-                Contract.Assert(successfullySet, "Expected the task to not yet be completed");
+                Debug.Assert(successfullySet, "Expected the task to not yet be completed");
             }
         }
 
@@ -2060,7 +2057,7 @@ namespace System.Threading.Tasks
             }
 
             // returned continuation task, off of starter
-            Contract.Assert(continuationAction != null);
+            Debug.Assert(continuationAction != null);
             return starter.ContinueWith<TResult>(
                 //the following delegate avoids closure capture as much as possible
                 //completedTask.Result is the winning task; state == continuationAction
@@ -2159,7 +2156,7 @@ namespace System.Threading.Tasks
             }
 
             // returned continuation task, off of starter
-            Contract.Assert(continuationAction != null);
+            Debug.Assert(continuationAction != null);
             return starter.ContinueWith<TResult>(
                 // Use a cached delegate
                 GenericDelegateCache<TAntecedentResult, TResult>.CWAnyActionDelegate,

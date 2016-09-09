@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -208,7 +207,7 @@ namespace System.Text
             int result = GetChars(arrByte, 0, byteCount, arrChar, 0, flush);
 
             // The only way this could fail is a bug in GetChars
-            Contract.Assert(result <= charCount, "Returned more chars than we have space for");
+            Debug.Assert(result <= charCount, "Returned more chars than we have space for");
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't

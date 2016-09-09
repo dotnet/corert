@@ -8,10 +8,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime;
-using System.Threading;
 
 namespace System.Threading
 {
@@ -189,7 +187,7 @@ namespace System.Threading
 #endif
             SpinUntil(condition, Timeout.Infinite);
 #if DEBUG
-            Contract.Assert(result);
+            Debug.Assert(result);
 #endif
         }
 
@@ -303,7 +301,7 @@ namespace System.Threading
                     s_lastProcessorCountRefreshTicks = now;
                 }
 
-                Contract.Assert(procCount > 0 && procCount <= 64,
+                Debug.Assert(procCount > 0 && procCount <= 64,
                     "Processor count not within the expected range (1 - 64).");
 
                 return procCount;

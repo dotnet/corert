@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Text;
-using Microsoft.Win32;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -191,7 +187,7 @@ namespace System
             internal void SetFailure(ParseFailureKind failure, string failureMessageFormat, object failureMessageFormatArgument,
                                      string failureArgumentName, Exception innerException)
             {
-                Contract.Assert(failure != ParseFailureKind.NativeException, "ParseFailureKind.NativeException should not be used with this overload");
+                Debug.Assert(failure != ParseFailureKind.NativeException, "ParseFailureKind.NativeException should not be used with this overload");
                 m_failure = failure;
                 m_resourceMessageFormat = failureMessageFormat;
                 m_failureMessageFormatArgument = failureMessageFormatArgument;
@@ -223,7 +219,7 @@ namespace System
                         return m_innerException;
 
                     default:
-                        Contract.Assert(false, "Unknown GuidParseFailure: " + m_failure);
+                        Debug.Assert(false, "Unknown GuidParseFailure: " + m_failure);
                         return new FormatException(SR.Format_GuidUnrecognized);
                 }
             }

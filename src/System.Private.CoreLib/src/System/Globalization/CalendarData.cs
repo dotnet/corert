@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
-using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Globalization
 {
@@ -108,7 +104,7 @@ namespace System.Globalization
 
             if (!LoadCalendarDataFromSystem(localeName, calendarId))
             {
-                Contract.Assert(false, "[CalendarData] LoadCalendarDataFromSystem call isn't expected to fail for calendar " + calendarId + " locale " + localeName);
+                Debug.Assert(false, "[CalendarData] LoadCalendarDataFromSystem call isn't expected to fail for calendar " + calendarId + " locale " + localeName);
 
                 // Something failed, try invariant for missing parts
                 // This is really not good, but we don't want the callers to crash.

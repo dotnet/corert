@@ -8,11 +8,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Security;
 
 #pragma warning disable 0420
 
@@ -42,7 +39,7 @@ namespace System.Threading
 
         internal unsafe static int WaitForMultipleObjects(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
         {
-            Contract.Assert(millisecondsTimeout >= -1);
+            Debug.Assert(millisecondsTimeout >= -1);
 
             //
             // In the CLR, we use CoWaitForMultipleHandles to pump messages while waiting in an STA.  In that case, we cannot use WAIT_ALL.  
@@ -59,7 +56,7 @@ namespace System.Threading
             int result;
             if (ReentrantWaitsEnabled)
             {
-                Contract.Assert(!waitAll);
+                Debug.Assert(!waitAll);
                 result = RuntimeImports.RhCompatibleReentrantWaitAny(false, millisecondsTimeout, numHandles, pHandles);
             }
             else
@@ -146,7 +143,7 @@ namespace System.Threading
                                     break;
 
                                 default:
-                                    Contract.Assert(false, "NA apartment without NA qualifier");
+                                    Debug.Assert(false, "NA apartment without NA qualifier");
                                     break;
                             }
                             break;
@@ -154,7 +151,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    Contract.Assert(false, "bad return from CoGetApartmentType");
+                    Debug.Assert(false, "bad return from CoGetApartmentType");
                     break;
             }
 
@@ -178,7 +175,7 @@ namespace System.Threading
 
         internal static void RestoreReentrantWaits()
         {
-            Contract.Assert(t_reentrantWaitSuppressionCount > 0);
+            Debug.Assert(t_reentrantWaitSuppressionCount > 0);
             t_reentrantWaitSuppressionCount--;
         }
 

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Runtime.Serialization
@@ -108,7 +108,7 @@ namespace System.Runtime.Serialization
         private void ExpandArrays()
         {
             int newSize;
-            Contract.Assert(_names.Length == _count);
+            Debug.Assert(_names.Length == _count);
 
             newSize = (_count * 2);
 
@@ -138,9 +138,9 @@ namespace System.Runtime.Serialization
 
         internal void UpdateValue(string name, object value, Type type)
         {
-            Contract.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
-            Contract.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
-            Contract.Assert(null != type, "[SerializationInfo.UpdateValue]type!=null");
+            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
+            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
+            Debug.Assert(null != type, "[SerializationInfo.UpdateValue]type!=null");
 
             int index = FindElement(name);
             if (index < 0)
@@ -295,11 +295,11 @@ namespace System.Runtime.Serialization
                 throw new SerializationException(SR.Format(SR.Serialization_NotFound, name));
             }
 
-            Contract.Assert(index < _values.Length);
-            Contract.Assert(index < _types.Length);
+            Debug.Assert(index < _values.Length);
+            Debug.Assert(index < _types.Length);
 
             foundType = _types[index];
-            Contract.Assert(foundType != null);
+            Debug.Assert(foundType != null);
             return _values[index];
         }
 
@@ -312,11 +312,11 @@ namespace System.Runtime.Serialization
                 return null;
             }
 
-            Contract.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<m_data.Length");
-            Contract.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
+            Debug.Assert(index < _values.Length, "[SerializationInfo.GetElement]index<m_data.Length");
+            Debug.Assert(index < _types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
 
             foundType = _types[index];
-            Contract.Assert(foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            Debug.Assert(foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return _values[index];
         }
 
@@ -336,13 +336,13 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Contract.Assert(_converter != null);
+            Debug.Assert(_converter != null);
             return _converter.Convert(value, type);
         }
 
         internal object GetValueNoThrow(string name, Type type)
         {
-            Contract.Assert(type != null, "[SerializationInfo.GetValue]type ==null");
+            Debug.Assert(type != null, "[SerializationInfo.GetValue]type ==null");
 
             Type foundType;
             object value = GetElementNoThrow(name, out foundType);
@@ -354,7 +354,7 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Contract.Assert(_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
+            Debug.Assert(_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
             return _converter.Convert(value, type);
         }
 

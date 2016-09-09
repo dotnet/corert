@@ -9,17 +9,15 @@
 **
 ===========================================================*/
 
-using System.Text;
-using System.Runtime;
-using System.Diagnostics;
-using System.Globalization;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
-using System.Security;
+using System.Text;
 
 namespace System
 {
@@ -427,7 +425,7 @@ namespace System
 
             // Get our string length
             int stringLength = encoding.GetCharCount(bytes, byteLength, null);
-            Contract.Assert(stringLength >= 0, "stringLength >= 0");
+            Debug.Assert(stringLength >= 0, "stringLength >= 0");
 
             // They gave us an empty string if they needed one
             // 0 bytelength might be possible if there's something in an encoder
@@ -438,7 +436,7 @@ namespace System
             fixed (char* pTempChars = &s._firstChar)
             {
                 int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength, null);
-                Contract.Assert(stringLength == doubleCheck,
+                Debug.Assert(stringLength == doubleCheck,
                     "Expected encoding.GetChars to return same length as encoding.GetCharCount");
             }
 
@@ -528,7 +526,7 @@ namespace System
                 end += 2;
             }
 
-            Contract.Assert(end[0] == 0 || end[1] == 0);
+            Debug.Assert(end[0] == 0 || end[1] == 0);
             if (end[0] != 0) end++;
 #else // !BIT64
             // Based on https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
@@ -585,7 +583,7 @@ namespace System
 #endif // !BIT64
 
             FoundZero:
-            Contract.Assert(*end == 0);
+            Debug.Assert(*end == 0);
 
             int count = (int)(end - ptr);
 

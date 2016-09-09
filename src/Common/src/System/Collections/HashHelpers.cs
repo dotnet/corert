@@ -12,11 +12,7 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Runtime;
 using System.Diagnostics;
-using System.Threading;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
 
 namespace System.Collections
@@ -94,7 +90,7 @@ namespace System.Collections
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
             {
-                Contract.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
+                Debug.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
                 return MaxPrimeArrayLength;
             }
 

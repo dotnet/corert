@@ -2,14 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Runtime;
-using System.Globalization;
-using System.Security;
-using System.Threading;
-using System.Text;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -650,7 +643,7 @@ namespace System.Text
             int byteCount = GetByteCount(s);
             byte[] bytes = new byte[byteCount];
             int bytesReceived = GetBytes(s, 0, s.Length, bytes, 0);
-            Contract.Assert(byteCount == bytesReceived);
+            Debug.Assert(byteCount == bytesReceived);
             return bytes;
         }
 
@@ -716,7 +709,7 @@ namespace System.Text
             // Do the work
             int result = GetBytes(arrChar, 0, charCount, arrByte, 0);
 
-            Contract.Assert(result <= byteCount, "[Encoding.GetBytes]Returned more bytes than we have space for");
+            Debug.Assert(result <= byteCount, "[Encoding.GetBytes]Returned more bytes than we have space for");
 
             // Copy the byte array
             // WARNING: We MUST make sure that we don't copy too many bytes.  We can't
@@ -872,7 +865,7 @@ namespace System.Text
             // Do the work
             int result = GetChars(arrByte, 0, byteCount, arrChar, 0);
 
-            Contract.Assert(result <= charCount, "[Encoding.GetChars]Returned more chars than we have space for");
+            Debug.Assert(result <= charCount, "[Encoding.GetChars]Returned more chars than we have space for");
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't
@@ -1292,7 +1285,7 @@ namespace System.Text
 
                 // If we're getting chars or getting char count we don't expect to have
                 // to remember fallbacks between calls (so it should be empty)
-                Contract.Assert(_fallbackBuffer.Remaining == 0,
+                Debug.Assert(_fallbackBuffer.Remaining == 0,
                     "[Encoding.EncodingCharBuffer.EncodingCharBuffer]Expected empty fallback buffer for getchars/charcount");
                 _fallbackBuffer.InternalInitialize(_bytes, _charEnd);
             }
@@ -1357,7 +1350,7 @@ namespace System.Text
             // but we'll double check just to make sure.
             internal unsafe byte GetNextByte()
             {
-                Contract.Assert(_bytes < _byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
+                Debug.Assert(_bytes < _byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
                 if (_bytes >= _byteEnd)
                     return 0;
                 return *(_bytes++);
@@ -1474,7 +1467,7 @@ namespace System.Text
 
             internal unsafe bool AddByte(byte b, int moreBytesExpected)
             {
-                Contract.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
+                Debug.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
                 if (_bytes != null)
                 {
                     if (_bytes >= _byteEnd - moreBytesExpected)
@@ -1531,7 +1524,7 @@ namespace System.Text
                     fallbackBuffer.MovePrevious();                      // don't use last fallback
                 else
                 {
-                    Contract.Assert(_chars > _charStart ||
+                    Debug.Assert(_chars > _charStart ||
                         ((bThrow == true) && (_bytes == _byteStart)),
                         "[EncodingByteBuffer.MovePrevious]expected previous data or throw");
                     if (_chars > _charStart)

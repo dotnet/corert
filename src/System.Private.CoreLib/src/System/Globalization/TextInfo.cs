@@ -12,14 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System.Security;
-using System;
-using System.Text;
-using System.Threading;
-using System.Runtime;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -396,7 +390,7 @@ namespace System.Globalization
 
         private unsafe int GetCaseInsensitiveHashCodeSlow(String str)
         {
-            Contract.Assert(str != null);
+            Debug.Assert(str != null);
 
             string upper = ToUpper(str);
 
