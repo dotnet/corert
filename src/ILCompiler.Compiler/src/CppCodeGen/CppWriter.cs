@@ -975,7 +975,8 @@ namespace ILCompiler.CppCodeGen
                 if (node is EETypeNode && !_emittedTypes.Contains(((EETypeNode)node).Type))
                     OutputTypeNode(node as EETypeNode, factory, forwardDefinitions, typeDefinitions, methodTables);
 
-                else if (node is EETypeOptionalFieldsNode)
+                // TODO: Remove the need for the skip check
+                else if (node is EETypeOptionalFieldsNode && (node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
                     optionalFields.Append(GetCodeForObjectNode(node as EETypeOptionalFieldsNode, factory));
             }
 
