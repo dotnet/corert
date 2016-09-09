@@ -339,10 +339,9 @@ namespace System
         private IntPtr[] _corDbgStackTrace;
         private int _idxFirstFreeStackTraceEntry;
 
-        private void AppendStackFrame(IntPtr IP, bool isFirstRethrowFrame)
+        private void AppendStackIP(IntPtr IP, bool isFirstRethrowFrame)
         {
-            if (this is OutOfMemoryException)
-                return;  // Allocating arrays in an OOM situation might be counterproductive...
+            Debug.Assert(!(this is OutOfMemoryException), "Avoid allocations if out of memory");
 
             if (_idxFirstFreeStackTraceEntry == 0)
             {
@@ -361,7 +360,6 @@ namespace System
                 GrowStackTrace();
 
             _corDbgStackTrace[_idxFirstFreeStackTraceEntry++] = IP;
-            return;
         }
 
         private void GrowStackTrace()
@@ -401,13 +399,22 @@ namespace System
                 bool isFirstFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_FRAME) != 0;
                 bool isFirstRethrowFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME) != 0;
 
-                ex.AppendStackFrame(IP, isFirstRethrowFrame);
+                // If out of memory, avoid any calls that may allocate.  Otherwise, they may fail
+                // with another OutOfMemoryException, which may lead to infinite recursion.
+                bool outOfMemory = ex is OutOfMemoryException;
+
+                if (!outOfMemory)
+                    ex.AppendStackIP(IP, isFirstRethrowFrame);
+
                 if (isFirstFrame)
                 {
+                    string typeName = !outOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
+                    string message = !outOfMemory ? ex.Message :
+                        "Insufficient memory to continue the execution of the program.";
+
                     unsafe
                     {
-                        fixed (char* exceptionTypeName = ex.GetType().ToString())
-                        fixed (char* exceptionMessage = ex.Message)
+                        fixed (char* exceptionTypeName = typeName, exceptionMessage = message)
                             RuntimeImports.RhpEtwExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
                     }
                 }
