@@ -1453,16 +1453,16 @@ namespace System.Text
                                     break; 
                                 } 
                             }
-                        }
 
-                        // Reaching here means the brace has been escaped 
-                        // so we need to build up the format string in segments 
-                        if (unescapedItemFormat == null)
-                        {
-                            unescapedItemFormat = new StringBuilder();
+                            // Reaching here means the brace has been escaped 
+                            // so we need to build up the format string in segments 
+                            if (unescapedItemFormat == null)
+                            {
+                                unescapedItemFormat = new StringBuilder();
+                            }
+                            unescapedItemFormat.Append(format, startPos, pos - startPos - 1);
+                            startPos = pos;
                         }
-                        unescapedItemFormat.Append(format, startPos, pos - startPos - 1);
-                        startPos = pos;
                     }
 
                     if (unescapedItemFormat == null || unescapedItemFormat.Length == 0) 
