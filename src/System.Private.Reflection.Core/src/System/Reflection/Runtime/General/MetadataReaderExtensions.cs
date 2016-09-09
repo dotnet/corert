@@ -596,9 +596,26 @@ namespace System.Reflection.Runtime.General
             }
         }
 
+        /// <summary>
+        /// Reverse len characters in a StringBuilder starting at offset index
+        /// </summary>
+        private static void ReverseStringInStringBuilder(StringBuilder builder, int index, int len)
+        {
+            int back = index + len - 1;
+            int front = index;
+            while (front < back)
+            {
+                char temp = builder[front];
+                builder[front] = builder[back];
+                builder[back] = temp;
+                front++;
+                back--;
+            }
+        }
+        
         public static string ToFullyQualifiedTypeName(this NamespaceReferenceHandle namespaceReferenceHandle, string typeName, MetadataReader reader)
         {
-            StringBuilder fullName = new StringBuilder();
+            StringBuilder fullName = new StringBuilder(64);
             NamespaceReference namespaceReference;
             for (;;)
             {
@@ -606,10 +623,13 @@ namespace System.Reflection.Runtime.General
                 String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
                 if (namespacePart == null)
                     break;
-                fullName.Append(namespacePart);
                 fullName.Append('.');
+                int index = fullName.Length;
+                fullName.Append(namespacePart);
+                ReverseStringInStringBuilder(fullName, index, namespacePart.Length);
                 namespaceReferenceHandle = namespaceReference.ParentScopeOrNamespace.ToExpectedNamespaceReferenceHandle(reader);
             }
+            ReverseStringInStringBuilder(fullName, 0, fullName.Length);
             fullName.Append(typeName);
             return fullName.ToString();
         }
