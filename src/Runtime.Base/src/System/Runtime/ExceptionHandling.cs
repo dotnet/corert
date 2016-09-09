@@ -94,7 +94,7 @@ namespace System.Runtime
         {
             get
             {
-                return new UIntPtr(unchecked((void*)(ulong)-1L));
+                return (UIntPtr)(void*)(-1);
             }
         }
 
@@ -264,15 +264,16 @@ namespace System.Runtime
         }
 
         private static void AppendExceptionStackFrameViaClasslib(
-            Exception exception, IntPtr IP, bool isFirstRethrowFrame, bool isFirstFrame)
+            Exception exception, IntPtr IP, ref bool isFirstRethrowFrame, ref bool isFirstFrame)
         {
             IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunction(IP,
-                                                               ClassLibFunctionId.AppendExceptionStackFrame);
-            int flags = (isFirstFrame ? (int)RhEHFrameType.RH_EH_FIRST_FRAME : 0) |
-                        (isFirstRethrowFrame ? (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME : 0);
+                ClassLibFunctionId.AppendExceptionStackFrame);
 
             if (pAppendStackFrame != IntPtr.Zero)
             {
+                int flags = (isFirstFrame ? (int)RhEHFrameType.RH_EH_FIRST_FRAME : 0) |
+                            (isFirstRethrowFrame ? (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME : 0);
+
                 try
                 {
                     CalliIntrinsics.CallVoid(pAppendStackFrame, exception, IP, flags);
@@ -281,6 +282,10 @@ namespace System.Runtime
                 {
                     // disallow all exceptions leaking out of callbacks
                 }
+
+                // Clear flags only if we called the function
+                isFirstRethrowFrame = false;
+                isFirstFrame = false;
             }
         }
 
@@ -707,11 +712,9 @@ namespace System.Runtime
             if ((prevFramePtr == UIntPtr.Zero) || (curFramePtr != prevFramePtr))
             {
                 AppendExceptionStackFrameViaClasslib(exceptionObj, (IntPtr)exInfo._frameIter.ControlPC,
-                                                     isFirstRethrowFrame, isFirstFrame);
+                                                     ref isFirstRethrowFrame, ref isFirstFrame);
             }
             prevFramePtr = curFramePtr;
-            isFirstRethrowFrame = false;
-            isFirstFrame = false;
         }
 
         private static bool FindFirstPassHandler(Exception exception, uint idxStart,
@@ -801,6 +804,7 @@ namespace System.Runtime
 
             if (s_pLowLevelObjectType == null)
             {
+                // TODO: Avoid allocating here as that may fail
                 s_pLowLevelObjectType = new System.Object().EEType;
             }
 
