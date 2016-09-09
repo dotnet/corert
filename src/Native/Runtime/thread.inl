@@ -17,3 +17,16 @@ inline void Thread::SetupHackPInvokeTunnel()
     m_pHackPInvokeTunnel = m_pTransitionFrame;
 }
 #endif // DACCESS_COMPILE
+
+inline bool Thread::IsWithinStackBounds(PTR_VOID p)
+{
+    ASSERT((m_pStackLow != 0) && (m_pStackHigh != 0));
+    return (m_pStackLow <= p) && (p < m_pStackHigh);
+}
+
+inline void Thread::GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh)
+{
+    ASSERT((m_pStackLow != 0) && (m_pStackHigh != 0));
+    *ppStackLow = m_pStackLow;
+    *ppStackHigh = m_pStackHigh;
+}

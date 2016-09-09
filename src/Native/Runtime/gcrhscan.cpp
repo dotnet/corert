@@ -24,7 +24,8 @@
 #include "module.h"
 #include "RuntimeInstance.h"
 #include "threadstore.h"
-
+#include "threadstore.inl"
+#include "thread.inl"
 
 #ifndef DACCESS_COMPILE
 

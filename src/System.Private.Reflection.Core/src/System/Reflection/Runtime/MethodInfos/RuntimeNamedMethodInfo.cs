@@ -193,9 +193,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeParameterInfo[] GetRuntimeParametersAndReturn(RuntimeMethodInfo contextMethod)
+        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
         {
-            return _common.GetRuntimeParametersAndReturn(contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
+            return _common.GetRuntimeParameters(contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters, out returnParameter);
         }
 
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType

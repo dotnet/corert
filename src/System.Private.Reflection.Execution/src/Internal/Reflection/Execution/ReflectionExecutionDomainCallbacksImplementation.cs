@@ -71,7 +71,7 @@ namespace Internal.Reflection.Execution
                 // The default binder rules allow omitting optional parameters but Activator.CreateInstance() doesn't. Thus, if the # of arguments doesn't match
                 // the # of parameters, do the pre-verification that the desktop does and ensure that the method has a "params" argument and that the argument count
                 // isn't shorter by more than one.
-                ParameterInfo[] parameters = constructor.GetParameters();
+                ParameterInfo[] parameters = constructor.GetParametersNoCopy();
                 if (args.Length != parameters.Length)
                 {
                     if (args.Length < parameters.Length - 1)
@@ -102,7 +102,7 @@ namespace Internal.Reflection.Execution
                 throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, type));
 
             MethodBase[] candidatesArray = candidates.ToArray();
-            Binder binder = Type._GetDefaultBinder();
+            Binder binder = Type.DefaultBinder;
             object ignore;
             BindingFlags bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
             ConstructorInfo match = (ConstructorInfo)binder.BindToMethod(bindingAttr, candidatesArray, ref args, null, null, null, out ignore);
@@ -217,7 +217,7 @@ namespace Internal.Reflection.Execution
             fullMethodName.Append('(');
 
             // get parameter list
-            ParameterInfo[] paramArr = methodBase.GetParameters();
+            ParameterInfo[] paramArr = methodBase.GetParametersNoCopy();
             for (int i = 0; i < paramArr.Length; ++i)
             {
                 if (i != 0)
@@ -424,7 +424,7 @@ namespace Internal.Reflection.Execution
                 return false;
             }
 
-            ParameterInfo parameterInfo = methodInfo.GetParameters()[argIndex];
+            ParameterInfo parameterInfo = methodInfo.GetParametersNoCopy()[argIndex];
             if (!parameterInfo.HasDefaultValue)
             {
                 // If the parameter is optional, with no default value and we're asked for its default value,

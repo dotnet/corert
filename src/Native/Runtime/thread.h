@@ -181,6 +181,8 @@ public:
     void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
 
+    void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
+
     PTR_UInt8           AllocateThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset, UInt32 tlsStorageSize, UInt32 numTlsCells);
     // mrt100 Debugger (dac) has dependencies on the GetThreadLocalStorageForDynamicType method.
     PTR_UInt8           GetThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset);

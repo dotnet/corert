@@ -134,7 +134,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     // write out actual parameters
                     friendlyName.Append('(');
                     first = true;
-                    foreach (ParameterInfo parameter in method.GetParameters())
+                    foreach (ParameterInfo parameter in method.GetParametersNoCopy())
                     {
                         if (!first)
                             friendlyName.Append(',');

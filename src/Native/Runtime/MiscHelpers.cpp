@@ -630,3 +630,8 @@ COOP_PINVOKE_HELPER(void*, RhpCreateModuleManager, (void* pModuleHeader))
     return ModuleManager::Create(pModuleHeader);
 }
 #endif
+
+COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, (PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh))
+{
+    ThreadStore::GetCurrentThread()->GetStackBounds(ppStackLow, ppStackHigh);
+}
