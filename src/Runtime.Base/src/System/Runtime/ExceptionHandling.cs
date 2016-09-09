@@ -156,9 +156,9 @@ namespace System.Runtime
 
         // Given an address pointing somewhere into a managed module, get the classlib-defined fail-fast 
         // function and invoke it.  Any failure to find and invoke the function, or if it returns, results in 
-        // Rtm-define fail-fast behavior.
-        internal unsafe static void FailFastViaClasslib(RhFailFastReason reason, Exception unhandledException,
-                                                        IntPtr classlibAddress)
+        // MRT-defined fail-fast behavior.
+        internal static void FailFastViaClasslib(RhFailFastReason reason, Exception unhandledException,
+            IntPtr classlibAddress)
         {
             // Find the classlib function that will fail fast. This is a RuntimeExport function from the 
             // classlib module, and is therefore managed-callable.
@@ -263,7 +263,7 @@ namespace System.Runtime
             RH_EH_FIRST_RETHROW_FRAME = 2,
         }
 
-        internal unsafe static void AppendExceptionStackFrameViaClasslib(
+        private static void AppendExceptionStackFrameViaClasslib(
             Exception exception, IntPtr IP, bool isFirstRethrowFrame, bool isFirstFrame)
         {
             IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunction(IP,
@@ -355,10 +355,10 @@ namespace System.Runtime
 #if !INPLACE_RUNTIME
         private static OutOfMemoryException s_theOOMException = new OutOfMemoryException();
 
-        // Rtm exports GetRuntimeException for the few cases where we have a helper that throws an exception
-        // and may be called by either slr100 or other classlibs and that helper needs to throw an exception. 
+        // MRT exports GetRuntimeException for the few cases where we have a helper that throws an exception
+        // and may be called by either MRT or other classlibs and that helper needs to throw an exception. 
         // There are only a few cases where this happens now (the fast allocation helpers), so we limit the 
-        // exception types that Rtm will return.
+        // exception types that MRT will return.
         [RuntimeExport("GetRuntimeException")]
         public static Exception GetRuntimeException(ExceptionIDs id)
         {
@@ -394,10 +394,6 @@ namespace System.Runtime
             [FieldOffset(AsmOffsets.OFFSETOF__PAL_LIMITED_CONTEXT__IP)]
             internal IntPtr IP;
             // the rest of the struct is left unspecified.
-        }
-
-        internal struct StackRange
-        {
         }
 
         // N.B. -- These values are burned into the throw helper assembly code and are also known the the 
@@ -688,7 +684,7 @@ namespace System.Runtime
         [System.Diagnostics.Conditional("DEBUG")]
         private static void DebugScanCallFrame(int passNumber, byte* ip, UIntPtr sp)
         {
-            if (ip == null) { Debug.Assert(false, "false"); }
+            Debug.Assert(ip != null, "IP address must not be null");
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
