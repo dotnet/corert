@@ -387,12 +387,16 @@ namespace System
         }
 
         [RuntimeExport("AppendExceptionStackFrame")]
-        private static void AppendExceptionStackFrame(Exception ex, IntPtr IP, int flags)
+        private static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
         {
             // This method is called by the runtime's EH dispatch code and is not allowed to leak exceptions
             // back into the dispatcher.
             try
             {
+                Exception ex = exceptionObj as Exception;
+                if (ex == null)
+                    Environment.FailFast("Exceptions must derive from the System.Exception class");
+
                 if (!RuntimeExceptionHelpers.SafeToPerformRichExceptionSupport)
                     return;
 
