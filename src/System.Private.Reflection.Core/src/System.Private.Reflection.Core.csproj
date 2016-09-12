@@ -50,6 +50,7 @@
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\LowLevelTypeExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberEnumerator.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueriedMemberList.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeNormalCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimePseudoCustomAttributeData.cs" />

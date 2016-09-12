@@ -49,6 +49,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         //
+        // Policy to decide how or if members in more derived types hide same-named members in base types.
+        // Due to desktop compat concerns, the definitions are a bit more arbitrary than we'd like.
+        //
+        public abstract bool IsSuppressedByMoreDerivedMember(M member, M[] priorMembers, int startIndex, int endIndex);
+
+        //
         // Policy to create a wrapper MemberInfo (if appropriate). This is due to the fact that MemberInfo's actually have their identity
         // tied to the type they were queried off of and this unfortunate fact shows up in certain api behaviors.
         //
@@ -156,6 +162,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             Debug.Assert(false, "This code path should be unreachable as fields are never \"virtual\".");
             throw new NotSupportedException();
         }
+
+        public sealed override bool IsSuppressedByMoreDerivedMember(FieldInfo member, FieldInfo[] priorMembers, int startIndex, int endIndex)
+        {
+            return false;
+        }
     }
 
 
@@ -189,6 +200,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             Debug.Assert(false, "This code path should be unreachable as constructors are never \"virtual\".");
             throw new NotSupportedException();
         }
+
+        public sealed override bool IsSuppressedByMoreDerivedMember(ConstructorInfo member, ConstructorInfo[] priorMembers, int startIndex, int endIndex)
+        {
+            return false;
+        }
     }
 
 
@@ -215,6 +231,28 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             return AreNamesAndSignaturesEqual(member1, member2);
         }
+
+        //
+        // Methods hide methods in base types if they share the same vtable slot.
+        //
+        public sealed override bool IsSuppressedByMoreDerivedMember(MethodInfo member, MethodInfo[] priorMembers, int startIndex, int endIndex)
+        {
+            if (!member.IsVirtual)
+                return false;
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                MethodInfo prior = priorMembers[i];
+                MethodAttributes attributes = prior.Attributes & (MethodAttributes.Virtual | MethodAttributes.VtableLayoutMask);
+                if (attributes != (MethodAttributes.Virtual | MethodAttributes.ReuseSlot))
+                    continue;
+                if (!AreNamesAndSignatureEqual(prior, member))
+                    continue;
+
+                return true;
+            }
+            return false;
+        }
     }
 
     //==========================================================================================================================
@@ -240,6 +278,27 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override bool AreNamesAndSignatureEqual(PropertyInfo member1, PropertyInfo member2)
         {
             return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
+        }
+
+        //
+        // Desktop compat: Properties hide properties in base types if they share the same vtable slot, or 
+        // have the same name, return type, signature and hasThis value.
+        //
+        public sealed override bool IsSuppressedByMoreDerivedMember(PropertyInfo member, PropertyInfo[] priorMembers, int startIndex, int endIndex)
+        {
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                PropertyInfo prior = priorMembers[i];
+                if (!AreNamesAndSignatureEqual(prior, member))
+                    continue;
+                if (GetAccessorMethod(prior).IsStatic != GetAccessorMethod(member).IsStatic)
+                    continue;
+                if (!(prior.PropertyType.Equals(member.PropertyType)))
+                    continue;
+
+                return true;
+            }
+            return false;
         }
 
         public sealed override PropertyInfo GetInheritedMemberInfo(PropertyInfo underlyingMemberInfo, Type reflectedType)
@@ -277,6 +336,19 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isStatic = (0 != (methodAttributes & MethodAttributes.Static));
             isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
             isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
+        }
+
+        //
+        // Desktop compat: Events hide events in base types if they have the same name.
+        //
+        public sealed override bool IsSuppressedByMoreDerivedMember(EventInfo member, EventInfo[] priorMembers, int startIndex, int endIndex)
+        {
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (priorMembers[i].Name == member.Name)
+                    return true;
+            }
+            return false;
         }
 
         public sealed override bool AreNamesAndSignatureEqual(EventInfo member1, EventInfo member2)
@@ -326,6 +398,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             Debug.Assert(false, "This code path should be unreachable as nested types are never \"virtual\".");
             throw new NotSupportedException();
+        }
+
+        public sealed override bool IsSuppressedByMoreDerivedMember(TypeInfo member, TypeInfo[] priorMembers, int startIndex, int endIndex)
+        {
+            return false;
         }
 
         public sealed override BindingFlags ModifyBindingFlags(BindingFlags bindingFlags)

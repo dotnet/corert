@@ -277,12 +277,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             LowLevelList<MemberInfo> members = new LowLevelList<MemberInfo>();
 
-            members.AddRange(MemberEnumerator.GetMembers<MethodInfo>(type, nameFilterOrAnyName, bindingAttr));
-            members.AddRange(MemberEnumerator.GetMembers<ConstructorInfo>(type, nameFilterOrAnyName, bindingAttr));
-            members.AddRange(MemberEnumerator.GetMembers<PropertyInfo>(type, nameFilterOrAnyName, bindingAttr));
-            members.AddRange(MemberEnumerator.GetMembers<EventInfo>(type, nameFilterOrAnyName, bindingAttr));
-            members.AddRange(MemberEnumerator.GetMembers<FieldInfo>(type, nameFilterOrAnyName, bindingAttr));
-            members.AddRange(MemberEnumerator.GetMembers<TypeInfo>(type, nameFilterOrAnyName, bindingAttr));
+            members.AddRange(MemberEnumerator.GetMembers<MethodInfo>(type, nameFilterOrAnyName, bindingAttr, allowPrefixing: true));
+            members.AddRange(MemberEnumerator.GetMembers<ConstructorInfo>(type, nameFilterOrAnyName, bindingAttr, allowPrefixing: true));
+            members.AddRange(MemberEnumerator.GetMembers<PropertyInfo>(type, nameFilterOrAnyName, bindingAttr, allowPrefixing: true));
+            members.AddRange(MemberEnumerator.GetMembers<EventInfo>(type, nameFilterOrAnyName, bindingAttr, allowPrefixing: true));
+            members.AddRange(MemberEnumerator.GetMembers<FieldInfo>(type, nameFilterOrAnyName, bindingAttr, allowPrefixing: true));
+            members.AddRange(MemberEnumerator.GetMembers<TypeInfo>(type, nameFilterOrAnyName, bindingAttr, allowPrefixing: true));
 
             return members;
         }
