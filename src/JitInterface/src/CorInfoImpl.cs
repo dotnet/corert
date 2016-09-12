@@ -2269,6 +2269,8 @@ namespace Internal.JitInterface
 
             // TODO: Generics
             // pResult.instParamLookup
+
+            pResult._secureDelegateInvoke = 0;
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]
