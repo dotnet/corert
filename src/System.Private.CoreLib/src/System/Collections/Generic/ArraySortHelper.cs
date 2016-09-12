@@ -86,8 +86,8 @@ namespace System.Collections.Generic
 
         internal static int InternalBinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
         {
-            Contract.Requires(array != null, "Check the arguments in the caller!");
-            Contract.Requires(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(array != null, "Check the arguments in the caller!");
+            Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
 
             int lo = index;
             int hi = index + length - 1;
@@ -135,12 +135,12 @@ namespace System.Collections.Generic
 
         internal static void IntrospectiveSort(T[] keys, int left, int length, IComparer<T> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(left >= 0);
-            Contract.Requires(length >= 0);
-            Contract.Requires(length <= keys.Length);
-            Contract.Requires(length + left <= keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(left >= 0);
+            Debug.Assert(length >= 0);
+            Debug.Assert(length <= keys.Length);
+            Debug.Assert(length + left <= keys.Length);
 
             if (length < 2)
                 return;
@@ -150,10 +150,10 @@ namespace System.Collections.Generic
 
         private static void IntroSort(T[] keys, int lo, int hi, int depthLimit, IComparer<T> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi < keys.Length);
 
             while (hi > lo)
             {
@@ -197,11 +197,11 @@ namespace System.Collections.Generic
 
         private static int PickPivotAndPartition(T[] keys, int lo, int hi, IComparer<T> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi > lo);
-            Contract.Requires(hi < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi > lo);
+            Debug.Assert(hi < keys.Length);
             Contract.Ensures(Contract.Result<int>() >= lo && Contract.Result<int>() <= hi);
 
             // Compute median-of-three.  But also partition them, since we've done the comparison.
@@ -234,11 +234,11 @@ namespace System.Collections.Generic
 
         private static void Heapsort(T[] keys, int lo, int hi, IComparer<T> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi > lo);
-            Contract.Requires(hi < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi > lo);
+            Debug.Assert(hi < keys.Length);
 
             int n = hi - lo + 1;
             for (int i = n / 2; i >= 1; i = i - 1)
@@ -254,10 +254,10 @@ namespace System.Collections.Generic
 
         private static void DownHeap(T[] keys, int i, int n, int lo, IComparer<T> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(lo < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(lo < keys.Length);
 
             T d = keys[lo + i - 1];
             int child;
@@ -278,10 +278,10 @@ namespace System.Collections.Generic
 
         private static void InsertionSort(T[] keys, int lo, int hi, IComparer<T> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi >= lo);
-            Contract.Requires(hi <= keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi >= lo);
+            Debug.Assert(hi <= keys.Length);
 
             int i, j;
             T t;
@@ -358,11 +358,11 @@ namespace System.Collections.Generic
 
         private static void SwapIfGreaterWithItems(TKey[] keys, TValue[] values, IComparer<TKey> comparer, int a, int b)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(values == null || values.Length >= keys.Length);
-            Contract.Requires(comparer != null);
-            Contract.Requires(0 <= a && a < keys.Length);
-            Contract.Requires(0 <= b && b < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(values == null || values.Length >= keys.Length);
+            Debug.Assert(comparer != null);
+            Debug.Assert(0 <= a && a < keys.Length);
+            Debug.Assert(0 <= b && b < keys.Length);
 
             if (a != b)
             {
@@ -399,14 +399,14 @@ namespace System.Collections.Generic
 
         internal static void IntrospectiveSort(TKey[] keys, TValue[] values, int left, int length, IComparer<TKey> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(values != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(left >= 0);
-            Contract.Requires(length >= 0);
-            Contract.Requires(length <= keys.Length);
-            Contract.Requires(length + left <= keys.Length);
-            Contract.Requires(length + left <= values.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(values != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(left >= 0);
+            Debug.Assert(length >= 0);
+            Debug.Assert(length <= keys.Length);
+            Debug.Assert(length + left <= keys.Length);
+            Debug.Assert(length + left <= values.Length);
 
             if (length < 2)
                 return;
@@ -416,11 +416,11 @@ namespace System.Collections.Generic
 
         private static void IntroSort(TKey[] keys, TValue[] values, int lo, int hi, int depthLimit, IComparer<TKey> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(values != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(values != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi < keys.Length);
 
             while (hi > lo)
             {
@@ -464,12 +464,12 @@ namespace System.Collections.Generic
 
         private static int PickPivotAndPartition(TKey[] keys, TValue[] values, int lo, int hi, IComparer<TKey> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(values != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi > lo);
-            Contract.Requires(hi < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(values != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi > lo);
+            Debug.Assert(hi < keys.Length);
             Contract.Ensures(Contract.Result<int>() >= lo && Contract.Result<int>() <= hi);
 
             // Compute median-of-three.  But also partition them, since we've done the comparison.
@@ -502,12 +502,12 @@ namespace System.Collections.Generic
 
         private static void Heapsort(TKey[] keys, TValue[] values, int lo, int hi, IComparer<TKey> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(values != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi > lo);
-            Contract.Requires(hi < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(values != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi > lo);
+            Debug.Assert(hi < keys.Length);
 
             int n = hi - lo + 1;
             for (int i = n / 2; i >= 1; i = i - 1)
@@ -523,10 +523,10 @@ namespace System.Collections.Generic
 
         private static void DownHeap(TKey[] keys, TValue[] values, int i, int n, int lo, IComparer<TKey> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(lo < keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(lo < keys.Length);
 
             TKey d = keys[lo + i - 1];
             TValue dValue = (values != null) ? values[lo + i - 1] : default(TValue);
@@ -552,12 +552,12 @@ namespace System.Collections.Generic
 
         private static void InsertionSort(TKey[] keys, TValue[] values, int lo, int hi, IComparer<TKey> comparer)
         {
-            Contract.Requires(keys != null);
-            Contract.Requires(values != null);
-            Contract.Requires(comparer != null);
-            Contract.Requires(lo >= 0);
-            Contract.Requires(hi >= lo);
-            Contract.Requires(hi <= keys.Length);
+            Debug.Assert(keys != null);
+            Debug.Assert(values != null);
+            Debug.Assert(comparer != null);
+            Debug.Assert(lo >= 0);
+            Debug.Assert(hi >= lo);
+            Debug.Assert(hi <= keys.Length);
 
             int i, j;
             TKey t;

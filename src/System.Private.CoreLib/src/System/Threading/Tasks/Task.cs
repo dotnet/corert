@@ -1162,7 +1162,7 @@ namespace System.Threading.Tasks
         // 
         internal void InternalRunSynchronously(TaskScheduler scheduler, bool waitForCompletion)
         {
-            Contract.Requires(scheduler != null, "Task.InternalRunSynchronously(): null TaskScheduler");
+            Debug.Assert(scheduler != null, "Task.InternalRunSynchronously(): null TaskScheduler");
 
             // Read the volatile m_stateFlags field once and cache it for subsequent operations
             int flags = m_stateFlags;
@@ -1823,7 +1823,7 @@ namespace System.Threading.Tasks
         /// <param name="exceptionObject">An object representing either an Exception or a collection of Exceptions.</param>
         internal void AddException(object exceptionObject)
         {
-            Contract.Requires(exceptionObject != null, "Task.AddException: Expected a non-null exception object");
+            Debug.Assert(exceptionObject != null, "Task.AddException: Expected a non-null exception object");
             AddException(exceptionObject, representsCancellation: false);
         }
 
@@ -1834,7 +1834,7 @@ namespace System.Threading.Tasks
         /// <param name="representsCancellation">Whether the exceptionObject is an OperationCanceledException representing cancellation.</param>
         internal void AddException(object exceptionObject, bool representsCancellation)
         {
-            Contract.Requires(exceptionObject != null, "Task.AddException: Expected a non-null exception object");
+            Debug.Assert(exceptionObject != null, "Task.AddException: Expected a non-null exception object");
 
 #if DEBUG
             var eoAsException = exceptionObject as Exception;
@@ -1981,7 +1981,7 @@ namespace System.Threading.Tasks
         /// </summary>
         internal void ThrowIfExceptional(bool includeTaskCanceledExceptions)
         {
-            Contract.Requires(IsCompleted, "ThrowIfExceptional(): Expected IsCompleted == true");
+            Debug.Assert(IsCompleted, "ThrowIfExceptional(): Expected IsCompleted == true");
 
             Exception exception = GetExceptions(includeTaskCanceledExceptions);
             if (exception != null)
@@ -2190,8 +2190,8 @@ namespace System.Threading.Tasks
         /// </summary>
         internal void ProcessChildCompletion(Task childTask)
         {
-            Contract.Requires(childTask != null);
-            Contract.Requires(childTask.IsCompleted, "ProcessChildCompletion was called for an uncompleted task");
+            Debug.Assert(childTask != null);
+            Debug.Assert(childTask.IsCompleted, "ProcessChildCompletion was called for an uncompleted task");
 
             Debug.Assert(childTask.m_parent == this, "ProcessChildCompletion should only be called for a child of this task");
 
@@ -2454,7 +2454,7 @@ namespace System.Threading.Tasks
         /// <param name="unhandledException">The exception that went unhandled.</param>
         private void HandleException(Exception unhandledException)
         {
-            Contract.Requires(unhandledException != null);
+            Debug.Assert(unhandledException != null);
 
             OperationCanceledException exceptionAsOce = unhandledException as OperationCanceledException;
             if (exceptionAsOce != null && IsCancellationRequested &&
@@ -2512,7 +2512,7 @@ namespace System.Threading.Tasks
         internal void SetContinuationForAwait(
             Action continuationAction, bool continueOnCapturedContext, bool flowExecutionContext)
         {
-            Contract.Requires(continuationAction != null);
+            Debug.Assert(continuationAction != null);
 
             // Create the best AwaitTaskContinuation object given the request.
             // If this remains null by the end of the function, we can use the 
@@ -2924,7 +2924,7 @@ namespace System.Threading.Tasks
         /// <returns>true if the task was successfully canceled; otherwise, false.</returns>
         internal bool InternalCancel(bool bCancelNonExecutingOnly)
         {
-            Contract.Requires((Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) == 0, "Task.InternalCancel() did not expect promise-style task");
+            Debug.Assert((Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) == 0, "Task.InternalCancel() did not expect promise-style task");
 
             bool bPopSucceeded = false;
             bool mustCleanup = false;
@@ -4110,9 +4110,9 @@ namespace System.Threading.Tasks
                                        CancellationToken cancellationToken,
                                        TaskContinuationOptions options)
         {
-            Contract.Requires(continuationTask != null, "Task.ContinueWithCore(): null continuationTask");
-            Contract.Requires(scheduler != null, "Task.ContinueWithCore(): null scheduler");
-            Contract.Requires(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
+            Debug.Assert(continuationTask != null, "Task.ContinueWithCore(): null continuationTask");
+            Debug.Assert(scheduler != null, "Task.ContinueWithCore(): null scheduler");
+            Debug.Assert(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
 
             // Create a TaskContinuation
             TaskContinuation continuation = new StandardTaskContinuation(continuationTask, options, scheduler);
@@ -4182,7 +4182,7 @@ namespace System.Threading.Tasks
         // care of in the calling method, AddTaskContinuation().
         private bool AddTaskContinuationComplex(object tc, bool addBeforeOthers)
         {
-            Contract.Requires(tc != null, "Expected non-null tc object in AddTaskContinuationComplex");
+            Debug.Assert(tc != null, "Expected non-null tc object in AddTaskContinuationComplex");
 
             object oldValue = m_continuationObject;
 
@@ -4246,7 +4246,7 @@ namespace System.Threading.Tasks
         // Return true if and only if we successfully queued a continuation.
         private bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
-            Contract.Requires(tc != null);
+            Debug.Assert(tc != null);
 
             // Make sure that, if someone calls ContinueWith() right after waiting for the predecessor to complete,
             // we don't queue up a continuation.
@@ -5460,7 +5460,7 @@ namespace System.Threading.Tasks
         // tasks should be a defensive copy.
         private static Task InternalWhenAll(Task[] tasks)
         {
-            Contract.Requires(tasks != null, "Expected a non-null tasks array");
+            Debug.Assert(tasks != null, "Expected a non-null tasks array");
             return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
                 Task.CompletedTask :
                 new WhenAllPromise(tasks);
@@ -5491,8 +5491,8 @@ namespace System.Threading.Tasks
             internal WhenAllPromise(Task[] tasks) :
                 base()
             {
-                Contract.Requires(tasks != null, "Expected a non-null task array");
-                Contract.Requires(tasks.Length > 0, "Expected a non-zero length task array");
+                Debug.Assert(tasks != null, "Expected a non-null task array");
+                Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
 
                 if (DebuggerSupport.LoggingOn)
                     DebuggerSupport.TraceOperationCreation(CausalityTraceLevel.Required, this, "Task.WhenAll", 0);
@@ -5703,7 +5703,7 @@ namespace System.Threading.Tasks
         // Some common logic to support WhenAll<TResult> methods
         private static Task<TResult[]> InternalWhenAll<TResult>(Task<TResult>[] tasks)
         {
-            Contract.Requires(tasks != null, "Expected a non-null tasks array");
+            Debug.Assert(tasks != null, "Expected a non-null tasks array");
             return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
                 new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default(CancellationToken)) :
                 new WhenAllPromise<TResult>(tasks);
@@ -5727,8 +5727,8 @@ namespace System.Threading.Tasks
             internal WhenAllPromise(Task<T>[] tasks) :
                 base()
             {
-                Contract.Requires(tasks != null, "Expected a non-null task array");
-                Contract.Requires(tasks.Length > 0, "Expected a non-zero length task array");
+                Debug.Assert(tasks != null, "Expected a non-null task array");
+                Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
 
                 m_tasks = tasks;
                 m_count = tasks.Length;
@@ -5966,7 +5966,7 @@ namespace System.Threading.Tasks
         //[FriendAccessAllowed]
         public static Task<TResult> CreateUnwrapPromise<TResult>(Task outerTask, bool lookForOce)
         {
-            Contract.Requires(outerTask != null);
+            Debug.Assert(outerTask != null);
 
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
@@ -6358,7 +6358,7 @@ namespace System.Threading.Tasks
         public UnwrapPromise(Task outerTask, bool lookForOce)
             : base((object)null, outerTask.CreationOptions & TaskCreationOptions.AttachedToParent)
         {
-            Contract.Requires(outerTask != null, "Expected non-null outerTask");
+            Debug.Assert(outerTask != null, "Expected non-null outerTask");
             _lookForOce = lookForOce;
             _state = STATE_WAITING_ON_OUTER_TASK;
 
@@ -6439,7 +6439,7 @@ namespace System.Threading.Tasks
         /// <param name="task">The now-completed outer task.</param>
         private void ProcessCompletedOuterTask(Task task)
         {
-            Contract.Requires(task != null && task.IsCompleted, "Expected non-null, completed outer task");
+            Debug.Assert(task != null && task.IsCompleted, "Expected non-null, completed outer task");
             Debug.Assert(_state == STATE_WAITING_ON_OUTER_TASK, "We're in the wrong state!");
 
             // Bump our state before proceeding any further
@@ -6470,7 +6470,7 @@ namespace System.Threading.Tasks
         /// <returns>true if the transfer was successful; otherwise, false.</returns>
         private bool TrySetFromTask(Task task, bool lookForOce)
         {
-            Contract.Requires(task != null && task.IsCompleted, "TrySetFromTask: Expected task to have completed.");
+            Debug.Assert(task != null && task.IsCompleted, "TrySetFromTask: Expected task to have completed.");
 
             if (DebuggerSupport.LoggingOn)
                 DebuggerSupport.TraceOperationRelation(CausalityTraceLevel.Important, this, CausalityRelation.Join);

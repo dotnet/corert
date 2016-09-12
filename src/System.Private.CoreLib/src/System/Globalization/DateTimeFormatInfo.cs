@@ -311,8 +311,8 @@ namespace System.Globalization
 
         internal DateTimeFormatInfo(CultureData cultureData, Calendar cal)
         {
-            Contract.Requires(cultureData != null);
-            Contract.Requires(cal != null);
+            Debug.Assert(cultureData != null);
+            Debug.Assert(cal != null);
 
             // Remember our culture
             _cultureData = cultureData;
@@ -322,7 +322,7 @@ namespace System.Globalization
 
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
         {
-            Contract.Requires(cultureData != null);
+            Debug.Assert(cultureData != null);
             Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initalized calendarId");
 
             if (this.firstDayOfWeek == -1) { this.firstDayOfWeek = cultureData.IFIRSTDAYOFWEEK; }
@@ -1255,8 +1255,8 @@ namespace System.Globalization
         //
         private static void CheckNullValue(String[] values, int length)
         {
-            Contract.Requires(values != null, "value != null");
-            Contract.Requires(values.Length >= length);
+            Debug.Assert(values != null, "value != null");
+            Debug.Assert(values.Length >= length);
             for (int i = 0; i < length; i++)
             {
                 if (values[i] == null)
@@ -1541,8 +1541,8 @@ namespace System.Globalization
         // Get all possible combination of inputs
         private static String[] GetCombinedPatterns(String[] patterns1, String[] patterns2, String connectString)
         {
-            Contract.Requires(patterns1 != null);
-            Contract.Requires(patterns2 != null);
+            Debug.Assert(patterns1 != null);
+            Debug.Assert(patterns2 != null);
 
             // Get array size
             String[] result = new String[patterns1.Length * patterns2.Length];

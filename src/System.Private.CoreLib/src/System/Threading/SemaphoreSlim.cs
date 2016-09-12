@@ -15,7 +15,6 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
 
 // The class will be part of the current System.Threading namespace
@@ -662,7 +661,7 @@ namespace System.Threading
         /// <returns>true if the waiter was in the list; otherwise, false.</returns>
         private bool RemoveAsyncWaiter(TaskNode task)
         {
-            Contract.Requires(task != null, "Expected non-null task");
+            Debug.Assert(task != null, "Expected non-null task");
             Debug.Assert(m_lock.IsAcquired, "Requires the lock be held");
 
             // Is the task in the list?  To be in the list, either it's the head or it has a predecessor that's in the list.

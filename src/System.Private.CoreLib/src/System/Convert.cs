@@ -247,7 +247,7 @@ namespace System
 
         internal static Object DefaultToType(IConvertible value, Type targetType, IFormatProvider provider)
         {
-            Contract.Requires(value != null, "[Convert.DefaultToType]value!=null");
+            Debug.Assert(value != null, "[Convert.DefaultToType]value!=null");
             if (targetType == null)
             {
                 throw new ArgumentNullException("targetType");

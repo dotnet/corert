@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Threading;
 using System.Globalization;
-using System.Runtime;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -168,7 +165,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException("ticks", SR.ArgumentOutOfRange_DateTimeBadTicks);
             }
-            Contract.Requires(kind == DateTimeKind.Local, "Internal Constructor is for local times only");
+            Debug.Assert(kind == DateTimeKind.Local, "Internal Constructor is for local times only");
             Contract.EndContractBlock();
             _dateData = ((UInt64)ticks | (isAmbiguousDst ? KindLocalAmbiguousDst : KindLocal));
         }

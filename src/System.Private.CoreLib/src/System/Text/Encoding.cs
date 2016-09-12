@@ -585,8 +585,8 @@ namespace System.Text
         // Always validate parameters before calling internal version, which will only assert.
         internal virtual unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
-            Contract.Requires(chars != null);
-            Contract.Requires(count >= 0);
+            Debug.Assert(chars != null);
+            Debug.Assert(count >= 0);
 
             return GetByteCount(chars, count);
         }

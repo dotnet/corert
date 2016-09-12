@@ -379,7 +379,7 @@ namespace System
         //
         private static String DoFormatG(EnumInfo enumInfo, ulong rawValue)
         {
-            Contract.Requires(enumInfo != null);
+            Debug.Assert(enumInfo != null);
             if (!enumInfo.HasFlagsAttribute) // Not marked with Flags attribute
             {
                 // Try to see if its one of the enum values, then we return a String back else the value
@@ -400,7 +400,7 @@ namespace System
         //
         private static String DoFormatF(EnumInfo enumInfo, ulong rawValue)
         {
-            Contract.Requires(enumInfo != null);
+            Debug.Assert(enumInfo != null);
 
             // These values are sorted by value. Don't change this
             KeyValuePair<String, ulong>[] namesAndValues = enumInfo.NamesAndValues;
