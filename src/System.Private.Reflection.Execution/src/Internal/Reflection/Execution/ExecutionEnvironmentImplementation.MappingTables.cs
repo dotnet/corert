@@ -870,9 +870,15 @@ namespace Internal.Reflection.Execution
 
             IntPtr resolver = IntPtr.Zero;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.HasVirtualInvoke) != 0)
+            {
                 resolver = TryGetVirtualResolveData(ModuleList.Instance.GetModuleForMetadataReader(metadataReader),
                     declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
                     ref methodSignatureComparer);
+
+                // Unable to find virtual resolution information, cannot return valid MethodInvokeInfo
+                if (resolver == IntPtr.Zero)
+                    return null;
+            }
 
             var methodInvokeInfo = new MethodInvokeInfo
             {
