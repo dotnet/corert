@@ -143,6 +143,8 @@ publish/
 *.publishproj
 
 # NuGet Packages
+*.nuget.props
+*.nuget.targets
 *.nupkg
 **/packages/*
 /packages/*
