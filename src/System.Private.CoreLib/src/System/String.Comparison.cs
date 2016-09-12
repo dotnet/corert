@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace System
@@ -275,8 +274,8 @@ namespace System
 
         private unsafe static int CompareOrdinalHelper(String strA, String strB)
         {
-            Contract.Requires(strA != null);
-            Contract.Requires(strB != null);
+            Debug.Assert(strA != null);
+            Debug.Assert(strB != null);
 
             // NOTE: This may be subject to change if eliminating the check
             // in the callers makes them small enough to be inlined

@@ -723,7 +723,7 @@ namespace System.Runtime.InteropServices
 
         private static unsafe int lstrlenA(IntPtr sz)
         {
-            Contract.Requires(sz != IntPtr.Zero);
+            Debug.Assert(sz != IntPtr.Zero);
 
             byte* pb = (byte*)sz;
             byte* start = pb;
@@ -737,7 +737,7 @@ namespace System.Runtime.InteropServices
 
         private static unsafe int lstrlenW(IntPtr wsz)
         {
-            Contract.Requires(wsz != IntPtr.Zero);
+            Debug.Assert(wsz != IntPtr.Zero);
 
             char* pc = (char*)wsz;
             char* start = pc;

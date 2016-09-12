@@ -523,7 +523,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise,
             bool requiresSynchronization)
         {
-            Contract.Requires((endFunction != null) != (endAction != null), "Expected exactly one of endFunction/endAction to be non-null");
+            Debug.Assert((endFunction != null) != (endAction != null), "Expected exactly one of endFunction/endAction to be non-null");
 
             Exception ex = null;
             OperationCanceledException oce = null;
@@ -669,7 +669,7 @@ namespace System.Threading.Tasks
             if (endFunction == null && endAction == null)
                 throw new ArgumentNullException("endMethod");
 
-            Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
+            Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
             if (scheduler == null)
                 throw new ArgumentNullException("scheduler");
@@ -776,7 +776,7 @@ namespace System.Threading.Tasks
             if (endFunction == null && endAction == null)
                 throw new ArgumentNullException("endMethod");
 
-            Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
+            Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
             TaskFactory.CheckFromAsyncOptions(creationOptions, true);
 
@@ -888,7 +888,7 @@ namespace System.Threading.Tasks
             if (endFunction == null && endAction == null)
                 throw new ArgumentNullException("endFunction");
 
-            Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
+            Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
             TaskFactory.CheckFromAsyncOptions(creationOptions, true);
 
@@ -1008,7 +1008,7 @@ namespace System.Threading.Tasks
             if (endFunction == null && endAction == null)
                 throw new ArgumentNullException("endMethod");
 
-            Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
+            Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
             TaskFactory.CheckFromAsyncOptions(creationOptions, true);
 
@@ -1136,7 +1136,7 @@ namespace System.Threading.Tasks
             if (endFunction == null && endAction == null)
                 throw new ArgumentNullException("endMethod");
 
-            Contract.Requires((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
+            Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
             TaskFactory.CheckFromAsyncOptions(creationOptions, true);
 
@@ -1235,8 +1235,8 @@ namespace System.Threading.Tasks
             /// <param name="endMethod">The end method.</param>
             internal FromAsyncTrimPromise(TInstance thisRef, Func<TInstance, IAsyncResult, TResult> endMethod) : base()
             {
-                Contract.Requires(thisRef != null, "Expected a non-null thisRef");
-                Contract.Requires(endMethod != null, "Expected a non-null endMethod");
+                Debug.Assert(thisRef != null, "Expected a non-null thisRef");
+                Debug.Assert(endMethod != null, "Expected a non-null endMethod");
                 m_thisRef = thisRef;
                 m_endMethod = endMethod;
             }
