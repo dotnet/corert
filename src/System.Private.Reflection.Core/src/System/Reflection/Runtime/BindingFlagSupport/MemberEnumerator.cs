@@ -14,7 +14,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // Enumerates members, optionally filtered by a name, in the given class and its base classes (but not implemented interfaces.)
         // Basically emulates the old Type.GetFoo(BindingFlags) api.
         //
-        public static IEnumerable<M> GetMembers<M>(this Type type, Object nameFilterOrAnyName, BindingFlags bindingFlags) where M : MemberInfo
+        public static IEnumerable<M> GetMembers<M>(this Type type, Object nameFilterOrAnyName, BindingFlags bindingFlags, bool allowPrefixing = false) where M : MemberInfo
         {
             // Do all the up-front argument validation here so that the exception occurs on call rather than on the first move.
             if (type == null)
@@ -36,35 +36,51 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 optionalNameFilter = (String)nameFilterOrAnyName;
             }
 
-            return GetMembersWorker<M>(type, optionalNameFilter, bindingFlags);
+            return Stage2Filter<M>(type, optionalNameFilter, bindingFlags, allowPrefixing);
         }
 
         //
-        // The iterator worker for GetMember<M>()
+        // Take the result of Stage1Filter and filter by the BindingFlag bits.
         //
-        private static IEnumerable<M> GetMembersWorker<M>(Type type, String optionalNameFilter, BindingFlags bindingFlags) where M : MemberInfo
+        private static IEnumerable<M> Stage2Filter<M>(Type type, String optionalNameFilter, BindingFlags bindingFlags, bool allowPrefixing) where M : MemberInfo
         {
-            Type reflectedType = type;
-            Type typeOfM = typeof(M);
-            Type typeOfEventInfo = typeof(EventInfo);
-
             MemberPolicies<M> policies = MemberPolicies<M>.Default;
             bindingFlags = policies.ModifyBindingFlags(bindingFlags);
+            bool ignoreCase = (bindingFlags & BindingFlags.IgnoreCase) != 0;
+            bool declaredOnly = (bindingFlags & BindingFlags.DeclaredOnly) != 0;
+            QueriedMemberList<M> queriedMembers = Stage1Filter<M>(type, optionalNameFilter, ignoreCase: ignoreCase, declaredOnly: declaredOnly, allowPrefixing: allowPrefixing);
+            for (int i = 0; i < queriedMembers.Count; i++)
+            {
+                BindingFlags allFlagsThatMustMatch = queriedMembers.AllFlagsThatMustMatchNoCopy[i];
+                if ((bindingFlags & allFlagsThatMustMatch) == allFlagsThatMustMatch)
+                    yield return queriedMembers.MembersNoCopy[i];
+            }
+        }
 
-            LowLevelList<M> overridingMembers = new LowLevelList<M>();
+        //
+        // Filter by name and visibility from the ReflectedType.
+        //
+        private static QueriedMemberList<M> Stage1Filter<M>(Type type, String optionalNameFilter, bool ignoreCase, bool declaredOnly, bool allowPrefixing) where M : MemberInfo
+        {
+            Type reflectedType = type;
 
-            StringComparison comparisonType = (0 != (bindingFlags & BindingFlags.IgnoreCase)) ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+            MemberPolicies<M> policies = MemberPolicies<M>.Default;
+
+            StringComparison comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
             bool inBaseClass = false;
 
             bool nameFilterIsPrefix = false;
-            if (optionalNameFilter != null && optionalNameFilter.EndsWith("*", StringComparison.Ordinal))
+            if (allowPrefixing && optionalNameFilter != null && optionalNameFilter.EndsWith("*", StringComparison.Ordinal))
             {
                 nameFilterIsPrefix = true;
                 optionalNameFilter = optionalNameFilter.Substring(0, optionalNameFilter.Length - 1);
             }
 
+            QueriedMemberList<M> queriedMembers = new QueriedMemberList<M>();
             while (type != null)
             {
+                int numCandidatesInDerivedTypes = queriedMembers.Count;
+
                 TypeInfo typeInfo = type.GetTypeInfo();
 
                 foreach (M member in policies.GetDeclaredMembers(typeInfo))
@@ -90,103 +106,36 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     bool isNewSlot;
                     policies.GetMemberAttributes(member, out visibility, out isStatic, out isVirtual, out isNewSlot);
 
-                    BindingFlags memberBindingFlags = (BindingFlags)0;
-                    memberBindingFlags |= (isStatic ? BindingFlags.Static : BindingFlags.Instance);
-                    memberBindingFlags |= ((visibility == MethodAttributes.Public) ? BindingFlags.Public : BindingFlags.NonPublic);
-                    if ((bindingFlags & memberBindingFlags) != memberBindingFlags)
-                    {
-                        continue;
-                    }
-
-                    bool passesVisibilityScreen = true;
                     if (inBaseClass && visibility == MethodAttributes.Private)
-                    {
-                        passesVisibilityScreen = false;
-                    }
-
-                    bool passesStaticScreen = true;
-                    if (inBaseClass && isStatic && (0 == (bindingFlags & BindingFlags.FlattenHierarchy)))
-                    {
-                        passesStaticScreen = false;
-                    }
-
-                    //
-                    // Desktop compat: The order in which we do checks is important.
-                    //
-                    if (!passesVisibilityScreen)
-                    {
                         continue;
-                    }
-                    if ((!passesStaticScreen) && !(typeOfM.Equals(typeOfEventInfo)))
-                    {
+                
+                    if (numCandidatesInDerivedTypes != 0 && policies.IsSuppressedByMoreDerivedMember(member, queriedMembers.MembersNoCopy, startIndex: 0, endIndex: numCandidatesInDerivedTypes))
                         continue;
-                    }
 
-                    bool isImplicitlyOverridden = false;
-                    if (isVirtual)
-                    {
-                        if (isNewSlot)
-                        {
-                            // A new virtual member definition.
-                            for (int i = 0; i < overridingMembers.Count; i++)
-                            {
-                                if (policies.AreNamesAndSignatureEqual(member, overridingMembers[i]))
-                                {
-                                    // This member is overridden by a more derived class.
-                                    isImplicitlyOverridden = true;
-                                    overridingMembers.RemoveAt(i);
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            for (int i = 0; i < overridingMembers.Count; i++)
-                            {
-                                if (policies.AreNamesAndSignatureEqual(overridingMembers[i], member))
-                                {
-                                    // This member overrides another, *and* is overridden by yet another method.
-                                    isImplicitlyOverridden = true;
-                                    break;
-                                }
-                            }
-
-                            if (!isImplicitlyOverridden)
-                            {
-                                // This member overrides another and is the most derived instance of it we've found.
-                                overridingMembers.Add(member);
-                            }
-                        }
-                    }
-
-                    if (isImplicitlyOverridden)
-                    {
-                        continue;
-                    }
-
-                    if (!passesStaticScreen)
-                    {
-                        continue;
-                    }
-
+                    BindingFlags allFlagsThatMustMatch = (BindingFlags)0;
+                    allFlagsThatMustMatch |= (isStatic ? BindingFlags.Static : BindingFlags.Instance);
+                    if (isStatic && inBaseClass)
+                        allFlagsThatMustMatch |= BindingFlags.FlattenHierarchy;
+                    allFlagsThatMustMatch |= ((visibility == MethodAttributes.Public) ? BindingFlags.Public : BindingFlags.NonPublic);
+                    
                     if (inBaseClass)
                     {
-                        yield return policies.GetInheritedMemberInfo(member, reflectedType);
+                        queriedMembers.Add(policies.GetInheritedMemberInfo(member, reflectedType), allFlagsThatMustMatch);
                     }
                     else
                     {
-                        yield return member;
+                        queriedMembers.Add(member, allFlagsThatMustMatch);
                     }
                 }
 
-                if (0 != (bindingFlags & BindingFlags.DeclaredOnly))
-                {
+                if (declaredOnly)
                     break;
-                }
 
                 inBaseClass = true;
                 type = typeInfo.BaseType;
             }
+
+            return queriedMembers;
         }
 
         //
