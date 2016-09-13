@@ -14,6 +14,7 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -342,7 +343,7 @@ namespace System
 
         private static sbyte AbsHelper(sbyte value)
         {
-            Contract.Requires(value < 0, "AbsHelper should only be called for negative values!");
+            Debug.Assert(value < 0, "AbsHelper should only be called for negative values!");
             if (value == SByte.MinValue)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
@@ -359,7 +360,7 @@ namespace System
 
         private static short AbsHelper(short value)
         {
-            Contract.Requires(value < 0, "AbsHelper should only be called for negative values!");
+            Debug.Assert(value < 0, "AbsHelper should only be called for negative values!");
             if (value == Int16.MinValue)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
@@ -376,7 +377,7 @@ namespace System
 
         private static int AbsHelper(int value)
         {
-            Contract.Requires(value < 0, "AbsHelper should only be called for negative values!");
+            Debug.Assert(value < 0, "AbsHelper should only be called for negative values!");
             if (value == Int32.MinValue)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
@@ -393,7 +394,7 @@ namespace System
 
         private static long AbsHelper(long value)
         {
-            Contract.Requires(value < 0, "AbsHelper should only be called for negative values!");
+            Debug.Assert(value < 0, "AbsHelper should only be called for negative values!");
             if (value == Int64.MinValue)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();

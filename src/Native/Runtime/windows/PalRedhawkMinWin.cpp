@@ -17,6 +17,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <evntprov.h>
+#ifndef CORERT
+#include <roapi.h>
+#endif
 
 #include "holder.h"
 
@@ -1325,6 +1328,10 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 
 static LARGE_INTEGER g_performanceFrequency;
 
+#ifndef CORERT
+static bool g_roInitialized;
+#endif
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
@@ -1335,12 +1342,37 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
+#ifndef CORERT
+    // TODO: Remove the RoInitialize call when we implement non-WinRT framework for classic apps
+    HRESULT hr = RoInitialize(RO_INIT_MULTITHREADED);
+
+    // RPC_E_CHANGED_MODE indicates this thread has been already initialized with a different
+    // concurrency model. That is fine; we just need to skip the RoUninitialize call on shutdown.
+    if (SUCCEEDED(hr))
+    {
+        g_roInitialized = true;
+    }
+    else if (hr != RPC_E_CHANGED_MODE)
+    {
+        return false;
+    }
+#endif
+
     return true;
 }
 
 // Shutdown the interface implementation
+// Remarks:
+//  Must be called on the same thread as Initialize.
 void GCToOSInterface::Shutdown()
 {
+#ifndef CORERT
+    if (g_roInitialized)
+    {
+        RoUninitialize();
+        g_roInitialized = false;
+    }
+#endif
 }
 
 // Get numeric id of the current thread if possible on the 

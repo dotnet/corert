@@ -286,10 +286,10 @@ namespace System
 
             internal ArraySegmentEnumerator(ArraySegment<T> arraySegment)
             {
-                Contract.Requires(arraySegment.Array != null);
-                Contract.Requires(arraySegment.Offset >= 0);
-                Contract.Requires(arraySegment.Count >= 0);
-                Contract.Requires(arraySegment.Offset + arraySegment.Count <= arraySegment.Array.Length);
+                Debug.Assert(arraySegment.Array != null);
+                Debug.Assert(arraySegment.Offset >= 0);
+                Debug.Assert(arraySegment.Count >= 0);
+                Debug.Assert(arraySegment.Offset + arraySegment.Count <= arraySegment.Array.Length);
 
                 _array = arraySegment._array;
                 _start = arraySegment._offset;

@@ -40,7 +40,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -65,7 +64,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The <see cref="System.Threading.Tasks.Task"/> to be awaited.</param>
         internal TaskAwaiter(Task task)
         {
-            Contract.Requires(task != null, "Constructing an awaiter requires a task to await.");
+            Debug.Assert(task != null, "Constructing an awaiter requires a task to await.");
             m_task = task;
         }
 
@@ -152,8 +151,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>Throws an exception to handle a task that completed in a state other than RanToCompletion.</summary>
         private static void ThrowForNonSuccess(Task task)
         {
-            Contract.Requires(task.IsCompleted, "Task must have been completed by now.");
-            Contract.Requires(task.Status != TaskStatus.RanToCompletion, "Task should not be completed successfully.");
+            Debug.Assert(task.IsCompleted, "Task must have been completed by now.");
+            Debug.Assert(task.Status != TaskStatus.RanToCompletion, "Task should not be completed successfully.");
 
             // Handle whether the task has been canceled or faulted
             switch (task.Status)
@@ -219,8 +218,8 @@ namespace System.Runtime.CompilerServices
         /// <returns>The action to use as the actual continuation.</returns>
         private static Action OutputWaitEtwEvents(Task task, Action continuation)
         {
-            Contract.Requires(task != null, "Need a task to wait on");
-            Contract.Requires(continuation != null, "Need a continuation to invoke when the wait completes");
+            Debug.Assert(task != null, "Need a task to wait on");
+            Debug.Assert(continuation != null, "Need a continuation to invoke when the wait completes");
             Debug.Assert(TaskTrace.Enabled, "Should only be used when ETW tracing is enabled");
 
             // ETW event for Task Wait Begin
@@ -264,7 +263,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The <see cref="System.Threading.Tasks.Task{TResult}"/> to be awaited.</param>
         internal TaskAwaiter(Task<TResult> task)
         {
-            Contract.Requires(task != null, "Constructing an awaiter requires a task to await.");
+            Debug.Assert(task != null, "Constructing an awaiter requires a task to await.");
             m_task = task;
         }
 
@@ -322,7 +321,7 @@ namespace System.Runtime.CompilerServices
         /// </param>
         internal ConfiguredTaskAwaitable(Task task, bool continueOnCapturedContext)
         {
-            Contract.Requires(task != null, "Constructing an awaitable requires a task to await.");
+            Debug.Assert(task != null, "Constructing an awaitable requires a task to await.");
             m_configuredTaskAwaiter = new ConfiguredTaskAwaitable.ConfiguredTaskAwaiter(task, continueOnCapturedContext);
         }
 
@@ -350,7 +349,7 @@ namespace System.Runtime.CompilerServices
             /// </param>
             internal ConfiguredTaskAwaiter(Task task, bool continueOnCapturedContext)
             {
-                Contract.Requires(task != null, "Constructing an awaiter requires a task to await.");
+                Debug.Assert(task != null, "Constructing an awaiter requires a task to await.");
                 m_task = task;
                 m_continueOnCapturedContext = continueOnCapturedContext;
             }
@@ -435,7 +434,7 @@ namespace System.Runtime.CompilerServices
             /// </param>
             internal ConfiguredTaskAwaiter(Task<TResult> task, bool continueOnCapturedContext)
             {
-                Contract.Requires(task != null, "Constructing an awaiter requires a task to await.");
+                Debug.Assert(task != null, "Constructing an awaiter requires a task to await.");
                 m_task = task;
                 m_continueOnCapturedContext = continueOnCapturedContext;
             }

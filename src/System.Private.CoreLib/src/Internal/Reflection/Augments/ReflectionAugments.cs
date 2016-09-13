@@ -92,7 +92,7 @@ namespace Internal.Reflection.Augments
             return TypeCode.Object;
         }
 
-        internal static ReflectionCoreCallbacks ReflectionCoreCallbacks
+        public static ReflectionCoreCallbacks ReflectionCoreCallbacks
         {
             get
             {

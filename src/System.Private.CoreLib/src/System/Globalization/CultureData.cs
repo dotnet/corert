@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 using System.Threading;
 
@@ -1795,9 +1794,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////////
         private static String UnescapeNlsString(String str, int start, int end)
         {
-            Contract.Requires(str != null);
-            Contract.Requires(start >= 0);
-            Contract.Requires(end >= 0);
+            Debug.Assert(str != null);
+            Debug.Assert(start >= 0);
+            Debug.Assert(end >= 0);
             StringBuilder result = null;
 
             for (int i = start; i < str.Length && i <= end; i++)

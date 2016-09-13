@@ -1581,7 +1581,7 @@ namespace System.Threading.Tasks
 
             internal CompleteOnCountdownPromise(Task[] tasksCopy) : base()
             {
-                Contract.Requires((tasksCopy != null) && (tasksCopy.Length > 0), "Expected non-null task array with at least one element in it");
+                Debug.Assert((tasksCopy != null) && (tasksCopy.Length > 0), "Expected non-null task array with at least one element in it");
                 _tasks = tasksCopy;
                 _count = tasksCopy.Length;
 
@@ -1627,7 +1627,7 @@ namespace System.Threading.Tasks
         // Performs some logic common to all ContinueWhenAll() overloads
         internal static Task<Task[]> CommonCWAllLogic(Task[] tasksCopy)
         {
-            Contract.Requires(tasksCopy != null);
+            Debug.Assert(tasksCopy != null);
 
             // Create a promise task to be returned to the user
             CompleteOnCountdownPromise promise = new CompleteOnCountdownPromise(tasksCopy);
@@ -1653,7 +1653,7 @@ namespace System.Threading.Tasks
 
             internal CompleteOnCountdownPromise(Task<T>[] tasksCopy) : base()
             {
-                Contract.Requires((tasksCopy != null) && (tasksCopy.Length > 0), "Expected non-null task array with at least one element in it");
+                Debug.Assert((tasksCopy != null) && (tasksCopy.Length > 0), "Expected non-null task array with at least one element in it");
                 _tasks = tasksCopy;
                 _count = tasksCopy.Length;
 
@@ -1699,7 +1699,7 @@ namespace System.Threading.Tasks
 
         internal static Task<Task<T>[]> CommonCWAllLogic<T>(Task<T>[] tasksCopy)
         {
-            Contract.Requires(tasksCopy != null);
+            Debug.Assert(tasksCopy != null);
 
             // Create a promise task to be returned to the user
             CompleteOnCountdownPromise<T> promise = new CompleteOnCountdownPromise<T>(tasksCopy);
@@ -2317,7 +2317,7 @@ namespace System.Threading.Tasks
 
             public CompleteOnInvokePromise(IList<Task> tasks) : base()
             {
-                Contract.Requires(tasks != null, "Expected non-null collection of tasks");
+                Debug.Assert(tasks != null, "Expected non-null collection of tasks");
                 _tasks = tasks;
 
                 if (DebuggerSupport.LoggingOn)
@@ -2367,7 +2367,7 @@ namespace System.Threading.Tasks
         // asynchronously (e.g. WhenAny) rather than synchronously (e.g. WaitAny).
         internal static Task<Task> CommonCWAnyLogic(IList<Task> tasks)
         {
-            Contract.Requires(tasks != null);
+            Debug.Assert(tasks != null);
 
             // Create a promise task to be returned to the user
             var promise = new CompleteOnInvokePromise(tasks);
