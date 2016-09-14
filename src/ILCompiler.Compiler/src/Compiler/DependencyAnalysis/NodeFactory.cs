@@ -574,6 +574,8 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
             graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
 
+            AddWellKnownTypes(graph);
+
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(StringTable, "StringTable is always generated");
@@ -592,6 +594,32 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager.AttachToDependencyGraph(graph);
 
             _compilationModuleGroup.AddCompilationRoots(new RootingServiceProvider(graph, this));
+        }
+        private void AddWellKnownType(WellKnownType wellKnownType, DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
+        {
+            var type = TypeSystemContext.GetWellKnownType(wellKnownType);
+            var typeNode = ConstructedTypeSymbol(type);
+            graph.AddRoot(typeNode, "Enables CPP codegen");
+        }
+        private void AddWellKnownTypes(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
+        {
+
+            AddWellKnownType(WellKnownType.Void, graph);
+            AddWellKnownType(WellKnownType.Boolean, graph);
+            AddWellKnownType(WellKnownType.Char, graph);
+            AddWellKnownType(WellKnownType.SByte, graph);
+            AddWellKnownType(WellKnownType.Byte, graph);
+            AddWellKnownType(WellKnownType.Int16, graph);
+            AddWellKnownType(WellKnownType.UInt16, graph);
+            AddWellKnownType(WellKnownType.Int32, graph);
+            AddWellKnownType(WellKnownType.UInt32, graph);
+            AddWellKnownType(WellKnownType.Int64, graph);
+            AddWellKnownType(WellKnownType.UInt64, graph);
+            AddWellKnownType(WellKnownType.IntPtr, graph);
+            AddWellKnownType(WellKnownType.UIntPtr, graph);
+            AddWellKnownType(WellKnownType.Single, graph);
+            AddWellKnownType(WellKnownType.Double, graph);
+
         }
 
         private class RootingServiceProvider : IRootingServiceProvider
