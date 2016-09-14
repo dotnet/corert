@@ -11,6 +11,7 @@ set(COMMON_RUNTIME_SOURCES
     FinalizerHelpers.cpp
     gcdump.cpp
     GCHelpers.cpp
+    gcheaputilities.cpp
     GCMemoryHelpers.cpp
     gcrhenv.cpp
     gcrhscan.cpp

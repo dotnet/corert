@@ -236,8 +236,8 @@ inline UInt16 GetClrInstanceId()
     return (UInt16)_tls_index;
 }
 
-class GCHeap;
-typedef DPTR(GCHeap) PTR_GCHeap;
+class IGCHeap;
+typedef DPTR(IGCHeap) PTR_IGCHeap;
 typedef DPTR(uint32_t) PTR_uint32_t;
 
 enum CLRDataEnumMemoryFlags : int;

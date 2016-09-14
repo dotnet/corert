@@ -11,7 +11,7 @@
 #include "common.h"
 
 #include "gcenv.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 
 #include "RestrictedCallouts.h"
 
@@ -108,19 +108,19 @@ UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
 {
     if (IsEnabled &&
         (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
-        GCHeap::IsGCHeapInitialized())
+        GCHeapUtilities::IsGCHeapInitialized())
     {
-        FireEtwGCSettings(GCHeap::GetGCHeap()->GetValidSegmentSize(FALSE),
-                          GCHeap::GetGCHeap()->GetValidSegmentSize(TRUE),
-                          GCHeap::IsServerHeap());
-        GCHeap::GetGCHeap()->TraceGCSegments();
+        FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
+                          GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
+                          GCHeapUtilities::IsServerHeap());
+        GCHeapUtilities::GetGCHeap()->TraceGCSegments();
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (IsEnabled && 
         (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle) &&
-        GCHeap::IsGCHeapInitialized() &&
+        GCHeapUtilities::IsGCHeapInitialized() &&
         ((pContext->MatchAnyKeyword & CLR_GCHEAPCOLLECT_KEYWORD) != 0))
     {
         // Profilers may (optionally) specify extra data in the filter parameter
@@ -194,12 +194,14 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
-    GCHeap::InitializeHeapType(fUseServerGC);
+    InitializeHeapType(fUseServerGC);
 
     // Create the GC heap itself.
-    GCHeap *pGCHeap = GCHeap::CreateGCHeap();
+    IGCHeap *pGCHeap = InitializeGarbageCollector(nullptr);
     if (!pGCHeap)
         return false;
+
+    g_pGCHeap = pGCHeap;
 
     // Initialize the GC subsystem.
     HRESULT hr = pGCHeap->Initialize();
@@ -230,7 +232,7 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
 
     pThread->SetCurrentThreadPInvokeTunnelForGcAlloc(pTransitionFrame);
 
-    ASSERT(GCHeap::UseAllocationContexts());
+    ASSERT(GCHeapUtilities::UseAllocationContexts());
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
     // Save the EEType for instrumentation purposes.
@@ -239,10 +241,10 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
     Object * pObject;
 #ifdef FEATURE_64BIT_ALIGNMENT
     if (uFlags & GC_ALLOC_ALIGN8)
-        pObject = GCHeap::GetGCHeap()->AllocAlign8(pThread->GetAllocContext(), cbSize, uFlags);
+        pObject = GCHeapUtilities::GetGCHeap()->AllocAlign8(pThread->GetAllocContext(), cbSize, uFlags);
     else
 #endif // FEATURE_64BIT_ALIGNMENT
-        pObject = GCHeap::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+        pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
 
     // NOTE: we cannot call PublishObject here because the object isn't initialized!
 
@@ -254,12 +256,12 @@ COOP_PINVOKE_HELPER(void*, RhpPublishObject, (void* pObject, UIntNative cbSize))
 {
     UNREFERENCED_PARAMETER(cbSize);
     ASSERT(cbSize >= LARGE_OBJECT_SIZE);
-    GCHeap::GetGCHeap()->PublishObject((uint8_t*)pObject);
+    GCHeapUtilities::GetGCHeap()->PublishObject((uint8_t*)pObject);
     return pObject;
 }
 
 // static
-void RedhawkGCInterface::InitAllocContext(alloc_context * pAllocContext)
+void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 {
     // NOTE: This method is currently unused because the thread's alloc_context is initialized via
     // static initialization of tls_CurrentThread.  If the initial contents of the alloc_context
@@ -270,17 +272,17 @@ void RedhawkGCInterface::InitAllocContext(alloc_context * pAllocContext)
 }
 
 // static
-void RedhawkGCInterface::ReleaseAllocContext(alloc_context * pAllocContext)
+void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 {
-    GCHeap::GetGCHeap()->FixAllocContext(pAllocContext, FALSE, NULL, NULL);
+    GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, FALSE, NULL, NULL);
 }
 
 // static 
 void RedhawkGCInterface::WaitForGCCompletion()
 {
-    ASSERT(GCHeap::IsGCHeapInitialized());
+    ASSERT(GCHeapUtilities::IsGCHeapInitialized());
 
-    GCHeap::GetGCHeap()->WaitUntilGCComplete();
+    GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 }
 
 #endif // !DACCESS_COMPILE
@@ -555,7 +557,7 @@ GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt3
     seginfo.ibCommit        = seginfo.ibAllocated;
     seginfo.ibReserved      = seginfo.ibAllocated;
 
-    return (GcSegmentHandle)GCHeap::GetGCHeap()->RegisterFrozenSegment(&seginfo);
+    return (GcSegmentHandle)GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
 #else // FEATURE_BASICFREEZE
     return NULL;
 #endif // FEATURE_BASICFREEZE    
@@ -564,7 +566,7 @@ GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt3
 // static 
 void RedhawkGCInterface::UnregisterFrozenSection(GcSegmentHandle segment)
 {
-    GCHeap::GetGCHeap()->UnregisterFrozenSegment((segment_handle)segment);
+    GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)segment);
 }
 
 EXTERN_C UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
@@ -577,7 +579,7 @@ void RedhawkGCInterface::StressGc()
         return;
     }
 
-    GCHeap::GetGCHeap()->GarbageCollect();
+    GCHeapUtilities::GetGCHeap()->GarbageCollect();
 }
 #endif // FEATURE_GC_STRESS
 
@@ -643,7 +645,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
     g_pvHeapScanContext = pContext;
 
     // Initiate a full garbage collection
-    GCHeap::GetGCHeap()->GarbageCollect();
+    GCHeapUtilities::GetGCHeap()->GarbageCollect();
     WaitForGCCompletion();
 
     // Release our hold on the global scanning pointers.
@@ -661,7 +663,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
 void RedhawkGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
 {
 #if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
-    GCHeap::GetGCHeap()->WalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
+    GCHeapUtilities::GetGCHeap()->WalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
 #else
     UNREFERENCED_PARAMETER(pObject);
     UNREFERENCED_PARAMETER(pfnScanCallback);
@@ -945,7 +947,7 @@ void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
     ETW::GCLog::ETW_GC_INFO Info;
     Info.SuspendEE.Reason = reason;
     Info.SuspendEE.GcCount = (((reason == SUSPEND_FOR_GC) || (reason == SUSPEND_FOR_GC_PREP)) ?
-        (UInt32)GCHeap::GetGCHeap()->GetGcCount() : (UInt32)-1);
+        (UInt32)GCHeapUtilities::GetGCHeap()->GetGcCount() : (UInt32)-1);
 #endif // FEATURE_EVENT_TRACE
 
     FireEtwGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
@@ -953,9 +955,9 @@ void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
     g_SuspendEELock.Enter();
 
     g_TrapReturningThreads = TRUE;
-    GCHeap::GetGCHeap()->SetGCInProgress(TRUE);
+    GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
 
-    GetThreadStore()->SuspendAllThreads(GCHeap::GetGCHeap()->GetWaitForGCEvent());
+    GetThreadStore()->SuspendAllThreads(GCHeapUtilities::GetGCHeap()->GetWaitForGCEvent());
 
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
 
@@ -971,8 +973,8 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
     SyncClean::CleanUp();
 
-    GetThreadStore()->ResumeAllThreads(GCHeap::GetGCHeap()->GetWaitForGCEvent());
-    GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
+    GetThreadStore()->ResumeAllThreads(GCHeapUtilities::GetGCHeap()->GetWaitForGCEvent());
+    GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
 
     g_TrapReturningThreads = FALSE;
 
@@ -1021,7 +1023,7 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
 }
 
-alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
+gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
 {
     return pThread->GetAllocContext();
 }
@@ -1075,7 +1077,7 @@ static uint32_t WINAPI BackgroundGCThreadStub(void * pContext)
     // Initialize the Thread for this thread. The false being passed indicates that the thread store lock
     // should not be acquired as part of this operation. This is necessary because this thread is created in
     // the context of a garbage collection and the lock is already held by the GC.
-    ASSERT(GCHeap::GetGCHeap()->IsGCInProgress());
+    ASSERT(GCHeapUtilities::IsGCInProgress());
     ThreadStore::AttachCurrentThread(false);
 
     Thread * pThread = GetThread();
@@ -1126,9 +1128,9 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
 // size, but thread.cpp doesn't generally need to include the GC environment headers for any other reason.
-alloc_context * Thread::GetAllocContext()
+gc_alloc_context * Thread::GetAllocContext()
 {
-    return dac_cast<DPTR(alloc_context)>(dac_cast<TADDR>(this) + offsetof(Thread, m_rgbAllocContextBuffer));
+    return dac_cast<DPTR(gc_alloc_context)>(dac_cast<TADDR>(this) + offsetof(Thread, m_rgbAllocContextBuffer));
 }
 
 bool IsGCSpecialThread()
