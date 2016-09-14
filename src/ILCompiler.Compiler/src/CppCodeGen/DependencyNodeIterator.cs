@@ -18,7 +18,7 @@ namespace ILCompiler.Compiler.CppCodeGen
         private HashSet<DependencyNode> _visited;
         private Dictionary<TypeDesc, EETypeNode> _typeToNodeMap;
 
-        public DependencyNodeIterator(IEnumerable<DependencyNode> nodes, NodeFactory factory)
+        public DependencyNodeIterator(IEnumerable<DependencyNode> nodes)
         {
             _nodes = new List<DependencyNode>();
             _typeToNodeMap = new Dictionary<TypeDesc, EETypeNode>();
@@ -28,22 +28,13 @@ namespace ILCompiler.Compiler.CppCodeGen
                 if (node is EETypeNode)
                 {
                     var typeNode = node as EETypeNode;
-
-                    if (!_typeToNodeMap.ContainsKey(typeNode.Type))
-                        _typeToNodeMap[typeNode.Type] = typeNode;
-                    else if (typeNode is ConstructedEETypeNode)
-                        _typeToNodeMap[typeNode.Type] = typeNode;
-                }
-                else
-                if (node is CppMethodCodeNode)
-                {
-                    // TODO: Remove once the type depedencies are tracked properly
-                    // Ensure that there is going to be a forward type definition for the method containing type
-                    var methodNode = node as CppMethodCodeNode;
-
-                    var methodType = methodNode.Method.OwningType;
-                    if (!_typeToNodeMap.ContainsKey(methodType))
-                        _typeToNodeMap[methodType] = (EETypeNode)factory.NecessaryTypeSymbol(methodType);
+                    if (typeNode != null)
+                    {
+                        if (!_typeToNodeMap.ContainsKey(typeNode.Type))
+                            _typeToNodeMap[typeNode.Type] = typeNode;
+                        else if (typeNode is ConstructedEETypeNode)
+                            _typeToNodeMap[typeNode.Type] = typeNode;
+                    }
                 }
                 // Assume ordering doesn't matter
                 else _nodes.Add(node);

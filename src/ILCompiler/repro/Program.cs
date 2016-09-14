@@ -4,10 +4,26 @@
 
 using System;
 
-internal class Program
+internal class Program:IInterface
 {
     private static void Main(string[] args)
     {
-        Console.WriteLine("Hello world");
+        Program foo = new Program();
+        IInterface iFoo = (IInterface)foo;
+        string result = iFoo.Print();
+        string otherResult = foo.Test();
+        Console.WriteLine(result + " " + otherResult);
     }
+    public string Print()
+    {
+        return "Hello";
+    }
+    public string Test()
+    {
+        return "world";
+    }
+}
+interface IInterface
+{
+    string Print();
 }

@@ -389,6 +389,15 @@ namespace Internal.IL
         }
 
         /// <summary>
+        /// Append the typedef of the method to assist in function pointer conversion
+        /// </summary>
+        /// <param name="method">Method typedef</param>
+        private void AppendInterfaceCallTypeDef(MethodDesc method, string name)
+        {
+            _writer.AppendSignatureTypeDef(_builder, name, method.Signature, method.Signature.ReturnType);
+        }
+
+        /// <summary>
         /// Increase level of indentation by one in <see cref="_builder"/>.
         /// </summary>
         public void Indent()
@@ -860,6 +869,7 @@ namespace Internal.IL
         {
             bool callViaSlot = false;
             bool delegateInvoke = false;
+            bool callViaInterfaceDispatch = false;
             DelegateCreationInfo delegateInfo = null;
 
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
@@ -938,15 +948,18 @@ namespace Internal.IL
 
                     // TODO: Interface calls
                     if (method.OwningType.IsInterface)
-                        throw new NotImplementedException();
+                        //throw new NotImplementedException();
+                        callViaInterfaceDispatch = true;
+
+                    else
+                        callViaSlot = true;
 
                     _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
 
-                    callViaSlot = true;
                 }
             }
 
-            if (!callViaSlot && !delegateInvoke)
+            if (!callViaSlot && !delegateInvoke && !callViaInterfaceDispatch)
                 AddMethodReference(method);
 
             if (opcode == ILOpcode.newobj)
@@ -960,6 +973,55 @@ namespace Internal.IL
             string temp = null;
             StackValueKind retKind = StackValueKind.Unknown;
             var needNewLine = false;
+
+            if (callViaInterfaceDispatch)
+            {
+                _dependencies.Add(_nodeFactory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, method));
+                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
+
+                string typeDefName = _writer.GetCppMethodName(method);
+                _writer.AppendSignatureTypeDef(_builder,  typeDefName, method.Signature, method.OwningType);
+
+                string functionPtr = NewTempName();
+                AppendEmptyLine();
+                                
+                Append("void*");
+                Append(functionPtr);
+                Append(" = (");
+                Append(typeDefName);
+                // Call method to find implementation address
+                Append(") System_Private_CoreLib::System::Runtime::DispatchResolve::FindInterfaceMethodImplementationTarget(");
+
+                // Get EEType of current object (interface implementation)
+                Append("::System_Private_CoreLib::System::Object::get_EEType((::System_Private_CoreLib::System::Object*)");
+                Append(v.Name);
+                Append(")");
+
+                Append(", ");
+
+                // Get EEType of interface
+                Append("((::System_Private_CoreLib::Internal::Runtime::EEType *)(");
+                Append(_writer.GetCppTypeName(method.OwningType));
+                Append("::__getMethodTable()))");
+
+                Append(", ");
+
+                // Get slot of implementation
+                Append("(uint16_t)");
+                Append("(");
+                Append(_writer.GetCppTypeName(method.OwningType));
+                Append("::");
+                Append("__getslot__");
+                Append(_writer.GetCppMethodName(method));
+                Append("(");
+                Append(v.Name);
+                Append("))");
+
+                Append(");");
+
+                PushExpression(StackValueKind.ByRef, functionPtr);
+
+            }
 
             if (!retType.IsVoid)
             {
@@ -1021,7 +1083,7 @@ namespace Internal.IL
 
                         PushExpression(StackValueKind.NativeInt, sb.ToString());
                     }
-                }
+                } 
             }
 
             if (needNewLine)
@@ -1047,6 +1109,15 @@ namespace Internal.IL
                         "((" + _writer.GetCppSignatureTypeName(GetWellKnownType(WellKnownType.MulticastDelegate)) + ")" +
                             v.Name + ")->m_firstParameter";
                 }
+            }
+            else if (callViaInterfaceDispatch)
+            {
+                Append("((");
+                Append(_writer.GetCppMethodName(method));
+                Append(")");
+                ExpressionEntry v = (ExpressionEntry)_stack.Pop();
+                Append(v);
+                Append(")");
             }
             else
             {
