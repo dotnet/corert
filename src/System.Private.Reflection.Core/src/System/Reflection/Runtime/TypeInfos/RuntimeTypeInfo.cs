@@ -538,6 +538,17 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override MemberTypes MemberType
+        {
+            get
+            {
+                if (IsPublic || IsNotPublic)
+                    return MemberTypes.TypeInfo;
+                else
+                    return MemberTypes.NestedType;
+            }
+        }
+
         public sealed override int MetadataToken
         {
             get

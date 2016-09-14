@@ -5,13 +5,11 @@
 using System.Diagnostics;
 using System.Reflection.Runtime.BindingFlagSupport;
 
-using Internal.LowLevelLinq;
-
 namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) =>  LowLevelTypeExtensions.GetConstructors(this, bindingAttr);
+        public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(bindingAttr).ToArray();
 
         protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
@@ -26,19 +24,17 @@ namespace System.Reflection.Runtime.TypeInfos
             if (binder == null)
                 binder = Type.DefaultBinder;
             ConstructorInfo[] candidates = GetConstructors(bindingAttr);
+            if ("".Length != 0) throw new NotImplementedException(); // Reminder that we have to do some pre-filtering before passing this list to the binder.
             return (ConstructorInfo)binder.SelectMethod(bindingAttr, candidates, types, modifiers);
         }
 
-        public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => LowLevelTypeExtensions.GetEvents(this, bindingAttr);
-        public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) => LowLevelTypeExtensions.GetEvent(this, name, bindingAttr);
+        public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => Query<EventInfo>(bindingAttr).ToArray();
+        public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) => Query<EventInfo>(name, bindingAttr).Disambiguate();
 
-        public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) => LowLevelTypeExtensions.GetFields(this, bindingAttr);
-        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => LowLevelTypeExtensions.GetField(this, name, bindingAttr);
+        public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) => Query<FieldInfo>(bindingAttr).ToArray();
+        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => Query<FieldInfo>(name, bindingAttr).Disambiguate();
 
-        public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) => LowLevelTypeExtensions.GetMembers(this, bindingAttr);
-        public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => LowLevelTypeExtensions.GetMember(this, name, bindingAttr);
-
-        public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) => LowLevelTypeExtensions.GetMethods(this, bindingAttr);
+        public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) => Query<MethodInfo>(bindingAttr).ToArray();
 
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
@@ -51,7 +47,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 Debug.Assert(binder == null);
                 Debug.Assert(callConvention == CallingConventions.Any);
                 Debug.Assert(modifiers == null);
-                return LowLevelTypeExtensions.GetMethod(this, name, bindingAttr);
+                return Query<MethodInfo>(name, bindingAttr).Disambiguate();
             }
             else
             {
@@ -63,15 +59,16 @@ namespace System.Reflection.Runtime.TypeInfos
                     throw new NotImplementedException();
                 if (binder == null)
                     binder = Type.DefaultBinder;
-                MethodInfo[] candidates = LowLevelTypeExtensions.GetMethods(this, name, bindingAttr);
+                MethodInfo[] candidates = Query<MethodInfo>(name, bindingAttr).ToArray();
+                if ("".Length != 0) throw new NotImplementedException(); // Reminder that we have to do some pre-filtering before passing this list to the binder.
                 return (MethodInfo)binder.SelectMethod(bindingAttr, candidates, types, modifiers);
             }
         }
 
-        public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => LowLevelTypeExtensions.GetNestedTypes(this, bindingAttr);
-        public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => LowLevelTypeExtensions.GetNestedType(this, name, bindingAttr);
+        public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => Query<Type>(bindingAttr).ToArray();
+        public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => Query<Type>(name, bindingAttr).Disambiguate();
 
-        public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => LowLevelTypeExtensions.GetProperties(this, bindingAttr);
+        public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => Query<PropertyInfo>(bindingAttr).ToArray();
 
         protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
@@ -86,7 +83,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 // Group #1: This group of api accept only a name and BindingFlags. The other parameters are hard-wired by the non-virtual api entrypoints. 
                 Debug.Assert(binder == null);
                 Debug.Assert(modifiers == null);
-                return LowLevelTypeExtensions.GetProperty(this, name, bindingAttr);
+                return Query<PropertyInfo>(name, bindingAttr).Disambiguate();
             }
             else
             {
@@ -96,9 +93,34 @@ namespace System.Reflection.Runtime.TypeInfos
                 // Group #2: This group of api takes a set of parameter types, a return type (both cannot be null) and an optional binder. 
                 if (binder == null)
                     binder = Type.DefaultBinder;
-                PropertyInfo[] candidates = LowLevelTypeExtensions.GetProperties(this, name, bindingAttr);
+                PropertyInfo[] candidates = Query<PropertyInfo>(name, bindingAttr).ToArray();
+                if ("".Length != 0) throw new NotImplementedException(); // Reminder that we have to do some pre-filtering before passing this list to the binder.
                 return binder.SelectProperty(bindingAttr, candidates, returnType, types, modifiers);
             }
+        }
+
+        private QueryResult<M> Query<M>(BindingFlags bindingAttr) where M : MemberInfo
+        {
+            return Query<M>(null, bindingAttr, null);
+        }
+
+        private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            return Query<M>(name, bindingAttr, null);
+        }
+
+        private QueryResult<M> Query<M>(string optionalName, BindingFlags bindingAttr, Func<M, bool> optionalPredicate) where M : MemberInfo
+        {
+            MemberPolicies<M> policies = MemberPolicies<M>.Default;
+            bindingAttr = policies.ModifyBindingFlags(bindingAttr);
+            bool ignoreCase = (bindingAttr & BindingFlags.IgnoreCase) != 0;
+            bool declaredOnly = (bindingAttr & BindingFlags.DeclaredOnly) != 0;
+            QueriedMemberList<M> queriedMembers = QueriedMemberList<M>.Create(this, optionalName, ignoreCase: ignoreCase, declaredOnly: declaredOnly);
+            if (optionalPredicate != null)
+                queriedMembers = queriedMembers.Filter(optionalPredicate);
+            return new QueryResult<M>(bindingAttr, queriedMembers);
         }
 
         private static bool OnlySearchRelatedBitsSet(BindingFlags bindingFlags)

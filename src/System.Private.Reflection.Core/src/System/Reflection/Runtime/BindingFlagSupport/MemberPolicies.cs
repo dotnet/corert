@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 
@@ -122,7 +120,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     {
                         _default = (MemberPolicies<M>)(Object)(new EventPolicies());
                     }
-                    else if (t.Equals(typeof(TypeInfo)))
+                    else if (t.Equals(typeof(Type)))
                     {
                         _default = (MemberPolicies<M>)(Object)(new NestedTypePolicies());
                     }
@@ -376,14 +374,14 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //    we'll arbitrarily denote all nested types as "static."
     //
     //==========================================================================================================================
-    internal sealed class NestedTypePolicies : MemberPolicies<TypeInfo>
+    internal sealed class NestedTypePolicies : MemberPolicies<Type>
     {
-        public sealed override IEnumerable<TypeInfo> GetDeclaredMembers(TypeInfo typeInfo)
+        public sealed override IEnumerable<Type> GetDeclaredMembers(TypeInfo typeInfo)
         {
             return typeInfo.DeclaredNestedTypes;
         }
 
-        public sealed override void GetMemberAttributes(TypeInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
+        public sealed override void GetMemberAttributes(Type member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
             isStatic = true;
             isVirtual = false;
@@ -394,13 +392,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             visibility = member.IsNestedPublic ? MethodAttributes.Public : MethodAttributes.Private;
         }
 
-        public sealed override bool AreNamesAndSignatureEqual(TypeInfo member1, TypeInfo member2)
+        public sealed override bool AreNamesAndSignatureEqual(Type member1, Type member2)
         {
             Debug.Assert(false, "This code path should be unreachable as nested types are never \"virtual\".");
             throw new NotSupportedException();
         }
 
-        public sealed override bool IsSuppressedByMoreDerivedMember(TypeInfo member, TypeInfo[] priorMembers, int startIndex, int endIndex)
+        public sealed override bool IsSuppressedByMoreDerivedMember(Type member, Type[] priorMembers, int startIndex, int endIndex)
         {
             return false;
         }
