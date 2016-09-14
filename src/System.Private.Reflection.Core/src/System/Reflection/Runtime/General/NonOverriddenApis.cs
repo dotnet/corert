@@ -141,7 +141,6 @@ namespace System.Reflection.Runtime.TypeInfos
         protected sealed override bool IsContextfulImpl() => base.IsContextfulImpl();
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
         protected sealed override bool IsMarshalByRefImpl() => base.IsMarshalByRefImpl();
-        public sealed override MemberTypes MemberType => base.MemberType;
         public sealed override bool IsInstanceOfType(object o) => base.IsInstanceOfType(o);
         public sealed override bool IsSerializable => base.IsSerializable;
         public sealed override bool IsEquivalentTo(Type other) => base.IsEquivalentTo(other); // Note: If we enable COM type equivalence, this is no longer the correct implementation.

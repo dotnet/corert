@@ -7,7 +7,7 @@
 //
 #include "common.h"
 #include "gcenv.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 
 #include "slist.h"
 #include "gcrhinterface.h"
@@ -30,7 +30,7 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
     // request.
     static bool fLastEventWasLowMemory = false;
 
-    GCHeap * pHeap = GCHeap::GetGCHeap();
+    IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
 
     // Wait in a loop because we may have to retry if we decide to only wait for finalization events but the
     // two second timeout expires.
@@ -91,7 +91,7 @@ COOP_PINVOKE_HELPER(OBJECTREF, RhpGetNextFinalizableObject, ())
     while (true)
     {
         // Get the next finalizable object. If we get back NULL we've reached the end of the list.
-        OBJECTREF refNext = GCHeap::GetGCHeap()->GetNextFinalizable();
+        OBJECTREF refNext = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
         if (refNext == NULL)
             return NULL;
 

@@ -40,22 +40,14 @@
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
 
-#if defined(FEATURE_SVR_GC)
-namespace SVR {
-    class GCHeap;
-}
-#endif // defined(FEATURE_SVR_GC)
-
-struct alloc_context
+struct gc_alloc_context
 {
     UInt8*         alloc_ptr;
     UInt8*         alloc_limit;
     __int64        alloc_bytes; //Number of bytes allocated on SOH by this context
     __int64        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
-#if defined(FEATURE_SVR_GC)
-    SVR::GCHeap*   alloc_heap;
-    SVR::GCHeap*   home_heap;
-#endif // defined(FEATURE_SVR_GC)
+    void*          gc_reserved_1;
+    void*          gc_reserved_2;
     int            alloc_count;
 };
 
@@ -68,7 +60,7 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (EEType* pEEType))
     ASSERT(!pEEType->HasFinalizer());
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
-    alloc_context * acontext = pCurThread->GetAllocContext();
+    gc_alloc_context * acontext = pCurThread->GetAllocContext();
     Object * pObject;
 
     size_t size = pEEType->get_BaseSize();
@@ -123,7 +115,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     ASSERT_MSG(!pArrayEEType->RequiresAlign8(), "NYI");
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
-    alloc_context * acontext = pCurThread->GetAllocContext();
+    gc_alloc_context * acontext = pCurThread->GetAllocContext();
     Array * pObject;
 
     if (numElements < 0)
