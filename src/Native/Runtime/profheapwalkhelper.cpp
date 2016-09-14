@@ -14,7 +14,7 @@
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 #include "gcenv.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "eventtrace.h"
 
 //---------------------------------------------------------------------------------------
@@ -141,7 +141,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
     //if (pMT->ContainsPointersOrCollectible())
     {
         // First round through calculates the number of object refs for this class
-        GCHeap::GetGCHeap()->WalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
+        GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
 
         if (cNumRefs > 0)
         {
@@ -166,7 +166,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
 
             // Second round saves off all of the ref values
             OBJECTREF * pCurObjRef = arrObjRef;
-            GCHeap::GetGCHeap()->WalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
+            GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
         }
     }
 

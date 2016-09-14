@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 #include "common.h"
 #include "gcenv.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "slist.h"
@@ -23,7 +23,7 @@
 
 class AsmOffsets
 {
-    static_assert(sizeof(Thread::m_rgbAllocContextBuffer) >= sizeof(alloc_context), "Thread::m_rgbAllocContextBuffer is not big enough to hold an alloc_context");
+    static_assert(sizeof(Thread::m_rgbAllocContextBuffer) >= sizeof(gc_alloc_context), "Thread::m_rgbAllocContextBuffer is not big enough to hold a gc_alloc_context");
 
 #define PLAT_ASM_OFFSET(offset, cls, member) \
     static_assert((offsetof(cls, member) == 0x##offset) || (offsetof(cls, member) > 0x##offset), "Bad asm offset for '" #cls "." #member "', the actual offset is smaller than 0x" #offset "."); \
