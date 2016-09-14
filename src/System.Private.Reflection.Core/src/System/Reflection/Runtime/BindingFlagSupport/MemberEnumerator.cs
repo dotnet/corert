@@ -58,11 +58,5 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 }
             }
         }
-
-        // Uniquely allocated sentinel "string"
-        //  - can't use null as that may be an app-supplied null, which we have to throw ArgumentNullException for.
-        //  - risky to use a proper String as the FX or toolchain can unexpectedly give you back a shared string
-        //    even when you'd swear you were allocating a new one.
-        public static readonly Object AnyName = new Object();
     }
 }

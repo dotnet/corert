@@ -72,23 +72,26 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         public static QueriedMemberList<M> Create(RuntimeTypeInfo type, string optionalNameFilter, bool ignoreCase, bool declaredOnly)
         {
-            Type reflectedType = type;
+            RuntimeTypeInfo reflectedType = type;
 
             MemberPolicies<M> policies = MemberPolicies<M>.Default;
 
-            StringComparison comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
-            bool inBaseClass = false;
+            NameFilter nameFilter;
+            if (optionalNameFilter == null)
+                nameFilter = null;
+            else if (ignoreCase)
+                nameFilter = new NameFilterCaseInsensitive(optionalNameFilter);
+            else
+                nameFilter = new NameFilterCaseSensitive(optionalNameFilter);
 
+            bool inBaseClass = false;
             QueriedMemberList<M> queriedMembers = new QueriedMemberList<M>();
             while (type != null)
             {
                 int numCandidatesInDerivedTypes = queriedMembers.Count;
 
-                foreach (M member in policies.GetDeclaredMembers(type))
+                foreach (M member in policies.CoreGetDeclaredMembers(type, nameFilter, reflectedType))
                 {
-                    if (optionalNameFilter != null && !member.Name.Equals(optionalNameFilter, comparisonType))
-                        continue;
-
                     MethodAttributes visibility;
                     bool isStatic;
                     bool isVirtual;

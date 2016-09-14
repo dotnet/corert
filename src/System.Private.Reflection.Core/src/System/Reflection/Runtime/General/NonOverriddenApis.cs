@@ -144,6 +144,22 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override bool IsInstanceOfType(object o) => base.IsInstanceOfType(o);
         public sealed override bool IsSerializable => base.IsSerializable;
         public sealed override bool IsEquivalentTo(Type other) => base.IsEquivalentTo(other); // Note: If we enable COM type equivalence, this is no longer the correct implementation.
+
+        public sealed override IEnumerable<ConstructorInfo> DeclaredConstructors => base.DeclaredConstructors;
+        public sealed override IEnumerable<EventInfo> DeclaredEvents => base.DeclaredEvents;
+        public sealed override IEnumerable<FieldInfo> DeclaredFields => base.DeclaredFields;
+        public sealed override IEnumerable<MemberInfo> DeclaredMembers => base.DeclaredMembers;
+        public sealed override IEnumerable<MethodInfo> DeclaredMethods => base.DeclaredMethods;
+        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes => base.DeclaredNestedTypes;
+        public sealed override IEnumerable<PropertyInfo> DeclaredProperties => base.DeclaredProperties;
+
+        public sealed override EventInfo GetDeclaredEvent(string name) => base.GetDeclaredEvent(name);
+        public sealed override FieldInfo GetDeclaredField(string name) => base.GetDeclaredField(name);
+        public sealed override MethodInfo GetDeclaredMethod(string name) => base.GetDeclaredMethod(name);
+        public sealed override TypeInfo GetDeclaredNestedType(string name) => base.GetDeclaredNestedType(name);
+        public sealed override PropertyInfo GetDeclaredProperty(string name) => base.GetDeclaredProperty(name);
+
+        public sealed override IEnumerable<MethodInfo> GetDeclaredMethods(string name) => base.GetDeclaredMethods(name);
 #endif //DEBUG
     }
 }
