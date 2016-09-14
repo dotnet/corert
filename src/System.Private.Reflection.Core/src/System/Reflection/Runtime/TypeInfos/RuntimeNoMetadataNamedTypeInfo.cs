@@ -57,14 +57,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
-            }
-        }
-
         public sealed override string FullName
         {
             get

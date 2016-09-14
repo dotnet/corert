@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
@@ -23,6 +24,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // Returns all of the directly declared members on the given TypeInfo.
         //
         public abstract IEnumerable<M> GetDeclaredMembers(TypeInfo typeInfo);
+
+        //
+        // Returns all of the directly declared members on the given TypeInfo whose name matches optionalNameFilter. If optionalNameFilter is null,
+        // returns all directly declared members.
+        //
+        public abstract IEnumerable<M> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType);
 
         //
         // Policy to decide whether a member is considered "virtual", "virtual new" and what its member visibility is.
@@ -146,6 +153,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredFields;
         }
 
+        public sealed override IEnumerable<FieldInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredFields(optionalNameFilter, reflectedType);
+        }
+
         public sealed override void GetMemberAttributes(FieldInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
             FieldAttributes fieldAttributes = member.Attributes;
@@ -176,6 +188,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override IEnumerable<ConstructorInfo> GetDeclaredMembers(TypeInfo typeInfo)
         {
             return typeInfo.DeclaredConstructors;
+        }
+
+        public sealed override IEnumerable<ConstructorInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            Debug.Assert(reflectedType.Equals(type));  // Constructor queries are always performed as if BindingFlags.DeclaredOnly are set so the reflectedType should always be the declaring type.
+            return type.CoreGetDeclaredConstructors(optionalNameFilter);
         }
 
         public sealed override BindingFlags ModifyBindingFlags(BindingFlags bindingFlags)
@@ -214,6 +232,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override IEnumerable<MethodInfo> GetDeclaredMembers(TypeInfo typeInfo)
         {
             return typeInfo.DeclaredMethods;
+        }
+
+        public sealed override IEnumerable<MethodInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredMethods(optionalNameFilter, reflectedType);
         }
 
         public sealed override void GetMemberAttributes(MethodInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
@@ -261,6 +284,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(TypeInfo typeInfo)
         {
             return typeInfo.DeclaredProperties;
+        }
+
+        public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredProperties(optionalNameFilter, reflectedType);
         }
 
         public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
@@ -326,6 +354,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredEvents;
         }
 
+        public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredEvents(optionalNameFilter, reflectedType);
+        }
+
         public sealed override void GetMemberAttributes(EventInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
             MethodInfo accessorMethod = GetAccessorMethod(member);
@@ -379,6 +412,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override IEnumerable<Type> GetDeclaredMembers(TypeInfo typeInfo)
         {
             return typeInfo.DeclaredNestedTypes;
+        }
+
+        public sealed override IEnumerable<Type> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            Debug.Assert(reflectedType.Equals(type));  // NestedType queries are always performed as if BindingFlags.DeclaredOnly are set so the reflectedType should always be the declaring type.
+            return type.CoreGetDeclaredNestedTypes(optionalNameFilter);
         }
 
         public sealed override void GetMemberAttributes(Type member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)

@@ -27,14 +27,14 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private MemberInfo[] GetMemberImpl(string optionalNameOrPrefix, MemberTypes type, BindingFlags bindingAttr)
         {
-            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith("*");
+            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith("*", StringComparison.Ordinal);
             string optionalName = prefixSearch ? null : optionalNameOrPrefix;
 
             Func<MemberInfo, bool> predicate = null;
             if (prefixSearch)
             {
                 bool ignoreCase = (bindingAttr & BindingFlags.IgnoreCase) != 0;
-                StringComparison comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+                StringComparison comparisonType = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
                 string prefix = optionalNameOrPrefix.Substring(0, optionalNameOrPrefix.Length - 1);
 
                 predicate = (member => member.Name.StartsWith(prefix, comparisonType));

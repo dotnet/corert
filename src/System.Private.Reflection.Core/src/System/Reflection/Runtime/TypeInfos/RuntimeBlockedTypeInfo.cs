@@ -68,14 +68,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-                return Empty<TypeInfo>.Enumerable;
-            }
-        }
-
         public sealed override string FullName
         {
             get

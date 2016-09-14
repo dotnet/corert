@@ -137,14 +137,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-                return GenericTypeDefinitionTypeInfo.DeclaredNestedTypes;
-            }
-        }
-
         public sealed override bool IsConstructedGenericType
         {
             get
