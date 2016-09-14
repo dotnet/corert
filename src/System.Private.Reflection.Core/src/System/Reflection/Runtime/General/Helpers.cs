@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo CastToRuntimeTypeInfo(this Type type)
         {
-            Debug.Assert(type is RuntimeTypeInfo);
+            Debug.Assert(type == null || type is RuntimeTypeInfo);
             return (RuntimeTypeInfo)type;
         }
 

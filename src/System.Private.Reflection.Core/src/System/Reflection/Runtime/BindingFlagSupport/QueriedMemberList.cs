@@ -2,26 +2,132 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Diagnostics;
-using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
     //
-    // Stores the result of a stage 1 member filtering (filtering by name and visibility from the reflected type.) May be cached long term.
-    // Allows copy-minimizing but unsafe access - use caution.
+    // Stores the result of a member filtering that's filtered by name and visibility from base class (as defined by the Type.Get*() family of apis).
+    // This object is a good candidate for long term caching.
     //
     internal sealed class QueriedMemberList<M> where M : MemberInfo
     {
-        public QueriedMemberList()
+        private QueriedMemberList()
         {
             _members = new M[Grow];
             _allFlagsThatMustMatch = new BindingFlags[Grow];
         }
 
-        public void Add(M member, BindingFlags allFlagsThatMustMatch)
+        private QueriedMemberList(int count, M[] members, BindingFlags[] allFlagsThatMustMatch)
+        {
+            _count = count;
+            _members = members;
+            _allFlagsThatMustMatch = allFlagsThatMustMatch;
+        }
+
+        public int Count => _count;
+
+        public M this[int index]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(index >= 0 && index < _count);
+                return _members[index];
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Matches(int index, BindingFlags bindingAttr)
+        {
+            Debug.Assert(index >= 0 && index < Count);
+            BindingFlags allFlagsThatMustMatch = _allFlagsThatMustMatch[index];
+            return ((bindingAttr & allFlagsThatMustMatch) == allFlagsThatMustMatch);
+        }
+
+        public QueriedMemberList<M> Filter(Func<M, bool> predicate)
+        {
+            BindingFlags[] newAllFlagsThatMustMatch = new BindingFlags[_count];
+            M[] newMembers = new M[_count];
+            int newCount = 0;
+            for (int i = 0; i < _count; i++)
+            {
+                M member = _members[i];
+                if (predicate(member))
+                {
+                    newMembers[newCount] = member;
+                    newAllFlagsThatMustMatch[newCount] = _allFlagsThatMustMatch[i];
+                    newCount++;
+                }
+            }
+
+            return new QueriedMemberList<M>(newCount, newMembers, newAllFlagsThatMustMatch);
+        }
+
+        //
+        // Filter by name and visibility from the ReflectedType.
+        //
+        public static QueriedMemberList<M> Create(RuntimeTypeInfo type, string optionalNameFilter, bool ignoreCase, bool declaredOnly)
+        {
+            Type reflectedType = type;
+
+            MemberPolicies<M> policies = MemberPolicies<M>.Default;
+
+            StringComparison comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+            bool inBaseClass = false;
+
+            QueriedMemberList<M> queriedMembers = new QueriedMemberList<M>();
+            while (type != null)
+            {
+                int numCandidatesInDerivedTypes = queriedMembers.Count;
+
+                foreach (M member in policies.GetDeclaredMembers(type))
+                {
+                    if (optionalNameFilter != null && !member.Name.Equals(optionalNameFilter, comparisonType))
+                        continue;
+
+                    MethodAttributes visibility;
+                    bool isStatic;
+                    bool isVirtual;
+                    bool isNewSlot;
+                    policies.GetMemberAttributes(member, out visibility, out isStatic, out isVirtual, out isNewSlot);
+
+                    if (inBaseClass && visibility == MethodAttributes.Private)
+                        continue;
+
+                    if (numCandidatesInDerivedTypes != 0 && policies.IsSuppressedByMoreDerivedMember(member, queriedMembers._members, startIndex: 0, endIndex: numCandidatesInDerivedTypes))
+                        continue;
+
+                    BindingFlags allFlagsThatMustMatch = default(BindingFlags);
+                    allFlagsThatMustMatch |= (isStatic ? BindingFlags.Static : BindingFlags.Instance);
+                    if (isStatic && inBaseClass)
+                        allFlagsThatMustMatch |= BindingFlags.FlattenHierarchy;
+                    allFlagsThatMustMatch |= ((visibility == MethodAttributes.Public) ? BindingFlags.Public : BindingFlags.NonPublic);
+
+                    if (inBaseClass)
+                    {
+                        queriedMembers.Add(policies.GetInheritedMemberInfo(member, reflectedType), allFlagsThatMustMatch);
+                    }
+                    else
+                    {
+                        queriedMembers.Add(member, allFlagsThatMustMatch);
+                    }
+                }
+
+                if (declaredOnly)
+                    break;
+
+                inBaseClass = true;
+                type = type.BaseType.CastToRuntimeTypeInfo();
+            }
+
+            return queriedMembers;
+        }
+
+        private void Add(M member, BindingFlags allFlagsThatMustMatch)
         {
             const BindingFlags validBits = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
             Debug.Assert((allFlagsThatMustMatch & ~validBits) == 0);
@@ -40,18 +146,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             _allFlagsThatMustMatch[count] = allFlagsThatMustMatch;
             _count++;
         }
-
-        public int Count => _count;
-
-        /// <summary>
-        /// Caution: Will have extra null entries - use QueriedMember.Count to stop iterating rather than MembersNoCopy.Length. Contents are invalidated if an Add occurs.
-        /// </summary>
-        public M[] MembersNoCopy => _members;
-
-        /// <summary>
-        /// Caution: Will have extra null entries - use QueriedMember.Count to stop iterating rather than MembersNoCopy.Length. Contents are invalidated if an Add occurs.
-        /// </summary>
-        public BindingFlags[] AllFlagsThatMustMatchNoCopy => _allFlagsThatMustMatch;
 
         private int _count;
         private M[] _members;
