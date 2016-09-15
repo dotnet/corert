@@ -706,6 +706,11 @@ namespace System.Reflection.Runtime.TypeInfos
         internal abstract RuntimeTypeHandle InternalTypeHandleIfAvailable { get; }
 
         //
+        // Returns true if it's possible to ask for a list of members and the base type without triggering a MissingMetadataException.
+        //
+        internal abstract bool CanBrowseWithoutMissingMetadataExceptions { get; }
+
+        //
         // The non-public version of TypeInfo.GenericTypeParameters (does not array-copy.)
         //
         internal virtual RuntimeTypeInfo[] RuntimeGenericTypeParameters

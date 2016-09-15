@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     if (_queriedMembers == null)
                         return 0;  // This is an uninitialized QueryResult<M>, which is supported and represents a 0-length list of matches.
 
-                    int unfilteredCount = _queriedMembers.Count;
+                    int unfilteredCount = UnfilteredCount;
                     for (int i = 0; i < unfilteredCount; i++)
                     {
                         if (_queriedMembers.Matches(i, _bindingAttr))
@@ -78,7 +78,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (_queriedMembers == null)
                 return; // This is an uninitialized QueryResult<M>, which is supported and represents a 0-length list of matches.
 
-            int unfilteredCount = _queriedMembers.Count;
+            int unfilteredCount = UnfilteredCount;
             for (int i = 0; i < unfilteredCount; i++)
             {
                 if (_queriedMembers.Matches(i, _bindingAttr))
@@ -96,7 +96,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (_queriedMembers == null)
                 return null; // This is an uninitialized QueryResult<M>, which is supported and represents a 0-length list of matches.
 
-            int unfilteredCount = _queriedMembers.Count;
+            int unfilteredCount = UnfilteredCount;
 
             M match = null;
             for (int i = 0; i < unfilteredCount; i++)
@@ -116,6 +116,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
             return match;
         }
+
+        private int UnfilteredCount => ((_bindingAttr & BindingFlags.DeclaredOnly) != 0) ? _queriedMembers.DeclaredOnlyCount : _queriedMembers.TotalCount;
 
         private readonly BindingFlags _bindingAttr;
         private int _lazyCount; // Intentionally not marking as volatile. QueryResult is for short-term use within a single method call - no aspiration to be thread-safe.
