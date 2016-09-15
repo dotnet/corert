@@ -95,6 +95,11 @@ bool GenericUnificationHashtable::EnterDesc(GenericUnificationDesc *pDesc, UIntT
     {
         UInt32 indirCellIndex = pDesc->GetIndirCellIndex(GUF_THREAD_STATICS);
         UInt32 tlsIndex = *(UInt32 *)pIndirCells[indirCellIndex];
+
+        // replace the pointer to the tls index by the tls index itself
+        // this is done so code referencing the tls index does not have to do an additional indirection
+        pIndirCells[indirCellIndex] = tlsIndex;
+        
         UInt32 tlsOffset = (UInt32)pIndirCells[indirCellIndex + 1];
         StaticGcDesc *pGcStaticsDesc = (StaticGcDesc *)pIndirCells[indirCellIndex + 2];
         if (!GetRuntimeInstance()->AddDynamicThreadStaticGcData(tlsIndex, tlsOffset, pGcStaticsDesc))
@@ -116,12 +121,32 @@ void GenericUnificationHashtable::CopyIndirCells(Entry *pWinnerEntry, GenericUni
     UInt32 winnerIndirCellCount = pWinnerDesc->GetIndirCellCount();
     UInt32 loserIndirCellCount = pLoserDesc->GetIndirCellCount();
 
+    if (pWinnerDesc->m_flags & GUF_THREAD_STATICS)
+    {
+        // the cells for the thread static index and thread static offset should be 
+        // copied always because 0 can be a valid value
+        UInt32 threadStaticIndirCellIndex = pWinnerDesc->GetIndirCellIndex(GUF_THREAD_STATICS);
+        pLoserIndirCells[threadStaticIndirCellIndex] = pWinnerIndirCells[threadStaticIndirCellIndex];
+        pLoserIndirCells[threadStaticIndirCellIndex + 1] = pWinnerIndirCells[threadStaticIndirCellIndex + 1];
+    }
+
     ASSERT(winnerIndirCellCount == loserIndirCellCount);
     for (UInt32 i = 0; i < winnerIndirCellCount; i++)
     {
-        if (i < loserIndirCellCount && pWinnerIndirCells[i] != 0)
+        if (i < loserIndirCellCount)
         {
-            pLoserIndirCells[i] = pWinnerIndirCells[i];
+            // pointers to method bodies can be null if the body was not present
+            if (pWinnerIndirCells[i] != 0)
+            {
+                // don't overwrite the loser's cells with null
+                pLoserIndirCells[i] = pWinnerIndirCells[i];
+            }
+            else if (pLoserIndirCells[i] != 0)
+            {
+                // overwrite winner's null with a loser's non-null
+                // so that later losers get the unified value
+                pWinnerIndirCells[i] = pLoserIndirCells[i];
+            }
         }
     }
 }
