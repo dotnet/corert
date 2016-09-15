@@ -15,6 +15,7 @@
 using System.Runtime;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 // TODO: remove when m_pEEType becomes EETypePtr
 using EEType = Internal.Runtime.EEType;
@@ -68,21 +69,10 @@ namespace System
             }
         }
 
-        internal unsafe int GetArrayLength()
-        {
-            Debug.Assert(m_pEEType->IsArray, "this is only supported on arrays");
-
-            // m_numComponents is an int field that is directly after m_pEEType
-            fixed (EEType** ptr = &m_pEEType)
-                return *(int*)(ptr + 1);
-        }
-
+        [StructLayout(LayoutKind.Sequential)]
         private class RawData
         {
-// Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
-#pragma warning disable 649
             public byte Data;
-#pragma warning restore
         }
 
         internal ref byte GetRawData()

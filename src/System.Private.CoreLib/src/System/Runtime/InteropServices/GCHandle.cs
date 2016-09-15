@@ -162,17 +162,15 @@ namespace System.Runtime.InteropServices
                 Array targetAsArray = target as Array;
                 if (targetAsArray != null)
                 {
-                    fixed (IntPtr* pTargetEEType = &targetAsArray.m_pEEType)
+                    fixed (byte* ptr = &targetAsArray.GetRawArrayData())
                     {
-                        return (IntPtr)Array.GetAddrOfPinnedArrayFromEETypeField(pTargetEEType);
+                        return (IntPtr)ptr;
                     }
                 }
-                else
+
+                fixed (byte* ptr = &target.GetRawData())
                 {
-                    fixed (IntPtr* pTargetEEType = &target.m_pEEType)
-                    {
-                        return (IntPtr)Object.GetAddrOfPinnedObjectFromEETypeField(pTargetEEType);
-                    }
+                    return (IntPtr)ptr;
                 }
             }
         }

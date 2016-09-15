@@ -60,12 +60,9 @@ namespace System
             if (uCount == 0)
                 return;
 
-            fixed (IntPtr* pSrcObj = &src.m_pEEType, pDstObj = &dst.m_pEEType)
+            fixed (byte* pSrc = &src.GetRawArrayData(), pDst = &dst.GetRawArrayData())
             {
-                byte* pSrc = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pSrcObj) + srcOffset;
-                byte* pDst = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pDstObj) + dstOffset;
-
-                Buffer.Memmove(pDst, pSrc, uCount);
+                Buffer.Memmove(pDst + dstOffset, pSrc + srcOffset, uCount);
             }
         }
 
@@ -181,11 +178,7 @@ namespace System
             if (index < 0 || index >= _ByteLength(array))
                 throw new ArgumentOutOfRangeException("index");
 
-            fixed (IntPtr* pObj = &array.m_pEEType)
-            {
-                byte* pByte = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pObj) + index;
-                return *pByte;
-            }
+            return Unsafe.Add(ref array.GetRawArrayData(), index);
         }
 
         public static unsafe void SetByte(Array array, int index, byte value)
@@ -202,11 +195,7 @@ namespace System
             if (index < 0 || index >= _ByteLength(array))
                 throw new ArgumentOutOfRangeException("index");
 
-            fixed (IntPtr* pObj = &array.m_pEEType)
-            {
-                byte* pByte = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pObj) + index;
-                *pByte = value;
-            }
+            Unsafe.Add(ref array.GetRawArrayData(), index) = value;
         }
 
         // The attributes on this method are chosen for best JIT performance. 

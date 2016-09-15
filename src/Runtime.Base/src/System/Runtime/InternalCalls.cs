@@ -135,6 +135,11 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static void RhpCopyObjectContents(object objDest, object objSrc);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal unsafe extern static void RhpAssignRef(ref Object address, object obj);
+
 #if FEATURE_GC_STRESS
         //
         // internal calls for GC stress
