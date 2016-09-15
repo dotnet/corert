@@ -116,8 +116,14 @@ namespace System.Reflection.Runtime.TypeInfos
             MemberPolicies<M> policies = MemberPolicies<M>.Default;
             bindingAttr = policies.ModifyBindingFlags(bindingAttr);
             bool ignoreCase = (bindingAttr & BindingFlags.IgnoreCase) != 0;
-            bool declaredOnly = (bindingAttr & BindingFlags.DeclaredOnly) != 0;
-            QueriedMemberList<M> queriedMembers = QueriedMemberList<M>.Create(this, optionalName, ignoreCase: ignoreCase, declaredOnly: declaredOnly);
+
+            TypeComponentsCache cache = Cache;
+            QueriedMemberList<M> queriedMembers;
+            if (optionalName == null)
+                queriedMembers = cache.GetQueriedMembers<M>();
+            else
+                queriedMembers = cache.GetQueriedMembers<M>(optionalName, ignoreCase: ignoreCase);
+
             if (optionalPredicate != null)
                 queriedMembers = queriedMembers.Filter(optionalPredicate);
             return new QueryResult<M>(bindingAttr, queriedMembers);
@@ -128,6 +134,10 @@ namespace System.Reflection.Runtime.TypeInfos
             const BindingFlags SearchRelatedBits = BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
             return (bindingFlags & ~SearchRelatedBits) == 0;
         }
+
+        private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
+
+        private volatile TypeComponentsCache _lazyCache;
     }
 }
 

@@ -141,6 +141,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected MetadataReader Reader { get; }
 
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
+
         internal sealed override string InternalFullNameOfAssembly
         {
             get

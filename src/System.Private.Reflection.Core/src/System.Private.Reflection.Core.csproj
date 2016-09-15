@@ -49,6 +49,7 @@
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\InheritedPropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberEnumerator.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberTypeIndex.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueriedMemberList.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.cs" />
@@ -125,6 +126,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.GetMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.BindingFlags.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.CoreGetDeclared.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.TypeComponentsCache.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\GetTypeOptions.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
