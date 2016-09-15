@@ -122,108 +122,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 return Empty<CustomAttributeData>.Enumerable;
             }
         }
-
-        public sealed override IEnumerable<ConstructorInfo> DeclaredConstructors
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredConstructors(this);
-#endif
-
-                return GetDeclaredConstructorsInternal(this.AnchoringTypeDefinitionForDeclaredMembers);
-            }
-        }
-
-        public sealed override IEnumerable<EventInfo> DeclaredEvents
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredEvents(this);
-#endif
-
-                return GetDeclaredEventsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
-        public sealed override IEnumerable<FieldInfo> DeclaredFields
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredFields(this);
-#endif
-
-                return GetDeclaredFieldsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
-        public sealed override IEnumerable<MemberInfo> DeclaredMembers
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredMembers(this);
-#endif
-
-                return GetDeclaredMembersInternal(
-                    this.DeclaredMethods,
-                    this.DeclaredConstructors,
-                    this.DeclaredProperties,
-                    this.DeclaredEvents,
-                    this.DeclaredFields,
-                    this.DeclaredNestedTypes);
-            }
-        }
-
-        public sealed override IEnumerable<MethodInfo> DeclaredMethods
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredMethods(this);
-#endif
-
-                return GetDeclaredMethodsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
-        //
-        // Left unsealed as named types must override.
-        //
-        public override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredNestedTypes(this);
-#endif
-
-                Debug.Assert(!(this is RuntimeNamedTypeInfo));
-                return Empty<TypeInfo>.Enumerable;
-            }
-        }
-
-        public sealed override IEnumerable<PropertyInfo> DeclaredProperties
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredProperties(this);
-#endif
-
-                return GetDeclaredPropertiesInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
+ 
         //
         // Left unsealed as generic parameter types must override.
         //
@@ -288,90 +187,6 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 return InternalRuntimeGenericTypeArguments.CloneTypeArray();
             }
-        }
-
-        public sealed override EventInfo GetDeclaredEvent(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredEvent(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredEvent(name);
-        }
-
-        public sealed override FieldInfo GetDeclaredField(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredField(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredField(name);
-        }
-
-        public sealed override MethodInfo GetDeclaredMethod(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredMethod(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredMethod(name);
-        }
-
-        public sealed override IEnumerable<MethodInfo> GetDeclaredMethods(string name)
-        {
-            foreach (MethodInfo method in DeclaredMethods)
-            {
-                if (method.Name == name)
-                    yield return method;
-            }
-        }
-
-        public sealed override TypeInfo GetDeclaredNestedType(string name)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfo match = null;
-            foreach (TypeInfo nestedType in DeclaredNestedTypes)
-            {
-                if (nestedType.Name == name)
-                {
-                    if (match != null)
-                        throw new AmbiguousMatchException();
-
-                    match = nestedType;
-                }
-            }
-            return match;
-        }
-
-        public sealed override PropertyInfo GetDeclaredProperty(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredProperty(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredProperty(name);
         }
 
         public sealed override MemberInfo[] GetDefaultMembers()
@@ -837,100 +652,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        //
-        // Return all declared events whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimeEventInfo> GetDeclaredEventsInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (EventHandle eventHandle in definingType.DeclaredEventHandles)
-                {
-                    if (optionalNameFilter == null || eventHandle.GetEvent(reader).Name.StringEquals(optionalNameFilter, reader))
-                        yield return RuntimeEventInfo.GetRuntimeEventInfo(eventHandle, definingType, this);
-                }
-            }
-        }
-
-        //
-        // Return all declared fields whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimeFieldInfo> GetDeclaredFieldsInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (FieldHandle fieldHandle in definingType.DeclaredFieldHandles)
-                {
-                    if (optionalNameFilter == null || fieldHandle.GetField(reader).Name.StringEquals(optionalNameFilter, reader))
-                        yield return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingType, this);
-                }
-            }
-        }
-
-        //
-        // Return all declared methods whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimeMethodInfo> GetDeclaredMethodsInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (MethodHandle methodHandle in definingType.DeclaredMethodAndConstructorHandles)
-                {
-                    Method method = methodHandle.GetMethod(reader);
-
-                    if ((optionalNameFilter != null) && !method.Name.StringEquals(optionalNameFilter, reader))
-                        continue;
-
-                    if (MetadataReaderExtensions.IsConstructor(ref method, reader))
-                        continue;
-                    yield return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingType, this);
-                }
-            }
-
-            foreach (RuntimeMethodInfo syntheticMethod in SyntheticMethods)
-            {
-                if (optionalNameFilter == null || optionalNameFilter == syntheticMethod.Name)
-                {
-                    yield return syntheticMethod;
-                }
-            }
-        }
-
-        //
-        // Return all declared properties whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimePropertyInfo> GetDeclaredPropertiesInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (PropertyHandle propertyHandle in definingType.DeclaredPropertyHandles)
-                {
-                    if (optionalNameFilter == null || propertyHandle.GetProperty(reader).Name.StringEquals(optionalNameFilter, reader))
-                        yield return RuntimePropertyInfo.GetRuntimePropertyInfo(propertyHandle, definingType, this);
-                }
-            }
-        }
-
         internal abstract Type InternalDeclaringType { get; }
 
         //
@@ -983,6 +704,11 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         internal abstract RuntimeTypeHandle InternalTypeHandleIfAvailable { get; }
+
+        //
+        // Returns true if it's possible to ask for a list of members and the base type without triggering a MissingMetadataException.
+        //
+        internal abstract bool CanBrowseWithoutMissingMetadataExceptions { get; }
 
         //
         // The non-public version of TypeInfo.GenericTypeParameters (does not array-copy.)
@@ -1168,73 +894,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return this;
         }
 
-        //
-        // Return all declared members. This may look like a silly code sequence to wrap inside a helper but we want to separate the iterator from
-        // the actual calls to get the sub-enumerations as we want any MissingMetadataException thrown by those
-        // calls to happen at the time DeclaredMembers is called.
-        //
-        private IEnumerable<MemberInfo> GetDeclaredMembersInternal(
-            IEnumerable<MethodInfo> methods,
-            IEnumerable<ConstructorInfo> constructors,
-            IEnumerable<PropertyInfo> properties,
-            IEnumerable<EventInfo> events,
-            IEnumerable<FieldInfo> fields,
-            IEnumerable<TypeInfo> nestedTypes
-            )
-        {
-            foreach (MemberInfo member in methods)
-                yield return member;
-            foreach (MemberInfo member in constructors)
-                yield return member;
-            foreach (MemberInfo member in properties)
-                yield return member;
-            foreach (MemberInfo member in events)
-                yield return member;
-            foreach (MemberInfo member in fields)
-                yield return member;
-            foreach (MemberInfo member in nestedTypes)
-                yield return member;
-        }
-
-        //
-        // Return all declared constructors.
-        //
-        private IEnumerable<RuntimeConstructorInfo> GetDeclaredConstructorsInternal(RuntimeNamedTypeInfo definingType)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                RuntimeTypeInfo contextType = this;
-                foreach (MethodHandle methodHandle in definingType.DeclaredConstructorHandles)
-                {
-                    yield return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, definingType, contextType);
-                }
-            }
-
-            foreach (RuntimeConstructorInfo syntheticConstructor in SyntheticConstructors)
-            {
-                yield return syntheticConstructor;
-            }
-        }
-
         private volatile TypeClassification _lazyClassification;
-
-        private TypeInfoCachedData TypeInfoCachedData
-        {
-            get
-            {
-                TypeInfoCachedData cachedData = _lazyTypeInfoCachedData;
-                if (cachedData != null)
-                    return cachedData;
-                _lazyTypeInfoCachedData = cachedData = new TypeInfoCachedData(this);
-                return cachedData;
-            }
-        }
-
-        private volatile TypeInfoCachedData _lazyTypeInfoCachedData;
 
         private String _debugName;
     }

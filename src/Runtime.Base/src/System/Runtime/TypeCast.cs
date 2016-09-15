@@ -758,11 +758,9 @@ namespace System.Runtime
             }
         }
 
-#if CORERT
-        [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        static private unsafe extern void RhpAssignRef(ref Object address, object obj);
-
+        //
+        // Array stelem/ldelema helpers with RyuJIT conventions
+        //
         [RuntimeExport("RhpStelemRef")]
         static public unsafe void StelemRef(Array array, int index, object obj)
         {
@@ -795,7 +793,7 @@ namespace System.Runtime
 
                 // Call write barrier directly. Assigning object reference would call slower checked write barrier.
                 ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
-                RhpAssignRef(ref Unsafe.Add(ref rawData, index), obj);
+                InternalCalls.RhpAssignRef(ref Unsafe.Add(ref rawData, index), obj);
             }
             else
             {
@@ -824,7 +822,6 @@ namespace System.Runtime
             ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
             return ref Unsafe.Add(ref rawData, index);
         }
-#endif
 
         static internal unsafe bool IsDerived(EEType* pDerivedType, EEType* pBaseType)
         {

@@ -68,14 +68,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-                return Empty<TypeInfo>.Enumerable;
-            }
-        }
-
         public sealed override string FullName
         {
             get
@@ -165,6 +157,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return null;  // this causes the type to report having no members.
             }
         }
+
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {

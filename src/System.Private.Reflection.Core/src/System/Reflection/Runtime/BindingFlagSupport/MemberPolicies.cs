@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
@@ -23,6 +24,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // Returns all of the directly declared members on the given TypeInfo.
         //
         public abstract IEnumerable<M> GetDeclaredMembers(TypeInfo typeInfo);
+
+        //
+        // Returns all of the directly declared members on the given TypeInfo whose name matches optionalNameFilter. If optionalNameFilter is null,
+        // returns all directly declared members.
+        //
+        public abstract IEnumerable<M> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType);
 
         //
         // Policy to decide whether a member is considered "virtual", "virtual new" and what its member visibility is.
@@ -45,6 +52,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             return bindingFlags;
         }
+
+        //
+        // Policy to decide if BindingFlags is always interpreted as having set DeclaredOnly.
+        //
+        public abstract bool AlwaysTreatAsDeclaredOnly { get; }
 
         //
         // Policy to decide how or if members in more derived types hide same-named members in base types.
@@ -90,50 +102,56 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return true;
         }
 
-        //
-        // This is a singleton class one for each MemberInfo category: Return the appropriate one. 
-        //
-        public static MemberPolicies<M> Default
+        static MemberPolicies()
         {
-            get
+            Type t = typeof(M);
+            if (t.Equals(typeof(FieldInfo)))
             {
-                if (_default == null)
-                {
-                    Type t = typeof(M);
-                    if (t.Equals(typeof(FieldInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new FieldPolicies());
-                    }
-                    else if (t.Equals(typeof(MethodInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new MethodPolicies());
-                    }
-                    else if (t.Equals(typeof(ConstructorInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new ConstructorPolicies());
-                    }
-                    else if (t.Equals(typeof(PropertyInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new PropertyPolicies());
-                    }
-                    else if (t.Equals(typeof(EventInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new EventPolicies());
-                    }
-                    else if (t.Equals(typeof(Type)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new NestedTypePolicies());
-                    }
-                    else
-                    {
-                        Debug.Assert(false, "Unknown MemberInfo type.");
-                    }
-                }
-                return _default;
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Field;
+                Default = (MemberPolicies<M>)(Object)(new FieldPolicies());
+            }
+            else if (t.Equals(typeof(MethodInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Method;
+                Default = (MemberPolicies<M>)(Object)(new MethodPolicies());
+            }
+            else if (t.Equals(typeof(ConstructorInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Constructor;
+                Default = (MemberPolicies<M>)(Object)(new ConstructorPolicies());
+            }
+            else if (t.Equals(typeof(PropertyInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Property; ;
+                Default = (MemberPolicies<M>)(Object)(new PropertyPolicies());
+            }
+            else if (t.Equals(typeof(EventInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Event;
+                Default = (MemberPolicies<M>)(Object)(new EventPolicies());
+            }
+            else if (t.Equals(typeof(Type)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.NestedType;
+                Default = (MemberPolicies<M>)(Object)(new NestedTypePolicies());
+            }
+            else
+            {
+                Debug.Assert(false, "Unknown MemberInfo type.");
             }
         }
 
-        private static volatile MemberPolicies<M> _default;
+        //
+        // This is a singleton class one for each MemberInfo category: Return the appropriate one. 
+        //
+        public static readonly MemberPolicies<M> Default;
+
+        //
+        // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M 
+        // being assigned a unique index (see the MemberTypeIndex for possible values). This is useful
+        // for converting a type reference to M to an array index or switch case label.
+        //
+        public static readonly int MemberTypeIndex;
     }
 
     //==========================================================================================================================
@@ -145,6 +163,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             return typeInfo.DeclaredFields;
         }
+
+        public sealed override IEnumerable<FieldInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredFields(optionalNameFilter, reflectedType);
+        }
+
+        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
 
         public sealed override void GetMemberAttributes(FieldInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
@@ -178,11 +203,19 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredConstructors;
         }
 
+        public sealed override IEnumerable<ConstructorInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            Debug.Assert(reflectedType.Equals(type));  // Constructor queries are always performed as if BindingFlags.DeclaredOnly are set so the reflectedType should always be the declaring type.
+            return type.CoreGetDeclaredConstructors(optionalNameFilter);
+        }
+
         public sealed override BindingFlags ModifyBindingFlags(BindingFlags bindingFlags)
         {
             // Constructors are not inherited.
             return bindingFlags | BindingFlags.DeclaredOnly;
         }
+
+        public sealed override bool AlwaysTreatAsDeclaredOnly => true;
 
         public sealed override void GetMemberAttributes(ConstructorInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
@@ -215,6 +248,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             return typeInfo.DeclaredMethods;
         }
+
+        public sealed override IEnumerable<MethodInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredMethods(optionalNameFilter, reflectedType);
+        }
+
+        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
 
         public sealed override void GetMemberAttributes(MethodInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
@@ -262,6 +302,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             return typeInfo.DeclaredProperties;
         }
+
+        public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredProperties(optionalNameFilter, reflectedType);
+        }
+
+        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
 
         public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
@@ -326,6 +373,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredEvents;
         }
 
+        public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            return type.CoreGetDeclaredEvents(optionalNameFilter, reflectedType);
+        }
+
+        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
+
         public sealed override void GetMemberAttributes(EventInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
             MethodInfo accessorMethod = GetAccessorMethod(member);
@@ -380,6 +434,14 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             return typeInfo.DeclaredNestedTypes;
         }
+
+        public sealed override IEnumerable<Type> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        {
+            Debug.Assert(reflectedType.Equals(type));  // NestedType queries are always performed as if BindingFlags.DeclaredOnly are set so the reflectedType should always be the declaring type.
+            return type.CoreGetDeclaredNestedTypes(optionalNameFilter);
+        }
+
+        public sealed override bool AlwaysTreatAsDeclaredOnly => true;
 
         public sealed override void GetMemberAttributes(Type member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {

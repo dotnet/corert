@@ -7,10 +7,16 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
+using Internal.Reflection.Core.Execution;
+
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
     //
     // Stores the result of a member filtering that's filtered by name and visibility from base class (as defined by the Type.Get*() family of apis).
+    //
+    // The results are as if you'd passed in a bindingFlags value of "Public | NonPublic | Instance | Static | FlattenHierarchy"
+    // In addition, if "ignoreCase" was passed to Create(), BindingFlags.IgnoreCase is also in effect.
+    //
     // This object is a good candidate for long term caching.
     //
     internal sealed class QueriedMemberList<M> where M : MemberInfo
@@ -21,21 +27,39 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             _allFlagsThatMustMatch = new BindingFlags[Grow];
         }
 
-        private QueriedMemberList(int count, M[] members, BindingFlags[] allFlagsThatMustMatch)
+        private QueriedMemberList(int totalCount, int declaredOnlyCount, M[] members, BindingFlags[] allFlagsThatMustMatch, RuntimeTypeInfo typeThatBlockedBrowing)
         {
-            _count = count;
+            _totalCount = totalCount;
+            _declaredOnlyCount = declaredOnlyCount;
             _members = members;
             _allFlagsThatMustMatch = allFlagsThatMustMatch;
+            _typeThatBlockedBrowsing = typeThatBlockedBrowing;
         }
 
-        public int Count => _count;
+        /// <summary>
+        /// Returns the # of candidates for a non-DeclaredOnly search. Caution: Can throw MissingMetadataException. Use DeclaredOnlyCount if you don't want to search base classes.
+        /// </summary>
+        public int TotalCount
+        {
+            get
+            {
+                if (_typeThatBlockedBrowsing != null)
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(_typeThatBlockedBrowsing);
+                return _totalCount;
+            }
+        }
+
+        /// <summary>
+        /// Returns the # of candidates for a DeclaredOnly search
+        /// </summary>
+        public int DeclaredOnlyCount => _declaredOnlyCount;
 
         public M this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Debug.Assert(index >= 0 && index < _count);
+                Debug.Assert(index >= 0 && index < _totalCount);
                 return _members[index];
             }
         }
@@ -43,52 +67,58 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Matches(int index, BindingFlags bindingAttr)
         {
-            Debug.Assert(index >= 0 && index < Count);
+            Debug.Assert(index >= 0 && index < _totalCount);
             BindingFlags allFlagsThatMustMatch = _allFlagsThatMustMatch[index];
             return ((bindingAttr & allFlagsThatMustMatch) == allFlagsThatMustMatch);
         }
 
         public QueriedMemberList<M> Filter(Func<M, bool> predicate)
         {
-            BindingFlags[] newAllFlagsThatMustMatch = new BindingFlags[_count];
-            M[] newMembers = new M[_count];
-            int newCount = 0;
-            for (int i = 0; i < _count; i++)
+            BindingFlags[] newAllFlagsThatMustMatch = new BindingFlags[_totalCount];
+            M[] newMembers = new M[_totalCount];
+            int newDeclaredOnlyCount = 0;
+            int newTotalCount = 0;
+            for (int i = 0; i < _totalCount; i++)
             {
                 M member = _members[i];
                 if (predicate(member))
                 {
-                    newMembers[newCount] = member;
-                    newAllFlagsThatMustMatch[newCount] = _allFlagsThatMustMatch[i];
-                    newCount++;
+                    newMembers[newTotalCount] = member;
+                    newAllFlagsThatMustMatch[newTotalCount] = _allFlagsThatMustMatch[i];
+                    newTotalCount++;
+                    if (i < _declaredOnlyCount)
+                        newDeclaredOnlyCount++;
                 }
             }
 
-            return new QueriedMemberList<M>(newCount, newMembers, newAllFlagsThatMustMatch);
+            return new QueriedMemberList<M>(newTotalCount, newDeclaredOnlyCount, newMembers, newAllFlagsThatMustMatch, _typeThatBlockedBrowsing);
         }
 
         //
         // Filter by name and visibility from the ReflectedType.
         //
-        public static QueriedMemberList<M> Create(RuntimeTypeInfo type, string optionalNameFilter, bool ignoreCase, bool declaredOnly)
+        public static QueriedMemberList<M> Create(RuntimeTypeInfo type, string optionalNameFilter, bool ignoreCase)
         {
-            Type reflectedType = type;
+            RuntimeTypeInfo reflectedType = type;
 
             MemberPolicies<M> policies = MemberPolicies<M>.Default;
 
-            StringComparison comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
-            bool inBaseClass = false;
+            NameFilter nameFilter;
+            if (optionalNameFilter == null)
+                nameFilter = null;
+            else if (ignoreCase)
+                nameFilter = new NameFilterCaseInsensitive(optionalNameFilter);
+            else
+                nameFilter = new NameFilterCaseSensitive(optionalNameFilter);
 
+            bool inBaseClass = false;
             QueriedMemberList<M> queriedMembers = new QueriedMemberList<M>();
             while (type != null)
             {
-                int numCandidatesInDerivedTypes = queriedMembers.Count;
+                int numCandidatesInDerivedTypes = queriedMembers._totalCount;
 
-                foreach (M member in policies.GetDeclaredMembers(type))
+                foreach (M member in policies.CoreGetDeclaredMembers(type, nameFilter, reflectedType))
                 {
-                    if (optionalNameFilter != null && !member.Name.Equals(optionalNameFilter, comparisonType))
-                        continue;
-
                     MethodAttributes visibility;
                     bool isStatic;
                     bool isVirtual;
@@ -117,14 +147,34 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     }
                 }
 
-                if (declaredOnly)
-                    break;
+                if (!inBaseClass)
+                {
+                    queriedMembers._declaredOnlyCount = queriedMembers._totalCount;
+                    if (policies.AlwaysTreatAsDeclaredOnly)
+                        break;
+                    inBaseClass = true;
+                }
 
-                inBaseClass = true;
                 type = type.BaseType.CastToRuntimeTypeInfo();
+
+                if (type != null && !type.CanBrowseWithoutMissingMetadataExceptions)
+                {
+                    // If we got here, one of the base classes is missing metadata. We don't want to throw a MissingMetadataException now because we may be 
+                    // building a cached result for a caller who passed BindingFlags.DeclaredOnly. So we'll mark the results in a way that 
+                    // it will throw a MissingMetadataException if a caller attempts to iterate past the declared-only subset.
+                    queriedMembers._typeThatBlockedBrowsing = type;
+                    queriedMembers._totalCount = queriedMembers._declaredOnlyCount;
+                    break;
+                }
             }
 
             return queriedMembers;
+        }
+
+        public void Compact()
+        {
+            Array.Resize(ref _members, _totalCount);
+            Array.Resize(ref _allFlagsThatMustMatch, _totalCount);
         }
 
         private void Add(M member, BindingFlags allFlagsThatMustMatch)
@@ -135,7 +185,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             Debug.Assert(((allFlagsThatMustMatch & BindingFlags.Instance) == 0) != ((allFlagsThatMustMatch & BindingFlags.Static) == 0));
             Debug.Assert((allFlagsThatMustMatch & BindingFlags.FlattenHierarchy) == 0 || (allFlagsThatMustMatch & BindingFlags.Static) != 0);
 
-            int count = _count;
+            int count = _totalCount;
             if (count == _members.Length)
             {
                 Array.Resize(ref _members, count + Grow);
@@ -144,12 +194,14 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
             _members[count] = member;
             _allFlagsThatMustMatch[count] = allFlagsThatMustMatch;
-            _count++;
+            _totalCount++;
         }
 
-        private int _count;
-        private M[] _members;
-        private BindingFlags[] _allFlagsThatMustMatch;
+        private int _totalCount; // # of entries including members in base classes.
+        private int _declaredOnlyCount; // # of entries for members only in the most derived class.
+        private M[] _members;  // Length is equal to or greater than _totalCount. Entries beyond _totalCount contain null or garbage and should be read.
+        private BindingFlags[] _allFlagsThatMustMatch; // Length will be equal to _members.Length
+        private RuntimeTypeInfo _typeThatBlockedBrowsing; // If non-null, one of the base classes was missing metadata.
 
         private const int Grow = 64;
     }

@@ -137,14 +137,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-                return GenericTypeDefinitionTypeInfo.DeclaredNestedTypes;
-            }
-        }
-
         public sealed override bool IsConstructedGenericType
         {
             get
@@ -243,6 +235,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return genericTypeDefinitionNamedTypeInfo;
             }
         }
+
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => GenericTypeDefinitionTypeInfo.CanBrowseWithoutMissingMetadataExceptions;
 
         internal sealed override Type InternalDeclaringType
         {

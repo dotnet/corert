@@ -82,22 +82,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredNestedTypes(this);
-#endif
-
-                foreach (TypeDefinitionHandle nestedTypeHandle in _typeDefinition.NestedTypes)
-                {
-                    yield return nestedTypeHandle.GetNamedType(_reader);
-                }
-            }
-        }
-
         public bool Equals(RuntimeNamedTypeInfo other)
         {
             // RuntimeTypeInfo.Equals(object) is the one that encapsulates our unification strategy so defer to him.
@@ -318,6 +302,8 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
+
         internal sealed override Type InternalDeclaringType
         {
             get
@@ -430,19 +416,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal IEnumerable<MethodHandle> DeclaredConstructorHandles
-        {
-            get
-            {
-                foreach (MethodHandle methodHandle in _typeDefinition.Methods)
-                {
-                    if (methodHandle.IsConstructor(_reader))
-                        yield return methodHandle;
-                }
-            }
-        }
-
-        internal IEnumerable<EventHandle> DeclaredEventHandles
+        internal EventHandleCollection DeclaredEventHandles
         {
             get
             {
@@ -450,7 +424,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal IEnumerable<FieldHandle> DeclaredFieldHandles
+        internal FieldHandleCollection DeclaredFieldHandles
         {
             get
             {
@@ -458,7 +432,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal IEnumerable<MethodHandle> DeclaredMethodAndConstructorHandles
+        internal MethodHandleCollection DeclaredMethodAndConstructorHandles
         {
             get
             {
@@ -466,7 +440,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal IEnumerable<PropertyHandle> DeclaredPropertyHandles
+        internal PropertyHandleCollection DeclaredPropertyHandles
         {
             get
             {

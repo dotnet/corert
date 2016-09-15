@@ -7,6 +7,7 @@ using System.Threading;
 using System.Collections;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
@@ -35,11 +36,6 @@ namespace System
 #pragma warning disable 649
         // This field should be the first field in Array as the runtime/compilers depend on it
         private int _numComponents;
-#if CORERT && BIT64
-        //  The field '{blah}' is never used
-#pragma warning disable 0169
-        private int _padding;
-#endif
 #pragma warning restore
 
 #if BIT64
@@ -196,29 +192,33 @@ namespace System
             return (byte*)ppEEType + new EETypePtr(*ppEEType).BaseSize - POINTER_SIZE;
         }
 
-#if CORERT
-        private class RawSzArrayData : Array
+        [StructLayout(LayoutKind.Sequential)]
+        private class RawData
         {
-// Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
-#pragma warning disable 649
+            public IntPtr Count; // Array._numComponents padded to IntPtr
             public byte Data;
-#pragma warning restore
         }
 
         internal ref byte GetRawSzArrayData()
         {
-            return ref Unsafe.As<RawSzArrayData>(this).Data;
+            Debug.Assert(this.IsSzArray);
+            return ref Unsafe.As<RawData>(this).Data;
         }
-#endif
 
-        //public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array) {
-        //    if (array == null) {
-        //        throw new ArgumentNullException("array");                
-        //    }
+        internal ref byte GetRawArrayData()
+        {
+            return ref Unsafe.Add(ref Unsafe.As<RawData>(this).Data, (int)(EETypePtr.BaseSize - SZARRAY_BASE_SIZE));
+        }
 
-        //    // T[] implements IList<T>.
-        //    return new ReadOnlyCollection<T>(array);
-        //}
+        public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array)
+        {
+            if (array == null) {
+                throw new ArgumentNullException("array");
+            }
+
+            // T[] implements IList<T>.
+            return new ReadOnlyCollection<T>(array);
+        }
 
         public static void Resize<T>(ref T[] array, int newSize)
         {
@@ -407,10 +407,9 @@ namespace System
             EETypePtr sourceElementEEType = sourceArray.ElementEEType;
             nuint sourceElementSize = sourceArray.ElementSize;
 
-            fixed (IntPtr* pSourceArray = &sourceArray.m_pEEType)
+            fixed (byte* pSourceArray = &sourceArray.GetRawArrayData())
             {
-                byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pSourceArray)
-                                            + (nuint)sourceIndex * sourceElementSize;
+                byte* pElement = pSourceArray + (nuint)sourceIndex * sourceElementSize;
 
                 for (int i = 0; i < length; i++)
                 {
@@ -433,10 +432,9 @@ namespace System
             nuint destinationElementSize = destinationArray.ElementSize;
             bool isNullable = destinationElementEEType.IsNullable;
 
-            fixed (IntPtr* pDestinationArray = &destinationArray.m_pEEType)
+            fixed (byte* pDestinationArray = &destinationArray.GetRawArrayData())
             {
-                byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pDestinationArray)
-                                            + (nuint)destinationIndex * destinationElementSize;
+                byte* pElement = pDestinationArray + (nuint)destinationIndex * destinationElementSize;
 
                 for (int i = 0; i < length; i++)
                 {
@@ -480,11 +478,11 @@ namespace System
                 reverseCopy = false;
             }
 
-            fixed (IntPtr* pDstArray = &destinationArray.m_pEEType, pSrcArray = &sourceArray.m_pEEType)
+            fixed (byte* pDstArray = &destinationArray.GetRawArrayData(), pSrcArray = &sourceArray.GetRawArrayData())
             {
                 nuint cbElementSize = sourceArray.ElementSize;
-                byte* pSourceElement = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + (nuint)sourceIndex * cbElementSize;
-                byte* pDestinationElement = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + (nuint)destinationIndex * cbElementSize;
+                byte* pSourceElement = pSrcArray + (nuint)sourceIndex * cbElementSize;
+                byte* pDestinationElement = pDstArray + (nuint)destinationIndex * cbElementSize;
                 if (reverseCopy)
                 {
                     pSourceElement += (nuint)length * cbElementSize;
@@ -530,10 +528,10 @@ namespace System
 
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
             nuint elementSize = sourceArray.ElementSize;
-            fixed (IntPtr* pSrcArray = &sourceArray.m_pEEType, pDstArray = &destinationArray.m_pEEType)
+            fixed (byte* pSrcArray = &sourceArray.GetRawArrayData(), pDstArray = &destinationArray.GetRawArrayData())
             {
-                byte* pSrcElements = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + (nuint)sourceIndex * elementSize;
-                byte* pDstElements = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + (nuint)destinationIndex * elementSize;
+                byte* pSrcElements = pSrcArray + (nuint)sourceIndex * elementSize;
+                byte* pDstElements = pDstArray + (nuint)destinationIndex * elementSize;
                 nuint cbCopy = elementSize * (nuint)length;
                 Buffer.Memmove(pDstElements, pSrcElements, cbCopy);
             }
@@ -550,10 +548,10 @@ namespace System
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
 
-            fixed (IntPtr* pSrcArray = &sourceArray.m_pEEType, pDstArray = &destinationArray.m_pEEType)
+            fixed (byte* pSrcArray = &sourceArray.GetRawArrayData(), pDstArray = &destinationArray.GetRawArrayData())
             {
-                byte* srcData = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + (nuint)sourceIndex * srcElementSize;
-                byte* data = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + (nuint)destinationIndex * destElementSize;
+                byte* srcData = pSrcArray + (nuint)sourceIndex * srcElementSize;
+                byte* data = pDstArray + (nuint)destinationIndex * destElementSize;
 
                 for (int i = 0; i < length; i++, srcData += srcElementSize, data += destElementSize)
                 {
@@ -811,9 +809,9 @@ namespace System
             nuint bytesToCopy = (nuint)length * destination.ElementSize;
             nuint startOffset = (nuint)startIndex * destination.ElementSize;
 
-            fixed (IntPtr* destinationEEType = &destination.m_pEEType)
+            fixed (byte* pDestination = &destination.GetRawArrayData())
             {
-                byte* destinationData = Array.GetAddrOfPinnedArrayFromEETypeField(destinationEEType) + startOffset;
+                byte* destinationData = pDestination + startOffset;
                 Buffer.Memmove(destinationData, (byte*)source, bytesToCopy);
             }
         }
@@ -845,9 +843,9 @@ namespace System
             nuint bytesToCopy = (nuint)length * source.ElementSize;
             nuint startOffset = (nuint)startIndex * source.ElementSize;
 
-            fixed (IntPtr* sourceEEType = &source.m_pEEType)
+            fixed (byte* pSource = &source.GetRawArrayData())
             {
-                byte* sourceData = Array.GetAddrOfPinnedArrayFromEETypeField(sourceEEType) + startOffset;
+                byte* sourceData = pSource + startOffset;
                 Buffer.Memmove((byte*)destination, sourceData, bytesToCopy);
             }
         }
