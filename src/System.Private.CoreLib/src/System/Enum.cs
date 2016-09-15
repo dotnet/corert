@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.Runtime.Augments;
@@ -17,7 +18,7 @@ namespace System
 {
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
-        public unsafe int CompareTo(Object target)
+        public int CompareTo(Object target)
         {
             if (target == null)
                 return 1;
@@ -30,35 +31,48 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, target.GetType().ToString(), this.GetType().ToString()));
             }
 
-            fixed (IntPtr* pThisObj = &this.m_pEEType, pTargetObj = &target.m_pEEType)
-            {
-                IntPtr pThisValue = Object.GetAddrOfPinnedObjectFromEETypeField(pThisObj);
-                IntPtr pTargetValue = Object.GetAddrOfPinnedObjectFromEETypeField(pTargetObj);
+            ref byte pThisValue = ref this.GetRawData();
+            ref byte pTargetValue = ref target.GetRawData();
 
-                switch (this.EETypePtr.CorElementType)
-                {
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                        return (*(sbyte*)pThisValue == *(sbyte*)pTargetValue) ? 0 : (*(sbyte*)pThisValue < *(sbyte*)pTargetValue) ? -1 : 1;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                        return (*(byte*)pThisValue == *(byte*)pTargetValue) ? 0 : (*(byte*)pThisValue < *(byte*)pTargetValue) ? -1 : 1;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                        return (*(short*)pThisValue == *(short*)pTargetValue) ? 0 : (*(short*)pThisValue < *(short*)pTargetValue) ? -1 : 1;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                        return (*(ushort*)pThisValue == *(ushort*)pTargetValue) ? 0 : (*(ushort*)pThisValue < *(ushort*)pTargetValue) ? -1 : 1;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                        return (*(int*)pThisValue == *(int*)pTargetValue) ? 0 : (*(int*)pThisValue < *(int*)pTargetValue) ? -1 : 1;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                        return (*(uint*)pThisValue == *(uint*)pTargetValue) ? 0 : (*(uint*)pThisValue < *(uint*)pTargetValue) ? -1 : 1;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                        return (*(long*)pThisValue == *(long*)pTargetValue) ? 0 : (*(long*)pThisValue < *(long*)pTargetValue) ? -1 : 1;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                        return (*(ulong*)pThisValue == *(ulong*)pTargetValue) ? 0 : (*(ulong*)pThisValue < *(ulong*)pTargetValue) ? -1 : 1;
-                    default:
-                        Environment.FailFast("Unexpected enum underlying type");
-                        return 0;
-                }
+            switch (this.EETypePtr.CorElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    return (Unsafe.As<byte, sbyte>(ref pThisValue) == Unsafe.As<byte, sbyte>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, sbyte>(ref pThisValue) < Unsafe.As<byte, sbyte>(ref pTargetValue)) ? -1 : 1;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return (Unsafe.As<byte, byte>(ref pThisValue) == Unsafe.As<byte, byte>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, byte>(ref pThisValue) < Unsafe.As<byte, byte>(ref pTargetValue)) ? -1 : 1;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    return (Unsafe.As<byte, short>(ref pThisValue) == Unsafe.As<byte, short>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, short>(ref pThisValue) < Unsafe.As<byte, short>(ref pTargetValue)) ? -1 : 1;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    return (Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, ushort>(ref pThisValue) < Unsafe.As<byte, ushort>(ref pTargetValue)) ? -1 : 1;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    return (Unsafe.As<byte, int>(ref pThisValue) == Unsafe.As<byte, int>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, int>(ref pThisValue) < Unsafe.As<byte, int>(ref pTargetValue)) ? -1 : 1;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    return (Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, uint>(ref pThisValue) < Unsafe.As<byte, uint>(ref pTargetValue)) ? -1 : 1;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    return (Unsafe.As<byte, long>(ref pThisValue) == Unsafe.As<byte, long>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, long>(ref pThisValue) < Unsafe.As<byte, long>(ref pTargetValue)) ? -1 : 1;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    return (Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pTargetValue)) ?
+                        0 : (Unsafe.As<byte, ulong>(ref pThisValue) < Unsafe.As<byte, ulong>(ref pTargetValue)) ? -1 : 1;
+
+                default:
+                    Environment.FailFast("Unexpected enum underlying type");
+                    return 0;
             }
         }
 
@@ -69,71 +83,56 @@ namespace System
             EETypePtr eeType = this.EETypePtr;
             if (!eeType.FastEquals(obj.EETypePtr))
                 return false;
-            unsafe
+
+            ref byte pThisValue = ref this.GetRawData();
+            ref byte pOtherValue = ref obj.GetRawData();
+
+            RuntimeImports.RhCorElementTypeInfo corElementTypeInfo = eeType.CorElementTypeInfo;
+            switch (corElementTypeInfo.Log2OfSize)
             {
-                fixed (IntPtr* pThisObj = &this.m_pEEType, pOtherObj = &obj.m_pEEType)
-                {
-                    IntPtr pThisValue = Object.GetAddrOfPinnedObjectFromEETypeField(pThisObj);
-                    IntPtr pOtherValue = Object.GetAddrOfPinnedObjectFromEETypeField(pOtherObj);
-
-                    RuntimeImports.RhCorElementTypeInfo corElementTypeInfo = eeType.CorElementTypeInfo;
-                    switch (corElementTypeInfo.Log2OfSize)
-                    {
-                        case 0:
-                            return (*(byte*)pThisValue) == (*(byte*)pOtherValue);
-
-                        case 1:
-                            return (*(ushort*)pThisValue) == (*(ushort*)pOtherValue);
-
-                        case 2:
-                            return (*(uint*)pThisValue) == (*(uint*)pOtherValue);
-
-                        case 3:
-                            return (*(ulong*)pThisValue) == (*(ulong*)pOtherValue);
-
-                        default:
-                            Environment.FailFast("Unexpected enum underlying type");
-                            return false;
-                    }
-                }
+                case 0:
+                    return Unsafe.As<byte, byte>(ref pThisValue) == Unsafe.As<byte, byte>(ref pOtherValue);
+                case 1:
+                    return Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pOtherValue);
+                case 2:
+                    return Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pOtherValue);
+                case 3:
+                    return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
+                default:
+                    Environment.FailFast("Unexpected enum underlying type");
+                    return false;
             }
         }
 
         public override int GetHashCode()
         {
-            unsafe
-            {
-                fixed (IntPtr* pObj = &this.m_pEEType)
-                {
-                    IntPtr pValue = Object.GetAddrOfPinnedObjectFromEETypeField(pObj);
+            ref byte pValue = ref this.GetRawData();
 
-                    switch (this.EETypePtr.CorElementType)
-                    {
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                            return (*(bool*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                            return (*(char*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                            return (*(sbyte*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                            return (*(byte*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                            return (*(short*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                            return (*(ushort*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                            return (*(int*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                            return (*(uint*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                            return (*(long*)pValue).GetHashCode();
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                            return (*(ulong*)pValue).GetHashCode();
-                        default:
-                            Environment.FailFast("Unexpected enum underlying type");
-                            return 0;
-                    }
-                }
+            switch (this.EETypePtr.CorElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return Unsafe.As<byte, bool>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    return Unsafe.As<byte, char>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    return Unsafe.As<byte, sbyte>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    return Unsafe.As<byte, byte>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    return Unsafe.As<byte, short>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    return Unsafe.As<byte, ushort>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    return Unsafe.As<byte, int>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    return Unsafe.As<byte, uint>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    return Unsafe.As<byte, long>(ref pValue).GetHashCode();
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    return Unsafe.As<byte, ulong>(ref pValue).GetHashCode();
+                default:
+                    Environment.FailFast("Unexpected enum underlying type");
+                    return 0;
             }
         }
 
@@ -447,38 +446,35 @@ namespace System
                 return retval.ToString();  // Built a list of matching names. Return it.
         }
 
-        internal unsafe Object GetValue()
+        internal Object GetValue()
         {
-            fixed (IntPtr* pObj = &this.m_pEEType)
-            {
-                IntPtr pValue = Object.GetAddrOfPinnedObjectFromEETypeField(pObj);
+            ref byte pValue = ref this.GetRawData();
 
-                switch (this.EETypePtr.CorElementType)
-                {
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                        return *(bool*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                        return *(char*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                        return *(sbyte*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                        return *(byte*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                        return *(short*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                        return *(ushort*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                        return *(int*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                        return *(uint*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                        return *(long*)pValue;
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                        return *(ulong*)pValue;
-                    default:
-                        Environment.FailFast("Unexpected enum underlying type");
-                        return 0;
-                }
+            switch (this.EETypePtr.CorElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return Unsafe.As<byte, bool>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    return Unsafe.As<byte, char>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    return Unsafe.As<byte, sbyte>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    return Unsafe.As<byte, byte>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    return Unsafe.As<byte, short>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    return Unsafe.As<byte, ushort>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    return Unsafe.As<byte, int>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    return Unsafe.As<byte, uint>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    return Unsafe.As<byte, long>(ref pValue);
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    return Unsafe.As<byte, ulong>(ref pValue);
+                default:
+                    Environment.FailFast("Unexpected enum underlying type");
+                    return 0;
             }
         }
 
@@ -569,28 +565,22 @@ namespace System
             if (!(this.EETypePtr == flag.EETypePtr))
                 throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), this.GetType()));
 
-            unsafe
-            {
-                fixed (IntPtr* pThisObj = &this.m_pEEType, pFlagObj = &flag.m_pEEType)
-                {
-                    IntPtr pThisValue = Object.GetAddrOfPinnedObjectFromEETypeField(pThisObj);
-                    IntPtr pFlagValue = Object.GetAddrOfPinnedObjectFromEETypeField(pFlagObj);
+            ref byte pThisValue = ref this.GetRawData();
+            ref byte pFlagValue = ref flag.GetRawData();
 
-                    switch (this.EETypePtr.CorElementTypeInfo.Log2OfSize)
-                    {
-                        case 0:
-                            return ((*(byte*)pThisValue) & (*(byte*)pFlagValue)) == *(byte*)pFlagValue;
-                        case 1:
-                            return ((*(ushort*)pThisValue) & (*(ushort*)pFlagValue)) == *(ushort*)pFlagValue;
-                        case 2:
-                            return ((*(uint*)pThisValue) & (*(uint*)pFlagValue)) == *(uint*)pFlagValue;
-                        case 3:
-                            return ((*(ulong*)pThisValue) & (*(ulong*)pFlagValue)) == *(ulong*)pFlagValue;
-                        default:
-                            Environment.FailFast("Unexpected enum underlying type");
-                            return false;
-                    }
-                }
+            switch (this.EETypePtr.CorElementTypeInfo.Log2OfSize)
+            {
+                case 0:
+                    return (Unsafe.As<byte, byte>(ref pThisValue) & Unsafe.As<byte, byte>(ref pFlagValue)) == Unsafe.As<byte, byte>(ref pFlagValue);
+                case 1:
+                    return (Unsafe.As<byte, ushort>(ref pThisValue) & Unsafe.As<byte, ushort>(ref pFlagValue)) == Unsafe.As<byte, ushort>(ref pFlagValue);
+                case 2:
+                    return (Unsafe.As<byte, uint>(ref pThisValue) & Unsafe.As<byte, uint>(ref pFlagValue)) == Unsafe.As<byte, uint>(ref pFlagValue);
+                case 3:
+                    return (Unsafe.As<byte, ulong>(ref pThisValue) & Unsafe.As<byte, ulong>(ref pFlagValue)) == Unsafe.As<byte, ulong>(ref pFlagValue);
+                default:
+                    Environment.FailFast("Unexpected enum underlying type");
+                    return false;
             }
         }
 
@@ -818,58 +808,54 @@ namespace System
                 return false;
             }
             RuntimeImports.RhCorElementType corElementType = eeType.CorElementType;
-            unsafe
+
+            ref byte pValue = ref value.GetRawData();
+
+            switch (corElementType)
             {
-                fixed (IntPtr* pEEType = &value.m_pEEType)
-                {
-                    IntPtr pValue = Object.GetAddrOfPinnedObjectFromEETypeField(pEEType);
-                    switch (corElementType)
-                    {
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                            result = (*(bool*)pValue) ? 1UL : 0UL;
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    result = Unsafe.As<byte, bool>(ref pValue) ? 1UL : 0UL;
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                            result = (ulong)(long)(*(char*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                            result = (ulong)(long)(*(sbyte*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    result = (ulong)(long)Unsafe.As<byte, sbyte>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                            result = (ulong)(long)(*(byte*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    result = (ulong)(long)Unsafe.As<byte, byte>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                            result = (ulong)(long)(*(short*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    result = (ulong)(long)Unsafe.As<byte, short>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                            result = (ulong)(long)(*(ushort*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    result = (ulong)(long)Unsafe.As<byte, ushort>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                            result = (ulong)(long)(*(int*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    result = (ulong)(long)Unsafe.As<byte, int>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                            result = (ulong)(long)(*(uint*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    result = (ulong)(long)Unsafe.As<byte, uint>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                            result = (ulong)(long)(*(long*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    result = (ulong)(long)Unsafe.As<byte, long>(ref pValue);
+                    return true;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                            result = (ulong)(long)(*(ulong*)pValue);
-                            return true;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    result = (ulong)(long)Unsafe.As<byte, ulong>(ref pValue);
+                    return true;
 
-                        default:
-                            result = 0;
-                            return false;
-                    }
-                }
+                default:
+                    result = 0;
+                    return false;
             }
         }
 

@@ -266,7 +266,7 @@ namespace System.Runtime
             object objClone;
 
             if (src.EEType->IsArray)
-                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), src.GetArrayLength());
+                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), Unsafe.As<Array>(src).Length);
             else
                 objClone = RhNewObject(new EETypePtr((IntPtr)src.EEType));
 
