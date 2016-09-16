@@ -34,7 +34,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         public NullableInstanceMethodInvoker(MetadataReader reader, MethodHandle methodHandle, RuntimeTypeHandle nullableTypeHandle, MethodInvokeInfo methodInvokeInfo)
         {
             _id = NullableMethodId.None;
-            s_nullableTypeHandle = nullableTypeHandle;
+            _nullableTypeHandle = nullableTypeHandle;
             Method method = methodHandle.GetMethod(reader);
             if (MethodAttributes.Public == (method.Flags & MethodAttributes.MemberAccessMask))
             {
@@ -119,7 +119,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         // where the constructor is responsible for both the allocation and initialization. Fortunately, we only have to return the boxed
                         // version of Nullable<T> which conveniently happens to be equal to the value we were passed in.
                         CheckArgumentCount(arguments, 1);
-                        RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(s_nullableTypeHandle);
+                        RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(_nullableTypeHandle);
                         Object argument = RuntimeAugments.CheckArgument(arguments[0], theT);
                         return argument;
                     }
@@ -139,14 +139,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         CheckArgumentCount(arguments, 0);
                         if (hasValue)
                             return value;
-                        RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(s_nullableTypeHandle);
+                        RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(_nullableTypeHandle);
                         return RuntimeAugments.NewObject(theT);
                     }
 
                 case NullableMethodId.GetValueOrDefault_1:
                     {
                         CheckArgumentCount(arguments, 1);
-                        RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(s_nullableTypeHandle);
+                        RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(_nullableTypeHandle);
                         Object defaultValue = RuntimeAugments.CheckArgument(arguments[0], theT);
                         return hasValue ? value : defaultValue;
                     }
@@ -183,8 +183,8 @@ namespace Internal.Reflection.Execution.MethodInvokers
             None = -1,
         }
 
-        private NullableMethodId _id;
-        private static RuntimeTypeHandle s_nullableTypeHandle;
+        private readonly NullableMethodId _id;
+        private readonly RuntimeTypeHandle _nullableTypeHandle; // type handle of a specific instantiation of Nullable<>
     }
 }
 
