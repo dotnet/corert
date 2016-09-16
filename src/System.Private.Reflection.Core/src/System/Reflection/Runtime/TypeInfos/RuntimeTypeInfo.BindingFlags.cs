@@ -135,7 +135,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return (bindingFlags & ~SearchRelatedBits) == 0;
         }
 
-        private TypeComponentsCache Cache => /* _lazyCache ?? (_lazyCache =*/ (new TypeComponentsCache(this));
+        private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
 
         private volatile TypeComponentsCache _lazyCache;
     }
