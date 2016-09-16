@@ -64,8 +64,6 @@
             <ILCompilerSdkFilesManaged Include="System.Private.Threading" />
             <ILCompilerSdkFilesManaged Include="System.Private.TypeLoader" />
 
-            <ILCompilerSdkContentFiles Include="scripts/linkerscript" />
-
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
@@ -78,9 +76,6 @@
             </ILCompilerSdkBinPlace>
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkCppCodegenFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
-            </ILCompilerSdkBinPlace>
-            <ILCompilerSdkBinPlace Include="@(ILCompilerSdkContentFiles)">
-                <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/sdk/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
 
             <!-- ILCompiler nuspec file -->
