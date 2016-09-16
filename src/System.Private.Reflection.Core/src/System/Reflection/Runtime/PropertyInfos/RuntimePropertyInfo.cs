@@ -49,11 +49,12 @@ namespace System.Reflection.Runtime.PropertyInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        private RuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             _propertyHandle = propertyHandle;
             _definingTypeInfo = definingTypeInfo;
             _contextTypeInfo = contextTypeInfo;
+            _reflectedType = reflectedType;
             _reader = definingTypeInfo.Reader;
             _property = propertyHandle.GetProperty(_reader);
         }
@@ -123,6 +124,8 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (!(_propertyHandle.Equals(other._propertyHandle)))
                 return false;
             if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
+                return false;
+            if (!(_reflectedType.Equals(other._reflectedType)))
                 return false;
             return true;
         }
@@ -247,6 +250,14 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return _reflectedType;
+            }
+        }
+
         public sealed override MethodInfo SetMethod
         {
             get
@@ -340,7 +351,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 MethodHandle getterHandle;
                 if (GetAccessor(MethodSemanticsAttributes.Getter, out getterHandle))
                 {
-                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(getterHandle, _definingTypeInfo, _contextTypeInfo);
+                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(getterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
                 }
                 return null;
             }
@@ -353,7 +364,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 MethodHandle setterHandle;
                 if (GetAccessor(MethodSemanticsAttributes.Setter, out setterHandle))
                 {
-                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(setterHandle, _definingTypeInfo, _contextTypeInfo);
+                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(setterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
                 }
                 return null;
             }
@@ -361,12 +372,22 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         private bool GetAccessor(MethodSemanticsAttributes methodSemanticsAttribute, out MethodHandle methodHandle)
         {
+            bool inherited = !_reflectedType.Equals(_contextTypeInfo);
+
             foreach (MethodSemanticsHandle methodSemanticsHandle in _property.MethodSemantics)
             {
                 MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                 if (methodSemantics.Attributes == methodSemanticsAttribute)
                 {
                     methodHandle = methodSemantics.Method;
+
+                    if (inherited)
+                    {
+                        MethodAttributes flags = methodHandle.GetMethod(_reader).Flags;
+                        if ((flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
+                            continue;
+                    }
+
                     return true;
                 }
             }
@@ -394,6 +415,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         private readonly RuntimeNamedTypeInfo _definingTypeInfo;
         private readonly PropertyHandle _propertyHandle;
         private readonly RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeTypeInfo _reflectedType;
 
         private readonly MetadataReader _reader;
         private readonly Property _property;

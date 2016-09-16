@@ -115,6 +115,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return _genericMethodDefinition.ReflectedType;
+            }
+        }
+
         public sealed override String ToString()
         {
             return _genericMethodDefinition.ComputeToString(this);

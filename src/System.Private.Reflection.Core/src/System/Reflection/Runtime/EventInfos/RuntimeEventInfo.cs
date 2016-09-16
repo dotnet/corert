@@ -45,11 +45,12 @@ namespace System.Reflection.Runtime.EventInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        private RuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             _eventHandle = eventHandle;
             _definingTypeInfo = definingTypeInfo;
             _contextTypeInfo = contextTypeInfo;
+            _reflectedType = reflectedType;
             _reader = definingTypeInfo.Reader;
             _event = eventHandle.GetEvent(_reader);
         }
@@ -68,7 +69,7 @@ namespace System.Reflection.Runtime.EventInfos
                     MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                     if (methodSemantics.Attributes == MethodSemanticsAttributes.AddOn)
                     {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo);
+                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
                     }
                 }
                 throw new BadImageFormatException(); // Added is a required method.
@@ -123,6 +124,8 @@ namespace System.Reflection.Runtime.EventInfos
                 return false;
             if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
                 return false;
+            if (!(_reflectedType.Equals(other._reflectedType)))
+                return false;
             return true;
         }
 
@@ -168,6 +171,14 @@ namespace System.Reflection.Runtime.EventInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return _reflectedType;
+            }
+        }
+
         public sealed override MethodInfo RaiseMethod
         {
             get
@@ -182,7 +193,7 @@ namespace System.Reflection.Runtime.EventInfos
                     MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                     if (methodSemantics.Attributes == MethodSemanticsAttributes.Fire)
                     {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo);
+                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
                     }
                 }
                 return null;
@@ -203,7 +214,7 @@ namespace System.Reflection.Runtime.EventInfos
                     MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                     if (methodSemantics.Attributes == MethodSemanticsAttributes.RemoveOn)
                     {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo);
+                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
                     }
                 }
                 throw new BadImageFormatException(); // Removed is a required method.
@@ -256,6 +267,7 @@ namespace System.Reflection.Runtime.EventInfos
         private readonly RuntimeNamedTypeInfo _definingTypeInfo;
         private readonly EventHandle _eventHandle;
         private readonly RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeTypeInfo _reflectedType;
 
         private readonly MetadataReader _reader;
         private readonly Event _event;

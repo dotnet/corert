@@ -162,7 +162,10 @@ namespace System.Reflection.Runtime.General
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
-            return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo);
+
+            // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
+            RuntimeTypeInfo reflectedType = contextTypeInfo;
+            return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType);
         }
     }
 }
