@@ -48,11 +48,12 @@ namespace System.Reflection.Runtime.FieldInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        private RuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             _fieldHandle = fieldHandle;
             _definingTypeInfo = definingTypeInfo;
             _contextTypeInfo = contextTypeInfo;
+            _reflectedType = reflectedType;
             _reader = definingTypeInfo.Reader;
             _field = fieldHandle.GetField(_reader);
         }
@@ -143,6 +144,14 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return _reflectedType;
+            }
+        }
+
         public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -174,6 +183,8 @@ namespace System.Reflection.Runtime.FieldInfos
             if (!(_fieldHandle.Equals(other._fieldHandle)))
                 return false;
             if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
+                return false;
+            if (!(_reflectedType.Equals(other._reflectedType)))
                 return false;
             return true;
         }
@@ -265,6 +276,7 @@ namespace System.Reflection.Runtime.FieldInfos
         private readonly RuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldHandle _fieldHandle;
         private readonly RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeTypeInfo _reflectedType;
 
         private readonly MetadataReader _reader;
         private readonly Field _field;

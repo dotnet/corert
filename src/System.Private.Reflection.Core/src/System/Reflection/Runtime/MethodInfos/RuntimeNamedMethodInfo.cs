@@ -42,10 +42,11 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimeNamedMethodInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        private RuntimeNamedMethodInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
             : base()
         {
             _common = new RuntimeMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo);
+            _reflectedType = reflectedType;
         }
 
         public sealed override MethodAttributes Attributes
@@ -146,6 +147,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return _reflectedType;
+            }
+        }
+
         public sealed override String ToString()
         {
             return ComputeToString(this);
@@ -156,7 +165,11 @@ namespace System.Reflection.Runtime.MethodInfos
             RuntimeNamedMethodInfo other = obj as RuntimeNamedMethodInfo;
             if (other == null)
                 return false;
-            return _common.Equals(other._common);
+            if (!_common.Equals(other._common))
+                return false;
+            if (!(_reflectedType.Equals(other._reflectedType)))
+                return false;
+            return true;
         }
 
         public sealed override int GetHashCode()
@@ -232,7 +245,14 @@ namespace System.Reflection.Runtime.MethodInfos
                     {
                         // Desktop compat: Constructed generic types and their generic type definitions share the same Type objects for method generic parameters. 
                         RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToRuntimeNamedTypeInfo();
-                        owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(Handle, genericTypeDefinition, genericTypeDefinition);
+                        owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(Handle, genericTypeDefinition, genericTypeDefinition, genericTypeDefinition);
+                    }
+                    else
+                    {
+                        // Desktop compat: DeclaringMethod always returns a MethodInfo whose ReflectedType is equal to DeclaringType.
+                        if (!_reflectedType.Equals(_common.DeclaringType))
+                            owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(_common.MethodHandle, _common.DefiningTypeInfo, _common.ContextTypeInfo, _common.DeclaringType);
+
                     }
                     RuntimeTypeInfo genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
                     genericTypeParameters[i++] = genericParameterType;
@@ -250,5 +270,6 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         private readonly RuntimeMethodCommon _common;
+        private readonly RuntimeTypeInfo _reflectedType;
     }
 }

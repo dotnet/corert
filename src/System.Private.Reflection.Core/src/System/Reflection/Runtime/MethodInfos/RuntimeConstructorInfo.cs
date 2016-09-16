@@ -148,6 +148,15 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override int GetHashCode();
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                // Constructors are always looked up as if BindingFlags.DeclaredOnly were specified. Thus, the ReflectedType will always be the DeclaringType.
+                return DeclaringType;
+            }
+        }
+
         public abstract override String ToString();
 
         protected MethodInvoker MethodInvoker

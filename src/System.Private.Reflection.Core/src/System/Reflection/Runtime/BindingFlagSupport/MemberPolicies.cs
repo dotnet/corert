@@ -65,15 +65,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract bool IsSuppressedByMoreDerivedMember(M member, M[] priorMembers, int startIndex, int endIndex);
 
         //
-        // Policy to create a wrapper MemberInfo (if appropriate). This is due to the fact that MemberInfo's actually have their identity
-        // tied to the type they were queried off of and this unfortunate fact shows up in certain api behaviors.
-        //
-        public virtual M GetInheritedMemberInfo(M underlyingMemberInfo, Type reflectedType)
-        {
-            return underlyingMemberInfo;
-        }
-
-        //
         // Helper method for determining whether two methods are signature-compatible for the purpose of implicit overriding.
         //
         protected static bool AreNamesAndSignaturesEqual(MethodInfo method1, MethodInfo method2)
@@ -313,6 +304,19 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
             MethodInfo accessorMethod = GetAccessorMethod(member);
+            if (accessorMethod == null)
+            {
+                // If we got here, this is a inherited PropertyInfo that only had private accessors and is now refusing to give them out
+                // because that's what the rules of inherited PropertyInfo's are. Such a PropertyInfo is also considered private and will never be
+                // given out of a Type.GetProperty() call. So all we have to do is set its visibility to Private and it will get filtered out.
+                // Other values need to be set to satisify C# but they are meaningless.
+                visibility = MethodAttributes.Private;
+                isStatic = false;
+                isVirtual = false;
+                isNewSlot = true;
+                return;
+            }
+
             MethodAttributes methodAttributes = accessorMethod.Attributes;
             visibility = methodAttributes & MethodAttributes.MemberAccessMask;
             isStatic = (0 != (methodAttributes & MethodAttributes.Static));
@@ -344,11 +348,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return true;
             }
             return false;
-        }
-
-        public sealed override PropertyInfo GetInheritedMemberInfo(PropertyInfo underlyingMemberInfo, Type reflectedType)
-        {
-            return new InheritedPropertyInfo(underlyingMemberInfo, reflectedType);
         }
 
         private MethodInfo GetAccessorMethod(PropertyInfo property)

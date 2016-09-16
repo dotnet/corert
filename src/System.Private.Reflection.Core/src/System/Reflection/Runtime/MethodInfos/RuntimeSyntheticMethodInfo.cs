@@ -115,6 +115,16 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                // The only synthetic methods come from array types which can never be inherited from. So unless that changes, 
+                // we don't provide a way to specify the ReflectedType.
+                return DeclaringType;
+            }
+        }
+
         public sealed override String ToString()
         {
             return RuntimeMethodCommon.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParameters, RuntimeReturnParameter);
