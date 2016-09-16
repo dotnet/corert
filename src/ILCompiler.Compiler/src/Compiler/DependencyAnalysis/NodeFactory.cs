@@ -567,7 +567,7 @@ namespace ILCompiler.DependencyAnalysis
         public static NameMangler NameMangler;
         public static string CompilationUnitPrefix;
 
-        public void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
+        public virtual void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
 
