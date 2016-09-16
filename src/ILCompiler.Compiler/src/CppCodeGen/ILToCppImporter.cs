@@ -518,7 +518,7 @@ namespace Internal.IL
             }
 
             ForceAppendEmptyLine();
-            Append(_writer.GetCppMethodDeclaration(_method, true));
+            _writer.AppendCppMethodDeclaration(_builder, _method, true);
             AppendLine();
             Append("{");
             Indent();
