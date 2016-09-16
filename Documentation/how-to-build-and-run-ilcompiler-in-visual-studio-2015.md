@@ -52,7 +52,7 @@ _Note: The size of NuGet packages is approximately 2.75 GB, so download might ta
   - Set startup command line to:
 `@c:\corert\bin\obj\Windows_NT.x64.Debug\cpp.rsp`
 
-    - `-nolinenumbers` command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
+    - `--nolinenumbers` command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
 
   - Build & run using **F5**
     - This will run the compiler. The output is `c:\corert\src\ILCompiler\repro\obj\Debug\dnxcore50\native\repro.cpp` file.

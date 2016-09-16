@@ -757,7 +757,10 @@ namespace ILCompiler.CppCodeGen
             }
             else
             {
-                nodeCode.Append(((ISymbolNode)node).MangledName);
+                string mangledName = ((ISymbolNode)node).MangledName;
+
+                // Rename generic composition nodes to avoid name clash with types
+                nodeCode.Append(node is GenericCompositionNode ? mangledName.Replace("::", "_") : mangledName);
             }
             nodeCode.Append("()");
             nodeCode.AppendLine();
@@ -824,15 +827,15 @@ namespace ILCompiler.CppCodeGen
                 relocCode.Append("(void*)&");
                 relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, GetCppMethodName(method.Method)));
             }
-            else if (reloc.Target is EETypeNode && node is EETypeNode && (reloc.Target as EETypeNode).Marked)
+            else if (reloc.Target is EETypeNode && node is EETypeNode)
             {
                 relocCode.Append(GetCppMethodDeclarationName((reloc.Target as EETypeNode).Type, "__getMethodTable"));
                 relocCode.Append("()");
             }
             // Node is either an non-emitted type or a generic composition - both are ignored for CPP codegen
-            else if ((reloc.Target is ModuleManagerIndirectionNode || reloc.Target is InterfaceDispatchMapNode || reloc.Target is EETypeOptionalFieldsNode) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+            else if ((reloc.Target is ModuleManagerIndirectionNode || reloc.Target is InterfaceDispatchMapNode || reloc.Target is EETypeOptionalFieldsNode || reloc.Target is GenericCompositionNode) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
             {
-                relocCode.Append(reloc.Target.MangledName);
+                relocCode.Append(reloc.Target is GenericCompositionNode ? reloc.Target.MangledName.Replace("::", "_") : reloc.Target.MangledName);
                 relocCode.Append("()");
             }
             else if (reloc.Target is ObjectAndOffsetSymbolNode && (reloc.Target as ISymbolNode).MangledName.Contains("DispatchMap"))
@@ -938,7 +941,7 @@ namespace ILCompiler.CppCodeGen
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer methodTables = new CppGenerationBuffer();
-            CppGenerationBuffer rtrHeaderData = new CppGenerationBuffer();
+            CppGenerationBuffer additionalNodes = new CppGenerationBuffer();
             DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
 
             // Number of InterfaceDispatchMapNodes needs to be declared explicitly for Ubuntu and OSX
@@ -954,8 +957,8 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is EETypeNode)
                     OutputTypeNode(node as EETypeNode, factory, forwardDefinitions, typeDefinitions, methodTables);
-                else if ((node is EETypeOptionalFieldsNode || node is ModuleManagerIndirectionNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
-                    rtrHeaderData.Append(GetCodeForObjectNode(node as ObjectNode, factory));
+                else if ((node is EETypeOptionalFieldsNode || node is ModuleManagerIndirectionNode || node is GenericCompositionNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+                    additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
                 else if (node is InterfaceDispatchMapNode)
                 {
                     dispatchPointers.Append("(void *)");
@@ -963,7 +966,7 @@ namespace ILCompiler.CppCodeGen
                     dispatchPointers.Append("(),");
                     dispatchPointers.AppendLine();
                     dispatchMapCount++;
-                    rtrHeaderData.Append(GetCodeForObjectNode(node as ObjectNode, factory));
+                    additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
 
                 }
                 else if (node is ReadyToRunHeaderNode)
@@ -977,7 +980,7 @@ namespace ILCompiler.CppCodeGen
 
             Out.Write(typeDefinitions.ToString());
 
-            Out.Write(rtrHeaderData.ToString());
+            Out.Write(additionalNodes.ToString());
 
             Out.Write(methodTables.ToString());
 

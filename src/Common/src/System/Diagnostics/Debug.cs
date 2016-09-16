@@ -30,10 +30,6 @@ namespace System.Diagnostics
         {
             if (!condition)
             {
-#if CORERT
-                // CORERT-TODO
-                unsafe { *(int*)0 = 0; }
-#else
                 string stackTrace;
 
                 try
@@ -47,7 +43,6 @@ namespace System.Diagnostics
 
                 WriteAssert(stackTrace, message, detailMessage);
                 s_logger.ShowAssertDialog(stackTrace, message, detailMessage);
-#endif
             }
         }
 
