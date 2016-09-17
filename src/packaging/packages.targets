@@ -22,6 +22,8 @@
             <LibPrefix Condition="'$(OsEnvironment)'!='Windows_NT'">lib</LibPrefix>
             <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
+
+            <JitPackageVersion>1.1.0-preview1-24512-01</JitPackageVersion>
         </PropertyGroup>
         <ItemGroup>
             <!-- IL.Compiler target files -->
@@ -40,6 +42,15 @@
             <ILCompilerNativeFiles Include="jitinterface.dylib" Condition="'$(OSGroup)'=='OSX'" />
             <ILCompilerBinPlace Include="@(ILCompilerNativeFiles)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Identity)" /> ]]></Text>
+            </ILCompilerBinPlace>
+
+            <!-- Repackage the JIT dynamic library used for AOT compilation with ilc suffix to avoid colliding with the one used to run the toolchain -->
+            <!-- TODO: Publish the JIT dynamic library in a sub-directory under the original name instead? -->
+            <ILCompilerRepackageJitFiles Include="clrjit.dll" Condition="'$(OSGroup)'=='Windows_NT'" />
+            <ILCompilerRepackageJitFiles Include="libclrjit.so" Condition="'$(OSGroup)'=='Linux'" />
+            <ILCompilerRepackageJitFiles Include="libclrjit.dylib" Condition="'$(OSGroup)'=='OSX'" />
+            <ILCompilerBinPlace Include="@(ILCompilerRepackageJitFiles)">
+                <Text><![CDATA[        <file src="packages/runtime.$(NuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(NuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <!-- IL.Compiler.SDK target files -->
@@ -88,7 +99,6 @@
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
         <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.13-prerelease-00001" />
-        <dependency id="Microsoft.NETCore.Jit" version="1.1.0-preview1-24512-00" />
         <dependency id="NETStandard.Library" version="1.6.0" />
         <dependency id="System.Collections.Immutable" version="1.2.0" />
         <dependency id="System.IO.MemoryMappedFiles" version="4.0.0" />

@@ -1,9 +1,7 @@
 {
   "dependencies": {
     "NETStandard.Library": "1.6.0",
-    "System.CommandLine": "0.1.0-e160909-1",
-    "Microsoft.NETCore.Jit": "1.1.0-preview1-24512-00",
-    "Microsoft.DotNet.ObjectWriter": "1.0.13-prerelease-00001"
+    "System.CommandLine": "0.1.0-e160909-1"
   },
   "frameworks": {
     "netstandard1.6": {}
