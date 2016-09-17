@@ -21,6 +21,8 @@ namespace Internal.IL.Stubs
 
             switch (method.Name)
             {
+                case "AsPointer":
+                    return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.conv_u, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 case "SizeOf":
                     return EmitSizeOf(method);
                 case "As":

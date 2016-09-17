@@ -14,9 +14,6 @@ namespace System.Reflection.Runtime.Dispensers
     {
         public sealed override DispenserAlgorithm GetAlgorithm(DispenserScenario scenario)
         {
-#if TEST_CODEGEN_OPTIMIZATION
-            return DispenserAlgorithm.CreateAlways;
-#else
             switch (scenario)
             {
                 // Assembly + NamespaceTypeName to Type
@@ -38,8 +35,6 @@ namespace System.Reflection.Runtime.Dispensers
                 default:
                     return DispenserAlgorithm.CreateAlways;
             }
-#endif //!TEST_CODEGEN_OPTIMIZATION
-
         }
     }
 }
