@@ -1,4 +1,4 @@
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
@@ -16,4 +16,8 @@
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Use the source primary copy for development convenience -->
+  <Import Project="$(MSBuildThisFileDirectory)\..\..\..\src\BuildIntegration\Microsoft.NETCore.Native.targets" />
+  <!-- <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" /> -->
 </Project>

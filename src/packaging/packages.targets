@@ -53,6 +53,13 @@
                 <Text><![CDATA[        <file src="packages/runtime.$(NuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(NuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
             </ILCompilerBinPlace>
 
+            <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.targets" />
+            <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.Windows.targets" />
+            <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.Unix.targets" />
+            <ILCompilerBinPlace Include="@(ILCompilerContentFiles)">
+                <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)%(Extension)" /> ]]></Text>
+            </ILCompilerBinPlace>
+
             <!-- IL.Compiler.SDK target files -->
             <ILCompilerSdkFiles Include="Runtime" />
             <ILCompilerSdkFiles Include="PortableRuntime" />
