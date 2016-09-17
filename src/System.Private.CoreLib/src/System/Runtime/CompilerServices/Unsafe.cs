@@ -25,6 +25,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
+        [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
