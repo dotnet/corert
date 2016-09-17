@@ -46,7 +46,6 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.LimitedBinder.cs" />
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\InheritedPropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberEnumerator.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberTypeIndex.cs" />

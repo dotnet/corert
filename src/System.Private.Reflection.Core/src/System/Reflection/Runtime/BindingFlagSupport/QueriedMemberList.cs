@@ -137,14 +137,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         allFlagsThatMustMatch |= BindingFlags.FlattenHierarchy;
                     allFlagsThatMustMatch |= ((visibility == MethodAttributes.Public) ? BindingFlags.Public : BindingFlags.NonPublic);
 
-                    if (inBaseClass)
-                    {
-                        queriedMembers.Add(policies.GetInheritedMemberInfo(member, reflectedType), allFlagsThatMustMatch);
-                    }
-                    else
-                    {
-                        queriedMembers.Add(member, allFlagsThatMustMatch);
-                    }
+                    queriedMembers.Add(member, allFlagsThatMustMatch);
                 }
 
                 if (!inBaseClass)

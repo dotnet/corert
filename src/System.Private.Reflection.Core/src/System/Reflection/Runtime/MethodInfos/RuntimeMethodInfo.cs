@@ -206,6 +206,8 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public abstract override Type ReflectedType { get; }
+
         public sealed override ParameterInfo ReturnParameter
         {
             get

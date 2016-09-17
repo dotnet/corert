@@ -39,7 +39,6 @@ namespace System.Reflection.Runtime.MethodInfos
     {
         public sealed override MethodBody GetMethodBody() { throw new NotImplementedException(); }
         public sealed override RuntimeMethodHandle MethodHandle { get { throw new NotImplementedException(); } }
-        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
     }
 }
 
@@ -55,7 +54,6 @@ namespace System.Reflection.Runtime.EventInfos
     internal sealed partial class RuntimeEventInfo
     {
         public sealed override MethodInfo[] GetOtherMethods(bool nonPublic) { throw new NotImplementedException(); }
-        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
     }
 }
 
@@ -66,7 +64,6 @@ namespace System.Reflection.Runtime.FieldInfos
         public sealed override RuntimeFieldHandle FieldHandle { get { throw new NotImplementedException(); } }
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
-        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
     }
 }
 
@@ -76,7 +73,6 @@ namespace System.Reflection.Runtime.MethodInfos
     {
         public sealed override MethodBody GetMethodBody() { throw new NotImplementedException(); }
         public sealed override RuntimeMethodHandle MethodHandle { get { throw new NotImplementedException(); } }
-        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
     }
 }
 
@@ -115,7 +111,6 @@ namespace System.Reflection.Runtime.PropertyInfos
 {
     internal sealed partial class RuntimePropertyInfo
     {
-        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
     }
@@ -126,6 +121,5 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract partial class RuntimeTypeInfo
     {
         public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotImplementedException(); }
-        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
     }
 }

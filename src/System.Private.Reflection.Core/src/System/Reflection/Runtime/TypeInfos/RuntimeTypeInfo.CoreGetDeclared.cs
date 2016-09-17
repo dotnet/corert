@@ -73,7 +73,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         continue;
 
                     if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
-                        yield return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingType, this);
+                        yield return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingType, this, reflectedType);
                 }
             }
 
@@ -93,7 +93,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 foreach (EventHandle eventHandle in definingType.DeclaredEventHandles)
                 {
                     if (optionalNameFilter == null || optionalNameFilter.Matches(eventHandle.GetEvent(reader).Name, reader))
-                        yield return RuntimeEventInfo.GetRuntimeEventInfo(eventHandle, definingType, this);
+                        yield return RuntimeEventInfo.GetRuntimeEventInfo(eventHandle, definingType, this, reflectedType);
                 }
             }
         }
@@ -107,7 +107,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 foreach (FieldHandle fieldHandle in definingType.DeclaredFieldHandles)
                 {
                     if (optionalNameFilter == null || optionalNameFilter.Matches(fieldHandle.GetField(reader).Name, reader))
-                        yield return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingType, this);
+                        yield return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingType, this, reflectedType);
                 }
             }
         }
@@ -121,7 +121,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 foreach (PropertyHandle propertyHandle in definingType.DeclaredPropertyHandles)
                 {
                     if (optionalNameFilter == null || optionalNameFilter.Matches(propertyHandle.GetProperty(reader).Name, reader))
-                        yield return RuntimePropertyInfo.GetRuntimePropertyInfo(propertyHandle, definingType, this);
+                        yield return RuntimePropertyInfo.GetRuntimePropertyInfo(propertyHandle, definingType, this, reflectedType);
                 }
             }
         }

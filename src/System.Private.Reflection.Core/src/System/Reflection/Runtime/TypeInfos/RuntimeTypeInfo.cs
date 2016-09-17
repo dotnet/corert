@@ -519,6 +519,16 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                // Desktop compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as BindingFlags.DeclaredOnly was passed.
+                // For non-nested types, the concept of a ReflectedType doesn't even make sense.
+                return DeclaringType;
+            }
+        }
+
         public abstract override StructLayoutAttribute StructLayoutAttribute { get; }
 
         public abstract override string ToString();

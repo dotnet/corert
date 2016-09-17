@@ -124,7 +124,9 @@ namespace Internal.Reflection.Core.Execution
             }
             else
             {
-                RuntimeNamedMethodInfo runtimeNamedMethodInfo = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+                // RuntimeMethodHandles always yield methods whose ReflectedType is the DeclaringType.
+                RuntimeTypeInfo reflectedType = contextTypeInfo;
+                RuntimeNamedMethodInfo runtimeNamedMethodInfo = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo, reflectedType);
                 if (!runtimeNamedMethodInfo.IsGenericMethod)
                 {
                     return runtimeNamedMethodInfo;

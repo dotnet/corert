@@ -271,14 +271,10 @@ namespace System.Globalization
 
             int sourceStartIndex = findLastIndex ? startIndex - sourceCount + 1 : startIndex;
 
-#if !TEST_CODEGEN_OPTIMIZATION
             fixed (char* pSource = source, spTarget = target)
             {
                 char* spSubSource = pSource + sourceStartIndex;
-#else
-                String.StringPointer spSubSource = source.GetStringPointer(sourceStartIndex);
-                String.StringPointer spTarget = target.GetStringPointer();
-#endif
+
                 if (findLastIndex)
                 {
                     int startPattern = (sourceCount - 1) - targetCount + 1;
@@ -338,11 +334,9 @@ namespace System.Globalization
                         retValue += startIndex;
                     }
                 }
-#if !TEST_CODEGEN_OPTIMIZATION
             }
 
             return retValue;
-#endif // TEST_CODEGEN_OPTIMIZATION
         }
 
         private const int COMPARE_OPTIONS_ORDINAL = 0x40000000;       // Ordinal

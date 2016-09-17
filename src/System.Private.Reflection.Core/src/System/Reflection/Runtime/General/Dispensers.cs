@@ -169,9 +169,9 @@ namespace System.Reflection.Runtime.FieldInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeFieldInfo
     {
-        internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            return new RuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo).WithDebugName();
+            return new RuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
     }
 }
@@ -205,9 +205,9 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeNamedMethodInfo : RuntimeMethodInfo
     {
-        internal static RuntimeNamedMethodInfo GetRuntimeNamedMethodInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimeNamedMethodInfo GetRuntimeNamedMethodInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            RuntimeNamedMethodInfo method = new RuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+            RuntimeNamedMethodInfo method = new RuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo, reflectedType);
             method.WithDebugName();
             return method;
         }
@@ -243,9 +243,9 @@ namespace System.Reflection.Runtime.PropertyInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimePropertyInfo
     {
-        internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            return new RuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo).WithDebugName();
+            return new RuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
     }
 }
@@ -257,9 +257,9 @@ namespace System.Reflection.Runtime.EventInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeEventInfo
     {
-        internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            return new RuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo).WithDebugName();
+            return new RuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
     }
 }
