@@ -304,15 +304,13 @@ namespace System
             {
                 if ((uint)index >= _stringLength)
                     throw new IndexOutOfRangeException();
-                fixed (char* s = &_firstChar)
-                    return s[index];
+                return Unsafe.Add(ref _firstChar, index);
             }
 #else
             [BoundsChecking]
             get
             {
-                System.Runtime.CompilerServices.ByReference<char> mgdPtr = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _firstChar);
-                return System.Runtime.CompilerServices.ByReference<char>.LoadAtIndex(mgdPtr, index);
+                return Unsafe.Add(ref _firstChar, index);
             }
 #endif
         }
@@ -589,42 +587,6 @@ namespace System
 
             return count;
         }
-
-#if !CORERT
-        // This method give you access raw access to a unpinned (i.e. don't hand out via interop) 
-        // string data to do efficent string indexing and substring operations.
-        internal StringPointer GetStringPointer(int startIndex = 0)
-        {
-            return new StringPointer(this, startIndex);
-        }
-
-        [System.Runtime.CompilerServices.StackOnly]
-        internal struct StringPointer
-        {
-            private string _theString;
-            private int _index;
-
-            public StringPointer(string s, int startIndex = 0)
-            {
-                _theString = s;
-                _index = startIndex;
-            }
-
-            public char this[int offset]
-            {
-                get
-                {
-                    System.Runtime.CompilerServices.ByReference<char> mgdPtr = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _theString._firstChar);
-                    return System.Runtime.CompilerServices.ByReference<char>.LoadAtIndex(mgdPtr, offset + _index);
-                }
-                set
-                {
-                    System.Runtime.CompilerServices.ByReference<char> mgdPtr = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _theString._firstChar);
-                    System.Runtime.CompilerServices.ByReference<char>.StoreAtIndex(mgdPtr, offset + _index, value);
-                }
-            }
-        }
-#endif
 
         //
         // IConvertible implementation

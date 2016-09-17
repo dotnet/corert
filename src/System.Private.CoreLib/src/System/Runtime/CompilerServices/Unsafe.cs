@@ -22,6 +22,25 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public static class Unsafe
     {
+        /// <summary>
+        /// Returns a pointer to the given by-ref parameter.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void* AsPointer<T>(ref T source)
+        {
+            // This method is implemented by the toolchain
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // conv.u
+            // ret
+        }
+
+        /// <summary>
+        /// Returns the size of an object of the given type parameter.
+        /// </summary>
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
