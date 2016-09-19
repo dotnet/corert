@@ -187,7 +187,7 @@ namespace System.Threading
             object slock = syncLock;
             if (slock == null)
             {
-                object newLock = new Lock();
+                object newLock = new object();
                 slock = Interlocked.CompareExchange(ref syncLock, newLock, null);
                 if (slock == null)
                 {
