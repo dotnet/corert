@@ -89,6 +89,65 @@
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
 
+            <!-- Repackage the framework used for AOT compilation -->
+            <!-- TODO: Obtain this via nuget once the framework is properly packaged -->
+            <ILCompilerAOTFrameworkFiles Include="System.Globalization" />
+            <ILCompilerAOTFrameworkFiles Include="System.IO" />
+            <ILCompilerAOTFrameworkFiles Include="System.Reflection" />
+            <ILCompilerAOTFrameworkFiles Include="System.Reflection.Extensions" />
+            <ILCompilerAOTFrameworkFiles Include="System.Reflection.Primitives" />
+            <ILCompilerAOTFrameworkFiles Include="System.Runtime" />
+            <ILCompilerAOTFrameworkFiles Include="System.Runtime.Handles" />
+            <ILCompilerAOTFrameworkFiles Include="System.Runtime.InteropServices" />
+            <ILCompilerAOTFrameworkFiles Include="System.Text.Encoding" />
+            <ILCompilerAOTFrameworkFiles Include="System.Text.Encoding.Extensions" />
+            <ILCompilerAOTFrameworkFiles Include="System.Threading.Tasks" />
+            <ILCompilerAOTFrameworkFiles Include="System.Collections" />
+            <ILCompilerAOTFrameworkFiles Include="System.Diagnostics.Tools" />
+            <ILCompilerAOTFrameworkFiles Include="System.Diagnostics.Tracing" />
+            <ILCompilerAOTFrameworkFiles Include="System.Globalization.Calendars" />
+            <ILCompilerAOTFrameworkFiles Include="System.Threading.Timer" />
+            <ILCompilerSdkBinPlace Include="@(ILCompilerAOTFrameworkFiles)">
+              <Text><![CDATA[        <file src="packages/runtime.aot.%(Identity)/4.3.0-beta-devapi-24514-04/runtimes/aot/lib/netcore50/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+
+            <ILCompilerFrameworkFiles Include="System.Reflection.TypeExtensions/4.1.0/runtimes/aot/lib/netcore50/System.Reflection.TypeExtensions.dll" />
+
+            <ILCompilerFrameworkFiles Include="Microsoft.NETCore.Portable.Compatibility/1.0.2/runtimes/aot/lib/netcore50/mscorlib.dll" />
+            <ILCompilerFrameworkFiles Include="toolchain.$(NuPkgRid).Microsoft.DotNet.AppDep/1.0.6-prerelease-00004/System.Resources.ResourceManager.dll" />
+
+            <ILCompilerFrameworkFiles Include="runtime.win.System.Runtime.Extensions/4.1.0/runtimes/win/lib/netstandard1.5/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.Runtime.Extensions/4.1.0/runtimes/unix/lib/netstandard1.5/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+
+            <ILCompilerFrameworkFiles Include="runtime.win.System.Console/4.0.0/runtimes/win/lib/netstandard1.3/System.Console.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.Console/4.0.0/runtimes/unix/lib/netstandard1.3/System.Console.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.win.System.Diagnostics.Debug/4.0.11/runtimes/win/lib/netstandard1.3/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.Diagnostics.Debug/4.0.11/runtimes/unix/lib/netstandard1.3/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.win.Microsoft.Win32.Primitives/4.0.1/runtimes/win/lib/netstandard1.3/Microsoft.Win32.Primitives.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.Microsoft.Win32.Primitives/4.0.1/runtimes/unix/lib/netstandard1.3/Microsoft.Win32.Primitives.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.win.System.IO.FileSystem/4.0.1/runtimes/win/lib/netstandard1.3/System.IO.FileSystem.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.IO.FileSystem/4.0.1/runtimes/unix/lib/netstandard1.3/System.IO.FileSystem.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.win7.System.Private.Uri/4.0.1/runtimes/win/lib/netstandard1.0/System.Private.Uri.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.Private.Uri/4.0.1/runtimes/unix/lib/netstandard1.0/System.Private.Uri.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+
+            <ILCompilerFrameworkFiles Include="System.Runtime.InteropServices.RuntimeInformation/4.0.0/runtimes/win/lib/netstandard1.1/System.Runtime.InteropServices.RuntimeInformation.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="System.Runtime.InteropServices.RuntimeInformation/4.0.0/runtimes/unix/lib/netstandard1.1/System.Runtime.InteropServices.RuntimeInformation.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+
+            <ILCompilerFrameworkFiles Include="System.Buffers/4.0.0/lib/netstandard1.1/System.Buffers.dll" />
+            <ILCompilerFrameworkFiles Include="System.Collections.Concurrent/4.0.12/lib/netcore50/System.Collections.Concurrent.dll" />
+            <ILCompilerFrameworkFiles Include="System.Collections.NonGeneric/4.0.1/lib/netstandard1.3/System.Collections.NonGeneric.dll" />
+            <ILCompilerFrameworkFiles Include="System.IO.FileSystem.Primitives/4.0.1/lib/netstandard1.3/System.IO.FileSystem.Primitives.dll" />
+            <ILCompilerFrameworkFiles Include="System.Linq/4.1.0/lib/netcore50/System.Linq.dll" />
+            <ILCompilerFrameworkFiles Include="System.Runtime.Numerics/4.0.1/lib/netcore50/System.Runtime.Numerics.dll" />
+            <ILCompilerFrameworkFiles Include="System.Security.Principal/4.0.1/lib/netcore50/System.Security.Principal.dll" />
+            <ILCompilerFrameworkFiles Include="System.Threading/4.0.11/lib/netstandard1.3/System.Threading.dll" />
+
+            <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).runtime.native.System/1.0.1/runtimes/$(NuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+
+            <ILCompilerSdkBinPlace Include="@(ILCompilerFrameworkFiles)">
+                <Text><![CDATA[        <file src="packages/%(Identity)" target="runtimes/$(NuPkgRid)/native/framework/%(Filename)%(Extension)" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+
             <!-- ILCompiler nuspec file -->
             <NuSpecFile Include="$(ToolchainPackageName)">
                 <Stage>1</Stage>
