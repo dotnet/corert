@@ -18,10 +18,10 @@ namespace System
     public sealed class Version : IComparable, IComparable<Version>, IEquatable<Version>, ICloneable
     {
         // AssemblyName depends on the order staying the same
-        private int _Major;
-        private int _Minor;
-        private int _Build = -1;
-        private int _Revision = -1;
+        private readonly int _Major;
+        private readonly int _Minor;
+        private readonly int _Build = -1;
+        private readonly int _Revision = -1;
 
         public Version(int major, int minor, int build, int revision)
         {
@@ -84,9 +84,19 @@ namespace System
             _Revision = v.Revision;
         }
 
+        private Version(Version version)
+        {
+            Debug.Assert(version != null);
+
+            _Major = version._Major;
+            _Minor = version._Minor;
+            _Build = version._Build;
+            _Revision = version._Revision;
+        }
+
         public object Clone()
         {
-            return new Version(_Major, _Minor, _Build, _Revision);
+            return new Version(this);
         }
 
         // Properties for setting and getting version numbers
@@ -133,94 +143,34 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeVersion);
             }
 
-            if (_Major != v._Major)
-                if (_Major > v._Major)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Minor != v._Minor)
-                if (_Minor > v._Minor)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Build != v._Build)
-                if (_Build > v._Build)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Revision != v._Revision)
-                if (_Revision > v._Revision)
-                    return 1;
-                else
-                    return -1;
-
-            return 0;
+            return CompareTo(v);
         }
 
         public int CompareTo(Version value)
         {
-            if (value == null)
-                return 1;
-
-            if (_Major != value._Major)
-                if (_Major > value._Major)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Minor != value._Minor)
-                if (_Minor > value._Minor)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Build != value._Build)
-                if (_Build > value._Build)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Revision != value._Revision)
-                if (_Revision > value._Revision)
-                    return 1;
-                else
-                    return -1;
-
-            return 0;
+            return
+                object.ReferenceEquals(value, this) ? 0 :
+                object.ReferenceEquals(value, null) ? 1 :
+                _Major != value._Major ? (_Major > value._Major ? 1 : -1) :
+                _Minor != value._Minor ? (_Minor > value._Minor ? 1 : -1) :
+                _Build != value._Build ? (_Build > value._Build ? 1 : -1) :
+                _Revision != value._Revision ? (_Revision > value._Revision ? 1 : -1) :
+                0;
         }
 
         public override bool Equals(Object obj)
         {
-            Version v = obj as Version;
-            if (v == null)
-                return false;
-
-            // check that major, minor, build & revision numbers match
-            if ((_Major != v._Major) ||
-                (_Minor != v._Minor) ||
-                (_Build != v._Build) ||
-                (_Revision != v._Revision))
-                return false;
-
-            return true;
+            return Equals(obj as Version);
         }
 
         public bool Equals(Version obj)
         {
-            if (obj == null)
-                return false;
-
-            // check that major, minor, build & revision numbers match
-            if ((_Major != obj._Major) ||
-                (_Minor != obj._Minor) ||
-                (_Build != obj._Build) ||
-                (_Revision != obj._Revision))
-                return false;
-
-            return true;
+            return object.ReferenceEquals(obj, this) ||
+                (!object.ReferenceEquals(obj, null) &&
+                _Major == obj._Major &&
+                _Minor == obj._Minor &&
+                _Build == obj._Build &&
+                _Revision == obj._Revision);
         }
 
         public override int GetHashCode()
