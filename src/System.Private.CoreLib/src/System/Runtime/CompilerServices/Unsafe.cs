@@ -23,6 +23,28 @@ namespace System.Runtime.CompilerServices
     public static class Unsafe
     {
         /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T Read<T>(void* source)
+        {
+            return Unsafe.As<byte, T>(ref *(byte*)source);
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void Write<T>(void* source, T value)
+        {
+            Unsafe.As<byte, T>(ref *(byte*)source) = value;
+        }
+
+        /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
         [CLSCompliant(false)]

@@ -706,54 +706,6 @@ namespace Internal.Runtime.Augments
         {
             return TypeLoaderExports.RegisterResolutionFunction(functionPointer);
         }
-        
-        // IL Code: stobj
-        public unsafe static void Write<T>(IntPtr destination, T value, RuntimeTypeHandle typeHandle)
-        {
-            if (RuntimeAugments.IsValueType(typeHandle))
-            {
-                RuntimeAugments.StoreValueTypeField(destination, (object)value, typeHandle);
-            }
-            else
-            {
-                RuntimeAugments.StoreReferenceTypeField(destination, (object)value);
-            }
-        }
-
-        // IL Code:ldobj
-        public unsafe static T Read<T>(IntPtr source, RuntimeTypeHandle typeHandle)
-        {
-            if (RuntimeAugments.IsValueType(typeHandle))
-            {
-                return (T)RuntimeAugments.LoadValueTypeField(source, typeHandle);
-            }
-            else
-            {
-                return (T)RuntimeAugments.LoadReferenceTypeField(source);
-            }
-        }
-
-        // IL code: sizeof
-        public unsafe static int SizeOf<T>(RuntimeTypeHandle typeHandle)
-        {
-            if (RuntimeAugments.IsValueType(typeHandle))
-            {
-                return typeHandle.GetValueTypeSize();
-            }
-            else
-            {
-                return sizeof(IntPtr);
-            }
-        }
-
-        // IL code: conv.u
-        public unsafe static IntPtr AsPointer<T>(ref T value)
-        {
-            fixed (IntPtr* pValue = &value.m_pEEType)
-            {
-                return (IntPtr)pValue;
-            }
-        }
 
         //==============================================================================================
         // Internals
