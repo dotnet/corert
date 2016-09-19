@@ -96,8 +96,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.ConstructorInfo_Invoke(this, parameters);
 #endif
-            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();

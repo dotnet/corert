@@ -153,8 +153,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();

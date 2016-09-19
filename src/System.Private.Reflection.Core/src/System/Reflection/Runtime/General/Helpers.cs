@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
+using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;
@@ -158,5 +159,12 @@ namespace System.Reflection.Runtime.General
         }
 
         private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureNotCustomBinder(this Binder binder)
+        {
+            if (!(binder == null || binder is DefaultBinder))
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CustomBinder);
+        }
     }
 }

@@ -190,8 +190,7 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
 #endif
-            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             if (_lazyGetterInvoker == null)
             {
@@ -277,8 +276,7 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
 #endif
-            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             if (_lazySetterInvoker == null)
             {

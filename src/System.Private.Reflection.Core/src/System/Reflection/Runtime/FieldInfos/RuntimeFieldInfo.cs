@@ -159,8 +159,7 @@ namespace System.Reflection.Runtime.FieldInfos
                 ReflectionTrace.FieldInfo_SetValue(this, obj, value);
 #endif
 
-            if (invokeAttr != BindingFlags.Default || !(binder is DefaultBinder) || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             FieldAccessor fieldAccessor = this.FieldAccessor;
             fieldAccessor.SetField(obj, value);
