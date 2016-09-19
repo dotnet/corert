@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.BindingFlagSupport;
 
 namespace System.Reflection.Runtime.TypeInfos
@@ -15,17 +16,33 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(types != null);
 
-            if (callConvention != CallingConventions.Any)
-                throw new NotImplementedException();
+            QueryResult<ConstructorInfo> queryResult = Query<ConstructorInfo>(bindingAttr);
+            ListBuilder<ConstructorInfo> candidates = new ListBuilder<ConstructorInfo>();
+            foreach (ConstructorInfo candidate in queryResult)
+            {
+                if (candidate.QualifiesBasedOnParameterCount(bindingAttr, callConvention, types))
+                    candidates.Add(candidate);
+            }
 
-            if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
-                throw new NotImplementedException();
+            // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+            if (candidates.Count == 0)
+                return null;
+
+            if (types.Length == 0 && candidates.Count == 1)
+            {
+                ConstructorInfo firstCandidate = candidates[0];
+                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
+                if (parameters.Length == 0)
+                    return firstCandidate;
+            }
+
+            if ((bindingAttr & BindingFlags.ExactBinding) != 0)
+                return System.Reflection.Runtime.BindingFlagSupport.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
 
             if (binder == null)
-                binder = Type.DefaultBinder;
-            ConstructorInfo[] candidates = GetConstructors(bindingAttr);
-            if ("".Length != 0) throw new NotImplementedException(); // Reminder that we have to do some pre-filtering before passing this list to the binder.
-            return (ConstructorInfo)binder.SelectMethod(bindingAttr, candidates, types, modifiers);
+                binder = DefaultBinder;
+
+            return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
 
         public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => Query<EventInfo>(bindingAttr).ToArray();
@@ -51,17 +68,26 @@ namespace System.Reflection.Runtime.TypeInfos
             }
             else
             {
-                if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
-                    throw new NotImplementedException();
-
                 // Group #2: This group of api takes a set of parameter types and an optional binder. 
-                if (callConvention != CallingConventions.Any)
-                    throw new NotImplementedException();
+                QueryResult<MethodInfo> queryResult = Query<MethodInfo>(name, bindingAttr);
+                ListBuilder<MethodInfo> candidates = new ListBuilder<MethodInfo>();
+                foreach (MethodInfo candidate in queryResult)
+                {
+                    if (candidate.QualifiesBasedOnParameterCount(bindingAttr, callConvention, types))
+                        candidates.Add(candidate);
+                }
+
+                if (candidates.Count == 0)
+                    return null;
+
+                // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+                if (types.Length == 0 && candidates.Count == 1)
+                    return candidates[0];
+
                 if (binder == null)
-                    binder = Type.DefaultBinder;
-                MethodInfo[] candidates = Query<MethodInfo>(name, bindingAttr).ToArray();
-                if ("".Length != 0) throw new NotImplementedException(); // Reminder that we have to do some pre-filtering before passing this list to the binder.
-                return (MethodInfo)binder.SelectMethod(bindingAttr, candidates, types, modifiers);
+                    binder = DefaultBinder;
+
+                return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
             }
         }
 
@@ -74,9 +100,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(name != null);
 
-            if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
-                throw new NotImplementedException();
-
             // GetPropertyImpl() is a funnel for two groups of api. We can distinguish by comparing "types" to null.
             if (types == null && returnType == null)
             {
@@ -87,15 +110,46 @@ namespace System.Reflection.Runtime.TypeInfos
             }
             else
             {
-                if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
-                    throw new NotImplementedException();
-
                 // Group #2: This group of api takes a set of parameter types, a return type (both cannot be null) and an optional binder. 
+                QueryResult<PropertyInfo> queryResult = Query<PropertyInfo>(name, bindingAttr);
+                ListBuilder<PropertyInfo> candidates = new ListBuilder<PropertyInfo>();
+                foreach (PropertyInfo candidate in queryResult)
+                {
+                    if (types == null || (candidate.GetIndexParameters().Length == types.Length))
+                    {
+                        candidates.Add(candidate);
+                    }
+                }
+
+                if (candidates.Count == 0)
+                    return null;
+
+                // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+                if (types == null || types.Length == 0)
+                {
+                    // no arguments
+                    if (candidates.Count == 1)
+                    {
+                        PropertyInfo firstCandidate = candidates[0];
+                        if ((object)returnType != null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
+                            return null;
+                        return firstCandidate;
+                    }
+                    else
+                    {
+                        if ((object)returnType == null)
+                            // if we are here we have no args or property type to select over and we have more than one property with that name
+                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    }
+                }
+
+                if ((bindingAttr & BindingFlags.ExactBinding) != 0)
+                    return System.Reflection.Runtime.BindingFlagSupport.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+
                 if (binder == null)
-                    binder = Type.DefaultBinder;
-                PropertyInfo[] candidates = Query<PropertyInfo>(name, bindingAttr).ToArray();
-                if ("".Length != 0) throw new NotImplementedException(); // Reminder that we have to do some pre-filtering before passing this list to the binder.
-                return binder.SelectProperty(bindingAttr, candidates, returnType, types, modifiers);
+                    binder = DefaultBinder;
+
+                return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
             }
         }
 
@@ -127,12 +181,6 @@ namespace System.Reflection.Runtime.TypeInfos
             if (optionalPredicate != null)
                 queriedMembers = queriedMembers.Filter(optionalPredicate);
             return new QueryResult<M>(bindingAttr, queriedMembers);
-        }
-
-        private static bool OnlySearchRelatedBitsSet(BindingFlags bindingFlags)
-        {
-            const BindingFlags SearchRelatedBits = BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
-            return (bindingFlags & ~SearchRelatedBits) == 0;
         }
 
         private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));

@@ -261,4 +261,13 @@
   <data name="FileNotFound_ResolveAssembly" xml:space="preserve">
     <value>Could not resolve assembly '{0}'.</value>
   </data>
+  <data name="MissingField" xml:space="preserve">
+    <value>Field not found.</value>
+  </data>
+  <data name="Arg_MustBeType" xml:space="preserve">
+    <value>Type must be a type provided by the runtime.</value>
+  </data>
+  <data name="NotSupported_ChangeType" xml:space="preserve">
+    <value>ChangeType operation is not supported.</value>
+  </data>
 </root>
