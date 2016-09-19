@@ -30,6 +30,10 @@ namespace Internal.Runtime
         TypeTemplateMap                             = 21,
         GenericMethodsTemplateMap                   = 22,
         DynamicInvokeTemplateData                   = 23,
+
+        // Stack Trace information
+        StackTraceData                              = 24,
+
         //Native layout blobs:
         NativeLayoutInfo                            = 30, // Created by MDIL binder
         NativeReferences                            = 31, // Created by MDIL binder
