@@ -44,7 +44,7 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.Old.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.LimitedBinder.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberEnumerator.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
