@@ -209,7 +209,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the fundamental base type for all methods within the type system.
     /// </summary>
-    public abstract partial class MethodDesc
+    public abstract partial class MethodDesc : TypeSystemEntity
     {
         public readonly static MethodDesc[] EmptyMethods = new MethodDesc[0];
 
@@ -258,14 +258,6 @@ namespace Internal.TypeSystem
             // Its only valid to compare two MethodDescs in the same context
             Debug.Assert(Object.ReferenceEquals(o, null) || !(o is MethodDesc) || Object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
             return Object.ReferenceEquals(this, o);
-        }
-
-        /// <summary>
-        /// Gets the type system context this method belongs to.
-        /// </summary>
-        public abstract TypeSystemContext Context
-        {
-            get;
         }
 
         /// <summary>
