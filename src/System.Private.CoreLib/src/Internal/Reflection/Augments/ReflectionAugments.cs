@@ -20,6 +20,7 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 
 using RhCorElementType = System.Runtime.RuntimeImports.RhCorElementType;
 
@@ -128,5 +129,8 @@ namespace Internal.Reflection.Augments
         public abstract PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p);
 
         public abstract Binder CreateDefaultBinder();
+
+        public abstract object ActivatorCreateInstance(Type type, bool nonPublic);
+        public abstract object ActivatorCreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes);
     }
 }

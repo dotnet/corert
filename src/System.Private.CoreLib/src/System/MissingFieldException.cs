@@ -34,11 +34,17 @@ namespace System
             SetErrorCode(__HResults.COR_E_MISSINGFIELD);
         }
 
+        public MissingFieldException(string className, string methodName)
+        {
+            ClassName = className;
+            MemberName = methodName;
+        }
+
         public override String Message
         {
             get
             {
-                return base.Message;
+                return ClassName == null ? base.Message : SR.Format(SR.MissingField_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
             }
         }
     }

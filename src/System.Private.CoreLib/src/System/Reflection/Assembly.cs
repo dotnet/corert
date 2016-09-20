@@ -99,7 +99,7 @@ namespace System.Reflection
             if (t == null)
                 return null;
 
-            throw new NotImplementedException(); //return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
+            return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
         }
 
         public virtual event ModuleResolveEventHandler ModuleResolve { add { throw NotImplemented.ByDesign; } remove { throw NotImplemented.ByDesign; } }
