@@ -167,6 +167,9 @@ namespace System.Reflection
         public void GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
         public void OnDeserialization(object sender) { throw new NotImplementedException(); }
 
+        public static AssemblyName GetAssemblyName(String assemblyFile) { throw new NotImplementedException(); }
+        public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition) { throw new NotImplementedException(); }
+
         private AssemblyNameFlags _flags;
         private byte[] _publicKey;
         private byte[] _publicKeyToken;
