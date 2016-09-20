@@ -6,15 +6,11 @@ using System.Collections.Generic;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class ModuleDesc
+    public abstract partial class ModuleDesc : TypeSystemEntity
     {
-        /// <summary>
-        /// Gets the type system context the module belongs to.
-        /// </summary>
-        public TypeSystemContext Context
+        public override TypeSystemContext Context
         {
             get;
-            private set;
         }
 
         public ModuleDesc(TypeSystemContext context)

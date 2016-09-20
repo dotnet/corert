@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the fundamental base type of all types within the type system.
     /// </summary>
-    public abstract partial class TypeDesc
+    public abstract partial class TypeDesc : TypeSystemEntity
     {
         public static readonly TypeDesc[] EmptyTypes = new TypeDesc[0];
 
@@ -45,14 +45,6 @@ namespace Internal.TypeSystem
 
         // The most frequently used type properties are cached here to avoid excesive virtual calls
         private TypeFlags _typeFlags;
-
-        /// <summary>
-        /// Gets the type system context this type belongs to.
-        /// </summary>
-        public abstract TypeSystemContext Context
-        {
-            get;
-        }
 
         /// <summary>
         /// Gets the generic instantiation information of this type.
