@@ -32,7 +32,6 @@ namespace Internal.Runtime.Augments
         public abstract void RegisterModule(IntPtr moduleHandle);
 
         // Api's that are exposed in System.Runtime but are really reflection apis.
-        public abstract Object ActivatorCreateInstance(Type type, Object[] args);
         public abstract Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase);
 
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);

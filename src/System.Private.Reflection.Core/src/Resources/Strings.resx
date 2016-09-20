@@ -273,4 +273,22 @@
   <data name="PlatformNotSupported_CustomBinder" xml:space="preserve">
     <value>Passing a binder object other than Type.DefaultBinder is not supported on this platform.</value>
   </data>
+  <data name="Arg_MustBeType" xml:space="preserve">
+    <value>Type must be a type provided by the runtime.</value>
+  </data>
+  <data name="Arg_NoDefCTor" xml:space="preserve">
+    <value>No parameterless constructor defined for this object.</value>
+  </data>
+  <data name="NotSupported_ActivAttr" xml:space="preserve">
+    <value>Activation Attributes are not supported.</value>
+  </data>
+  <data name="NotSupported_CallToVarArg" xml:space="preserve">
+    <value>Vararg calling convention not supported.</value>
+  </data>
+  <data name="Acc_CreateGenericEx" xml:space="preserve">
+    <value>Cannot create an instance of {0} because Type.ContainsGenericParameters is true.</value>
+  </data>
+  <data name="Acc_CreateVoid" xml:space="preserve">
+    <value>Cannot dynamically create an instance of System.Void.</value>
+  </data>
 </root>

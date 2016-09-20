@@ -36,11 +36,17 @@ namespace System
             SetErrorCode(__HResults.COR_E_MISSINGMETHOD);
         }
 
-        public override String Message
+        public MissingMethodException(string className, string methodName)
+        {
+            ClassName = className;
+            MemberName = methodName;
+        }
+
+        public override string Message
         {
             get
             {
-                return base.Message;
+                return ClassName == null ? base.Message : SR.Format(SR.MissingMethod_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
             }
         }
     }
