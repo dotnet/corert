@@ -273,4 +273,80 @@
   <data name="PlatformNotSupported_CustomBinder" xml:space="preserve">
     <value>Passing a binder object other than Type.DefaultBinder is not supported on this platform.</value>
   </data>
+  <data name="Arg_MustBeType" xml:space="preserve">
+    <value>Type must be a type provided by the runtime.</value>
+  </data>
+  <data name="Arg_NoDefCTor" xml:space="preserve">
+    <value>No parameterless constructor defined for this object.</value>
+  </data>
+  <data name="NotSupported_ActivAttr" xml:space="preserve">
+    <value>Activation Attributes are not supported.</value>
+  </data>
+  <data name="NotSupported_CallToVarArg" xml:space="preserve">
+    <value>Vararg calling convention not supported.</value>
+  </data>
+  <data name="Acc_CreateGenericEx" xml:space="preserve">
+    <value>Cannot create an instance of {0} because Type.ContainsGenericParameters is true.</value>
+  </data>
+  <data name="Acc_CreateVoid" xml:space="preserve">
+    <value>Cannot dynamically create an instance of System.Void.</value>
+  </data>
+
+  <data name="Arg_GenericParameter" xml:space="preserve">
+    <value>Method must be called on a Type for which Type.IsGenericParameter is false.</value>
+  </data>
+  <data name="Arg_NoAccessSpec" xml:space="preserve">
+    <value>Must specify binding flags describing the invoke operation required (BindingFlags.InvokeMethod CreateInstance GetField SetField GetProperty SetProperty).</value>
+  </data>
+  <data name="Arg_NamedParamTooBig" xml:space="preserve">
+    <value>Named parameter array cannot be bigger than argument array.</value>
+  </data>
+  <data name="Arg_COMAccess" xml:space="preserve">
+    <value>Must specify property Set or Get or method call for a COM Object.</value>
+  </data>
+  <data name="Arg_PropSetGet" xml:space="preserve">
+    <value>Cannot specify both Get and Set on a property.</value>
+  </data>
+  <data name="Arg_PropSetInvoke" xml:space="preserve">
+    <value>Cannot specify Set on a property and Invoke on a method.</value>
+  </data>
+  <data name="Arg_COMPropSetPut" xml:space="preserve">
+    <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
+  </data>
+  <data name="Arg_NamedParamNull" xml:space="preserve">
+    <value>Named parameter value must not be null.</value>
+  </data>
+  <data name="Arg_CreatInstAccess" xml:space="preserve">
+    <value>Cannot specify both CreateInstance and another access type.</value>
+  </data>
+  <data name="Arg_FldSetGet" xml:space="preserve">
+    <value>Cannot specify both Get and Set on a field.</value>
+  </data>
+  <data name="Arg_FldGetPropSet" xml:space="preserve">
+    <value>Cannot specify both GetField and SetProperty.</value>
+  </data>
+  <data name="Arg_FldSetPropGet" xml:space="preserve">
+    <value>Cannot specify both SetField and GetProperty.</value>
+  </data>
+  <data name="Arg_FldSetInvoke" xml:space="preserve">
+    <value>Cannot specify Set on a Field and Invoke on a method.</value>
+  </data>
+  <data name="Arg_IndexMustBeInt" xml:space="preserve">
+    <value>All indexes must be of type Int32.</value>
+  </data>
+  <data name="Arg_FldGetArgErr" xml:space="preserve">
+    <value>No arguments can be provided to Get a field value.</value>
+  </data>
+  <data name="Arg_FldSetArgErr" xml:space="preserve">
+    <value>Only the field value can be specified to set a field value.</value>
+  </data>
+  <data name="Arg_PropSetGet" xml:space="preserve">
+    <value>Cannot specify both Get and Set on a property.</value>
+  </data>
+  <data name="Arg_PropSetInvoke" xml:space="preserve">
+    <value>Cannot specify Set on a property and Invoke on a method.</value>
+  </data>
+  <data name="Arg_PlatformNotSupportedInvokeMemberCom" xml:space="preserve">
+    <value>InvokeMember on a COM object is not supported on this platform.</value>
+  </data>
 </root>

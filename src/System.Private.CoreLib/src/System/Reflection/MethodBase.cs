@@ -56,6 +56,10 @@ namespace System.Reflection
 
         public static MethodBase GetCurrentMethod() { throw new NotImplementedException(); }
 
+        public virtual bool IsSecurityCritical { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecuritySafeCritical { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
+
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => GetHashCode();
 

@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
@@ -166,6 +167,16 @@ namespace System.Reflection.Runtime.General
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
             RuntimeTypeInfo reflectedType = contextTypeInfo;
             return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType);
+        }
+
+        public sealed override object ActivatorCreateInstance(Type type, bool nonPublic)
+        {
+            return ActivatorImplementation.CreateInstance(type, nonPublic);
+        }
+
+        public sealed override object ActivatorCreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
+        {
+            return ActivatorImplementation.CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
         }
     }
 }

@@ -70,6 +70,11 @@ namespace System.Reflection.Runtime.MethodInfos
     internal abstract partial class RuntimeConstructorInfo
     {
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
+
+        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
+        public sealed override bool IsSecurityCritical => true;
+        public sealed override bool IsSecuritySafeCritical => false;
+        public sealed override bool IsSecurityTransparent => false;
     }
 }
 
@@ -104,6 +109,11 @@ namespace System.Reflection.Runtime.MethodInfos
     {
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
         public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes => ReturnParameter;
+        
+        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
+        public sealed override bool IsSecurityCritical => true;
+        public sealed override bool IsSecuritySafeCritical => false;
+        public sealed override bool IsSecurityTransparent => false;
     }
 }
 
