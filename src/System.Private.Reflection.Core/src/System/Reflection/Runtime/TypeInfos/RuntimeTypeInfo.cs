@@ -191,26 +191,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override MemberInfo[] GetDefaultMembers()
         {
-            Type defaultMemberAttributeType = typeof(DefaultMemberAttribute);
-            for (Type type = this; type != null; type = type.BaseType)
-            {
-                foreach (CustomAttributeData attribute in type.CustomAttributes)
-                {
-                    if (attribute.AttributeType == defaultMemberAttributeType)
-                    {
-                        // NOTE: Neither indexing nor cast can fail here. Any attempt to use fewer than 1 argument
-                        // or a non-string argument would correctly trigger MissingMethodException before
-                        // we reach here as that would be an attempt to reference a non-existent DefaultMemberAttribute
-                        // constructor.
-                        Debug.Assert(attribute.ConstructorArguments.Count == 1 && attribute.ConstructorArguments[0].Value is string);
-
-                        string memberName = (string)(attribute.ConstructorArguments[0].Value);
-                        return GetMember(memberName);
-                    }
-                }
-            }
-
-            return Array.Empty<MemberInfo>();
+            string defaultMemberName = GetDefaultMemberName();
+            return defaultMemberName != null ? GetMember(defaultMemberName) : Array.Empty<MemberInfo>();
         }
 
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType)
@@ -849,6 +831,30 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
                 return baseType;
             }
+        }
+
+        private string GetDefaultMemberName()
+        {
+            Type defaultMemberAttributeType = typeof(DefaultMemberAttribute);
+            for (Type type = this; type != null; type = type.BaseType)
+            {
+                foreach (CustomAttributeData attribute in type.CustomAttributes)
+                {
+                    if (attribute.AttributeType == defaultMemberAttributeType)
+                    {
+                        // NOTE: Neither indexing nor cast can fail here. Any attempt to use fewer than 1 argument
+                        // or a non-string argument would correctly trigger MissingMethodException before
+                        // we reach here as that would be an attempt to reference a non-existent DefaultMemberAttribute
+                        // constructor.
+                        Debug.Assert(attribute.ConstructorArguments.Count == 1 && attribute.ConstructorArguments[0].Value is string);
+
+                        string memberName = (string)(attribute.ConstructorArguments[0].Value);
+                        return memberName;
+                    }
+                }
+            }
+
+            return null;
         }
 
         //
