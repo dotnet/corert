@@ -13,7 +13,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //
     // Note: The uninitialized state ("qr = default(QueryResult<M>)) is considered a valid state for this object, and represents an empty list of members.
     //
-    internal struct QueryResult<M> where M : MemberInfo
+    internal partial struct QueryResult<M> where M : MemberInfo
     {
         public QueryResult(BindingFlags bindingAttr, QueriedMemberList<M> queriedMembers)
         {
@@ -21,6 +21,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             _bindingAttr = bindingAttr;
             _queriedMembers = queriedMembers;
         }
+
+        public QueryResultEnumerator GetEnumerator() => new QueryResultEnumerator(this);
 
         /// <summary>
         /// Returns the number of matching results.
@@ -50,7 +52,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     }
 
                     _lazyCount = count;
-                    
+
                 }
                 return count;
             }
@@ -105,7 +107,16 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 {
                     if (match != null)
                     {
-                        if (match.DeclaringType.Equals(_queriedMembers[i].DeclaringType))
+                        M challenger = _queriedMembers[i];
+
+                        // Assuming the policy says it's ok to ignore the ambiguity, we're to resolve in favor of the member
+                        // declared by the most derived type. Since QueriedMemberLists are sorted in order of decreasing derivation,
+                        // that means we let the first match win - unless, of course, they're both the "most derived member".
+                        if (match.DeclaringType.Equals(challenger.DeclaringType))
+                            throw new AmbiguousMatchException();
+
+                        MemberPolicies<M> policies = MemberPolicies<M>.Default;
+                        if (!policies.OkToIgnoreAmbiguity(match, challenger))
                             throw new AmbiguousMatchException();
                     }
                     else

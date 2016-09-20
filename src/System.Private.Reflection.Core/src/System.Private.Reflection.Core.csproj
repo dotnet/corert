@@ -36,6 +36,7 @@
 
   <ItemGroup>
     <Compile Include="System\DBNull.cs" />
+    <Compile Include="System\Empty.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
@@ -45,13 +46,15 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.cs" />
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.LimitedBinder.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberEnumerator.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberTypeIndex.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueriedMemberList.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.Enumerator.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\Shared.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeNormalCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimePseudoCustomAttributeData.cs" />
@@ -75,6 +78,7 @@
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
     <Compile Include="System\Reflection\Runtime\General\NonOverriddenApis.cs" />

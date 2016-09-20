@@ -65,6 +65,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract bool IsSuppressedByMoreDerivedMember(M member, M[] priorMembers, int startIndex, int endIndex);
 
         //
+        // Policy to decide whether to throw an AmbiguousMatchException on an ambiguous Type.Get*() call.
+        // Does not apply to GetConstructor/GetMethod/GetProperty calls that have a non-null Type[] array passed to it.
+        //
+        // If method returns true, the Get() api will pick the member that's in the most derived type.
+        // If method returns false, the Get() api throws AmbiguousMatchException.
+        //
+        public abstract bool OkToIgnoreAmbiguity(M m1, M m2);
+
+        //
         // Helper method for determining whether two methods are signature-compatible for the purpose of implicit overriding.
         //
         protected static bool AreNamesAndSignaturesEqual(MethodInfo method1, MethodInfo method2)
@@ -181,6 +190,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             return false;
         }
+
+        public sealed override bool OkToIgnoreAmbiguity(FieldInfo m1, FieldInfo m2)
+        {
+            return true; // Unlike most member types, Field ambiguities are tolerated as long as they're defined in different classes.
+        }
     }
 
 
@@ -226,6 +240,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override bool IsSuppressedByMoreDerivedMember(ConstructorInfo member, ConstructorInfo[] priorMembers, int startIndex, int endIndex)
         {
             return false;
+        }
+
+        public sealed override bool OkToIgnoreAmbiguity(ConstructorInfo m1, ConstructorInfo m2)
+        {
+            // Constructors are only resolvable using an array of parameter types so this should never be called.
+            Debug.Fail("This code path should be unreachable.");
+            throw new NotSupportedException();
         }
     }
 
@@ -281,6 +302,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return true;
             }
             return false;
+        }
+
+        public sealed override bool OkToIgnoreAmbiguity(MethodInfo m1, MethodInfo m2)
+        {
+            return DefaultBinder.CompareMethodSig(m1, m2);  // If all candidates have the same signature, pick the most derived one without throwing an AmbiguousMatchException.
         }
     }
 
@@ -350,6 +376,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
+        public sealed override bool OkToIgnoreAmbiguity(PropertyInfo m1, PropertyInfo m2)
+        {
+            return false;
+        }
+
         private MethodInfo GetAccessorMethod(PropertyInfo property)
         {
             MethodInfo accessor = property.GetMethod;
@@ -405,6 +436,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public sealed override bool AreNamesAndSignatureEqual(EventInfo member1, EventInfo member2)
         {
             return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
+        }
+
+        public sealed override bool OkToIgnoreAmbiguity(EventInfo m1, EventInfo m2)
+        {
+            return false;
         }
 
         private MethodInfo GetAccessorMethod(EventInfo e)
@@ -469,6 +505,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             bindingFlags &= BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase;
             bindingFlags |= BindingFlags.Static | BindingFlags.DeclaredOnly;
             return bindingFlags;
+        }
+
+        public sealed override bool OkToIgnoreAmbiguity(Type m1, Type m2)
+        {
+            return false;
         }
     }
 }
