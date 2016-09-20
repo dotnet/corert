@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Reflection.Runtime.General;
+using System.Globalization;
+using System.Collections.Generic;
 using System.Reflection.Runtime.BindingFlagSupport;
 
 namespace System.Reflection.Runtime.TypeInfos
@@ -11,24 +12,30 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract partial class RuntimeTypeInfo
     {
         public override Object InvokeMember(
-            String name, BindingFlags bindingFlags, Binder binder, Object target, 
-            Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams) 
+            String name, BindingFlags bindingFlags, Binder binder, Object target,
+            Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)
         {
+            const BindingFlags MemberBindingMask = (BindingFlags)0x000000FF;
+            const BindingFlags InvocationMask = (BindingFlags)0x0000FF00;
+            const BindingFlags BinderGetSetProperty = BindingFlags.GetProperty | BindingFlags.SetProperty;
+            const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
+            const BindingFlags BinderNonFieldGetSet = (BindingFlags)0x00FFF300;
+            const BindingFlags BinderNonCreateInstance = BindingFlags.InvokeMethod | BinderGetSetField | BinderGetSetProperty;
+
             if (IsGenericParameter)
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_GenericParameter"));
-            Contract.EndContractBlock();
-        
+                throw new InvalidOperationException(SR.Arg_GenericParameter);
+
             #region Preconditions
             if ((bindingFlags & InvocationMask) == 0)
                 // "Must specify binding flags describing the invoke operation required."
-                throw new ArgumentException(Environment.GetResourceString("Arg_NoAccessSpec"),"bindingFlags");
+                throw new ArgumentException(SR.Arg_NoAccessSpec, nameof(bindingFlags));
 
             // Provide a default binding mask if none is provided 
-            if ((bindingFlags & MemberBindingMask) == 0) 
+            if ((bindingFlags & MemberBindingMask) == 0)
             {
                 bindingFlags |= BindingFlags.Instance | BindingFlags.Public;
 
-                if ((bindingFlags & BindingFlags.CreateInstance) == 0) 
+                if ((bindingFlags & BindingFlags.CreateInstance) == 0)
                     bindingFlags |= BindingFlags.Static;
             }
 
@@ -39,90 +46,43 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     if (namedParams.Length > providedArgs.Length)
                         // "Named parameter array can not be bigger than argument array."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), "namedParams");
+                        throw new ArgumentException(SR.Arg_NamedParamTooBig, nameof(namedParams));
                 }
                 else
                 {
                     if (namedParams.Length != 0)
                         // "Named parameter array can not be bigger than argument array."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), "namedParams");
+                        throw new ArgumentException(SR.Arg_NamedParamTooBig, nameof(namedParams));
                 }
             }
             #endregion
 
             #region COM Interop
-#if FEATURE_COMINTEROP && FEATURE_USE_LCID
             if (target != null && target.GetType().IsCOMObject)
-            {
-                #region Preconditions
-                if ((bindingFlags & ClassicBindingMask) == 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMAccess"), "bindingFlags");
-
-                if ((bindingFlags & BindingFlags.GetProperty) != 0 && (bindingFlags & ClassicBindingMask & ~(BindingFlags.GetProperty | BindingFlags.InvokeMethod)) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), "bindingFlags");
-
-                if ((bindingFlags & BindingFlags.InvokeMethod) != 0 && (bindingFlags & ClassicBindingMask & ~(BindingFlags.GetProperty | BindingFlags.InvokeMethod)) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), "bindingFlags");
-
-                if ((bindingFlags & BindingFlags.SetProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.SetProperty) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), "bindingFlags");
-
-                if ((bindingFlags & BindingFlags.PutDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutDispProperty) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), "bindingFlags");
-
-                if ((bindingFlags & BindingFlags.PutRefDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutRefDispProperty) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), "bindingFlags");
-                #endregion
-
-#if FEATURE_REMOTING
-                if(!RemotingServices.IsTransparentProxy(target))
-#endif
-                {
-                    #region Non-TransparentProxy case
-                    if (name == null)
-                        throw new ArgumentNullException("name");
-
-                    bool[] isByRef = modifiers == null ? null : modifiers[0].IsByRefArray;
-                    
-                    // pass LCID_ENGLISH_US if no explicit culture is specified to match the behavior of VB
-                    int lcid = (culture == null ? 0x0409 : culture.LCID);
-
-                    return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
-                    #endregion
-                }
-#if FEATURE_REMOTING
-                else
-                {
-                    #region TransparentProxy case
-                    return ((MarshalByRefObject)target).InvokeMember(name, bindingFlags, binder, providedArgs, modifiers, culture, namedParams);
-                    #endregion
-                }
-#endif // FEATURE_REMOTING
-            }
-#endif // FEATURE_COMINTEROP && FEATURE_USE_LCID
+                throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupportedInvokeMemberCom);
             #endregion
-                
+
             #region Check that any named paramters are not null
             if (namedParams != null && Array.IndexOf(namedParams, null) != -1)
                 // "Named parameter value must not be null."
-                throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamNull"),"namedParams");
+                throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
             #endregion
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
-            
+
             #region Get a Binder
             if (binder == null)
                 binder = DefaultBinder;
 
             bool bDefaultBinder = (binder == DefaultBinder);
             #endregion
-            
+
             #region Delegate to Activator.CreateInstance
-            if ((bindingFlags & BindingFlags.CreateInstance) != 0) 
+            if ((bindingFlags & BindingFlags.CreateInstance) != 0)
             {
                 if ((bindingFlags & BindingFlags.CreateInstance) != 0 && (bindingFlags & BinderNonCreateInstance) != 0)
                     // "Can not specify both CreateInstance and another access type."
-                    throw new ArgumentException(Environment.GetResourceString("Arg_CreatInstAccess"),"bindingFlags");
+                    throw new ArgumentException(SR.Arg_CreatInstAccess, nameof(bindingFlags));
 
                 return Activator.CreateInstance(this, bindingFlags, binder, providedArgs, culture);
             }
@@ -134,13 +94,13 @@ namespace System.Reflection.Runtime.TypeInfos
 
             #region Name
             if (name == null)
-                throw new ArgumentNullException("name");
-                
-            if (name.Length == 0 || name.Equals(@"[DISPID=0]")) 
+                throw new ArgumentNullException(nameof(name));
+
+            if (name.Length == 0 || name.Equals(@"[DISPID=0]"))
             {
                 name = GetDefaultMemberName();
 
-                if (name == null) 
+                if (name == null)
                 {
                     // in InvokeMember we always pretend there is a default member if none is provided and we make it ToString
                     name = "ToString";
@@ -159,34 +119,34 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     if (IsSetField)
                         // "Can not specify both Get and Set on a field."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetGet"),"bindingFlags");
+                        throw new ArgumentException(SR.Arg_FldSetGet, nameof(bindingFlags));
 
                     if ((bindingFlags & BindingFlags.SetProperty) != 0)
                         // "Can not specify both GetField and SetProperty."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldGetPropSet"),"bindingFlags");
+                        throw new ArgumentException(SR.Arg_FldGetPropSet, nameof(bindingFlags));
                 }
                 else
                 {
-                    Contract.Assert(IsSetField);
+                    Debug.Assert(IsSetField);
 
-                    if (providedArgs == null) 
-                        throw new ArgumentNullException("providedArgs");
+                    if (providedArgs == null)
+                        throw new ArgumentNullException(nameof(providedArgs));
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         // "Can not specify both SetField and GetProperty."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetPropGet"),"bindingFlags");
+                        throw new ArgumentException(SR.Arg_FldSetPropGet, nameof(bindingFlags));
 
                     if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
                         // "Can not specify Set on a Field and Invoke on a method."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetInvoke"),"bindingFlags");
+                        throw new ArgumentException(SR.Arg_FldSetInvoke, nameof(bindingFlags));
                 }
                 #endregion
-                        
+
                 #region Lookup Field
-                FieldInfo selFld = null;                
+                FieldInfo selFld = null;
                 FieldInfo[] flds = GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
-                Contract.Assert(flds != null);
+                Debug.Assert(flds != null);
 
                 if (flds.Length == 1)
                 {
@@ -197,8 +157,8 @@ namespace System.Reflection.Runtime.TypeInfos
                     selFld = binder.BindToField(bindingFlags, flds, IsGetField ? Empty.Value : providedArgs[0], culture);
                 }
                 #endregion
-                
-                if (selFld != null) 
+
+                if (selFld != null)
                 {
                     #region Invocation on a field
                     if (selFld.FieldType.IsArray || Object.ReferenceEquals(selFld.FieldType, typeof(System.Array)))
@@ -206,53 +166,53 @@ namespace System.Reflection.Runtime.TypeInfos
                         #region Invocation of an array Field
                         int idxCnt;
 
-                        if ((bindingFlags & BindingFlags.GetField) != 0) 
+                        if ((bindingFlags & BindingFlags.GetField) != 0)
                         {
-                            idxCnt = argCnt;                                                        
+                            idxCnt = argCnt;
                         }
                         else
                         {
                             idxCnt = argCnt - 1;
                         }
 
-                        if (idxCnt > 0) 
+                        if (idxCnt > 0)
                         {
                             // Verify that all of the index values are ints
                             int[] idx = new int[idxCnt];
-                            for (int i=0;i<idxCnt;i++) 
+                            for (int i = 0; i < idxCnt; i++)
                             {
-                                try 
+                                try
                                 {
                                     idx[i] = ((IConvertible)providedArgs[i]).ToInt32(null);
                                 }
                                 catch (InvalidCastException)
                                 {
-                                    throw new ArgumentException(Environment.GetResourceString("Arg_IndexMustBeInt"));
+                                    throw new ArgumentException(SR.Arg_IndexMustBeInt);
                                 }
                             }
-                            
+
                             // Set or get the value...
-                            Array a = (Array) selFld.GetValue(target);
-                            
+                            Array a = (Array)selFld.GetValue(target);
+
                             // Set or get the value in the array
-                            if ((bindingFlags & BindingFlags.GetField) != 0) 
+                            if ((bindingFlags & BindingFlags.GetField) != 0)
                             {
                                 return a.GetValue(idx);
                             }
-                            else 
+                            else
                             {
-                                a.SetValue(providedArgs[idxCnt],idx);
+                                a.SetValue(providedArgs[idxCnt], idx);
                                 return null;
-                            }                                               
+                            }
                         }
                         #endregion
                     }
-                    
+
                     if (IsGetField)
                     {
                         #region Get the field value
                         if (argCnt != 0)
-                            throw new ArgumentException(Environment.GetResourceString("Arg_FldGetArgErr"),"bindingFlags");
+                            throw new ArgumentException(SR.Arg_FldGetArgErr, nameof(bindingFlags));
 
                         return selFld.GetValue(target);
                         #endregion
@@ -261,9 +221,9 @@ namespace System.Reflection.Runtime.TypeInfos
                     {
                         #region Set the field Value
                         if (argCnt != 1)
-                            throw new ArgumentException(Environment.GetResourceString("Arg_FldSetArgErr"),"bindingFlags");
+                            throw new ArgumentException(SR.Arg_FldSetArgErr, nameof(bindingFlags));
 
-                        selFld.SetValue(target,providedArgs[0],bindingFlags,binder,culture);
+                        selFld.SetValue(target, providedArgs[0], bindingFlags, binder, culture);
 
                         return null;
                         #endregion
@@ -271,57 +231,34 @@ namespace System.Reflection.Runtime.TypeInfos
                     #endregion
                 }
 
-                if ((bindingFlags & BinderNonFieldGetSet) == 0) 
+                if ((bindingFlags & BinderNonFieldGetSet) == 0)
                     throw new MissingFieldException(FullName, name);
             }
             #endregion                    
-
-            #region Caching Logic
-            /*
-            bool useCache = false;
-
-            // Note that when we add something to the cache, we are careful to ensure
-            // that the actual providedArgs matches the parameters of the method.  Otherwise,
-            // some default argument processing has occurred.  We don't want anyone
-            // else with the same (insufficient) number of actual arguments to get a
-            // cache hit because then they would bypass the default argument processing
-            // and the invocation would fail.
-            if (bDefaultBinder && namedParams == null && argCnt < 6)
-                useCache = true;
-
-            if (useCache)
-            {
-                MethodBase invokeMethod = GetMethodFromCache (name, bindingFlags, argCnt, providedArgs);
-
-                if (invokeMethod != null)
-                    return ((MethodInfo) invokeMethod).Invoke(target, bindingFlags, binder, providedArgs, culture);
-            }
-            */
-            #endregion
 
             #region Property PreConditions
             // @Legacy - This is RTM behavior
             bool isGetProperty = (bindingFlags & BindingFlags.GetProperty) != 0;
             bool isSetProperty = (bindingFlags & BindingFlags.SetProperty) != 0;
 
-            if (isGetProperty || isSetProperty) 
+            if (isGetProperty || isSetProperty)
             {
                 #region Preconditions
                 if (isGetProperty)
                 {
-                    Contract.Assert(!IsSetField);
+                    Debug.Assert(!IsSetField);
 
                     if (isSetProperty)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), "bindingFlags");
+                        throw new ArgumentException(SR.Arg_PropSetGet, nameof(bindingFlags));
                 }
                 else
                 {
-                    Contract.Assert(isSetProperty);
+                    Debug.Assert(isSetProperty);
 
-                    Contract.Assert(!IsGetField);
-                    
+                    Debug.Assert(!IsGetField);
+
                     if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), "bindingFlags");
+                        throw new ArgumentException(SR.Arg_PropSetInvoke, nameof(bindingFlags));
                 }
                 #endregion
             }
@@ -331,20 +268,20 @@ namespace System.Reflection.Runtime.TypeInfos
             MethodInfo finalist = null;
 
             #region BindingFlags.InvokeMethod
-            if ((bindingFlags & BindingFlags.InvokeMethod) != 0) 
+            if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
             {
                 #region Lookup Methods
                 MethodInfo[] semiFinalists = GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[];
-                List<MethodInfo> results = null;
-                
-                for(int i = 0; i < semiFinalists.Length; i ++)
+                LowLevelListWithIList<MethodInfo> results = null;
+
+                for (int i = 0; i < semiFinalists.Length; i++)
                 {
                     MethodInfo semiFinalist = semiFinalists[i];
-                    Contract.Assert(semiFinalist != null);
+                    Debug.Assert(semiFinalist != null);
 
-                    if (!FilterApplyMethodInfo((RuntimeMethodInfo)semiFinalist, bindingFlags, CallingConventions.Any, new Type[argCnt]))
+                    if (!semiFinalist.QualifiesBasedOnParameterCount(bindingFlags, CallingConventions.Any, new Type[argCnt]))
                         continue;
-                    
+
                     if (finalist == null)
                     {
                         finalist = semiFinalist;
@@ -353,34 +290,34 @@ namespace System.Reflection.Runtime.TypeInfos
                     {
                         if (results == null)
                         {
-                            results = new List<MethodInfo>(semiFinalists.Length);
+                            results = new LowLevelListWithIList<MethodInfo>(semiFinalists.Length);
                             results.Add(finalist);
                         }
 
                         results.Add(semiFinalist);
                     }
                 }
-                
+
                 if (results != null)
                 {
-                    Contract.Assert(results.Count > 1);
+                    Debug.Assert(results.Count > 1);
                     finalists = new MethodInfo[results.Count];
-                    results.CopyTo(finalists);
+                    results.CopyTo(finalists, 0);
                 }
                 #endregion
             }
             #endregion
-            
-            Contract.Assert(finalists == null || finalist != null);
+
+            Debug.Assert(finalists == null || finalist != null);
 
             #region BindingFlags.GetProperty or BindingFlags.SetProperty
-            if (finalist == null && isGetProperty || isSetProperty) 
+            if (finalist == null && isGetProperty || isSetProperty)
             {
                 #region Lookup Property
-                PropertyInfo[] semiFinalists = GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[];                        
-                List<MethodInfo> results = null;
+                PropertyInfo[] semiFinalists = GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[];
+                LowLevelListWithIList<MethodInfo> results = null;
 
-                for(int i = 0; i < semiFinalists.Length; i ++)
+                for (int i = 0; i < semiFinalists.Length; i++)
                 {
                     MethodInfo semiFinalist = null;
 
@@ -396,9 +333,13 @@ namespace System.Reflection.Runtime.TypeInfos
                     if (semiFinalist == null)
                         continue;
 
-                    if (!FilterApplyMethodInfo((RuntimeMethodInfo)semiFinalist, bindingFlags, CallingConventions.Any, new Type[argCnt]))
+                    BindingFlags expectedBindingFlags = semiFinalist.IsPublic ? BindingFlags.Public : BindingFlags.NonPublic;
+                    if ((bindingFlags & expectedBindingFlags) != expectedBindingFlags)
                         continue;
-                    
+
+                    if (!semiFinalist.QualifiesBasedOnParameterCount(bindingFlags, CallingConventions.Any, new Type[argCnt]))
+                        continue;
+
                     if (finalist == null)
                     {
                         finalist = semiFinalist;
@@ -407,7 +348,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     {
                         if (results == null)
                         {
-                            results = new List<MethodInfo>(semiFinalists.Length);
+                            results = new LowLevelListWithIList<MethodInfo>(semiFinalists.Length);
                             results.Add(finalist);
                         }
 
@@ -417,20 +358,20 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 if (results != null)
                 {
-                    Contract.Assert(results.Count > 1);
+                    Debug.Assert(results.Count > 1);
                     finalists = new MethodInfo[results.Count];
-                    results.CopyTo(finalists);
+                    results.CopyTo(finalists, 0);
                 }
                 #endregion            
             }
             #endregion
 
-            if (finalist != null) 
+            if (finalist != null)
             {
                 #region Invoke
-                if (finalists == null && 
-                    argCnt == 0 && 
-                    finalist.GetParametersNoCopy().Length == 0 && 
+                if (finalists == null &&
+                    argCnt == 0 &&
+                    finalist.GetParametersNoCopy().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
                 {
                     //if (useCache && argCnt == props[0].GetParameters().Length)
@@ -438,20 +379,20 @@ namespace System.Reflection.Runtime.TypeInfos
 
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
-                
+
                 if (finalists == null)
                     finalists = new MethodInfo[] { finalist };
 
                 if (providedArgs == null)
-                        providedArgs = EmptyArray<Object>.Value;
+                    providedArgs = Array.Empty<object>();
 
                 Object state = null;
 
-                
+
                 MethodBase invokeMethod = null;
 
                 try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs, modifiers, culture, namedParams, out state); }
-                catch(MissingMethodException) { }
+                catch (MissingMethodException) { }
 
                 if (invokeMethod == null)
                     throw new MissingMethodException(FullName, name);
@@ -467,21 +408,9 @@ namespace System.Reflection.Runtime.TypeInfos
                 return result;
                 #endregion
             }
-            
+
             throw new MissingMethodException(FullName, name);
         }
-
-        private const BindingFlags MemberBindingMask        = (BindingFlags)0x000000FF;
-        private const BindingFlags InvocationMask           = (BindingFlags)0x0000FF00;
-        private const BindingFlags BinderNonCreateInstance  = BindingFlags.InvokeMethod | BinderGetSetField | BinderGetSetProperty;
-        private const BindingFlags BinderGetSetProperty     = BindingFlags.GetProperty | BindingFlags.SetProperty;
-        private const BindingFlags BinderSetInvokeProperty  = BindingFlags.InvokeMethod | BindingFlags.SetProperty;
-        private const BindingFlags BinderGetSetField        = BindingFlags.GetField | BindingFlags.SetField;
-        private const BindingFlags BinderSetInvokeField     = BindingFlags.SetField | BindingFlags.InvokeMethod;
-        private const BindingFlags BinderNonFieldGetSet     = (BindingFlags)0x00FFF300;
-        private const BindingFlags ClassicBindingMask       = 
-            BindingFlags.InvokeMethod | BindingFlags.GetProperty | BindingFlags.SetProperty | 
-            BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty;
     }
 }
 
