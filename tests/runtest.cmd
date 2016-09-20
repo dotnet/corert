@@ -47,9 +47,6 @@ set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
 
-REM ** Validate the paths needed to run tests
-if not exist "%CoreRT_AppDepSdkDir%" ((call :Fail "AppDep SDK not installed at %CoreRT_AppDepSdkDir%") & exit /b -1)
-
 if not "%CoreRT_TestExtRepo%"=="" goto :TestExtRepo
 
 if /i "%__BuildType%"=="Debug" (
@@ -68,8 +65,7 @@ for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
-    if exist "!__SourceFolder!\project.json" (
-        %CoreRT_CliDir%\dotnet restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "!__SourceFolder!"
+    if exist "!__SourceFolder!\!__SourceFileName!.csproj" (
 
         set __Mode=Jit
         call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
@@ -77,7 +73,7 @@ for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
 
         if not exist "!__SourceFolder!\no_cpp" (
             set __Mode=Cpp
-            call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath! --cpp
+            call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
             set /a __CppTotalTests=!__CppTotalTests!+1
         )
     )
@@ -127,8 +123,10 @@ goto :eof
     set __SourceFolder=%~1
     set __SourceFileName=%~2
     set __CompileLogPath=%~3
-    set __ExtraCompileArgs=%~4
-    echo Compiling directory !__SourceFolder! !__ExtraCompileArgs!
+
+    echo Compiling directory !__SourceFolder! !__Mode!
+    echo.
+
     if not exist "!__CompileLogPath!" (mkdir !__CompileLogPath!)
     set __SourceFile=!__SourceFolder!\!__SourceFileName!
 
@@ -136,12 +134,19 @@ goto :eof
     if exist "!__SourceFolder!\obj" rmdir /s /q !__SourceFolder!\obj
 
     setlocal
-    set additionalCompilerFlags=
-    if /i "%CoreRT_BuildType%" == "debug" (
-        if /i "%__Mode%" == "cpp" set additionalCompilerFlags=--cppcompilerflags /MTd
+    set extraArgs=
+    if /i "%__Mode%" == "cpp" (
+        set extraArgs=!extraArgs! /p:NativeCodeGen=cpp
+        if /i "%CoreRT_BuildType%" == "debug" (
+            set extraArgs=!extraArgs! /p:AdditionalCppCompilerFlags=/MTd
+        )
     )
+
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
-    "%CoreRT_CliDir%\dotnet" build --native --runtime "win7-x64" --ilcpath "%CoreRT_ToolchainDir%" --appdepsdkpath "%CoreRT_AppDepSdkDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType% %additionalCompilerFlags%
+
+    echo msbuild "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
+    echo.
+    msbuild "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
@@ -150,7 +155,7 @@ goto :eof
     if "%__SavedErrorLevel%"=="0" (
         echo.
         echo Running test !__SourceFileName!
-        call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\dnxcore50\win7-x64\native !__SourceFileName!.exe
+        call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\native !__SourceFileName!.exe
         set __SavedErrorLevel=!ErrorLevel!
     )
 

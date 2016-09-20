@@ -1,0 +1,23 @@
+<Project ToolsVersion="14.0" DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProjectJson>$(MSBuildThisFileDirectory)\project.json</ProjectJson>
+    <ProjectLockJson>$(MSBuildThisFileDirectory)\project.lock.json</ProjectLockJson>
+    <CopyNuGetImplementations>false</CopyNuGetImplementations>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Use the source primary copy for development convenience -->
+  <Import Project="$(MSBuildThisFileDirectory)\..\..\..\src\BuildIntegration\Microsoft.NETCore.Native.targets" />
+  <!-- <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" /> -->
+</Project>

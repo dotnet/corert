@@ -1,20 +1,9 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.5.0-rc2-23911",
-    "System.CommandLine": "0.1.0-e160514-1",
-    "Microsoft.NETCore.Jit": "1.1.0-preview1-24512-00",
-    "Microsoft.DotNet.ObjectWriter": "1.0.13-prerelease-00001"
+    "NETStandard.Library": "1.6.0",
+    "System.CommandLine": "0.1.0-e160909-1"
   },
   "frameworks": {
-    "netstandard1.3": {}
-  },
-  "runtimes": {
-    "win7-x86": {},
-    "win7-x64": {},
-    "ubuntu.14.04-x64": {},
-    "osx.10.10-x64": {},
-    "centos.7-x64": {},
-    "rhel.7-x64": {},
-    "debian.8.2-x64": {}
+    "netstandard1.6": {}
   }
 }
