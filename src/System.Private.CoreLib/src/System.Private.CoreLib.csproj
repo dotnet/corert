@@ -55,9 +55,6 @@
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
     <Compile Include="Internal\Helpers.cs" />
-    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
-      <Link>Common\src\Internal\Runtime\MetadataBlob.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
@@ -89,12 +86,6 @@
     <Compile Include="Internal\Threading\Tracing\SpinLockTrace.cs" />
     <Compile Include="Internal\Toolchain\NonExecutableAttribute.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
-    <Compile Include="Internal\DeveloperExperience\StackTrace\StackTraceBlobIndex.cs" />
-    <Compile Include="Internal\DeveloperExperience\StackTrace\StackTraceDecoder.cs" />
-    <Compile Include="Internal\DeveloperExperience\StackTrace\StackTraceMethodDescriptor.cs" />
-    <Compile Include="Internal\DeveloperExperience\StackTrace\StackTraceStringDescriptor.cs" />
-    <Compile Include="Internal\DeveloperExperience\StackTrace\StackTraceTrieNode.cs" />
-    <Compile Include="Internal\DeveloperExperience\StackTrace\StackTraceTypeDescriptor.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionExecutionDomainCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
