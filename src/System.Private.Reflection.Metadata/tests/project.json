@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.5.0-rc2-23911",
+    "NETStandard.Library": "1.6.0",
     "xunit": "2.1.0",
     "test-runtime": {
       "target": "project",
@@ -9,7 +9,10 @@
   },
   "frameworks": {
     "dnxcore50": {
-      "imports": "portable-net451+win8"
+      "imports": [
+        "netstandard1.6",
+        "portable-net45+win8"
+      ]
     }
   },
   "runtimes": {

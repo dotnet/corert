@@ -89,10 +89,6 @@ else
     __BuildRid=osx.10.10-${CoreRT_BuildArch}
 fi
 
-export CoreRT_AppDepSdkPkg=toolchain.${__BuildRid}.Microsoft.DotNet.AppDep
-export CoreRT_AppDepSdkVer=1.0.6-prerelease-00004
-
 __ScriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 export CoreRT_ToolchainDir=${__ScriptDir}/../bin/Product/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/packaging/publish1
-export CoreRT_AppDepSdkDir=${__ScriptDir}/../packages/${CoreRT_AppDepSdkPkg}/${CoreRT_AppDepSdkVer}

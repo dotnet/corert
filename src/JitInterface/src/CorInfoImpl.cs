@@ -29,10 +29,10 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
-        [DllImport("clrjit")]
+        [DllImport("clrjitilc")]
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport("clrjit")]
+        [DllImport("clrjitilc")]
         private extern static IntPtr getJit();
 
         [DllImport("jitinterface")]
@@ -2269,6 +2269,8 @@ namespace Internal.JitInterface
 
             // TODO: Generics
             // pResult.instParamLookup
+
+            pResult._secureDelegateInvoke = 0;
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]

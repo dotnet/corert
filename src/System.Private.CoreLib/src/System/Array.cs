@@ -1745,6 +1745,35 @@ namespace System
             }
         }
 
+        public static void Reverse<T>(T[] array)
+        {
+            if (array == null)
+                throw new ArgumentNullException("array");
+
+            Reverse(array, 0, array.Length);
+        }
+
+        public static void Reverse<T>(T[] array, int index, int length)
+        {
+            if (array == null)
+                throw new ArgumentNullException("array");
+            if (index < 0 || length < 0)
+                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "length"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (array.Length - index < length)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+            int i = index;
+            int j = index + length - 1;
+            while (i < j)
+            {
+                T temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+                i++;
+                j--;
+            }
+        }
+
         // Sorts the elements of an array. The sort compares the elements to each
         // other using the IComparable interface, which must be implemented
         // by all elements of the array.

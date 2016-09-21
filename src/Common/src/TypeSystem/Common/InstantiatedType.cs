@@ -263,8 +263,7 @@ namespace Internal.TypeSystem
         {
             var sb = new StringBuilder(_typeDef.ToString());
             sb.Append('<');
-            for (int i = 0; i < _instantiation.Length; i++)
-                sb.Append(_instantiation[i].ToString());
+            sb.Append(_instantiation.ToString());
             sb.Append('>');
             return sb.ToString();
         }

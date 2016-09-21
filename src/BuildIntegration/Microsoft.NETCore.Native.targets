@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+***********************************************************************************************
+Microsoft.NETCore.Native.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file defines the steps in the build process for native AOT compilation.
+
+Licensed to the .NET Foundation under one or more agreements.
+The .NET Foundation licenses this file to you under the MIT license.
+See the LICENSE file in the project root for more information.
+***********************************************************************************************
+-->
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Set defaults for unspecified properties -->
+  <PropertyGroup>
+    <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
+    <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
+    <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
+    <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
+
+    <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' != 'Windows_NT'"></NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT'">.dll</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'OSX'">.dylib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(TargetOS)' !=  'OSX'">.so</NativeBinaryExt>
+
+    <ManagedBinary>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ManagedBinary>
+    <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
+    <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+
+    <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
+    <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
+    <LinkNativeDependsOn Condition="$(NativeCodeGen) == ''">IlcCompile</LinkNativeDependsOn>
+    <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'cpp'">CppCompile</LinkNativeDependsOn>
+    
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.5</CppCompilerAndLinker>
+  </PropertyGroup>
+
+  <Target Name="IlcCompile" 
+      Inputs="$(ManagedBinary)"
+      Outputs="$(IlcCompileOutput)"
+      DependsOnTargets="Compile">
+
+    <ItemGroup>
+      <IlcReference Include="$(IlcPath)\sdk\*.dll" />
+      <IlcReference Include="$(IlcPath)\framework\*.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <IlcArg Include="$(ManagedBinary)" />
+      <IlcArg Include="-o:$(IlcCompileOutput)" />
+      <IlcArg Include="@(IlcReference->'-r:%(Identity)')" />
+      <IlcArg Condition="$(NativeCodeGen) != ''" Include="--$(NativeCodeGen)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath)" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
+
+    <PropertyGroup>
+      <TestHost Condition="'$(OS)' == 'Windows_NT'">CoreRun.exe</TestHost>
+      <TestHost Condition="'$(OS)' != 'Windows_NT'">corerun</TestHost>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(IlcPath)\$(TestHost)&quot; &quot;$(IlcPath)\ilc.exe&quot; @&quot;$(NativeIntermediateOutputPath)ilc.rsp&quot;">
+    </Exec>
+
+  </Target>
+
+  <Import Project="Microsoft.NETCore.Native.Windows.targets" Condition="'$(TargetOS)' == 'Windows_NT'" />
+  <Import Project="Microsoft.NETCore.Native.Unix.targets" Condition="'$(TargetOS)' != 'Windows_NT'" />
+
+</Project>

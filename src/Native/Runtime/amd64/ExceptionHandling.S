@@ -23,6 +23,9 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
 
         mov     rax, rsp        // save the faulting RSP
 
+        // Align the stack towards zero
+        and     rsp, -16
+
         add     rsi, 1  // 'faulting IP' += 1, we do this because everywhere else we treat the faulting IP as
                         // a return-address and optionally subtract one when doing EH-related things (but not
                         // subtracting 1 when doing GC-related things).  The fault IP here will be the start
@@ -32,7 +35,6 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
                         // don't need to be precise here because the fault location isn't a GC safe point 
 
         xor     rdx, rdx
-        push_register   rdx             // padding
 
 //  struct PAL_LIMITED_CONTEXT
 //  {

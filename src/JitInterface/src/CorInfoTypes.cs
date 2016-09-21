@@ -883,6 +883,9 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
+        // Secure delegate offsets
+        public uint offsetOfSecureDelegateIndirectCell;
+
         // Remoting offsets
         public uint offsetOfTransparentProxyRP;
         public uint offsetOfRealProxyServer;
@@ -1037,11 +1040,13 @@ namespace Internal.JitInterface
         public CORINFO_THIS_TRANSFORM thisTransform;
 
         public CORINFO_CALL_KIND kind;
+
         public uint _nullInstanceCheck;
         public bool nullInstanceCheck { get { return _nullInstanceCheck != 0; } set { _nullInstanceCheck = value ? (byte)1 : (byte)0; } }
 
         // Context for inlining and hidden arg
         public CORINFO_CONTEXT_STRUCT* contextHandle;
+
         public uint _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
         public bool exactContextNeedsRuntimeLookup { get { return _exactContextNeedsRuntimeLookup != 0; } set { _exactContextNeedsRuntimeLookup = value ? (byte)1 : (byte)0; } }
 
@@ -1051,6 +1056,9 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
+
+        public uint _secureDelegateInvoke;
+        public bool secureDelegateInvoke { get { return _secureDelegateInvoke != 0; } set { _secureDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
 
