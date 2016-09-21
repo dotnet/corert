@@ -28,7 +28,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 * Create a new folder and switch into it. 
 * Run `dotnet new --type MSBuild` on the command/shell prompt. This will add a project template. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
 * Run `dotnet restore`. This will download nuget packages required for compilation
-* Add the following line at the end of `.csproj` file that is part your project.
+* Add the following line at the end of `.csproj` file that is part of your project.
 ```
     <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" />
 ```
