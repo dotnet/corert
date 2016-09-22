@@ -157,17 +157,38 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         public sealed override ParameterInfo[] GetIndexParameters()
         {
-            bool useGetter = CanRead;
-            RuntimeMethodInfo accessor = (useGetter ? Getter : Setter);
-            RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.RuntimeParameters;
-            int count = runtimeMethodParameterInfos.Length;
-            if (!useGetter)
-                count--;  // If we're taking the parameters off the setter, subtract one for the "value" parameter.
-            if (count == 0)
-                return Array.Empty<ParameterInfo>();
-            ParameterInfo[] result = new ParameterInfo[count];
-            for (int i = 0; i < count; i++)
-                result[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i]);
+            ParameterInfo[] indexParameters = _lazyIndexParameters;
+            if (indexParameters == null)
+            {
+                bool useGetter = CanRead;
+                RuntimeMethodInfo accessor = (useGetter ? Getter : Setter);
+                RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.RuntimeParameters;
+                int count = runtimeMethodParameterInfos.Length;
+                if (!useGetter)
+                    count--;  // If we're taking the parameters off the setter, subtract one for the "value" parameter.
+                if (count == 0)
+                {
+                    _lazyIndexParameters = indexParameters = Array.Empty<ParameterInfo>();
+                }
+                else
+                {
+                    indexParameters = new ParameterInfo[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        indexParameters[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i]);
+                    }
+                    _lazyIndexParameters = indexParameters;
+                }
+            }
+
+            int numParameters = indexParameters.Length;
+            if (numParameters == 0)
+                return indexParameters;
+            ParameterInfo[] result = new ParameterInfo[numParameters];
+            for (int i = 0; i < numParameters; i++)
+            {
+                result[i] = indexParameters[i];
+            }
             return result;
         }
 
@@ -346,12 +367,22 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                MethodHandle getterHandle;
-                if (GetAccessor(MethodSemanticsAttributes.Getter, out getterHandle))
+                RuntimeMethodInfo getter = _lazyGetter;
+                if (getter == null)
                 {
-                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(getterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                    MethodHandle getterHandle;
+                    if (GetAccessor(MethodSemanticsAttributes.Getter, out getterHandle))
+                    {
+                        getter =  RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(getterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                    }
+                    else
+                    {
+                        getter = RuntimeDummyMethodInfo.Instance;
+                    }
+                    _lazyGetter = getter;
                 }
-                return null;
+
+                return object.ReferenceEquals(getter, RuntimeDummyMethodInfo.Instance) ? null : getter;
             }
         }
 
@@ -359,12 +390,22 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                MethodHandle setterHandle;
-                if (GetAccessor(MethodSemanticsAttributes.Setter, out setterHandle))
+                RuntimeMethodInfo setter = _lazySetter;
+                if (setter == null)
                 {
-                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(setterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                    MethodHandle setterHandle;
+                    if (GetAccessor(MethodSemanticsAttributes.Setter, out setterHandle))
+                    {
+                        setter = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(setterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                    }
+                    else
+                    {
+                        setter = RuntimeDummyMethodInfo.Instance;
+                    }
+                    _lazySetter = setter;
                 }
-                return null;
+
+                return object.ReferenceEquals(setter, RuntimeDummyMethodInfo.Instance) ? null : setter;
             }
         }
 
@@ -420,6 +461,11 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         private volatile MethodInvoker _lazyGetterInvoker = null;
         private volatile MethodInvoker _lazySetterInvoker = null;
+
+        private volatile RuntimeMethodInfo _lazyGetter;
+        private volatile RuntimeMethodInfo _lazySetter;
+
+        private volatile ParameterInfo[] _lazyIndexParameters;
 
         private String _debugName;
     }
