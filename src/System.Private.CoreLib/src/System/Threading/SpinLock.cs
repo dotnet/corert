@@ -401,11 +401,11 @@ namespace System.Threading
 
                 if (yieldsoFar % SLEEP_ONE_FREQUENCY == 0)
                 {
-                    Helpers.Sleep(1);
+                    Interop.mincore.Sleep(1);
                 }
                 else if (yieldsoFar % SLEEP_ZERO_FREQUENCY == 0)
                 {
-                    Helpers.Sleep(0);
+                    Interop.mincore.Sleep(0);
                 }
                 else
                 {
