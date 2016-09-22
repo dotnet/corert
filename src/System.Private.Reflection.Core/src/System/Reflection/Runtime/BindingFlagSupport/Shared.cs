@@ -184,7 +184,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     {
                         continue;
                     }
-                    if (!policies.AreNamesAndSignatureEqual(member, candidate))
+                    if (!policies.ImplicitlyOverrides(candidate, member))
                     {
                         continue;
                     }

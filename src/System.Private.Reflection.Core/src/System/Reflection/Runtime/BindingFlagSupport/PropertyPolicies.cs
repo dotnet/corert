@@ -48,9 +48,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
         }
 
-        public sealed override bool AreNamesAndSignatureEqual(PropertyInfo member1, PropertyInfo member2)
+        public sealed override bool ImplicitlyOverrides(PropertyInfo baseMember, PropertyInfo derivedMember)
         {
-            return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
+            MethodInfo baseAccessor = GetAccessorMethod(baseMember);
+            MethodInfo derivedAccessor = GetAccessorMethod(derivedMember);
+            return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         //
@@ -59,12 +61,14 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         public sealed override bool IsSuppressedByMoreDerivedMember(PropertyInfo member, PropertyInfo[] priorMembers, int startIndex, int endIndex)
         {
+            MethodInfo baseAccessor = GetAccessorMethod(member);
             for (int i = startIndex; i < endIndex; i++)
             {
                 PropertyInfo prior = priorMembers[i];
-                if (!AreNamesAndSignatureEqual(prior, member))
+                MethodInfo derivedAccessor = GetAccessorMethod(prior);
+                if (!AreNamesAndSignaturesEqual(baseAccessor, derivedAccessor))
                     continue;
-                if (GetAccessorMethod(prior).IsStatic != GetAccessorMethod(member).IsStatic)
+                if (derivedAccessor.IsStatic != baseAccessor.IsStatic)
                     continue;
                 if (!(prior.PropertyType.Equals(member.PropertyType)))
                     continue;

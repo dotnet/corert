@@ -39,9 +39,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract void GetMemberAttributes(M member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot);
 
         //
-        // Policy to decide whether two virtual members are signature-compatible for the purpose of implicit overriding. 
+        // Policy to decide whether "derivedMember" is a virtual override of "baseMember." Used to implement MethodInfo.GetBaseDefinition(),
+        // parent chain traversal for discovering inherited custom attributes, and suppressing lookup results in the Type.Get*() api family.
+        // 
+        // Does not consider explicit overrides (methodimpls.) Does not consider "overrides" of interface methods.
         //
-        public abstract bool AreNamesAndSignatureEqual(M member1, M member2);
+        public abstract bool ImplicitlyOverrides(M baseMember, M derivedMember);
 
         //
         // Policy to decide how BindingFlags should be reinterpreted for a given member type.
@@ -74,32 +77,116 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract bool OkToIgnoreAmbiguity(M m1, M m2);
 
         //
-        // Helper method for determining whether two methods are signature-compatible for the purpose of implicit overriding.
+        // Helper method for determining whether two methods are signature-compatible.
         //
         protected static bool AreNamesAndSignaturesEqual(MethodInfo method1, MethodInfo method2)
         {
             if (method1.Name != method2.Name)
-            {
                 return false;
-            }
 
             ParameterInfo[] p1 = method1.GetParametersNoCopy();
             ParameterInfo[] p2 = method2.GetParametersNoCopy();
             if (p1.Length != p2.Length)
-            {
                 return false;
-            }
 
-            for (int i = 0; i < p1.Length; i++)
+            bool isGenericMethod1 = method1.IsGenericMethodDefinition;
+            bool isGenericMethod2 = method2.IsGenericMethodDefinition;
+            if (isGenericMethod1 != isGenericMethod2)
+                return false;
+            if (!isGenericMethod1)
             {
-                Type parameterType1 = p1[i].ParameterType;
-                Type parameterType2 = p2[i].ParameterType;
-                if (!(parameterType1.Equals(parameterType2)))
+                for (int i = 0; i < p1.Length; i++)
                 {
+                    Type parameterType1 = p1[i].ParameterType;
+                    Type parameterType2 = p2[i].ParameterType;
+                    if (!(parameterType1.Equals(parameterType2)))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                if (method1.GetGenericArguments().Length != method2.GetGenericArguments().Length)
                     return false;
+                for (int i = 0; i < p1.Length; i++)
+                {
+                    Type parameterType1 = p1[i].ParameterType;
+                    Type parameterType2 = p2[i].ParameterType;
+                    if (!GenericMethodAwareAreParameterTypesEqual(parameterType1, parameterType2))
+                    {
+                        return false;
+                    }
                 }
             }
             return true;
+        }
+
+        //
+        // This helper compares the types of the corresponding parameters of two methods to see if one method is signature equivalent to the other.
+        // This is needed when comparing the signatures of two generic methods as Type.Equals() is not up to that job.
+        //
+        private static bool GenericMethodAwareAreParameterTypesEqual(Type t1, Type t2)
+        {
+            // Fast-path - if Reflection has already deemed them equivalent, we can trust its result.
+            if (t1.Equals(t2))
+                return true;
+
+            // If we got here, Reflection determined the types not equivalent. Most of the time, that's the result we want. 
+            // There is however, one wrinkle. If the type is or embeds a generic method parameter type, Reflection will always report them 
+            // non-equivalent, since generic parameter type comparison always compares both the position and the declaring method. For our purposes, though,
+            // we only want to consider the position.
+
+            // Fast-path: if the types don't embed any generic parameters, we can go ahead and use Reflection's result.
+            if (!(t1.ContainsGenericParameters && t2.ContainsGenericParameters))
+                return false;
+
+            if ((t1.IsArray && t2.IsArray) || (t1.IsByRef && t2.IsByRef) || (t1.IsPointer && t2.IsPointer))
+            {
+                if (t1.IsSzArray != t2.IsSzArray)
+                    return false;
+
+                if (t1.IsArray && (t1.GetArrayRank() != t2.GetArrayRank()))
+                    return false;
+
+                return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType(), t2.GetElementType());
+            }
+
+            if (t1.IsConstructedGenericType)
+            {
+                // We can use regular old Equals() rather than recursing into GenericMethodAwareAreParameterTypesEqual() since the
+                // generic type definition will always be a plain old named type and won't embed any generic method parameters.
+                if (!(t1.GetGenericTypeDefinition().Equals(t2.GetGenericTypeDefinition())))
+                    return false;
+
+                Type[] ga1 = t1.GenericTypeArguments;
+                Type[] ga2 = t2.GenericTypeArguments;
+                if (ga1.Length != ga2.Length)
+                    return false;
+
+                for (int i = 0; i < ga1.Length; i++)
+                {
+                    if (!GenericMethodAwareAreParameterTypesEqual(ga1[i], ga2[i]))
+                        return false;
+                }
+                return true;
+            }
+
+            if (t1.IsGenericParameter && t2.IsGenericParameter)
+            {
+                if (t1.DeclaringMethod != null && t2.DeclaringMethod != null)
+                {
+                    // A generic method parameter. The DeclaringMethods will be different but we don't care about that - we can assume that
+                    // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to 
+                    // compare the positions.
+                    return t1.GenericParameterPosition == t2.GenericParameterPosition;
+                }
+                return false;
+            }
+
+            // If we got here, either t1 and t2 are different flavors of types or they are both simple named types.
+            // Either way, we can trust Reflection's result here.
+            return false;
         }
 
         static MemberPolicies()

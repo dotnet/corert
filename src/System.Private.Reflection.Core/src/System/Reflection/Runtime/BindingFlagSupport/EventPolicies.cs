@@ -48,9 +48,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        public sealed override bool AreNamesAndSignatureEqual(EventInfo member1, EventInfo member2)
+        public sealed override bool ImplicitlyOverrides(EventInfo baseMember, EventInfo derivedMember)
         {
-            return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
+            MethodInfo baseAccessor = GetAccessorMethod(baseMember);
+            MethodInfo derivedAccessor = GetAccessorMethod(derivedMember);
+            return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         public sealed override bool OkToIgnoreAmbiguity(EventInfo m1, EventInfo m2)

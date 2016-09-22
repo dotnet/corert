@@ -34,11 +34,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = false;
         }
 
-        public sealed override bool AreNamesAndSignatureEqual(FieldInfo member1, FieldInfo member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as fields are never \"virtual\".");
-            throw new NotSupportedException();
-        }
+        public sealed override bool ImplicitlyOverrides(FieldInfo baseMember, FieldInfo derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(FieldInfo member, FieldInfo[] priorMembers, int startIndex, int endIndex)
         {
