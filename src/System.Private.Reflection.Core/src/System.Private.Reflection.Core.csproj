@@ -99,6 +99,7 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeDummyMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimePlainConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodCommon.cs" />

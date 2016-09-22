@@ -64,15 +64,20 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_AddMethod(this);
 #endif
 
-                foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
+                MethodInfo adder = _lazyAdder;
+                if (adder == null)
                 {
-                    MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
-                    if (methodSemantics.Attributes == MethodSemanticsAttributes.AddOn)
+                    foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
                     {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                        MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
+                        if (methodSemantics.Attributes == MethodSemanticsAttributes.AddOn)
+                        {
+                            return _lazyAdder = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                        }
                     }
+                    throw new BadImageFormatException(); // Added is a required method.
                 }
-                throw new BadImageFormatException(); // Added is a required method.
+                return adder;
             }
         }
 
@@ -209,15 +214,20 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_RemoveMethod(this);
 #endif
 
-                foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
+                MethodInfo remover = _lazyRemover;
+                if (remover == null)
                 {
-                    MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
-                    if (methodSemantics.Attributes == MethodSemanticsAttributes.RemoveOn)
+                    foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
                     {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                        MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
+                        if (methodSemantics.Attributes == MethodSemanticsAttributes.RemoveOn)
+                        {
+                            return _lazyRemover = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                        }
                     }
+                    throw new BadImageFormatException(); // Removed is a required method.
                 }
-                throw new BadImageFormatException(); // Removed is a required method.
+                return remover;
             }
         }
 
@@ -271,6 +281,9 @@ namespace System.Reflection.Runtime.EventInfos
 
         private readonly MetadataReader _reader;
         private readonly Event _event;
+
+        private volatile MethodInfo _lazyAdder;
+        private volatile MethodInfo _lazyRemover;
 
         private String _debugName;
     }
