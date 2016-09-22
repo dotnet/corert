@@ -47,11 +47,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             visibility = member.IsNestedPublic ? MethodAttributes.Public : MethodAttributes.Private;
         }
 
-        public sealed override bool AreNamesAndSignatureEqual(Type member1, Type member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as nested types are never \"virtual\".");
-            throw new NotSupportedException();
-        }
+        public sealed override bool ImplicitlyOverrides(Type baseMember, Type derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(Type member, Type[] priorMembers, int startIndex, int endIndex)
         {

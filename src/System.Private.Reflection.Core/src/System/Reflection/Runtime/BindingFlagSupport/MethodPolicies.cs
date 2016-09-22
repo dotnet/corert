@@ -34,9 +34,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
         }
 
-        public sealed override bool AreNamesAndSignatureEqual(MethodInfo member1, MethodInfo member2)
+        public sealed override bool ImplicitlyOverrides(MethodInfo baseMember, MethodInfo derivedMember)
         {
-            return AreNamesAndSignaturesEqual(member1, member2);
+            // TODO (https://github.com/dotnet/corert/issues/1896) Comparing signatures is lame. The runtime and/or toolchain should have a way of sharing this info.
+            return AreNamesAndSignaturesEqual(baseMember, derivedMember);
         }
 
         //
@@ -53,7 +54,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 MethodAttributes attributes = prior.Attributes & (MethodAttributes.Virtual | MethodAttributes.VtableLayoutMask);
                 if (attributes != (MethodAttributes.Virtual | MethodAttributes.ReuseSlot))
                     continue;
-                if (!AreNamesAndSignatureEqual(prior, member))
+                if (!ImplicitlyOverrides(member, prior))
                     continue;
 
                 return true;
