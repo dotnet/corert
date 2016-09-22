@@ -1056,15 +1056,15 @@ namespace System.Threading
             {
                 if (i < LockSpinCount && pc > 1)
                 {
-                    Helpers.Spin(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
+                    System.Threading.SpinWait.Spin(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
                 }
                 else if (i < (LockSpinCount + LockSleep0Count))
                 {
-                    Helpers.Sleep(0);   // Give up my quantum.  
+                    Interop.mincore.Sleep(0);   // Give up my quantum.  
                 }
                 else
                 {
-                    Helpers.Sleep(1);   // Give up my quantum.  
+                    Interop.mincore.Sleep(1);   // Give up my quantum.  
                 }
 
                 if (_myLock == 0 && Interlocked.CompareExchange(ref _myLock, 1, 0) == 0)
@@ -1087,15 +1087,15 @@ namespace System.Threading
             //Exponential backoff
             if ((SpinCount < 5) && (Environment.ProcessorCount > 1))
             {
-                Helpers.Spin(LockSpinCycles * SpinCount);
+                System.Threading.SpinWait.Spin(LockSpinCycles * SpinCount);
             }
             else if (SpinCount < MaxSpinCount - 3)
             {
-                Helpers.Sleep(0);
+                Interop.mincore.Sleep(0);
             }
             else
             {
-                Helpers.Sleep(1);
+                Interop.mincore.Sleep(1);
             }
         }
 
