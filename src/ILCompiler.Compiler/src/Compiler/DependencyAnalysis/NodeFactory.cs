@@ -238,6 +238,21 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     return new LazilyBuiltVTableSliceNode(type);
             });
+
+            _methodGenericDictionaries = new NodeCache<MethodDesc, GenericDictionaryNode>(method =>
+            {
+                return new MethodGenericDictionaryNode(method);
+            });
+
+            _typeGenericDictionaries = new NodeCache<TypeDesc, GenericDictionaryNode>(type =>
+            {
+                return new TypeGenericDictionaryNode(type);
+            });
+
+            _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(methodOrType =>
+            {
+                return new DictionaryLayoutNode(methodOrType);
+            });
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
@@ -404,6 +419,24 @@ namespace ILCompiler.DependencyAnalysis
         internal VTableSliceNode VTable(TypeDesc type)
         {
             return _vTableNodes.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, GenericDictionaryNode> _methodGenericDictionaries;
+        internal GenericDictionaryNode MethodGenericDictionary(MethodDesc method)
+        {
+            return _methodGenericDictionaries.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, GenericDictionaryNode> _typeGenericDictionaries;
+        internal GenericDictionaryNode TypeGenericDictionary(TypeDesc type)
+        {
+            return _typeGenericDictionaries.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeSystemEntity, DictionaryLayoutNode> _genericDictionaryLayouts;
+        internal DictionaryLayoutNode GenericDictionaryLayout(TypeSystemEntity methodOrType)
+        {
+            return _genericDictionaryLayouts.GetOrAdd(methodOrType);
         }
 
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
