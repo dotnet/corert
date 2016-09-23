@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.Alignment = 16;
+            objData.Alignment = objData.TargetPointerSize;
             objData.DefinedSymbols.Add(this);
 
             ComputeOptionalEETypeFields(factory);
