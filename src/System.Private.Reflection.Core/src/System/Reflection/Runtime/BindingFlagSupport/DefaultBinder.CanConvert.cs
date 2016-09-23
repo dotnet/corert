@@ -26,8 +26,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         private static bool CanPrimitiveWiden(Type source, Type target)
         {
-            Primitives widerCodes = _primitiveConversions[(int)GetTypeCode(source)];
-            Primitives targetCode = (Primitives)(1 << (int)GetTypeCode(target));
+            Primitives widerCodes = _primitiveConversions[(int)(Type.GetTypeCode(source))];
+            Primitives targetCode = (Primitives)(1 << (int)(Type.GetTypeCode(target)));
 
             return 0 != (widerCodes & targetCode);
         }
@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 /* Byte     */  Primitives.Byte    | Primitives.Char   | Primitives.UInt16 | Primitives.Int16  | Primitives.UInt32 | Primitives.Int32  | Primitives.UInt64 |  Primitives.Int64 |  Primitives.Single |  Primitives.Double,
                 /* Int16    */  Primitives.Int16   | Primitives.Int32  | Primitives.Int64  | Primitives.Single | Primitives.Double,
                 /* UInt16   */  Primitives.UInt16  | Primitives.UInt32 | Primitives.Int32  | Primitives.UInt64 | Primitives.Int64  | Primitives.Single | Primitives.Double,
-                /* Int32    */  Primitives.Int32   | Primitives.Int64  | Primitives.Single | Primitives.Double |
+                /* Int32    */  Primitives.Int32   | Primitives.Int64  | Primitives.Single | Primitives.Double,
                 /* UInt32   */  Primitives.UInt32  | Primitives.UInt64 | Primitives.Int64  | Primitives.Single | Primitives.Double,
                 /* Int64    */  Primitives.Int64   | Primitives.Single | Primitives.Double,
                 /* UInt64   */  Primitives.UInt64  | Primitives.Single | Primitives.Double,
@@ -74,55 +74,5 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 /* [Unused] */  0,
                 /* String   */  Primitives.String,
         };
-
-        private static TypeCode GetTypeCode(Type type)
-        {
-            if (type == CommonRuntimeTypes.Boolean)
-                return TypeCode.Boolean;
-
-            if (type == CommonRuntimeTypes.Char)
-                return TypeCode.Char;
-
-            if (type == CommonRuntimeTypes.SByte)
-                return TypeCode.SByte;
-
-            if (type == CommonRuntimeTypes.Byte)
-                return TypeCode.Byte;
-
-            if (type == CommonRuntimeTypes.Int16)
-                return TypeCode.Int16;
-
-            if (type == CommonRuntimeTypes.UInt16)
-                return TypeCode.UInt16;
-
-            if (type == CommonRuntimeTypes.Int32)
-                return TypeCode.Int32;
-
-            if (type == CommonRuntimeTypes.UInt32)
-                return TypeCode.UInt32;
-
-            if (type == CommonRuntimeTypes.Int64)
-                return TypeCode.Int64;
-
-            if (type == CommonRuntimeTypes.UInt64)
-                return TypeCode.UInt64;
-
-            if (type == CommonRuntimeTypes.Single)
-                return TypeCode.Single;
-
-            if (type == CommonRuntimeTypes.Double)
-                return TypeCode.Double;
-
-            if (type == CommonRuntimeTypes.Decimal)
-                return TypeCode.Decimal;
-
-            if (type == CommonRuntimeTypes.DateTime)
-                return TypeCode.DateTime;
-
-            if (type.IsEnum)
-                return GetTypeCode(Enum.GetUnderlyingType(type));
-
-            return TypeCode.Object;
-        }
     }
 }
