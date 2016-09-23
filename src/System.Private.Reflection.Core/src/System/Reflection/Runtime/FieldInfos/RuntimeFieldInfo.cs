@@ -92,7 +92,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     ReflectionTrace.FieldInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
 
@@ -205,7 +205,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
 

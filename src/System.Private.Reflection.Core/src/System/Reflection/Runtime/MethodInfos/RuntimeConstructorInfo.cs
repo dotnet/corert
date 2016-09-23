@@ -32,7 +32,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return DeclaringType.GetTypeInfo().ContainsGenericParameters;
+                return DeclaringType.ContainsGenericParameters;
             }
         }
 
@@ -119,7 +119,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return DeclaringType.GetTypeInfo().Module;
+                return DeclaringType.Module;
             }
         }
 

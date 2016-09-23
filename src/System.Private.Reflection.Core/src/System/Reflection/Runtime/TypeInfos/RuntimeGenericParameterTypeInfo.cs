@@ -34,7 +34,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return DeclaringType.GetTypeInfo().Assembly;
+                return DeclaringType.Assembly;
             }
         }
 

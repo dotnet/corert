@@ -187,7 +187,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override Type GetGenericTypeDefinition()
         {
             if (_typeDefinition.GenericParameters.GetEnumerator().MoveNext())
-                return this.AsType();
+                return this;
             return base.GetGenericTypeDefinition();
         }
 

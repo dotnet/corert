@@ -49,6 +49,13 @@ namespace System.Reflection.Runtime.General
             return type is IRuntimeImplementedType;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type[] GetGenericTypeParameters(this Type type)
+        {
+            Debug.Assert(type.IsGenericTypeDefinition);
+            return type.GetGenericArguments();
+        }
+
         public static RuntimeTypeInfo[] ToRuntimeTypeInfoArray(this Type[] types)
         {
             int count = types.Length;

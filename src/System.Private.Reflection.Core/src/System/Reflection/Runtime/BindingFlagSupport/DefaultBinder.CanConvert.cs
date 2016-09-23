@@ -119,7 +119,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (type == CommonRuntimeTypes.DateTime)
                 return TypeCode.DateTime;
 
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
                 return GetTypeCode(Enum.GetUnderlyingType(type));
 
             return TypeCode.Object;

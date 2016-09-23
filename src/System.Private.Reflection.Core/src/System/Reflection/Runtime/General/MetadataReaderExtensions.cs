@@ -216,7 +216,7 @@ namespace System.Reflection.Runtime.General
                 return exception;
             }
 
-            if (!enumType.GetTypeInfo().IsEnum)
+            if (!enumType.IsEnum)
                 throw new BadImageFormatException();
 
             Type underlyingType = Enum.GetUnderlyingType(enumType);

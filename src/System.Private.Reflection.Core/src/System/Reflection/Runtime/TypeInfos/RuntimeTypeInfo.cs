@@ -89,7 +89,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     // Desktop quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
                     // unless that other generic parameter has a "class" constraint.
-                    GenericParameterAttributes genericParameterAttributes = baseType.GetTypeInfo().GenericParameterAttributes;
+                    GenericParameterAttributes genericParameterAttributes = baseType.GenericParameterAttributes;
                     if (0 == (genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint))
                         baseType = CommonRuntimeTypes.Object;
                 }
@@ -234,14 +234,14 @@ namespace System.Reflection.Runtime.TypeInfos
                     TypeContext typeContext = this.TypeContext;
                     Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
                     if (baseType != null)
-                        result.AddRange(baseType.GetTypeInfo().ImplementedInterfaces);
+                        result.AddRange(baseType.GetInterfaces());
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
                         Type ifc = directlyImplementedInterface.Handle.Resolve(directlyImplementedInterface.Reader, typeContext);
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);
-                        foreach (Type indirectIfc in ifc.GetTypeInfo().ImplementedInterfaces)
+                        foreach (Type indirectIfc in ifc.GetInterfaces())
                         {
                             if (result.Contains(indirectIfc))
                                 continue;
@@ -254,16 +254,14 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool IsAssignableFrom(TypeInfo typeInfo) => IsAssignableFrom((Type)typeInfo);
+
         public sealed override bool IsAssignableFrom(Type c)
         {
             if (c == null)
                 return false;
 
-            return IsAssignableFrom(c.GetTypeInfo());
-        }
-
-        public sealed override bool IsAssignableFrom(TypeInfo typeInfo)
-        {
+            Type typeInfo = c;
             RuntimeTypeInfo toTypeInfo = this;
 
             if (typeInfo == null || !typeInfo.IsRuntimeImplemented())
@@ -415,7 +413,7 @@ namespace System.Reflection.Runtime.TypeInfos
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
             // in the ECMA model and in CLR Reflection.
-            return this.GetArrayType().AsType();
+            return this.GetArrayType();
         }
 
         public sealed override Type MakeArrayType(int rank)
@@ -427,7 +425,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
-            return this.GetMultiDimArrayType(rank).AsType();
+            return this.GetMultiDimArrayType(rank);
         }
 
         public sealed override Type MakeByRefType()
@@ -436,7 +434,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_MakeByRefType(this);
 #endif
-            return this.GetByRefType().AsType();
+            return this.GetByRefType();
         }
 
         public sealed override Type MakeGenericType(params Type[] typeArguments)
@@ -464,7 +462,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!typeArguments[i].IsRuntimeImplemented())
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_MakeGenericType); // "PlatformNotSupported" because on desktop, passing in a foreign type is allowed and creates a RefEmit.TypeBuilder
             }
-            return this.GetConstructedGenericType(typeArguments.ToRuntimeTypeInfoArray()).AsType();
+            return this.GetConstructedGenericType(typeArguments.ToRuntimeTypeInfoArray());
         }
 
         public sealed override Type MakePointerType()
@@ -474,7 +472,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 ReflectionTrace.TypeInfo_MakePointerType(this);
 #endif
 
-            return this.GetPointerType().AsType();
+            return this.GetPointerType();
         }
 
         public sealed override Type DeclaringType
@@ -876,13 +874,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
                         if (baseType.Equals(enumType))
                             classification |= TypeClassification.IsEnum | TypeClassification.IsValueType;
-                        if (baseType.Equals(valueType) && !(this.AsType().Equals(enumType)))
+                        if (baseType.Equals(valueType) && !(this.Equals(enumType)))
                         {
                             classification |= TypeClassification.IsValueType;
-                            Type thisType = this.AsType();
                             foreach (Type primitiveType in ReflectionCoreExecution.ExecutionDomain.PrimitiveTypes)
                             {
-                                if (thisType.Equals(primitiveType))
+                                if (this.Equals(primitiveType))
                                 {
                                     classification |= TypeClassification.IsPrimitive;
                                     break;

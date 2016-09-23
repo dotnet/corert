@@ -86,11 +86,8 @@ namespace System.Reflection.Runtime.CustomAttributes
         protected static ConstructorInfo ResolveAttributeConstructor(Type attributeType, Type[] parameterTypes)
         {
             int parameterCount = parameterTypes.Length;
-            foreach (ConstructorInfo candidate in attributeType.GetTypeInfo().DeclaredConstructors)
+            foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                if (candidate.IsStatic)
-                    continue;
-
                 ParameterInfo[] candidateParameters = candidate.GetParametersNoCopy();
                 if (parameterCount != candidateParameters.Length)
                     continue;
@@ -129,8 +126,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 return cat.ToString();
 
             Object value = cat.Value;
-            TypeInfo argumentTypeInfo = argumentType.GetTypeInfo();
-            if (argumentTypeInfo.IsEnum)
+            if (argumentType.IsEnum)
                 return String.Format(typed ? "{0}" : "({1}){0}", value, argumentType.FullName);
 
             if (value == null)
@@ -151,7 +147,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 IList<CustomAttributeTypedArgument> array = value as IList<CustomAttributeTypedArgument>;
 
                 Type elementType = argumentType.GetElementType();
-                result = String.Format(@"new {0}[{1}] {{ ", elementType.GetTypeInfo().IsEnum ? elementType.FullName : elementType.Name, array.Count);
+                result = String.Format(@"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
 
                 for (int i = 0; i < array.Count; i++)
                     result += String.Format(i == 0 ? "{0}" : ", {0}", ComputeTypedArgumentString(array[i], elementType != CommonRuntimeTypes.Object));

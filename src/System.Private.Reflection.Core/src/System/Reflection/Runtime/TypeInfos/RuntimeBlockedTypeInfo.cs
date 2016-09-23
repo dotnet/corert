@@ -44,7 +44,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return CommonRuntimeTypes.Object.GetTypeInfo().Assembly;
+                return CommonRuntimeTypes.Object.Assembly;
             }
         }
 
