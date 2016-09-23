@@ -117,7 +117,12 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
     <Compile Include="System/Configuration/Assemblies/AssemblyHashAlgorithm.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
     <Compile Include="System/Configuration/Assemblies/AssemblyVersionCompatibility.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\IO\SeekOrigin.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\Reflection\AmbiguousMatchException.cs" />

@@ -17,9 +17,9 @@ using System.Collections.Generic;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal static partial class AssemblyNameHelpers
+    public static partial class AssemblyNameHelpers
     {
-        internal static String ComputeDisplayName(RuntimeAssemblyName a)
+        public static String ComputeDisplayName(RuntimeAssemblyName a)
         {
             if (a.Name == String.Empty)
                 throw new FileLoadException();
@@ -122,7 +122,7 @@ namespace System.Reflection.Runtime.Assemblies
         //
         // Converts an AssemblyName to a RuntimeAssemblyName that is free from any future mutations on the AssemblyName.
         //
-        internal static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyName assemblyName)
+        public static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyName assemblyName)
         {
             if (assemblyName.Name == null)
                 throw new ArgumentException();

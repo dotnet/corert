@@ -58,11 +58,10 @@ namespace Internal.Reflection.Execution
             DefaultAssemblyNamesForGetType =
                 new String[]
                 {
-                    DefaultAssemblyNameForGetType,
+                    AssemblyBinder.DefaultAssemblyNameForGetType,
                 };
 
             ExecutionEnvironment = executionEnvironment;
-            setup.InstallModuleRegistrationCallbacks();
         }
 
         //
@@ -88,8 +87,6 @@ namespace Internal.Reflection.Execution
 
         internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
 
-        //@todo: Is there a better way than hard-coding?
-        internal const String DefaultAssemblyNameForGetType = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
         internal static IList<string> DefaultAssemblyNamesForGetType;
     }
 }

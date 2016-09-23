@@ -43,9 +43,14 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>MetadataBlob.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>LowLevelDictionary.cs</Link>
     </Compile>
+    <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
+    <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs" >
       <Link>LowLevelStringConverter.cs</Link>
@@ -55,6 +60,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.Fakes.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MetadataSignatureParsing.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

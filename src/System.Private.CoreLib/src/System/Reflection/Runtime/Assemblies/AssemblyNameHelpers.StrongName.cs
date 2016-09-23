@@ -21,9 +21,9 @@ using SecurityException = System.Security.SecurityException;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal static partial class AssemblyNameHelpers
+    public static partial class AssemblyNameHelpers
     {
-        internal static byte[] ComputePublicKeyToken(byte[] publicKey)
+        public static byte[] ComputePublicKeyToken(byte[] publicKey)
         {
             if (publicKey == null)
                 return null;

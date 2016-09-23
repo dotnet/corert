@@ -5,6 +5,7 @@
 
 using global::System;
 using global::System.Reflection;
+using System.Reflection.Runtime.Assemblies;
 using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
@@ -33,6 +34,75 @@ namespace Internal.Runtime.TypeLoader
         public static unsafe Handle AsHandle(this uint token)
         {
             return *(Handle*)&token;
+        }
+
+        public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
+        {
+            return reader.GetConstantStringValue(handle).Value;
+        }
+
+        // Useful for namespace Name string which can be a null handle.
+        public static String GetStringOrNull(this ConstantStringValueHandle handle, MetadataReader reader)
+        {
+            if (reader.IsNull(handle))
+                return null;
+            return reader.GetConstantStringValue(handle).Value;
+        }
+
+        public static bool IsTypeDefRefOrSpecHandle(this Handle handle, MetadataReader reader)
+        {
+            HandleType handleType = handle.HandleType;
+            return handleType == HandleType.TypeDefinition ||
+                handleType == HandleType.TypeReference ||
+                handleType == HandleType.TypeSpecification;
+        }
+
+        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
+        {
+            ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);
+            return CreateRuntimeAssemblyNameFromMetadata(
+                reader,
+                scopeDefinition.Name,
+                scopeDefinition.MajorVersion,
+                scopeDefinition.MinorVersion,
+                scopeDefinition.BuildNumber,
+                scopeDefinition.RevisionNumber,
+                scopeDefinition.Culture,
+                scopeDefinition.PublicKey,
+                scopeDefinition.Flags
+                );
+        }
+
+        private static RuntimeAssemblyName CreateRuntimeAssemblyNameFromMetadata(
+            MetadataReader reader,
+            ConstantStringValueHandle name,
+            ushort majorVersion,
+            ushort minorVersion,
+            ushort buildNumber,
+            ushort revisionNumber,
+            ConstantStringValueHandle culture,
+            IEnumerable<byte> publicKeyOrToken,
+            AssemblyFlags assemblyFlags)
+        {
+            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
+            if (0 != (assemblyFlags & AssemblyFlags.PublicKey))
+                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
+            if (0 != (assemblyFlags & AssemblyFlags.Retargetable))
+                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
+            int contentType = ((int)assemblyFlags) & 0x00000E00;
+            assemblyNameFlags |= (AssemblyNameFlags)contentType;
+
+            ArrayBuilder<byte> keyOrTokenArrayBuilder = new ArrayBuilder<byte>();
+            foreach (byte b in publicKeyOrToken)
+                keyOrTokenArrayBuilder.Add(b);
+
+            return new RuntimeAssemblyName(
+                name.GetString(reader),
+                new Version(majorVersion, minorVersion, buildNumber, revisionNumber),
+                culture.GetStringOrNull(reader),
+                assemblyNameFlags,
+                keyOrTokenArrayBuilder.ToArray()
+                );
         }
     }
 }

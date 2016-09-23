@@ -187,7 +187,7 @@ namespace System.Globalization
                     "name", name, SR.Argument_CultureNotSupported);
 
             this.m_name = this.m_cultureData.CultureName;
-            this.m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
+            this.m_isInherited = !this.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<CultureInfo>());
 #endif // CORERT
         }
 
