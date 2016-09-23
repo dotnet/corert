@@ -158,7 +158,7 @@ namespace System
         // both strings are non-null and that their lengths are equal. Ther caller should also have
         // done the Object.ReferenceEquals() fastpath check as we won't repeat it here.
         //
-        private unsafe static bool OrdinalCompareEqualLengthStrings(String strA, String strB)
+        private unsafe static bool EqualsHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
@@ -766,7 +766,7 @@ namespace System
             if (this.Length != str.Length)
                 return false;
 
-            return OrdinalCompareEqualLengthStrings(this, str);
+            return EqualsHelper(this, str);
         }
 
         // Determines whether two strings match.
@@ -787,7 +787,7 @@ namespace System
             if (this.Length != value.Length)
                 return false;
 
-            return OrdinalCompareEqualLengthStrings(this, value);
+            return EqualsHelper(this, value);
         }
 
 
@@ -817,7 +817,7 @@ namespace System
                 case StringComparison.Ordinal:
                     if (this.Length != value.Length)
                         return false;
-                    return OrdinalCompareEqualLengthStrings(this, value);
+                    return EqualsHelper(this, value);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if (this.Length != value.Length)
@@ -846,7 +846,7 @@ namespace System
                 return false;
             }
 
-            return OrdinalCompareEqualLengthStrings(a, b);
+            return EqualsHelper(a, b);
         }
 
         public static bool Equals(String a, String b, StringComparison comparisonType)
@@ -875,7 +875,7 @@ namespace System
                 case StringComparison.Ordinal:
                     if (a.Length != b.Length)
                         return false;
-                    return OrdinalCompareEqualLengthStrings(a, b);
+                    return EqualsHelper(a, b);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if (a.Length != b.Length)
@@ -895,7 +895,7 @@ namespace System
                 return true;
             if (a == null || b == null || a.Length != b.Length)
                 return false;
-            return OrdinalCompareEqualLengthStrings(a, b);
+            return EqualsHelper(a, b);
         }
 
         public static bool operator !=(String a, String b)
@@ -904,7 +904,7 @@ namespace System
                 return false;
             if (a == null || b == null || a.Length != b.Length)
                 return true;
-            return !OrdinalCompareEqualLengthStrings(a, b);
+            return !EqualsHelper(a, b);
         }
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
