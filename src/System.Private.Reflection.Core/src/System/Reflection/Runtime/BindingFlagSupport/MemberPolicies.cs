@@ -39,9 +39,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract void GetMemberAttributes(M member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot);
 
         //
-        // Policy to decide whether two virtual members are signature-compatible for the purpose of implicit overriding. 
+        // Policy to decide whether "derivedMember" is a virtual override of "baseMember." Used to implement MethodInfo.GetBaseDefinition(),
+        // parent chain traversal for discovering inherited custom attributes, and suppressing lookup results in the Type.Get*() api family.
+        // 
+        // Does not consider explicit overrides (methodimpls.) Does not consider "overrides" of interface methods.
         //
-        public abstract bool AreNamesAndSignatureEqual(M member1, M member2);
+        public abstract bool ImplicitlyOverrides(M baseMember, M derivedMember);
 
         //
         // Policy to decide how BindingFlags should be reinterpreted for a given member type.
@@ -74,32 +77,116 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract bool OkToIgnoreAmbiguity(M m1, M m2);
 
         //
-        // Helper method for determining whether two methods are signature-compatible for the purpose of implicit overriding.
+        // Helper method for determining whether two methods are signature-compatible.
         //
         protected static bool AreNamesAndSignaturesEqual(MethodInfo method1, MethodInfo method2)
         {
             if (method1.Name != method2.Name)
-            {
                 return false;
-            }
 
             ParameterInfo[] p1 = method1.GetParametersNoCopy();
             ParameterInfo[] p2 = method2.GetParametersNoCopy();
             if (p1.Length != p2.Length)
-            {
                 return false;
-            }
 
-            for (int i = 0; i < p1.Length; i++)
+            bool isGenericMethod1 = method1.IsGenericMethodDefinition;
+            bool isGenericMethod2 = method2.IsGenericMethodDefinition;
+            if (isGenericMethod1 != isGenericMethod2)
+                return false;
+            if (!isGenericMethod1)
             {
-                Type parameterType1 = p1[i].ParameterType;
-                Type parameterType2 = p2[i].ParameterType;
-                if (!(parameterType1.Equals(parameterType2)))
+                for (int i = 0; i < p1.Length; i++)
                 {
+                    Type parameterType1 = p1[i].ParameterType;
+                    Type parameterType2 = p2[i].ParameterType;
+                    if (!(parameterType1.Equals(parameterType2)))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                if (method1.GetGenericArguments().Length != method2.GetGenericArguments().Length)
                     return false;
+                for (int i = 0; i < p1.Length; i++)
+                {
+                    Type parameterType1 = p1[i].ParameterType;
+                    Type parameterType2 = p2[i].ParameterType;
+                    if (!GenericMethodAwareAreParameterTypesEqual(parameterType1, parameterType2))
+                    {
+                        return false;
+                    }
                 }
             }
             return true;
+        }
+
+        //
+        // This helper compares the types of the corresponding parameters of two methods to see if one method is signature equivalent to the other.
+        // This is needed when comparing the signatures of two generic methods as Type.Equals() is not up to that job.
+        //
+        private static bool GenericMethodAwareAreParameterTypesEqual(Type t1, Type t2)
+        {
+            // Fast-path - if Reflection has already deemed them equivalent, we can trust its result.
+            if (t1.Equals(t2))
+                return true;
+
+            // If we got here, Reflection determined the types not equivalent. Most of the time, that's the result we want. 
+            // There is however, one wrinkle. If the type is or embeds a generic method parameter type, Reflection will always report them 
+            // non-equivalent, since generic parameter type comparison always compares both the position and the declaring method. For our purposes, though,
+            // we only want to consider the position.
+
+            // Fast-path: if the types don't embed any generic parameters, we can go ahead and use Reflection's result.
+            if (!(t1.ContainsGenericParameters && t2.ContainsGenericParameters))
+                return false;
+
+            if ((t1.IsArray && t2.IsArray) || (t1.IsByRef && t2.IsByRef) || (t1.IsPointer && t2.IsPointer))
+            {
+                if (t1.IsSzArray != t2.IsSzArray)
+                    return false;
+
+                if (t1.IsArray && (t1.GetArrayRank() != t2.GetArrayRank()))
+                    return false;
+
+                return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType(), t2.GetElementType());
+            }
+
+            if (t1.IsConstructedGenericType)
+            {
+                // We can use regular old Equals() rather than recursing into GenericMethodAwareAreParameterTypesEqual() since the
+                // generic type definition will always be a plain old named type and won't embed any generic method parameters.
+                if (!(t1.GetGenericTypeDefinition().Equals(t2.GetGenericTypeDefinition())))
+                    return false;
+
+                Type[] ga1 = t1.GenericTypeArguments;
+                Type[] ga2 = t2.GenericTypeArguments;
+                if (ga1.Length != ga2.Length)
+                    return false;
+
+                for (int i = 0; i < ga1.Length; i++)
+                {
+                    if (!GenericMethodAwareAreParameterTypesEqual(ga1[i], ga2[i]))
+                        return false;
+                }
+                return true;
+            }
+
+            if (t1.IsGenericParameter && t2.IsGenericParameter)
+            {
+                if (t1.DeclaringMethod != null && t2.DeclaringMethod != null)
+                {
+                    // A generic method parameter. The DeclaringMethods will be different but we don't care about that - we can assume that
+                    // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to 
+                    // compare the positions.
+                    return t1.GenericParameterPosition == t2.GenericParameterPosition;
+                }
+                return false;
+            }
+
+            // If we got here, either t1 and t2 are different flavors of types or they are both simple named types.
+            // Either way, we can trust Reflection's result here.
+            return false;
         }
 
         static MemberPolicies()
@@ -152,364 +239,5 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // for converting a type reference to M to an array index or switch case label.
         //
         public static readonly int MemberTypeIndex;
-    }
-
-    //==========================================================================================================================
-    // Policies for fields.
-    //==========================================================================================================================
-    internal sealed class FieldPolicies : MemberPolicies<FieldInfo>
-    {
-        public sealed override IEnumerable<FieldInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredFields;
-        }
-
-        public sealed override IEnumerable<FieldInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
-        {
-            return type.CoreGetDeclaredFields(optionalNameFilter, reflectedType);
-        }
-
-        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
-
-        public sealed override void GetMemberAttributes(FieldInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            FieldAttributes fieldAttributes = member.Attributes;
-            visibility = (MethodAttributes)(fieldAttributes & FieldAttributes.FieldAccessMask);
-            isStatic = (0 != (fieldAttributes & FieldAttributes.Static));
-            isVirtual = false;
-            isNewSlot = false;
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(FieldInfo member1, FieldInfo member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as fields are never \"virtual\".");
-            throw new NotSupportedException();
-        }
-
-        public sealed override bool IsSuppressedByMoreDerivedMember(FieldInfo member, FieldInfo[] priorMembers, int startIndex, int endIndex)
-        {
-            return false;
-        }
-
-        public sealed override bool OkToIgnoreAmbiguity(FieldInfo m1, FieldInfo m2)
-        {
-            return true; // Unlike most member types, Field ambiguities are tolerated as long as they're defined in different classes.
-        }
-    }
-
-
-    //==========================================================================================================================
-    // Policies for constructors.
-    //==========================================================================================================================
-    internal sealed class ConstructorPolicies : MemberPolicies<ConstructorInfo>
-    {
-        public sealed override IEnumerable<ConstructorInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredConstructors;
-        }
-
-        public sealed override IEnumerable<ConstructorInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
-        {
-            Debug.Assert(reflectedType.Equals(type));  // Constructor queries are always performed as if BindingFlags.DeclaredOnly are set so the reflectedType should always be the declaring type.
-            return type.CoreGetDeclaredConstructors(optionalNameFilter);
-        }
-
-        public sealed override BindingFlags ModifyBindingFlags(BindingFlags bindingFlags)
-        {
-            // Constructors are not inherited.
-            return bindingFlags | BindingFlags.DeclaredOnly;
-        }
-
-        public sealed override bool AlwaysTreatAsDeclaredOnly => true;
-
-        public sealed override void GetMemberAttributes(ConstructorInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodAttributes methodAttributes = member.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = false;
-            isNewSlot = false;
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(ConstructorInfo member1, ConstructorInfo member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as constructors are never \"virtual\".");
-            throw new NotSupportedException();
-        }
-
-        public sealed override bool IsSuppressedByMoreDerivedMember(ConstructorInfo member, ConstructorInfo[] priorMembers, int startIndex, int endIndex)
-        {
-            return false;
-        }
-
-        public sealed override bool OkToIgnoreAmbiguity(ConstructorInfo m1, ConstructorInfo m2)
-        {
-            // Constructors are only resolvable using an array of parameter types so this should never be called.
-            Debug.Fail("This code path should be unreachable.");
-            throw new NotSupportedException();
-        }
-    }
-
-
-    //==========================================================================================================================
-    // Policies for methods.
-    //==========================================================================================================================
-    internal sealed class MethodPolicies : MemberPolicies<MethodInfo>
-    {
-        public sealed override IEnumerable<MethodInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredMethods;
-        }
-
-        public sealed override IEnumerable<MethodInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
-        {
-            return type.CoreGetDeclaredMethods(optionalNameFilter, reflectedType);
-        }
-
-        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
-
-        public sealed override void GetMemberAttributes(MethodInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodAttributes methodAttributes = member.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
-            isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(MethodInfo member1, MethodInfo member2)
-        {
-            return AreNamesAndSignaturesEqual(member1, member2);
-        }
-
-        //
-        // Methods hide methods in base types if they share the same vtable slot.
-        //
-        public sealed override bool IsSuppressedByMoreDerivedMember(MethodInfo member, MethodInfo[] priorMembers, int startIndex, int endIndex)
-        {
-            if (!member.IsVirtual)
-                return false;
-
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                MethodInfo prior = priorMembers[i];
-                MethodAttributes attributes = prior.Attributes & (MethodAttributes.Virtual | MethodAttributes.VtableLayoutMask);
-                if (attributes != (MethodAttributes.Virtual | MethodAttributes.ReuseSlot))
-                    continue;
-                if (!AreNamesAndSignatureEqual(prior, member))
-                    continue;
-
-                return true;
-            }
-            return false;
-        }
-
-        public sealed override bool OkToIgnoreAmbiguity(MethodInfo m1, MethodInfo m2)
-        {
-            return DefaultBinder.CompareMethodSig(m1, m2);  // If all candidates have the same signature, pick the most derived one without throwing an AmbiguousMatchException.
-        }
-    }
-
-    //==========================================================================================================================
-    // Policies for properties.
-    //==========================================================================================================================
-    internal sealed class PropertyPolicies : MemberPolicies<PropertyInfo>
-    {
-        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredProperties;
-        }
-
-        public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
-        {
-            return type.CoreGetDeclaredProperties(optionalNameFilter, reflectedType);
-        }
-
-        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
-
-        public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodInfo accessorMethod = GetAccessorMethod(member);
-            if (accessorMethod == null)
-            {
-                // If we got here, this is a inherited PropertyInfo that only had private accessors and is now refusing to give them out
-                // because that's what the rules of inherited PropertyInfo's are. Such a PropertyInfo is also considered private and will never be
-                // given out of a Type.GetProperty() call. So all we have to do is set its visibility to Private and it will get filtered out.
-                // Other values need to be set to satisify C# but they are meaningless.
-                visibility = MethodAttributes.Private;
-                isStatic = false;
-                isVirtual = false;
-                isNewSlot = true;
-                return;
-            }
-
-            MethodAttributes methodAttributes = accessorMethod.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
-            isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(PropertyInfo member1, PropertyInfo member2)
-        {
-            return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
-        }
-
-        //
-        // Desktop compat: Properties hide properties in base types if they share the same vtable slot, or 
-        // have the same name, return type, signature and hasThis value.
-        //
-        public sealed override bool IsSuppressedByMoreDerivedMember(PropertyInfo member, PropertyInfo[] priorMembers, int startIndex, int endIndex)
-        {
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                PropertyInfo prior = priorMembers[i];
-                if (!AreNamesAndSignatureEqual(prior, member))
-                    continue;
-                if (GetAccessorMethod(prior).IsStatic != GetAccessorMethod(member).IsStatic)
-                    continue;
-                if (!(prior.PropertyType.Equals(member.PropertyType)))
-                    continue;
-
-                return true;
-            }
-            return false;
-        }
-
-        public sealed override bool OkToIgnoreAmbiguity(PropertyInfo m1, PropertyInfo m2)
-        {
-            return false;
-        }
-
-        private MethodInfo GetAccessorMethod(PropertyInfo property)
-        {
-            MethodInfo accessor = property.GetMethod;
-            if (accessor == null)
-            {
-                accessor = property.SetMethod;
-            }
-
-            return accessor;
-        }
-    }
-
-    //==========================================================================================================================
-    // Policies for events.
-    //==========================================================================================================================
-    internal sealed class EventPolicies : MemberPolicies<EventInfo>
-    {
-        public sealed override IEnumerable<EventInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredEvents;
-        }
-
-        public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
-        {
-            return type.CoreGetDeclaredEvents(optionalNameFilter, reflectedType);
-        }
-
-        public sealed override bool AlwaysTreatAsDeclaredOnly => false;
-
-        public sealed override void GetMemberAttributes(EventInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodInfo accessorMethod = GetAccessorMethod(member);
-            MethodAttributes methodAttributes = accessorMethod.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
-            isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        //
-        // Desktop compat: Events hide events in base types if they have the same name.
-        //
-        public sealed override bool IsSuppressedByMoreDerivedMember(EventInfo member, EventInfo[] priorMembers, int startIndex, int endIndex)
-        {
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                if (priorMembers[i].Name == member.Name)
-                    return true;
-            }
-            return false;
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(EventInfo member1, EventInfo member2)
-        {
-            return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
-        }
-
-        public sealed override bool OkToIgnoreAmbiguity(EventInfo m1, EventInfo m2)
-        {
-            return false;
-        }
-
-        private MethodInfo GetAccessorMethod(EventInfo e)
-        {
-            MethodInfo accessor = e.AddMethod;
-            return accessor;
-        }
-    }
-
-    //==========================================================================================================================
-    // Policies for nested types.
-    //
-    // Nested types enumerate a little differently than other members:
-    //
-    //    Base classes are never searched, regardless of BindingFlags.DeclaredOnly value.
-    //
-    //    Public|NonPublic|IgnoreCase are the only relevant BindingFlags. The apis ignore any other bits.
-    //
-    //    There is no such thing as a "static" or "instanced" nested type. For enumeration purposes,
-    //    we'll arbitrarily denote all nested types as "static."
-    //
-    //==========================================================================================================================
-    internal sealed class NestedTypePolicies : MemberPolicies<Type>
-    {
-        public sealed override IEnumerable<Type> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredNestedTypes;
-        }
-
-        public sealed override IEnumerable<Type> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
-        {
-            Debug.Assert(reflectedType.Equals(type));  // NestedType queries are always performed as if BindingFlags.DeclaredOnly are set so the reflectedType should always be the declaring type.
-            return type.CoreGetDeclaredNestedTypes(optionalNameFilter);
-        }
-
-        public sealed override bool AlwaysTreatAsDeclaredOnly => true;
-
-        public sealed override void GetMemberAttributes(Type member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            isStatic = true;
-            isVirtual = false;
-            isNewSlot = false;
-
-            // Since we never search base types for nested types, we don't need to map every visibility value one to one.
-            // We just need to distinguish between "public" and "everything else."
-            visibility = member.IsNestedPublic ? MethodAttributes.Public : MethodAttributes.Private;
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(Type member1, Type member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as nested types are never \"virtual\".");
-            throw new NotSupportedException();
-        }
-
-        public sealed override bool IsSuppressedByMoreDerivedMember(Type member, Type[] priorMembers, int startIndex, int endIndex)
-        {
-            return false;
-        }
-
-        public sealed override BindingFlags ModifyBindingFlags(BindingFlags bindingFlags)
-        {
-            bindingFlags &= BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase;
-            bindingFlags |= BindingFlags.Static | BindingFlags.DeclaredOnly;
-            return bindingFlags;
-        }
-
-        public sealed override bool OkToIgnoreAmbiguity(Type m1, Type m2)
-        {
-            return false;
-        }
     }
 }

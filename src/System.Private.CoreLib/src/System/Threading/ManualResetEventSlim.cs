@@ -597,11 +597,11 @@ namespace System.Threading
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_1 == 0)
                     {
-                        Helpers.Sleep(1);
+                        Interop.mincore.Sleep(1);
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_0 == 0)
                     {
-                        Helpers.Sleep(0);
+                        Interop.mincore.Sleep(0);
                     }
                     else
                     {

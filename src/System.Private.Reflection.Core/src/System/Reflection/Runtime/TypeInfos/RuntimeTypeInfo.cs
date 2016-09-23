@@ -335,6 +335,14 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool IsSzArray
+        {
+            get
+            {
+                return IsArrayImpl() && !InternalIsMultiDimArray;
+            }
+        }
+
         public sealed override MemberTypes MemberType
         {
             get
