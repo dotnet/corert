@@ -56,6 +56,11 @@ namespace ILCompiler
         /// and therefore needs a full VTable
         /// </summary>
         public abstract bool ShouldProduceFullType(TypeDesc type);
+        /// <summary>
+        /// If true, the type will not be linked into the same module as the current compilation and therefore
+        /// accessed through the target platform's import mechanism (ie, Import Address Table on Windows)
+        /// </summary>
+        public abstract bool ShouldReferenceThroughImportTable(TypeDesc type);
 
         public virtual void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {

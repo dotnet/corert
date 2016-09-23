@@ -122,8 +122,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
+                return GetMangledName(_type);
             }
+        }
+
+        public static string GetMangledName(TypeDesc type)
+        {
+            return "__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -275,7 +280,7 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
-        private void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
+        protected virtual void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             ISymbolNode relatedTypeNode = null;
 

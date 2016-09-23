@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ConstructedEETypeNode : EETypeNode, ISymbolNode
+    internal class ConstructedEETypeNode : EETypeNode, ISymbolNode
     {
         public ConstructedEETypeNode(TypeDesc type) : base(type)
         {

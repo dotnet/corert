@@ -23,12 +23,14 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectAndOffsetSymbolNode _startSymbol;
         private ObjectAndOffsetSymbolNode _endSymbol;
         private IComparer<TEmbedded> _sorter;
+        private EmbeddedObjectNode _endOfArraySentinel;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter)
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter, EmbeddedObjectNode endOfArraySentinel)
         {
             _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName);
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName);
             _sorter = nodeSorter;
+            _endOfArraySentinel = endOfArraySentinel;
         }
 
         internal ObjectAndOffsetSymbolNode StartSymbol
@@ -82,6 +84,20 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        IEnumerable<EmbeddedObjectNode> NodesList
+        {
+            get
+            {
+                foreach (var node in _nestedNodesList)
+                {
+                    yield return node;
+                }
+
+                if (_endOfArraySentinel != null)
+                    yield return _endOfArraySentinel;
+            }
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
@@ -91,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                 _nestedNodesList.Sort(_sorter);
 
             builder.DefinedSymbols.Add(_startSymbol);
-            foreach (TEmbedded node in _nestedNodesList)
+            foreach (EmbeddedObjectNode node in NodesList)
             {
                 if (!relocsOnly)
                     node.Offset = builder.CountBytes;
@@ -120,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis
     public class ArrayOfEmbeddedDataNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
     {
         public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
-            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
+            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter, null)
         {
         }
     }
