@@ -12,7 +12,7 @@ namespace Internal.TypeSystem.Ecma
     {
         public PdbSymbolReader PdbReader
         {
-            get; private set;
+            get;
         }
 
         internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, PdbSymbolReader pdbReader)

@@ -39,7 +39,7 @@ namespace Internal.TypeSystem
 
         public TargetDetails Target
         {
-            get; private set;
+            get;
         }
 
         public ModuleDesc SystemModule

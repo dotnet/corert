@@ -18,9 +18,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class ObjectNodeSection
     {
-        public string Name { get; private set; }
-        public SectionType Type { get; private set; }
-        public string ComdatName { get; private set; }
+        public string Name { get; }
+        public SectionType Type { get; }
+        public string ComdatName { get; }
 
         private ObjectNodeSection(string name, SectionType type, string comdatName)
         {

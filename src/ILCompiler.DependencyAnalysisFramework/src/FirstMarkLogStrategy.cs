@@ -27,19 +27,16 @@ namespace ILCompiler.DependencyAnalysisFramework
             public string Reason
             {
                 get;
-                private set;
             }
 
             public DependencyNodeCore<DependencyContextType> Reason1
             {
                 get;
-                private set;
             }
 
             public DependencyNodeCore<DependencyContextType> Reason2
             {
                 get;
-                private set;
             }
         }
 
