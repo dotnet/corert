@@ -110,7 +110,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
 
@@ -359,7 +359,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
 

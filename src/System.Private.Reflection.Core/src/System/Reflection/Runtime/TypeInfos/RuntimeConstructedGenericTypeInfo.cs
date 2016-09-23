@@ -105,7 +105,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type GetGenericTypeDefinition()
         {
-            return GenericTypeDefinitionTypeInfo.AsType();
+            return GenericTypeDefinitionTypeInfo;
         }
 
         public sealed override Guid GUID

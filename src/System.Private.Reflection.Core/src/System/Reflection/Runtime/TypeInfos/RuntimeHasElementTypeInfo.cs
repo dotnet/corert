@@ -144,7 +144,7 @@ namespace System.Reflection.Runtime.TypeInfos
             string elementTypeName = _key.ElementType.InternalGetNameIfAvailable(ref rootCauseForFailure);
             if (elementTypeName == null)
             {
-                rootCauseForFailure = _key.ElementType.AsType();
+                rootCauseForFailure = _key.ElementType;
                 return null;
             }
             return elementTypeName + Suffix;

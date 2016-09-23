@@ -39,7 +39,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return _declaringRuntimeNamedTypeInfo.AsType();
+                return _declaringRuntimeNamedTypeInfo;
             }
         }
 

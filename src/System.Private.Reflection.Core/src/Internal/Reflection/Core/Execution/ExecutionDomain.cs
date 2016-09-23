@@ -164,17 +164,17 @@ namespace Internal.Reflection.Core.Execution
             TypeDefinitionHandle typeDefinitionHandle;
             if (ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out reader, out typeDefinitionHandle))
             {
-                return typeDefinitionHandle.GetNamedType(reader, typeHandle).AsType();
+                return typeDefinitionHandle.GetNamedType(reader, typeHandle);
             }
             else
             {
                 if (ExecutionEnvironment.IsReflectionBlocked(typeHandle))
                 {
-                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
                 }
                 else
                 {
-                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition);
                 }
             }
         }
@@ -185,7 +185,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle).AsType();
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
         }
 
         public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
@@ -194,7 +194,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle).AsType();
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
         }
 
         public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -203,7 +203,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetPointerTypeTargetType(typeHandle, out targetTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle).AsType();
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
         public Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -225,7 +225,7 @@ namespace Internal.Reflection.Core.Execution
             // generic type definitions.
             if (ExecutionEnvironment.IsReflectionBlocked(genericTypeDefinitionHandle))
             {
-                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false).AsType();
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false);
             }
 
             RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
@@ -235,7 +235,7 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericTypeArguments[i] = genericTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
             }
-            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle).AsType();
+            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle);
         }
 
         //=======================================================================================

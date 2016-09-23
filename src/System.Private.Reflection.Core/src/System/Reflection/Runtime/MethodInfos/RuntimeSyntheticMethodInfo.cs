@@ -111,7 +111,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return this.DeclaringType.GetTypeInfo().Assembly.ManifestModule;
+                return this.DeclaringType.Assembly.ManifestModule;
             }
         }
 

@@ -324,7 +324,7 @@ namespace System.Reflection.Runtime.TypeInfos
             // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
             // type would be an open type.
             if (typeHandle.IsNull() && !elementType.ContainsGenericParameters)
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType.AsType(), multiDim, rank);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, multiDim, rank);
         }
     }
 
@@ -445,7 +445,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
                 // type would be an open type.
                 if (key.TypeHandle.IsNull() && !atLeastOneOpenType)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingConstructedGenericTypeException(key.GenericTypeDefinition.AsType(), key.GenericTypeArguments.CloneTypeArray());
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingConstructedGenericTypeException(key.GenericTypeDefinition, key.GenericTypeArguments.CloneTypeArray());
 
                 return new RuntimeConstructedGenericTypeInfo(key);
             }

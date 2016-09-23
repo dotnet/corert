@@ -154,7 +154,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
-            rootCauseForFailure = this.AsType();
+            rootCauseForFailure = this;
             return null;
         }
 

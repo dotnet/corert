@@ -269,7 +269,7 @@ namespace Internal.Reflection.Execution
                     EnumInfoFlags flags = EnumInfoFlags.Computed;
 
                     Type flagsAttributeType = typeof(FlagsAttribute);
-                    foreach (CustomAttributeData cad in _enumType.GetTypeInfo().CustomAttributes)
+                    foreach (CustomAttributeData cad in _enumType.CustomAttributes)
                     {
                         if (cad.AttributeType.Equals(flagsAttributeType))
                         {
