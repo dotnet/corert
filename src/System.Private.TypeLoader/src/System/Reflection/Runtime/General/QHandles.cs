@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.Metadata.NativeFormat;
+using Internal.Runtime.TypeLoader;
 
 namespace Internal.Reflection.Core
 {
@@ -59,7 +60,7 @@ namespace Internal.Reflection.Core
 
 namespace System.Reflection.Runtime.General
 {
-    internal struct QHandle : IEquatable<QHandle>
+    public struct QHandle : IEquatable<QHandle>
     {
         public QHandle(MetadataReader reader, Handle handle)
         {
@@ -96,7 +97,7 @@ namespace System.Reflection.Runtime.General
     }
 
 
-    internal struct QTypeDefinition : IEquatable<QTypeDefinition>
+    public struct QTypeDefinition : IEquatable<QTypeDefinition>
     {
         public QTypeDefinition(MetadataReader reader, TypeDefinitionHandle handle)
         {
@@ -133,7 +134,7 @@ namespace System.Reflection.Runtime.General
     }
 
 
-    internal struct QTypeDefRefOrSpec
+    public struct QTypeDefRefOrSpec
     {
         public QTypeDefRefOrSpec(MetadataReader reader, Handle handle, bool skipCheck = false)
         {
@@ -156,7 +157,7 @@ namespace System.Reflection.Runtime.General
         private readonly Handle _handle;
     }
 
-    internal struct QGenericParameter : IEquatable<QGenericParameter>
+    public struct QGenericParameter : IEquatable<QGenericParameter>
     {
         public QGenericParameter(MetadataReader reader, GenericParameterHandle handle)
         {

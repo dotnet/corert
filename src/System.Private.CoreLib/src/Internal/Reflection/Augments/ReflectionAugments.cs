@@ -93,7 +93,7 @@ namespace Internal.Reflection.Augments
             return TypeCode.Object;
         }
 
-        public static ReflectionCoreCallbacks ReflectionCoreCallbacks
+        internal static ReflectionCoreCallbacks ReflectionCoreCallbacks
         {
             get
             {
@@ -119,10 +119,6 @@ namespace Internal.Reflection.Augments
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
         public abstract FieldInfo GetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle);
         public abstract FieldInfo GetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle);
-
-        public abstract void InitializeAssemblyName(AssemblyName blank, String fullName);
-        public abstract String ComputeAssemblyNameFullName(AssemblyName assemblyName);
-        public abstract byte[] ComputePublicKeyToken(byte[] publicKey);
 
         public abstract EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e);
         public abstract MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m);

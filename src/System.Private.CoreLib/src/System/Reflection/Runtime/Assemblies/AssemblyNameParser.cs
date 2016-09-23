@@ -15,9 +15,9 @@ namespace System.Reflection.Runtime.Assemblies
     //
     // Parses an assembly name.
     //
-    internal static class AssemblyNameParser
+    public static class AssemblyNameParser
     {
-        internal static void Parse(AssemblyName blank, String s)
+        public static void Parse(AssemblyName blank, String s)
         {
             if (s == null)
                 throw new ArgumentNullException();
@@ -25,7 +25,7 @@ namespace System.Reflection.Runtime.Assemblies
             runtimeAssemblyName.CopyToAssemblyName(blank);
         }
 
-        internal static RuntimeAssemblyName Parse(String s)
+        public static RuntimeAssemblyName Parse(String s)
         {
             Debug.Assert(s != null);
             AssemblyNameLexer lexer = new AssemblyNameLexer(s);

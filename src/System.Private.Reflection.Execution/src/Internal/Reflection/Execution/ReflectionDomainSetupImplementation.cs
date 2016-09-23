@@ -23,16 +23,7 @@ namespace Internal.Reflection.Execution
         {
             _executionEnvironment = executionEnvironment;
             _foundationTypes = new FoundationTypesImplementation();
-            _assemblyBinder = new AssemblyBinderImplementation(executionEnvironment);
-        }
-
-        /// <summary>
-        /// Install module registration callbacks and call them for the modules that have already been registered.
-        /// See AssemblyBinderImplementation for the explanation why this cannot be done in the constructor.
-        /// </summary>
-        public void InstallModuleRegistrationCallbacks()
-        {
-            _assemblyBinder.InstallModuleRegistrationCallback();
+            _assemblyBinder = AssemblyBinderImplementation.Instance;
         }
 
         public sealed override AssemblyBinder AssemblyBinder
