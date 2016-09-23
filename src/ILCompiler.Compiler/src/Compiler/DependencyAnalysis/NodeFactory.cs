@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataGeneration MetadataManager
         {
-            get; private set;
+            get;
         }
 
         private struct NodeCache<TKey, TValue>

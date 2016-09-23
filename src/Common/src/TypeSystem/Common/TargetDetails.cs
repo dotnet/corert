@@ -43,7 +43,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public TargetArchitecture Architecture
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public TargetOS OperatingSystem
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
