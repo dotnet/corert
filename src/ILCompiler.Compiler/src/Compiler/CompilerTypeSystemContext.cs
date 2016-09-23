@@ -116,9 +116,12 @@ namespace ILCompiler
         }
         private DelegateInfoHashtable _delegateInfoHashtable = new DelegateInfoHashtable();
 
-        public CompilerTypeSystemContext(TargetDetails details)
+        private SharedGenericsMode _genericsMode;
+
+        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {
+            _genericsMode = genericsMode;
         }
 
         public IReadOnlyDictionary<string, string> InputFilePaths
@@ -302,17 +305,30 @@ namespace ILCompiler
 
         protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
-            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+            if (_genericsMode == SharedGenericsMode.CanonicalReferenceTypes)
+                return RuntimeDeterminedCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+
+            Debug.Assert(_genericsMode == SharedGenericsMode.Disabled);
+            changed = false;
+            return instantiation;
         }
 
         protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
-            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+            if (_genericsMode == SharedGenericsMode.CanonicalReferenceTypes)
+                return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+
+            Debug.Assert(_genericsMode == SharedGenericsMode.Disabled);
+            return typeToConvert;
         }
 
         protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
         {
-            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref kind);
+            if (_genericsMode == SharedGenericsMode.CanonicalReferenceTypes)
+                return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref kind);
+
+            Debug.Assert(_genericsMode == SharedGenericsMode.Disabled);
+            return typeToConvert;
         }
 
         public MetadataStringDecoder GetMetadataStringDecoder()
@@ -355,5 +371,14 @@ namespace ILCompiler
 
             return reader;
         }
+    }
+
+    /// <summary>
+    /// Specifies the mode in which canonicalization should occur.
+    /// </summary>
+    public enum SharedGenericsMode
+    {
+        Disabled,
+        CanonicalReferenceTypes,
     }
 }
