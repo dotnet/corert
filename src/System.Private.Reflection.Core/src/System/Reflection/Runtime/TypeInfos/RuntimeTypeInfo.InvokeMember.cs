@@ -161,7 +161,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (selFld != null)
                 {
                     #region Invocation on a field
-                    if (selFld.FieldType.IsArray || Object.ReferenceEquals(selFld.FieldType, typeof(System.Array)))
+                    if (selFld.FieldType.IsArray || Object.ReferenceEquals(selFld.FieldType, CommonRuntimeTypes.Array))
                     {
                         #region Invocation of an array Field
                         int idxCnt;

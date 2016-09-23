@@ -57,9 +57,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 bool multiDim = this.InternalIsMultiDimArray;
                 int rank = this.GetArrayRank();
 
-                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
                 RuntimeTypeInfo arrayType = this;
-                RuntimeTypeInfo countType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
+                RuntimeTypeInfo countType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] ctorParameters = new RuntimeTypeInfo[rank];
@@ -178,11 +177,10 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 int rank = this.GetArrayRank();
 
-                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
-                RuntimeTypeInfo indexType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
+                RuntimeTypeInfo indexType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
                 RuntimeTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
-                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.CastToRuntimeTypeInfo();
+                RuntimeTypeInfo voidType = CommonRuntimeTypes.Void.CastToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] getParameters = new RuntimeTypeInfo[rank];

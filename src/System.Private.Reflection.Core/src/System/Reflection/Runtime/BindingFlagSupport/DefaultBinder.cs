@@ -206,7 +206,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         continue;
 
                     // the type is Object, so it will match everything
-                    if (pCls == typeof(Object))
+                    if (pCls == CommonRuntimeTypes.Object)
                         continue;
 
                     // now do a "classic" type check
@@ -463,7 +463,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                             continue;
                         }
                     }
-                    if (pCls == typeof(Object))
+                    if (pCls == CommonRuntimeTypes.Object)
                     {
                         candidates[CurIdx++] = candidates[i];
                         continue;
@@ -549,7 +549,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     Type pCls = par[j].ParameterType;
                     if (pCls == types[j])
                         continue;
-                    if (pCls == typeof(Object))
+                    if (pCls == CommonRuntimeTypes.Object)
                         continue;
                     if (pCls.IsPrimitive)
                     {
@@ -637,7 +637,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         // If the classes  exactly match continue
                         if (pCls == indexes[j])
                             continue;
-                        if (pCls == typeof(Object))
+                        if (pCls == CommonRuntimeTypes.Object)
                             continue;
 
                         if (pCls.IsPrimitive)
