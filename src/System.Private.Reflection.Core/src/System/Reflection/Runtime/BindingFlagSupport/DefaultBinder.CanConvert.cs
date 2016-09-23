@@ -77,46 +77,46 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         private static TypeCode GetTypeCode(Type type)
         {
-            if (type == typeof(Boolean))
+            if (type == CommonRuntimeTypes.Boolean)
                 return TypeCode.Boolean;
 
-            if (type == typeof(Char))
+            if (type == CommonRuntimeTypes.Char)
                 return TypeCode.Char;
 
-            if (type == typeof(SByte))
+            if (type == CommonRuntimeTypes.SByte)
                 return TypeCode.SByte;
 
-            if (type == typeof(Byte))
+            if (type == CommonRuntimeTypes.Byte)
                 return TypeCode.Byte;
 
-            if (type == typeof(Int16))
+            if (type == CommonRuntimeTypes.Int16)
                 return TypeCode.Int16;
 
-            if (type == typeof(UInt16))
+            if (type == CommonRuntimeTypes.UInt16)
                 return TypeCode.UInt16;
 
-            if (type == typeof(Int32))
+            if (type == CommonRuntimeTypes.Int32)
                 return TypeCode.Int32;
 
-            if (type == typeof(UInt32))
+            if (type == CommonRuntimeTypes.UInt32)
                 return TypeCode.UInt32;
 
-            if (type == typeof(Int64))
+            if (type == CommonRuntimeTypes.Int64)
                 return TypeCode.Int64;
 
-            if (type == typeof(UInt64))
+            if (type == CommonRuntimeTypes.UInt64)
                 return TypeCode.UInt64;
 
-            if (type == typeof(Single))
+            if (type == CommonRuntimeTypes.Single)
                 return TypeCode.Single;
 
-            if (type == typeof(Double))
+            if (type == CommonRuntimeTypes.Double)
                 return TypeCode.Double;
 
-            if (type == typeof(Decimal))
+            if (type == CommonRuntimeTypes.Decimal)
                 return TypeCode.Decimal;
 
-            if (type == typeof(DateTime))
+            if (type == CommonRuntimeTypes.DateTime)
                 return TypeCode.DateTime;
 
             if (type.GetTypeInfo().IsEnum)

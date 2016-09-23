@@ -314,37 +314,24 @@ namespace Internal.Reflection.Core.Execution
 
         internal ReflectionDomainSetup ReflectionDomainSetup { get; }
 
-        internal FoundationTypes FoundationTypes
-        {
-            get
-            {
-                return this.ReflectionDomainSetup.FoundationTypes;
-            }
-        }
+        internal IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
 
-        internal IEnumerable<Type> PrimitiveTypes
+        private static readonly Type[] s_primitiveTypes =
         {
-            get
-            {
-                FoundationTypes foundationTypes = this.FoundationTypes;
-                return new Type[]
-                {
-                    foundationTypes.SystemBoolean,
-                    foundationTypes.SystemChar,
-                    foundationTypes.SystemSByte,
-                    foundationTypes.SystemByte,
-                    foundationTypes.SystemInt16,
-                    foundationTypes.SystemUInt16,
-                    foundationTypes.SystemInt32,
-                    foundationTypes.SystemUInt32,
-                    foundationTypes.SystemInt64,
-                    foundationTypes.SystemUInt64,
-                    foundationTypes.SystemSingle,
-                    foundationTypes.SystemDouble,
-                    foundationTypes.SystemIntPtr,
-                    foundationTypes.SystemUIntPtr,
-                };
-            }
-        }
+                    CommonRuntimeTypes.Boolean,
+                    CommonRuntimeTypes.Char,
+                    CommonRuntimeTypes.SByte,
+                    CommonRuntimeTypes.Byte,
+                    CommonRuntimeTypes.Int16,
+                    CommonRuntimeTypes.UInt16,
+                    CommonRuntimeTypes.Int32,
+                    CommonRuntimeTypes.UInt32,
+                    CommonRuntimeTypes.Int64,
+                    CommonRuntimeTypes.UInt64,
+                    CommonRuntimeTypes.Single,
+                    CommonRuntimeTypes.Double,
+                    CommonRuntimeTypes.IntPtr,
+                    CommonRuntimeTypes.UIntPtr,
+        };
     }
 }

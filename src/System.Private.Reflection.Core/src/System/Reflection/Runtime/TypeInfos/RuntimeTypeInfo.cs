@@ -2,19 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.FieldInfos;
-using System.Reflection.Runtime.PropertyInfos;
-using System.Reflection.Runtime.EventInfos;
 
-using Internal.LowLevelLinq;
-using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Augments;
@@ -98,7 +91,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     // unless that other generic parameter has a "class" constraint.
                     GenericParameterAttributes genericParameterAttributes = baseType.GetTypeInfo().GenericParameterAttributes;
                     if (0 == (genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint))
-                        baseType = ReflectionCoreExecution.ExecutionDomain.FoundationTypes.SystemObject;
+                        baseType = CommonRuntimeTypes.Object;
                 }
                 return baseType;
             }
@@ -299,7 +292,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             // If we got here, the types are open, or reduced away, or otherwise lacking in type handles. Perform the IsAssignability check in managed code.
-            return Assignability.IsAssignableFrom(this, typeInfo, ReflectionCoreExecution.ExecutionDomain.FoundationTypes);
+            return Assignability.IsAssignableFrom(this, typeInfo);
         }
 
         //
@@ -878,9 +871,8 @@ namespace System.Reflection.Runtime.TypeInfos
                     Type baseType = this.BaseType;
                     if (baseType != null)
                     {
-                        FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
-                        Type enumType = foundationTypes.SystemEnum;
-                        Type valueType = foundationTypes.SystemValueType;
+                        Type enumType = CommonRuntimeTypes.Enum;
+                        Type valueType = CommonRuntimeTypes.ValueType;
 
                         if (baseType.Equals(enumType))
                             classification |= TypeClassification.IsEnum | TypeClassification.IsValueType;
