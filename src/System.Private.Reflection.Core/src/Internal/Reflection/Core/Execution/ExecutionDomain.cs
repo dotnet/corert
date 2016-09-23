@@ -164,17 +164,17 @@ namespace Internal.Reflection.Core.Execution
             TypeDefinitionHandle typeDefinitionHandle;
             if (ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out reader, out typeDefinitionHandle))
             {
-                return typeDefinitionHandle.GetNamedType(reader, typeHandle).AsType();
+                return typeDefinitionHandle.GetNamedType(reader, typeHandle);
             }
             else
             {
                 if (ExecutionEnvironment.IsReflectionBlocked(typeHandle))
                 {
-                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
                 }
                 else
                 {
-                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition);
                 }
             }
         }
@@ -185,7 +185,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle).AsType();
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
         }
 
         public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
@@ -194,7 +194,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle).AsType();
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
         }
 
         public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -203,7 +203,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetPointerTypeTargetType(typeHandle, out targetTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle).AsType();
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
         public Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -225,7 +225,7 @@ namespace Internal.Reflection.Core.Execution
             // generic type definitions.
             if (ExecutionEnvironment.IsReflectionBlocked(genericTypeDefinitionHandle))
             {
-                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false).AsType();
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false);
             }
 
             RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
@@ -235,7 +235,7 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericTypeArguments[i] = genericTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
             }
-            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle).AsType();
+            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle);
         }
 
         //=======================================================================================
@@ -314,37 +314,24 @@ namespace Internal.Reflection.Core.Execution
 
         internal ReflectionDomainSetup ReflectionDomainSetup { get; }
 
-        internal FoundationTypes FoundationTypes
-        {
-            get
-            {
-                return this.ReflectionDomainSetup.FoundationTypes;
-            }
-        }
+        internal IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
 
-        internal IEnumerable<Type> PrimitiveTypes
+        private static readonly Type[] s_primitiveTypes =
         {
-            get
-            {
-                FoundationTypes foundationTypes = this.FoundationTypes;
-                return new Type[]
-                {
-                    foundationTypes.SystemBoolean,
-                    foundationTypes.SystemChar,
-                    foundationTypes.SystemSByte,
-                    foundationTypes.SystemByte,
-                    foundationTypes.SystemInt16,
-                    foundationTypes.SystemUInt16,
-                    foundationTypes.SystemInt32,
-                    foundationTypes.SystemUInt32,
-                    foundationTypes.SystemInt64,
-                    foundationTypes.SystemUInt64,
-                    foundationTypes.SystemSingle,
-                    foundationTypes.SystemDouble,
-                    foundationTypes.SystemIntPtr,
-                    foundationTypes.SystemUIntPtr,
-                };
-            }
-        }
+                    CommonRuntimeTypes.Boolean,
+                    CommonRuntimeTypes.Char,
+                    CommonRuntimeTypes.SByte,
+                    CommonRuntimeTypes.Byte,
+                    CommonRuntimeTypes.Int16,
+                    CommonRuntimeTypes.UInt16,
+                    CommonRuntimeTypes.Int32,
+                    CommonRuntimeTypes.UInt32,
+                    CommonRuntimeTypes.Int64,
+                    CommonRuntimeTypes.UInt64,
+                    CommonRuntimeTypes.Single,
+                    CommonRuntimeTypes.Double,
+                    CommonRuntimeTypes.IntPtr,
+                    CommonRuntimeTypes.UIntPtr,
+        };
     }
 }

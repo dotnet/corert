@@ -61,7 +61,6 @@
     <Compile Include="Internal\Reflection\Execution\ReflectionExecutionLogger.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
     <Compile Include="Internal\Reflection\Execution\FoundationTypesImplementation.cs" />
-    <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Interop.cs" />

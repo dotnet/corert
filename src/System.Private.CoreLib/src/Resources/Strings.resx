@@ -1675,4 +1675,10 @@
   <data name="MissingField_Name" xml:space="preserve">
     <value>Field '{0}' not found.</value>
   </data>
+  <data name="Format_StringZeroLength" xml:space="preserve">
+    <value>String cannot have zero length.</value>
+  </data>
+  <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
+    <value>Invalid assembly public key.</value>
+  </data>
 </root>

@@ -245,13 +245,13 @@ namespace System.Reflection.Runtime.CustomAttributes
         //
         private CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(Object value, Type argumentType)
         {
-            if (argumentType.Equals(typeof(Object)))
+            if (argumentType.Equals(CommonRuntimeTypes.Object))
             {
                 // If the declared attribute type is System.Object, we must report the type based on the runtime value.
                 if (value == null)
-                    argumentType = typeof(String);  // Why is null reported as System.String? Because that's what the desktop CLR does.
+                    argumentType = CommonRuntimeTypes.String;  // Why is null reported as System.String? Because that's what the desktop CLR does.
                 else if (value is Type)
-                    argumentType = typeof(Type);    // value.GetType() will not actually be System.Type - rather it will be some internal implementation type. We only want to report it as System.Type.
+                    argumentType = CommonRuntimeTypes.Type;    // value.GetType() will not actually be System.Type - rather it will be some internal implementation type. We only want to report it as System.Type.
                 else
                     argumentType = value.GetType();
             }

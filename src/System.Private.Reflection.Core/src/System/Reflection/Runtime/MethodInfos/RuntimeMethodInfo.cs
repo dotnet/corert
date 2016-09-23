@@ -44,7 +44,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                if (DeclaringType.GetTypeInfo().ContainsGenericParameters)
+                if (DeclaringType.ContainsGenericParameters)
                     return true;
 
                 if (!IsGenericMethod)
@@ -53,7 +53,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 Type[] pis = GetGenericArguments();
                 for (int i = 0; i < pis.Length; i++)
                 {
-                    if (pis[i].GetTypeInfo().ContainsGenericParameters)
+                    if (pis[i].ContainsGenericParameters)
                         return true;
                 }
 
@@ -444,12 +444,12 @@ namespace System.Reflection.Runtime.MethodInfos
             // they are not compatible yet enums can go into each other if their underlying element type is the same
             // or into their equivalent integral type
             Type dstTypeUnderlying = dstType;
-            if (dstType.GetTypeInfo().IsEnum)
+            if (dstType.IsEnum)
             {
                 dstTypeUnderlying = Enum.GetUnderlyingType(dstType);
             }
             Type srcTypeUnderlying = srcType;
-            if (srcType.GetTypeInfo().IsEnum)
+            if (srcType.IsEnum)
             {
                 srcTypeUnderlying = Enum.GetUnderlyingType(srcType);
             }

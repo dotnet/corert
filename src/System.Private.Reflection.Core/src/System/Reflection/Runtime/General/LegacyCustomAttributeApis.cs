@@ -22,7 +22,6 @@ using System.Reflection.Runtime.General;
 
 using Internal.LowLevelLinq;
 
-using CustomAttributeExtensions = System.Reflection.CustomAttributeExtensionsSoonToBe;
 
 namespace System.Reflection.Runtime.Assemblies
 {

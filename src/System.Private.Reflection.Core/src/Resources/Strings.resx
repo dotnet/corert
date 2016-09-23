@@ -156,17 +156,11 @@
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
   </data>
-  <data name="Format_StringZeroLength" xml:space="preserve">
-    <value>String cannot have zero length.</value>
-  </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
   <data name="NotSupported_ByRefReturn" xml:space="preserve">
     <value>ByRef return value not supported in reflection invocation.</value>
-  </data>
-  <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
-    <value>Invalid assembly public key.</value>
   </data>
   <data name="Arg_DlgtTargMeth" xml:space="preserve">
     <value>Cannot bind to the target method because its signature is not compatible with that of the delegate type.</value>

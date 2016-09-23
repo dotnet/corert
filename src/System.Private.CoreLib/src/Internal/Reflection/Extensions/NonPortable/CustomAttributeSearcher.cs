@@ -42,14 +42,13 @@ namespace Internal.Reflection.Extensions.NonPortable
             {
                 if (optionalAttributeTypeFilter == null)
                     throw new ArgumentNullException("type");
-                TypeInfo attributeTypeFilterInfo = optionalAttributeTypeFilter.GetTypeInfo();
                 if (!(optionalAttributeTypeFilter.Equals(CommonRuntimeTypes.Attribute) ||
-                      attributeTypeFilterInfo.IsSubclassOf(CommonRuntimeTypes.Attribute)))
+                      optionalAttributeTypeFilter.IsSubclassOf(CommonRuntimeTypes.Attribute)))
                     throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
                 try
                 {
-                    typeFilterKnownToBeSealed = attributeTypeFilterInfo.IsSealed;
+                    typeFilterKnownToBeSealed = optionalAttributeTypeFilter.IsSealed;
                 }
                 catch (MissingMetadataException)
                 {
@@ -85,7 +84,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                             return true;
                         if (typeFilterKnownToBeSealed)
                             return false;
-                        return actualType.GetTypeInfo().IsSubclassOf(optionalAttributeTypeFilter);
+                        return actualType.IsSubclassOf(optionalAttributeTypeFilter);
                     };
             }
 
@@ -111,7 +110,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 delegate (Type attributeType)
                 {
                     // Windows prohibits instantiating WinRT custom attributes. Filter them from the search as the desktop CLR does.
-                    TypeAttributes typeAttributes = attributeType.GetTypeInfo().Attributes;
+                    TypeAttributes typeAttributes = attributeType.Attributes;
                     if (0 != (typeAttributes & TypeAttributes.WindowsRuntime))
                         return false;
                     return rawPassesFilter(attributeType);
@@ -197,7 +196,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             // This behavior goes all the way back to at least 3.5 (and perhaps earlier). For compat reasons,
             // we won't-fixed this in 4.5 and we won't-fix this in Project N.
             //
-            AttributeUsageAttribute usage = attributeType.GetTypeInfo().GetCustomAttribute<AttributeUsageAttribute>(inherit: false);
+            AttributeUsageAttribute usage = attributeType.GetCustomAttribute<AttributeUsageAttribute>(inherit: false);
             if (usage == null)
                 return new AttributeUsageAttribute(AttributeTargets.All) { AllowMultiple = false, Inherited = true };
             return usage;

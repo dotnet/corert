@@ -39,7 +39,7 @@ namespace System.Runtime.Serialization
 
             _rootType = type;
             _rootTypeName = type.FullName;
-            _rootTypeAssemblyName = type.GetTypeInfo().Module.Assembly.FullName;
+            _rootTypeAssemblyName = type.Module.Assembly.FullName;
 
             _names = new string[DefaultSize];
             _values = new object[DefaultSize];
@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization
             {
                 _rootType = type;
                 _rootTypeName = type.FullName;
-                _rootTypeAssemblyName = type.GetTypeInfo().Module.Assembly.FullName;
+                _rootTypeAssemblyName = type.Module.Assembly.FullName;
                 IsFullTypeNameSetExplicit = false;
                 IsAssemblyNameSetExplicit = false;
             }
@@ -331,7 +331,7 @@ namespace System.Runtime.Serialization
             object value;
 
             value = GetElement(name, out foundType);
-            if (ReferenceEquals(foundType, type) || type.GetTypeInfo().IsAssignableFrom(foundType.GetTypeInfo()) || value == null)
+            if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
                 return value;
             }
@@ -349,7 +349,7 @@ namespace System.Runtime.Serialization
             if (value == null)
                 return null;
 
-            if (ReferenceEquals(foundType, type) || type.GetTypeInfo().IsAssignableFrom(foundType.GetTypeInfo()) || value == null)
+            if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
                 return value;
             }

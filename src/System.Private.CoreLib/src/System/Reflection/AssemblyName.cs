@@ -12,6 +12,7 @@
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Configuration.Assemblies;
+using System.Reflection.Runtime.Assemblies;
 
 using Internal.Reflection.Augments;
 
@@ -30,7 +31,8 @@ namespace System.Reflection
         {
             if (assemblyName == null)
                 throw new ArgumentNullException("assemblyName");
-            ReflectionAugments.ReflectionCoreCallbacks.InitializeAssemblyName(this, assemblyName);
+            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(assemblyName);
+            runtimeAssemblyName.CopyToAssemblyName(this);
         }
 
         public object Clone()
@@ -118,7 +120,7 @@ namespace System.Reflection
             {
                 if (this.Name == null)
                     return string.Empty;
-                return ReflectionAugments.ReflectionCoreCallbacks.ComputeAssemblyNameFullName(this);
+                return AssemblyNameHelpers.ComputeDisplayName(this.ToRuntimeAssemblyName());
             }
         }
 
@@ -136,7 +138,7 @@ namespace System.Reflection
         public byte[] GetPublicKeyToken()
         {
             if (_publicKeyToken == null)
-                _publicKeyToken = ReflectionAugments.ReflectionCoreCallbacks.ComputePublicKeyToken(_publicKey);
+                _publicKeyToken = AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
             return _publicKeyToken;
         }
 

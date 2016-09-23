@@ -32,7 +32,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _typeHandle.Resolve(this.Reader, _typeContext);
+                return _lazyParameterType ?? (_lazyParameterType = _typeHandle.Resolve(this.Reader, _typeContext));
             }
         }
 
@@ -49,5 +49,6 @@ namespace System.Reflection.Runtime.ParameterInfos
 
         private readonly Handle _typeHandle;
         private readonly TypeContext _typeContext;
+        private volatile Type _lazyParameterType;
     }
 }

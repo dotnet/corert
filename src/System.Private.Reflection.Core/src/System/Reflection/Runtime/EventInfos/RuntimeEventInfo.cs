@@ -114,7 +114,7 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
 
@@ -253,7 +253,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
 

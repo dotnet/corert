@@ -14,7 +14,6 @@ using global::System.Reflection.Runtime.General;
 using global::Internal.Reflection.Core;
 using global::Internal.Runtime.Augments;
 using global::Internal.Runtime.TypeLoader;
-using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -27,7 +26,7 @@ namespace Internal.Reflection.Execution
     // native process. There is no support for probing for assemblies in directories, user-supplied files, GACs, NICs or any
     // other repository.
     //=============================================================================================================================
-    internal sealed class AssemblyBinderImplementation : AssemblyBinder
+    public sealed class AssemblyBinderImplementation : AssemblyBinder
     {
         private sealed class AssemblyNameKey : IEquatable<AssemblyNameKey>
         {
@@ -69,26 +68,13 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        public AssemblyBinderImplementation(ExecutionEnvironmentImplementation executionEnvironment)
+        private AssemblyBinderImplementation()
         {
-            _executionEnvironment = executionEnvironment;
             _scopeGroups = new KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[0];
-        }
-
-        /// <summary>
-        /// Install callback that gets called whenever a module gets registered. Unfortunately we cannot do that
-        /// in the constructor as the callback gets called immediately for the modules that have
-        /// already been registered and at the time AssemblyBinderImplementation is constructed
-        /// the reflection execution engine is not yet fully initialized - in particular, AddScopesFromReaderToGroups
-        /// calls AssemblyName.FullName which requires ReflectionAugments.ReflectionCoreCallbacks which
-        /// are registered in ReflectionCoreExecution after the execution domain gets initialized
-        /// and the execution domain initialization requires ReflectionDomainSetup which constructs
-        /// the AssemblyBinderImplementation. Sigh.
-        /// </summary>
-        public void InstallModuleRegistrationCallback()
-        {
             ModuleList.AddModuleRegistrationCallback(RegisterModule);
         }
+
+        public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
         public sealed override bool Bind(AssemblyName refName, out MetadataReader reader, out ScopeDefinitionHandle scopeDefinitionHandle, out IEnumerable<QScopeDefinition> overflowScopes, out Exception exception)
         {
@@ -105,7 +91,7 @@ namespace Internal.Reflection.Execution
             if (refName.Name == "mscorlib")
             {
                 useMscorlibNameCompareFunc = true;
-                compareRefName = new AssemblyName(ReflectionExecution.DefaultAssemblyNameForGetType);
+                compareRefName = new AssemblyName(AssemblyBinder.DefaultAssemblyNameForGetType);
             }
 
             foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> group in ScopeGroups)
@@ -297,8 +283,6 @@ namespace Internal.Reflection.Execution
 
         private volatile KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] _scopeGroups;
 
-        private ExecutionEnvironmentImplementation _executionEnvironment;
-
         private class ScopeDefinitionGroup
         {
             public ScopeDefinitionGroup(QScopeDefinition canonicalScope)
@@ -312,27 +296,17 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    if (_overflowScopes == null)
-                    {
-                        return Empty<QScopeDefinition>.Enumerable;
-                    }
-
                     return _overflowScopes.ToArray();
                 }
             }
 
             public void AddOverflowScope(QScopeDefinition overflowScope)
             {
-                if (_overflowScopes == null)
-                {
-                    _overflowScopes = new LowLevelListWithIList<QScopeDefinition>();
-                }
-
                 _overflowScopes.Add(overflowScope);
             }
 
             private readonly QScopeDefinition _canonicalScope;
-            private LowLevelListWithIList<QScopeDefinition> _overflowScopes;
+            private ArrayBuilder<QScopeDefinition> _overflowScopes;
         }
     }
 }

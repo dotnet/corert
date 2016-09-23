@@ -122,22 +122,6 @@ namespace System.Reflection.Runtime.General
             return fieldInfo;
         }
 
-        public sealed override void InitializeAssemblyName(AssemblyName blank, String fullName)
-        {
-            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(fullName);
-            runtimeAssemblyName.CopyToAssemblyName(blank);
-        }
-
-        public sealed override String ComputeAssemblyNameFullName(AssemblyName assemblyName)
-        {
-            return AssemblyNameHelpers.ComputeDisplayName(assemblyName.ToRuntimeAssemblyName());
-        }
-
-        public sealed override byte[] ComputePublicKeyToken(byte[] publicKey)
-        {
-            return AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
-        }
-
         public sealed override EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e)
         {
             return e.GetImplicitlyOverriddenBaseClassMember();

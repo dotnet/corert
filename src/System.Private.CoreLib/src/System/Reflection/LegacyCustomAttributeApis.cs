@@ -17,7 +17,6 @@
 using System.Reflection;
 using System.Collections.Generic;
 using Internal.LowLevelLinq;
-using CustomAttributeExtensions = System.Reflection.CustomAttributeExtensionsSoonToBe;
 
 namespace System
 {

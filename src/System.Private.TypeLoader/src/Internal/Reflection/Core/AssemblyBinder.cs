@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
+using Internal.Runtime.TypeLoader;
 
 namespace Internal.Reflection.Core
 {
@@ -18,6 +19,8 @@ namespace Internal.Reflection.Core
     //
     public abstract class AssemblyBinder
     {
+        public const String DefaultAssemblyNameForGetType = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+
         public abstract bool Bind(AssemblyName refName, out MetadataReader reader, out ScopeDefinitionHandle scopeDefinitionHandle, out IEnumerable<QScopeDefinition> overflowScopes, out Exception exception);
 
         // This helper is a concession to the fact that third-party binders running on top of the Win8P surface area have no sensible way
