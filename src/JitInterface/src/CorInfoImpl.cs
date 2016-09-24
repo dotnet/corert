@@ -472,7 +472,7 @@ namespace Internal.JitInterface
                 return (CorInfoType)type.Category;
             }
 
-            if (type.IsPointer)
+            if (type.IsPointer || type.IsFunctionPointer)
             {
                 return CorInfoType.CORINFO_TYPE_PTR;
             }

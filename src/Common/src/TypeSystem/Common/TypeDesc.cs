@@ -310,6 +310,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is an unmanaged function pointer type (<see cref="FunctionPointerType"/>).
+        /// </summary>
+        public bool IsFunctionPointer
+        {
+            get
+            {
+                return this.GetType() == typeof(FunctionPointerType);
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a <see cref="SignatureTypeVariable"/> or <see cref="SignatureMethodVariable"/>.
         /// </summary>
         public bool IsSignatureVariable

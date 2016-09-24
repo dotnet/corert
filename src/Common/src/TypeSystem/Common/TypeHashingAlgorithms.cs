@@ -208,6 +208,18 @@ namespace Internal.NativeFormat
             return (hashcode + _rotl(hashcode, 15));
         }
 
+        public static int ComputeMethodSignatureHashCode<ARG>(int returnTypeHashCode, ARG[] parameters)
+        {
+            // TODO: Do we need calling conventions in the mix too?
+            int hashcode = returnTypeHashCode;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                int parameterHashCode = parameters[i].GetHashCode();
+                hashcode = (hashcode + _rotl(hashcode, 13)) ^ parameterHashCode;
+            }
+            return (hashcode + _rotl(hashcode, 15));
+        }
+
         /// <summary>
         /// Produce a hashcode for a specific method
         /// </summary>

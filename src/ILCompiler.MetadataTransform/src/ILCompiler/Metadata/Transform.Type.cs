@@ -53,6 +53,8 @@ namespace ILCompiler.Metadata
                 case Cts.TypeFlags.Pointer:
                     rec = _types.Create((Cts.PointerType)type, _initPointer ?? (_initPointer = InitializePointer));
                     break;
+                case Cts.TypeFlags.FunctionPointer:
+                    throw new NotImplementedException();
                 case Cts.TypeFlags.SignatureTypeVariable:
                     rec = _types.Create((Cts.SignatureTypeVariable)type, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
                     break;
