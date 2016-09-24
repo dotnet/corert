@@ -8,6 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>TypeSystem.Tests</AssemblyName>
     <RootNamespace>TypeSystem.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <TestTFM>netcoreapp1.0</TestTFM>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

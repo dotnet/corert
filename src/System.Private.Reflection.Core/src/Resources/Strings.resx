@@ -267,9 +267,6 @@
   <data name="PlatformNotSupported_CustomBinder" xml:space="preserve">
     <value>Passing a binder object other than Type.DefaultBinder is not supported on this platform.</value>
   </data>
-  <data name="Arg_MustBeType" xml:space="preserve">
-    <value>Type must be a type provided by the runtime.</value>
-  </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for this object.</value>
   </data>
@@ -333,12 +330,6 @@
   </data>
   <data name="Arg_FldSetArgErr" xml:space="preserve">
     <value>Only the field value can be specified to set a field value.</value>
-  </data>
-  <data name="Arg_PropSetGet" xml:space="preserve">
-    <value>Cannot specify both Get and Set on a property.</value>
-  </data>
-  <data name="Arg_PropSetInvoke" xml:space="preserve">
-    <value>Cannot specify Set on a property and Invoke on a method.</value>
   </data>
   <data name="Arg_PlatformNotSupportedInvokeMemberCom" xml:space="preserve">
     <value>InvokeMember on a COM object is not supported on this platform.</value>

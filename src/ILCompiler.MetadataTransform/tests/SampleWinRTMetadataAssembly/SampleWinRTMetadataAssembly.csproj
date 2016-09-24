@@ -18,7 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PrimaryMetadataAssembly\PrimaryMetadataAssembly.csproj" />
     <ProjectReference Include="..\SampleMetadataAssembly\SampleMetadataAssembly.csproj" />
-    <ProjectReference Include="..\WindowsWinrtMetadataAssembly\WindowsWinrtMetadataAssembly.csproj" />
+    <ProjectReference Include="..\WindowsWinRTMetadataAssembly\WindowsWinRTMetadataAssembly.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <AssemblyName>WindowsWinrtMetadataAssembly</AssemblyName>
+    <AssemblyName>WindowsWinRTMetadataAssembly</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ProjectGuid>{19D0BAA8-8762-4D64-80AF-53D7A2BBC4AE}</ProjectGuid>
   </PropertyGroup>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="WindowsWinrtMetadata.cs" />
+    <Compile Include="WindowsWinRTMetadata.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
