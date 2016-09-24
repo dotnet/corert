@@ -24,9 +24,18 @@ namespace ILCompiler.DependencyAnalysis
     /// </remarks>
     class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
     {
+        class EntryHashTable : LockFreeReaderHashtable<DictionaryEntry, DictionaryEntry>
+        {
+            protected override bool CompareKeyToValue(DictionaryEntry key, DictionaryEntry value) => Object.Equals(key, value);
+            protected override bool CompareValueToValue(DictionaryEntry value1, DictionaryEntry value2) => Object.Equals(value1, value2);
+            protected override DictionaryEntry CreateValueFromKey(DictionaryEntry key) => key;
+            protected override int GetKeyHashCode(DictionaryEntry key) => key.GetHashCode();
+            protected override int GetValueHashCode(DictionaryEntry value) => value.GetHashCode();
+        }
+
         private TypeSystemEntity _owningMethodOrType;
-        private HashSet<DictionaryEntry> _entries = new HashSet<DictionaryEntry>();
-        private DictionaryEntry[] _layout;
+        private EntryHashTable _entries = new EntryHashTable();
+        private volatile DictionaryEntry[] _layout;
 
         public DictionaryLayoutNode(TypeSystemEntity owningMethodOrType)
         {
@@ -36,25 +45,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EnsureEntry(DictionaryEntry entry)
         {
-            // TODO: thread safety
             Debug.Assert(_layout == null, "Trying to add entry but layout already computed");
-
-            _entries.Add(entry);
+            _entries.AddOrGetExisting(entry);
         }
 
         private void ComputeLayout()
         {
-            HashSet<DictionaryEntry> entries = _entries;
-            _entries = null;
-
             // TODO: deterministic ordering
-            DictionaryEntry[] layout = new DictionaryEntry[entries.Count];
+            DictionaryEntry[] layout = new DictionaryEntry[_entries.Count];
             int index = 0;
-            foreach (DictionaryEntry entry in entries)
+            foreach (DictionaryEntry entry in EntryHashTable.Enumerator.Get(_entries))
             {
                 layout[index++] = entry;
             }
 
+            // Only publish after the full layout is computed. Races are fine.
             _layout = layout;
         }
 
