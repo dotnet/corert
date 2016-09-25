@@ -157,6 +157,22 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestFunctionPointerTypes()
+        {
+            DefType intType = _context.GetWellKnownType(WellKnownType.Int32);
+            DefType objectType = _context.GetWellKnownType(WellKnownType.Object);
+
+            int expHashInt = TypeHashingAlgorithms.ComputeNameHashCode("System.Int32");
+            int expHashObject = TypeHashingAlgorithms.ComputeNameHashCode("System.Object");
+
+            int expHashFnPtr = TypeHashingAlgorithms.ComputeMethodSignatureHashCode(expHashInt, new[] { expHashObject });
+
+            MethodSignature fnPtrSig = new MethodSignature(MethodSignatureFlags.None, 0, intType, new TypeDesc[] { objectType });
+            var fnPtrType = _context.GetFunctionPointerType(fnPtrSig);
+            Assert.Equal(expHashFnPtr, fnPtrType.GetHashCode());
+        }
+
+        [Fact]
         public void TestByRefTypes()
         {
             DefType intType = _context.GetWellKnownType(WellKnownType.Int32);
