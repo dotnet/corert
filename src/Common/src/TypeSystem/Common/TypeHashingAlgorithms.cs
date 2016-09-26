@@ -210,7 +210,9 @@ namespace Internal.NativeFormat
 
         public static int ComputeMethodSignatureHashCode<ARG>(int returnTypeHashCode, ARG[] parameters)
         {
-            // TODO: Do we need calling conventions in the mix too?
+            // We're not taking calling conventions into consideration here mostly because there's no
+            // exchange enum type that would define them. We could define one, but the amount of additional
+            // information it would bring (16 or so possibilities) is likely not worth it.
             int hashcode = returnTypeHashCode;
             for (int i = 0; i < parameters.Length; i++)
             {
