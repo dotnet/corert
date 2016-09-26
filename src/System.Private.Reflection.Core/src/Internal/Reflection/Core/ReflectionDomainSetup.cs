@@ -12,7 +12,6 @@ namespace Internal.Reflection.Core
     {
         protected ReflectionDomainSetup() { }
         public abstract AssemblyBinder AssemblyBinder { get; }
-        public abstract FoundationTypes FoundationTypes { get; }
         public abstract Exception CreateMissingMetadataException(TypeInfo pertainant);
         public abstract Exception CreateMissingMetadataException(Type pertainant);
         public abstract Exception CreateMissingMetadataException(TypeInfo pertainant, string nestedTypeName);
