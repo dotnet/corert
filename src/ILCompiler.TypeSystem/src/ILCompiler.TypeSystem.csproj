@@ -29,6 +29,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\FunctionPointerType.Canon.cs">
+      <Link>TypeSystem\Canon\FunctionPointerType.Canon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs">
       <Link>TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs</Link>
     </Compile>
@@ -79,6 +82,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
       <Link>TypeSystem\Common\ConstructedTypeRewritingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\FunctionPointerType.cs">
+      <Link>TypeSystem\Common\FunctionPointerType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>TypeSystem\Common\IAssemblyDesc.cs</Link>
@@ -328,6 +334,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs</Link>

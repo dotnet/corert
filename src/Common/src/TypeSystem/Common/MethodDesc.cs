@@ -121,6 +121,16 @@ namespace Internal.TypeSystem
 
             return true;
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is MethodSignature && Equals((MethodSignature)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return TypeHashingAlgorithms.ComputeMethodSignatureHashCode(_returnType.GetHashCode(), _parameters);
+        }
     }
 
     /// <summary>

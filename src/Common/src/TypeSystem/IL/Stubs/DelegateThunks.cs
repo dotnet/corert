@@ -538,7 +538,7 @@ namespace Internal.IL.Stubs
 
         private TypeDesc ConvertToBoxableType(TypeDesc type)
         {
-            if (type.IsPointer)
+            if (type.IsPointer || type.IsFunctionPointer)
             {
                 return type.Context.GetWellKnownType(WellKnownType.IntPtr);
             }

@@ -28,6 +28,8 @@ namespace Internal.TypeSystem
 
             _pointerTypes = new PointerHashtable();
 
+            _functionPointerTypes = new FunctionPointerHashtable();
+
             _instantiatedMethods = new InstantiatedMethodKey.InstantiatedMethodKeyHashtable();
 
             _methodForInstantiatedTypes = new MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable();
@@ -219,6 +221,44 @@ namespace Internal.TypeSystem
         public PointerType GetPointerType(TypeDesc parameterType)
         {
             return _pointerTypes.GetOrCreateValue(parameterType);
+        }
+
+        //
+        // Function pointer types
+        //
+        public class FunctionPointerHashtable : LockFreeReaderHashtable<MethodSignature, FunctionPointerType>
+        {
+            protected override int GetKeyHashCode(MethodSignature key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(FunctionPointerType value)
+            {
+                return value.Signature.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(MethodSignature key, FunctionPointerType value)
+            {
+                return key.Equals(value.Signature);
+            }
+
+            protected override bool CompareValueToValue(FunctionPointerType value1, FunctionPointerType value2)
+            {
+                return value1.Signature.Equals(value2.Signature);
+            }
+
+            protected override FunctionPointerType CreateValueFromKey(MethodSignature key)
+            {
+                return new FunctionPointerType(key);
+            }
+        }
+
+        private FunctionPointerHashtable _functionPointerTypes;
+
+        public FunctionPointerType GetFunctionPointerType(MethodSignature signature)
+        {
+            return _functionPointerTypes.GetOrCreateValue(signature);
         }
 
         //
@@ -643,7 +683,8 @@ namespace Internal.TypeSystem
             else if (type.IsArray)
             {
                 ArrayType arrType = (ArrayType)type;
-                if (arrType.IsSzArray && !arrType.ElementType.IsPointer)
+                TypeDesc elementType = arrType.ElementType;
+                if (arrType.IsSzArray && !elementType.IsPointer && !elementType.IsFunctionPointer)
                 {
                     return GetRuntimeInterfacesAlgorithmForNonPointerArrayType((ArrayType)type);
                 }

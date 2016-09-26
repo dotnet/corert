@@ -128,7 +128,7 @@ namespace ILCompiler
 
         public override bool ShouldShareAcrossModules(TypeDesc type)
         {
-            if (type is ParameterizedType || type is InstantiatedType)
+            if (type.IsParameterizedType || type.IsFunctionPointer || type is InstantiatedType)
             {
                 return true;
             }

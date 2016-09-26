@@ -42,6 +42,18 @@ namespace Internal.TypeSystem
                 ParameterizedType parameterizedType = (ParameterizedType)type;
                 return parameterizedType.ParameterType.IsConstructedOverType(typesToFind);
             }
+            else if (type.IsFunctionPointer)
+            {
+                MethodSignature functionPointerSignature = ((FunctionPointerType)type).Signature;
+                if (functionPointerSignature.ReturnType.IsConstructedOverType(typesToFind))
+                    return true;
+
+                for (int paramIndex = 0; paramIndex < functionPointerSignature.Length; paramIndex++)
+                {
+                    if (functionPointerSignature[paramIndex].IsConstructedOverType(typesToFind))
+                        return true;
+                }
+            }
 
             return false;
         }
@@ -85,9 +97,7 @@ namespace Internal.TypeSystem
                         newInstantiation[instantiationIndex] = newType;
                     }
                 }
-                if (newInstantiation == null)
-                    return type;
-                else
+                if (newInstantiation != null)
                     return type.Context.GetInstantiatedType((MetadataType)type.GetTypeDefinition(), new Instantiation(newInstantiation));
             }
             else if (type.IsParameterizedType)
@@ -115,6 +125,18 @@ namespace Internal.TypeSystem
                     }
                     Debug.Fail("Unknown form of type");
                 }
+            }
+            else if (type.IsFunctionPointer)
+            {
+                MethodSignature oldSig = ((FunctionPointerType)type).Signature;
+                MethodSignatureBuilder sigBuilder = new MethodSignatureBuilder(oldSig);
+                sigBuilder.ReturnType = oldSig.ReturnType.ReplaceTypesInConstructionOfType(typesToReplace, replacementTypes);
+                for (int paramIndex = 0; paramIndex < oldSig.Length; paramIndex++)
+                    sigBuilder[paramIndex] = oldSig[paramIndex].ReplaceTypesInConstructionOfType(typesToReplace, replacementTypes);
+
+                MethodSignature newSig = sigBuilder.ToSignature();
+                if (newSig != oldSig)
+                    return type.Context.GetFunctionPointerType(newSig);
             }
 
             return type;

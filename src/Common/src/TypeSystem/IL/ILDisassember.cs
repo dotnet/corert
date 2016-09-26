@@ -456,6 +456,29 @@ namespace Internal.IL
                 sb.Append('*');
             }
 
+            public override void AppendName(StringBuilder sb, FunctionPointerType type)
+            {
+                MethodSignature signature = type.Signature;
+
+                sb.Append("method ");
+
+                if (!signature.IsStatic)
+                    sb.Append("instance ");
+
+                // TODO: rest of calling conventions
+
+                AppendName(sb, signature.ReturnType);
+
+                sb.Append(" *(");
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    AppendName(sb, signature[i]);
+                }
+                sb.Append(')');
+            }
+
             public override void AppendName(StringBuilder sb, SignatureMethodVariable type)
             {
                 sb.Append("!!");

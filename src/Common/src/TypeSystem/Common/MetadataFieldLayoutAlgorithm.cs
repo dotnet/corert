@@ -425,7 +425,7 @@ namespace Internal.TypeSystem
                 result.Size = fieldType.Context.Target.PointerSize;
                 result.Alignment = fieldType.Context.Target.PointerSize;
             }
-            else if (fieldType.IsPointer)
+            else if (fieldType.IsPointer || fieldType.IsFunctionPointer)
             {
                 result.Size = fieldType.Context.Target.PointerSize;
                 result.Alignment = fieldType.Context.Target.PointerSize;
