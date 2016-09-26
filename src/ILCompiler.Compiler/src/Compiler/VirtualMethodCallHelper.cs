@@ -10,7 +10,7 @@ using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
-    internal class VirtualMethodSlotHelper
+    internal static class VirtualMethodSlotHelper
     {
         /// <summary>
         /// Given a virtual method decl, return its VTable slot if the method is used on its containing type.
@@ -25,10 +25,21 @@ namespace ILCompiler
 
             while (baseType != null)
             {
+                // For types that have a generic dictionary, the introduced virtual method slots are
+                // prefixed with a pointer to the generic dictionary.
+                if (baseType.HasGenericDictionarySlot())
+                    baseSlots++;
+
                 IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
                 baseSlots += baseVirtualSlots.Count;
+
                 baseType = baseType.BaseType;
             }
+
+            // For types that have a generic dictionary, the introduced virtual method slots are
+            // prefixed with a pointer to the generic dictionary.
+            if (owningType.HasGenericDictionarySlot())
+                baseSlots++;
 
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(owningType).Slots;
             int methodSlot = -1;
@@ -42,6 +53,15 @@ namespace ILCompiler
             }
 
             return methodSlot == -1 ? -1 : baseSlots + methodSlot;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the virtual method slots introduced by this type are prefixed
+        /// by a pointer to the generic dictionary of the type.
+        /// </summary>
+        public static bool HasGenericDictionarySlot(this TypeDesc type)
+        {
+            return !type.IsInterface && type.ConvertToCanonForm(CanonicalFormKind.Specific) != type;
         }
     }
 }

@@ -31,6 +31,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DefType closestDefType = _type.GetClosestDefType();
+
             DependencyList dependencyList = new DependencyList();
             if (_type.RuntimeInterfaces.Length > 0)
             {
@@ -40,14 +42,14 @@ namespace ILCompiler.DependencyAnalysis
                 // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
                 // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
                 // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                DefType defType = _type.GetClosestDefType();
-                foreach (var implementedInterface in defType.RuntimeInterfaces)
+                
+                foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
                     if (implementedInterface.HasVariance)
                     {
                         foreach (var interfaceMethod in implementedInterface.GetAllVirtualMethods())
                         {
-                            MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                            MethodDesc implMethod = closestDefType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                             if (implMethod != null)
                             {
                                 dependencyList.Add(factory.VirtualMethodUse(interfaceMethod), "Variant interface method");
@@ -67,6 +69,13 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(_type), "VTable");
 
+            if (closestDefType.HasGenericDictionarySlot())
+            {
+                // Generic dictionary pointer is part of the vtable and as such it gets only laid out
+                // at the final data emission phase. We need to report it as a non-relocation dependency.
+                dependencyList.Add(factory.TypeGenericDictionary(closestDefType), "Type generic dictionary");
+            }
+            
             return dependencyList;
         }
 
@@ -165,6 +174,13 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
                 OutputVirtualSlots(factory, ref objData, implType, baseType);
 
+            // The generic dictionary pointer occupies the first slot of each type vtable slice
+            if (declType.HasGenericDictionarySlot())
+            {
+                objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
+            }
+
+            // Actual vtable slots follow
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
 
             for (int i = 0; i < virtualSlots.Count; i++)
@@ -200,6 +216,9 @@ namespace ILCompiler.DependencyAnalysis
 
             while (currentTypeSlice != null)
             {
+                if (currentTypeSlice.HasGenericDictionarySlot())
+                    virtualSlotCount++;
+
                 virtualSlotCount += factory.VTable(currentTypeSlice).Slots.Count;
                 currentTypeSlice = currentTypeSlice.BaseType;
             }
