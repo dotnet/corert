@@ -15,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         public InterfaceDispatchCellNode(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.OwningType.IsInterface);
+            Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
             _targetMethod = targetMethod;
         }
 

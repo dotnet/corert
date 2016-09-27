@@ -42,7 +42,15 @@ namespace System.Runtime
             AllowSizeEquivalence = 2,
         }
 
+#if CORERT
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
+        static public unsafe object RtIsInstanceOfClass(void* pvTargetType, object obj)
+        {
+            return IsInstanceOfClass(obj, pvTargetType);
+        }
+#else
+        [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
+#endif
         static public unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
         {
             if (obj == null)
@@ -152,7 +160,15 @@ namespace System.Runtime
             }
         }
 
+#if CORERT
         [RuntimeExport("RhTypeCast_CheckCastClass")]
+        static public unsafe object RtCheckCastClass(void* pvTargetEEType, Object obj)
+        {
+            return CheckCastClass(obj, pvTargetEEType);
+        }
+#else
+        [RuntimeExport("RhTypeCast_CheckCastClass")]
+#endif
         static public unsafe object CheckCastClass(Object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything

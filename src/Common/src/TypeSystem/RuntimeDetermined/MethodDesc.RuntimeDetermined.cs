@@ -47,5 +47,41 @@ namespace Internal.TypeSystem
 
             return result;
         }
+
+        /// <summary>
+        /// Gets the type which holds the implementation of this method. This is typically the owning method,
+        /// unless this method models a target of a constrained method call.
+        /// </summary>
+        public TypeDesc ImplementationType
+        {
+            get
+            {
+                // TODO: IsConstrainedMethod
+                return OwningType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a shared method body.
+        /// </summary>
+        public bool IsSharedByGenericInstantiations
+        {
+            get
+            {
+                foreach (TypeDesc typeArg in ImplementationType.Instantiation)
+                {
+                    if (typeArg.IsCanonicalType)
+                        return true;
+                }
+
+                foreach (TypeDesc typeArg in Instantiation)
+                {
+                    if (typeArg.IsCanonicalType)
+                        return true;
+                }
+
+                return false;
+            }
+        }
     }
 }
