@@ -143,10 +143,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
-                    mangledName = "RhTypeCast_CheckCastClass";
+                    mangledName = "RhTypeCast_CheckCastClass_Generic";
                     break;
                 case ReadyToRunHelper.CheckInstanceAny:
-                    mangledName = "RhTypeCast_IsInstanceOfClass";
+                    mangledName = "RhTypeCast_IsInstanceOfClass_Generic";
                     break;
 
                 default:
