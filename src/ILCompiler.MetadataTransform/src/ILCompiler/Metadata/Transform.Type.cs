@@ -25,6 +25,7 @@ namespace ILCompiler.Metadata
         private Action<Cts.ArrayType, TypeSpecification> _initArray;
         private Action<Cts.ByRefType, TypeSpecification> _initByRef;
         private Action<Cts.PointerType, TypeSpecification> _initPointer;
+        private Action<Cts.FunctionPointerType, TypeSpecification> _initFunctionPointer;
         private Action<Cts.TypeDesc, TypeSpecification> _initTypeInst;
         private Action<Cts.SignatureTypeVariable, TypeSpecification> _initTypeVar;
         private Action<Cts.SignatureMethodVariable, TypeSpecification> _initMethodVar;
@@ -54,7 +55,8 @@ namespace ILCompiler.Metadata
                     rec = _types.Create((Cts.PointerType)type, _initPointer ?? (_initPointer = InitializePointer));
                     break;
                 case Cts.TypeFlags.FunctionPointer:
-                    throw new NotImplementedException();
+                    rec = _types.Create((Cts.FunctionPointerType)type, _initFunctionPointer ?? (_initFunctionPointer = InitializeFunctionPointer));
+                    break;
                 case Cts.TypeFlags.SignatureTypeVariable:
                     rec = _types.Create((Cts.SignatureTypeVariable)type, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
                     break;
@@ -125,6 +127,14 @@ namespace ILCompiler.Metadata
             record.Signature = new PointerSignature
             {
                 Type = HandleType(entity.ParameterType)
+            };
+        }
+
+        private void InitializeFunctionPointer(Cts.FunctionPointerType entity, TypeSpecification record)
+        {
+            record.Signature = new FunctionPointerSignature
+            {
+                Signature = HandleMethodSignature(entity.Signature)
             };
         }
 

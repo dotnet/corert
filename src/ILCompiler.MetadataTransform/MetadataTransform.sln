@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.TypeSystem", "..
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform.Tests", "tests\ILCompiler.MetadataTransform.Tests.csproj", "{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILMetadataAssembly", "tests\ILMetadataAssembly\ILMetadataAssembly.ilproj", "{347E2A5A-54E5-4482-9723-ED460DE79CE8}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimaryMetadataAssembly", "tests\PrimaryMetadataAssembly\PrimaryMetadataAssembly.csproj", "{C29B7395-F925-4B0E-972D-187D2D4BFEC7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleMetadataAssembly", "tests\SampleMetadataAssembly\SampleMetadataAssembly.csproj", "{D29B7395-A925-5B0E-972D-387D2D4BFEC8}"
@@ -41,6 +43,10 @@ Global
 		{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
