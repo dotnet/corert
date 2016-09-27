@@ -572,8 +572,7 @@ namespace System.Runtime.InteropServices
             {
                 target = CustomPropertyImpl.UnwrapTarget(target);
 
-                PropertyInfo propertyInfo = target.GetType().GetRuntimeProperty(
-                    propertyName);
+                PropertyInfo propertyInfo = target.GetType().GetProperty(propertyName);
 
                 if (propertyInfo != null)
                     return new CustomPropertyImpl(propertyInfo, supportIndexerWithoutMetadata : false);
@@ -672,7 +671,8 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                foreach (PropertyInfo property in target.GetType().GetRuntimeProperties())
+                BindingFlags Everything = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
+                foreach (PropertyInfo property in target.GetType().GetProperties(Everything))
                 {
                     if (IsMatchingIndexedProperty(property, propertyName, indexerType))
                     {
