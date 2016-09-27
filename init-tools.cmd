@@ -11,7 +11,7 @@ set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib\
 set PROJECT_JSON_PATH=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
 set PROJECT_JSON_FILE=%PROJECT_JSON_PATH%\project.json
-set PROJECT_JSON_CONTENTS={ "dependencies": { "Microsoft.DotNet.BuildTools": "%BUILDTOOLS_VERSION%" }, "frameworks": { "dnxcore50": { } } }
+set PROJECT_JSON_CONTENTS={ "dependencies": { "Microsoft.DotNet.BuildTools": "%BUILDTOOLS_VERSION%" }, "frameworks": { "netcoreapp1.0": { } } }
 set BUILD_TOOLS_SEMAPHORE=%PROJECT_JSON_PATH%\init-tools.completed
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
@@ -60,33 +60,16 @@ if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
 
 :afterbuildtoolsrestore
 
-echo Initializing BuildTools ...
+echo Initializing BuildTools...
 echo Running: "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
 call "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
-
-:: Override Roslyn with newer version. Ideally, we would pick up the compiler update via buildtools update. But new buildtools 
-:: require new CLI as well that we cannot pick up right now because of it is missing the native compilation driver.
-
-set ROSLYN_VERSION_OVERRIDE=2.0.0-beta3
-
-set ROSLYN_PACKAGE=%PACKAGES_DIR%Microsoft.Net.Compilers\%ROSLYN_VERSION_OVERRIDE%\
-
-set ROSLYN_JSON_FILE=%TOOLRUNTIME_DIR%\net45\roslyn\project.json
-set ROSLYN_JSON_CONTENTS={ "dependencies": { "Microsoft.Net.Compilers": "%ROSLYN_VERSION_OVERRIDE%" }, "frameworks": { "net46": { } } }
-echo %ROSLYN_JSON_CONTENTS% > "%ROSLYN_JSON_FILE%"
-
-set ROSLYN_SOURCE=https://api.nuget.org/v3/index.json
-
-echo Restoring Microsoft.Net.Compilers version %ROSLYN_VERSION_OVERRIDE%...
-echo Running: "%DOTNET_CMD%" restore "%ROSLYN_JSON_FILE%" --packages %PACKAGES_DIR% --source %ROSLYN_SOURCE% >> "%INIT_TOOLS_LOG%"
-call "%DOTNET_CMD%" restore "%ROSLYN_JSON_FILE%" --packages %PACKAGES_DIR% --source "%ROSLYN_SOURCE%" >> "%INIT_TOOLS_LOG%"
-if NOT exist "%ROSLYN_PACKAGE%tools\csc.exe" (
-  echo ERROR: Could not restore build tools correctly. See '%INIT_TOOLS_LOG%' for more details.
-  exit /b 1
+set INIT_TOOLS_ERRORLEVEL=%ERRORLEVEL%
+if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
+  echo ERROR: An error occured when trying to initialize the tools. Please check '%INIT_TOOLS_LOG%' for more details. 1>&2
+  exit /b %INIT_TOOLS_ERRORLEVEL%
 )
 
-Robocopy "%ROSLYN_PACKAGE%." "%TOOLRUNTIME_DIR%\net45\roslyn\." /E >> "%INIT_TOOLS_LOG%"
-
-:: Create sempahore file
+:: Create semaphore file
 echo Done initializing tools.
 echo Init-Tools.cmd completed for BuildTools Version: %BUILDTOOLS_VERSION% > "%BUILD_TOOLS_SEMAPHORE%"
+exit /b 0

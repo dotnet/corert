@@ -12,7 +12,7 @@ __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
-__PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"dnxcore50\": { } } }"
+__PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"netcoreapp1.0\": { } } }"
 __INIT_TOOLS_DONE_MARKER=$__PROJECT_JSON_PATH/done
 
 # Extended version of platform detection logic from dotnet/cli/scripts/obtain/dotnet-install.sh 16692fc
@@ -119,29 +119,10 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     echo "Initializing BuildTools..."
     echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR" >> $__init_tools_log
     $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR >> $__init_tools_log
-
-    # Override Roslyn with newer version. Ideally, we would pick up the compiler update via buildtools update. But new buildtools 
-    # require new CLI as well that we cannot pick up right now because of it is missing the native compilation driver.
-
-    __ROSLYN_VERSION_OVERRIDE=2.0.0-beta3
-
-    __ROSLYN_JSON_FILE=$__TOOLRUNTIME_DIR/roslyn.project.json
-    __ROSLYN_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.Net.Compilers.netcore\": \"$__ROSLYN_VERSION_OVERRIDE\" }, \"frameworks\": { \"netcoreapp1.0\": { } } }"
-    echo $__ROSLYN_JSON_CONTENTS > "$__ROSLYN_JSON_FILE"
-
-    __ROSLYN_SOURCE=https://api.nuget.org/v3/index.json
-
-    echo "Restoring Microsoft.Net.Compilers version $__ROSLYN_VERSION_OVERRIDE..."
-    echo "Running: $__DOTNET_CMD restore \"$__ROSLYN_JSON_FILE\" --no-cache --packages $__PACKAGES_DIR --source $__ROSLYN_SOURCE" >> $__init_tools_log
-    $__DOTNET_CMD restore "$__ROSLYN_JSON_FILE" --no-cache --packages $__PACKAGES_DIR --source $__ROSLYN_SOURCE >> $__init_tools_log
-    if [ ! -e "$__PACKAGES_DIR/Microsoft.Net.Compilers.netcore/$__ROSLYN_VERSION_OVERRIDE/runtimes/any/native" ]; then echo "ERROR: Could not restore Microsoft.Net.Compilers correctly. See '$__init_tools_log' for more details."; fi
-
-    cp "$__PACKAGES_DIR/Microsoft.Net.Compilers.netcore/$__ROSLYN_VERSION_OVERRIDE/runtimes/any/native/csc.exe" $__TOOLRUNTIME_DIR
-    cp "$__PACKAGES_DIR/Microsoft.CodeAnalysis.Common/$__ROSLYN_VERSION_OVERRIDE/lib/netstandard1.3/Microsoft.CodeAnalysis.dll" $__TOOLRUNTIME_DIR
-    cp "$__PACKAGES_DIR/Microsoft.CodeAnalysis.CSharp/$__ROSLYN_VERSION_OVERRIDE/lib/netstandard1.3/Microsoft.CodeAnalysis.CSharp.dll" $__TOOLRUNTIME_DIR
-    cp "$__PACKAGES_DIR/Microsoft.CodeAnalysis.VisualBasic/$__ROSLYN_VERSION_OVERRIDE/lib/netstandard1.3/Microsoft.CodeAnalysis.VisualBasic.dll" $__TOOLRUNTIME_DIR
-    cp "$__PACKAGES_DIR/System.Reflection.Metadata/1.3.0/lib/netstandard1.1/System.Reflection.Metadata.dll" $__TOOLRUNTIME_DIR
-    cp "$__PACKAGES_DIR/System.Collections.Immutable/1.2.0/lib/netstandard1.0/System.Collections.Immutable.dll" $__TOOLRUNTIME_DIR
+    if [ "$?" != "0" ]; then
+        echo "ERROR: An error occured when trying to initialize the tools. Please check '$__init_tools_log' for more details."1>&2
+        exit 1
+    fi
 
     touch $__INIT_TOOLS_DONE_MARKER
     echo "Done initializing tools."

@@ -1,25 +1,18 @@
 {
   "dependencies": {
     "NETStandard.Library": "1.6.0",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24522-03",
     "System.Reflection.Metadata": "1.4.1-beta-24227-04",
-    "xunit": "2.1.0",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
     }
   },
   "frameworks": {
-    "dnxcore50": {
-      "imports": [
-        "netstandard1.6",
-        "portable-net45+win8"
-      ]
-    }
+    "netstandard1.3": { }
   },
-  "runtimes": {
-    "win7-x64": {},
-    "win7-x86": {},
-    "ubuntu.14.04-x64": {},
-    "osx.10.10-x64": {}
+  "supports": {
+    "coreFx.Test.netcoreapp1.0": { }
   }
 }
