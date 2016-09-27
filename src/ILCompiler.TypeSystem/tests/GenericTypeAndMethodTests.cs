@@ -161,7 +161,14 @@ namespace TypeSystemTests
 
             // Test Arrays
             TypeDesc arrayChar = _context.GetArrayType(charType);
+            Assert.False(arrayChar.IsMdArray);
+            Assert.True(arrayChar.IsSzArray);
+            Assert.True(arrayChar.IsArray);
+
             TypeDesc arrayInt = _context.GetArrayType(intType);
+            Assert.False(arrayInt.IsMdArray);
+            Assert.True(arrayInt.IsSzArray);
+            Assert.True(arrayInt.IsArray);
 
             InstantiatedType genericOfCharArrayObject = genericOpenType.MakeInstantiatedType(arrayChar, objectType);
             InstantiatedType genericOfIntArrayObject = genericOpenType.MakeInstantiatedType(arrayInt, objectType);
@@ -170,7 +177,14 @@ namespace TypeSystemTests
 
             // Test multidimensional arrays
             TypeDesc mdArrayChar = _context.GetArrayType(charType, 3);
+            Assert.True(mdArrayChar.IsMdArray);
+            Assert.False(mdArrayChar.IsSzArray);
+            Assert.True(mdArrayChar.IsArray);
+
             TypeDesc mdArrayInt = _context.GetArrayType(intType, 3);
+            Assert.True(mdArrayInt.IsMdArray);
+            Assert.False(mdArrayInt.IsSzArray);
+            Assert.True(mdArrayInt.IsArray);
 
             InstantiatedType genericOfCharMdArrayObject = genericOpenType.MakeInstantiatedType(mdArrayChar, objectType);
             InstantiatedType genericOfIntMdArrayObject = genericOpenType.MakeInstantiatedType(mdArrayInt, objectType);
