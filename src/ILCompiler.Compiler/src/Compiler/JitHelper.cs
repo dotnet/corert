@@ -142,6 +142,13 @@ namespace ILCompiler
                     mangledName = "RhpReversePInvokeReturn2";
                     break;
 
+                case ReadyToRunHelper.CheckCastAny:
+                    mangledName = "RhTypeCast_CheckCastClass";
+                    break;
+                case ReadyToRunHelper.CheckInstanceAny:
+                    mangledName = "RhTypeCast_IsInstanceOfClass";
+                    break;
+
                 default:
                     throw new NotImplementedException(id.ToString());
             }
