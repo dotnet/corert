@@ -22,7 +22,6 @@ namespace Internal.Reflection.Execution
         public ReflectionDomainSetupImplementation(ExecutionEnvironmentImplementation executionEnvironment)
         {
             _executionEnvironment = executionEnvironment;
-            _foundationTypes = new FoundationTypesImplementation();
             _assemblyBinder = AssemblyBinderImplementation.Instance;
         }
 
@@ -31,14 +30,6 @@ namespace Internal.Reflection.Execution
             get
             {
                 return _assemblyBinder;
-            }
-        }
-
-        public sealed override FoundationTypes FoundationTypes
-        {
-            get
-            {
-                return _foundationTypes;
             }
         }
 
@@ -88,7 +79,6 @@ namespace Internal.Reflection.Execution
             return MissingMetadataExceptionCreator.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
         }
 
-        private FoundationTypes _foundationTypes;
         private AssemblyBinderImplementation _assemblyBinder;
         private ExecutionEnvironmentImplementation _executionEnvironment;
     }
