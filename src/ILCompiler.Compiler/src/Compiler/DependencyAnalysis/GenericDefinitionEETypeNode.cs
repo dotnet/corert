@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
 
-            dataBuilder.Alignment = objData.TargetPointerSize;
+            dataBuilder.Alignment = dataBuilder.TargetPointerSize;
             dataBuilder.DefinedSymbols.Add(this);
             EETypeRareFlags rareFlags = 0;
 
