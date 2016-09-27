@@ -61,6 +61,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this type is an mdarray.
+        /// </summary>
+        public new bool IsMdArray
+        {
+            get
+            {
+                return _rank > 0;
+            }
+        }
+
+        /// <summary>
         /// Gets the rank of this array. Note this returns "1" for both vectors, and
         /// for general arrays of rank 1. Use <see cref="IsSzArray"/> to disambiguate.
         /// </summary>

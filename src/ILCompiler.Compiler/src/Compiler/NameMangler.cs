@@ -171,7 +171,7 @@ namespace ILCompiler
                 case TypeFlags.SzArray:
                     // mangledName = "Array<" + GetSignatureCPPTypeName(((ArrayType)type).ElementType) + ">";
                     mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__Array";
-                    if (!type.IsSzArray)
+                    if (type.IsMdArray)
                         mangledName += "Rank" + ((ArrayType)type).Rank.ToStringInvariant();
                     break;
                 case TypeFlags.ByRef:

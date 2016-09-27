@@ -288,6 +288,18 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a non-vector array type.
+        /// To check for arrays in general, use <see cref="IsArray"/>.
+        /// </summary>
+        public bool IsMdArray
+        {
+            get
+            {
+                return this.IsArray && ((ArrayType)this).IsMdArray;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a managed pointer type (<see cref="ByRefType"/>).
         /// </summary>
         public bool IsByRef
