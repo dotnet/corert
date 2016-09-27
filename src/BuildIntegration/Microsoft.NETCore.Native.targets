@@ -20,6 +20,8 @@ See the LICENSE file in the project root for more information.
   <PropertyGroup>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
+    <!-- Workaround for lack of current host OS detection - https://github.com/Microsoft/msbuild/issues/539 -->
+    <TargetOS Condition="'$(TargetOS)' == '' and '$(OS)' == 'Unix' and Exists('/Applications')">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
   </PropertyGroup>
 

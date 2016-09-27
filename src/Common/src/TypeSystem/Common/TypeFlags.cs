@@ -42,6 +42,7 @@ namespace Internal.TypeSystem
         SzArray         = 0x18,
         ByRef           = 0x19,
         Pointer         = 0x1A,
+        FunctionPointer = 0x1B,
 
         GenericParameter        = 0x1C,
         SignatureTypeVariable   = 0x1D,

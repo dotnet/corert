@@ -23,15 +23,20 @@ namespace ILCompiler
             return true;
         }
 
+        /// <summary>
+        /// Gets the type that defines virtual method slots for the specified type.
+        /// </summary>
         static public DefType GetClosestDefType(this TypeDesc type)
         {
-            if (type.IsSzArray && !((ArrayType)type).ElementType.IsPointer)
+            if (type.IsArray)
             {
-                MetadataType arrayType = type.Context.SystemModule.GetKnownType("System", "Array`1");
-                return arrayType.MakeInstantiatedType(((ArrayType)type).ElementType);
-            }
-            else if (type.IsArray)
-            {
+                var arrayType = (ArrayType)type;
+                TypeDesc elementType = arrayType.ElementType;
+                if (arrayType.IsSzArray && !elementType.IsPointer && !elementType.IsFunctionPointer)
+                {
+                    MetadataType arrayShadowType = type.Context.SystemModule.GetKnownType("System", "Array`1");
+                    return arrayShadowType.MakeInstantiatedType(elementType);
+                }
                 return type.Context.GetWellKnownType(WellKnownType.Array);
             }
 

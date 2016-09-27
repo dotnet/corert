@@ -8,6 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.MetadataTransform.Tests</AssemblyName>
     <RootNamespace>MetadataTransformTests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <TestTFM>netcoreapp1.0</TestTFM>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -45,7 +47,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
-    <ProjectReference Include="WindowsWinrtMetadataAssembly\WindowsWinrtMetadataAssembly.csproj">
+    <ProjectReference Include="WindowsWinRTMetadataAssembly\WindowsWinRTMetadataAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

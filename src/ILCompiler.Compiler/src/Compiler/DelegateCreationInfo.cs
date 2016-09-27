@@ -24,7 +24,7 @@ namespace ILCompiler
         /// </summary>
         public IMethodNode Constructor
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace ILCompiler
         /// </summary>
         public ISymbolNode Target
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace ILCompiler
         /// </summary>
         public IMethodNode Thunk
         {
-            get; private set;
+            get;
         }
 
         private DelegateCreationInfo(IMethodNode constructor, ISymbolNode target, IMethodNode thunk = null)

@@ -13,6 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <CLSCompliant>false</CLSCompliant>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>bin\Debug</OutputPath>

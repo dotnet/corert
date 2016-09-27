@@ -289,5 +289,20 @@ namespace TypeSystemTests
 
             Assert.Equal(0x78563412, value);
         }
+
+        [Fact]
+        public void TestFunctionPointer()
+        {
+            //
+            // Test layout with a function pointer typed-field.
+            //
+
+            var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
+            var t = ilModule.GetType("StaticFieldLayout", "FunctionPointerType");
+            var field = t.GetField("StaticMethodField");
+
+            Assert.Equal(8, field.Offset);
+            Assert.False(field.HasGCStaticBase);
+        }
     }
 }

@@ -15,11 +15,4 @@
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
 
-  <!-- Project language -->
-  <PropertyGroup Condition="'$(ProjectLanguage)' == ''">
-    <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.ilproj' OR '$(Language)' == 'IL'">IL</ProjectLanguage>
-    <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
-  </PropertyGroup>
-  
-  <Import Project="$(ToolsDir)\IL.targets" Condition="'$(ProjectLanguage)' == 'IL'" />
 </Project>

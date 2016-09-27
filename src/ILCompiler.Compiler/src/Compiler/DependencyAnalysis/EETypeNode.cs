@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.Alignment = 16;
+            objData.Alignment = objData.TargetPointerSize;
             objData.DefinedSymbols.Add(this);
 
             ComputeOptionalEETypeFields(factory);
@@ -242,7 +242,7 @@ namespace ILCompiler.DependencyAnalysis
             else if (_type.IsArray)
             {
                 objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
-                if (!_type.IsSzArray)
+                if (_type.IsMdArray)
                     objectSize +=
                         2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
             }

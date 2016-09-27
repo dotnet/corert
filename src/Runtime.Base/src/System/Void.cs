@@ -5,8 +5,6 @@
 namespace System
 {
     // This class represents the void return type
-    // For RH, this type wont be available at runtime
-    // typeof(void) would fail.
     public struct Void
     {
     }

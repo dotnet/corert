@@ -2648,7 +2648,8 @@ namespace System
 
         public bool Contains(T item)
         {
-            return Array.IndexOf(Unsafe.As<T[]>(this), item) != -1;
+            T[] array = Unsafe.As<T[]>(this);
+            return Array.IndexOf(array, item, 0, array.Length) >= 0;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
@@ -2689,7 +2690,8 @@ namespace System
 
         public int IndexOf(T item)
         {
-            return Array.IndexOf(Unsafe.As<T[]>(this), item);
+            T[] array = Unsafe.As<T[]>(this);
+            return Array.IndexOf(array, item, 0, array.Length);
         }
 
         public void Insert(int index, T item)
