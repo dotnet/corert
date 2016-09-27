@@ -1861,6 +1861,7 @@ namespace System
         /// <returns>if it cann't find it, return null</returns>
         internal PropertyInfo GetMatchingProperty(Func<PropertyInfo, bool> matchingDelegate)
         {
+            BindingFlags Everything = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
             // first check Simple ComInterface Cache
             for (int i = 0; i < m_cachedInterfaces.Length; i++)
             {
@@ -1868,7 +1869,7 @@ namespace System
                 if (m_cachedInterfaces[i].TryGetType(out cachedType))
                 {
                     Type interfaceType = InteropExtensions.GetTypeFromHandle(cachedType);
-                    foreach (PropertyInfo propertyInfo in interfaceType.GetRuntimeProperties())
+                    foreach (PropertyInfo propertyInfo in interfaceType.GetProperties(Everything))
                     {
                         if (matchingDelegate(propertyInfo))
                             return propertyInfo;
@@ -1886,7 +1887,7 @@ namespace System
                     if (item != null)
                     {
                         Type interfaceType = InteropExtensions.GetTypeFromHandle(item.items.GetTypeHandle());
-                        foreach (var propertyInfo in interfaceType.GetRuntimeProperties())
+                        foreach (var propertyInfo in interfaceType.GetProperties(Everything))
                         {
                             if (matchingDelegate(propertyInfo))
                                 return propertyInfo;
