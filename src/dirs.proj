@@ -4,6 +4,7 @@
   <ItemGroup>
     <!-- This project requires ILASM and we have access to that only on Windows -->
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\TypeSystem.Tests.csproj" />
+    <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\ILCompiler.MetadataTransform.Tests.csproj" />
 
     <Project Include="*\src\*.csproj" Exclude="@(ExcludeProjects)" />
     <Project Include="*\src\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
