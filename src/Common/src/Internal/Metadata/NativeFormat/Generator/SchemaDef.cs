@@ -386,6 +386,7 @@ class SchemaDef
         "SZArraySignature",
         "ArraySignature",
         "PointerSignature",
+        "FunctionPointerSignature",
         "ByReferenceSignature",
         "TypeVariableSignature",
         "MethodTypeVariableSignature",
@@ -669,6 +670,12 @@ class SchemaDef
             name: "PointerSignature",
             members: new MemberDef[] {
                 new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
+            }
+        ),
+        new RecordDef(
+            name: "FunctionPointerSignature",
+            members: new MemberDef[] {
+                new MemberDef("Signature", "MethodSignature", MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(

@@ -2612,6 +2612,70 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Value;
     } // FixedArgument
 
+    public partial class FunctionPointerSignature : MetadataRecord
+    {
+        public override HandleType HandleType
+        {
+            get
+            {
+                return HandleType.FunctionPointerSignature;
+            }
+        } // HandleType
+
+        internal override void Visit(IRecordVisitor visitor)
+        {
+            Signature = visitor.Visit(this, Signature);
+        } // Visit
+
+        public override sealed bool Equals(Object obj)
+        {
+            if (Object.ReferenceEquals(this, obj)) return true;
+            var other = obj as FunctionPointerSignature;
+            if (other == null) return false;
+            if (!Object.Equals(Signature, other.Signature)) return false;
+            return true;
+        } // Equals
+
+        public override sealed int GetHashCode()
+        {
+            if (_hash != 0)
+                return _hash;
+            EnterGetHashCode();
+            int hash = 1733451879;
+            hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
+            LeaveGetHashCode();
+            _hash = hash;
+            return _hash;
+        } // GetHashCode
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.Write(Signature);
+        } // Save
+
+        internal static FunctionPointerSignatureHandle AsHandle(FunctionPointerSignature record)
+        {
+            if (record == null)
+            {
+                return new FunctionPointerSignatureHandle(0);
+            }
+            else
+            {
+                return record.Handle;
+            }
+        } // AsHandle
+
+        internal new FunctionPointerSignatureHandle Handle
+        {
+            get
+            {
+                return new FunctionPointerSignatureHandle(HandleOffset);
+            }
+        } // Handle
+
+        public MethodSignature Signature;
+    } // FunctionPointerSignature
+
     public partial class GenericParameter : MetadataRecord
     {
         public override HandleType HandleType
@@ -4813,6 +4877,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 Signature.HandleType == HandleType.SZArraySignature ||
                 Signature.HandleType == HandleType.ArraySignature ||
                 Signature.HandleType == HandleType.PointerSignature ||
+                Signature.HandleType == HandleType.FunctionPointerSignature ||
                 Signature.HandleType == HandleType.ByReferenceSignature ||
                 Signature.HandleType == HandleType.TypeVariableSignature ||
                 Signature.HandleType == HandleType.MethodTypeVariableSignature);
