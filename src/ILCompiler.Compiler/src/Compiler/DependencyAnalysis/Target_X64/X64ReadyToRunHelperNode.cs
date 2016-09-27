@@ -187,9 +187,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         var lookupInfo = (GenericLookupDescriptor)Target;
 
-                        // Load EEType pointer from this
-                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+                        // Arg0 points to the EEType
 
                         // Locate the VTable slot that points to the dictionary
                         int vtableSlot = 0;
@@ -199,7 +197,7 @@ namespace ILCompiler.DependencyAnalysis
                         int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
 
                         // Load the dictionary pointer from the VTable
-                        AddrMode loadDictionary = new AddrMode(encoder.TargetRegister.Result, null, slotOffset, 0, AddrModeSize.Int64);
+                        AddrMode loadDictionary = new AddrMode(encoder.TargetRegister.Arg0, null, slotOffset, 0, AddrModeSize.Int64);
                         encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadDictionary);
 
                         // What's left now is the actual dictionary lookup
