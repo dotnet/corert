@@ -1124,6 +1124,7 @@ namespace Internal.JitInterface
 
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.I1)]bool fThrowing)
         {
+            // TODO: optimized helpers
             return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
         }
 
@@ -2435,15 +2436,21 @@ namespace Internal.JitInterface
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                //Debug.Assert(!pResult.exactContextNeedsRuntimeLookup, "TODO");
-
-                var readyToRunHelper = targetMethod.OwningType.IsInterface ? ReadyToRunHelperId.InterfaceDispatch : ReadyToRunHelperId.VirtualCall;
-
-                if (!targetMethod.IsCanonicalMethod(CanonicalFormKind.Any))
-                    pResult.codePointerOrStubLookup.constLookup.addr =
-                        (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(readyToRunHelper, targetMethod));
-                else
+                if (pResult.exactContextNeedsRuntimeLookup)
+                {
                     throw new NotImplementedException();
+                }
+                else
+                {
+
+                    var readyToRunHelper = targetMethod.OwningType.IsInterface ? ReadyToRunHelperId.InterfaceDispatch : ReadyToRunHelperId.VirtualCall;
+
+                    if (!targetMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                        pResult.codePointerOrStubLookup.constLookup.addr =
+                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(readyToRunHelper, targetMethod));
+                    else
+                        throw new NotImplementedException();
+                }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
                 // TODO: Optimize this
@@ -2474,10 +2481,7 @@ namespace Internal.JitInterface
                     pResult.verSig = pResult.sig;
                 }
             }
-
-            // TODO: Generics
-            // pResult.instParamLookup
-
+            
             pResult._secureDelegateInvoke = 0;
         }
 
