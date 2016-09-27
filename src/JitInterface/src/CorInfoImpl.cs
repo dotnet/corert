@@ -2172,17 +2172,7 @@ namespace Internal.JitInterface
                 if (contextMethod != MethodBeingCompiled)
                     return;
 
-                if (contextMethod.RequiresInstMethodDescArg())
-                {
-                    pResult.lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
-                }
-                else
-                {
-                    if (contextMethod.RequiresInstMethodTableArg())
-                        pResult.lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
-                    else
-                        pResult.lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
-                }
+                pResult.lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
             }
             else
             {
@@ -2191,6 +2181,19 @@ namespace Internal.JitInterface
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
 
                 pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            }
+        }
+
+        private CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
+        {
+            if (method.RequiresInstMethodDescArg())
+                return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
+            else if (method.RequiresInstMethodTableArg())
+                return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
+            else
+            {
+                Debug.Assert(method.AcquiresInstMethodTableFromThis());
+                return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
             }
         }
 
@@ -2203,16 +2206,7 @@ namespace Internal.JitInterface
             if (method.IsSharedByGenericInstantiations)
             {
                 result.needsRuntimeLookup = true;
-
-                // If we've got a vtable extra argument, go through that 
-                if (method.RequiresInstMethodTableArg())
-                    result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
-                // If we've got an object, go through its vtable 
-                else if (method.AcquiresInstMethodTableFromThis())
-                    result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
-                // Otherwise go through the method-desc argument 
-                else
-                    result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
+                result.runtimeLookupKind = GetGenericRuntimeLookupKind(method);
             }
             else
             {
@@ -2329,7 +2323,6 @@ namespace Internal.JitInterface
             }
             else
             {
-                // TODO: There was an "if (!exactType.IsTypeDesc())" on the CoreCLR side here 
                 pResult.contextHandle = contextFromType(exactType);
                 pResult.exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
