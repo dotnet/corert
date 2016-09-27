@@ -185,16 +185,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
 
-            _readyToRunLookupFromDictionaryHelpers = new NodeCache<Tuple<TypeSystemEntity, DictionaryEntry>, ReadyToRunGenericLookupHelperNode>(helper =>
-            {
-                return new ReadyToRunGenericLookupHelperNode(helper.Item1, GenericContextKind.Dictionary, helper.Item2);
-            });
-
-            _readyToRunLookupFromThisObjHelpers = new NodeCache<Tuple<TypeDesc, DictionaryEntry>, ReadyToRunGenericLookupHelperNode>(helper =>
-            {
-                return new ReadyToRunGenericLookupHelperNode(helper.Item1, GenericContextKind.ThisObj, helper.Item2);
-            });
-
             _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
             {
                 return new StringDataNode(data);
@@ -543,25 +533,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
         {
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
-        }
-
-        private NodeCache<Tuple<TypeSystemEntity, DictionaryEntry>, ReadyToRunGenericLookupHelperNode> _readyToRunLookupFromDictionaryHelpers;
-
-        public ISymbolNode ReadyToRunGenericLookupFromDictionaryHelper(MethodDesc context, DictionaryEntry entry)
-        {
-            return _readyToRunLookupFromDictionaryHelpers.GetOrAdd(new Tuple<TypeSystemEntity, DictionaryEntry>(context, entry));
-        }
-
-        public ISymbolNode ReadyToRunGenericLookupFromDictionaryHelper(TypeDesc context, DictionaryEntry entry)
-        {
-            return _readyToRunLookupFromDictionaryHelpers.GetOrAdd(new Tuple<TypeSystemEntity, DictionaryEntry>(context, entry));
-        }
-
-        private NodeCache<Tuple<TypeDesc, DictionaryEntry>, ReadyToRunGenericLookupHelperNode> _readyToRunLookupFromThisObjHelpers;
-
-        public ISymbolNode ReadyToRunGenericLookupFromThisObjHelper(TypeDesc context, DictionaryEntry entry)
-        {
-            return _readyToRunLookupFromThisObjHelpers.GetOrAdd(new Tuple<TypeDesc, DictionaryEntry>(context, entry));
         }
 
         private NodeCache<string, StringDataNode> _stringDataNodes;

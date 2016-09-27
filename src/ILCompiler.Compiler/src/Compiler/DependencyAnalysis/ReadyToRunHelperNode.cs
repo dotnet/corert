@@ -3,13 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -27,6 +24,8 @@ namespace ILCompiler.DependencyAnalysis
         DelegateCtor,
         InterfaceDispatch,
         ResolveVirtualFunction,
+        GenericLookupFromThis,
+        GenericLookupFromDictionary,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
@@ -96,6 +95,30 @@ namespace ILCompiler.DependencyAnalysis
                         return "__InterfaceDispatch_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
                     case ReadyToRunHelperId.ResolveVirtualFunction:
                         return "__ResolveVirtualFunction_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
+                    case ReadyToRunHelperId.GenericLookupFromThis:
+                        {
+                            var lookupInfo = (GenericLookupDescriptor)_target;
+
+                            string mangledContextName;
+                            if (lookupInfo.CanonicalOwner is MethodDesc)
+                                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)lookupInfo.CanonicalOwner);
+                            else
+                                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)lookupInfo.CanonicalOwner);
+
+                            return string.Concat("__GenericLookupFromThis_", mangledContextName, "_", lookupInfo.Signature.GetMangledName(NodeFactory.NameMangler));
+                        }
+                    case ReadyToRunHelperId.GenericLookupFromDictionary:
+                        {
+                            var lookupInfo = (GenericLookupDescriptor)_target;
+
+                            string mangledContextName;
+                            if (lookupInfo.CanonicalOwner is MethodDesc)
+                                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)lookupInfo.CanonicalOwner);
+                            else
+                                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)lookupInfo.CanonicalOwner);
+
+                            return string.Concat("__GenericLookupFromDict_", mangledContextName, "_", lookupInfo.Signature.GetMangledName(NodeFactory.NameMangler));
+                        }
                     default:
                         throw new NotImplementedException();
                 }
@@ -132,6 +155,76 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return null;
             }
+        }
+
+        protected override void OnMarked(NodeFactory factory)
+        {
+            switch (_id)
+            {
+                case ReadyToRunHelperId.GenericLookupFromThis:
+                case ReadyToRunHelperId.GenericLookupFromDictionary:
+                    {
+                        // When the helper call gets marked, ensure the generic layout for the associated dictionaries
+                        // includes the signature.
+                        var lookupInfo = (GenericLookupDescriptor)_target;
+                        factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).EnsureEntry(lookupInfo.Signature);
+                    }
+                    break;
+            }
+        }
+    }
+
+    public struct GenericLookupDescriptor : IEquatable<GenericLookupDescriptor>
+    {
+        public readonly TypeSystemEntity CanonicalOwner;
+
+        public readonly DictionaryEntry Signature;
+
+        public GenericLookupDescriptor(TypeSystemEntity canonicalOwner, DictionaryEntry signature)
+        {
+            // Owner should be a canonical type or canonical method
+            Debug.Assert((
+                canonicalOwner is TypeDesc &&
+                    ((TypeDesc)canonicalOwner).IsCanonicalSubtype(CanonicalFormKind.Any))
+                || (canonicalOwner is MethodDesc &&
+                    ((MethodDesc)canonicalOwner).HasInstantiation && ((MethodDesc)canonicalOwner).IsSharedByGenericInstantiations));
+            
+            CanonicalOwner = canonicalOwner;
+            Signature = signature;
+        }
+
+        public bool Equals(GenericLookupDescriptor other)
+        {
+            if (CanonicalOwner != other.CanonicalOwner)
+                return false;
+
+            if (!Signature.Equals(other.Signature))
+                return false;
+
+            return true;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is GenericLookupDescriptor && Equals((GenericLookupDescriptor)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 67;
+            hash = hash * 31 + CanonicalOwner.GetHashCode();
+            hash = hash * 31 + Signature.GetHashCode();
+            return hash;
+        }
+
+        public override string ToString()
+        {
+            return String.Concat(
+                "Lookup for ",
+                CanonicalOwner.ToString(),
+                ". Target: ",
+                Signature.ToString()
+                );
         }
     }
 }

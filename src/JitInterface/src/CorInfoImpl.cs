@@ -1155,6 +1155,20 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
+        private static DictionaryEntry GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
+        {
+            switch (fixupKind)
+            {
+                case ReadyToRunFixupKind.TypeHandle:
+                    if (resolvedToken is TypeDesc)
+                        return new TypeHandleDictionaryEntry((TypeDesc)resolvedToken);
+                    else
+                        return new TypeHandleDictionaryEntry(((MethodDesc)resolvedToken).OwningType);
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
             pLookup.accessType = InfoAccessType.IAT_VALUE;
@@ -1214,21 +1228,30 @@ namespace Internal.JitInterface
 
                         ReadyToRunFixupKind fixupKind = (ReadyToRunFixupKind)pGenericLookupKind.runtimeLookupFlags;
                         object fixupTarget = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        DictionaryEntry target = ReadyToRunTargetLocator.GetTargetForFixup(fixupTarget, fixupKind);
+                        DictionaryEntry target = GetTargetForFixup(fixupTarget, fixupKind);
+
+                        ReadyToRunHelperId helper;
+                        TypeSystemEntity dictionaryOwner;
 
                         if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
                         {
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromThisObjHelper(MethodBeingCompiled.OwningType, target));
+                            helper = ReadyToRunHelperId.GenericLookupFromThis;
+                            dictionaryOwner = MethodBeingCompiled.OwningType;
                         }
                         else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
                         {
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromDictionaryHelper(MethodBeingCompiled.OwningType, target));
+                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
+                            dictionaryOwner = MethodBeingCompiled.OwningType;
                         }
                         else
                         {
                             Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromDictionaryHelper(MethodBeingCompiled, target));
+                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
+                            dictionaryOwner = MethodBeingCompiled;
                         }
+
+                        GenericLookupDescriptor lookup = new GenericLookupDescriptor(dictionaryOwner, target);
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helper, lookup));
                     }
                     break;
                 default:
