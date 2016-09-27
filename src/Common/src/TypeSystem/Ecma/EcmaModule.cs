@@ -454,7 +454,7 @@ namespace Internal.TypeSystem.Ecma
             an.Version = assemblyReference.Version;
 
             var publicKeyOrToken = _metadataReader.GetBlobBytes(assemblyReference.PublicKeyOrToken);
-            if ((an.Flags & AssemblyNameFlags.PublicKey) != 0)
+            if ((assemblyReference.Flags & AssemblyFlags.PublicKey) != 0)
             {
                 an.SetPublicKey(publicKeyOrToken);
             }
