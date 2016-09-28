@@ -560,8 +560,8 @@ inline void EEType::set_DynamicThreadStaticOffset(UInt32 threadStaticOffset)
 
     bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
     return
-        // Do we need a padding size for value types that could be unboxed?
-        (pMT->IsValueTypeOrEnum() &&
+        // Do we need a padding size for value types or unsealed classes? that could be unboxed?
+        ((!pMT->IsInterface() && (pMT->IsValueTypeOrEnum() || !IsTdSealed(pMT->GetClass()->GetAttrClass()))) &&
             (((pMT->GetBaseSize() - SYNC_BLOCK_SKEW) - pMT->GetClass()->GetNumInstanceFieldBytes()) > 0)) ||
         // Do we need a alignment for value types?
         (pMT->IsValueTypeOrEnum() &&

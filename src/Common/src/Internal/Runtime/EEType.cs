@@ -687,6 +687,22 @@ namespace Internal.Runtime
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(EEType*) + ValueTypeFieldPadding);
             }
         }
+        
+        internal UInt32 FieldByteCountNonGCAligned
+        {
+            get
+            {
+                // This api is designed to return correct results for EETypes which can be derived from
+                // And results indistinguishable from correct for DefTypes which cannot be derived from (sealed classes)
+                // (For sealed classes, this should always return BaseSize-((uint)sizeof(ObjHeader));
+                Debug.Assert(!IsInterface && !IsParameterizedType);
+
+                // get_BaseSize returns the GC size including space for the sync block index field, the EEType* and
+                // padding for GC heap alignment. Must subtract all of these to get the size used for the fields of
+                // the type (where the fields of the type includes the EEType*)
+                return BaseSize - ((uint)sizeof(ObjHeader) + ValueTypeFieldPadding);
+            }
+        }
 
         // Mark or determine that a type instance was allocated at runtime (currently only used for unification of
         // generic instantiations). This is sometimes important for memory management or debugging purposes.
