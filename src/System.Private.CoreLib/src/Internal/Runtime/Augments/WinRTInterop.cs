@@ -121,7 +121,6 @@ namespace Internal.Runtime.Augments
         public abstract void SetCOMWeakReferenceTarget(object weakReference, object target);
         public abstract object GetCOMWeakReferenceTarget(object weakReference);
         public abstract object ReadFileIntoStream(string name);
-        public abstract byte[] ComputeSHA1(byte[] plainText);
         public abstract void InitTracingStatusChanged(Action<bool> tracingStatusChanged);
         public abstract void TraceOperationCompletion(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, AsyncStatus status);
         public abstract void TraceOperationCreation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, string operationName, ulong relatedContext);
