@@ -12,6 +12,7 @@ using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using Internal.Metadata.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Core.Execution
 {
@@ -210,8 +211,7 @@ namespace Internal.Reflection.Core.Execution
         {
             RuntimeTypeHandle genericTypeDefinitionHandle;
             RuntimeTypeHandle[] genericTypeArgumentHandles;
-            if (!ExecutionEnvironment.TryGetConstructedGenericTypeComponents(typeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                throw CreateMissingMetadataException((Type)null);
+            genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(typeHandle, out genericTypeArgumentHandles);
 
             // Reflection blocked constructed generic types simply pretend to not be generic
             // This is reasonable, as the behavior of reflection blocked types is supposed

@@ -54,15 +54,12 @@ namespace Internal.Reflection.Execution
 
             if (RuntimeAugments.IsGenericType(rtth))
             {
-                RuntimeTypeHandle openTypeDef;
                 RuntimeTypeHandle[] typeArgumentsHandles;
-                if (TryGetOpenTypeDefinition(rtth, out openTypeDef, out typeArgumentsHandles))
-                {
-                    result = GetTypeNameDebug(openTypeDef) + "<";
-                    for (int i = 0; i < typeArgumentsHandles.Length; i++)
-                        result += (i == 0 ? "" : ",") + GetTypeNameDebug(typeArgumentsHandles[i]);
-                    return result + ">";
-                }
+                RuntimeTypeHandle openTypeDef = RuntimeAugments.GetGenericInstantiation(rtth, out typeArgumentsHandles);;
+                result = GetTypeNameDebug(openTypeDef) + "<";
+                for (int i = 0; i < typeArgumentsHandles.Length; i++)
+                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(typeArgumentsHandles[i]);
+                return result + ">";
             }
             else
             {
@@ -85,23 +82,23 @@ namespace Internal.Reflection.Execution
         }
 #endif
 
-        private bool TryGetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle typeDefHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
+        private RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
-                return TryGetConstructedGenericTypeComponents(typeHandle, out typeDefHandle, out typeArgumentsHandles);
+            {
+                return RuntimeAugments.GetGenericInstantiation(typeHandle, out typeArgumentsHandles);
+            }
 
-            typeDefHandle = typeHandle;
             typeArgumentsHandles = null;
-            return true;
+            return typeHandle;
         }
 
         private RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle[] typeArgumentsHandles;
-            RuntimeTypeHandle result;
-            bool success = TryGetOpenTypeDefinition(typeHandle, out result, out typeArgumentsHandles);
-            Debug.Assert(success);
-            return result;
+            if (RuntimeAugments.IsGenericType(typeHandle))
+                return RuntimeAugments.GetGenericDefinition(typeHandle);
+
+            return typeHandle;
         }
 
         private static bool RuntimeTypeHandleIsNonDefault(RuntimeTypeHandle runtimeTypeHandle)
@@ -439,32 +436,6 @@ namespace Internal.Reflection.Execution
         }
 
         //
-        // Given a RuntimeTypeHandle for any closed generic instance G<T1,T2,...>, return the RuntimeTypeHandles for G, T1 and T2, if the pay-for-play
-        // policy denotes G<T1,T2,...> as browsable. This is used to implement Type.GetGenericTypeDefinition() and Type.GenericTypeArguments.
-        //
-        // Preconditions: 
-        //      runtimeTypeHandle is a valid RuntimeTypeHandle for a generic instance.
-        //
-        public unsafe sealed override bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles);
-        }
-
-        //
-        // Given a RuntimeTypeHandle for any closed generic instance G<T1,T2,...>, return the RuntimeTypeHandles for G, T1 and T2. This is the
-        // "diagnostic" version which only returns useful information in "debug" builds. Unlike the normal version, its success is indepedent
-        // of the type's inclusion in the pay-for-play policy as its very purpose to create useful MissingMetadataExceptions when a type
-        // isn't in the policy.
-        //
-        // Preconditions: 
-        //      runtimeTypeHandle is a valid RuntimeTypeHandle for a generic instance.
-        //
-        public unsafe bool TryGetConstructedGenericTypeComponentsDiag(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles);
-        }
-
-        //
         // Given a RuntimeTypeHandle for a generic type G and a set of RuntimeTypeHandles T1, T2.., return the RuntimeTypeHandle for the generic
         // instance G<T1,T2...> if the pay-for-play policy denotes G<T1,T2...> as browsable. This is used to implement Type.MakeGenericType().
         //
@@ -757,18 +728,15 @@ namespace Internal.Reflection.Execution
                                 break;
                             }
 
-                            RuntimeTypeHandle genericDefinition;
                             RuntimeTypeHandle[] genericTypeArgs;
-                            bool success = TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeComponents(searchForSharedGenericTypesInParentHierarchy,
-                                                                                                                out genericDefinition,
-                                                                                                                out genericTypeArgs);
+                            RuntimeAugments.GetGenericInstantiation(searchForSharedGenericTypesInParentHierarchy,
+                                                                                        out genericTypeArgs);
+
                             if (TypeLoaderEnvironment.Instance.ConversionToCanonFormIsAChange(genericTypeArgs, CanonicalFormKind.Specific))
                             {
                                 // Shared generic types have a slot dedicated to holding the generic dictionary.
                                 slot++;
                             }
-
-                            Debug.Assert(success);
                         }
 
                         // Walk to parent
@@ -935,13 +903,7 @@ namespace Internal.Reflection.Execution
 
             // This method needs to return "true" and "Base<string>" for cases like this.
 
-            RuntimeTypeHandle dstTypeDef = default(RuntimeTypeHandle);
-            if (RuntimeAugments.IsGenericType(dstType))
-            {
-                RuntimeTypeHandle[] dstComponent;
-                bool success = TryGetConstructedGenericTypeComponents(dstType, out dstTypeDef, out dstComponent);
-                Debug.Assert(success);
-            }
+            RuntimeTypeHandle dstTypeDef = GetTypeDefinition(dstType);
 
             while (!srcType.IsNull())
             {
@@ -952,10 +914,7 @@ namespace Internal.Reflection.Execution
 
                 if (!dstTypeDef.IsNull() && RuntimeAugments.IsGenericType(srcType))
                 {
-                    RuntimeTypeHandle srcTypeDef;
-                    RuntimeTypeHandle[] srcComponents;
-                    bool success = TryGetConstructedGenericTypeComponents(srcType, out srcTypeDef, out srcComponents);
-                    Debug.Assert(success);
+                    RuntimeTypeHandle srcTypeDef = GetTypeDefinition(srcType);;
 
                     // Compare TypeDefs. We don't look at the generic components. We already know that the right type
                     // to return must be somewhere in the inheritance chain.
@@ -1455,17 +1414,8 @@ namespace Internal.Reflection.Execution
         {
             MetadataReader reader;
             TypeDefinitionHandle typeDefinitionHandle;
-            RuntimeTypeHandle metadataLookupTypeHandle = declaringTypeHandle;
+            RuntimeTypeHandle metadataLookupTypeHandle = GetTypeDefinition(declaringTypeHandle);
             methodHandle = default(MethodHandle);
-
-            // For generic instantiations, get the declaring type def to do the metadata lookup with, as TryGetMetadataForNamedType expects
-            // this as a pre-condition
-            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
-            {
-                RuntimeTypeHandle[] components;
-                if (!TryGetConstructedGenericTypeComponents(declaringTypeHandle, out metadataLookupTypeHandle, out components))
-                    return false;
-            }
 
             if (!TryGetMetadataForNamedType(metadataLookupTypeHandle, out reader, out typeDefinitionHandle))
                 return false;
@@ -1526,16 +1476,7 @@ namespace Internal.Reflection.Execution
 
             MetadataReader reader;
             TypeDefinitionHandle typeDefinitionHandle;
-            RuntimeTypeHandle metadataLookupTypeHandle = declaringTypeHandle;
-
-            // For generic instantiations, get the declaring type def to do the metadata lookup with, as TryGetMetadataForNamedType expects
-            // this as a pre-condition
-            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
-            {
-                RuntimeTypeHandle[] components;
-                if (!TryGetConstructedGenericTypeComponents(declaringTypeHandle, out metadataLookupTypeHandle, out components))
-                    return false;
-            }
+            RuntimeTypeHandle metadataLookupTypeHandle = GetTypeDefinition(declaringTypeHandle);
 
             if (!TryGetMetadataForNamedType(metadataLookupTypeHandle, out reader, out typeDefinitionHandle))
                 return false;

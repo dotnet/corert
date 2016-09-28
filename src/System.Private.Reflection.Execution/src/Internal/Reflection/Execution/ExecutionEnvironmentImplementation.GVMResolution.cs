@@ -103,15 +103,12 @@ namespace Internal.Reflection.Execution
         {
             // Get the open type definition of the containing type of the generic virtual method being resolved
             RuntimeTypeHandle openCallingTypeHandle;
-            RuntimeTypeHandle[] callingTypeInstantiation;
-            if (!TryGetOpenTypeDefinition(declaringType, out openCallingTypeHandle, out callingTypeInstantiation))
-                return false;
+            openCallingTypeHandle = GetTypeDefinition(declaringType);
 
             // Get the open type definition of the current type of the object instance on which the GVM is being resolved
             RuntimeTypeHandle openTargetTypeHandle;
             RuntimeTypeHandle[] targetTypeInstantiation;
-            if (!TryGetOpenTypeDefinition(targetTypeHandle, out openTargetTypeHandle, out targetTypeInstantiation))
-                return false;
+            openTargetTypeHandle = GetOpenTypeDefinition(targetTypeHandle, out targetTypeInstantiation);
 
 #if REFLECTION_EXECUTION_TRACE
             ReflectionExecutionLogger.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name);
@@ -241,15 +238,11 @@ namespace Internal.Reflection.Execution
 
             // Get the open type definition of the containing type of the generic virtual method being resolved
             RuntimeTypeHandle openCallingTypeHandle;
-            RuntimeTypeHandle[] callingTypeInstantiation;
-            if (!TryGetOpenTypeDefinition(declaringType, out openCallingTypeHandle, out callingTypeInstantiation))
-                return false;
+            openCallingTypeHandle = GetTypeDefinition(declaringType);
 
             // Get the open type definition of the current type of the object instance on which the GVM is being resolved
             RuntimeTypeHandle openTargetTypeHandle;
-            RuntimeTypeHandle[] targetTypeInstantiation;
-            if (!TryGetOpenTypeDefinition(targetTypeHandle, out openTargetTypeHandle, out targetTypeInstantiation))
-                return false;
+            openTargetTypeHandle = GetTypeDefinition(targetTypeHandle);
 
             int hashCode = openCallingTypeHandle.GetHashCode();
             hashCode = ((hashCode << 13) ^ hashCode) ^ openTargetTypeHandle.GetHashCode();

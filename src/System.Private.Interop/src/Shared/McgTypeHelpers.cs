@@ -759,7 +759,7 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        internal static bool IsWinRTInterface(this RuntimeTypeHandle interfaceType)
+        internal static bool IsSupportIInspectable(this RuntimeTypeHandle interfaceType)
         {
             McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
             if (interfaceInfo != null)

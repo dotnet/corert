@@ -1177,7 +1177,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
             if (structureTypeHandle.IsValueType())
             {
-                throw new ArgumentException();
+                throw new ArgumentException("structure", SR.Argument_StructMustNotBeValueClass);
             }
 
             PtrToStructureHelper(ptr, structure);
@@ -1208,10 +1208,38 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
+            if (structureTypeHandle.IsGenericType())
+            {
+                throw new ArgumentException("structure", SR.Argument_NeedNonGenericObject);
+            }
+
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
 
-            if (structureTypeHandle.IsBlittable())
+            bool isBlittable = false; // whether Mcg treat this struct as blittable struct
+            IntPtr marshalStub;
+            if (McgModuleManager.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
+            {
+                if (marshalStub != IntPtr.Zero)
+                {
+                    InteropExtensions.PinObjectAndCall(structure,
+                        unboxedStructPtr =>
+                        {
+                            CalliIntrinsics.Call<int>(
+                                marshalStub,
+                                ((void*)((IntPtr*)unboxedStructPtr + offset)),  // safe (need to adjust offset as it could be class)
+                                (void*)ptr                                      // unsafe (no need to adjust as it is always struct)
+                            );
+                        });
+                    return;
+                }
+                else
+                {
+                    isBlittable = true;
+                }
+            }
+
+            if (isBlittable || structureTypeHandle.IsBlittable()) // blittable
             {
                 int structSize = Marshal.SizeOf(structure);
                 InteropExtensions.PinObjectAndCall(structure,
@@ -1221,21 +1249,6 @@ namespace System.Runtime.InteropServices
                             ptr,                                            // unsafe (no need to adjust as it is always struct)
                             (IntPtr)((IntPtr*)unboxedStructPtr + offset),   // safe (need to adjust offset as it could be class)
                             structSize
-                        );
-                    });
-                return;
-            }
-
-            IntPtr marshalStub;
-            if (McgModuleManager.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
-            {
-                InteropExtensions.PinObjectAndCall(structure,
-                    unboxedStructPtr =>
-                    {
-                        CalliIntrinsics.Call<int>(
-                            marshalStub,
-                            ((void*)((IntPtr*)unboxedStructPtr + offset)),  // safe (need to adjust offset as it could be class)
-                            (void*)ptr                                      // unsafe (no need to adjust as it is always struct)
                         );
                     });
                 return;

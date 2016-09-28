@@ -363,6 +363,9 @@
   <data name="Argument_OffsetOfFieldNotFound" xml:space="preserve">
     <value>Field passed in is not a marshaled member of the type '{0}'.</value>
   </data>
+  <data name="Argument_StructMustNotBeValueClass" xml:space="preserve">
+    <value>The structure must not be a value class.</value>
+  </data>
   <data name="Argument_NeedNonGenericObject" xml:space="preserve">
     <value>The specified object must not be an instance of a generic type.</value>
   </data>
