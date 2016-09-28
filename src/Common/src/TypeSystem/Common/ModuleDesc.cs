@@ -13,6 +13,14 @@ namespace Internal.TypeSystem
             get;
         }
 
+        public sealed override EntityKind EntityKind
+        {
+            get
+            {
+                return EntityKind.ModuleDesc;
+            }
+        }
+
         public ModuleDesc(TypeSystemContext context)
         {
             Context = context;

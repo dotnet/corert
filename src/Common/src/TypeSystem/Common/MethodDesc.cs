@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the parameter types, the return type, and flags of a method.
     /// </summary>
-    public sealed class MethodSignature
+    public sealed class MethodSignature : TypeSystemEntity
     {
         internal MethodSignatureFlags _flags;
         internal int _genericParameterCount;
@@ -95,6 +95,22 @@ namespace Internal.TypeSystem
             get
             {
                 return _parameters.Length;
+            }
+        }
+
+        public override TypeSystemContext Context
+        {
+            get
+            {
+                return _returnType.Context;
+            }
+        }
+
+        public sealed override EntityKind EntityKind
+        {
+            get
+            {
+                return EntityKind.MethodSignature;
             }
         }
 
@@ -268,6 +284,14 @@ namespace Internal.TypeSystem
             // Its only valid to compare two MethodDescs in the same context
             Debug.Assert(Object.ReferenceEquals(o, null) || !(o is MethodDesc) || Object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
             return Object.ReferenceEquals(this, o);
+        }
+
+        public sealed override EntityKind EntityKind
+        {
+            get
+            {
+                return EntityKind.MethodDesc;
+            }
         }
 
         /// <summary>

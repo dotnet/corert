@@ -27,6 +27,14 @@ namespace Internal.TypeSystem
             return Object.ReferenceEquals(this, o);
         }
 
+        public sealed override EntityKind EntityKind
+        {
+            get
+            {
+                return EntityKind.TypeDesc;
+            }
+        }
+
 #if DEBUG
         public static bool operator ==(TypeDesc left, TypeDesc right)
         {
