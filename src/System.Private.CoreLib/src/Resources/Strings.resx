@@ -1681,4 +1681,7 @@
   <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
     <value>Invalid assembly public key.</value>
   </data>
+  <data name="CryptoError_Sha1" xml:space="preserve">
+    <value>Unexpected cryptographic error while computing SHA1 ({0}).</value>
+  </data>
 </root>
