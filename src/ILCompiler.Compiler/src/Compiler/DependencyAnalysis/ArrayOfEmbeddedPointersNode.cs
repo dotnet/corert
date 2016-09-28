@@ -27,7 +27,8 @@ namespace ILCompiler.DependencyAnalysis
             : base(
                   startSymbolMangledName,
                   endSymbolMangledName,
-                  nodeSorter != null ? new PointerIndirectionNodeComparer(nodeSorter) : null)
+                  nodeSorter != null ? new PointerIndirectionNodeComparer(nodeSorter) : null,
+                  null)
         {
             _startSymbolMangledName = startSymbolMangledName;
         }

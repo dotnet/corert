@@ -151,6 +151,11 @@ namespace ILCompiler
             }
         }
 
+        public override bool ShouldReferenceThroughImportTable(TypeDesc type)
+        {
+            return false;
+        }
+
         private HashSet<EcmaModule> InputModules
         {
             get

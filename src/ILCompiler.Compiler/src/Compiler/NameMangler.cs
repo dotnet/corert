@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -19,6 +21,7 @@ namespace ILCompiler
     //
     public class NameMangler
     {
+        private SHA256 _sha256;
         private readonly bool _mangleForCplusPlus;
 
         public NameMangler(bool mangleForCplusPlus)
@@ -341,6 +344,41 @@ namespace ILCompiler
             lock (this)
             {
                 _mangledFieldNames = _mangledFieldNames.Add(field, mangledName);
+            }
+
+            return mangledName;
+        }
+
+        private ImmutableDictionary<string, string> _mangledStringLiterals = ImmutableDictionary<string, string>.Empty;
+
+        public string GetMangledStringName(string literal)
+        {
+            string mangledName;
+            if (_mangledStringLiterals.TryGetValue(literal, out mangledName))
+                return mangledName;
+
+            return ComputeMangledStringLiteralName(literal);
+        }
+
+        private string ComputeMangledStringLiteralName(string literal)
+        {
+            string mangledName = SanitizeName(literal);
+
+            if (mangledName.Length > 30)
+                mangledName = mangledName.Substring(0, 30);
+
+            if (mangledName != literal)
+            {
+                if (_sha256 == null)
+                    _sha256 = SHA256.Create();
+                
+                var hash = _sha256.ComputeHash(Encoding.UTF8.GetBytes(literal));
+                mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
+            }
+
+            lock (this)
+            {
+                _mangledStringLiterals = _mangledStringLiterals.Add(literal, mangledName);
             }
 
             return mangledName;

@@ -52,5 +52,10 @@ namespace ILCompiler
         {
             return false;
         }
+
+        public override bool ShouldReferenceThroughImportTable(TypeDesc type)
+        {
+            return false;
+        }
     }
 }
