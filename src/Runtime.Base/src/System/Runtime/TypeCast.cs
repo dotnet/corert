@@ -42,6 +42,12 @@ namespace System.Runtime
             AllowSizeEquivalence = 2,
         }
 
+        [RuntimeExport("RhTypeCast_IsInstanceOfClass2")] // Helper with RyuJIT calling convention
+        static public unsafe object IsInstanceOfClass2(void* pvTargetType, object obj)
+        {
+            return IsInstanceOfClass(obj, pvTargetType);
+        }
+
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
         static public unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
         {
@@ -150,6 +156,12 @@ namespace System.Runtime
                     return obj;
                 }
             }
+        }
+
+        [RuntimeExport("RhTypeCast_CheckCastClass2")] // Helper with RyuJIT calling convention
+        static public unsafe object CheckCastClass2(void* pvTargetEEType, Object obj)
+        {
+            return CheckCastClass(obj, pvTargetEEType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCastClass")]

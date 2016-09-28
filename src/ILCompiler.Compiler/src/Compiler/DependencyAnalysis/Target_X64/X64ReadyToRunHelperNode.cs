@@ -181,6 +181,49 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
+                case ReadyToRunHelperId.GenericLookupFromThis:
+                    {
+                        int pointerSize = factory.Target.PointerSize;
+
+                        var lookupInfo = (GenericLookupDescriptor)Target;
+
+                        // Arg0 points to the EEType
+
+                        // Locate the VTable slot that points to the dictionary
+                        int vtableSlot = 0;
+                        if (!relocsOnly)
+                            vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(factory, (TypeDesc)lookupInfo.CanonicalOwner);
+
+                        int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
+
+                        // Load the dictionary pointer from the VTable
+                        AddrMode loadDictionary = new AddrMode(encoder.TargetRegister.Arg0, null, slotOffset, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadDictionary);
+
+                        // What's left now is the actual dictionary lookup
+                        goto case ReadyToRunHelperId.GenericLookupFromDictionary;
+                    }
+
+                 case ReadyToRunHelperId.GenericLookupFromDictionary:
+                    {
+                        var lookupInfo = (GenericLookupDescriptor)Target;
+
+                        // Find the generic dictionary slot
+                        int dictionarySlot = 0;
+                        if (!relocsOnly)
+                        {
+                            // The concrete slot won't be known until we're emitting data.
+                            dictionarySlot = factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).GetSlotForEntry(lookupInfo.Signature);
+                        }
+
+                        // Load the generic dictionary cell
+                        AddrMode loadEntry = new AddrMode(
+                            encoder.TargetRegister.Arg0, null, dictionarySlot * factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadEntry);
+                        encoder.EmitRET();
+                    }
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }

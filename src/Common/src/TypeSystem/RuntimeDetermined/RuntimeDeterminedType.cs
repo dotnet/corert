@@ -127,7 +127,13 @@ namespace Internal.TypeSystem
 
         public override TypeDesc GetTypeDefinition()
         {
-            return _rawCanonType.GetTypeDefinition();
+            // TODO: this is needed because NameMangler calls it to see if we're dealing with genericness. Revise?
+            if (_rawCanonType.HasInstantiation)
+            {
+                return Context.GetRuntimeDeterminedType((DefType)_rawCanonType.GetTypeDefinition(), _runtimeDeterminedDetailsType);
+            }
+
+            return this;
         }
 
         public override int GetHashCode()
