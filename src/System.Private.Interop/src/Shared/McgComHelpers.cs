@@ -513,7 +513,7 @@ namespace System.Runtime.InteropServices
 
                 bool needRelease = false;
 
-                if (interfaceType.IsWinRTInterface())
+                if (interfaceType.IsSupportIInspectable())
                 {
                     //
                     // Use the interface pointer as IInspectable as we know it is indeed a WinRT interface that

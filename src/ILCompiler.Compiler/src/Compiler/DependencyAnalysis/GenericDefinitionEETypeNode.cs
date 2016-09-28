@@ -33,14 +33,24 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
-            dataBuilder.Alignment = 16;
+
+            dataBuilder.Alignment = dataBuilder.TargetPointerSize;
             dataBuilder.DefinedSymbols.Add(this);
+            EETypeRareFlags rareFlags = 0;
 
             short flags = (short)EETypeKind.GenericTypeDefEEType;
             if (_type.IsValueType)
                 flags |= (short)EETypeFlags.ValueTypeFlag;
             if (_type.IsInterface)
                 flags |= (short)EETypeFlags.IsInterfaceFlag;
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+                rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
+
+            if (rareFlags != 0)
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, (uint)rareFlags);
+
+            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+                flags |= (short)EETypeFlags.OptionalFieldsFlag;
 
             dataBuilder.EmitShort((short)_type.Instantiation.Length);
             dataBuilder.EmitShort(flags);
@@ -50,7 +60,11 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitShort(0);       // No interface map
             dataBuilder.EmitInt(_type.GetHashCode());
             dataBuilder.EmitPointerReloc(factory.ModuleManagerIndirection);
-            
+            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            {
+                dataBuilder.EmitPointerReloc(factory.EETypeOptionalFields(_optionalFieldsBuilder));
+            }
+
             return dataBuilder.ToObjectData();
         }
     }

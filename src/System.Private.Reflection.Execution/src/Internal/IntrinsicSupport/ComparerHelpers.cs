@@ -38,28 +38,24 @@ namespace Internal.IntrinsicSupport
 
                 RuntimeTypeHandle genericDefinition;
                 RuntimeTypeHandle[] genericTypeArgs;
-                bool success = TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeComponents(interfaceType,
-                                                                                                    out genericDefinition,
-                                                                                                    out genericTypeArgs);
+                genericDefinition = RuntimeAugments.GetGenericInstantiation(interfaceType,
+                                                                            out genericTypeArgs);
 
-                if (success)
+                if (genericDefinition.Equals(typeof(IComparable<>).TypeHandle))
                 {
-                    if (genericDefinition.Equals(typeof(IComparable<>).TypeHandle))
-                    {
-                        if (genericTypeArgs.Length != 1)
-                            continue;
+                    if (genericTypeArgs.Length != 1)
+                        continue;
 
-                        if (RuntimeAugments.IsValueType(t))
-                        {
-                            if (genericTypeArgs[0].Equals(t))
-                            {
-                                return true;
-                            }
-                        }
-                        else if (RuntimeAugments.IsAssignableFrom(genericTypeArgs[0], t))
+                    if (RuntimeAugments.IsValueType(t))
+                    {
+                        if (genericTypeArgs[0].Equals(t))
                         {
                             return true;
                         }
+                    }
+                    else if (RuntimeAugments.IsAssignableFrom(genericTypeArgs[0], t))
+                    {
+                        return true;
                     }
                 }
             }

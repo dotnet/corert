@@ -1260,7 +1260,7 @@ namespace System.Runtime.InteropServices
         {
             bool isWinRTScenario
 #if ENABLE_WINRT
-            = typeHnd.IsWinRTInterface();
+            = typeHnd.IsSupportIInspectable();
 #else
             = false;
 #endif

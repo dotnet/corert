@@ -2,22 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-/*============================================================
-**
-  Type:  AssemblyNameHelpers
-**
-==============================================================*/
-
-using System;
-using System.IO;
-using System.Text;
-using System.Collections.Generic;
-using Internal.Runtime.Augments;
-using Buffer = System.Buffer;
-
-using SecurityException = System.Security.SecurityException;
+using System.Security;
+using Internal.Cryptography;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -38,7 +24,7 @@ namespace System.Reflection.Runtime.Assemblies
             // CORERT-TODO: ComputeSHA1
             return Array.Empty<byte>();
 #else
-            byte[] hash = WinRTInterop.Callbacks.ComputeSHA1(publicKey);
+            byte[] hash = Sha1.ComputeSha1(publicKey);
             byte[] pkt = new byte[PUBLIC_KEY_TOKEN_LEN];
             for (int i = 0; i < PUBLIC_KEY_TOKEN_LEN; i++)
             {

@@ -163,6 +163,9 @@ partial class Interop
         internal const int COR_E_OBJECTDISPOSED = unchecked((int)0x80131622);
         internal const int RO_E_CLOSED = unchecked((int)0x80000013);
 
+        internal const int TYPE_E_TYPEMISMATCH = unchecked((int)0x80028CA0);
+        internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
+
         /// <summary>
         /// Error indicates that you are accessing a CCW whose target object has already been garbage
         /// collected while the CCW still has non-0 jupiter ref counts

@@ -16,7 +16,7 @@ namespace ILCompiler
             var metadataType = type as MetadataType;
             if (metadataType != null)
             {
-                return metadataType.IsSealed;
+                return metadataType.IsSealed || metadataType.IsModuleType;
             }
 
             Debug.Assert(type.IsArray, "IsSealed on a type with no virtual methods?");
