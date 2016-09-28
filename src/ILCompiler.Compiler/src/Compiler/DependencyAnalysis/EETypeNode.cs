@@ -466,7 +466,11 @@ namespace ILCompiler.DependencyAnalysis
 
         void ComputeValueTypeFieldPadding()
         {
-            if (!_type.IsValueType)
+            // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding. 
+            // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
+
+            // Interfaces, sealed types, and non-DefTypes cannot be derived from
+            if (_type.IsInterface || !_type.IsDefType || _type.IsSealed())
                 return;
 
             DefType defType = _type as DefType;
