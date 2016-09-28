@@ -22,7 +22,6 @@ namespace ILCompiler.DependencyAnalysis
         GetGCStaticBase,
         GetThreadStaticBase,
         DelegateCtor,
-        InterfaceDispatch,
         ResolveVirtualFunction,
         GenericLookupFromThis,
         GenericLookupFromDictionary,
@@ -91,8 +90,6 @@ namespace ILCompiler.DependencyAnalysis
                                 mangledName += String.Concat("__", createInfo.Thunk.MangledName);
                             return mangledName;
                         }
-                    case ReadyToRunHelperId.InterfaceDispatch:
-                        return "__InterfaceDispatch_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
                     case ReadyToRunHelperId.ResolveVirtualFunction:
                         return "__ResolveVirtualFunction_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
                     case ReadyToRunHelperId.GenericLookupFromThis:
@@ -137,12 +134,6 @@ namespace ILCompiler.DependencyAnalysis
                 DependencyList dependencyList = new DependencyList();
                 dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
                 dependencyList.Add(factory.VTable(((MethodDesc)_target).OwningType), "ReadyToRun Virtual Method Call Target VTable");
-                return dependencyList;
-            }
-            else if (_id == ReadyToRunHelperId.InterfaceDispatch)
-            {
-                DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Interface Method Call");
                 return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
