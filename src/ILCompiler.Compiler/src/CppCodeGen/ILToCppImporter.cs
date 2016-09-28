@@ -969,7 +969,7 @@ namespace Internal.IL
 
             if (callViaInterfaceDispatch)
             {
-                _dependencies.Add(_nodeFactory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, method));
+                _dependencies.Add(_nodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, method));
                 ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
 
                 string typeDefName = _writer.GetCppMethodName(method);
