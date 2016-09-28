@@ -63,6 +63,28 @@ namespace System.Runtime.InteropServices
 
         private static InternalModule s_internalModule;
 
+        #region "Dynamic Interop"
+        // Whether to use dynamic interop or not
+        private static bool s_useDynamicInterop = true;
+
+        public static bool UseDynamicInterop
+        {
+            get
+            {
+                return s_useDynamicInterop;
+            }
+        }
+
+        /// <summary>
+        /// Helper function to enable Dynamic Interop
+        /// in future, useDynamicInterop should be always true
+        /// </summary>
+        public static void EnableDynamicInterop()
+        {
+            s_useDynamicInterop = true;
+        }
+        #endregion
+
         /// <summary>
         /// Register the module and add it into global module list
         /// This should always be called from eagerly constructed ctors so threading is not a concern

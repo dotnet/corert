@@ -14,7 +14,8 @@
     "System.Runtime.InteropServices": "4.0.20",
     "System.Private.Uri": "4.0.0",
     "System.IO": "4.0.10",
-    "System.Globalization": "4.0.10"
+    "System.Globalization": "4.0.10",
+    "System.ObjectModel": "4.0.10"
   },
   "frameworks": {
     "netcore50": {}

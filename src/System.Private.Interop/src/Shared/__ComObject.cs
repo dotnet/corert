@@ -1260,7 +1260,7 @@ namespace System
                 interfaceDisplayName = SR.MissingMetadataType;
             }
 
-            if (hr == Interop.COM.E_NOINTERFACE && interfaceType.IsWinRTInterface())
+            if (hr == Interop.COM.E_NOINTERFACE && interfaceType.IsSupportIInspectable())
             {
                 // If this is a WinRT secenario and the failure is E_NOINTERFACE then display the standard
                 // InvalidCastException as most developers are not interested in IID's or HRESULTS

@@ -10,7 +10,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Security;
 using System.Diagnostics;
-using Windows.UI.Xaml.Data;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -20,7 +19,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // MCG emits references to this internal type into generated interop code, so we apply the [DependencyReductionRoot]
     // attribute to it so that it survives initial tree shaking.
     [System.Runtime.CompilerServices.DependencyReductionRootAttribute]
-    internal sealed class CustomPropertyImpl : ICustomProperty
+    internal sealed class CustomPropertyImpl : global::Windows.UI.Xaml.Data.ICustomProperty
     {
         /// <summary>
         /// The PropertyInfo for reflection

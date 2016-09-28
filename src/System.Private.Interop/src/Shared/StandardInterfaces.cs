@@ -14,12 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-
 using Internal.NativeFormat;
-
-#if ENABLE_WINRT
-using global::Windows.UI.Xaml.Data;
-#endif
 
 namespace System.Runtime.InteropServices
 {
@@ -548,10 +543,10 @@ namespace System.Runtime.InteropServices
             string propertyName = McgMarshal.HStringToString(unsafe_name);
             try
             {
-                ICustomProperty property = ManagedGetCustomProperty(target, propertyName);
+                global::Windows.UI.Xaml.Data.ICustomProperty property = ManagedGetCustomProperty(target, propertyName);
                 *unsafe_customProperty = (void*)McgComHelpers.ManagedObjectToComInterface(
                     property,
-                    typeof(ICustomProperty).TypeHandle);
+                    typeof(global::Windows.UI.Xaml.Data.ICustomProperty).TypeHandle);
             }
             catch (Exception ex)
             {
@@ -566,7 +561,7 @@ namespace System.Runtime.InteropServices
         /// <param name="target">Object to find a property on</param>
         /// <param name="propertyName">Name of the property to find</param>
         /// <returns>ICustomProperty representing the property</returns>
-        private static ICustomProperty ManagedGetCustomProperty(object target, string propertyName)
+        private static global::Windows.UI.Xaml.Data.ICustomProperty ManagedGetCustomProperty(object target, string propertyName)
         {
             try
             {
@@ -613,10 +608,10 @@ namespace System.Runtime.InteropServices
                 string propertyName = McgMarshal.HStringToString(unsafe_name);
                 Type indexerType = McgMarshal.TypeNameToType(unsafe_type.Name, (int)unsafe_type.Kind);
 
-                ICustomProperty property = ManagedGetIndexedProperty(target, propertyName, indexerType);
+                global::Windows.UI.Xaml.Data.ICustomProperty property = ManagedGetIndexedProperty(target, propertyName, indexerType);
                 *unsafe_customProperty = (void*)McgComHelpers.ManagedObjectToComInterface(
                     property,
-                    typeof(ICustomProperty).TypeHandle);
+                    typeof(global::Windows.UI.Xaml.Data.ICustomProperty).TypeHandle);
             }
             catch (Exception ex)
             {
@@ -662,7 +657,7 @@ namespace System.Runtime.InteropServices
         /// <param name="propertyName">Name of the property to find</param>
         /// <param name="indexerType">Type of indexer used on the indexed property to distinguish overloads</param>
         /// <returns>ICustomProperty representing the property</returns>
-        private static ICustomProperty ManagedGetIndexedProperty(object target, string propertyName, Type indexerType)
+        private static global::Windows.UI.Xaml.Data.ICustomProperty ManagedGetIndexedProperty(object target, string propertyName, Type indexerType)
         {
             target = CustomPropertyImpl.UnwrapTarget(target);
 
@@ -789,11 +784,11 @@ namespace System.Runtime.InteropServices
     }
 #endif //ENABLE_WINRT
 
-            /// <summary>
-            /// This is a special type we'll create CCW for but does not implement any WinRT interfaces
-            /// We need to ask MCG to generate templates for it explicitly by marking with McgComCallableAttribute
-            /// </summary>
-        [McgComCallableAttribute]
+    /// <summary>
+    /// This is a special type we'll create CCW for but does not implement any WinRT interfaces
+    /// We need to ask MCG to generate templates for it explicitly by marking with McgComCallableAttribute
+    /// </summary>
+    [McgComCallableAttribute]
     internal class StandardCustomPropertyProviderProxy : IManagedWrapper
     {
         Object m_target;
@@ -1550,7 +1545,7 @@ namespace System.Runtime.InteropServices
             pfnGetUnmarshalClass    = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfGetMarshalUnMarshal>(__vtable_IMarshal.GetUnmarshalClass),
             pfnGetMarshalSizeMax    = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfGetMarshalUnMarshal>(__vtable_IMarshal.GetMarshalSizeMax),
             pfnMarshalInterface     = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfMarshalInterface>(__vtable_IMarshal.MarshalInterface),
-            pfnUnmarshalInterface = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfUnmarshalInterface>(__vtable_IMarshal.UnmarshalInterface),
+            pfnUnmarshalInterface   = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfTarget5>(__vtable_IMarshal.UnmarshalInterface),
             pfnReleaseMarshalData   = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfTarget3>(__vtable_IMarshal.ReleaseMarshalData),
             pfnDisconnectObject     = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfTarget2>(__vtable_IMarshal.DisconnectObject)
         };
