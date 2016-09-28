@@ -171,22 +171,6 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
             return true;
         }
-
-        public static bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
-        {
-            genericTypeDefinitionHandle = default(RuntimeTypeHandle);
-            genericTypeArgumentHandles = null;
-
-            // Check the regular tables first.
-            if (ReflectionExecution.ExecutionEnvironment.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                return true;
-
-            // Now check the diagnostic tables.
-            if (ReflectionExecution.ExecutionEnvironment.TryGetConstructedGenericTypeComponentsDiag(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                return true;
-
-            return false;
-        }
     }
 }
 
