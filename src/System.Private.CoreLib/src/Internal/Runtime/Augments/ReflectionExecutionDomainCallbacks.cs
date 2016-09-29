@@ -53,9 +53,6 @@ namespace Internal.Runtime.Augments
         public abstract Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle);
 
-        // Generic Virtual Method Support
-        public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref IntPtr methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
-
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
 
