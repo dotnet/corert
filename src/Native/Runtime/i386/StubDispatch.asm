@@ -15,6 +15,77 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 EXTERN RhpCidResolve : PROC
 EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
+EXTERN RhpCastableObjectResolve : PROC
+EXTERN _RhpCheckedAssignRefEDX : PROC
+
+EXTERN  _t_TLS_DispatchCell:DWORD
+EXTERN  __tls_index:DWORD
+
+GET_TLS_DISPATCH_CELL macro
+        ASSUME fs : NOTHING
+        mov     eax, [__tls_index]
+        add     eax, eax
+        add     eax, eax
+        add     eax, fs:[__tls_array]
+        mov     eax, [eax]
+        mov     eax, [eax + SECTIONREL _t_TLS_DispatchCell]
+endm
+
+_RhpGetTailCallTLSDispatchCell proc public
+        lea     eax, RhpTailCallTLSDispatchCell
+        ret
+_RhpGetTailCallTLSDispatchCell endp
+
+RhpTailCallTLSDispatchCell proc public
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+
+        ;; Tail call to the target of the dispatch cell
+        jmp     dword ptr [eax]
+RhpTailCallTLSDispatchCell endp
+
+_RhpGetCastableObjectDispatchHelper_TailCalled proc public
+        lea     eax, RhpCastableObjectDispatchHelper_TailCalled
+        ret
+_RhpGetCastableObjectDispatchHelper_TailCalled endp
+
+RhpCastableObjectDispatchHelper_TailCalled proc public
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+        jmp     RhpCastableObjectDispatchHelper
+RhpCastableObjectDispatchHelper_TailCalled endp
+
+RhpCastableObjectDispatchHelper proc public
+        push    ebp
+        mov     ebp, esp
+        ;; TODO! Implement fast lookup helper to avoid the universal transition each time we
+        ;; hit a CastableObject
+
+        ;; If the initial lookup fails, call into managed under the universal thunk
+        ;; to run the full lookup routine
+
+        ;; indirection cell address is in EAX, it will be passed by
+        ;; the universal transition thunk as an argument to RhpCastableObjectResolve
+        push    eax
+        lea     eax, RhpCastableObjectResolve
+        push    eax
+        jmp     _RhpUniversalTransition_DebugStepTailCall@0
+RhpCastableObjectDispatchHelper endp
+
+_RhpGetCastableObjectDispatchHelper proc public
+        lea     eax, RhpCastableObjectDispatchHelper
+        ret
+_RhpGetCastableObjectDispatchHelper endp
+
+_RhpGetCacheForCastableObject proc public
+        mov     eax, [ecx+4]
+        ret
+_RhpGetCacheForCastableObject endp
+
+_RhpSetCacheForCastableObject proc public
+        lea     ecx, [ecx+4]
+        jmp     _RhpCheckedAssignRefEDX ;; Is this the correct form for tailcall?
+_RhpSetCacheForCastableObject endp
 
 
 ;; Macro that generates code to check a single cache entry.
@@ -64,7 +135,7 @@ CurrentEntry = CurrentEntry + 1
         ;; indirection cell using the back pointer in the cache block
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
         pop     ebx
-        jmp     InterfaceDispatchCacheMiss
+        jmp     RhpInterfaceDispatchSlow
 
     StubName endp
 
@@ -81,19 +152,19 @@ DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
 ;; Shared out of line helper used on cache misses.
-    InterfaceDispatchCacheMiss proc
+RhpInterfaceDispatchSlow proc
 ;; eax points at InterfaceDispatchCell
 
-;; Setup call to Universal Transition thunk
+        ;; Setup call to Universal Transition thunk
         push        ebp
         mov         ebp, esp
         push        eax   ; First argument (Interface Dispatch Cell)
         lea         eax, [RhpCidResolve]
         push        eax ; Second argument (RhpCidResolve)
 
-;; Jump to Universal Transition
+        ;; Jump to Universal Transition
         jmp         _RhpUniversalTransition_DebugStepTailCall@0
-    InterfaceDispatchCacheMiss endp
+RhpInterfaceDispatchSlow endp
 
 ;; Out of line helper used when we try to interface dispatch on a null pointer. Sets up the stack so the
 ;; debugger gives a reasonable stack trace.
@@ -106,12 +177,12 @@ RhpInterfaceDispatchNullReference endp
 
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
-    RhpInitialInterfaceDispatch proc public
+_RhpInitialInterfaceDispatch proc public
     ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
 
-        jmp InterfaceDispatchCacheMiss
+        jmp RhpInterfaceDispatchSlow
 
-    RhpInitialInterfaceDispatch endp
+_RhpInitialInterfaceDispatch endp
 
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH

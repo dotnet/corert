@@ -24,15 +24,9 @@ namespace Internal.Reflection.Execution.MethodInvokers
             if (RuntimeAugments.IsAssignableFrom(declaringTypeHandle, srcTypeHandle))
                 return;
 
-            // if Object supports ICastable interface and the declaringType is interface
-            // try to call ICastable.IsInstanceOfInterface to determine whether object suppport declaringType interface
             if (RuntimeAugments.IsInterface(declaringTypeHandle))
             {
-                ICastable castable = thisObject as ICastable;
-                Exception castError;
-
-                // ICastable.IsInstanceOfInterface isn't supposed to throw exception
-                if (castable != null && castable.IsInstanceOfInterface(declaringTypeHandle, out castError))
+                if (RuntimeAugments.IsInstanceOfInterface(thisObject, declaringTypeHandle))
                     return;
             }
 

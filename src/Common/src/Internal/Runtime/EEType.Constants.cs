@@ -180,43 +180,7 @@ namespace Internal.Runtime
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
     }
-
-    internal enum EETypeOptionalFieldsElement : byte
-    {
-        /// <summary>
-        /// Extra <c>EEType</c> flags not commonly used such as HasClassConstructor
-        /// </summary>
-        RareFlags,
-
-        /// <summary>
-        /// VTable slot of <see cref="ICastable.IsInstanceOfInterface"/> for direct invocation without interface dispatch overhead
-        /// </summary>
-        ICastableIsInstSlot,
-
-        /// <summary>
-        /// Index of the dispatch map pointer in the DispathMap table
-        /// </summary>
-        DispatchMap,
-
-        /// <summary>
-        /// Padding added to a value type when allocated on the GC heap
-        /// </summary>
-        ValueTypeFieldPadding,
-
-        /// <summary>
-        /// VTable slot of <see cref="ICastable.GetImplType"/> for direct invocation without interface dispatch overhead
-        /// </summary>
-        ICastableGetImplTypeSlot,
-
-        /// <summary>
-        /// Offset in Nullable&lt;T&gt; of the value field
-        /// </summary>
-        NullableValueOffset,
-
-        // Number of field types we support
-        Count
-    }
-
+    
     internal enum EETypeField
     {
         ETF_InterfaceMap,
@@ -265,14 +229,38 @@ namespace Internal.Runtime
 
     internal enum EETypeOptionalFieldTag : byte
     {
-        OFT_RareFlags,
-        OFT_ICastableIsInstSlot,
-        OFT_DispatchMap,
-        OFT_ValueTypeFieldPadding,
-        OFT_ICastableGetImplTypeSlot,
-        OFT_NullableValueOffset,
+        /// <summary>
+        /// Extra <c>EEType</c> flags not commonly used such as HasClassConstructor
+        /// </summary>
+        RareFlags,
 
-        OFT_Count // Number of field types we support
+        /// <summary>
+        /// VTable slot of <see cref="ICastable.IsInstanceOfInterface"/> for direct invocation without interface dispatch overhead
+        /// </summary>
+        ICastableIsInstSlot,
+
+        /// <summary>
+        /// Index of the dispatch map pointer in the DispathMap table
+        /// </summary>
+        DispatchMap,
+
+        /// <summary>
+        /// Padding added to a value type when allocated on the GC heap
+        /// </summary>
+        ValueTypeFieldPadding,
+
+        /// <summary>
+        /// VTable slot of <see cref="ICastable.GetImplType"/> for direct invocation without interface dispatch overhead
+        /// </summary>
+        ICastableGetImplTypeSlot,
+
+        /// <summary>
+        /// Offset in Nullable&lt;T&gt; of the value field
+        /// </summary>
+        NullableValueOffset,
+
+        // Number of field types we support
+        Count
     }
 
     // Keep this synchronized with GenericVarianceType in rhbinder.h.

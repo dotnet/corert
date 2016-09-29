@@ -265,14 +265,20 @@ namespace System.Runtime
 
             // If object type implements ICastable then there's one more way to check whether it implements
             // the interface.
-            if (pObjType->IsICastable && IsInstanceOfInterfaceViaICastable(obj, pTargetType))
+            if (pObjType->IsICastable && IsInstanceOfInterfaceViaCastableObject(obj, pTargetType))
                 return obj;
 
             return null;
         }
 
-        unsafe static bool IsInstanceOfInterfaceViaICastable(object obj, EEType* pTargetType)
+        unsafe static bool IsInstanceOfInterfaceViaCastableObject(object obj, EEType* pTargetType)
         {
+            // To avoid stack overflow, it is not possible to implement the ICastableObject interface
+            // itself via ICastableObject
+            if (pTargetType->IsICastable)
+                return false;
+
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
             // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
             // dispatch since we know the method address statically. We ignore any cast error exception
             // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
@@ -280,7 +286,42 @@ namespace System.Runtime
             Exception castError = null;
             if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
                 return true;
+
+            if (obj is CastableObjectSupport.ICastableObject)
+            {
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+
+            // We ignore any cast error exception
+            // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
+            CastableObjectSupport.ICastableObject castableObject = (CastableObjectSupport.ICastableObject)obj;
+            Exception castableObjectCastError = null;
+            if (CastableObjectSupport.GetCastableTargetIfPossible(castableObject, pTargetType, false, ref castableObjectCastError) != null)
+                return true;
+
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+            }
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
             return false;
+        }
+
+        unsafe static bool IsInstanceOfInterfaceViaCastableObjectWithException(object obj, EEType* pTargetType, ref Exception castError)
+        {
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+            // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
+            // dispatch since we know the method address statically.
+            IntPtr pfnIsInstanceOfInterface = obj.EEType->ICastableIsInstanceOfInterfaceMethod;
+            if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
+                return true;
+            if (obj is CastableObjectSupport.ICastableObject)
+            {
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+
+            CastableObjectSupport.ICastableObject castableObject = (CastableObjectSupport.ICastableObject)obj;
+            return CastableObjectSupport.GetCastableTargetIfPossible(castableObject, pTargetType, true, ref castError) != null;
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+            }
+            return false;
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
         }
 
         static internal unsafe bool ImplementsInterface(EEType* pObjType, EEType* pTargetType)
@@ -366,6 +407,18 @@ namespace System.Runtime
                                                         fArrayCovariance))
                             return true;
                     }
+                }
+            }
+
+            // Interface type equivalence check.
+            // Currently only implemented to allow ICastable to be defined in multiple type spaces
+            if (pTargetType->IsICastable)
+            {
+                for (int i = 0; i < numInterfaces; i++)
+                {
+                    EEType* pInterfaceType = interfaceMap[i].InterfaceType;
+                    if (pInterfaceType->IsICastable)
+                        return true;
                 }
             }
 
@@ -685,10 +738,7 @@ namespace System.Runtime
             // the interface.
             if (pObjType->IsICastable)
             {
-                // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
-                // dispatch since we know the method address statically.
-                IntPtr pfnIsInstanceOfInterface = pObjType->ICastableIsInstanceOfInterfaceMethod;
-                if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
+                if (IsInstanceOfInterfaceViaCastableObjectWithException(obj, pTargetType, ref castError))
                     return obj;
             }
 
@@ -718,7 +768,7 @@ namespace System.Runtime
 
             // If object type implements ICastable then there's one more way to check whether it implements
             // the interface.
-            if (obj.EEType->IsICastable && IsInstanceOfInterfaceViaICastable(obj, arrayElemType))
+            if (obj.EEType->IsICastable && IsInstanceOfInterfaceViaCastableObject(obj, arrayElemType))
                 return;
 
             // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
@@ -780,7 +830,7 @@ namespace System.Runtime
                 {
                     // If object type implements ICastable then there's one more way to check whether it implements
                     // the interface.
-                    if (!obj.EEType->IsICastable || !IsInstanceOfInterfaceViaICastable(obj, arrayElemType))
+                    if (!obj.EEType->IsICastable || !IsInstanceOfInterfaceViaCastableObject(obj, arrayElemType))
                     {
                         // Throw the array type mismatch exception defined by the classlib, using the input array's 
                         // EEType* to find the correct classlib.
