@@ -770,7 +770,7 @@ namespace ILCompiler.CppCodeGen
             }
             else
             {
-                nodeCode.Append(node.GetName());
+                nodeCode.Append(((ISymbolNode)node).MangledName);
             }
             nodeCode.Append("()");
             nodeCode.AppendLine();
@@ -847,7 +847,7 @@ namespace ILCompiler.CppCodeGen
                 relocCode.Append(reloc.Target.MangledName);
                 relocCode.Append("()");
             }
-            else if (reloc.Target is ObjectAndOffsetSymbolNode && (reloc.Target as ObjectAndOffsetSymbolNode).GetName().Contains("DispatchMap"))
+            else if (reloc.Target is ObjectAndOffsetSymbolNode && (reloc.Target as ISymbolNode).MangledName.Contains("DispatchMap"))
             {
                 relocCode.Append("dispatchMapModule");
             }
@@ -972,7 +972,7 @@ namespace ILCompiler.CppCodeGen
                 else if (node is InterfaceDispatchMapNode)
                 {
                     dispatchPointers.Append("(void *)");
-                    dispatchPointers.Append(node.GetName());
+                    dispatchPointers.Append(((ISymbolNode)node).MangledName);
                     dispatchPointers.Append("(),");
                     dispatchPointers.AppendLine();
                     dispatchMapCount++;
@@ -1193,7 +1193,7 @@ namespace ILCompiler.CppCodeGen
             rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },");
             rtrHeader.AppendLine();
             rtrHeader.Append("(void*)");
-            rtrHeader.Append(headerNode.GetName());
+            rtrHeader.Append(((ISymbolNode)headerNode).MangledName);
             rtrHeader.Append("(),");
             rtrHeader.AppendLine();
             rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }");

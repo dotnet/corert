@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return ((ISymbolNode)this).MangledName;
         }

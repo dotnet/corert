@@ -697,10 +697,13 @@ namespace ILCompiler.DependencyAnalysis
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
-#if DEBUG
-                    Debug.Assert(_previouslyWrittenNodeNames.Add(node.GetName()), "Duplicate node name emitted to file", "Node {0} has already been written to the output object file {1}", node.GetName(), objectFilePath);
-#endif
                     ObjectNode.ObjectData nodeContents = node.GetData(factory);
+
+#if DEBUG
+                    foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
+                        Debug.Assert(_previouslyWrittenNodeNames.Add(definedSymbol.MangledName), "Duplicate node name emitted to file", "Symbol {0} has already been written to the output object file {1}", definedSymbol.MangledName, objectFilePath);
+#endif
+
 
                     ObjectNodeSection section = node.Section;
                     if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)

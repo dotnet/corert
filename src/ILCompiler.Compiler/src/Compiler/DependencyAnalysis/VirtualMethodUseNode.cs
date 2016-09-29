@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             _decl = decl;
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return "VirtualMethodUse" + _decl.ToString();
         }

@@ -153,7 +153,7 @@ namespace Internal.JitInterface
                 catch (Exception e)
                 {
                     // Debug info not successfully loaded.
-                    _compilation.Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.GetName() + ")");
+                    _compilation.Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
                 }
 
                 CorInfoImpl _this = this;

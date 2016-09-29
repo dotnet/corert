@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode = futureParent;
             }
 
-            public override string GetName()
+            protected override string GetName()
             {
                 return "Embedded pointer to " + Target.MangledName;
             }
