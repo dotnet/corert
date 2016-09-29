@@ -10,13 +10,114 @@ using System.Diagnostics;
 
 namespace Internal.Runtime.CompilerServices
 {
+    public struct RuntimeMethodSignature
+    {
+        private IntPtr _ptrField;
+        private bool _isNativeLayoutSignature;
+        private int _intField;
+
+        public static RuntimeMethodSignature CreateFromNativeLayoutSignature(IntPtr signature)
+        {
+            return new RuntimeMethodSignature
+            {
+                _ptrField = signature,
+                _isNativeLayoutSignature = true
+            };
+        }
+
+        public static RuntimeMethodSignature CreateFromMethodHandle(IntPtr moduleHandle, int token)
+        {
+            return new RuntimeMethodSignature
+            {
+                _ptrField = moduleHandle,
+                _isNativeLayoutSignature = false,
+                _intField = token
+            };
+        }
+
+        public bool IsNativeLayoutSignature
+        {
+            get
+            {
+                return _isNativeLayoutSignature;
+            }
+        }
+
+        public IntPtr NativeLayoutSignature
+        {
+            get
+            {
+                if (_isNativeLayoutSignature)
+                    return _ptrField;
+                else
+                    return IntPtr.Zero;
+            }
+        }
+
+        public int Token
+        {
+            get
+            {
+                if (!_isNativeLayoutSignature)
+                    return _intField;
+                else
+                    return 0;
+            }
+        }
+
+        public IntPtr ModuleHandle
+        {
+            get
+            {
+                if (!_isNativeLayoutSignature)
+                    return _ptrField;
+                else
+                    return IntPtr.Zero;
+            }
+        }
+
+        public bool Equals(RuntimeMethodSignature other)
+        {
+            if (IsNativeLayoutSignature && other.IsNativeLayoutSignature)
+            {
+                if (NativeLayoutSignature == other.NativeLayoutSignature)
+                    return true;
+            }
+            else if (!IsNativeLayoutSignature && !other.IsNativeLayoutSignature)
+            {
+                if ((ModuleHandle == other.ModuleHandle) && (Token == other.Token))
+                    return true;
+            }
+
+            // Walk both signatures to check for equality the slow way
+            return RuntimeAugments.TypeLoaderCallbacks.CompareMethodSignatures(this, other);
+        }
+
+        /// <summary>
+        /// Fast equality check
+        /// </summary>
+        public bool StructuralEquals(RuntimeMethodSignature other)
+        {
+            if (_ptrField != other._ptrField)
+                return false;
+
+            if (_intField != other._intField)
+                return false;
+
+            if (_isNativeLayoutSignature != other._isNativeLayoutSignature)
+                return false;
+
+            return true;
+        }
+    }
+
     [System.Runtime.CompilerServices.DependencyReductionRoot]
     public class MethodNameAndSignature
     {
         public string Name { get; private set; }
-        public IntPtr Signature { get; private set; }
+        public RuntimeMethodSignature Signature { get; private set; }
 
-        public MethodNameAndSignature(string name, IntPtr signature)
+        public MethodNameAndSignature(string name, RuntimeMethodSignature signature)
         {
             Name = name;
             Signature = signature;
@@ -34,12 +135,7 @@ namespace Internal.Runtime.CompilerServices
             if (Name != other.Name)
                 return false;
 
-            // Optimistically compare signatures by pointer first
-            if (Signature == other.Signature)
-                return true;
-
-            // Walk both signatures to check for equality the slow way
-            return RuntimeAugments.TypeLoaderCallbacks.CompareMethodSignatures(Signature, other.Signature);
+            return Signature.Equals(other.Signature);
         }
 
         public override int GetHashCode()
