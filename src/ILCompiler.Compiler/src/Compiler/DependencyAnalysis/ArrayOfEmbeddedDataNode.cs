@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             return _nestedNodesList.IndexOf(symbol);
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return "Region " + ((ISymbolNode)_startSymbol).MangledName;
         }

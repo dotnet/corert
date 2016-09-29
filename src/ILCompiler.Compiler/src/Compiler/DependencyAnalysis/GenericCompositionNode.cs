@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return MangledName;
         }

@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return MangledName;
         }

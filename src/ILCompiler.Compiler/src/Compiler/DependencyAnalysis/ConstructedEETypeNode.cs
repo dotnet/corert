@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!_type.IsGenericDefinition);
         }
         
-        public override string GetName()
+        protected override string GetName()
         {
             return ((ISymbolNode)this).MangledName + " constructed";
         }

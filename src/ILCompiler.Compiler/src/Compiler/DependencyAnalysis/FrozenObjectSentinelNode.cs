@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitZeroPointer();
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return "FrozenObjectSentinelNode";
         }

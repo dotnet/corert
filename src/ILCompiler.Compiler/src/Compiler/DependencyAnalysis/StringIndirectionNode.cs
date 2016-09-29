@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitPointerReloc(stringDataNode);
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return ((ISymbolNode)this).MangledName;
         }

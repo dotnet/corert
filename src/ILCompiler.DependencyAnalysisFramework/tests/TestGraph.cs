@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 }
             }
 
-            public override string GetName()
+            protected override string GetName()
             {
                 return _data;
             }

@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
         
-        public override string GetName()
+        protected override string GetName()
         {
             return "__vtable_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
         }
