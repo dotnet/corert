@@ -16,7 +16,7 @@ namespace System
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct RuntimeTypeHandle
+    internal partial struct RuntimeTypeHandle
     {
         private EETypePtr _pEEType;
     }

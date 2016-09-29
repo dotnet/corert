@@ -44,7 +44,7 @@ namespace System
 #pragma warning restore
 
         // Creates a new instance of an Object.
-        internal Object()
+        public Object()
         {
         }
 
