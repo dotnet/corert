@@ -32,9 +32,11 @@ set(COMMON_RUNTIME_SOURCES
     RuntimeInstance.cpp
     RWLock.cpp
     SectionMethodList.cpp
+    sha1.cpp
     StackFrameIterator.cpp
     startup.cpp
     stressLog.cpp
+    strongname.cpp
     SyncClean.cpp
     thread.cpp
     threadstore.cpp

@@ -40,9 +40,12 @@ Revision History:
 
 */
 
+
 #include "common.h"
-#include "sha1.h"
-#include "contract.h"
+//#include "sha1.h"
+//#include "contract.h"
+
+#if 0
 
 typedef const DWORD DWORDC;
 #define ROTATE32L(x,n) _rotl(x,n)
@@ -409,4 +412,6 @@ BYTE *SHA1Hash::GetHash()
 
     return m_Value;
 }
+
+#endif
 
