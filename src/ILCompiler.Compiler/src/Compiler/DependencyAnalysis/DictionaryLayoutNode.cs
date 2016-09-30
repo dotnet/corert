@@ -104,16 +104,11 @@ namespace ILCompiler.DependencyAnalysis
             return String.Concat("Dictionary layout for " + _owningMethodOrType.ToString());
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            foreach (GenericLookupResultNode entry in EntryHashTable.Enumerator.Get(_entries))
-                yield return new DependencyListEntry(entry, "Canonical dependency");
-        }
-
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
             List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(
