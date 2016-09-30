@@ -104,60 +104,19 @@ namespace ILCompiler.DependencyAnalysis
             return String.Concat("Dictionary layout for " + _owningMethodOrType.ToString());
         }
 
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            foreach (DictionaryEntry entry in EntryHashTable.Enumerator.Get(_entries))
+                yield return new DependencyListEntry(entry, "Canonical dependency");
+        }
+
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
             List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(
             NodeFactory factory) => null;
     }
-
-    /// <summary>
-    /// Represents a single entry in a <see cref="DictionaryLayoutNode"/>.
-    /// </summary>
-    public abstract class DictionaryEntry
-    {
-        public abstract override bool Equals(object obj);
-        public abstract override int GetHashCode();
-        public abstract override string ToString();
-
-        public abstract ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
-        public abstract string GetMangledName(NameMangler nameMangler);
-
-        protected static bool SameType<T>(T thisEntry, object other)
-        {
-            Debug.Assert(thisEntry.GetType() == typeof(T));
-            return other != null && typeof(T) == other.GetType();
-        }
-    }
-
-    public class TypeHandleDictionaryEntry : DictionaryEntry
-    {
-        private TypeDesc _type;
-
-        public TypeHandleDictionaryEntry(TypeDesc type)
-        {
-            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
-            _type = type;
-        }
-
-        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
-        {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return factory.NecessaryTypeSymbol(instantiatedType);
-        }
-
-        public override string GetMangledName(NameMangler nameMangler)
-        {
-            return $"TypeHandle_{nameMangler.GetMangledTypeName(_type)}";
-        }
-
-        public override bool Equals(object obj) => SameType(this, obj) && ((TypeHandleDictionaryEntry)obj)._type == _type;
-        public override int GetHashCode() => _type.GetHashCode();
-        public override string ToString() => $"TypeHandle: {_type}";
-    }
-
 }

@@ -1156,15 +1156,15 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private static DictionaryEntry GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
+        private DictionaryEntry GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
         {
             switch (fixupKind)
             {
                 case ReadyToRunFixupKind.TypeHandle:
                     if (resolvedToken is TypeDesc)
-                        return new TypeHandleDictionaryEntry((TypeDesc)resolvedToken);
+                        return _compilation.NodeFactory.GenericLookup.Type((TypeDesc)resolvedToken);
                     else
-                        return new TypeHandleDictionaryEntry(((MethodDesc)resolvedToken).OwningType);
+                        return _compilation.NodeFactory.GenericLookup.Type(((MethodDesc)resolvedToken).OwningType);
                 default:
                     throw new NotImplementedException();
             }

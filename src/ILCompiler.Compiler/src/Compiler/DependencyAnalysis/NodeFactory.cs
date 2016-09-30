@@ -14,7 +14,7 @@ using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class NodeFactory
+    public abstract partial class NodeFactory
     {
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
