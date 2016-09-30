@@ -1156,15 +1156,15 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private static DictionaryEntry GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
+        private GenericLookupResult GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
         {
             switch (fixupKind)
             {
                 case ReadyToRunFixupKind.TypeHandle:
                     if (resolvedToken is TypeDesc)
-                        return new TypeHandleDictionaryEntry((TypeDesc)resolvedToken);
+                        return _compilation.NodeFactory.GenericLookup.Type((TypeDesc)resolvedToken);
                     else
-                        return new TypeHandleDictionaryEntry(((MethodDesc)resolvedToken).OwningType);
+                        return _compilation.NodeFactory.GenericLookup.Type(((MethodDesc)resolvedToken).OwningType);
                 default:
                     throw new NotImplementedException();
             }
@@ -1229,7 +1229,7 @@ namespace Internal.JitInterface
 
                         ReadyToRunFixupKind fixupKind = (ReadyToRunFixupKind)pGenericLookupKind.runtimeLookupFlags;
                         object fixupTarget = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        DictionaryEntry target = GetTargetForFixup(fixupTarget, fixupKind);
+                        GenericLookupResult target = GetTargetForFixup(fixupTarget, fixupKind);
 
                         ReadyToRunHelperId helper;
                         TypeSystemEntity dictionaryOwner;

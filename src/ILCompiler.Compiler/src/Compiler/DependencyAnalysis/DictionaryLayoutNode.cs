@@ -14,28 +14,28 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents the layout of the generic dictionary associated with a given canonical
-    /// generic type or generic method. Maintains a bag of <see cref="DictionaryEntry"/> associated
+    /// generic type or generic method. Maintains a bag of <see cref="GenericLookupResult"/> associated
     /// with the canonical entity.
     /// </summary>
     /// <remarks>
-    /// The generic dictionary doesn't have any dependent nodes because <see cref="DictionaryEntry"/>
+    /// The generic dictionary doesn't have any dependent nodes because <see cref="GenericLookupResult"/>
     /// are runtime-determined - the concrete dependency depends on the generic context the canonical
     /// entity is instantiated with.
     /// </remarks>
     class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
     {
-        class EntryHashTable : LockFreeReaderHashtable<DictionaryEntry, DictionaryEntry>
+        class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
         {
-            protected override bool CompareKeyToValue(DictionaryEntry key, DictionaryEntry value) => Object.Equals(key, value);
-            protected override bool CompareValueToValue(DictionaryEntry value1, DictionaryEntry value2) => Object.Equals(value1, value2);
-            protected override DictionaryEntry CreateValueFromKey(DictionaryEntry key) => key;
-            protected override int GetKeyHashCode(DictionaryEntry key) => key.GetHashCode();
-            protected override int GetValueHashCode(DictionaryEntry value) => value.GetHashCode();
+            protected override bool CompareKeyToValue(GenericLookupResult key, GenericLookupResult value) => Object.Equals(key, value);
+            protected override bool CompareValueToValue(GenericLookupResult value1, GenericLookupResult value2) => Object.Equals(value1, value2);
+            protected override GenericLookupResult CreateValueFromKey(GenericLookupResult key) => key;
+            protected override int GetKeyHashCode(GenericLookupResult key) => key.GetHashCode();
+            protected override int GetValueHashCode(GenericLookupResult value) => value.GetHashCode();
         }
 
         private TypeSystemEntity _owningMethodOrType;
         private EntryHashTable _entries = new EntryHashTable();
-        private volatile DictionaryEntry[] _layout;
+        private volatile GenericLookupResult[] _layout;
 
         public DictionaryLayoutNode(TypeSystemEntity owningMethodOrType)
         {
@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
             Validate();
         }
 
-        public void EnsureEntry(DictionaryEntry entry)
+        public void EnsureEntry(GenericLookupResult entry)
         {
             Debug.Assert(_layout == null, "Trying to add entry but layout already computed");
             _entries.AddOrGetExisting(entry);
@@ -52,9 +52,9 @@ namespace ILCompiler.DependencyAnalysis
         private void ComputeLayout()
         {
             // TODO: deterministic ordering
-            DictionaryEntry[] layout = new DictionaryEntry[_entries.Count];
+            GenericLookupResult[] layout = new GenericLookupResult[_entries.Count];
             int index = 0;
-            foreach (DictionaryEntry entry in EntryHashTable.Enumerator.Get(_entries))
+            foreach (GenericLookupResult entry in EntryHashTable.Enumerator.Get(_entries))
             {
                 layout[index++] = entry;
             }
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             _layout = layout;
         }
 
-        public int GetSlotForEntry(DictionaryEntry entry)
+        public int GetSlotForEntry(GenericLookupResult entry)
         {
             if (_layout == null)
                 ComputeLayout();
@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public IEnumerable<DictionaryEntry> Entries
+        public IEnumerable<GenericLookupResult> Entries
         {
             get
             {
@@ -114,50 +114,4 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(
             NodeFactory factory) => null;
     }
-
-    /// <summary>
-    /// Represents a single entry in a <see cref="DictionaryLayoutNode"/>.
-    /// </summary>
-    public abstract class DictionaryEntry
-    {
-        public abstract override bool Equals(object obj);
-        public abstract override int GetHashCode();
-        public abstract override string ToString();
-
-        public abstract ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
-        public abstract string GetMangledName(NameMangler nameMangler);
-
-        protected static bool SameType<T>(T thisEntry, object other)
-        {
-            Debug.Assert(thisEntry.GetType() == typeof(T));
-            return other != null && typeof(T) == other.GetType();
-        }
-    }
-
-    public class TypeHandleDictionaryEntry : DictionaryEntry
-    {
-        private TypeDesc _type;
-
-        public TypeHandleDictionaryEntry(TypeDesc type)
-        {
-            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
-            _type = type;
-        }
-
-        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
-        {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return factory.NecessaryTypeSymbol(instantiatedType);
-        }
-
-        public override string GetMangledName(NameMangler nameMangler)
-        {
-            return $"TypeHandle_{nameMangler.GetMangledTypeName(_type)}";
-        }
-
-        public override bool Equals(object obj) => SameType(this, obj) && ((TypeHandleDictionaryEntry)obj)._type == _type;
-        public override int GetHashCode() => _type.GetHashCode();
-        public override string ToString() => $"TypeHandle: {_type}";
-    }
-
 }
