@@ -266,6 +266,12 @@ namespace Internal.JitInterface
                                                        _compilation.NodeFactory.Target.MinimumFunctionAlignment,
                                                        new ISymbolNode[] { _methodCodeNode });
 
+            Console.WriteLine("*** " + MethodBeingCompiled);
+            foreach (var reloc in relocs)
+            {
+                Console.WriteLine("{0}: {1}", reloc.Target.GetType(), reloc.Target);
+            }
+
             _methodCodeNode.SetCode(objectData);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
@@ -570,7 +576,7 @@ namespace Internal.JitInterface
             if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
-            if (method.IsSharedByGenericInstantiations)
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
@@ -766,7 +772,7 @@ namespace Internal.JitInterface
 
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
 
-            if (methodIL.OwningMethod.IsSharedByGenericInstantiations)
+            if (methodIL.OwningMethod.IsCanonicalMethod(CanonicalFormKind.Any))
             {
                 MethodIL methodILUninstantiated = methodIL.GetMethodILDefinition();
                 MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
@@ -1171,6 +1177,10 @@ namespace Internal.JitInterface
                         return _compilation.NodeFactory.GenericLookup.Type((TypeDesc)resolvedToken);
                     else
                         return _compilation.NodeFactory.GenericLookup.Type(((MethodDesc)resolvedToken).OwningType);
+
+                case ReadyToRunFixupKind.MethodHandle:
+                    return _compilation.NodeFactory.GenericLookup.MethodDictionary((MethodDesc)resolvedToken);
+
                 default:
                     throw new NotImplementedException();
             }
@@ -2117,11 +2127,18 @@ namespace Internal.JitInterface
 
                 Debug.Assert(md.OwningType == td);
 
+                runtimeLookup = md.IsCanonicalMethod(CanonicalFormKind.Any);
+
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
 
-                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
-
-                runtimeLookup = false;
+                if (!runtimeLookup)
+                {
+                    // TODO: LDTOKEN <method>?
+                }
+                else
+                {
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.MethodHandle;
+                }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
@@ -2211,7 +2228,7 @@ namespace Internal.JitInterface
 
             MethodDesc method = HandleToObject(context);
 
-            if (method.IsSharedByGenericInstantiations)
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
             {
                 result.needsRuntimeLookup = true;
                 result.runtimeLookupKind = GetGenericRuntimeLookupKind(method);
@@ -2327,7 +2344,7 @@ namespace Internal.JitInterface
             if (targetMethod.HasInstantiation)
             {
                 pResult.contextHandle = contextFromMethod(targetMethod);
-                pResult.exactContextNeedsRuntimeLookup = targetMethod.IsSharedByGenericInstantiations;
+                pResult.exactContextNeedsRuntimeLookup = targetMethod.IsCanonicalMethod(CanonicalFormKind.Any);
             }
             else
             {
@@ -2381,13 +2398,11 @@ namespace Internal.JitInterface
                 {
                     // Calling a string constructor doesn't call the actual constructor.
                     directMethod = targetMethod.GetStringInitializer();
+                    concreteMethod = directMethod;
                 }
 
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(directMethod));
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
@@ -2395,6 +2410,18 @@ namespace Internal.JitInterface
                     // during the jitting of the call.
                     // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
                     // codegen emitted at crossgen time)
+
+                    if (directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                    {
+                        MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.RuntimeDeterminedMethod(runtimeDeterminedMethod));
+                    }
+                    else
+                    {
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.MethodEntrypoint(directMethod));
+                    }
                 }
                 else
                 {
@@ -2413,6 +2440,19 @@ namespace Internal.JitInterface
                     {
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
                         pResult.instParamLookup.addr = (void*)ObjectToHandle(genericDictionary);
+
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
+                    }
+                    else if (targetMethod.AcquiresInstMethodTableFromThis())
+                    {
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
+                    }
+                    else
+                    {
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.MethodEntrypoint(directMethod));
                     }
                 }
 

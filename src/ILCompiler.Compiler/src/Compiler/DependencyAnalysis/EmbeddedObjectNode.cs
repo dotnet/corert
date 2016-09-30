@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                Debug.Assert(_offset != InvalidOffset);
+                //Debug.Assert(_offset != InvalidOffset);
                 return _offset;
             }
             set

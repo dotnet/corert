@@ -48,4 +48,31 @@ namespace ILCompiler.DependencyAnalysis
 
         public override string ToString() => $"TypeHandle: {_type}";
     }
+
+    /// <summary>
+    /// Generic lookup result that points to a method dictionary.
+    /// </summary>
+    internal sealed class MethodDictionaryGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public MethodDictionaryGenericLookupResult(MethodDesc method)
+        {
+            // TODO: assert it's runtime determined
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.MethodGenericDictionary(instantiatedMethod);
+        }
+
+        public override string GetMangledName(NameMangler nameMangler)
+        {
+            return $"MethodHandle_{nameMangler.GetMangledMethodName(_method)}";
+        }
+
+        public override string ToString() => $"MethodHandle: {_method}";
+    }
 }

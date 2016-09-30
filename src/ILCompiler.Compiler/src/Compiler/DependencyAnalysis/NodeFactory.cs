@@ -185,6 +185,18 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
+            _dependencyOnlyMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
+            {
+                return new ShadowConcreteMethodNode(method,
+                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+            });
+
+            _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
+            {
+                return new RuntimeDeterminedMethodNode(method,
+                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+            });
+
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
             {
                 return new VirtualMethodUseNode(method);
@@ -469,6 +481,20 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, IMethodNode> _dependencyOnlyMethods;
+
+        public IMethodNode DependencyOnlyMethod(MethodDesc method)
+        {
+            return _dependencyOnlyMethods.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, IMethodNode> _runtimeDeterminedMethods;
+
+        public IMethodNode RuntimeDeterminedMethod(MethodDesc method)
+        {
+            return _runtimeDeterminedMethods.GetOrAdd(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
