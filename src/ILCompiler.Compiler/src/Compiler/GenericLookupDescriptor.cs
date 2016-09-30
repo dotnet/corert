@@ -14,9 +14,9 @@ namespace ILCompiler.DependencyAnalysis
     {
         public readonly TypeSystemEntity CanonicalOwner;
 
-        public readonly DictionaryEntry Signature;
+        public readonly GenericLookupResultNode Signature;
 
-        public GenericLookupDescriptor(TypeSystemEntity canonicalOwner, DictionaryEntry signature)
+        public GenericLookupDescriptor(TypeSystemEntity canonicalOwner, GenericLookupResultNode signature)
         {
             // Owner should be a canonical type or canonical method
             Debug.Assert((

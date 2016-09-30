@@ -14,28 +14,28 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents the layout of the generic dictionary associated with a given canonical
-    /// generic type or generic method. Maintains a bag of <see cref="DictionaryEntry"/> associated
+    /// generic type or generic method. Maintains a bag of <see cref="GenericLookupResultNode"/> associated
     /// with the canonical entity.
     /// </summary>
     /// <remarks>
-    /// The generic dictionary doesn't have any dependent nodes because <see cref="DictionaryEntry"/>
+    /// The generic dictionary doesn't have any dependent nodes because <see cref="GenericLookupResultNode"/>
     /// are runtime-determined - the concrete dependency depends on the generic context the canonical
     /// entity is instantiated with.
     /// </remarks>
     class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
     {
-        class EntryHashTable : LockFreeReaderHashtable<DictionaryEntry, DictionaryEntry>
+        class EntryHashTable : LockFreeReaderHashtable<GenericLookupResultNode, GenericLookupResultNode>
         {
-            protected override bool CompareKeyToValue(DictionaryEntry key, DictionaryEntry value) => Object.Equals(key, value);
-            protected override bool CompareValueToValue(DictionaryEntry value1, DictionaryEntry value2) => Object.Equals(value1, value2);
-            protected override DictionaryEntry CreateValueFromKey(DictionaryEntry key) => key;
-            protected override int GetKeyHashCode(DictionaryEntry key) => key.GetHashCode();
-            protected override int GetValueHashCode(DictionaryEntry value) => value.GetHashCode();
+            protected override bool CompareKeyToValue(GenericLookupResultNode key, GenericLookupResultNode value) => Object.Equals(key, value);
+            protected override bool CompareValueToValue(GenericLookupResultNode value1, GenericLookupResultNode value2) => Object.Equals(value1, value2);
+            protected override GenericLookupResultNode CreateValueFromKey(GenericLookupResultNode key) => key;
+            protected override int GetKeyHashCode(GenericLookupResultNode key) => key.GetHashCode();
+            protected override int GetValueHashCode(GenericLookupResultNode value) => value.GetHashCode();
         }
 
         private TypeSystemEntity _owningMethodOrType;
         private EntryHashTable _entries = new EntryHashTable();
-        private volatile DictionaryEntry[] _layout;
+        private volatile GenericLookupResultNode[] _layout;
 
         public DictionaryLayoutNode(TypeSystemEntity owningMethodOrType)
         {
@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
             Validate();
         }
 
-        public void EnsureEntry(DictionaryEntry entry)
+        public void EnsureEntry(GenericLookupResultNode entry)
         {
             Debug.Assert(_layout == null, "Trying to add entry but layout already computed");
             _entries.AddOrGetExisting(entry);
@@ -52,9 +52,9 @@ namespace ILCompiler.DependencyAnalysis
         private void ComputeLayout()
         {
             // TODO: deterministic ordering
-            DictionaryEntry[] layout = new DictionaryEntry[_entries.Count];
+            GenericLookupResultNode[] layout = new GenericLookupResultNode[_entries.Count];
             int index = 0;
-            foreach (DictionaryEntry entry in EntryHashTable.Enumerator.Get(_entries))
+            foreach (GenericLookupResultNode entry in EntryHashTable.Enumerator.Get(_entries))
             {
                 layout[index++] = entry;
             }
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             _layout = layout;
         }
 
-        public int GetSlotForEntry(DictionaryEntry entry)
+        public int GetSlotForEntry(GenericLookupResultNode entry)
         {
             if (_layout == null)
                 ComputeLayout();
@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public IEnumerable<DictionaryEntry> Entries
+        public IEnumerable<GenericLookupResultNode> Entries
         {
             get
             {
@@ -106,7 +106,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            foreach (DictionaryEntry entry in EntryHashTable.Enumerator.Get(_entries))
+            foreach (GenericLookupResultNode entry in EntryHashTable.Enumerator.Get(_entries))
                 yield return new DependencyListEntry(entry, "Canonical dependency");
         }
 

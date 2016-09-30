@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 namespace ILCompiler.DependencyAnalysis
 {
     /// Part of Node factory that deals with nodes describing results of generic lookups.
-    /// See: <see cref="DictionaryEntry"/>.
+    /// See: <see cref="GenericLookupResultNode"/>.
     partial class NodeFactory
     {
         /// <summary>
@@ -22,15 +22,15 @@ namespace ILCompiler.DependencyAnalysis
 
             private void CreateNodeCaches()
             {
-                _typeSymbols = new NodeCache<TypeDesc, DictionaryEntry>(type =>
+                _typeSymbols = new NodeCache<TypeDesc, GenericLookupResultNode>(type =>
                 {
                     return new TypeHandleDictionaryEntry(type);
                 });
             }
 
-            private NodeCache<TypeDesc, DictionaryEntry> _typeSymbols;
+            private NodeCache<TypeDesc, GenericLookupResultNode> _typeSymbols;
 
-            public DictionaryEntry Type(TypeDesc type)
+            public GenericLookupResultNode Type(TypeDesc type)
             {
                 return _typeSymbols.GetOrAdd(type);
             }
