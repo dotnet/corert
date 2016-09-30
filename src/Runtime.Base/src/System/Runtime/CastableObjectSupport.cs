@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
+    [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
     static class CastableObjectSupport
     {
         private static object s_castFailCanary = new object();
