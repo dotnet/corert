@@ -263,6 +263,22 @@ namespace Internal.Runtime.TypeLoader
             throw new NotImplementedException();
         }
 
+        public struct VirtualResolveDataResult
+        {
+            public RuntimeTypeHandle DeclaringInvokeType;
+            public ushort SlotIndex;
+            public RuntimeMethodHandle GVMHandle;
+            public bool IsGVM;
+        }
+
+        public static bool TryGetVirtualResolveData(IntPtr moduleHandle,
+            RuntimeTypeHandle methodHandleDeclaringType, RuntimeTypeHandle[] genericArgs,
+            ref MethodSignatureComparer methodSignatureComparer,
+            out VirtualResolveDataResult lookupResult)
+        {
+            throw new NotImplementedException();
+        }
+
         internal unsafe static NativeReader GetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob)
         {
             NativeReader reader;

@@ -1684,6 +1684,24 @@ namespace System
                 }
             }
 
+            if (!firstTypeHandle.IsNull())
+            {
+                if (firstTypeHandle.HasDynamicAdapterClass() && GetDynamicAdapterInternal(firstTypeHandle, default(RuntimeTypeHandle)) != null)
+                {
+                    resolvedTypeHandle = firstTypeHandle;
+                    return true;
+                }
+            }
+
+            if (!secondaryTypeHandle.IsNull())
+            {
+                if (secondaryTypeHandle.HasDynamicAdapterClass() && GetDynamicAdapterInternal(secondaryTypeHandle, default(RuntimeTypeHandle)) != null)
+                {
+                    resolvedTypeHandle = secondaryTypeHandle;
+                    return true;
+                }
+            }          
+            
             return false;
         }
 

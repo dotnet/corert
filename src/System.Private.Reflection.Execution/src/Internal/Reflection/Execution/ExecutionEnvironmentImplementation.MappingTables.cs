@@ -635,122 +635,21 @@ namespace Internal.Reflection.Execution
             RuntimeTypeHandle methodHandleDeclaringType, MethodHandle methodHandle, RuntimeTypeHandle[] genericArgs,
             ref MethodSignatureComparer methodSignatureComparer)
         {
-            NativeReader invokeMapReader = GetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.VirtualInvokeMap);
-            NativeParser invokeMapParser = new NativeParser(invokeMapReader, 0);
-            NativeHashtable invokeHashtable = new NativeHashtable(invokeMapParser);
-            ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-            externalReferences.InitializeCommonFixupsTable(moduleHandle);
-
-            RuntimeTypeHandle definitionType = GetTypeDefinition(methodHandleDeclaringType);
-
-            int hashcode = definitionType.GetHashCode();
-
-            var lookup = invokeHashtable.Lookup(hashcode);
-            NativeParser entryParser;
-            while (!(entryParser = lookup.GetNext()).IsNull)
+            TypeLoaderEnvironment.VirtualResolveDataResult lookupResult;
+            bool success = TypeLoaderEnvironment.TryGetVirtualResolveData(moduleHandle, methodHandleDeclaringType, genericArgs, ref methodSignatureComparer, out lookupResult);
+            if (!success)
+                return IntPtr.Zero;
+            else
             {
-                // Grammar of an entry in the hash table:
-                // Virtual Method uses a normal slot 
-                // OpenType + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
-                // OR
-                // Generic Virtual Method 
-                // OpenType + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
-
-                RuntimeTypeHandle entryType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                if (!entryType.Equals(definitionType))
-                    continue;
-
-                uint nameAndSigPointerToken = externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
-
-                MethodNameAndSignature nameAndSig;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, nameAndSigPointerToken, out nameAndSig))
+                if (lookupResult.IsGVM)
                 {
-                    Debug.Assert(false);
-                    continue;
-                }
-
-                if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature))
-                {
-                    continue;
-                }
-
-                uint parentHierarchyAndFlag = entryParser.GetUnsigned();
-                uint parentHierarchy = parentHierarchyAndFlag >> 1;
-                RuntimeTypeHandle declaringTypeOfVirtualInvoke = methodHandleDeclaringType;
-                for (uint iType = 0; iType < parentHierarchy; iType++)
-                {
-                    if (!RuntimeAugments.TryGetBaseType(declaringTypeOfVirtualInvoke, out declaringTypeOfVirtualInvoke))
-                    {
-                        Debug.Assert(false); // This will only fail if the virtual invoke data is malformed as specifies that a type
-                        // has a deeper inheritance hierarchy than it actually does.
-                        return IntPtr.Zero;
-                    }
-                }
-
-                bool isGenericVirtualMethod = ((parentHierarchyAndFlag & VirtualInvokeTableEntry.FlagsMask) == VirtualInvokeTableEntry.GenericVirtualMethod);
-
-                Debug.Assert(isGenericVirtualMethod == ((genericArgs != null) && genericArgs.Length > 0));
-
-                if (isGenericVirtualMethod)
-                {
-                    IntPtr methodName;
-                    IntPtr methodSignature;
-
-                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignaturePointersFromNativeLayoutSignature(moduleHandle, nameAndSigPointerToken, out methodName, out methodSignature))
-                    {
-                        Debug.Assert(false);
-                        return IntPtr.Zero;
-                    }
-
-                    RuntimeMethodHandle gvmSlot;
-                    if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(declaringTypeOfVirtualInvoke, methodName, methodSignature, genericArgs, out gvmSlot))
-                    {
-                        return IntPtr.Zero;
-                    }
-
-                    return (new OpenMethodResolver(declaringTypeOfVirtualInvoke, gvmSlot, methodHandle.AsInt())).ToIntPtr();
+                    return (new OpenMethodResolver(lookupResult.DeclaringInvokeType, lookupResult.GVMHandle, methodHandle.AsInt())).ToIntPtr();
                 }
                 else
                 {
-                    uint slot = entryParser.GetUnsigned();
-
-                    RuntimeTypeHandle searchForSharedGenericTypesInParentHierarchy = declaringTypeOfVirtualInvoke;
-                    while (!searchForSharedGenericTypesInParentHierarchy.IsNull())
-                    {
-                        // See if this type is shared generic. If so, adjust the slot by 1.
-                        if (RuntimeAugments.IsGenericType(searchForSharedGenericTypesInParentHierarchy))
-                        {
-                            if (RuntimeAugments.IsInterface(searchForSharedGenericTypesInParentHierarchy))
-                            {
-                                // Generic interfaces always have a dictionary slot in the vtable (see binder code in MdilModule::SaveMethodTable)
-                                // Interfaces do not have base types, so we can just break out of the loop here ...
-                                slot++;
-                                break;
-                            }
-
-                            RuntimeTypeHandle[] genericTypeArgs;
-                            RuntimeAugments.GetGenericInstantiation(searchForSharedGenericTypesInParentHierarchy,
-                                                                                        out genericTypeArgs);
-
-                            if (TypeLoaderEnvironment.Instance.ConversionToCanonFormIsAChange(genericTypeArgs, CanonicalFormKind.Specific))
-                            {
-                                // Shared generic types have a slot dedicated to holding the generic dictionary.
-                                slot++;
-                            }
-                        }
-
-                        // Walk to parent
-                        if (!RuntimeAugments.TryGetBaseType(searchForSharedGenericTypesInParentHierarchy, out searchForSharedGenericTypesInParentHierarchy))
-                        {
-                            break;
-                        }
-                    }
-
-
-                    return (new OpenMethodResolver(declaringTypeOfVirtualInvoke, checked((ushort)slot), methodHandle.AsInt())).ToIntPtr();
+                    return (new OpenMethodResolver(lookupResult.DeclaringInvokeType, lookupResult.SlotIndex, methodHandle.AsInt())).ToIntPtr();
                 }
             }
-            return IntPtr.Zero;
         }
 
         /// <summary>
@@ -1412,6 +1311,13 @@ namespace Internal.Reflection.Execution
 
         private bool TryGetMetadataForTypeMethodNameAndSignature(RuntimeTypeHandle declaringTypeHandle, MethodNameAndSignature nameAndSignature, out MethodHandle methodHandle)
         {
+            if (!nameAndSignature.Signature.IsNativeLayoutSignature)
+            {
+                // When working with method signature that draw directly from metadata, just return the metadata token
+                methodHandle = nameAndSignature.Signature.Token.AsHandle().ToMethodHandle(null);
+                return true;
+            }
+
             MetadataReader reader;
             TypeDefinitionHandle typeDefinitionHandle;
             RuntimeTypeHandle metadataLookupTypeHandle = GetTypeDefinition(declaringTypeHandle);
@@ -1421,7 +1327,9 @@ namespace Internal.Reflection.Execution
                 return false;
 
             TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
-            IntPtr nativeLayoutSignature = nameAndSignature.Signature;
+
+            Debug.Assert(nameAndSignature.Signature.IsNativeLayoutSignature);
+            IntPtr nativeLayoutSignature = nameAndSignature.Signature.NativeLayoutSignature;
 
             foreach (MethodHandle mh in typeDefinition.Methods)
             {

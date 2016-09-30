@@ -531,4 +531,14 @@ COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell
     *slot = pCell->GetSlotNumber();
 }
 
+extern "C"
+{
+DECLSPEC_THREAD void* t_TLS_DispatchCell = nullptr;
+}
+
+COOP_PINVOKE_HELPER(void, RhpSetTLSDispatchCell, (void *dispatchCell))
+{
+    t_TLS_DispatchCell = dispatchCell;
+}
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

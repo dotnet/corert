@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void SetDispatchMapIndex(int index)
         {
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.DispatchMap, checked((uint)index));
+            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)index));
         }
 
         int ISymbolNode.Offset
@@ -407,7 +407,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (flags != 0)
             {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, flags);
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, flags);
             }
         }
 
@@ -427,7 +427,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
             // to get a small encoding size win.
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.NullableValueOffset, (uint)field.Offset - 1);
+            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset - 1);
         }
 
         /// <summary>
@@ -453,18 +453,18 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (isInstMethodSlot != -1 || getImplTypeMethodSlot != -1)
                     {
-                        var rareFlags = _optionalFieldsBuilder.GetFieldValue(EETypeOptionalFieldsElement.RareFlags, 0);
+                        var rareFlags = _optionalFieldsBuilder.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
                         rareFlags |= (uint)EETypeRareFlags.ICastableFlag;
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, rareFlags);
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
                     }
 
                     if (isInstMethodSlot != -1)
                     {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ICastableIsInstSlot, (uint)isInstMethodSlot);
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableIsInstSlot, (uint)isInstMethodSlot);
                     }
                     if (getImplTypeMethodSlot != -1)
                     {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
                     }
                 }
             }
@@ -487,7 +487,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (valueTypeFieldPaddingEncoded != 0)
             {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
 

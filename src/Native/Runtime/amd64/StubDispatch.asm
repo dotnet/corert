@@ -10,7 +10,75 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 EXTERN RhpCidResolve : PROC
 EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
+EXTERN RhpCastableObjectResolve : PROC
+EXTERN RhpCheckedAssignRefEDX : PROC
 
+EXTERN  t_TLS_DispatchCell:QWORD
+EXTERN  _tls_index:DWORD
+
+LEAF_ENTRY RhpGetTailCallTLSDispatchCell, _TEXT
+        lea rax, RhpTailCallTLSDispatchCell
+        ret
+LEAF_END RhpGetTailCallTLSDispatchCell, _TEXT
+
+LEAF_ENTRY RhpTailCallTLSDispatchCell, _TEXT
+        ;; Load the dispatch cell out of the TLS variable
+        mov rax, gs:[88]
+        mov r10d, _tls_index
+        mov r10, [rax + r10 * 8]
+        mov eax, SECTIONREL t_TLS_DispatchCell
+        mov r10, [r10+rax]
+
+        ;; Load the target of the dispatch cell into rax
+        mov rax, [r10]
+        ;; And tail call to it
+        TAILJMP_RAX
+LEAF_END RhpTailCallTLSDispatchCell, _TEXT
+
+
+LEAF_ENTRY RhpGetCastableObjectDispatchHelper_TailCalled, _TEXT
+        lea rax, RhpCastableObjectDispatchHelper_TailCalled
+        ret
+LEAF_END RhpGetCastableObjectDispatchHelper_TailCalled, _TEXT
+
+LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled, _TEXT
+        ;; Load the dispatch cell out of the TLS variable
+        mov rax, gs:[88]
+        mov r10d, _tls_index
+        mov r10, [rax + r10 * 8]
+        mov eax, SECTIONREL t_TLS_DispatchCell
+        mov r10, [r10+rax]
+        jmp RhpCastableObjectDispatchHelper
+LEAF_END RhpCastableObjectDispatchHelper_TailCalled, _TEXT
+
+LEAF_ENTRY RhpCastableObjectDispatchHelper, _TEXT
+        ;; TODO! Implement fast lookup helper to avoid the universal transition each time we
+        ;; hit a CastableObject
+
+        ;; If the initial lookup fails, call into managed under the universal thunk
+        ;; to run the full lookup routine
+
+        ;; r10 contains indirection cell address, move to r11 where it will be passed by
+        ;; the universal transition thunk as an argument to RhpCastableObjectResolve
+        mov r11, r10
+        lea r10, RhpCastableObjectResolve
+        jmp RhpUniversalTransition_DebugStepTailCall
+LEAF_END RhpCastableObjectDispatchHelper, _TEXT
+
+LEAF_ENTRY RhpGetCastableObjectDispatchHelper, _TEXT
+        lea rax, RhpCastableObjectDispatchHelper
+        ret
+LEAF_END RhpGetCastableObjectDispatchHelper, _TEXT
+
+LEAF_ENTRY RhpGetCacheForCastableObject, _TEXT
+        mov rax, [rcx+8]
+        ret
+LEAF_END RhpGetCacheForCastableObject, _TEXT
+
+LEAF_ENTRY RhpSetCacheForCastableObject, _TEXT
+        lea rcx, [rcx+8]
+        jmp RhpCheckedAssignRefEDX ;; Is this the correct form for tailcall?
+LEAF_END RhpSetCacheForCastableObject, _TEXT
 
 ;; Macro that generates code to check a single cache entry.
 CHECK_CACHE_ENTRY macro entry
