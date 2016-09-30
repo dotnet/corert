@@ -310,7 +310,7 @@ namespace System
 
     // This type implements == without overriding GetHashCode, Equals, disable compiler warning
 #pragma warning disable 0660, 0661
-    public partial struct IntPtr
+    public struct IntPtr
     {
         unsafe private void* _value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
 
@@ -348,6 +348,15 @@ namespace System
             _value = (void*)value;
         }
 
+        [Intrinsic]
+        public unsafe long ToInt64()
+        {
+#if BIT64
+            return (long)_value;
+#else
+            return (long)(int)_value;
+#endif
+        }
 
         [Intrinsic]
         public static unsafe explicit operator IntPtr(int value)

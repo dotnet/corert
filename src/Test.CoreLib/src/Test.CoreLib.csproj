@@ -235,13 +235,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\Void.cs">
       <Link>System\Void.cs</Link>
     </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs">
-      <Link>Runtime.Base\src\System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs</Link>
-    </Compile>
-    <Compile Include="Internal\Runtime\RuntimeImports.cs" />
-    <Compile Include="System\IntPtr.Ext.cs" />
+    <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
+    <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
-    <Compile Include="System\RuntimeTypeHandle.Ext.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup>

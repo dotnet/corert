@@ -6,6 +6,7 @@
 // In the redhawk runtime these are not used. In the class library there is an implementation that support typeof
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -16,8 +17,14 @@ namespace System
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct RuntimeTypeHandle
+    internal struct RuntimeTypeHandle
     {
         private EETypePtr _pEEType;
+
+        [Intrinsic]
+        internal unsafe static IntPtr GetValueInternal(RuntimeTypeHandle handle)
+        {
+            return (IntPtr)handle._pEEType.ToPointer();
+        }
     }
 }

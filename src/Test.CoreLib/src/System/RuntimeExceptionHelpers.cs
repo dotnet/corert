@@ -5,6 +5,8 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace System
 {
     // Eagerly preallocate instance of out of memory exception to avoid infinite recursion once we run out of memory
@@ -68,11 +70,8 @@ namespace System
                         return new PlatformNotSupportedException();
 
                     default:
-                        unsafe
-                        {
-                            int* x = null;
-                            *x = 123456;
-                        }
+                        Debug.Assert(false, "unexpected ExceptionID");
+                        RuntimeImports.RhpFallbackFailFast();
                         return null;
                 }
             }
@@ -101,6 +100,7 @@ namespace System
         [RuntimeExport("FailFast")]
         public static void RuntimeFailFast(RhFailFastReason reason, Exception exception, IntPtr pExAddress, IntPtr pExContext)
         {
+            RuntimeImports.RhpFallbackFailFast();
         }
     }
 }

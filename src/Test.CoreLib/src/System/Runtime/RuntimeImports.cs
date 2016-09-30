@@ -58,6 +58,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
         internal static extern String RhNewArrayAsString(EETypePtr pEEType, int length);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]
+        internal extern static unsafe void RhpFallbackFailFast();
     }
 }
-
