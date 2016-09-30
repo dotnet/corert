@@ -6,16 +6,13 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-
-using Internal.NativeFormat;
 
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
     [McgIntrinsics]
-    internal static class StartupCodeHelpers
+    internal static partial class StartupCodeHelpers
     {
         public static IntPtr[] Modules
         {
@@ -27,9 +24,9 @@ namespace Internal.Runtime.CompilerHelpers
         {
             IntPtr[] modules = CreateModuleManagers(moduleHeaders, count);
 
-            foreach (var moduleManager in modules)
+            for (int i = 0; i < modules.Length; i++)
             {
-                InitializeGlobalTablesForModule(moduleManager);
+                InitializeGlobalTablesForModule(modules[i]);
             }
 
             // We are now at a stage where we can use GC statics - publish the list of modules
@@ -38,45 +35,10 @@ namespace Internal.Runtime.CompilerHelpers
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
-            foreach (var moduleManager in modules)
+            for (int i = 0; i < modules.Length; i++)
             {
-                InitializeEagerClassConstructorsForModule(moduleManager);
+                InitializeEagerClassConstructorsForModule(modules[i]);
             }
-        }
-
-        internal static unsafe void InitializeCommandLineArgsW(int argc, char** argv)
-        {
-            string[] args = new string[argc];
-            for (int i = 0; i < argc; ++i)
-            {
-                args[i] = new string(argv[i]);
-            }
-            Environment.SetCommandLineArgs(args);
-        }
-
-        internal static unsafe void InitializeCommandLineArgs(int argc, byte** argv)
-        {
-            string[] args = new string[argc];
-            for (int i = 0; i < argc; ++i)
-            {
-                byte* argval = argv[i];
-                int len = CStrLen(argval);
-                args[i] = Encoding.UTF8.GetString(argval, len);
-            }
-            Environment.SetCommandLineArgs(args);
-        }
-
-        private static string[] GetMainMethodArguments()
-        {
-            // GetCommandLineArgs includes the executable name, Main() arguments do not.
-            string[] args = Environment.GetCommandLineArgs();
-
-            Debug.Assert(args.Length > 0);
-
-            string[] mainArgs = new string[args.Length - 1];
-            Array.Copy(args, 1, mainArgs, 0, mainArgs.Length);
-
-            return mainArgs;
         }
 
         private static unsafe IntPtr[] CreateModuleManagers(IntPtr moduleHeaders, int count)
@@ -134,6 +96,8 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
+        static unsafe partial void InitializeStringTable(IntPtr stringTableStart, int length);
+
         private static unsafe void InitializeEagerClassConstructorsForModule(IntPtr moduleManager)
         {
             int length;
@@ -147,27 +111,6 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
         
-        private static unsafe void InitializeStringTable(IntPtr stringTableStart, int length)
-        {
-            IntPtr stringTableEnd = (IntPtr)((byte*)stringTableStart + length);
-            for (IntPtr* tab = (IntPtr*)stringTableStart; tab < (IntPtr*)stringTableEnd; tab++)
-            {
-                byte* bytes = (byte*)*tab;
-                int len = (int)NativePrimitiveDecoder.DecodeUnsigned(ref bytes);
-                int count = LowLevelUTF8Encoding.GetCharCount(bytes, len);
-                Debug.Assert(count >= 0);
-
-                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.EETypePtrOf<string>(), count);
-                fixed (char* dest = newStr)
-                {
-                    int newCount = LowLevelUTF8Encoding.GetChars(bytes, len, dest, count);
-                    Debug.Assert(newCount == count);
-                }
-                GCHandle handle = GCHandle.Alloc(newStr);
-                *tab = (IntPtr)handle;
-            }
-        }
-
         private static void Call(System.IntPtr pfn)
         {
         }

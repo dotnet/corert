@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 /*============================================================
 **
 ** Class:  EETypePtr
@@ -38,6 +39,16 @@ namespace System
         {
             return (Internal.Runtime.EEType*)(void*)_value;
         }
+
+#if CORERT
+        // This only works on CoreRT (with no fallback) because Runtime.Base doesn't have enough infrastructure
+        // to let us express typeof(T).TypeHandle.ToEETypePtr().
+        [Intrinsic]
+        internal static EETypePtr EETypePtrOf<T>()
+        {
+            throw new NotImplementedException();
+        }
+#endif
     }
 }
 

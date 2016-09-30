@@ -56,18 +56,25 @@ namespace Internal.IL.Stubs.StartupCode
 
             MetadataType startup = Context.GetHelperType("StartupCodeHelpers");
 
-            // Initialize command line args
+            // Initialize command line args if the class library supports this
             string initArgsName = (Context.Target.OperatingSystem == TargetOS.Windows)
                                 ? "InitializeCommandLineArgsW"
                                 : "InitializeCommandLineArgs";
-            MethodDesc initArgs = startup.GetKnownMethod(initArgsName, null);
-            codeStream.Emit(ILOpcode.ldarg_0); // argc
-            codeStream.Emit(ILOpcode.ldarg_1); // argv
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(initArgs));
+            MethodDesc initArgs = startup.GetMethod(initArgsName, null);
+            if (initArgs != null)
+            {
+                codeStream.Emit(ILOpcode.ldarg_0); // argc
+                codeStream.Emit(ILOpcode.ldarg_1); // argv
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(initArgs));
+            }
 
             // Call program Main
             if (_mainMethod.Signature.Length > 0)
             {
+                // TODO: better exception
+                if (initArgs == null)
+                    throw new Exception("Main() has parameters, but the class library doesn't support them");
+
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetKnownMethod("GetMainMethodArguments", null)));
             }
             codeStream.Emit(ILOpcode.call, emitter.NewToken(_mainMethod));

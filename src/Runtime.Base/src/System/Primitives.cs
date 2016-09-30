@@ -348,6 +348,15 @@ namespace System
             _value = (void*)value;
         }
 
+        [Intrinsic]
+        public unsafe long ToInt64()
+        {
+#if BIT64
+            return (long)_value;
+#else
+            return (long)(int)_value;
+#endif
+        }
 
         [Intrinsic]
         public static unsafe explicit operator IntPtr(int value)
