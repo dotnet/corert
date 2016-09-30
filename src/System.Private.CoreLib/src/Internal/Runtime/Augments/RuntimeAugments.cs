@@ -399,6 +399,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.AreTypesAssignable(srcEEType, dstEEType);
         }
 
+        public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
+        {
+            return (null != RuntimeImports.IsInstanceOfInterface(obj, interfaceTypeHandle.ToEETypePtr()));
+        }
+
         //
         // Return a type's base type using the runtime type system. If the underlying runtime type system does not support
         // this operation, return false and TypeInfo.BaseType will fall back to metadata.

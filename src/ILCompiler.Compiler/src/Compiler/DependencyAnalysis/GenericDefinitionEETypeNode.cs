@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
                 rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
 
             if (rareFlags != 0)
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, (uint)rareFlags);
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
 
             if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
                 flags |= (short)EETypeFlags.OptionalFieldsFlag;

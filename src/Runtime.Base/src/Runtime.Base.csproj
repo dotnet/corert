@@ -79,6 +79,7 @@
     <Compile Include="System\Diagnostics\Debug.cs" />
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
+    <Compile Include="System\Runtime\CastableObjectSupport.cs" />
     <Compile Include="System\Runtime\EEType.Runtime.cs" />
     <Compile Include="System\Runtime\EETypePtr.cs" />
     <Compile Include="System\Runtime\ExceptionHandling.cs" />

@@ -17,7 +17,15 @@ namespace System.Runtime
         {
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
             object pObject = Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer);
-            return RhpCidResolve_Worker(pObject, pCell);
+            IntPtr dispatchResolveTarget = RhpCidResolve_Worker(pObject, pCell);
+            if (dispatchResolveTarget == InternalCalls.RhpGetCastableObjectDispatchHelper())
+            {
+                // Swap it out for the one which reads the TLS slot to put the cell in a consistent
+                // location
+                dispatchResolveTarget = InternalCalls.RhpGetCastableObjectDispatchHelper_TailCalled();
+                InternalCalls.RhpSetTLSDispatchCell(pCell);
+            }
+            return dispatchResolveTarget;
         }
 
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
@@ -93,13 +101,27 @@ namespace System.Runtime
 
             if (pTargetCode == IntPtr.Zero && pInstanceType->IsICastable)
             {
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
                 // Dispatch not resolved through normal dispatch map, try using the ICastable
-                IntPtr pfnGetImplTypeMethod = pInstanceType->ICastableGetImplTypeMethod;
-                pResolvingInstanceType = (EEType*)CalliIntrinsics.Call<IntPtr>(pfnGetImplTypeMethod, pObject, new IntPtr(pInterfaceType));
-
-                pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
-                                                                         pInterfaceType,
-                                                                         slot);
+                // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
+                // dispatch since we know the method address statically. We ignore any cast error exception
+                // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
+                IntPtr pfnIsInstanceOfInterface = pInstanceType->ICastableIsInstanceOfInterfaceMethod;
+                Exception castError = null;
+                if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, pObject, pInterfaceType, out castError))
+                {
+                    IntPtr pfnGetImplTypeMethod = pInstanceType->ICastableGetImplTypeMethod;
+                    pResolvingInstanceType = (EEType*)CalliIntrinsics.Call<IntPtr>(pfnGetImplTypeMethod, pObject, new IntPtr(pInterfaceType));
+                    pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
+                                                                             pInterfaceType,
+                                                                             slot);
+                }
+                else
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+                {
+                    // Dispatch not resolved through normal dispatch map, using the CastableObject path
+                    pTargetCode = InternalCalls.RhpGetCastableObjectDispatchHelper();
+                }
             }
 
             return pTargetCode;
