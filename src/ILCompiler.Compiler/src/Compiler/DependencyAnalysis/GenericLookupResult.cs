@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <see cref="GetTarget(NodeFactory, Instantiation, Instantiation)"/> to obtain the concrete
     /// node the result points to.
     /// </summary>
-    public abstract class GenericLookupResultNode
+    public abstract class GenericLookupResult
     {
         public abstract ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
         public abstract string GetMangledName(NameMangler nameMangler);
@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to an EEType.
     /// </summary>
-    internal sealed class TypeHandleDictionaryEntry : GenericLookupResultNode
+    internal sealed class TypeHandleDictionaryEntry : GenericLookupResult
     {
         private TypeDesc _type;
 

@@ -1156,7 +1156,7 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private GenericLookupResultNode GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
+        private GenericLookupResult GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
         {
             switch (fixupKind)
             {
@@ -1229,7 +1229,7 @@ namespace Internal.JitInterface
 
                         ReadyToRunFixupKind fixupKind = (ReadyToRunFixupKind)pGenericLookupKind.runtimeLookupFlags;
                         object fixupTarget = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        GenericLookupResultNode target = GetTargetForFixup(fixupTarget, fixupKind);
+                        GenericLookupResult target = GetTargetForFixup(fixupTarget, fixupKind);
 
                         ReadyToRunHelperId helper;
                         TypeSystemEntity dictionaryOwner;
