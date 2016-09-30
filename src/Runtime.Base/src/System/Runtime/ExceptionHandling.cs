@@ -373,6 +373,9 @@ namespace System.Runtime
                 case ExceptionIDs.Overflow:
                     return new OverflowException();
 
+                case ExceptionIDs.InvalidCast:
+                    return new InvalidCastException();
+                    
                 default:
                     Debug.Assert(false, "unexpected ExceptionID");
                     FallbackFailFast(RhFailFastReason.InternalError, null);

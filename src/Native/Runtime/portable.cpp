@@ -310,6 +310,31 @@ COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int
     return PalInterlockedCompareExchange64(location, value, comparand);
 }
 
+COOP_PINVOKE_HELPER(void, RhpGetCacheForCastableObject, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpGetTailCallTLSDispatchCell, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpGetCastableObjectDispatchHelper, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpGetCastableObjectDispatchHelper_TailCalled, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpSetCacheForCastableObject, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 #endif // USE_PORTABLE_HELPERS
 
 COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
