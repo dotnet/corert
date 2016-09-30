@@ -90,6 +90,7 @@
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\StackFrameIterator.cs" />
     <Compile Include="System\Runtime\TypeCast.cs" />
+    <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
