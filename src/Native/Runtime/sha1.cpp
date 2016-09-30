@@ -42,31 +42,39 @@ Revision History:
 
 
 #include "common.h"
-//#include "sha1.h"
-//#include "contract.h"
+#include "common.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
 
-#if 0
+#include "sha1.h"
 
-typedef const DWORD DWORDC;
-#define ROTATE32L(x,n) _rotl(x,n)
-#define SHAVE32(x)     (DWORD)(x)
+
+#define ROTATE32L(x,n) rotate32l(x,n)
+#define SHAVE32(x)     (UInt32)(x)
+
+static UInt32 rotate32l(UInt32 val, int shift)
+{
+    shift &= 0x1f;
+    val = (val >> (0x20 - shift)) | (val << shift);
+    return val;
+}
 
 static void SHA1_block(SHA1_CTX *ctx)
 /*
      Update the SHA-1 hash from a fresh 64 bytes of data.
 */
 { 
-    static DWORDC sha1_round1 = 0x5A827999u; 
-    static DWORDC sha1_round2 = 0x6ED9EBA1u;
-    static DWORDC sha1_round3 = 0x8F1BBCDCu;
-    static DWORDC sha1_round4 = 0xCA62C1D6u;
+    static const UInt32 sha1_round1 = 0x5A827999u; 
+    static const UInt32 sha1_round2 = 0x6ED9EBA1u;
+    static const UInt32 sha1_round3 = 0x8F1BBCDCu;
+    static const UInt32 sha1_round4 = 0xCA62C1D6u;
     
-    DWORD a = ctx->partial_hash[0], b = ctx->partial_hash[1]; 
-    DWORD c = ctx->partial_hash[2], d = ctx->partial_hash[3];
-    DWORD e = ctx->partial_hash[4];
-    DWORD  msg80[80]; 
+    UInt32 a = ctx->partial_hash[0], b = ctx->partial_hash[1]; 
+    UInt32 c = ctx->partial_hash[2], d = ctx->partial_hash[3];
+    UInt32 e = ctx->partial_hash[4];
+    UInt32 msg80[80]; 
     int i;
-    BOOL OK = TRUE;
 
     // OACR note:
     // Loop conditions are using (i <= limit - increment) instead of (i < limit) to satisfy OACR. When the increment is greater
@@ -74,15 +82,15 @@ static void SHA1_block(SHA1_CTX *ctx)
 
     for (i = 0; i < 16; i++) {   // Copy to local array, zero original
                                   // Extend length to 80
-        DWORDC datval = ctx->awaiting_data[i];
+        const UInt32 datval = ctx->awaiting_data[i];
         ctx->awaiting_data[i] = 0;
         msg80[i] = datval;
     }
 
     for (i = 16; i <= 80 - 2; i += 2) {
-        DWORDC temp1 =    msg80[i-3] ^ msg80[i-8] 
+        const UInt32 temp1 =    msg80[i-3] ^ msg80[i-8] 
                         ^ msg80[i-14] ^ msg80[i-16];
-        DWORDC temp2 =    msg80[i-2] ^ msg80[i-7] 
+        const UInt32 temp2 =    msg80[i-2] ^ msg80[i-7] 
                         ^ msg80[i-13] ^ msg80[i-15];
         msg80[i  ] = ROTATE32L(temp1, 1);
         msg80[i+1] = ROTATE32L(temp2, 1);
@@ -200,16 +208,9 @@ static void SHA1_block(SHA1_CTX *ctx)
 
 void SHA1Hash::SHA1Init(SHA1_CTX *ctx)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-    
     ctx->nbit_total[0] = ctx->nbit_total[1] = 0;
     
-    for (DWORD i = 0; i != 16; i++) {
+    for (UInt32 i = 0; i != 16; i++) {
         ctx->awaiting_data[i] = 0;
     }
    
@@ -228,27 +229,20 @@ void SHA1Hash::SHA1Init(SHA1_CTX *ctx)
 
 void SHA1Hash::SHA1Update(
         SHA1_CTX *  ctx,        // IN/OUT
-        const BYTE *    msg,    // IN
-        DWORD           nbyte)  // IN
+        const UInt8 *    msg,    // IN
+        UInt32           nbyte)  // IN
 /*
     Append data to a partially hashed SHA-1 message.
 */
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-    
-    const BYTE *fresh_data = msg;
-    DWORD nbyte_left = nbyte;
-    DWORD nbit_occupied = ctx->nbit_total[0] & 511;
-    DWORD *awaiting_data;
-    DWORDC nbitnew_low = SHAVE32(8*nbyte);
+    const UInt8 *fresh_data = msg;
+    UInt32 nbyte_left = nbyte;
+    UInt32 nbit_occupied = ctx->nbit_total[0] & 511;
+    UInt32 *awaiting_data;
+    const UInt32 nbitnew_low = SHAVE32(8*nbyte);
 
 
-    _ASSERTE((nbit_occupied & 7) == 0);   // Partial bytes not implemented
+    ASSERT((nbit_occupied & 7) == 0);   // Partial bytes not implemented
     
     ctx->nbit_total[0] += nbitnew_low;
     ctx->nbit_total[1] += (nbyte >> 29) 
@@ -261,7 +255,7 @@ void SHA1Hash::SHA1Update(
 
         while ((nbit_occupied & 31) != 0 && nbyte_left != 0) {
             nbit_occupied += 8;
-            *awaiting_data |= (DWORD)*fresh_data++ 
+            *awaiting_data |= (UInt32)*fresh_data++ 
                      << ((-(int)nbit_occupied) & 31);
             nbyte_left--;            // Start at most significant byte
         }
@@ -270,19 +264,19 @@ void SHA1Hash::SHA1Update(
              /* Transfer 4 bytes at a time */
 
     do {
-        DWORDC nword_occupied = nbit_occupied/32;
-        DWORD nwcopy = min(nbyte_left/4, 16 - nword_occupied);
-        _ASSERTE (nbit_occupied <= 512);
-        _ASSERTE ((nbit_occupied & 31) == 0 || nbyte_left == 0);
+        const UInt32 nword_occupied = nbit_occupied/32;
+        UInt32 nwcopy = min(nbyte_left/4, 16 - nword_occupied);
+        ASSERT (nbit_occupied <= 512);
+        ASSERT ((nbit_occupied & 31) == 0 || nbyte_left == 0);
         awaiting_data = ctx->awaiting_data + nword_occupied;
         nbyte_left -= 4*nwcopy;
         nbit_occupied += 32*nwcopy;
 
         while (nwcopy != 0) {
-            DWORDC byte0 = (DWORD)fresh_data[0];
-            DWORDC byte1 = (DWORD)fresh_data[1];
-            DWORDC byte2 = (DWORD)fresh_data[2];
-            DWORDC byte3 = (DWORD)fresh_data[3];
+            const UInt32 byte0 = (UInt32)fresh_data[0];
+            const UInt32 byte1 = (UInt32)fresh_data[1];
+            const UInt32 byte2 = (UInt32)fresh_data[2];
+            const UInt32 byte3 = (UInt32)fresh_data[3];
             *awaiting_data++ = byte3 | (byte2 << 8)
                         | (byte1 << 16) | (byte0 << 24);
                              /* Big endian */
@@ -294,50 +288,43 @@ void SHA1Hash::SHA1Update(
             SHA1_block(ctx);
             nbit_occupied = 0;
             awaiting_data -= 16;
-            _ASSERTE(awaiting_data == ctx->awaiting_data);
+            ASSERT(awaiting_data == ctx->awaiting_data);
         }
     } while (nbyte_left >= 4); 
 
-    _ASSERTE (ctx->awaiting_data + nbit_occupied/32
+    ASSERT (ctx->awaiting_data + nbit_occupied/32
                        == awaiting_data);
 
     while (nbyte_left != 0) {
-        DWORDC new_byte = (DWORD)*fresh_data++;
+        const UInt32 new_byte = (UInt32)*fresh_data++;
 
-        _ASSERTE((nbit_occupied & 31) <= 16);
+        ASSERT((nbit_occupied & 31) <= 16);
         nbit_occupied += 8;
         *awaiting_data |= new_byte << ((-(int)nbit_occupied) & 31);
         nbyte_left--;
     }
     
-    _ASSERTE (nbit_occupied == (ctx->nbit_total[0] & 511));
+    ASSERT (nbit_occupied == (ctx->nbit_total[0] & 511));
 } // end SHA1Update
 
 
 
 void SHA1Hash::SHA1Final(
         SHA1_CTX *  ctx,            // IN/OUT
-        BYTE *          digest)     // OUT
+        UInt8 *          digest)     // OUT
 /*
         Finish a SHA-1 hash.
 */
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-    
-    DWORDC nbit0 = ctx->nbit_total[0];
-    DWORDC nbit1 = ctx->nbit_total[1];
-    DWORD  nbit_occupied = nbit0 & 511;
-    DWORD i;
+    const UInt32 nbit0 = ctx->nbit_total[0];
+    const UInt32 nbit1 = ctx->nbit_total[1];
+    UInt32 nbit_occupied = nbit0 & 511;
+    UInt32 i;
 
-    _ASSERTE((nbit_occupied & 7) == 0);
+    ASSERT((nbit_occupied & 7) == 0);
 
     ctx->awaiting_data[nbit_occupied/32] 
-         |= (DWORD)0x80 << ((-8-nbit_occupied) & 31);
+         |= (UInt32)0x80 << ((-8-nbit_occupied) & 31);
                           // Append a 1 bit
     nbit_occupied += 8;
 
@@ -357,36 +344,22 @@ void SHA1Hash::SHA1Final(
          /* Copy final digest to user-supplied byte array */
 
     for (i = 0; i != 5; i++) {
-        DWORDC dwi = ctx->partial_hash[i];
-        digest[4*i + 0] = (BYTE)((dwi >> 24) & 255);
-        digest[4*i + 1] = (BYTE)((dwi >> 16) & 255);
-        digest[4*i + 2] = (BYTE)((dwi >>  8) & 255);
-        digest[4*i + 3] = (BYTE)(dwi         & 255);  // Big-endian
+        const UInt32 dwi = ctx->partial_hash[i];
+        digest[4*i + 0] = (UInt8)((dwi >> 24) & 255);
+        digest[4*i + 1] = (UInt8)((dwi >> 16) & 255);
+        digest[4*i + 2] = (UInt8)((dwi >>  8) & 255);
+        digest[4*i + 3] = (UInt8)(dwi         & 255);  // Big-endian
     }
 } // end SHA1Final
 
 SHA1Hash::SHA1Hash()
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
-    m_fFinalized = FALSE;
+    m_fFinalized = false;
     SHA1Init(&m_Context);
 }
     
-void SHA1Hash::AddData(BYTE *pbData, DWORD cbData)
+void SHA1Hash::AddData(const UInt8 *pbData, UInt32 cbData)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-    
     if (m_fFinalized)
         return;
         
@@ -394,24 +367,15 @@ void SHA1Hash::AddData(BYTE *pbData, DWORD cbData)
 }
 
 // Retrieve a pointer to the final hash.
-BYTE *SHA1Hash::GetHash()
+UInt8 *SHA1Hash::GetHash()
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
     if (m_fFinalized)
         return m_Value;
 
     SHA1Final(&m_Context, m_Value);
      
-    m_fFinalized = TRUE;
+    m_fFinalized = true;
 
     return m_Value;
 }
-
-#endif
 

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime;
 using System.Security;
-using Internal.Cryptography;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -20,18 +20,7 @@ namespace System.Reflection.Runtime.Assemblies
             if (!IsValidPublicKey(publicKey))
                 throw new SecurityException(SR.Security_InvalidAssemblyPublicKey);
 
-#if CORERT
-            // CORERT-TODO: ComputeSHA1
-            return Array.Empty<byte>();
-#else
-            byte[] hash = Sha1.ComputeSha1(publicKey);
-            byte[] pkt = new byte[PUBLIC_KEY_TOKEN_LEN];
-            for (int i = 0; i < PUBLIC_KEY_TOKEN_LEN; i++)
-            {
-                pkt[i] = hash[hash.Length - i - 1];
-            }
-            return pkt;
-#endif
+            return RuntimeImports.ConvertPublicKeyToPublicKeyToken(publicKey);
         }
 
         //
