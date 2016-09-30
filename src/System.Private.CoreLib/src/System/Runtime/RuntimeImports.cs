@@ -516,6 +516,30 @@ namespace System.Runtime
         internal static extern unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc);
 
         //
+        // Strong name helpers
+        //
+        internal static byte[] ConvertPublicKeyToPublicKeyToken(byte[] publicKey)
+        {
+            const int PUBLIC_KEY_TOKEN_LEN = 8;
+            byte[] publicKeyToken = new byte[PUBLIC_KEY_TOKEN_LEN];
+            unsafe
+            {
+                fixed (byte* pPublicKey = publicKey)
+                {
+                    fixed (byte* pPublicKeyToken = publicKeyToken)
+                    {
+                        RhConvertPublicKeyToPublicKeyToken(pPublicKey, publicKey.Length, pPublicKeyToken, publicKeyToken.Length);
+                    }
+                }
+            }
+            return publicKeyToken;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhConvertPublicKeyToPublicKeyToken")]
+        private extern static unsafe void RhConvertPublicKeyToPublicKeyToken(byte* pbPublicKey, int cbPublicKey, byte* pbPublicKeyTokenOut, int cbPublicKeyTokenOut);
+
+        //
         // ETW helpers.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
