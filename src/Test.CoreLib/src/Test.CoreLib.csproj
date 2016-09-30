@@ -169,6 +169,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\RuntimeTypeHandle.cs">
       <Link>System\RuntimeTypeHandle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
       <Link>System\Runtime\CompilerServices\IntrinsicAttribute.cs</Link>
     </Compile>
@@ -235,7 +238,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Void.cs">
       <Link>System\Void.cs</Link>
     </Compile>
-    <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
   </ItemGroup>
