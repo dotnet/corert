@@ -9,8 +9,26 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+    EXTERN RhpCastableObjectResolve
+    EXTERN RhpCheckedAssignRefR1
     EXTERN RhpCidResolve
     EXTERN RhpUniversalTransition_DebugStepTailCall
+
+    EXTERN t_TLS_DispatchCell
+
+    MACRO
+        GET_TLS_DISPATCH_CELL
+        EXTERN      _tls_index
+        push        {r0}
+        ldr         r12, =_tls_index
+        ldr         r12, [r12]
+        mrc         p15, 0, r0, c13, c0, 2
+        ldr         r0, [r0, #__tls_array]
+        ldr         r12, [r0, r12, lsl #2]
+        ldr         r0, SECTIONREL_t_TLS_DispatchCell
+        ldr         r12, [r0, r12]
+        pop         {r0}
+    MEND
 
     ;; Macro that generates code to check a single cache entry.
     MACRO
@@ -28,6 +46,60 @@
 0
     MEND
 
+SECTIONREL_t_TLS_DispatchCell
+        DCD     t_TLS_DispatchCell
+        RELOC   15 ;; SECREL
+
+    LEAF_ENTRY RhpGetTailCallTLSDispatchCell
+        ldr     r0, =RhpTailCallTLSDispatchCell
+        bx      lr
+    LEAF_END RhpGetTailCallTLSDispatchCell
+
+    LEAF_ENTRY RhpTailCallTLSDispatchCell
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+
+        ;; Tail call to the target of the dispatch cell, preserving the cell address in r12
+        ldr     pc, [r12]
+    LEAF_END RhpTailCallTLSDispatchCell
+
+    LEAF_ENTRY RhpGetCastableObjectDispatchHelper_TailCalled
+        ldr     r0, =RhpCastableObjectDispatchHelper_TailCalled
+        bx      lr
+    LEAF_END RhpGetCastableObjectDispatchHelper_TailCalled
+
+    LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+        b       RhpCastableObjectDispatchHelper
+    LEAF_END RhpCastableObjectDispatchHelper_TailCalled
+
+    LEAF_ENTRY  RhpCastableObjectDispatchHelper
+        ;; r12 has the interface dispatch cell address in it. 
+        ;; The calling convention of the universal thunk is that the parameter
+        ;; for the universal thunk target is to be placed in sp-8
+        ;; and the universal thunk target address is to be placed in sp-4
+        str     r12, [sp, #-8]
+        ldr     r12, =RhpCastableObjectResolve
+        str     r12, [sp, #-4]
+
+        b       RhpUniversalTransition_DebugStepTailCall
+    LEAF_END RhpCastableObjectDispatchHelper
+
+    LEAF_ENTRY RhpGetCastableObjectDispatchHelper
+        ldr     r0, =RhpCastableObjectDispatchHelper
+        bx      lr
+    LEAF_END RhpGetCastableObjectDispatchHelper
+
+    LEAF_ENTRY RhpGetCacheForCastableObject
+        ldr     r0, [r0, #4]
+        bx      lr
+    LEAF_END RhpGetCacheForCastableObject
+
+    LEAF_ENTRY RhpSetCacheForCastableObject
+        add     r0, #4
+        b       RhpCheckedAssignRefR1
+    LEAF_END RhpSetCacheForCastableObject
 
 ;; Macro that generates a stub consuming a cache with the given number of entries.
     GBLS StubName
@@ -88,10 +160,10 @@ CurrentEntry SETA CurrentEntry + 1
 
         ;; The stub that jumped here pushed r12, which contains the interface dispatch cell
         ;; we need to pop it here
-        pop         { r12 }
+        pop     { r12 }
 
         ;; Simply tail call the slow dispatch helper.
-        b RhpInterfaceDispatchSlow
+        b       RhpInterfaceDispatchSlow
 
     LEAF_END RhpInitialInterfaceDispatch
 
@@ -103,12 +175,12 @@ CurrentEntry SETA CurrentEntry + 1
         ;; The calling convention of the universal thunk is that the parameter
         ;; for the universal thunk target is to be placed in sp-8
         ;; and the universal thunk target address is to be placed in sp-4
-        str    r12, [sp, #-8]
+        str     r12, [sp, #-8]
         ldr     r12, =RhpCidResolve
-        str    r12, [sp, #-4]
+        str     r12, [sp, #-4]
         
         ;; jump to universal transition thunk
-        b RhpUniversalTransition_DebugStepTailCall
+        b       RhpUniversalTransition_DebugStepTailCall
     LEAF_END RhpInterfaceDispatchSlow
 
 

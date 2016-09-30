@@ -116,6 +116,7 @@
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System/Configuration/Assemblies/AssemblyHashAlgorithm.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
@@ -809,6 +810,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InternalCalls.cs">
       <Link>Runtime.Base\src\System\Runtime\InternalCalls.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CastableObjectSupport.cs">
+      <Link>Runtime.Base\src\System\Runtime\CastableObjectSupport.cs</Link>
+    </Compile>    
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExports.cs">
       <Link>Runtime.Base\src\System\Runtime\RuntimeExports.cs</Link>
     </Compile>

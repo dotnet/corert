@@ -45,7 +45,7 @@ namespace Internal.Runtime
         // this is just the EEType pointer itself, but when this type represents a generic that has been 
         // unified at runtime (and thus the EEType pointer resides in the process heap rather than a specific 
         // module) we need to do some work.
-        private unsafe IntPtr GetAssociatedModuleAddress()
+        internal unsafe IntPtr GetAssociatedModuleAddress()
         {
             fixed (EEType* pThis = &this)
             {
