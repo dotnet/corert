@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _typeSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
-                    return new TypeHandleDictionaryEntry(type);
+                    return new TypeHandleGenericLookupResult(type);
                 });
             }
 

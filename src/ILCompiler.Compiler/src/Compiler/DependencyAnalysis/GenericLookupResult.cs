@@ -25,11 +25,11 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to an EEType.
     /// </summary>
-    internal sealed class TypeHandleDictionaryEntry : GenericLookupResult
+    internal sealed class TypeHandleGenericLookupResult : GenericLookupResult
     {
         private TypeDesc _type;
 
-        public TypeHandleDictionaryEntry(TypeDesc type)
+        public TypeHandleGenericLookupResult(TypeDesc type)
         {
             Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
             _type = type;
