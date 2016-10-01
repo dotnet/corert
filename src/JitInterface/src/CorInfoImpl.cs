@@ -785,7 +785,10 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    return ((TypeDesc)resultUninstantiated).InstantiateSignature(typeInstantiation, methodInstantiation);
+                    TypeDesc result = ((TypeDesc)resultUninstantiated).InstantiateSignature(typeInstantiation, methodInstantiation);
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                        result = result.MakeArrayType();
+                    return result;
                 }
             }
 

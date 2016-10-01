@@ -37,8 +37,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
+            // We are getting a constructed type symbol because this might be something passed to newobj.
             TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return factory.NecessaryTypeSymbol(instantiatedType);
+            return factory.ConstructedTypeSymbol(instantiatedType);
         }
 
         public override string GetMangledName(NameMangler nameMangler)
