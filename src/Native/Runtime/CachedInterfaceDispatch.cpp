@@ -531,14 +531,29 @@ COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell
     *slot = pCell->GetSlotNumber();
 }
 
-extern "C"
-{
-DECLSPEC_THREAD void* t_TLS_DispatchCell = nullptr;
-}
+EXTERN_C DECLSPEC_THREAD void* t_TLS_DispatchCell = nullptr;
 
 COOP_PINVOKE_HELPER(void, RhpSetTLSDispatchCell, (void *dispatchCell))
 {
     t_TLS_DispatchCell = dispatchCell;
+}
+
+extern "C" void(*RhpTailCallTLSDispatchCell)();
+COOP_PINVOKE_HELPER(void*, RhpGetTailCallTLSDispatchCell, ())
+{
+    return &RhpTailCallTLSDispatchCell;
+}
+
+extern "C" void(*RhpCastableObjectDispatchHelper)();
+COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatchHelper, ())
+{
+    return &RhpCastableObjectDispatchHelper;
+}
+
+extern "C" void(*RhpCastableObjectDispatchHelper_TailCalled)();
+COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatchHelper_TailCalled, ())
+{
+    return &RhpCastableObjectDispatchHelper_TailCalled;
 }
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
