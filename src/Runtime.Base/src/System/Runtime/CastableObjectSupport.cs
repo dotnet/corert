@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
+    [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
     static class CastableObjectSupport
     {
         private static object s_castFailCanary = new object();
@@ -257,15 +258,7 @@ namespace System.Runtime
             if (targetObject == null)
                 EH.FailFastViaClasslib(RhFailFastReason.InternalError, null, pObject.EEType->GetAssociatedModuleAddress());
 
-#if !INPLACE_RUNTIME           
-            fixed (EEType** targetObjectRawPointer = &targetObject.m_pEEType)
-#else
-            fixed (IntPtr* targetObjectRawPointer = &targetObject.m_pEEType)
-#endif
-            {
-                // Update this pointer on stack to point to new target
-                *(IntPtr*)locationOfThisPointer = new IntPtr(targetObjectRawPointer);
-            }
+            Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer) = targetObject;
 
             InternalCalls.RhpSetTLSDispatchCell(pCell);
             return InternalCalls.RhpGetTailCallTLSDispatchCell();

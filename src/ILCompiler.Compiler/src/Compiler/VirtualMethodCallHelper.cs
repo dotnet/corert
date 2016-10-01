@@ -20,21 +20,7 @@ namespace ILCompiler
         {
             // TODO: More efficient lookup of the slot
             TypeDesc owningType = method.OwningType;
-            int baseSlots = 0;
-            var baseType = owningType.BaseType;
-
-            while (baseType != null)
-            {
-                // For types that have a generic dictionary, the introduced virtual method slots are
-                // prefixed with a pointer to the generic dictionary.
-                if (baseType.HasGenericDictionarySlot())
-                    baseSlots++;
-
-                IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
-                baseSlots += baseVirtualSlots.Count;
-
-                baseType = baseType.BaseType;
-            }
+            int baseSlots = GetNumberOfBaseSlots(factory, owningType);
 
             // For types that have a generic dictionary, the introduced virtual method slots are
             // prefixed with a pointer to the generic dictionary.
@@ -55,13 +41,44 @@ namespace ILCompiler
             return methodSlot == -1 ? -1 : baseSlots + methodSlot;
         }
 
+        private static int GetNumberOfBaseSlots(NodeFactory factory, TypeDesc owningType)
+        {
+            int baseSlots = 0;
+            var baseType = owningType.BaseType;
+
+            while (baseType != null)
+            {
+                // For types that have a generic dictionary, the introduced virtual method slots are
+                // prefixed with a pointer to the generic dictionary.
+                if (baseType.HasGenericDictionarySlot())
+                    baseSlots++;
+
+                IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
+                baseSlots += baseVirtualSlots.Count;
+
+                baseType = baseType.BaseType;
+            }
+
+            return baseSlots;
+        }
+
+        /// <summary>
+        /// Gets the vtable slot that holds the generic dictionary of this type.
+        /// </summary>
+        public static int GetGenericDictionarySlot(NodeFactory factory, TypeDesc type)
+        {
+            Debug.Assert(type.HasGenericDictionarySlot());
+            return GetNumberOfBaseSlots(factory, type);
+        }
+
         /// <summary>
         /// Gets a value indicating whether the virtual method slots introduced by this type are prefixed
         /// by a pointer to the generic dictionary of the type.
         /// </summary>
         public static bool HasGenericDictionarySlot(this TypeDesc type)
         {
-            return !type.IsInterface && type.ConvertToCanonForm(CanonicalFormKind.Specific) != type;
+            return !type.IsInterface &&
+                (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type || type.IsCanonicalSubtype(CanonicalFormKind.Any));
         }
     }
 }

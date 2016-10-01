@@ -14,7 +14,7 @@ using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class NodeFactory
+    public abstract partial class NodeFactory
     {
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
@@ -120,7 +120,14 @@ namespace ILCompiler.DependencyAnalysis
                     return new ExternEETypeSymbolNode(type);
                 }
             });
-            
+
+            _clonedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
+            {
+                // Only types that reside in other binaries should be cloned
+                Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
+                return new ClonedConstructedEETypeNode(type);
+            });
+
             _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>
             {
                 return new NonGCStaticsNode(type, this);
@@ -193,6 +200,11 @@ namespace ILCompiler.DependencyAnalysis
             _stringIndirectionNodes = new NodeCache<string, StringIndirectionNode>((string data) =>
             {
                 return new StringIndirectionNode(data);
+            });
+
+            _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
+            {
+                return new FrozenStringNode(data, Target);
             });
 
             _typeOptionalFields = new NodeCache<EETypeOptionalFieldsBuilder, EETypeOptionalFieldsNode>((EETypeOptionalFieldsBuilder fieldBuilder) =>
@@ -273,6 +285,13 @@ namespace ILCompiler.DependencyAnalysis
         public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
         {
             return _constructedTypeSymbols.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, IEETypeNode> _clonedTypeSymbols;
+
+        public IEETypeNode ConstructedClonedTypeSymbol(TypeDesc type)
+        {
+            return _clonedTypeSymbols.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, NonGCStaticsNode> _nonGCStatics;
@@ -549,6 +568,13 @@ namespace ILCompiler.DependencyAnalysis
             return _stringIndirectionNodes.GetOrAdd(data);
         }
 
+        private NodeCache<string, FrozenStringNode> _frozenStringNodes;
+
+        public FrozenStringNode SerializedStringObject(string data)
+        {
+            return _frozenStringNodes.GetOrAdd(data);
+        }
+
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
 
         public EmbeddedObjectNode EagerCctorIndirection(MethodDesc cctorMethod)
@@ -591,6 +617,12 @@ namespace ILCompiler.DependencyAnalysis
             CompilationUnitPrefix + "__DispatchMapTableEnd",
             null);
 
+        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfEmbeddedDataNode<FrozenStringNode>(
+            "__FrozenSegmentRegionStart",
+            "__FrozenSegmentRegionEnd",
+            null,
+            new FrozenObjectSentinelNode());
+
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
         public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
@@ -613,6 +645,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(ModuleManagerIndirection, "ModuleManagerIndirection is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
+            graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
@@ -620,6 +653,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleManagerIndirection, ModuleManagerIndirection, ModuleManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
 
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
             MetadataManager.AttachToDependencyGraph(graph);

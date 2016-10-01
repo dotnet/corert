@@ -200,11 +200,18 @@ namespace ILCompiler
 
         private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
         {
-            TypeDesc foundType = context.SystemModule.GetTypeByCustomAttributeTypeName(typeName);
+            ModuleDesc systemModule = context.SystemModule;
+
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName);
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
 
-            return foundType;
+            TypeDesc classLibCanon = systemModule.GetType("System", "__Canon", false);
+            TypeDesc classLibUniCanon = systemModule.GetType("System", "__UniversalCanon", false);
+
+            return foundType.ReplaceTypesInConstructionOfType(
+                new TypeDesc[] { classLibCanon, classLibUniCanon },
+                new TypeDesc[] { context.CanonType, context.UniversalCanonType });
         }
 
         private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)

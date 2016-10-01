@@ -30,16 +30,29 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.VirtualCall:
                     {
-                        if (relocsOnly)
-                            break;
+                        MethodDesc targetMethod = (MethodDesc)Target;
 
-                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-                    
-                        int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, (MethodDesc)Target);
-                        Debug.Assert(slot != -1);
-                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
-                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                        if (targetMethod.OwningType.IsInterface)
+                        {
+                            encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
+                            AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                        }
+                        else
+                        {
+                            if (relocsOnly)
+                                break;
+
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                            int pointerSize = factory.Target.PointerSize;
+
+                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
+                            Debug.Assert(slot != -1);
+                            AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
+                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                        }
                     }
                     break;
 
@@ -148,14 +161,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
-                case ReadyToRunHelperId.InterfaceDispatch:
-                    {
-                        encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
-                        AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                    }
-                    break;
-
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
                         MethodDesc targetMethod = (MethodDesc)Target;
@@ -178,6 +183,49 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);
                             encoder.EmitRET();
                         }
+                    }
+                    break;
+
+                case ReadyToRunHelperId.GenericLookupFromThis:
+                    {
+                        int pointerSize = factory.Target.PointerSize;
+
+                        var lookupInfo = (GenericLookupDescriptor)Target;
+
+                        // Arg0 points to the EEType
+
+                        // Locate the VTable slot that points to the dictionary
+                        int vtableSlot = 0;
+                        if (!relocsOnly)
+                            vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(factory, (TypeDesc)lookupInfo.CanonicalOwner);
+
+                        int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
+
+                        // Load the dictionary pointer from the VTable
+                        AddrMode loadDictionary = new AddrMode(encoder.TargetRegister.Arg0, null, slotOffset, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadDictionary);
+
+                        // What's left now is the actual dictionary lookup
+                        goto case ReadyToRunHelperId.GenericLookupFromDictionary;
+                    }
+
+                 case ReadyToRunHelperId.GenericLookupFromDictionary:
+                    {
+                        var lookupInfo = (GenericLookupDescriptor)Target;
+
+                        // Find the generic dictionary slot
+                        int dictionarySlot = 0;
+                        if (!relocsOnly)
+                        {
+                            // The concrete slot won't be known until we're emitting data.
+                            dictionarySlot = factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).GetSlotForEntry(lookupInfo.Signature);
+                        }
+
+                        // Load the generic dictionary cell
+                        AddrMode loadEntry = new AddrMode(
+                            encoder.TargetRegister.Arg0, null, dictionarySlot * factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadEntry);
+                        encoder.EmitRET();
                     }
                     break;
 

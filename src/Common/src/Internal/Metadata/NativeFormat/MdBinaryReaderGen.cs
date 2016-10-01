@@ -601,6 +601,15 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out FunctionPointerSignatureHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new FunctionPointerSignatureHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out GenericParameterHandle handle)
         {
             uint value;

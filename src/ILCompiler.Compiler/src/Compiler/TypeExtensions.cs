@@ -43,5 +43,46 @@ namespace ILCompiler
             Debug.Assert(type is DefType);
             return (DefType)type;
         }
+
+        /// <summary>
+        /// Gets a value indicating whether the method requires a hidden instantiation argument in addition
+        /// to the formal arguments defined in the method signature.
+        /// </summary>
+        public static bool RequiresInstArg(this MethodDesc method)
+        {
+            return method.IsSharedByGenericInstantiations &&
+                (method.HasInstantiation || method.Signature.IsStatic || method.ImplementationType.IsValueType);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the method acquires the generic context from a hidden
+        /// instantiation argument that points to the method's generic dictionary.
+        /// </summary>
+        public static bool RequiresInstMethodDescArg(this MethodDesc method)
+        {
+            return method.HasInstantiation && method.IsSharedByGenericInstantiations;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the method acquires the generic context from a hidden
+        /// instantiation argument that points to the generic dictionary of the method's owning type.
+        /// </summary>
+        public static bool RequiresInstMethodTableArg(this MethodDesc method)
+        {
+            return (method.Signature.IsStatic || method.ImplementationType.IsValueType) &&
+                method.IsSharedByGenericInstantiations &&
+                !method.HasInstantiation;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the method acquires the generic context from the this pointer.
+        /// </summary>
+        public static bool AcquiresInstMethodTableFromThis(this MethodDesc method)
+        {
+            return method.IsSharedByGenericInstantiations &&
+                !method.HasInstantiation &&
+                !method.Signature.IsStatic &&
+                !method.ImplementationType.IsValueType;
+        }
     }
 }

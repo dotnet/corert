@@ -51,6 +51,7 @@ namespace Internal.Runtime
         InterfaceDispatchTable      = 203,
         ModuleManagerIndirection    = 204,
         EagerCctor                  = 205,
+        FrozenObjectRegion          = 206,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart     = 300,

@@ -12,14 +12,14 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ConstructedEETypeNode : EETypeNode, ISymbolNode
+    internal class ConstructedEETypeNode : EETypeNode, ISymbolNode
     {
         public ConstructedEETypeNode(TypeDesc type) : base(type)
         {
             Debug.Assert(!_type.IsGenericDefinition);
         }
         
-        public override string GetName()
+        protected override string GetName()
         {
             return ((ISymbolNode)this).MangledName + " constructed";
         }
@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
-                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
+                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, interfaceMethod), "Interface method");
                         yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, interfaceMethod), "Interface method address");
                     }
                 }

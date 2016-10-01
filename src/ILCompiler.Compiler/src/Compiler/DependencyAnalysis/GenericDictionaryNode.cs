@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override string GetName()
+        protected sealed override string GetName()
         {
             return MangledName;
         }

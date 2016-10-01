@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
             _name = name;
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return "ExternSymbol " + _name;
         }

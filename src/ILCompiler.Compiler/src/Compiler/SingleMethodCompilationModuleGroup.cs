@@ -57,5 +57,10 @@ namespace ILCompiler
         {
             rootProvider.AddCompilationRoot(_method, "Single method mode");
         }
+
+        public override bool ShouldReferenceThroughImportTable(TypeDesc type)
+        {
+            return false;
+        }
     }
 }

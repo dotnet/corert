@@ -938,6 +938,12 @@ namespace System.Runtime
             return false;
         }
 
+        [RuntimeExport("RhTypeCast_IsInstanceOf2")]  // Helper with RyuJIT calling convention
+        static public unsafe object IsInstanceOf2(void* pvTargetType, object obj)
+        {
+            return IsInstanceOf(obj, pvTargetType);
+        }
+
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
@@ -951,6 +957,12 @@ namespace System.Runtime
                 return IsInstanceOfInterface(obj, pvTargetType);
             else
                 return IsInstanceOfClass(obj, pvTargetType);
+        }
+
+        [RuntimeExport("RhTypeCast_CheckCast2")] // Helper with RyuJIT calling convention
+        static public unsafe object CheckCast2(void* pvTargetType, Object obj)
+        {
+            return CheckCast(obj, pvTargetType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
@@ -1007,9 +1019,7 @@ namespace System.Runtime
         }
 
         // source type + target type + assignment variation -> true/false
-#if INPLACE_RUNTIME
         [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-#endif
         private static class CastCache
         {
             //

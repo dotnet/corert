@@ -27,7 +27,8 @@ namespace ILCompiler.DependencyAnalysis
             : base(
                   startSymbolMangledName,
                   endSymbolMangledName,
-                  nodeSorter != null ? new PointerIndirectionNodeComparer(nodeSorter) : null)
+                  nodeSorter != null ? new PointerIndirectionNodeComparer(nodeSorter) : null,
+                  null)
         {
             _startSymbolMangledName = startSymbolMangledName;
         }
@@ -77,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode = futureParent;
             }
 
-            public override string GetName()
+            protected override string GetName()
             {
                 return "Embedded pointer to " + Target.MangledName;
             }

@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
             _name = name;
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return "Symbol " + _name + " at offset " + _offset.ToStringInvariant();
         }

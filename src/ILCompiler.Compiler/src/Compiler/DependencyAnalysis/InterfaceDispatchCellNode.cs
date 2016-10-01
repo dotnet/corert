@@ -15,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         public InterfaceDispatchCellNode(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.OwningType.IsInterface);
+            Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
             _targetMethod = targetMethod;
         }
 
@@ -26,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string GetName()
+        protected override string GetName()
         {
             return ((ISymbolNode)this).MangledName;
         }

@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
             _offset = InvalidOffset;
         }
 
-        public int Offset
+        public virtual int Offset
         {
             get
             {

@@ -109,10 +109,8 @@ namespace ILCompiler.CppCodeGen
             return null;
         }
 
-        public string GetCppMethodDeclaration(MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null)
+        public void AppendCppMethodDeclaration(CppGenerationBuffer sb, MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null)
         {
-            var sb = new CppGenerationBuffer();
-
             if (methodSignature == null)
                 methodSignature = method.Signature;
 
@@ -208,14 +206,10 @@ namespace ILCompiler.CppCodeGen
             sb.Append(")");
             if (!implementation)
                 sb.Append(";");
-
-            return sb.ToString();
         }
 
-        public string GetCppMethodCallParamList(MethodDesc method)
+        public void AppendCppMethodCallParamList(CppGenerationBuffer sb, MethodDesc method)
         {
-            var sb = new CppGenerationBuffer();
-
             var methodSignature = method.Signature;
 
             bool hasThis = !methodSignature.IsStatic;
@@ -252,7 +246,6 @@ namespace ILCompiler.CppCodeGen
                 if (i != argCount - 1)
                     sb.Append(", ");
             }
-            return sb.ToString();
         }
 
         public string GetCppTypeName(TypeDesc type)
@@ -330,40 +323,40 @@ namespace ILCompiler.CppCodeGen
                 externCSignature = methodSignature;
             }
 
-            var builder = new CppGenerationBuffer();
+            var sb = new CppGenerationBuffer();
 
-            builder.AppendLine();
-            builder.Append(GetCppMethodDeclaration(method, true));
-            builder.AppendLine();
-            builder.Append("{");
-            builder.Indent();
+            sb.AppendLine();
+            AppendCppMethodDeclaration(sb, method, true);
+            sb.AppendLine();
+            sb.Append("{");
+            sb.Indent();
 
             if (slotCastRequired)
             {
-                AppendSlotTypeDef(builder, method);
+                AppendSlotTypeDef(sb, method);
             }
 
-            builder.AppendLine();
+            sb.AppendLine();
             if (!method.Signature.ReturnType.IsVoid)
             {
-                builder.Append("return ");
+                sb.Append("return ");
             }
 
             if (slotCastRequired)
-                builder.Append("((__slot__" + GetCppMethodName(method) + ")");
-            builder.Append("::");
-            builder.Append(importName);
+                sb.Append("((__slot__" + GetCppMethodName(method) + ")");
+            sb.Append("::");
+            sb.Append(importName);
             if (slotCastRequired)
-                builder.Append(")");
+                sb.Append(")");
 
-            builder.Append("(");
-            builder.Append(GetCppMethodCallParamList(method));
-            builder.Append(");");
-            builder.Exdent();
-            builder.AppendLine();
-            builder.Append("}");
+            sb.Append("(");
+            AppendCppMethodCallParamList(sb, method);
+            sb.Append(");");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("}");
 
-            methodCodeNodeNeedingCode.SetCode(builder.ToString(), Array.Empty<Object>());
+            methodCodeNodeNeedingCode.SetCode(sb.ToString(), Array.Empty<Object>());
         }
 
         public void CompileMethod(CppMethodCodeNode methodCodeNodeNeedingCode)
@@ -434,19 +427,19 @@ namespace ILCompiler.CppCodeGen
             {
                 _compilation.Log.WriteLine(e.Message + " (" + method + ")");
 
-                var builder = new CppGenerationBuffer();
-                builder.AppendLine();
-                builder.Append(GetCppMethodDeclaration(method, true));
-                builder.AppendLine();
-                builder.Append("{");
-                builder.Indent();
-                builder.AppendLine();
-                builder.Append("throw 0xC000C000;");
-                builder.Exdent();
-                builder.AppendLine();
-                builder.Append("}");
+                var sb = new CppGenerationBuffer();
+                sb.AppendLine();
+                AppendCppMethodDeclaration(sb, method, true);
+                sb.AppendLine();
+                sb.Append("{");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("throw 0xC000C000;");
+                sb.Exdent();
+                sb.AppendLine();
+                sb.Append("}");
 
-                methodCodeNodeNeedingCode.SetCode(builder.ToString(), Array.Empty<Object>());
+                methodCodeNodeNeedingCode.SetCode(sb.ToString(), Array.Empty<Object>());
             }
         }
 
@@ -562,12 +555,6 @@ namespace ILCompiler.CppCodeGen
                 sb.AppendLine();
                 sb.Append("};");
             }
-        }
-
-        private void OutputMethodDecl(CppGenerationBuffer sb, MethodDesc m)
-        {
-            sb.AppendLine();
-            sb.Append(GetCppMethodDeclaration(m, false));
         }
 
         private void AppendSlotTypeDef(CppGenerationBuffer sb, MethodDesc method)
@@ -770,7 +757,7 @@ namespace ILCompiler.CppCodeGen
             }
             else
             {
-                nodeCode.Append(node.GetName());
+                nodeCode.Append(((ISymbolNode)node).MangledName);
             }
             nodeCode.Append("()");
             nodeCode.AppendLine();
@@ -797,6 +784,7 @@ namespace ILCompiler.CppCodeGen
             nodeCode.AppendLine();
             return nodeCode.ToString();
         }
+
         private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, byte[] byteData, DependencyNode node, int offset, NodeFactory factory)
         {
             CppGenerationBuffer nodeDataDecl = new CppGenerationBuffer();
@@ -817,7 +805,7 @@ namespace ILCompiler.CppCodeGen
                 }
                 else
                 {
-                    AppendFormattedByteArray(byteData, divisionStartIndex, divisionStartIndex + nodeDataSections[i].SectionSize, nodeDataDecl);
+                    AppendFormattedByteArray(nodeDataDecl, byteData, divisionStartIndex, divisionStartIndex + nodeDataSections[i].SectionSize);
                     nodeDataDecl.Append(",");
                 }
                 divisionStartIndex += nodeDataSections[i].SectionSize;
@@ -847,14 +835,13 @@ namespace ILCompiler.CppCodeGen
                 relocCode.Append(reloc.Target.MangledName);
                 relocCode.Append("()");
             }
-            else if (reloc.Target is ObjectAndOffsetSymbolNode && (reloc.Target as ObjectAndOffsetSymbolNode).GetName().Contains("DispatchMap"))
+            else if (reloc.Target is ObjectAndOffsetSymbolNode && (reloc.Target as ISymbolNode).MangledName.Contains("DispatchMap"))
             {
                 relocCode.Append("dispatchMapModule");
             }
             else
             {
                 relocCode.Append("NULL");
-
             }
             return relocCode.ToString();
         }
@@ -891,7 +878,7 @@ namespace ILCompiler.CppCodeGen
             return nodeStructDecl.ToString();
         }
 
-        private static void AppendFormattedByteArray(byte[] array, int startIndex, int endIndex, CppGenerationBuffer sb)
+        private static void AppendFormattedByteArray(CppGenerationBuffer sb, byte[] array, int startIndex, int endIndex)
         {
             sb.Append("{");
             sb.Append("0x");
@@ -972,7 +959,7 @@ namespace ILCompiler.CppCodeGen
                 else if (node is InterfaceDispatchMapNode)
                 {
                     dispatchPointers.Append("(void *)");
-                    dispatchPointers.Append(node.GetName());
+                    dispatchPointers.Append(((ISymbolNode)node).MangledName);
                     dispatchPointers.Append("(),");
                     dispatchPointers.AppendLine();
                     dispatchMapCount++;
@@ -994,8 +981,6 @@ namespace ILCompiler.CppCodeGen
 
             Out.Write(methodTables.ToString());
 
-
-
             // Emit pointers to dispatch map nodes, to be used in interface dispatch
             Out.Write("void * dispatchMapModule[");
             Out.Write(dispatchMapCount);
@@ -1004,8 +989,6 @@ namespace ILCompiler.CppCodeGen
             Out.Write("};");
 
             Out.Write(rtrHeader);
-
-
         }
 
         /// <summary>
@@ -1023,7 +1006,7 @@ namespace ILCompiler.CppCodeGen
             {
                 CppGenerationBuffer sb = new CppGenerationBuffer();
                 sb.AppendLine();
-                sb.Append(GetCppMethodDeclaration(methodCodeNode.Method, true, alternateName));
+                AppendCppMethodDeclaration(sb, methodCodeNode.Method, true, alternateName);
                 sb.AppendLine();
                 sb.Append("{");
                 sb.Indent();
@@ -1034,7 +1017,7 @@ namespace ILCompiler.CppCodeGen
                 }
                 sb.Append(GetCppMethodDeclarationName(methodCodeNode.Method.OwningType, GetCppMethodName(methodCodeNode.Method)));
                 sb.Append("(");
-                sb.Append(GetCppMethodCallParamList(methodCodeNode.Method));
+                AppendCppMethodCallParamList(sb, methodCodeNode.Method);
                 sb.Append(");");
                 sb.Exdent();
                 sb.AppendLine();
@@ -1146,7 +1129,8 @@ namespace ILCompiler.CppCodeGen
                 {
                     foreach (var m in methodList)
                     {
-                        OutputMethodDecl(typeDefinitions, m);
+                        typeDefinitions.AppendLine();
+                        AppendCppMethodDeclaration(typeDefinitions, m, false);
                     }
                 }
             }
@@ -1171,6 +1155,7 @@ namespace ILCompiler.CppCodeGen
                 methodTable.AppendEmptyLine();
             }
         }
+
         private String GetCodeForReadyToRunHeader(ReadyToRunHeaderNode headerNode, NodeFactory factory)
         {
             CppGenerationBuffer rtrHeader = new CppGenerationBuffer();
@@ -1193,7 +1178,7 @@ namespace ILCompiler.CppCodeGen
             rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },");
             rtrHeader.AppendLine();
             rtrHeader.Append("(void*)");
-            rtrHeader.Append(headerNode.GetName());
+            rtrHeader.Append(((ISymbolNode)headerNode).MangledName);
             rtrHeader.Append("(),");
             rtrHeader.AppendLine();
             rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }");
@@ -1220,7 +1205,7 @@ namespace ILCompiler.CppCodeGen
                 if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
                 {
                     sb.AppendLine();
-                    sb.Append(GetCppMethodDeclaration(null, false, importName, externC.Value));
+                    AppendCppMethodDeclaration(sb, null, false, importName, externC.Value);
                 }
             }
 
@@ -1273,6 +1258,7 @@ namespace ILCompiler.CppCodeGen
             sb.Exdent();
             sb.AppendLine();
             sb.Append("}");
+
             Out.Write(sb.ToString());
         }
 
@@ -1283,7 +1269,6 @@ namespace ILCompiler.CppCodeGen
             Out.WriteLine("#include \"common.h\"");
             Out.WriteLine("#include \"CppCodeGen.h\"");
             Out.WriteLine();
-
 
             _statics = new CppGenerationBuffer();
             _statics.Indent();
@@ -1319,8 +1304,8 @@ namespace ILCompiler.CppCodeGen
             if (entrypoint != null)
             {
                 OutputMainMethodStub(entrypoint);
-
             }
+
             Out.Dispose();
         }
     }
