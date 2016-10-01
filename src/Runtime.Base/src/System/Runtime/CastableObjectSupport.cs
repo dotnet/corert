@@ -40,6 +40,11 @@ namespace System.Runtime
             public object InstanceObjectForType;
         }
 
+        internal class CastableObject
+        {
+            public CastableObjectCacheEntry[] Cache;
+        }
+
         // cache must be a size which is a power of two.
         internal static unsafe object CastableTargetLookup(CastableObjectCacheEntry[] cache, EEType* interfaceType)
         {
@@ -127,7 +132,7 @@ namespace System.Runtime
         /// </summary>
         internal unsafe static void AddToCastableCache(ICastableObject castableObject, EEType* interfaceType, object objectForType)
         {
-            CastableObjectCacheEntry[] cache = InternalCalls.RhpGetCacheForCastableObject(castableObject);
+            CastableObjectCacheEntry[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
             bool setNewCache = false;
 
             // If there is no cache, allocate one
@@ -173,7 +178,7 @@ namespace System.Runtime
 
             if (setNewCache)
             {
-                InternalCalls.RhpSetCacheForCastableObject(castableObject, cache);
+                Unsafe.As<CastableObject>(castableObject).Cache = cache;
             }
 
             return;
@@ -181,7 +186,7 @@ namespace System.Runtime
 
         internal static unsafe object GetCastableTargetIfPossible(ICastableObject castableObject, EEType *interfaceType, bool produceException, ref Exception exception)
         {
-            CastableObjectCacheEntry[] cache = InternalCalls.RhpGetCacheForCastableObject(castableObject);
+            CastableObjectCacheEntry[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
 
             object targetObjectInitial = null;
 
@@ -217,7 +222,7 @@ namespace System.Runtime
 
             // we may have replaced the cache object since the earlier acquisition in this method. Re-acquire the cache object
             // here.
-            cache = InternalCalls.RhpGetCacheForCastableObject(castableObject);
+            cache = Unsafe.As<CastableObject>(castableObject).Cache;
             object targetObjectInCache = null;
 
             if (cache != null)

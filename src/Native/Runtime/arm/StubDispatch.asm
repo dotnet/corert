@@ -10,7 +10,6 @@
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
     EXTERN RhpCastableObjectResolve
-    EXTERN RhpCheckedAssignRefR1
     EXTERN RhpCidResolve
     EXTERN RhpUniversalTransition_DebugStepTailCall
 
@@ -50,11 +49,6 @@ SECTIONREL_t_TLS_DispatchCell
         DCD     t_TLS_DispatchCell
         RELOC   15 ;; SECREL
 
-    LEAF_ENTRY RhpGetTailCallTLSDispatchCell
-        ldr     r0, =RhpTailCallTLSDispatchCell
-        bx      lr
-    LEAF_END RhpGetTailCallTLSDispatchCell
-
     LEAF_ENTRY RhpTailCallTLSDispatchCell
         ;; Load the dispatch cell out of the TLS variable
         GET_TLS_DISPATCH_CELL
@@ -62,11 +56,6 @@ SECTIONREL_t_TLS_DispatchCell
         ;; Tail call to the target of the dispatch cell, preserving the cell address in r12
         ldr     pc, [r12]
     LEAF_END RhpTailCallTLSDispatchCell
-
-    LEAF_ENTRY RhpGetCastableObjectDispatchHelper_TailCalled
-        ldr     r0, =RhpCastableObjectDispatchHelper_TailCalled
-        bx      lr
-    LEAF_END RhpGetCastableObjectDispatchHelper_TailCalled
 
     LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled
         ;; Load the dispatch cell out of the TLS variable
@@ -86,20 +75,6 @@ SECTIONREL_t_TLS_DispatchCell
         b       RhpUniversalTransition_DebugStepTailCall
     LEAF_END RhpCastableObjectDispatchHelper
 
-    LEAF_ENTRY RhpGetCastableObjectDispatchHelper
-        ldr     r0, =RhpCastableObjectDispatchHelper
-        bx      lr
-    LEAF_END RhpGetCastableObjectDispatchHelper
-
-    LEAF_ENTRY RhpGetCacheForCastableObject
-        ldr     r0, [r0, #4]
-        bx      lr
-    LEAF_END RhpGetCacheForCastableObject
-
-    LEAF_ENTRY RhpSetCacheForCastableObject
-        add     r0, #4
-        b       RhpCheckedAssignRefR1
-    LEAF_END RhpSetCacheForCastableObject
 
 ;; Macro that generates a stub consuming a cache with the given number of entries.
     GBLS StubName
