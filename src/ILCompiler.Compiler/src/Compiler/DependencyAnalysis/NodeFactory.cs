@@ -185,16 +185,16 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
-            _dependencyOnlyMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
+            _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
-                return new ShadowConcreteMethodNode(method,
-                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                return new ShadowConcreteMethodNode<MethodCodeNode>(method,
+                    (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             });
 
             _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
-                return new RuntimeDeterminedMethodNode(method,
-                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                return new RuntimeDeterminedMethodNode<MethodCodeNode>(method,
+                    (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
@@ -483,11 +483,11 @@ namespace ILCompiler.DependencyAnalysis
             return _methodEntrypoints.GetOrAdd(method);
         }
 
-        private NodeCache<MethodDesc, IMethodNode> _dependencyOnlyMethods;
+        private NodeCache<MethodDesc, IMethodNode> _shadowConcreteMethods;
 
-        public IMethodNode DependencyOnlyMethod(MethodDesc method)
+        public IMethodNode ShadowConcreteMethod(MethodDesc method)
         {
-            return _dependencyOnlyMethods.GetOrAdd(method);
+            return _shadowConcreteMethods.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, IMethodNode> _runtimeDeterminedMethods;

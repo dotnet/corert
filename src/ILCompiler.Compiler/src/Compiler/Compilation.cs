@@ -187,10 +187,13 @@ namespace ILCompiler
                 var methodCodeNodeNeedingCode = dependency as MethodCodeNode;
                 if (methodCodeNodeNeedingCode == null)
                 {
-                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
-                    methodCodeNodeNeedingCode = (MethodCodeNode)dependencyMethod.CanonicalMethodNode;
+                    // To compute dependencies of the shadow method that tracks dictionary
+                    // dependencies we need to ensure there is code for the canonical method body.
+                    var dependencyMethod = (ShadowConcreteMethodNode<MethodCodeNode>)dependency;
+                    methodCodeNodeNeedingCode = dependencyMethod.CanonicalMethodNode;
                 }
 
+                // We might have already compiled this method.
                 if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
                     continue;
 

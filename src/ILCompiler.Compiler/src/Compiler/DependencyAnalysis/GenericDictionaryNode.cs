@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
                 // If a canonical method body was compiled, we need to track the dictionary
                 // dependencies in the context of the concrete type that owns this dictionary.
                 yield return new CombinedDependencyListEntry(
-                    factory.DependencyOnlyMethod(method),
+                    factory.ShadowConcreteMethod(method),
                     factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                     "Generic dictionary dependency");
             }

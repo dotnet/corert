@@ -10,8 +10,15 @@ namespace ILCompiler.DependencyAnalysis
 {
     using DependencyListEntry = DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyListEntry;
 
+    /// <summary>
+    /// Represents a node whose dependencies are runtime determined (they depend on the generic context)
+    /// and which provides means to compute concrete dependencies when given the generic context.
+    /// </summary>
     public interface INodeWithRuntimeDeterminedDependencies
     {
+        /// <summary>
+        /// Instantiates runtime determined dependencies of this node using the supplied generic context.
+        /// </summary>
         IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
     }
 }

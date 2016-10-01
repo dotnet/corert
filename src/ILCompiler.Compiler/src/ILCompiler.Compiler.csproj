@@ -74,6 +74,7 @@
     <Compile Include="Compiler\DependencyAnalysis\FrozenStringNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericCompositionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDefinitionEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\RuntimeDeterminedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />

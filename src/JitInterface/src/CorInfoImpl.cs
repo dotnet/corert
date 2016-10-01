@@ -266,12 +266,6 @@ namespace Internal.JitInterface
                                                        _compilation.NodeFactory.Target.MinimumFunctionAlignment,
                                                        new ISymbolNode[] { _methodCodeNode });
 
-            Console.WriteLine("*** " + MethodBeingCompiled);
-            foreach (var reloc in relocs)
-            {
-                Console.WriteLine("{0}: {1}", reloc.Target.GetType(), reloc.Target);
-            }
-
             _methodCodeNode.SetCode(objectData);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
@@ -2442,12 +2436,12 @@ namespace Internal.JitInterface
                         pResult.instParamLookup.addr = (void*)ObjectToHandle(genericDictionary);
 
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
                     }
                     else if (targetMethod.AcquiresInstMethodTableFromThis())
                     {
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
                     }
                     else
                     {
