@@ -42,12 +42,6 @@ namespace System.Runtime
             AllowSizeEquivalence = 2,
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfClass2")] // Helper with RyuJIT calling convention
-        static public unsafe object IsInstanceOfClass2(void* pvTargetType, object obj)
-        {
-            return IsInstanceOfClass(obj, pvTargetType);
-        }
-
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
         static public unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
         {
@@ -156,12 +150,6 @@ namespace System.Runtime
                     return obj;
                 }
             }
-        }
-
-        [RuntimeExport("RhTypeCast_CheckCastClass2")] // Helper with RyuJIT calling convention
-        static public unsafe object CheckCastClass2(void* pvTargetEEType, Object obj)
-        {
-            return CheckCastClass(obj, pvTargetEEType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCastClass")]
@@ -950,6 +938,12 @@ namespace System.Runtime
             return false;
         }
 
+        [RuntimeExport("RhTypeCast_IsInstanceOf2")]  // Helper with RyuJIT calling convention
+        static public unsafe object IsInstanceOf2(void* pvTargetType, object obj)
+        {
+            return IsInstanceOf(obj, pvTargetType);
+        }
+
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
@@ -963,6 +957,12 @@ namespace System.Runtime
                 return IsInstanceOfInterface(obj, pvTargetType);
             else
                 return IsInstanceOfClass(obj, pvTargetType);
+        }
+
+        [RuntimeExport("RhTypeCast_CheckCast2")] // Helper with RyuJIT calling convention
+        static public unsafe object CheckCast2(void* pvTargetType, Object obj)
+        {
+            return CheckCast(obj, pvTargetType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
