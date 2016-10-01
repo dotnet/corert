@@ -303,6 +303,26 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatchHelper")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetCastableObjectDispatchHelper();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatchHelper_TailCalled")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetCastableObjectDispatchHelper_TailCalled();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetTailCallTLSDispatchCell")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetTailCallTLSDispatchCell();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpSetTLSDispatchCell")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal unsafe extern static void RhpSetTLSDispatchCell(IntPtr pCell);
+
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
@@ -329,31 +349,5 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal extern static long PalGetTickCount64();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetCacheForCastableObject")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static CastableObjectSupport.CastableObjectCacheEntry[] RhpGetCacheForCastableObject(CastableObjectSupport.ICastableObject castableObject);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpSetCacheForCastableObject")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static void RhpSetCacheForCastableObject(CastableObjectSupport.ICastableObject castableObject, CastableObjectSupport.CastableObjectCacheEntry[] cache);
-
-        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
-        internal extern static IntPtr RhpGetCastableObjectDispatchHelper();
-
-        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
-        internal extern static IntPtr RhpGetCastableObjectDispatchHelper_TailCalled();
-
-        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
-        internal extern static IntPtr RhpGetTailCallTLSDispatchCell();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpSetTLSDispatchCell")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpSetTLSDispatchCell(IntPtr pCell);
-
-
     }
 }
