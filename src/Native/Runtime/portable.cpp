@@ -224,6 +224,21 @@ COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
+COOP_PINVOKE_HELPER(void, RhpTailCallTLSDispatchCell, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpCastableObjectDispatchHelper, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpCastableObjectDispatchHelper_TailCalled, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;
@@ -308,31 +323,6 @@ COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     return PalInterlockedCompareExchange64(location, value, comparand);
-}
-
-COOP_PINVOKE_HELPER(void, RhpGetCacheForCastableObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpGetTailCallTLSDispatchCell, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpGetCastableObjectDispatchHelper, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpGetCastableObjectDispatchHelper_TailCalled, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpSetCacheForCastableObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
 }
 
 #endif // USE_PORTABLE_HELPERS
