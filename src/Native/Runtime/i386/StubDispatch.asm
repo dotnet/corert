@@ -16,7 +16,6 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 EXTERN RhpCidResolve : PROC
 EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
 EXTERN RhpCastableObjectResolve : PROC
-EXTERN _RhpCheckedAssignRefEDX : PROC
 
 EXTERN  _t_TLS_DispatchCell:DWORD
 EXTERN  __tls_index:DWORD
@@ -31,31 +30,21 @@ GET_TLS_DISPATCH_CELL macro
         mov     eax, [eax + SECTIONREL _t_TLS_DispatchCell]
 endm
 
-_RhpGetTailCallTLSDispatchCell proc public
-        lea     eax, RhpTailCallTLSDispatchCell
-        ret
-_RhpGetTailCallTLSDispatchCell endp
-
-RhpTailCallTLSDispatchCell proc public
+_RhpTailCallTLSDispatchCell proc public
         ;; Load the dispatch cell out of the TLS variable
         GET_TLS_DISPATCH_CELL
 
         ;; Tail call to the target of the dispatch cell
         jmp     dword ptr [eax]
-RhpTailCallTLSDispatchCell endp
+_RhpTailCallTLSDispatchCell endp
 
-_RhpGetCastableObjectDispatchHelper_TailCalled proc public
-        lea     eax, RhpCastableObjectDispatchHelper_TailCalled
-        ret
-_RhpGetCastableObjectDispatchHelper_TailCalled endp
-
-RhpCastableObjectDispatchHelper_TailCalled proc public
+_RhpCastableObjectDispatchHelper_TailCalled proc public
         ;; Load the dispatch cell out of the TLS variable
         GET_TLS_DISPATCH_CELL
-        jmp     RhpCastableObjectDispatchHelper
-RhpCastableObjectDispatchHelper_TailCalled endp
+        jmp     _RhpCastableObjectDispatchHelper
+_RhpCastableObjectDispatchHelper_TailCalled endp
 
-RhpCastableObjectDispatchHelper proc public
+_RhpCastableObjectDispatchHelper proc public
         push    ebp
         mov     ebp, esp
         ;; TODO! Implement fast lookup helper to avoid the universal transition each time we
@@ -70,22 +59,7 @@ RhpCastableObjectDispatchHelper proc public
         lea     eax, RhpCastableObjectResolve
         push    eax
         jmp     _RhpUniversalTransition_DebugStepTailCall@0
-RhpCastableObjectDispatchHelper endp
-
-_RhpGetCastableObjectDispatchHelper proc public
-        lea     eax, RhpCastableObjectDispatchHelper
-        ret
-_RhpGetCastableObjectDispatchHelper endp
-
-_RhpGetCacheForCastableObject proc public
-        mov     eax, [ecx+4]
-        ret
-_RhpGetCacheForCastableObject endp
-
-_RhpSetCacheForCastableObject proc public
-        lea     ecx, [ecx+4]
-        jmp     _RhpCheckedAssignRefEDX ;; Is this the correct form for tailcall?
-_RhpSetCacheForCastableObject endp
+_RhpCastableObjectDispatchHelper endp
 
 
 ;; Macro that generates code to check a single cache entry.
