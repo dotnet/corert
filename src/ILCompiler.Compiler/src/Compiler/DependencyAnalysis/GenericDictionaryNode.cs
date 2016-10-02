@@ -111,6 +111,10 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.Signature.IsStatic || method.HasInstantiation)
                     continue;
 
+                // Abstract methods don't have a body
+                if (method.IsAbstract)
+                    continue;
+
                 // If a canonical method body was compiled, we need to track the dictionary
                 // dependencies in the context of the concrete type that owns this dictionary.
                 yield return new CombinedDependencyListEntry(
