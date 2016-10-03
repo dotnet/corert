@@ -570,7 +570,7 @@ namespace Internal.JitInterface
             if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
-            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+            if (method.IsSharedByGenericInstantiations)
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
@@ -766,7 +766,7 @@ namespace Internal.JitInterface
 
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
 
-            if (methodIL.OwningMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+            if (methodIL.OwningMethod.IsSharedByGenericInstantiations)
             {
                 MethodIL methodILUninstantiated = methodIL.GetMethodILDefinition();
                 MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
@@ -2124,7 +2124,7 @@ namespace Internal.JitInterface
 
                 Debug.Assert(md.OwningType == td);
 
-                runtimeLookup = md.IsCanonicalMethod(CanonicalFormKind.Any);
+                runtimeLookup = md.IsSharedByGenericInstantiations;
 
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
 
@@ -2225,7 +2225,7 @@ namespace Internal.JitInterface
 
             MethodDesc method = HandleToObject(context);
 
-            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+            if (method.IsSharedByGenericInstantiations)
             {
                 result.needsRuntimeLookup = true;
                 result.runtimeLookupKind = GetGenericRuntimeLookupKind(method);
@@ -2341,7 +2341,7 @@ namespace Internal.JitInterface
             if (targetMethod.HasInstantiation)
             {
                 pResult.contextHandle = contextFromMethod(targetMethod);
-                pResult.exactContextNeedsRuntimeLookup = targetMethod.IsCanonicalMethod(CanonicalFormKind.Any);
+                pResult.exactContextNeedsRuntimeLookup = targetMethod.IsSharedByGenericInstantiations;
             }
             else
             {
@@ -2408,7 +2408,7 @@ namespace Internal.JitInterface
                     // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
                     // codegen emitted at crossgen time)
 
-                    if (directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                    if (directMethod.IsSharedByGenericInstantiations)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(

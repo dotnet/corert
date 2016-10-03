@@ -50,7 +50,7 @@ namespace ILCompiler
         /// </summary>
         public static bool RequiresInstArg(this MethodDesc method)
         {
-            return method.IsCanonicalMethod(CanonicalFormKind.Any) &&
+            return method.IsSharedByGenericInstantiations &&
                 (method.HasInstantiation || method.Signature.IsStatic || method.ImplementationType.IsValueType);
         }
 
@@ -60,7 +60,7 @@ namespace ILCompiler
         /// </summary>
         public static bool RequiresInstMethodDescArg(this MethodDesc method)
         {
-            return method.HasInstantiation && method.IsCanonicalMethod(CanonicalFormKind.Any);
+            return method.HasInstantiation && method.IsSharedByGenericInstantiations;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace ILCompiler
         public static bool RequiresInstMethodTableArg(this MethodDesc method)
         {
             return (method.Signature.IsStatic || method.ImplementationType.IsValueType) &&
-                method.IsCanonicalMethod(CanonicalFormKind.Any) &&
+                method.IsSharedByGenericInstantiations &&
                 !method.HasInstantiation;
         }
 
@@ -79,7 +79,7 @@ namespace ILCompiler
         /// </summary>
         public static bool AcquiresInstMethodTableFromThis(this MethodDesc method)
         {
-            return method.IsCanonicalMethod(CanonicalFormKind.Any) &&
+            return method.IsSharedByGenericInstantiations &&
                 !method.HasInstantiation &&
                 !method.Signature.IsStatic &&
                 !method.ImplementationType.IsValueType;

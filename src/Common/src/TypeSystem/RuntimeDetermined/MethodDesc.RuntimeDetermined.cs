@@ -68,19 +68,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                foreach (TypeDesc typeArg in ImplementationType.Instantiation)
-                {
-                    if (typeArg.IsCanonicalType)
-                        return true;
-                }
-
-                foreach (TypeDesc typeArg in Instantiation)
-                {
-                    if (typeArg.IsCanonicalType)
-                        return true;
-                }
-
-                return false;
+                return IsCanonicalMethod(CanonicalFormKind.Any);
             }
         }
     }

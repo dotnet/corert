@@ -166,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodGenericDictionaryNode(MethodDesc owningMethod)
         {
-            Debug.Assert(!owningMethod.IsCanonicalMethod(CanonicalFormKind.Any));
+            Debug.Assert(!owningMethod.IsSharedByGenericInstantiations);
             Debug.Assert(owningMethod.HasInstantiation);
 
             _owningMethod = owningMethod;

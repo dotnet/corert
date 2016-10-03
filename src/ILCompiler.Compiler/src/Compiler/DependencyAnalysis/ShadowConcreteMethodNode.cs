@@ -40,9 +40,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ShadowConcreteMethodNode(MethodDesc method, T canonicalMethod)
         {
-            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any));
+            Debug.Assert(!method.IsSharedByGenericInstantiations);
             // TODO: assert the method is not runtime determined
-            Debug.Assert(canonicalMethod.Method.IsCanonicalMethod(CanonicalFormKind.Any));
+            Debug.Assert(canonicalMethod.Method.IsSharedByGenericInstantiations);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             Method = method;
             CanonicalMethodNode = canonicalMethod;
