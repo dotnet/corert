@@ -36,14 +36,35 @@ namespace Internal.Runtime
 #if INPLACE_RUNTIME
             return RuntimeExceptionHelpers.GetRuntimeException(id);
 #else
+            DynamicModule* dynamicModule = this.DynamicModule;
+            if (dynamicModule != null)
+            {
+                IntPtr getRuntimeException = dynamicModule->GetRuntimeException;
+                if (getRuntimeException != IntPtr.Zero)
+                {
+                    return CalliIntrinsics.Call<Exception>(getRuntimeException, id);
+                }
+            }
+            if (IsParameterizedType)
+            {
+                return RelatedParameterType->GetClasslibException(id);
+            }
+
             return EH.GetClasslibException(id, GetAssociatedModuleAddress());
 #endif
         }
 
+        internal void SetToCloneOf(EEType *pOrigType)
+        {
+            Debug.Assert((_usFlags & (ushort)EETypeFlags.EETypeKindMask) == 0, "should be a canonical type");
+            this._usFlags |= (ushort)EETypeKind.ClonedEEType;
+            this._relatedType._pCanonicalType = pOrigType;
+        }
+
         // Returns an address in the module most closely associated with this EEType that can be handed to
-        // EH.GetClasslibException and use to locate the compute the correct exception type. In most cases 
-        // this is just the EEType pointer itself, but when this type represents a generic that has been 
-        // unified at runtime (and thus the EEType pointer resides in the process heap rather than a specific 
+        // EH.GetClasslibException and use to locate the compute the correct exception type. In most cases
+        // this is just the EEType pointer itself, but when this type represents a generic that has been
+        // unified at runtime (and thus the EEType pointer resides in the process heap rather than a specific
         // module) we need to do some work.
         internal unsafe IntPtr GetAssociatedModuleAddress()
         {
@@ -56,6 +77,12 @@ namespace Internal.Runtime
                 // Arrays/Pointers can be handled by looking at their element type.
                 if (IsParameterizedType)
                     return pThis->RelatedParameterType->GetAssociatedModuleAddress();
+
+                if (!IsGeneric)
+                {
+                    // No way to resolve module information for a non-generic dynamic type.
+                    return IntPtr.Zero;
+                }
 
                 // Generic types are trickier. Often we could look at the parent type (since eventually it
                 // would derive from the class library's System.Object which is definitely not runtime

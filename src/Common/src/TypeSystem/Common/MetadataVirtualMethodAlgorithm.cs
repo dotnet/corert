@@ -324,7 +324,7 @@ namespace Internal.TypeSystem
         // This function looks for the base type method that defines the slot for a method
         // This is either the newslot method most derived that is in the parent hierarchy of method
         // or the least derived method that isn't newslot that matches by name and sig.
-        private static MethodDesc FindSlotDefiningMethodForVirtualMethod(MethodDesc method)
+        public static MethodDesc FindSlotDefiningMethodForVirtualMethod(MethodDesc method)
         {
             if (method == null)
                 return method;

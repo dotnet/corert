@@ -179,6 +179,11 @@ namespace Internal.Runtime
         /// This dynamically created types has thread statics
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
+        
+        /// <summary>
+        /// This EEType contains a pointer to dynamic module information
+        /// </summary>
+        HasDynamicModuleFlag = 0x00002000,
     }
     
     internal enum EETypeField
@@ -190,6 +195,7 @@ namespace Internal.Runtime
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
         ETF_DynamicDispatchMap,
+        ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
     }

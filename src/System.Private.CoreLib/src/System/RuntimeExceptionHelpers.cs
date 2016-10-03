@@ -20,7 +20,7 @@ namespace System
         public static readonly OutOfMemoryException Instance = new OutOfMemoryException(message: null);  // Cannot call the nullary constructor as that triggers non-trivial resource manager logic.
     }
 
-    internal class RuntimeExceptionHelpers
+    public class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw

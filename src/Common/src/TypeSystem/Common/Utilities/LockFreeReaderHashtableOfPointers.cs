@@ -12,14 +12,12 @@ namespace Internal.TypeSystem
     /// <summary>
     /// A hash table which is lock free for readers and up to 1 writer at a time.
     /// It must be possible to compute the key's hashcode from a value.
-    /// All values must be reference types.
+    /// All values must convertable to/from an IntPtr.
     /// It must be possible to perform an equality check between a key and a value.
     /// It must be possible to perform an equality check between a value and a value.
     /// A LockFreeReaderKeyValueComparer must be provided to perform these operations.
     /// </summary>
-    /// <typeparam name="TKey"></typeparam>
-    /// <typeparam name="TValue"></typeparam>
-    abstract public class LockFreeReaderHashtable<TKey, TValue> where TValue : class
+    abstract public class LockFreeReaderHashtableOfPointers<TKey, TValue>
     {
         private const int _fillPercentageBeforeResize = 60;
 
@@ -33,8 +31,8 @@ namespace Internal.TypeSystem
         /// initial step, as this approach allows the TryGetValue logic to always
         /// succeed without needing any length or null checks.)
         /// </summary>
-        private TValue[] _hashtable = s_hashtableInitialArray;
-        private static TValue[] s_hashtableInitialArray = new TValue[1];
+        private IntPtr[] _hashtable = s_hashtableInitialArray;
+        private static IntPtr[] s_hashtableInitialArray = new IntPtr[1];
 
         /// <summary>
         /// _count represents the current count of elements in the hashtable
@@ -58,7 +56,7 @@ namespace Internal.TypeSystem
         /// of a single read operation.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private TValue[] GetCurrentHashtable()
+        private IntPtr[] GetCurrentHashtable()
         {
             return _hashtable;
         }
@@ -69,7 +67,7 @@ namespace Internal.TypeSystem
         /// that all writes to the contents of hashtable are completed before _hashtable
         /// is visible to readers.
         /// </summary>
-        private void SetCurrentHashtable(TValue[] hashtable)
+        private void SetCurrentHashtable(IntPtr[] hashtable)
         {
             Volatile.Write(ref _hashtable, hashtable);
         }
@@ -122,7 +120,7 @@ namespace Internal.TypeSystem
         /// Create the LockFreeReaderHashtable. This hash table is designed for GetOrCreateValue
         /// to be a generally lock free api (unless an add is necessary)
         /// </summary>
-        public LockFreeReaderHashtable()
+        public LockFreeReaderHashtableOfPointers()
         {
         }
 
@@ -142,37 +140,39 @@ namespace Internal.TypeSystem
         /// <returns>true if a value was found</returns>
         public bool TryGetValue(TKey key, out TValue value)
         {
-            TValue[] hashTableLocal = GetCurrentHashtable();
+            IntPtr[] hashTableLocal = GetCurrentHashtable();
             Debug.Assert(hashTableLocal.Length > 0);
             int mask = hashTableLocal.Length - 1;
             int hashCode = GetKeyHashCode(key);
             int tableIndex = HashInt1(hashCode) & mask;
 
-            if (hashTableLocal[tableIndex] == null)
+            if (hashTableLocal[tableIndex] == IntPtr.Zero)
             {
-                value = null;
+                value = default(TValue);
                 return false;
             }
 
-            if (CompareKeyToValue(key, hashTableLocal[tableIndex]))
+            TValue valTemp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+            if (CompareKeyToValue(key, valTemp))
             {
-                value = hashTableLocal[tableIndex];
+                value = valTemp;
                 return true;
             }
 
             int hash2 = HashInt2(hashCode);
             tableIndex = (tableIndex + hash2) & mask;
 
-            while (hashTableLocal[tableIndex] != null)
+            while (hashTableLocal[tableIndex] != IntPtr.Zero)
             {
-                if (CompareKeyToValue(key, hashTableLocal[tableIndex]))
+                valTemp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+                if (CompareKeyToValue(key, valTemp))
                 {
-                    value = hashTableLocal[tableIndex];
+                    value = valTemp;
                     return true;
                 }
                 tableIndex = (tableIndex + hash2) & mask;
             }
-            value = null;
+            value = default(TValue);
             return false;
         }
 
@@ -188,36 +188,38 @@ namespace Internal.TypeSystem
             if (newSize < 16)
                 newSize = 16;
 
-            TValue[] hashTableLocal = new TValue[newSize];
+            IntPtr[] hashTableLocal = new IntPtr[newSize];
 
             int mask = hashTableLocal.Length - 1;
-            foreach (TValue value in _hashtable)
+            foreach (IntPtr ptrValue in _hashtable)
             {
-                if (value == null)
+                if (ptrValue == IntPtr.Zero)
                     continue;
+
+                TValue value = ConvertIntPtrToValue(ptrValue);
 
                 int hashCode = GetValueHashCode(value);
                 int tableIndex = HashInt1(hashCode) & mask;
 
                 // Initial probe into hashtable found empty spot
-                if (hashTableLocal[tableIndex] == null)
+                if (hashTableLocal[tableIndex] == IntPtr.Zero)
                 {
                     // Add to hash
-                    hashTableLocal[tableIndex] = value;
+                    hashTableLocal[tableIndex] = ptrValue;
                     continue;
                 }
 
                 int hash2 = HashInt2(hashCode);
                 tableIndex = (tableIndex + hash2) & mask;
 
-                while (hashTableLocal[tableIndex] != null)
+                while (hashTableLocal[tableIndex] != IntPtr.Zero)
                 {
                     tableIndex = (tableIndex + hash2) & mask;
                 }
 
                 // We've probed to find an empty spot
                 // Add to hash
-                hashTableLocal[tableIndex] = value;
+                hashTableLocal[tableIndex] = ptrValue;
             }
 
             _resizeCount = checked((newSize * _fillPercentageBeforeResize) / 100);
@@ -225,15 +227,35 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Grow the hashtable so that storing into the hashtable does not require any allocation
+        /// operations.
+        /// </summary>
+        /// <param name="size"></param>
+        public void Reserve(int size)
+        {
+            // while the type system is single threaded, this hashtable is used for some caching outside of the type system proper.
+            // thus it needs to have the lock code enabled
+            //#if !TYPE_SYSTEM_SINGLE_THREADED
+            lock (this)
+            //#endif
+            {
+                while (size >= _resizeCount)
+                    Expand();
+            }
+        }
+
+        /// <summary>
         /// Add a value to the hashtable, or find a value which is already present in the hashtable.
         /// Note that the key is not specified as it is implicit in the value. This function is thread-safe
         /// through the use of locking.
         /// </summary>
-        /// <param name="value">Value to attempt to add to the hashtable, must not be null</param>
+        /// <param name="value">Value to attempt to add to the hashtable, its conversion to IntPtr must not result in IntPtr.Zero</param>
         /// <returns>newly added value, or a value which was already present in the hashtable which is equal to it.</returns>
         public TValue AddOrGetExisting(TValue value)
         {
-            if (value == null)
+            IntPtr ptrValue = ConvertValueToIntPtr(value);
+
+            if (ptrValue == null)
                 throw new ArgumentNullException();
 
             lock (this)
@@ -246,37 +268,39 @@ namespace Internal.TypeSystem
                     Debug.Assert(_count < _resizeCount);
                 }
 
-                TValue[] hashTableLocal = _hashtable;
+                IntPtr[] hashTableLocal = _hashtable;
                 int mask = hashTableLocal.Length - 1;
                 int hashCode = GetValueHashCode(value);
                 int tableIndex = HashInt1(hashCode) & mask;
 
                 // Initial probe into hashtable found empty spot
-                if (hashTableLocal[tableIndex] == null)
+                if (hashTableLocal[tableIndex] == IntPtr.Zero)
                 {
                     // Add to hash, use a volatile write to ensure that
                     // the contents of the value are fully published to all
                     // threads before adding to the hashtable
-                    Volatile.Write(ref hashTableLocal[tableIndex], value);
+                    Volatile.Write(ref hashTableLocal[tableIndex], ptrValue);
                     _count++;
                     return value;
                 }
 
-                if (CompareValueToValue(value, hashTableLocal[tableIndex]))
+                TValue valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+                if (CompareValueToValue(value, valTmp))
                 {
                     // Value is already present in hash, do not add
-                    return hashTableLocal[tableIndex];
+                    return valTmp;
                 }
 
                 int hash2 = HashInt2(hashCode);
                 tableIndex = (tableIndex + hash2) & mask;
 
-                while (hashTableLocal[tableIndex] != null)
+                while (hashTableLocal[tableIndex] != IntPtr.Zero)
                 {
-                    if (CompareValueToValue(value, hashTableLocal[tableIndex]))
+                    valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+                    if (CompareValueToValue(value, valTmp))
                     {
                         // Value is already present in hash, do not add
-                        return hashTableLocal[tableIndex];
+                        return valTmp;
                     }
                     tableIndex = (tableIndex + hash2) & mask;
                 }
@@ -285,7 +309,7 @@ namespace Internal.TypeSystem
                 // Add to hash, use a volatile write to ensure that
                 // the contents of the value are fully published to all
                 // threads before adding to the hashtable
-                Volatile.Write(ref hashTableLocal[tableIndex], value);
+                Volatile.Write(ref hashTableLocal[tableIndex], ptrValue);
                 _count++;
                 return value;
             }
@@ -337,30 +361,32 @@ namespace Internal.TypeSystem
             if (value == null)
                 throw new ArgumentNullException();
 
-            TValue[] hashTableLocal = GetCurrentHashtable();
+            IntPtr[] hashTableLocal = GetCurrentHashtable();
             Debug.Assert(hashTableLocal.Length > 0);
             int mask = hashTableLocal.Length - 1;
             int hashCode = GetValueHashCode(value);
             int tableIndex = HashInt1(hashCode) & mask;
 
-            if (hashTableLocal[tableIndex] == null)
-                return null;
+            if (hashTableLocal[tableIndex] == IntPtr.Zero)
+                return default(TValue);
 
-            if (CompareValueToValue(value, hashTableLocal[tableIndex]))
-                return hashTableLocal[tableIndex];
+            TValue valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+            if (CompareValueToValue(value, valTmp))
+                return valTmp;
 
             int hash2 = HashInt2(hashCode);
             tableIndex = (tableIndex + hash2) & mask;
 
-            while (hashTableLocal[tableIndex] != null)
+            while (hashTableLocal[tableIndex] != IntPtr.Zero)
             {
-                if (CompareValueToValue(value, hashTableLocal[tableIndex]))
-                    return hashTableLocal[tableIndex];
+                valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+                if (CompareValueToValue(value, valTmp))
+                    return valTmp;
 
                 tableIndex = (tableIndex + hash2) & mask;
             }
 
-            return null;
+            return default(TValue);
         }
 
         /// <summary>
@@ -372,7 +398,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public struct Enumerator
         {
-            private TValue[] _hashtableContentsToEnumerate;
+            LockFreeReaderHashtableOfPointers<TKey, TValue> _hashtable;
+            private IntPtr[] _hashtableContentsToEnumerate;
             private int _index;
             private TValue _current;
 
@@ -384,7 +411,7 @@ namespace Internal.TypeSystem
             /// enumerator type.
             /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Enumerator Get(LockFreeReaderHashtable<TKey, TValue> hashtable)
+            public static Enumerator Get(LockFreeReaderHashtableOfPointers<TKey, TValue> hashtable)
             {
                 return new Enumerator(hashtable);
             }
@@ -395,8 +422,9 @@ namespace Internal.TypeSystem
                 return this;
             }
 
-            internal Enumerator(LockFreeReaderHashtable<TKey, TValue> hashtable)
+            internal Enumerator(LockFreeReaderHashtableOfPointers<TKey, TValue> hashtable)
             {
+                _hashtable = hashtable;
                 _hashtableContentsToEnumerate = hashtable._hashtable;
                 _index = 0;
                 _current = default(TValue);
@@ -408,9 +436,9 @@ namespace Internal.TypeSystem
                 {
                     for (; _index < _hashtableContentsToEnumerate.Length; _index++)
                     {
-                        if (_hashtableContentsToEnumerate[_index] != null)
+                        if (_hashtableContentsToEnumerate[_index] != IntPtr.Zero)
                         {
-                            _current = _hashtableContentsToEnumerate[_index];
+                            _current = _hashtable.ConvertIntPtrToValue(_hashtableContentsToEnumerate[_index]);
                             _index++;
                             return true;
                         }
@@ -458,5 +486,15 @@ namespace Internal.TypeSystem
         /// to collection. Return value must not be null.
         /// </summary>
         protected abstract TValue CreateValueFromKey(TKey key);
+
+        /// <summary>
+        /// Convert a value to an IntPtr for storage into the hashtable
+        /// </summary>
+        protected abstract IntPtr ConvertValueToIntPtr(TValue value);
+
+        /// <summary>
+        /// Convert an IntPtr into a value for comparisions, or for returning.
+        /// </summary>
+        protected abstract TValue ConvertIntPtrToValue(IntPtr pointer);
     }
 }

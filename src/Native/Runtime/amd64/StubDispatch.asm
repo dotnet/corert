@@ -109,6 +109,22 @@ DEFINE_INTERFACE_DISPATCH_STUB 16
 DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
+;; Stub dispatch routine for dispatch to a vtable slot
+LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
+        ;; r10 currently contains the indirection cell address. 
+        ;; load rax to point to the vtable offset (which is stored in the m_pCache field).
+        mov     rax, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        ;; Load the EEType from the object instance in rcx, and add it to the vtable offset
+        ;; to get the address in the vtable of what we want to dereference
+        add     rax, [rcx]
+
+        ;; Load the target address of the vtable into rax
+        mov     rax, [rax]
+
+        TAILJMP_RAX
+LEAF_END RhpVTableOffsetDispatch, _TEXT
+
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
 LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
