@@ -71,5 +71,27 @@ namespace Internal.TypeSystem
                 return IsCanonicalMethod(CanonicalFormKind.Any);
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a canonical method that will only become concrete
+        /// at runtime (after supplying the generic context).
+        /// </summary>
+        public bool IsRuntimeDeterminedExactMethod
+        {
+            get
+            {
+                TypeDesc containingType = ImplementationType;
+                if (containingType.IsRuntimeDeterminedSubtype)
+                    return true;
+
+                foreach (TypeDesc typeArg in Instantiation)
+                {
+                    if (typeArg.IsRuntimeDeterminedSubtype)
+                        return true;
+                }
+
+                return false;
+            }
+        }
     }
 }

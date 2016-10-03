@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeDeterminedMethodNode(MethodDesc method, T canonicalMethod)
         {
             Debug.Assert(!method.IsSharedByGenericInstantiations);
-            // TODO: assert the method is runtime determined
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             Method = method;
             _canonicalMethodNode = canonicalMethod;
         }

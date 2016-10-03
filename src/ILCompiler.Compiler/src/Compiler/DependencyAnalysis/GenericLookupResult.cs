@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDictionaryGenericLookupResult(MethodDesc method)
         {
-            // TODO: assert it's runtime determined
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod, "Concrete method in a generic dictionary?");
             _method = method;
         }
 
