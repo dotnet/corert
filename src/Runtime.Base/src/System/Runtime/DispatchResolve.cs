@@ -30,6 +30,15 @@ namespace System.Runtime
                                                                  EEType* pItfType,
                                                                  ushort itfSlotNumber)
         {
+            DynamicModule* dynamicModule = pTgtType->DynamicModule;
+
+            // Use the dynamic module resolver if it's present
+            if ((dynamicModule != null) && (dynamicModule->DynamicTypeSlotDispatchResolve != IntPtr.Zero))
+            {
+                return CalliIntrinsics.Call<IntPtr>(dynamicModule->DynamicTypeSlotDispatchResolve, 
+                                                    (IntPtr)pTgtType, (IntPtr)pItfType, itfSlotNumber);
+            }
+
             // Start at the current type and work up the inheritance chain
             EEType* pCur = pTgtType;
             UInt32 iCurInheritanceChainDelta = 0;

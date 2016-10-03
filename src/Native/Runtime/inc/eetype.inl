@@ -143,7 +143,7 @@ inline DispatchMap * EEType::GetDispatchMap()
     OptionalFields *optionalFields = get_OptionalFields();
     if (optionalFields == NULL)
         return NULL;
-    UInt32 idxDispatchMap = get_OptionalFields()->GetDispatchMap(0xffffffff);
+    UInt32 idxDispatchMap = optionalFields->GetDispatchMap(0xffffffff);
     if ((idxDispatchMap == 0xffffffff) && IsDynamicType())
     {
         if (HasDynamicallyAllocatedDispatchMap())
@@ -159,9 +159,12 @@ inline DispatchMap * EEType::GetDispatchMap()
     return GetModuleManager()->GetDispatchMapLookupTable()[idxDispatchMap];
 #endif
 
-    Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(this);
+    // handle case of R2R cloned string type correctly - the cloned string type is just a copy
+    // of the real string type, with the optional fields in the library. So for consistency,
+    // we need to find the module from the optional fields
+    Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(optionalFields);
     if (pModule == NULL)
-        pModule = pRuntimeInstance->FindModuleByDataAddress(this);
+        pModule = pRuntimeInstance->FindModuleByDataAddress(optionalFields);
     ASSERT(pModule != NULL);
 
     return pModule->GetDispatchMapLookupTable()[idxDispatchMap];
@@ -547,6 +550,21 @@ inline void EEType::set_DynamicThreadStaticOffset(UInt32 threadStaticOffset)
 
     *(UInt32*)((UInt8*)this + cbOffset) = threadStaticOffset;
 }
+
+inline DynamicModule * EEType::get_DynamicModule()
+{
+    if ((get_RareFlags() & HasDynamicModuleFlag) != 0)
+    {
+        UInt32 cbOffset = GetFieldOffset(ETF_DynamicModule);
+
+        return *(DynamicModule**)((UInt8*)this + cbOffset);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
 #endif // !BINDER
 
 #ifdef BINDER
@@ -732,6 +750,15 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     if (IsGeneric())
+        cbOffset += sizeof(UIntTarget);
+
+    if (eField == ETF_DynamicModule)
+    {
+        ASSERT((get_RareFlags() & HasDynamicModuleFlag) != 0);
+        return cbOffset;
+    }
+
+    if ((get_RareFlags() & HasDynamicModuleFlag) != 0)
         cbOffset += sizeof(UIntTarget);
 
     if (eField == ETF_DynamicTemplateType)

@@ -757,7 +757,7 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (EEType * pInterface, In
     ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
 
     pCell[0].m_pStub = (UIntNative)&RhpInitialDynamicInterfaceDispatch;
-    pCell[0].m_pCache = ((UIntNative)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointer;
+    pCell[0].m_pCache = ((UIntNative)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointerOrMetadataToken;
     pCell[1].m_pStub = 0;
     pCell[1].m_pCache = (UIntNative)slotNumber;
 

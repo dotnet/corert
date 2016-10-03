@@ -31,17 +31,6 @@ namespace Internal.Reflection.Execution
             _executionEnvironment = executionEnvironment;
         }
 
-        /// <summary>
-        /// Register a module for reflection support - locate the reflection metadata blob in the module
-        /// and register its metadata reader in an internal map. Manipulation of the internal map
-        /// is not thread safe with respect to reflection runtime.
-        /// </summary>
-        /// <param name="moduleHandle">Module handle to register</param>
-        public sealed override void RegisterModule(IntPtr moduleHandle)
-        {
-            ModuleList.Instance.RegisterModule(moduleHandle);
-        }
-
         public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
         {
             return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);

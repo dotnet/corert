@@ -30,13 +30,13 @@ namespace System.Runtime
 
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
         {
-            EEType* pInterfaceType;
-            ushort slot;
-            InternalCalls.RhpGetDispatchCellInfo(pCell, &pInterfaceType, &slot);
-            IntPtr pTargetCode = RhResolveDispatchWorker(pObject, pInterfaceType, slot);
+            DispatchCellInfo cellInfo;
+
+            InternalCalls.RhpGetDispatchCellInfo(pCell, out cellInfo);
+            IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
             if (pTargetCode != IntPtr.Zero)
             {
-                return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.EEType);
+                return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.EEType, ref cellInfo);
             }
 
             // "Valid method implementation was not found."
@@ -69,7 +69,12 @@ namespace System.Runtime
         [RuntimeExport("RhResolveDispatch")]
         private static IntPtr RhResolveDispatch(object pObject, EETypePtr interfaceType, ushort slot)
         {
-            return RhResolveDispatchWorker(pObject, interfaceType.ToPointer(), slot);
+            DispatchCellInfo cellInfo = new DispatchCellInfo();
+            cellInfo.CellType = DispatchCellType.InterfaceAndSlot;
+            cellInfo.InterfaceType = interfaceType;
+            cellInfo.InterfaceSlot = slot;
+
+            return RhResolveDispatchWorker(pObject, null, ref cellInfo);
         }
 
         [RuntimeExport("RhResolveDispatchOnType")]
@@ -86,45 +91,73 @@ namespace System.Runtime
                                                                           slot);
         }
 
-        private static IntPtr RhResolveDispatchWorker(object pObject, EEType* pInterfaceType, ushort slot)
+        private unsafe static IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
         {
             // Type of object we're dispatching on.
             EEType* pInstanceType = pObject.EEType;
 
-            // Type whose DispatchMap is used. Usually the same as the above but for types which implement ICastable
-            // we may repeat this process with an alternate type.
-            EEType* pResolvingInstanceType = pInstanceType;
-
-            IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
-                                                                          pInterfaceType,
-                                                                          slot);
-
-            if (pTargetCode == IntPtr.Zero && pInstanceType->IsICastable)
+            if (cellInfo.CellType == DispatchCellType.InterfaceAndSlot)
             {
-            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-                // Dispatch not resolved through normal dispatch map, try using the ICastable
-                // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
-                // dispatch since we know the method address statically. We ignore any cast error exception
-                // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
-                IntPtr pfnIsInstanceOfInterface = pInstanceType->ICastableIsInstanceOfInterfaceMethod;
-                Exception castError = null;
-                if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, pObject, pInterfaceType, out castError))
-                {
-                    IntPtr pfnGetImplTypeMethod = pInstanceType->ICastableGetImplTypeMethod;
-                    pResolvingInstanceType = (EEType*)CalliIntrinsics.Call<IntPtr>(pfnGetImplTypeMethod, pObject, new IntPtr(pInterfaceType));
-                    pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
-                                                                             pInterfaceType,
-                                                                             slot);
-                }
-                else
-            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-                {
-                    // Dispatch not resolved through normal dispatch map, using the CastableObject path
-                    pTargetCode = InternalCalls.RhpGetCastableObjectDispatchHelper();
-                }
-            }
+                // Type whose DispatchMap is used. Usually the same as the above but for types which implement ICastable
+                // we may repeat this process with an alternate type.
+                EEType* pResolvingInstanceType = pInstanceType;
 
-            return pTargetCode;
+                IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
+                                                                              cellInfo.InterfaceType.ToPointer(),
+                                                                              cellInfo.InterfaceSlot);
+
+                if (pTargetCode == IntPtr.Zero && pInstanceType->IsICastable)
+                {
+                    // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+                    // Dispatch not resolved through normal dispatch map, try using the ICastable
+                    // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
+                    // dispatch since we know the method address statically. We ignore any cast error exception
+                    // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
+                    IntPtr pfnIsInstanceOfInterface = pInstanceType->ICastableIsInstanceOfInterfaceMethod;
+                    Exception castError = null;
+                    if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, pObject, cellInfo.InterfaceType.ToPointer(), out castError))
+                    {
+                        IntPtr pfnGetImplTypeMethod = pInstanceType->ICastableGetImplTypeMethod;
+                        pResolvingInstanceType = (EEType*)CalliIntrinsics.Call<IntPtr>(pfnGetImplTypeMethod, pObject, new IntPtr(cellInfo.InterfaceType.ToPointer()));
+                        pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
+                                                                                 cellInfo.InterfaceType.ToPointer(),
+                                                                                 cellInfo.InterfaceSlot);
+                    }
+                    else
+                // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+                    {
+                        // Dispatch not resolved through normal dispatch map, using the CastableObject path
+                        pTargetCode = InternalCalls.RhpGetCastableObjectDispatchHelper();
+                    }
+                }
+
+                return pTargetCode;
+            }
+            else if (cellInfo.CellType == DispatchCellType.VTableOffset)
+            {
+                // Dereference VTable
+                return *(IntPtr*)(((byte*)pInstanceType) + cellInfo.VTableOffset);
+            }
+            else
+            {
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING                
+                // Attempt to convert dispatch cell to non-metadata form if we haven't acquired a cache for this cell yet
+                if (cellInfo.HasCache == 0)
+                {
+                    cellInfo = InternalTypeLoaderCalls.ConvertMetadataTokenDispatch(InternalCalls.RhGetModuleFromPointer(cell), cellInfo);
+                    if (cellInfo.CellType != DispatchCellType.MetadataToken)
+                    {
+                        return RhResolveDispatchWorker(pObject, cell, ref cellInfo);
+                    }
+                }
+
+                // If that failed, go down the metadata resolution path
+                return InternalTypeLoaderCalls.ResolveMetadataTokenDispatch(InternalCalls.RhGetModuleFromPointer(cell), (int)cellInfo.MetadataToken, new IntPtr(pInstanceType));
+#else
+                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+                return IntPtr.Zero;
+#endif
+            }
         }
     }
 }

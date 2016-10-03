@@ -152,19 +152,19 @@ static bool UpdateCacheEntryAtomically(InterfaceDispatchCacheEntry *pEntry,
 // Returns the value of the cache pointer that is not referenced by the cell after this operation. This can be
 // NULL on the initial cell update, the value of the old cache pointer or the value of the new cache pointer
 // supplied (in the case where another thread raced with us for the update and won). In any case, if the
-// returned pointer is non-NULL it represents a cache that should be scehduled for release.
+// returned pointer is non-NULL it represents a cache that should be scheduled for release.
 static InterfaceDispatchCache * UpdateCellStubAndCache(InterfaceDispatchCell * pCell,
                                                        void * pStub,
-                                                       InterfaceDispatchCache * pCache)
+                                                       UIntNative newCacheValue)
 {
     C_ASSERT(offsetof(InterfaceDispatchCell, m_pStub) == 0);
     C_ASSERT(offsetof(InterfaceDispatchCell, m_pCache) == sizeof(void*));
 
-    UIntNative cacheValue = (UIntNative)UpdatePointerPairAtomically(pCell, pStub, pCache, false);
+    UIntNative oldCacheValue = (UIntNative)UpdatePointerPairAtomically(pCell, pStub, (void*)newCacheValue, false);
 
-    if (InterfaceDispatchCell::IsCache(cacheValue))
+    if (InterfaceDispatchCell::IsCache(oldCacheValue))
     {
-        return (InterfaceDispatchCache *)cacheValue;
+        return (InterfaceDispatchCache *)oldCacheValue;
     }
     else
     {
@@ -228,6 +228,8 @@ extern "C" void (*RhpInterfaceDispatch16)();
 extern "C" void (*RhpInterfaceDispatch32)();
 extern "C" void (*RhpInterfaceDispatch64)();
 
+extern "C" void(*RhpVTableOffsetDispatch)();
+
 typedef void (*InterfaceDispatchStub)();
 
 static void * g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
@@ -267,8 +269,16 @@ static UInt32 CacheSizeToIndex(UInt32 cCacheEntries)
 // Allocates and initializes new cache of the given size. If given a previous version of the cache (guaranteed
 // to be smaller) it will also pre-populate the new cache with the contents of the old. Additionally the
 // address of the interface dispatch stub associated with this size of cache is returned.
-static InterfaceDispatchCache * AllocateCache(UInt32 cCacheEntries, InterfaceDispatchCache * pExistingCache, EEType *interfaceType, UInt16 slot, void ** ppStub)
+static UIntNative AllocateCache(UInt32 cCacheEntries, InterfaceDispatchCache * pExistingCache, const DispatchCellInfo *pNewCellInfo, void ** ppStub)
 {
+    if (pNewCellInfo->CellType == DispatchCellType::VTableOffset)
+    {
+        ASSERT(pNewCellInfo->VTableOffset < InterfaceDispatchCell::IDC_MaxVTableOffsetPlusOne);
+        *ppStub = &RhpVTableOffsetDispatch;
+        ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->VTableOffset));
+        return pNewCellInfo->VTableOffset;
+    }
+
     ASSERT((cCacheEntries >= 1) && (cCacheEntries <= CID_MAX_CACHE_SIZE));
     ASSERT((pExistingCache == NULL) || (pExistingCache->m_cEntries < cCacheEntries));
 
@@ -309,8 +319,7 @@ static InterfaceDispatchCache * AllocateCache(UInt32 cCacheEntries, InterfaceDis
     // We have a cache block, now initialize it.
     pCache->m_pNextFree = NULL;
     pCache->m_cEntries = cCacheEntries;
-    pCache->m_cacheHeader.m_pInterfaceType = interfaceType;
-    pCache->m_cacheHeader.m_slotIndex = slot;
+    pCache->m_cacheHeader.Initialize(pNewCellInfo);
 
     // Copy over entries from previous version of the cache (if any) and zero the rest.
     if (pExistingCache)
@@ -332,7 +341,7 @@ static InterfaceDispatchCache * AllocateCache(UInt32 cCacheEntries, InterfaceDis
     // Pass back the stub the corresponds to this cache size.
     *ppStub = g_rgDispatchStubs[idxCacheSize];
 
-    return pCache;
+    return (UIntNative)pCache;
 }
 
 // Discards a cache by adding it to a list of caches that may still be in use but will be made available for
@@ -440,7 +449,7 @@ bool InitializeInterfaceDispatch()
     return true;
 }
 
-COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PTR_Code pTargetCode, EEType* pInstanceType))
+COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PTR_Code pTargetCode, EEType* pInstanceType, DispatchCellInfo *pNewCellInfo))
 {
     // Attempt to update the cache with this new mapping (if we have any cache at all, the initial state
     // is none).
@@ -479,28 +488,32 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
 
     UInt32 cNewCacheEntries = cOldCacheEntries ? cOldCacheEntries * 2 : 1;
     void *pStub;
-    pCache = AllocateCache(cNewCacheEntries, pCache, pCell->GetInterfaceType(), pCell->GetSlotNumber(), &pStub);
-    if (pCache == NULL)
+    UIntNative newCacheValue = AllocateCache(cNewCacheEntries, pCache, pNewCellInfo, &pStub);
+    if (newCacheValue == 0)
     {
         CID_COUNTER_INC(CacheOutOfMemory);
         return (PTR_Code)pTargetCode;
     }
 
+    if (InterfaceDispatchCell::IsCache(newCacheValue))
+    {
+        pCache = (InterfaceDispatchCache*)newCacheValue;
 #ifndef _AMD64_
-    // Set back pointer to interface dispatch cell for non-AMD64
-    // for AMD64, we have enough registers to make this trick unnecessary
-    pCache->m_pCell = pCell;
+        // Set back pointer to interface dispatch cell for non-AMD64
+        // for AMD64, we have enough registers to make this trick unnecessary
+        pCache->m_pCell = pCell;
 #endif // _AMD64_
 
-    // Add entry to the first unused slot.
-    InterfaceDispatchCacheEntry * pCacheEntry = &pCache->m_rgEntries[cOldCacheEntries];
-    pCacheEntry->m_pInstanceType = pInstanceType;
-    pCacheEntry->m_pTargetCode = pTargetCode;
+        // Add entry to the first unused slot.
+        InterfaceDispatchCacheEntry * pCacheEntry = &pCache->m_rgEntries[cOldCacheEntries];
+        pCacheEntry->m_pInstanceType = pInstanceType;
+        pCacheEntry->m_pTargetCode = pTargetCode;
+    }
 
     // Publish the new cache by atomically updating both the cache and stub pointers in the indirection
     // cell. This returns us a cache to discard which may be NULL (no previous cache), the previous cache
     // value or the cache we just allocated (another thread peformed an update first).
-    InterfaceDispatchCache * pDiscardedCache = UpdateCellStubAndCache(pCell, pStub, pCache);
+    InterfaceDispatchCache * pDiscardedCache = UpdateCellStubAndCache(pCell, pStub, newCacheValue);
     if (pDiscardedCache)
         DiscardCache(pDiscardedCache);
 
@@ -525,10 +538,9 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpSearchDispatchCellCache, (InterfaceDispatchCell
 // Given a dispatch cell, get the type and slot associated with it. This function MUST be implemented
 // in cooperative native code, as the m_pCache field on the cell is unsafe to access from managed
 // code due to its use of the GC state as a lock, and as lifetime control
-COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell, EEType** ppInterfaceType, UInt16 *slot))
+COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo))
 {
-    *ppInterfaceType = pCell->GetInterfaceType();
-    *slot = pCell->GetSlotNumber();
+    *pDispatchCellInfo = pCell->GetDispatchCellInfo();
 }
 
 EXTERN_C DECLSPEC_THREAD void* t_TLS_DispatchCell = nullptr;

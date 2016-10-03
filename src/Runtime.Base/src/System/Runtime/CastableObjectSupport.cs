@@ -249,9 +249,17 @@ namespace System.Runtime
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
             object pObject = Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer);
 
-            EEType* pInterfaceType;
-            ushort slot;
-            InternalCalls.RhpGetDispatchCellInfo(pCell, &pInterfaceType, &slot);
+            DispatchCellInfo cellInfo;
+            InternalCalls.RhpGetDispatchCellInfo(pCell, out cellInfo);
+            if (cellInfo.CellType != DispatchCellType.InterfaceAndSlot)
+            {
+                // Dispatch cell used for castable object resolve is not InterfaceAndSlot. This should not be possible
+                // as all metadata based cells should have been converted to interface and slot cells by this time.
+                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+                return IntPtr.Zero;
+            }
+
+            EEType* pInterfaceType = cellInfo.InterfaceType.ToPointer();
 
             Exception e = null;
             object targetObject = GetCastableTargetIfPossible((ICastableObject)pObject, pInterfaceType, false, ref e);

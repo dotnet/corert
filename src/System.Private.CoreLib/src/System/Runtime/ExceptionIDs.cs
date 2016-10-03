@@ -11,7 +11,7 @@
 
 namespace System.Runtime
 {
-    internal enum ExceptionIDs
+    public enum ExceptionIDs
     {
         OutOfMemory = 1,
         Arithmetic = 2,
