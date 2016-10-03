@@ -93,6 +93,10 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type.GetClosestDefType();
             foreach (var method in defType.GetAllVirtualMethods())
             {
+                if (method.HasInstantiation)
+                {
+                    continue;
+                }
                 slots.Add(method);
             }
 

@@ -706,7 +706,7 @@ namespace ILCompiler.DependencyAnalysis
 
 
                     ObjectNodeSection section = node.Section;
-                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
+                    if (node.ShouldShareNodeAcrossModules(factory) && (factory.Target.OperatingSystem == TargetOS.Windows || factory.Target.OperatingSystem == TargetOS.Linux))
                     {
                         Debug.Assert(node is ISymbolNode);
                         section = section.GetSharedSection(((ISymbolNode)node).MangledName);

@@ -362,3 +362,56 @@ COOP_PINVOKE_HELPER(bool, RhpETWShouldWalkCom, ())
     ASSERT_UNCONDITIONALLY("NYI");
     return false;
 }
+
+#if !defined(_WIN32)
+//
+// Mincore APIs for threading
+//
+COOP_PINVOKE_HELPER(void *, VirtualQuery, (void * lpAddress, void ** lpBuffer, void * dwLength))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return nullptr;
+}
+
+COOP_PINVOKE_HELPER(void *, CreateSemaphoreExW, (void * lpSemaphoreAttributes, Int32 lInitialCount, Int32 lMaximumCount, Object * lpName, UInt32 dwFlags, UInt32 dwDesiredAccess))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return nullptr;
+}
+
+COOP_PINVOKE_HELPER(bool, ReleaseSemaphore, (void * hSemaphore, Int32 lReleaseCount, Int32 * lpPreviousCount))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return false;
+}
+
+COOP_PINVOKE_HELPER(UInt32, ReleaseMutex, (void * hMutex))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return false;
+}
+
+COOP_PINVOKE_HELPER(void *, OpenSemaphoreW, (UInt32 dwDesiredAccess, bool bInheritHandle, Object * lpName))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return nullptr;
+}
+
+COOP_PINVOKE_HELPER(void *, OpenMutexW, (UInt32 dwDesiredAccess, bool bInheritHandle, Object * lpName))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return nullptr;
+}
+
+COOP_PINVOKE_HELPER(void *, OpenEventW, (UInt32 dwDesiredAccess, Int32 bInheritHandle, Object * lpName))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return nullptr;
+}
+
+COOP_PINVOKE_HELPER(void *, CreateMutexExW, (void * lpMutexAttributes, Object * lpName, UInt32 dwFlags, UInt32 dwDesiredAccess))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return nullptr;
+}
+#endif // !_WIN32

@@ -62,5 +62,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             return ((ISymbolNode)this).MangledName;
         }
+
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return true;
+        }
     }
 }
