@@ -885,11 +885,32 @@ namespace Internal.IL
 
                     bool forceUseRuntimeLookup;
                     MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
-                    if (directMethod == null || forceUseRuntimeLookup)
+
+                    if (forceUseRuntimeLookup)
                         throw new NotImplementedException();
 
-                    method = directMethod;
-                    opcode = ILOpcode.call;
+                    if (directMethod != null)
+                    {
+                        method = directMethod;
+                        opcode = ILOpcode.call;
+                    }
+                    else
+                    {
+                        // Dereference "this"
+                        int thisPosition = _stack.Top - (method.Signature.Length + 1);
+                        string tempName = NewTempName();
+
+                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
+                        Append(" ");
+                        Append(tempName);
+                        Append(" = *(");
+                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
+                        Append("*)");
+                        Append(_stack[thisPosition]);
+                        AppendSemicolon();
+
+                        _stack[thisPosition] = new ExpressionEntry(StackValueKind.ObjRef, tempName);
+                    }
                 }
             }
 
@@ -899,10 +920,9 @@ namespace Internal.IL
 
             {
                 if (opcode == ILOpcode.newobj)
+                {
                     retType = owningType;
 
-                if (opcode == ILOpcode.newobj)
-                {
                     if (owningType.IsString)
                     {
                         // String constructors actually look like regular method calls
@@ -943,12 +963,10 @@ namespace Internal.IL
 
                     if (method.OwningType.IsInterface)
                         callViaInterfaceDispatch = true;
-
                     else
                         callViaSlot = true;
 
                     _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
-
                 }
             }
 
@@ -977,7 +995,7 @@ namespace Internal.IL
 
                 string functionPtr = NewTempName();
                 AppendEmptyLine();
-                                
+
                 Append("void*");
                 Append(functionPtr);
                 Append(" = (void*) ((");
@@ -1013,7 +1031,6 @@ namespace Internal.IL
                 Append("));");
 
                 PushExpression(StackValueKind.ByRef, functionPtr);
-
             }
 
             if (!retType.IsVoid)
@@ -1084,8 +1101,6 @@ namespace Internal.IL
 
             if (callViaSlot || delegateInvoke)
             {
-                // While waiting for C# return by ref, get this reference and insert it back
-                // if it is a delegate invoke.
                 ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
                 Append("(*");
                 Append(_writer.GetCppTypeName(method.OwningType));
@@ -1584,6 +1599,20 @@ namespace Internal.IL
                 default: Debug.Assert(false, "Unexpected opcode"); break;
             }
 
+            if (kind == StackValueKind.ByRef)
+            {
+                Append("(");
+                Append(GetStackValueKindCPPTypeName(kind, type));
+                Append(")(");
+            }
+
+            if (op2.Kind == StackValueKind.ByRef)
+            {
+                Append("(");
+                Append(GetStackValueKindCPPTypeName(StackValueKind.NativeInt));
+                Append(")");
+            }
+            else
             if (unsigned)
             {
                 Append("(u");
@@ -1594,6 +1623,13 @@ namespace Internal.IL
             Append(" ");
             Append(op);
             Append(" ");
+            if (op1.Kind == StackValueKind.ByRef)
+            {
+                Append("(");
+                Append(GetStackValueKindCPPTypeName(StackValueKind.NativeInt));
+                Append(")");
+            }
+            else
             if (unsigned)
             {
                 Append("(u");
@@ -1601,6 +1637,11 @@ namespace Internal.IL
                 Append(")");
             }
             Append(op1);
+
+            if (kind == StackValueKind.ByRef)
+            {
+                Append(")");
+            }
 
             AppendSemicolon();
         }
@@ -2281,12 +2322,10 @@ namespace Internal.IL
         {
             var argument = _stack.Pop();
 
-            if (argument.Kind == StackValueKind.Float)
-                throw new NotImplementedException();
-
             PushTemp(argument.Kind, argument.Type);
 
-            Append((opCode == ILOpcode.neg) ? "~" : "!");
+            Debug.Assert((opCode == ILOpcode.neg) || (opCode == ILOpcode.not));
+            Append((opCode == ILOpcode.neg) ? "-" : "~");
             Append(argument);
 
             AppendSemicolon();

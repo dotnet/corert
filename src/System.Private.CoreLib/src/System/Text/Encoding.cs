@@ -331,13 +331,7 @@ namespace System.Text
             // Otherwise, the code below will throw exception when trying to call
             // EncodingTable.GetCodePageFromName().
             //
-#if CORERT
-            // CORERT-TODO: For now, always return UTF8 encoding
-            // https://github.com/dotnet/corert/issues/213
-            return UTF8;
-#else
             return GetEncoding(EncodingTable.GetCodePageFromName(name));
-#endif
         }
 
         // Returns an Encoding object for a given name or a given code page value.
