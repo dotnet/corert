@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Collections.Generic;
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -27,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
         GenericLookupFromDictionary,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode
+    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithRuntimeDeterminedDependencies
     {
         private ReadyToRunHelperId _id;
         private Object _target;
@@ -159,6 +160,22 @@ namespace ILCompiler.DependencyAnalysis
                         // includes the signature.
                         var lookupInfo = (GenericLookupDescriptor)_target;
                         factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).EnsureEntry(lookupInfo.Signature);
+                    }
+                    break;
+            }
+        }
+
+        public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            switch (_id)
+            {
+                case ReadyToRunHelperId.GenericLookupFromDictionary:
+                case ReadyToRunHelperId.GenericLookupFromThis:
+                    {
+                        var lookupInfo = (GenericLookupDescriptor)_target;
+                        yield return new DependencyListEntry(
+                            lookupInfo.Signature.GetTarget(factory, typeInstantiation, methodInstantiation),
+                            "Dictionary dependency");
                     }
                     break;
             }

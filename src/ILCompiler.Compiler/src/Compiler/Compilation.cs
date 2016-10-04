@@ -182,8 +182,21 @@ namespace ILCompiler
 
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
+            foreach (DependencyNodeCore<NodeFactory> dependency in obj)
             {
+                var methodCodeNodeNeedingCode = dependency as MethodCodeNode;
+                if (methodCodeNodeNeedingCode == null)
+                {
+                    // To compute dependencies of the shadow method that tracks dictionary
+                    // dependencies we need to ensure there is code for the canonical method body.
+                    var dependencyMethod = (ShadowConcreteMethodNode<MethodCodeNode>)dependency;
+                    methodCodeNodeNeedingCode = dependencyMethod.CanonicalMethodNode;
+                }
+
+                // We might have already compiled this method.
+                if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
+                    continue;
+
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
 
                 if (_options.Verbose)

@@ -73,7 +73,6 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Returns true if this type matches the discovery policy or if it's parameterized over one that does.
-        /// See also <see cref="IsCanonicalType"/>.
         /// </summary>
         public abstract bool IsCanonicalSubtype(CanonicalFormKind policy);
 
@@ -82,7 +81,7 @@ namespace Internal.TypeSystem
         /// Note this will only return true if this is type is the actual __Canon/__UniversalCanon type,
         /// or a struct instantiated over one of those. See also <see cref="IsCanonicalSubtype(CanonicalFormKind)"/>.
         /// </summary>
-        public bool IsCanonicalType
+        internal bool IsCanonicalType
         {
             get
             {

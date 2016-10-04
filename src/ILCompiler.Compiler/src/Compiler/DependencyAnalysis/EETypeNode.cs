@@ -63,6 +63,7 @@ namespace ILCompiler.DependencyAnalysis
         public EETypeNode(TypeDesc type)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
         }
 
