@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
-using System.Runtime;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
@@ -14,13 +12,11 @@ namespace System.Runtime.CompilerServices
     // same order and at the same offset (hence the sequential layout attribute). It is permissable for the
     // classlibrary to add its own fields after these for its own use however. These must not contain GC
     // references and will be zero initialized.
-    [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct StaticClassConstructionContext
     {
         // Pointer to the code for the static class constructor method. This is initialized by the
         // binder/runtime.
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]  
         public IntPtr cctorMethodAddress;
 
         // Initialization state of the class. This is initialized to 0. Every time managed code checks the
