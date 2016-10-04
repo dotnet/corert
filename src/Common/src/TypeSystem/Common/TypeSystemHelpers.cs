@@ -236,13 +236,11 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Enumerates all virtual methods introduced or overriden by '<paramref name="type"/>'.
-        /// Note that this is not just a convenience method. This method is capable of enumerating
-        /// virtual method injected by the type system host.
+        /// Retrieves all methods on a type, including the ones injected by the type system context.
         /// </summary>
-        public static IEnumerable<MethodDesc> GetAllVirtualMethods(this TypeDesc type)
+        public static IEnumerable<MethodDesc> GetAllMethods(this TypeDesc type)
         {
-            return type.Context.GetVirtualMethodEnumerationAlgorithmForType(type).ComputeAllVirtualMethods(type);
+            return type.Context.GetAllMethods(type);
         }
 
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)

@@ -144,7 +144,6 @@
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
-    <Compile Include="Compiler\VirtualMethodEnumeration.cs" />
     <Compile Include="CppCodeGen\DependencyNodeIterator.cs" />
     <Compile Include="CppCodeGen\EvaluationStack.cs" />
     <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
