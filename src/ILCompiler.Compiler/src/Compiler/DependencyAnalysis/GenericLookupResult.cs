@@ -76,4 +76,31 @@ namespace ILCompiler.DependencyAnalysis
 
         public override string ToString() => $"MethodHandle: {_method}";
     }
+
+    /// <summary>
+    /// Generic lookup result that points to a virtual dispatch stub.
+    /// </summary>
+    internal sealed class VirtualDispatchGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public VirtualDispatchGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, instantiatedMethod);
+        }
+
+        public override string GetMangledName(NameMangler nameMangler)
+        {
+            return $"VirtualCall_{nameMangler.GetMangledMethodName(_method)}";
+        }
+
+        public override string ToString() => $"VirtualCall: {_method}";
+    }
 }

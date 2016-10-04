@@ -108,7 +108,8 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType == defType && !impl.IsAbstract)
                 {
-                    yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
+                    MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                 }
             }
 
@@ -195,9 +196,14 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 if (!implMethod.IsAbstract)
-                    objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
+                {
+                    MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType));
+                }
                 else
+                {
                     objData.EmitZeroPointer();
+                }
             }
         }
 

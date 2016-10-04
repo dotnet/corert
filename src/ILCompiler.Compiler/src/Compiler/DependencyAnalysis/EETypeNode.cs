@@ -332,7 +332,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (finalizerMethod != null)
             {
-                objData.EmitPointerReloc(factory.MethodEntrypoint(finalizerMethod));
+                MethodDesc canonFinalizerMethod = finalizerMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
             }
         }
 

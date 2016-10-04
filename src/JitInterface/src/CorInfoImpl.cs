@@ -1178,6 +1178,9 @@ namespace Internal.JitInterface
                 case ReadyToRunFixupKind.MethodHandle:
                     return _compilation.NodeFactory.GenericLookup.MethodDictionary((MethodDesc)resolvedToken);
 
+                case ReadyToRunFixupKind.VirtualEntry:
+                    return _compilation.NodeFactory.GenericLookup.VirtualCall((MethodDesc)resolvedToken);
+
                 default:
                     throw new NotImplementedException();
             }
@@ -2408,7 +2411,13 @@ namespace Internal.JitInterface
                     // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
                     // codegen emitted at crossgen time)
 
-                    if (directMethod.IsSharedByGenericInstantiations)
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+
+                    // Do not bother capturing the runtime determined context if we're inlining. The JIT is going
+                    // to abort the inlining attempt if the inlinee does any generic lookups.
+                    bool inlining = contextMethod != MethodBeingCompiled;
+
+                    if (directMethod.IsSharedByGenericInstantiations && !inlining)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
@@ -2472,14 +2481,27 @@ namespace Internal.JitInterface
                 // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
                 // call that should not be inlined.
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    throw new NotImplementedException();
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod != MethodBeingCompiled)
+                    {
+                        return;
+                    }
+
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.VirtualEntry;
                 }
                 else
                 {
+                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                     pResult.codePointerOrStubLookup.constLookup.addr =
                             (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
