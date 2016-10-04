@@ -74,9 +74,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\CachingVirtualMethodEnumerationAlgorithm.cs">
-      <Link>TypeSystem\Common\CachingVirtualMethodEnumerationAlgorithm.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
@@ -91,9 +88,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Instantiation.cs">
       <Link>TypeSystem\Common\Instantiation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs">
-      <Link>TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>TypeSystem\Common\ModuleDesc.cs</Link>
@@ -205,9 +199,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
       <Link>Utilities\TypeNameFormatter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs">
-      <Link>TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs">
       <Link>TypeSystem\Common\WellKnownType.cs</Link>

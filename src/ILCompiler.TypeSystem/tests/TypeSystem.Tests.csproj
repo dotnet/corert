@@ -53,7 +53,6 @@
     <Compile Include="InstanceFieldLayoutTests.cs" />
     <Compile Include="StaticFieldLayoutTests.cs" />
     <Compile Include="TestTypeSystemContext.cs" />
-    <Compile Include="VirtualMethodEnumerationAlgorithmTests.cs" />
     <Compile Include="WellKnownTypeTests.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -105,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis
             // The generic dictionary layout is shared between all the canonically equivalent
             // instantiations. We need to track the dependencies of all canonical method bodies
             // that use the same dictionary layout.
-            foreach (var method in _owningType.GetMethods())
+            foreach (var method in _owningType.GetAllMethods())
             {
                 // Static and generic methods have their own generic dictionaries
                 if (method.Signature.IsStatic || method.HasInstantiation)

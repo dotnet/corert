@@ -41,7 +41,7 @@ namespace TypeSystemTests
             Assert.DoesNotContain(t.GetMethods(), m => m.Name == "Equals");
             Assert.DoesNotContain(t.GetMethods(), m => m.Name == "GetHashCode");
 
-            List<MethodDesc> introducedVirtualMethods = new List<MethodDesc>(t.GetAllVirtualMethods());
+            List<MethodDesc> introducedVirtualMethods = new List<MethodDesc>(t.GetAllMethods().Where(m => m.IsVirtual));
             Assert.Equal(2, introducedVirtualMethods.Count);
             Assert.Contains(introducedVirtualMethods, m => m.Name == "Equals");
             Assert.Contains(introducedVirtualMethods, m => m.Name == "GetHashCode");
@@ -105,13 +105,15 @@ namespace TypeSystemTests
             Assert.Contains(vtable, m => m.Name == "ToString" && m.OwningType.IsObject);
         }
 
-        /// <summary>
-        /// An algorithm that provides synthetic Equals and GetHashCode overrides.
-        /// </summary>
-        private class EqualsAndGetHashCodeProvidingAlgorithm : VirtualMethodEnumerationAlgorithm
+        private class SyntheticVirtualOverrideTypeSystemContext : TestTypeSystemContext
         {
             private Dictionary<TypeDesc, MethodDesc> _getHashCodeMethods = new Dictionary<TypeDesc, MethodDesc>();
             private Dictionary<TypeDesc, MethodDesc> _equalsMethods = new Dictionary<TypeDesc, MethodDesc>();
+
+            public SyntheticVirtualOverrideTypeSystemContext()
+                : base(TargetArchitecture.Unknown)
+            {
+            }
 
             private MethodDesc GetGetHashCodeMethod(TypeDesc type)
             {
@@ -138,33 +140,19 @@ namespace TypeSystemTests
                 return result;
             }
 
-            public override IEnumerable<MethodDesc> ComputeAllVirtualMethods(TypeDesc type)
-            {
-                yield return GetGetHashCodeMethod(type);
-                yield return GetEqualsMethod(type);
-            }
-        }
-
-        private class SyntheticVirtualOverrideTypeSystemContext : TestTypeSystemContext
-        {
-            EqualsAndGetHashCodeProvidingAlgorithm _equalsAndGetHashCodeProvidingAlgorithm = new EqualsAndGetHashCodeProvidingAlgorithm();
-
-            public SyntheticVirtualOverrideTypeSystemContext()
-                : base(TargetArchitecture.Unknown)
-            {
-            }
-
-            public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+            protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
             {
                 MetadataType mdType = type as MetadataType;
 
                 if (mdType.Name == "StructWithNoEqualsAndGetHashCode"
                     || mdType.Name == "ClassWithInjectedEqualsAndGetHashCode")
                 {
-                    return _equalsAndGetHashCodeProvidingAlgorithm;
+                    yield return GetEqualsMethod(type);
+                    yield return GetGetHashCodeMethod(type);
                 }
 
-                return base.GetVirtualMethodEnumerationAlgorithmForType(type);
+                foreach (var m in mdType.GetMethods())
+                    yield return m;
             }
         }
 

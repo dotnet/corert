@@ -26,8 +26,7 @@ namespace TypeSystemTests
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         VirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
-        VirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
-
+        
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
 
         public TestTypeSystemContext(TargetArchitecture arch)
@@ -78,11 +77,6 @@ namespace TypeSystemTests
         public override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
         {
             return _virtualMethodAlgorithm;
-        }
-
-        public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
-        {
-            return _virtualMethodEnumAlgorithm;
         }
 
         protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
