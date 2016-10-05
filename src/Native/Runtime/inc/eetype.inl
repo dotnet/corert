@@ -579,7 +579,8 @@ inline DynamicModule * EEType::get_DynamicModule()
     bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
     return
         // Do we need a padding size for value types or unsealed classes? that could be unboxed?
-        ((!pMT->IsInterface() && (pMT->IsValueTypeOrEnum() || !IsTdSealed(pMT->GetClass()->GetAttrClass()))) &&
+        (!pMT->IsArray() && 
+            (!pMT->IsInterface() && (pMT->IsValueTypeOrEnum() || !IsTdSealed(pMT->GetClass()->GetAttrClass()))) &&
             (((pMT->GetBaseSize() - SYNC_BLOCK_SKEW) - pMT->GetClass()->GetNumInstanceFieldBytes()) > 0)) ||
         // Do we need a alignment for value types?
         (pMT->IsValueTypeOrEnum() &&
