@@ -30,7 +30,7 @@ _Note: The size of NuGet packages is approximately 2.75 GB, so download might ta
 `@c:\corert\bin\obj\Windows_NT.x64.Debug\ryujit.rsp`
 
   - Build & run using **F5**
-    - This will run the compiler. The output is `c:\corert\src\ILCompiler\repro\obj\Debug\dnxcore50\native\repro.obj` file.
+    - This will run the compiler. The output is `c:\corert\bin\obj\Windows_NT.x64.Debug\repro\native\repro.obj` file.
 
   - The repro project has a dummy program that you can modify for ad-hoc testing
 
@@ -55,7 +55,7 @@ _Note: The size of NuGet packages is approximately 2.75 GB, so download might ta
     - `--nolinenumbers` command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
 
   - Build & run using **F5**
-    - This will run the compiler. The output is `c:\corert\src\ILCompiler\repro\obj\Debug\dnxcore50\native\repro.cpp` file.
+    - This will run the compiler. The output is `c:\corert\bin\obj\Windows_NT.x64.Debug\repro\native\repro.cpp` file.
 
   - The repro project has a dummy program that you can modify for ad-hoc testing
 
