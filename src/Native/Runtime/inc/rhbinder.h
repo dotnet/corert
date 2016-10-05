@@ -457,7 +457,7 @@ struct InterfaceDispatchCell
         UIntTarget cachePointerValue = m_pCache;
         DispatchCellInfo cellInfo;
 
-        if (cachePointerValue < IDC_MaxVTableOffsetPlusOne)
+        if ((cachePointerValue < IDC_MaxVTableOffsetPlusOne) && ((cachePointerValue & IDC_CachePointerMask) == IDC_CachePointerPointsAtCache))
         {
             cellInfo.VTableOffset = (UInt32)cachePointerValue;
             cellInfo.CellType = DispatchCellType::VTableOffset;
