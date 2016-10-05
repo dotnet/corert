@@ -149,6 +149,21 @@ RhpInterfaceDispatchNullReference proc public
         int     3
 RhpInterfaceDispatchNullReference endp
 
+;; Stub dispatch routine for dispatch to a vtable slot
+_RhpVTableOffsetDispatch proc public
+        ;; eax currently contains the indirection cell address. We need to update it to point to the vtable offset (which is in the m_pCache field)
+        mov     eax, [eax + OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        ;; add the vtable offset to the EEType pointer 
+        add     eax, [ecx]
+
+        ;; Load the target address of the vtable into eax
+        mov     eax, [eax]
+
+        ;; tail-jump to the target
+        jmp     eax
+_RhpVTableOffsetDispatch endp
+
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
 _RhpInitialInterfaceDispatch proc public

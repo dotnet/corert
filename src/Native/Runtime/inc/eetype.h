@@ -13,6 +13,7 @@ class MdilModule;
 class EEType;
 class OptionalFields;
 class ModuleManager;
+class DynamicModule;
 struct EETypeRef;
 enum GenericVarianceType : UInt8;
 class GenericComposition;
@@ -166,6 +167,7 @@ enum EETypeField
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_DynamicDispatchMap,
+    ETF_DynamicModule,
     ETF_GenericDefinition,
     ETF_GenericComposition,
     ETF_DynamicGcStatics,
@@ -202,6 +204,7 @@ private:
             EEType**    m_ppBaseTypeViaIAT;
 
             // Kinds.ClonedEEType
+            EEType** m_pCanonicalType;
             EEType** m_ppCanonicalTypeViaIAT;
 
             // Kinds.ParameterizedEEType
@@ -323,6 +326,10 @@ public:
 
         // This dynamically created type has thread statics
         IsDynamicTypeWithThreadStaticsFlag = 0x00001000,
+
+        // This EEType was constructed from a module where the open type is defined in
+        // a dynamically loaded type
+        HasDynamicModuleFlag    = 0x00002000,
     };
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -461,6 +468,8 @@ public:
 
     bool IsGeneric()
         { return (m_usFlags & IsGenericFlag) != 0; }
+
+    DynamicModule* get_DynamicModule();
 
 #if defined(CORERT)
     ModuleManager* GetModuleManager()

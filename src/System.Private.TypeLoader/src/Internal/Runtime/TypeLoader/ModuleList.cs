@@ -13,11 +13,17 @@ using Internal.Metadata.NativeFormat;
 
 namespace Internal.Runtime.TypeLoader
 {
+    public enum ModuleType
+    {
+        Eager,
+        ReadyToRun
+    }
+    
     /// <summary>
     /// This class represents basic information about a native binary module including its
     /// metadata.
     /// </summary>
-    public sealed class ModuleInfo
+    public unsafe sealed class ModuleInfo
     {
         /// <summary>
         /// Module handle is equal to its starting virtual address in memory (i.e. it points
@@ -31,12 +37,24 @@ namespace Internal.Runtime.TypeLoader
         public MetadataReader MetadataReader { get; private set; }
 
         /// <summary>
+        /// A reference to the dynamic module is part of the EEType for dynamically allocated types.
+        /// </summary>
+        internal DynamicModule *DynamicModulePtr { get; private set; }
+
+        /// <summary>
+        /// What sort of module is this? (Eager, ReadyToRun)?
+        /// </summary>
+        internal ModuleType ModuleType { get; private set; }
+
+        /// <summary>
         /// Initialize module info and construct per-module metadata reader.
         /// </summary>
         /// <param name="moduleHandle">Handle (address) of module to initialize</param>
-        internal unsafe ModuleInfo(IntPtr moduleHandle)
+        internal unsafe ModuleInfo(IntPtr moduleHandle, ModuleType moduleType)
         {
             Handle = moduleHandle;
+            ModuleType = moduleType;
+            DynamicModulePtr = null;
 
             byte* pBlob;
             uint cbBlob;
@@ -392,16 +410,7 @@ namespace Internal.Runtime.TypeLoader
             _moduleRegistrationCallbacks = default(Action<ModuleInfo>);
             _moduleRegistrationLock = new Lock();
 
-            // Fetch modules that have already been registered with the runtime
-            int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
-            IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
-            int loadedModuleCountUpdated = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
-            Debug.Assert(loadedModuleCount == loadedModuleCountUpdated);
-
-            foreach (IntPtr moduleHandle in loadedModuleHandles)
-            {
-                RegisterModule(moduleHandle);
-            }
+            RegisterNewModules(ModuleType.Eager);
         }
 
         /// <summary>
@@ -431,39 +440,55 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
-        /// Register a new module. Call all module registration callbacks.
+        /// Register all modules which were added (Registered) to the runtime and are not already registered with the TypeLoader.
         /// </summary>
-        /// <param name="moduleHandle">Module handle to register</param>
-        public void RegisterModule(IntPtr newModuleHandle)
+        /// <param name="moduleType">Type to assign to all new modules.</param>
+        public void RegisterNewModules(ModuleType moduleType)
         {
             // prevent multiple threads from registering modules concurrently
             using (LockHolder.Hold(_moduleRegistrationLock))
             {
-                // Don't allow double module registration
-                int oldModuleIndex;
-                if (_loadedModuleMap.HandleToModuleIndex.TryGetValue(newModuleHandle, out oldModuleIndex))
-                {
-                    Environment.FailFast("Module " + newModuleHandle.LowLevelToString() + " is being registered for the second time");
-                }
+                // Fetch modules that have already been registered with the runtime
+                int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
+                IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
+                int loadedModuleCountUpdated = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
+                Debug.Assert(loadedModuleCount == loadedModuleCountUpdated);
 
-                ModuleInfo newModuleInfo = new ModuleInfo(newModuleHandle);
+                LowLevelList<IntPtr> newModuleHandles = new LowLevelList<IntPtr>(loadedModuleHandles.Length);
+                foreach (IntPtr moduleHandle in loadedModuleHandles)
+                {
+                    // Skip already registered modules.
+                    int oldModuleIndex;
+                    if (_loadedModuleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out oldModuleIndex))
+                    {
+                        continue;
+                    }
+
+                    newModuleHandles.Add(moduleHandle);
+                }
 
                 // Copy existing modules to new dictionary
                 int oldModuleCount = _loadedModuleMap.Modules.Length;
-                ModuleInfo[] updatedModules = new ModuleInfo[oldModuleCount + 1];
+                ModuleInfo[] updatedModules = new ModuleInfo[oldModuleCount + newModuleHandles.Count];
                 if (oldModuleCount > 0)
                 {
                     Array.Copy(_loadedModuleMap.Modules, 0, updatedModules, 0, oldModuleCount);
                 }
-                updatedModules[oldModuleCount] = newModuleInfo;
+
+                for (int newModuleIndex = 0; newModuleIndex < newModuleHandles.Count; newModuleIndex++)
+                {
+                    ModuleInfo newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType);
+
+                    updatedModules[oldModuleCount + newModuleIndex] = newModuleInfo;
+
+                    if (_moduleRegistrationCallbacks != null)
+                    {
+                        _moduleRegistrationCallbacks(newModuleInfo);
+                    }
+                }
 
                 // Atomically update the module map
                 _loadedModuleMap = new ModuleMap(updatedModules);
-
-                if (_moduleRegistrationCallbacks != null)
-                {
-                    _moduleRegistrationCallbacks(newModuleInfo);
-                }
             }
         }
 

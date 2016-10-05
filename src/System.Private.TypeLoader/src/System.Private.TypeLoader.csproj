@@ -8,6 +8,7 @@
     <ProjectGuid>{F36495F7-8CF5-474D-A92D-40317AE2439C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
+    <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -40,6 +41,13 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs">
+      <Link>EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
+      <Link>EEType.Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>MetadataBlob.cs</Link>
     </Compile>
@@ -52,6 +60,7 @@
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
+    <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs" >
       <Link>LowLevelStringConverter.cs</Link>
     </Compile>

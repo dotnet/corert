@@ -142,6 +142,27 @@ CurrentEntry SETA CurrentEntry + 1
 
     LEAF_END RhpInitialInterfaceDispatch
 
+    LEAF_ENTRY RhpVTableOffsetDispatch
+        ;; On input we have the indirection cell data structure in r12. But we need more scratch registers and
+        ;; we may A/V on a null this. Both of these suggest we need a real prolog and epilog.
+        PROLOG_PUSH {r1}
+
+        ;; r12 currently holds the indirection cell address. We need to update it to point to the vtable
+        ;; offset instead.
+        ldr     r12, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        ;; Load the EEType from the object instance in r0.
+        ldr     r1, [r0]
+
+        ;; add the vtable offset to the EEType pointer 
+        add     r12, r1, r12
+
+        ;; Load the target address of the vtable into r12
+        ldr     r12, [r12]
+
+        EPILOG_POP {r1}
+        EPILOG_BRANCH_REG r12
+    LEAF_END RhpVTableOffsetDispatch
 
 ;; Cache miss case, call the runtime to resolve the target and update the cache.
     LEAF_ENTRY RhpInterfaceDispatchSlow

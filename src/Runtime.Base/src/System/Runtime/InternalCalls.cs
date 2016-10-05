@@ -13,6 +13,23 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
+    internal enum DispatchCellType
+    {
+        InterfaceAndSlot = 0x0,
+        MetadataToken = 0x1,
+        VTableOffset = 0x2,
+    }
+
+    internal struct DispatchCellInfo
+    {
+        public DispatchCellType CellType;
+        public EETypePtr InterfaceType;
+        public ushort InterfaceSlot;
+        public byte HasCache;
+        public uint MetadataToken;
+        public uint VTableOffset;
+    }
+
     internal static class InternalCalls
     {
         //
@@ -183,7 +200,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpGetDispatchCellInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpGetDispatchCellInfo(IntPtr pCell, EEType** pInterfaceType, ushort* slot);
+        internal unsafe extern static void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
 
         [RuntimeImport(Redhawk.BaseName, "RhpSearchDispatchCellCache")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -193,12 +210,17 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpUpdateDispatchCellCache")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType);
+        internal unsafe extern static IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType, ref DispatchCellInfo newCellInfo);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunction")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
+
+        [RuntimeImport(Redhawk.BaseName, "RhGetModuleFromPointer")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static unsafe IntPtr RhGetModuleFromPointer(void* pointer);
 
         //
         // StackFrameIterator

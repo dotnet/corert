@@ -134,6 +134,8 @@ namespace Internal.Runtime
 
             // Kinds.ClonedEEType
             [FieldOffset(0)]
+            public EEType* _pCanonicalType;
+            [FieldOffset(0)]
             public EEType** _ppCanonicalTypeViaIAT;
 
             // Kinds.ArrayEEType
@@ -866,8 +868,10 @@ namespace Internal.Runtime
             {
                 // cloned EETypes must always refer to types in other modules
                 Debug.Assert(IsCloned);
-                Debug.Assert(IsRelatedTypeViaIAT);
-                return *_relatedType._ppCanonicalTypeViaIAT;
+                if (IsRelatedTypeViaIAT)
+                    return *_relatedType._ppCanonicalTypeViaIAT;
+                else
+                    return _relatedType._pCanonicalType;
             }
         }
 
@@ -1049,6 +1053,56 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal DynamicModule* DynamicModule
+        {
+            get
+            {
+                if ((RareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
+                {
+                    UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicModule);
+                    fixed (EEType* pThis = &this)
+                    {
+                        return *(DynamicModule**)((byte*)pThis + cbOffset);
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(RareFlags.HasFlag(EETypeRareFlags.HasDynamicModuleFlag));
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicModule);
+                fixed (EEType* pThis = &this)
+                {
+                    *(DynamicModule**)((byte*)pThis + cbOffset) = value;
+                }
+            }
+#endif
+        }
+
+#if CORERT
+        internal IntPtr ModuleManager
+        {
+            get
+            {
+                // This is always a pointer to a pointer to a module manager
+                return *(IntPtr *)_ppModuleManager;
+            }
+        }
+#if TYPE_LOADER_IMPLEMENTATION
+        internal IntPtr PointerToModuleManager
+        {
+            set
+            {
+                _ppModuleManager = value;
+            }
+        }
+#endif
+#endif // CORERT
+
         internal unsafe EETypeRareFlags RareFlags
         {
             get
@@ -1198,6 +1252,14 @@ namespace Internal.Runtime
             if (IsGeneric)
                 cbOffset += (UInt32)IntPtr.Size;
 
+            if (eField == EETypeField.ETF_DynamicModule)
+            {
+                return cbOffset;
+            }
+
+            if ((RareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
+                cbOffset += (UInt32)IntPtr.Size;
+
             if (eField == EETypeField.ETF_DynamicTemplateType)
             {
                 Debug.Assert(IsDynamicType);
@@ -1269,5 +1331,90 @@ namespace Internal.Runtime
             }
 #endif
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DynamicModule
+    {
+        // Size field used to indicate the number of bytes of this structure that are defined in Runtime Known ways
+        // This is used to drive versioning of this field
+        int _cbSize;
+
+        // Pointer to interface dispatch resolver that works off of a type/slot pair
+        // This is a function pointer with the following signature IntPtr()(IntPtr targetType, IntPtr interfaceType, ushort slot)
+        IntPtr _dynamicTypeSlotDispatchResolve;
+
+        // Starting address for the the binary module corresponding to this dynamic module.
+        IntPtr _getRuntimeException;
+
+#if TYPE_LOADER_IMPLEMENTATION
+        public int CbSize
+        {
+            get
+            {
+                return _cbSize;
+            }
+            set
+            {
+                _cbSize = value;
+            }
+        }
+#endif
+
+        public IntPtr DynamicTypeSlotDispatchResolve
+        {
+            get
+            {
+                unsafe
+                {
+                    if (_cbSize >= sizeof(IntPtr) * 2)
+                    {
+                        return _dynamicTypeSlotDispatchResolve;
+                    }
+                    else
+                    {
+                        return IntPtr.Zero;
+                    }
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _dynamicTypeSlotDispatchResolve = value;
+            }
+#endif
+        }
+
+        public IntPtr GetRuntimeException
+        {
+            get
+            {
+                unsafe
+                {
+                    if (_cbSize >= sizeof(IntPtr) * 3)
+                    {
+                        return _getRuntimeException;
+                    }
+                    else
+                    {
+                        return IntPtr.Zero;
+                    }
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _getRuntimeException = value;
+            }
+#endif
+        }
+
+        /////////////////////// END OF FIELDS KNOWN TO THE MRT RUNTIME ////////////////////////
+#if TYPE_LOADER_IMPLEMENTATION
+        public static readonly int DynamicModuleSize = IntPtr.Size * 3; // We have three fields here.
+
+        // We can put non-low level runtime fields that are module level, that need quick access from a type here
+        // For instance, we may choose to put a pointer to the metadata reader or the like here in the future.
+#endif
     }
 }

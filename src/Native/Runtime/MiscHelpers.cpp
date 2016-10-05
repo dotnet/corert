@@ -121,6 +121,9 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
     if (pEEType->IsDynamicType())
         pEEType = pEEType->get_DynamicTemplateType();
 
+    if (pEEType->get_DynamicModule() != nullptr)
+        return nullptr;
+
     FOREACH_MODULE(pModule)
     {
         if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
