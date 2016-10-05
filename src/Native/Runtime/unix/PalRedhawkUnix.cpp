@@ -667,23 +667,6 @@ REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI PalGetTickCount64()
             ASSERT_UNCONDITIONALLY("clock_gettime(CLOCK_MONOTONIC) failed\n");
         }
     }
-#elif HAVE_GETHRTIME
-    {
-        retval = (UInt64)(gethrtime() / tccMilliSecondsToNanoSeconds);
-    }
-#elif HAVE_READ_REAL_TIME
-    {
-        timebasestruct_t tb;
-        read_real_time(&tb, TIMEBASE_SZ);
-        if (time_base_to_time(&tb, TIMEBASE_SZ) == 0)
-        {
-            retval = (tb.tb_high * tccSecondsToMilliSeconds)+(tb.tb_low / tccMilliSecondsToNanoSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("time_base_to_time() failed\n");
-        }
-    }
 #else
     {
         struct timeval tv;
