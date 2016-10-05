@@ -68,11 +68,11 @@ DEFINE_INTERFACE_DISPATCH_STUB 16
 DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
-;; Stub dispatch routine for dispatch to a vtable slot
+// Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         // UNIXTODO: Implement this function
         int 3
-LEAF_END RhpTailCallTLSDispatchCell, _TEXT
+LEAF_END RhpVTableOffsetDispatch, _TEXT
 
 // Initial dispatch on an interface when we don't have a cache yet.
 LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
