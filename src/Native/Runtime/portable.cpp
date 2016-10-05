@@ -224,6 +224,11 @@ COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
+COOP_PINVOKE_HELPER(void, RhpVTableOffsetDispatch, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 COOP_PINVOKE_HELPER(void, RhpTailCallTLSDispatchCell, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");

@@ -228,7 +228,7 @@ extern "C" void (*RhpInterfaceDispatch16)();
 extern "C" void (*RhpInterfaceDispatch32)();
 extern "C" void (*RhpInterfaceDispatch64)();
 
-extern "C" void(*RhpVTableOffsetDispatch)();
+extern "C" void (*RhpVTableOffsetDispatch)();
 
 typedef void (*InterfaceDispatchStub)();
 

@@ -1089,7 +1089,7 @@ namespace Internal.Runtime
             get
             {
                 // This is always a pointer to a pointer to a module manager
-                return *(IntPtr *)_ppModuleManager.ToPointer();
+                return *(IntPtr *)_ppModuleManager;
             }
         }
 #if TYPE_LOADER_IMPLEMENTATION
