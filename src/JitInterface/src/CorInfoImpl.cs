@@ -2087,7 +2087,17 @@ namespace Internal.JitInterface
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
-        { throw new NotImplementedException("getFunctionEntryPoint"); }
+        {
+            MethodDesc method = HandleToObject(ftn);
+
+            // TODO: Implement MapMethodDeclToMethodImpl from CoreCLR
+            if (method.IsVirtual)
+                throw new NotImplementedException("getFunctionEntryPoint");
+
+            pResult.accessType = InfoAccessType.IAT_VALUE;
+            pResult.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(method));
+        }
+
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
