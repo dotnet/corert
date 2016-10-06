@@ -205,10 +205,6 @@ namespace ILCompiler
                     Log.WriteLine("Compiling " + methodName);
                 }
 
-                var methodIL = GetMethodIL(method);
-                if (methodIL == null)
-                    return;
-
                 try
                 {
                     _corInfo.CompileMethod(methodCodeNodeNeedingCode);

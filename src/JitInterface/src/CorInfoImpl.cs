@@ -121,12 +121,14 @@ namespace Internal.JitInterface
                 CORINFO_METHOD_INFO methodInfo;
                 MethodIL methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
+                // We should have detected that there will be no code for this method when we were creating
+                // the node representing the entrypoint (we should have created a different node).
+                Debug.Assert(methodIL != null);
+
                 _methodScope = methodInfo.scope;
 
                 try
                 {
-                    CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-
                     MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
 
                     if (!_compilation.Options.NoLineNumbers)
