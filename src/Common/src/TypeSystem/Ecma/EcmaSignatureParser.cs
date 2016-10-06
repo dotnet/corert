@@ -23,8 +23,6 @@ namespace Internal.TypeSystem.Ecma
         {
             _module = module;
             _reader = reader;
-
-            // _hasModifiers = false;
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -119,18 +117,28 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private SignatureTypeCode ParseTypeCode()
+        private SignatureTypeCode ParseTypeCode(bool skipPinned = true)
         {
             for (;;)
             {
                 SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
 
-                if (typeCode != SignatureTypeCode.RequiredModifier && typeCode != SignatureTypeCode.OptionalModifier)
-                    return typeCode;
+                // TODO: actually consume modopts
+                if (typeCode == SignatureTypeCode.RequiredModifier ||
+                    typeCode == SignatureTypeCode.OptionalModifier)
+                {
+                    _reader.ReadTypeHandle();
+                    continue;
+                }
 
-                _reader.ReadTypeHandle();
+                // TODO: treat PINNED in the signature same as modopts (it matters
+                // in signature matching - you can actually define overloads on this)
+                if (skipPinned && typeCode == SignatureTypeCode.Pinned)
+                {
+                    continue;
+                }
 
-                // _hasModifiers = true;
+                return typeCode;
             }
         }
 
@@ -246,7 +254,7 @@ namespace Internal.TypeSystem.Ecma
                 {
                     bool isPinned = false;
 
-                    SignatureTypeCode typeCode = ParseTypeCode();
+                    SignatureTypeCode typeCode = ParseTypeCode(skipPinned: false);
                     if (typeCode == SignatureTypeCode.Pinned)
                     {
                         isPinned = true;
