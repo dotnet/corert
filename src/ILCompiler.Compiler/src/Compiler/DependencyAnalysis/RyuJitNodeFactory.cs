@@ -6,6 +6,8 @@ using System;
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public sealed class RyuJitNodeFactory : NodeFactory
@@ -17,8 +19,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
-            if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
+            if (method.IsInternalCall)
             {
+                // The only way to locate the entrypoint for an internal call is through the RuntimeImportAttribute.
+                // If this is a method that doesn't have it (e.g. a string constructor), the method should never
+                // have reached this code path.
+                Debug.Assert(method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"));
                 return new RuntimeImportMethodNode(method);
             }
 
