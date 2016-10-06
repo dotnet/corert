@@ -17,10 +17,15 @@ namespace Internal.Diagnostics
     {
         public static string FormatStackTrace(IntPtr[] ips, bool includeFileInfo)
         {
+            return FormatStackTrace(ips, 0, includeFileInfo);
+        }
+
+        public static string FormatStackTrace(IntPtr[] ips, int skipFrames, bool includeFileInfo)
+        {
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < ips.Length; i++)
+            for (int i = skipFrames; i < ips.Length; i++)
             {
-                if (i != 0)
+                if (i != skipFrames)
                     sb.AppendLine();
 
                 IntPtr ip = ips[i];

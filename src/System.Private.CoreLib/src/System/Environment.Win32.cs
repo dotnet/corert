@@ -6,59 +6,6 @@ namespace System
 {
     public static partial class Environment
     {
-        public unsafe static String ExpandEnvironmentVariables(String name)
-        {
-            if (name == null)
-                throw new ArgumentNullException("name");
-
-            if (name.Length == 0)
-            {
-                return name;
-            }
-
-            int currentSize = 128;
-            char* blob = stackalloc char[currentSize]; // A somewhat reasonable default size
-            int requiredSize;
-            fixed (char* pName = name)
-            {
-                requiredSize = Interop.mincore.ExpandEnvironmentStrings(pName, blob, currentSize);
-            }
-
-            if (requiredSize == 0)
-            {
-                // TODO: This used to throw an exception:
-                // Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-                throw new ArgumentException();
-            }
-
-            if (requiredSize <= currentSize)
-            {
-                return new string(blob);
-            }
-
-            // Fallback to using heap allocated buffers.
-            char[] newBlob = null;
-            while (requiredSize > currentSize)
-            {
-                currentSize = requiredSize;
-                newBlob = new char[currentSize];
-
-                fixed (char* pName = name, pBlob = newBlob)
-                {
-                    requiredSize = Interop.mincore.ExpandEnvironmentStrings(pName, pBlob, currentSize);
-                }
-
-                if (requiredSize == 0)
-                {
-                    // TODO: This used to throw an exception:
-                    // Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-                    throw new ArgumentException();
-                }
-            }
-
-            return new string(newBlob);
-        }
-
         public unsafe static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
@@ -110,19 +57,6 @@ namespace System
             Diagnostics.Debug.Assert(newblob != null);
 
             return new string(newblob);
-        }
-
-        public unsafe static string MachineName
-        {
-            get
-            {
-                const int MaxMachineNameLength = 256;
-                char* buf = stackalloc char[MaxMachineNameLength];
-                int len = MaxMachineNameLength;
-                if (Interop.mincore.GetComputerName(buf, ref len) == 0)
-                    throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
-                return new String(buf);
-            }
         }
 
         public static void Exit(int exitCode)
