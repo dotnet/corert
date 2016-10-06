@@ -244,7 +244,6 @@ NotHijacked
 
     NESTED_END RhpRethrow
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* FASTCALL RhpCallCatchFunclet(RtuObjectRef exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
@@ -262,9 +261,10 @@ NotHijacked
 
         PROLOG_PUSH     {r1-r11,lr}     ;; r2 & r3 are saved so we have the REGDISPLAY and ExInfo later, r1 is
                                         ;; alignment padding, and we save the preserved regs 
+        PROLOG_VPUSH    {d8-d15}
 
-#define rsp_offset_r2 4
-#define rsp_offset_r3 8
+#define rsp_offset_r2 (8 * 8) + 4
+#define rsp_offset_r3 (8 * 8) + 8
 
         ;;
         ;; clear the DoNotTriggerGc flag, trashes r4-r6
@@ -377,7 +377,8 @@ DonePopping
     NESTED_ENTRY RhpCallFinallyFunclet
 
         PROLOG_PUSH     {r1,r4-r11,lr}  ;; r1 is saved so we have the REGDISPLAY later
-#define rsp_offset_r1 0
+        PROLOG_VPUSH    {d8-d15}
+#define rsp_offset_r1 8 * 8
 
         ;;
         ;; We want to suppress hijacking between invocations of subsequent finallys.  We do this because we
@@ -495,6 +496,7 @@ SetRetry
         b           SetRetry
 SetSuccess
 
+        EPILOG_VPOP {d8-d15}
         EPILOG_POP {r1,r4-r11,pc}
 
     NESTED_END RhpCallFinallyFunclet
@@ -515,9 +517,8 @@ SetSuccess
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpCallFilterFunclet
 
-        PROLOG_PUSH     {r2,r7,r11,lr}  ;; r2 is saved so we have the REGDISPLAY later
-#undef rsp_offset_r2
-#define rsp_offset_r2 0
+        PROLOG_PUSH     {r4-r11,lr}
+        PROLOG_VPUSH    {d8-d15}
 
         ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR7]
         ldr         r7, [r12]
@@ -530,7 +531,8 @@ SetSuccess
     LABELED_RETURN_ADDRESS RhpCallFilterFunclet2
 
 
-        EPILOG_POP {r1,r7,r11,pc}
+        EPILOG_VPOP {d8-d15}
+        EPILOG_POP {r4-r11,pc}
 
     NESTED_END RhpCallFilterFunclet
 
