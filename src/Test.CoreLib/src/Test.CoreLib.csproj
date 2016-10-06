@@ -244,7 +244,10 @@
     <Compile Include="..\..\Runtime.Base\src\System\Void.cs">
       <Link>System\Void.cs</Link>
     </Compile>
+    <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
+    <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
+    <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

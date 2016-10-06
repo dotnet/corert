@@ -63,5 +63,16 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]
         internal extern static unsafe void RhpFallbackFailFast();
+
+        //
+        // Interlocked helpers
+        //
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+        internal extern static int InterlockedCompareExchange(ref int location1, int value, int comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
+        internal extern static void MemoryBarrier();
     }
 }
