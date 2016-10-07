@@ -282,6 +282,67 @@ ALTERNATE_ENTRY RhpRethrow2
 
 NESTED_END RhpRethrow, _TEXT
 
+;;
+;; Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
+;;
+FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
+
+    push_nonvol_reg r15     ;; save preserved regs for OS stackwalker
+    push_nonvol_reg r14     ;; ...
+    push_nonvol_reg r13     ;; ...
+    push_nonvol_reg r12     ;; ...
+    push_nonvol_reg rbx     ;; ...
+    push_nonvol_reg rsi     ;; ...
+    push_nonvol_reg rdi     ;; ...
+    push_nonvol_reg rbp     ;; ...
+
+    arguments_scratch_area_size = 20h
+    xmm_save_area_size = 10 * 10h ;; xmm6..xmm15 save area
+    stack_alloc_size = arguments_scratch_area_size + localsCount * 8 + alignStack * 8 + xmm_save_area_size
+    rsp_offsetof_arguments = stack_alloc_size + 8*8h + 8h
+    rsp_offsetof_locals = arguments_scratch_area_size + xmm_save_area_size
+    
+    alloc_stack     stack_alloc_size
+
+    save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
+    save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
+    save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
+    save_xmm128_postrsp xmm9,  (arguments_scratch_area_size + 3 * 10h)
+    save_xmm128_postrsp xmm10, (arguments_scratch_area_size + 4 * 10h)
+    save_xmm128_postrsp xmm11, (arguments_scratch_area_size + 5 * 10h)
+    save_xmm128_postrsp xmm12, (arguments_scratch_area_size + 6 * 10h)
+    save_xmm128_postrsp xmm13, (arguments_scratch_area_size + 7 * 10h)
+    save_xmm128_postrsp xmm14, (arguments_scratch_area_size + 8 * 10h)
+    save_xmm128_postrsp xmm15, (arguments_scratch_area_size + 9 * 10h)
+
+    END_PROLOGUE
+endm
+
+;;
+;; Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
+;;
+FUNCLET_CALL_EPILOGUE macro
+    movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
+    movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
+    movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
+    movdqa  xmm9,  [rsp + arguments_scratch_area_size + 3 * 10h]
+    movdqa  xmm10, [rsp + arguments_scratch_area_size + 4 * 10h]
+    movdqa  xmm11, [rsp + arguments_scratch_area_size + 5 * 10h]
+    movdqa  xmm12, [rsp + arguments_scratch_area_size + 6 * 10h]
+    movdqa  xmm13, [rsp + arguments_scratch_area_size + 7 * 10h]
+    movdqa  xmm14, [rsp + arguments_scratch_area_size + 8 * 10h]
+    movdqa  xmm15, [rsp + arguments_scratch_area_size + 9 * 10h]
+
+    add     rsp, stack_alloc_size
+    pop     rbp
+    pop     rdi
+    pop     rsi
+    pop     rbx
+    pop     r12
+    pop     r13
+    pop     r14
+    pop     r15
+endm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -298,28 +359,19 @@ NESTED_END RhpRethrow, _TEXT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
-        push_nonvol_reg r15     ;; save preserved regs for OS stackwalker
-        push_nonvol_reg r14     ;; ...
-        push_nonvol_reg r13     ;; ...
-        push_nonvol_reg r12     ;; ...
-        push_nonvol_reg rbx     ;; ...
-        push_nonvol_reg rsi     ;; ...
-        push_nonvol_reg rdi     ;; ...
-        push_nonvol_reg rbp     ;; ...
+        FUNCLET_CALL_PROLOGUE 2, 1
 
-        alloc_stack     38h     ;; outgoing area + locals
-
-        END_PROLOGUE
-
-        rsp_offsetof_arguments = 38h + 8*8h + 8h
-
+        ;; locals
+        rsp_offsetof_thread = rsp_offsetof_locals
+        rsp_offsetof_resume_ip = rsp_offsetof_locals + 8;
+      
         mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
         mov     [rsp + rsp_offsetof_arguments + 8h], rdx
         mov     [rsp + rsp_offsetof_arguments + 10h], r8
         mov     [rsp + rsp_offsetof_arguments + 18h], r9
 
         INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
-        mov     [rsp + 20h], rax                                    ;; save Thread* for later
+        mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
@@ -389,7 +441,7 @@ ifdef _DEBUG
         ;; Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we 
         ;; have to spill all the preserved registers and then refill them after the call.
 
-        mov     [rsp + 28h], rax                                    ;; save resume IP for later
+        mov     [rsp + rsp_offsetof_resume_ip], rax                                    ;; save resume IP for later
 
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pRbx]
         mov     [rcx]                           , rbx
@@ -408,7 +460,7 @@ ifdef _DEBUG
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pR15]
         mov     [rcx]                           , r15
 
-        mov     rcx, [rsp + 20h]                                    ;; rcx <- Thread*
+        mov     rcx, [rsp + rsp_offsetof_thread]                    ;; rcx <- Thread*
         mov     rdx, [rsp + rsp_offsetof_arguments + 18h]           ;; rdx <- current ExInfo *
         mov     r8, [r8 + OFFSETOF__REGDISPLAY__SP]                 ;; r8  <- resume SP value
         call    RhpValidateExInfoPop
@@ -431,9 +483,9 @@ ifdef _DEBUG
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
         mov     r15, [rax]
 
-        mov     rax, [rsp + 28h]                                    ;; reload resume IP
+        mov     rax, [rsp + rsp_offsetof_resume_ip]                 ;; reload resume IP
 endif
-        mov     rdx, [rsp + 20h]                                    ;; rdx <- Thread*
+        mov     rdx, [rsp + rsp_offsetof_thread]                    ;; rdx <- Thread*
 
         ;; We must unhijack the thread at this point because the section of stack where the hijack is applied
         ;; may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
@@ -469,26 +521,15 @@ NESTED_END RhpCallCatchFunclet, _TEXT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
 
-        push_nonvol_reg r15     ;; save preserved regs 
-        push_nonvol_reg r14     ;; ...
-        push_nonvol_reg r13     ;; ...
-        push_nonvol_reg r12     ;; ...
-        push_nonvol_reg rbx     ;; ...
-        push_nonvol_reg rsi     ;; ...
-        push_nonvol_reg rdi     ;; ...
-        push_nonvol_reg rbp     ;; ...
-
-        alloc_stack     28h     ;; outgoing area + locals
-
-        END_PROLOGUE
-
-        rsp_offsetof_arguments = 28h + 8*8h + 8h
+        FUNCLET_CALL_PROLOGUE 1, 0
 
         mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
         mov     [rsp + rsp_offsetof_arguments + 8h], rdx
 
+        rsp_offsetof_thread = rsp_offsetof_locals
+        
         INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
-        mov     [rsp + 20h], rax                                    ;; save Thread* for later
+        mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
 
         ;;
         ;; We want to suppress hijacking between invocations of subsequent finallys.  We do this because we
@@ -584,18 +625,10 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h], xmm14
         movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h], xmm15
 
-        mov     rax, [rsp + 20h]                                    ;; rax <- Thread*
+        mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
         lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
 
-        add     rsp, 28h
-        pop     rbp
-        pop     rdi
-        pop     rsi
-        pop     rbx
-        pop     r12
-        pop     r13
-        pop     r14
-        pop     r15
+        FUNCLET_CALL_EPILOGUE
 
         ret
 
@@ -615,11 +648,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallFilterFunclet, _TEXT
 
-        push_nonvol_reg rbp     ;; we'll be setting rbp to the funclet's frame pointer
-
-        alloc_stack     20h     ;; outgoing area
-
-        END_PROLOGUE
+        FUNCLET_CALL_PROLOGUE 0, 1
 
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
         mov     rbp, [rax]
@@ -636,8 +665,7 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ;; RAX contains the result of the filter execution
 
-        add     rsp, 20h
-        pop     rbp
+        FUNCLET_CALL_EPILOGUE
 
         ret
 
