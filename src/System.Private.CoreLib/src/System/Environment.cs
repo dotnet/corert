@@ -20,7 +20,8 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Internal.DeveloperExperience;
+
+using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -105,40 +106,13 @@ namespace System
             }
         }
 
-        private static string[] s_commandLineArgs;
-
-        internal static void SetCommandLineArgs(string[] args)
-        {
-            s_commandLineArgs = args;
-        }
-
-        public static string[] GetCommandLineArgs()
-        {
-            return (string[])s_commandLineArgs?.Clone();
-        }
-
         public static String StackTrace
         {
+            // Disable inlining to have predictable stack frame that EnvironmentAugments can skip
+            [MethodImpl(MethodImplOptions.NoInlining)]
             get
             {
-                // RhGetCurrentThreadStackTrace returns the number of frames(cFrames) added to input buffer.
-                // It returns a negative value, -cFrames which is the required array size, if the buffer is too small.
-                // Initial array length is deliberately chosen to be 0 so that we reallocate to exactly the right size
-                // for StackFrameHelper.FormatStackTrace call. If we want to do this optimistically with one call change
-                // FormatStackTrace to accept an explicit length.
-                IntPtr[] frameIPs = Array.Empty<IntPtr>();
-                int cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
-                if (cFrames < 0)
-                {
-                    frameIPs = new IntPtr[-cFrames];
-                    cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
-                    if (cFrames < 0)
-                    {
-                        return "";
-                    }
-                }
-
-                return Internal.Diagnostics.StackTraceHelper.FormatStackTrace(frameIPs, true);
+                return EnvironmentAugments.StackTrace;
             }
         }
     }

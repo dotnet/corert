@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
 #include <assert.h>
 #include <config.h>
 #include <sys/time.h>
@@ -37,27 +36,6 @@ extern "C" int32_t CoreLibNative_GetEnvironmentVariable(const char* variable, ch
     }
 
     return (int32_t)resultSize;
-}
-
-extern "C" int32_t CoreLibNative_GetMachineName(char* hostNameBuffer, int32_t hostNameBufferLength)
-{
-    assert(hostNameBuffer != NULL && hostNameBufferLength > 0);
-
-    int32_t res = gethostname(hostNameBuffer, hostNameBufferLength);
-    if (res < 0)
-        return res;
-
-    // If the hostname is truncated, it is unspecified whether the returned buffer includes a terminating null byte.
-    hostNameBuffer[hostNameBufferLength - 1] = '\0';
-
-    // truncate the domain from the host name if it exist    
-    char *pDot = strchr(hostNameBuffer, '.');
-    if (pDot != NULL)
-    {
-        *pDot = '\0';    
-    }
-    
-    return strlen(hostNameBuffer);
 }
 
 #define SECONDS_TO_MILLISECONDS 1000

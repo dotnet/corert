@@ -38,15 +38,6 @@ namespace System
             return null;
         }
 
-        public static string MachineName
-        {
-            get
-            {
-                // Store apps don't support MachineName
-                throw new PlatformNotSupportedException();
-            }
-        }
-
         public static void Exit(int exitCode)
         {
             // Store apps have their lifetime managed by the PLM
