@@ -645,6 +645,11 @@ namespace System.Runtime
                         // int** is not compatible with uint**, nor is int*[] oompatible with uint*[].
                         return false;
                     }
+                    else if (pSourceType->RelatedParameterType->IsByRefType)
+                    {
+                        // Only allow exact matches for ByRef types - same as pointers above.
+                        return false;
+                    }
                     else
                     {
                         // Note that using AreTypesAssignableInternal with AssignmentVariation.AllowSizeEquivalence 

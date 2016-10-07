@@ -207,6 +207,15 @@ namespace Internal.Reflection.Core.Execution
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
+        public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            RuntimeTypeHandle targetTypeHandle;
+            if (!ExecutionEnvironment.TryGetByRefTypeTargetType(typeHandle, out targetTypeHandle))
+                throw CreateMissingMetadataException((Type)null);
+
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle);
+        }
+
         public Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle genericTypeDefinitionHandle;
