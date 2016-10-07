@@ -378,10 +378,7 @@ public:
         { return ((m_usFlags & (UInt16)RelatedTypeViaIATFlag) != 0); }
 
     bool IsArray()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() != 0; }
-
-    bool IsPointerType()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() == 0; }
+        { return IsParameterizedType() && get_ParameterizedTypeShape() > 1; }
 
     bool IsParameterizedType()
         { return (get_Kind() == ParameterizedEEType); }

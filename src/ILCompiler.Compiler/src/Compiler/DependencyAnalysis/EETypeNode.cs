@@ -292,7 +292,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             ISymbolNode relatedTypeNode = null;
 
-            if (_type.IsArray || _type.IsPointer)
+            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
                 relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
