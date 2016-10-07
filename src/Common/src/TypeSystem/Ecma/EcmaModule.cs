@@ -283,14 +283,9 @@ namespace Internal.TypeSystem.Ecma
             }
 
             if (throwIfNotFound)
-                throw CreateTypeLoadException(nameSpace + "." + name);
+                throw TypeSystemExceptionHelpers.CreateClassLoadGeneralException(nameSpace, name, this);
 
             return null;
-        }
-
-        public Exception CreateTypeLoadException(string fullTypeName)
-        {
-            return new TypeLoadException(String.Format("Could not load type '{0}' from assembly '{1}'.", fullTypeName, this.ToString()));
         }
 
         public TypeDesc GetType(EntityHandle handle)
@@ -384,8 +379,8 @@ namespace Internal.TypeSystem.Ecma
                     if (field != null)
                         return field;
 
-                    // TODO: Better error message
-                    throw new MissingMemberException("Field not found " + parent.ToString() + "." + name);
+                    TypeDesc fieldType = parser.ParseFieldSignature();
+                    throw TypeSystemExceptionHelpers.CreateMissingFieldException(parentTypeDesc, name, fieldType);
                 }
                 else
                 {
@@ -409,8 +404,7 @@ namespace Internal.TypeSystem.Ecma
                         typeDescToInspect = typeDescToInspect.BaseType;
                     } while (typeDescToInspect != null);
 
-                    // TODO: Better error message
-                    throw new MissingMemberException("Method not found " + parent.ToString() + "." + name);
+                    throw TypeSystemExceptionHelpers.CreateMissingMethodException(parentTypeDesc, name, sig);
                 }
             }
             else if (parent is MethodDesc)
@@ -487,9 +481,8 @@ namespace Internal.TypeSystem.Ecma
                 var type = (MetadataType)implementation;
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
-                // TODO: Better error message
                 if (nestedType == null)
-                    throw new TypeLoadException("Nested type not found " + type.ToString() + "." + name);
+                    throw TypeSystemExceptionHelpers.CreateClassLoadGeneralException(name, this);
                 return nestedType;
             }
             else

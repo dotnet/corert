@@ -225,7 +225,6 @@ namespace TypeSystemTests
                     case "StringConstant":
                         Assert.True(field.IsStatic);
                         Assert.True(field.IsLiteral);
-                        Assert.Throws<BadImageFormatException>(() => field.Offset);
                         break;
                     case "Int1":
                         Assert.Equal(0, field.Offset);

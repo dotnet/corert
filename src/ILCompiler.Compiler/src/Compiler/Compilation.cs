@@ -207,7 +207,31 @@ namespace ILCompiler
 
                 try
                 {
-                    _corInfo.CompileMethod(methodCodeNodeNeedingCode);
+                    try
+                    {
+                        _corInfo.CompileMethod(methodCodeNodeNeedingCode);
+                    }
+                    catch (TypeSystemException.TypeLoadException ex)
+                    {
+                        // TODO: fail compilation if a switch was passed
+                        if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex.Message, "System", "TypeLoadException"))
+                            throw;
+                        // TODO: Log as a warning
+                    }
+                    catch (TypeSystemException.MissingFieldException ex)
+                    {
+                        // TODO: fail compilation if a switch was passed
+                        if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex.Message, "System", "MissingFieldException"))
+                            throw;
+                        // TODO: Log as a warning
+                    }
+                    catch (TypeSystemException.MissingMethodException ex)
+                    {
+                        // TODO: fail compilation if a switch was passed
+                        if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex.Message, "System", "MissingMethodException"))
+                            throw;
+                        // TODO: Log as a warning
+                    }
                 }
                 catch (Exception e)
                 {
@@ -235,6 +259,36 @@ namespace ILCompiler
                     continue;
                 }
             }
+        }
+
+        /// <summary>
+        /// Compiles the provided method code node while swapping it's body with a throwing stub.
+        /// </summary>
+        private bool TryCompileWithThrowingBody(MethodCodeNode methodNode, string message, string exceptionNamespace, string exceptionName)
+        {
+            try
+            {
+                TypeDesc exceptionType = _typeSystemContext.SystemModule.GetKnownType(exceptionNamespace, exceptionName);
+                MethodDesc exceptionConstructor = exceptionType.GetKnownMethod(".ctor",
+                    new MethodSignature(0, 0, _typeSystemContext.GetWellKnownType(WellKnownType.Void),
+                    new[] { _typeSystemContext.GetWellKnownType(WellKnownType.String) }));
+
+                var emitter = new Internal.IL.Stubs.ILEmitter();
+                var codeStream = emitter.NewCodeStream();
+                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
+                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionConstructor));
+                codeStream.Emit(ILOpcode.throw_);
+
+                _corInfo.CompileMethod(methodNode, emitter.Link(methodNode.Method));
+            }
+            catch (Exception)
+            {
+                // If anything happens, swallow the exception. This method is a fallback because something went wrong.
+                // We want the compiler to fail for the original reason.
+                return false;
+            }
+
+            return true;
         }
 
         private void CppCodeGenComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
