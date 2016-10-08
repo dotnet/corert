@@ -532,6 +532,9 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
 #endif // _TARGET_ARM_
 }
 
+#ifdef _TARGET_AMD64_
+typedef DPTR(Fp128) PTR_Fp128;
+#endif
 
 // The invoke of a funclet is a bit special and requires an assembly thunk, but we don't want to break the
 // stackwalk due to this.  So this routine will unwind through the assembly thunks used to invoke funclets.
@@ -564,11 +567,12 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     bool isFilterInvoke = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) 
+    SP = (PTR_UIntNative)(m_RegDisplay.SP);
+    
     if (isFilterInvoke)
     {
-        SP = (PTR_UIntNative)(m_RegDisplay.SP);
-        m_RegDisplay.pRbp = SP++;
+        SP++; // stack alignment
     }
     else
     {
@@ -582,25 +586,35 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
         if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x38);
+            SP += 6 + 1; // 6 locals and stack alignment
         }
         else
         {
-            SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x18);
+            SP += 3; // 3 locals
         }
-
-        m_RegDisplay.pRbp = SP++;
-        m_RegDisplay.pRbx = SP++;
-        m_RegDisplay.pR12 = SP++;
-        m_RegDisplay.pR13 = SP++;
-        m_RegDisplay.pR14 = SP++;
-        m_RegDisplay.pR15 = SP++;
     }
+    
+    m_RegDisplay.pRbp = SP++;
+    m_RegDisplay.pRbx = SP++;
+    m_RegDisplay.pR12 = SP++;
+    m_RegDisplay.pR13 = SP++;
+    m_RegDisplay.pR14 = SP++;
+    m_RegDisplay.pR15 = SP++;
 #elif defined(_TARGET_AMD64_)
+    static const int ArgumentsScratchAreaSize = 4 * 8;
+    
+    PTR_Fp128 xmm = (PTR_Fp128)(m_RegDisplay.SP + ArgumentsScratchAreaSize);
+
+    for (int i = 0; i < 10; i++)
+    {
+        m_RegDisplay.Xmm[i] = *xmm++;
+    }
+
+    SP = (PTR_UIntNative)xmm;
+
     if (isFilterInvoke)
     {
-        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x20);
-        m_RegDisplay.pRbp = SP++;
+        SP++; // stack alignment
     }
     else
     {
@@ -613,58 +627,59 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR13 = m_RegDisplay.pR13;
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
-
+        
         if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x38);
+            SP += 2 + 1; // 2 locals and stack alignment
         }
         else
         {
-            SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x28);
+            SP++; // 1 local
         }
+    }
 
-        m_RegDisplay.pRbp = SP++;
-        m_RegDisplay.pRdi = SP++;
-        m_RegDisplay.pRsi = SP++;
-        m_RegDisplay.pRbx = SP++;
-        m_RegDisplay.pR12 = SP++;
-        m_RegDisplay.pR13 = SP++;
-        m_RegDisplay.pR14 = SP++;
-        m_RegDisplay.pR15 = SP++;
-    }
+    m_RegDisplay.pRbp = SP++;
+    m_RegDisplay.pRdi = SP++;
+    m_RegDisplay.pRsi = SP++;
+    m_RegDisplay.pRbx = SP++;
+    m_RegDisplay.pR12 = SP++;
+    m_RegDisplay.pR13 = SP++;
+    m_RegDisplay.pR14 = SP++;
+    m_RegDisplay.pR15 = SP++;
+    
 #elif defined(_TARGET_X86_)
-    if (isFilterInvoke)
-    {
-        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);
-        m_RegDisplay.pRbp = SP++;
-    }
-    else
+    SP = (PTR_UIntNative)(m_RegDisplay.SP);
+
+    if (!isFilterInvoke)
     {
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
         m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
         m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
-
-        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);
-
-        m_RegDisplay.pRdi = SP++;
-        m_RegDisplay.pRsi = SP++;
-        m_RegDisplay.pRbx = SP++;
-        m_RegDisplay.pRbp = SP++;
     }
+
+    SP++; // local / stack alignment
+    m_RegDisplay.pRdi = SP++;
+    m_RegDisplay.pRsi = SP++;
+    m_RegDisplay.pRbx = SP++;
+    m_RegDisplay.pRbp = SP++;
 #elif defined(_TARGET_ARM_)
-    if (isFilterInvoke)
+
+    PTR_UInt64 d = (PTR_UInt64)(m_RegDisplay.SP);
+
+    for (int i = 0; i < 8; i++)
     {
-        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);
-        m_RegDisplay.pR7 = SP++;
-        m_RegDisplay.pR11 = SP++;
+        m_RegDisplay.D[i] = *d++;
     }
-    else
+
+    SP = (PTR_UIntNative)d;
+
+    if (!isFilterInvoke)
     {
         // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        UIntNative uOffsetToR4 = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 0xC : 0x4;
+        SP += EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 3 : 1;
 
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pR4  = m_RegDisplay.pR4;
@@ -675,19 +690,17 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR9  = m_RegDisplay.pR9;
         m_funcletPtrs.pR10 = m_RegDisplay.pR10;
         m_funcletPtrs.pR11 = m_RegDisplay.pR11;
-
-        SP = (PTR_UIntNative)(m_RegDisplay.SP + uOffsetToR4);
-
-        m_RegDisplay.pR4  = SP++;
-        m_RegDisplay.pR5  = SP++;
-        m_RegDisplay.pR6  = SP++;
-        m_RegDisplay.pR7  = SP++;
-        m_RegDisplay.pR8  = SP++;
-        m_RegDisplay.pR9  = SP++;
-        m_RegDisplay.pR10 = SP++;
-        m_RegDisplay.pR11 = SP++;
     }
 
+    m_RegDisplay.pR4 = SP++;
+    m_RegDisplay.pR5 = SP++;
+    m_RegDisplay.pR6 = SP++;
+    m_RegDisplay.pR7 = SP++;
+    m_RegDisplay.pR8 = SP++;
+    m_RegDisplay.pR9 = SP++;
+    m_RegDisplay.pR10 = SP++;
+    m_RegDisplay.pR11 = SP++;
+    
 #elif defined(_TARGET_ARM64_)
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 

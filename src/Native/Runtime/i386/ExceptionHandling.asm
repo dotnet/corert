@@ -232,6 +232,36 @@ ALTERNATE_ENTRY RhpRethrow2
 
 FASTCALL_ENDFUNC
 
+;;
+;; Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
+;;
+FUNCLET_CALL_PROLOGUE macro localsCount
+    push        ebp
+    mov         ebp, esp
+
+    push        ebx     ;; save preserved registers (for the stackwalker)
+    push        esi     ;; 
+    push        edi     ;; 
+
+    stack_alloc_size = localsCount * 4
+    
+    if stack_alloc_size ne 0
+    sub         esp, stack_alloc_size
+    endif
+endm
+
+;;
+;; Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
+;;
+FUNCLET_CALL_EPILOGUE macro
+    if stack_alloc_size ne 0
+    add         esp, stack_alloc_size
+    endif
+    pop         edi
+    pop         esi
+    pop         ebx
+    pop         ebp
+endm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -248,14 +278,7 @@ FASTCALL_ENDFUNC
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallCatchFunclet, 0
 
-        push        ebp
-        mov         ebp, esp
-
-        push        ebx     ;; save preserved registers (for the stackwalker)
-        push        esi     ;; 
-        push        edi     ;; 
-
-        sub         esp, 4
+        FUNCLET_CALL_PROLOGUE 1
 
         esp_offsetof_ResumeIP   textequ %00h         ;; [esp + 00h]: continuation address
                                                      ;; [esp + 04h]: edi save
@@ -338,12 +361,7 @@ FASTCALL_ENDFUNC
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallFinallyFunclet, 0
 
-        push        ebp
-        mov         ebp, esp
-
-        push        ebx     ;; save preserved registers
-        push        esi     ;; 
-        push        edi     ;; 
+        FUNCLET_CALL_PROLOGUE 0
 
         push        edx     ;; save REGDISPLAY*
 
@@ -391,10 +409,7 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         INLINE_GETTHREAD    eax, ebx        ;; eax <- Thread*, ebx is trashed
         lock or             dword ptr [eax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
 
-        pop         edi
-        pop         esi
-        pop         ebx
-        pop         ebp
+        FUNCLET_CALL_EPILOGUE
         ret
 
 FASTCALL_ENDFUNC
@@ -412,8 +427,7 @@ FASTCALL_ENDFUNC
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallFilterFunclet, 0
 
-        push        ebp
-        mov         ebp, esp
+        FUNCLET_CALL_PROLOGUE 0
 
         push        edx     ;; save filter funclet address
 
@@ -435,54 +449,10 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
         mov         edx, [ebp + 8]
 
         pop         ecx         ;; pop scratch slot
-        pop         ebp
+
+        FUNCLET_CALL_EPILOGUE
         ret
 
 FASTCALL_ENDFUNC
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpCallFilterFunclet
-;;
-;; This function's goal in life is to serve as a wrapper around funclet invocation to allow debuggers to 
-;; properly unwind out of funcets.  To start with, funclets get an 'unwind program' (provide by the binder)
-;; that defeats EBP chaining and allows unwind to this function.  Then, this function has an unwind program
-;; which restores EBP to the correct value to re-establish a useful EBP chain.  
-;;
-;; It would have been preferable to combine the EBP-restore part of the unwind program into the unwind program 
-;; of the funclet, but the users of the unwind program are too clever.  They inspect the code stream of the 
-;; funclet and decide that the funclet couldn't possibly have trashed EBP, so they ignore the EBP update.  
-;; 
-;; Furthermore, we would have ideally put this unwind program on the RhpCall{Filter|Catch|Finally}Funclet 
-;; functions, but neither MASM nor C++ inline-asm allows us to do that.  Instead, we have to hand-craft an 
-;; .obj file with the correct unwind program and assembly code.  That is why this function is commented out 
-;; here.
-;;
-;; See tools\GenerateDebuggableCallThunk for the program which generates the custom .obj file
-;;
-;; INPUT:  ECX:         exception object (optional)
-;;         EDX:         funclet IP address
-;;         EAX:         funclet EBP value
-;;
-;; OUTPUT:
-;;         EAX:         whatever the funclet returns, as appropriate for that kind of funclet
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; input:   ECX: possible exception object
-;;          EDX: funclet IP
-;;          EAX: funclet EBP
-;;  FASTCALL_FUNC  RhpCallFunclet, 0
-;;          push    ebp
-;;          mov     ebp, eax
-;;          call    edx
-;;  ALTERNATE_ENTRY RhpCallFunclet2
-;;          pop     ebp
-;;          ret
-;;  ;; $T0 $esp =
-;;  ;; $eip $T0 4 + ^ =
-;;  ;; $ebp $T0 ^ =
-;;  ;; $esp $T0 4 + =
-;;  FASTCALL_ENDFUNC
 
         end
