@@ -255,8 +255,14 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (_type.IsPointer)
             {
-                // Object size 0 is a sentinel value in the runtime for parameterized types that means "Pointer Type"
-                objData.EmitInt(0);
+                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                objData.EmitInt(ParameterizedTypeShapeConstants.Pointer);
+                return;
+            }
+            else if (_type.IsByRef)
+            {
+                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                objData.EmitInt(ParameterizedTypeShapeConstants.ByRef);
                 return;
             }
             else
@@ -286,7 +292,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             ISymbolNode relatedTypeNode = null;
 
-            if (_type.IsArray || _type.IsPointer)
+            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
                 relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);

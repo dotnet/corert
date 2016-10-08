@@ -114,7 +114,7 @@ namespace System
         {
             get
             {
-                return IsArray && BaseSize == Array.SZARRAY_BASE_SIZE;
+                return _value->IsSzArray;
             }
         }
 
@@ -123,6 +123,14 @@ namespace System
             get
             {
                 return _value->IsPointerType;
+            }
+        }
+
+        internal bool IsByRef
+        {
+            get
+            {
+                return _value->IsByRefType;
             }
         }
 
@@ -287,7 +295,7 @@ namespace System
                 if (IsArray)
                     return EETypePtr.EETypePtrOf<Array>();
 
-                if (IsPointer)
+                if (IsPointer || IsByRef)
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = new EETypePtr((IntPtr)_value->NonArrayBaseType);

@@ -377,11 +377,9 @@ public:
     bool IsRelatedTypeViaIAT()
         { return ((m_usFlags & (UInt16)RelatedTypeViaIATFlag) != 0); }
 
+    // PREFER: get_ParameterizedTypeShape() >= SZARRAY_BASE_SIZE
     bool IsArray()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() != 0; }
-
-    bool IsPointerType()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() == 0; }
+        { return IsParameterizedType() && get_ParameterizedTypeShape() > 1 /* ParameterizedTypeShapeConstants.ByRef */; }
 
     bool IsParameterizedType()
         { return (get_Kind() == ParameterizedEEType); }
@@ -401,8 +399,9 @@ public:
 
     EEType * get_RelatedParameterType();
 
-    // A parameterized type shape is 0 to indicate that it is a pointer type, 
-    // and non-zero to indicate that it is an array type
+    // A parameterized type shape less than SZARRAY_BASE_SIZE indicates that this is not
+    // an array but some other parameterized type (see: ParameterizedTypeShapeConstants)
+    // For arrays, this number uniquely captures both Sz/Md array flavor and rank.
     UInt32 get_ParameterizedTypeShape() { return m_uBaseSize; }
 
     bool get_IsValueType()
