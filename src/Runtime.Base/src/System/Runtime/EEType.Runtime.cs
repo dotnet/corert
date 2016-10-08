@@ -73,8 +73,8 @@ namespace Internal.Runtime
                 if (!IsRuntimeAllocated && !IsDynamicType)
                     return (IntPtr)pThis;
 
-                // There are currently three types of runtime allocated EETypes, arrays, pointers, and generic types.
-                // Arrays/Pointers can be handled by looking at their element type.
+                // There are currently four types of runtime allocated EETypes, arrays, pointers, byrefs, and generic types.
+                // Arrays/Pointers/ByRefs can be handled by looking at their element type.
                 if (IsParameterizedType)
                     return pThis->RelatedParameterType->GetAssociatedModuleAddress();
 

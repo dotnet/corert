@@ -647,7 +647,9 @@ namespace System.Runtime
                     }
                     else if (pSourceType->RelatedParameterType->IsByRefType)
                     {
-                        // Only allow exact matches for ByRef types - same as pointers above.
+                        // Only allow exact matches for ByRef types - same as pointers above. This should
+                        // be unreachable and it's only a defense in depth. ByRefs can't be parameters
+                        // of any parameterized type.
                         return false;
                     }
                     else
