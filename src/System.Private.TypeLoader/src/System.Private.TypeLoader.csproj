@@ -64,6 +64,8 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs" >
       <Link>LowLevelStringConverter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeHashingAlgorithms.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataTable.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />

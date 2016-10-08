@@ -69,6 +69,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppCodegenNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DictionaryLayoutNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternalReferencesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectSentinelNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenStringNode.cs" />
