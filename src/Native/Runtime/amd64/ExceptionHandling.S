@@ -257,13 +257,14 @@ NESTED_END RhpRethrow, _TEXT
 // Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
 //
 .macro FUNCLET_CALL_EPILOGUE
-    add     rsp, stack_alloc_size
-    pop     rbp
-    pop     rbx
-    pop     r12
-    pop     r13
-    pop     r14
-    pop     r15
+    free_stack      stack_alloc_size
+
+    pop_nonvol_reg rbp
+    pop_nonvol_reg rbx
+    pop_nonvol_reg r12
+    pop_nonvol_reg r13
+    pop_nonvol_reg r14
+    pop_nonvol_reg r15
 .endm
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
