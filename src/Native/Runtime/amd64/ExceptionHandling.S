@@ -246,7 +246,7 @@ NESTED_END RhpRethrow, _TEXT
     push_nonvol_reg rbx     // ...
     push_nonvol_reg rbp     // ...
 
-    stack_alloc_size = localsCount * 8 + alignStack * 8
+    stack_alloc_size = \localsCount * 8 + \alignStack * 8
 
     alloc_stack     stack_alloc_size
 
