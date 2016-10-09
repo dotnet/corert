@@ -43,9 +43,24 @@ namespace Internal.Runtime.CompilerHelpers
             throw new PlatformNotSupportedException();
         }
 
-        public static void ThrowTypeLoadException()
+        public static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName, string messageArg)
         {
-            throw new TypeLoadException();
+            throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName, messageArg);
+        }
+
+        public static void ThrowMissingMethodException(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingMethodException(id, methodName);
+        }
+
+        public static void ThrowMissingFieldException(ExceptionStringID id, string fieldName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingFieldException(id, fieldName);
+        }
+
+        public static void ThrowFileLoadException(ExceptionStringID id, string fileName)
+        {
+            throw TypeLoaderExceptionHelper.CreateFileLoadException(id, fileName);
         }
 
         public static void ThrowArgumentException()

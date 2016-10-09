@@ -17,6 +17,8 @@ using Internal.IL;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
+using ExceptionStringID = Internal.Runtime.ExceptionStringID;
+
 namespace Internal.JitInterface
 {
     internal unsafe sealed partial class CorInfoImpl
@@ -129,7 +131,7 @@ namespace Internal.JitInterface
                 // not a P/invoke, InternalCall or something like that). Throw a compatible exception and
                 // let the driver deal with that.
                 if (methodIL == null)
-                    throw TypeSystemExceptionHelpers.CreateClassLoadMissingMethodRvaException(MethodBeingCompiled);
+                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadMissingMethodRva, MethodBeingCompiled);
 
                 _methodScope = methodInfo.scope;
 
@@ -177,6 +179,8 @@ namespace Internal.JitInterface
                     if (_lastException != null)
                     {
                         // If we captured a managed exception, rethrow that.
+                        // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
+                        // an inlining attempt with a type system problem in it...
                         throw _lastException;
                     }
 
@@ -839,7 +843,7 @@ namespace Internal.JitInterface
                 // References to literal fields from IL body should never resolve.
                 // The CLR would throw a MissingFieldException while jitting and so should we.
                 if (field.IsLiteral)
-                    throw TypeSystemExceptionHelpers.CreateMissingFieldException(field.OwningType, field.Name, field.FieldType);
+                    throw new TypeSystemException.MissingFieldException(field.OwningType, field.Name);
 
                 pResolvedToken.hField = ObjectToHandle(field);
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);

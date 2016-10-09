@@ -283,7 +283,7 @@ namespace Internal.TypeSystem.Ecma
             }
 
             if (throwIfNotFound)
-                throw TypeSystemExceptionHelpers.CreateClassLoadGeneralException(nameSpace, name, this);
+                throw new TypeSystemException.TypeLoadException(nameSpace, name, this);
 
             return null;
         }
@@ -379,8 +379,7 @@ namespace Internal.TypeSystem.Ecma
                     if (field != null)
                         return field;
 
-                    TypeDesc fieldType = parser.ParseFieldSignature();
-                    throw TypeSystemExceptionHelpers.CreateMissingFieldException(parentTypeDesc, name, fieldType);
+                    throw new TypeSystemException.MissingFieldException(parentTypeDesc, name);
                 }
                 else
                 {
@@ -404,7 +403,7 @@ namespace Internal.TypeSystem.Ecma
                         typeDescToInspect = typeDescToInspect.BaseType;
                     } while (typeDescToInspect != null);
 
-                    throw TypeSystemExceptionHelpers.CreateMissingMethodException(parentTypeDesc, name, sig);
+                    throw new TypeSystemException.MissingMethodException(parentTypeDesc, name, sig);
                 }
             }
             else if (parent is MethodDesc)
@@ -482,7 +481,7 @@ namespace Internal.TypeSystem.Ecma
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 if (nestedType == null)
-                    throw TypeSystemExceptionHelpers.CreateClassLoadGeneralException(name, this);
+                    throw new TypeSystemException.TypeLoadException(name, this);
                 return nestedType;
             }
             else

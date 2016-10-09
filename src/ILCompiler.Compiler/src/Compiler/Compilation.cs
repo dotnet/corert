@@ -15,6 +15,8 @@ using Internal.JitInterface;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     public class CompilationOptions
@@ -207,56 +209,14 @@ namespace ILCompiler
 
                 try
                 {
-                    try
-                    {
-                        _corInfo.CompileMethod(methodCodeNodeNeedingCode);
-                    }
-                    catch (TypeSystemException.TypeLoadException ex)
-                    {
-                        // TODO: fail compilation if a switch was passed
-                        if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex.Message, "System", "TypeLoadException"))
-                            throw;
-                        // TODO: Log as a warning
-                    }
-                    catch (TypeSystemException.MissingFieldException ex)
-                    {
-                        // TODO: fail compilation if a switch was passed
-                        if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex.Message, "System", "MissingFieldException"))
-                            throw;
-                        // TODO: Log as a warning
-                    }
-                    catch (TypeSystemException.MissingMethodException ex)
-                    {
-                        // TODO: fail compilation if a switch was passed
-                        if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex.Message, "System", "MissingMethodException"))
-                            throw;
-                        // TODO: Log as a warning
-                    }
+                    _corInfo.CompileMethod(methodCodeNodeNeedingCode);
                 }
-                catch (Exception e)
+                catch (TypeSystemException ex)
                 {
-                    Log.WriteLine("*** " + method + ": " + e.Message);
-
-                    // Call the __not_yet_implemented method
-                    DependencyAnalysis.X64.X64Emitter emit = new DependencyAnalysis.X64.X64Emitter(_nodeFactory);
-                    emit.Builder.RequireAlignment(_nodeFactory.Target.MinimumFunctionAlignment);
-                    emit.Builder.DefinedSymbols.Add(methodCodeNodeNeedingCode);
-
-                    emit.EmitLEAQ(emit.TargetRegister.Arg0, _nodeFactory.StringIndirection(method.ToString()));
-                    DependencyAnalysis.X64.AddrMode loadFromArg0 =
-                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg0, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
-                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
-                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
-
-                    emit.EmitLEAQ(emit.TargetRegister.Arg1, _nodeFactory.StringIndirection(e.Message));
-                    DependencyAnalysis.X64.AddrMode loadFromArg1 =
-                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg1, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
-                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
-                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
-
-                    emit.EmitJMP(_nodeFactory.ExternSymbol("__not_yet_implemented"));
-                    methodCodeNodeNeedingCode.SetCode(emit.Builder.ToObjectData());
-                    continue;
+                    // TODO: fail compilation if a switch was passed
+                    if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex))
+                        throw;
+                    // TODO: Log as a warning
                 }
             }
         }
@@ -264,29 +224,54 @@ namespace ILCompiler
         /// <summary>
         /// Compiles the provided method code node while swapping it's body with a throwing stub.
         /// </summary>
-        private bool TryCompileWithThrowingBody(MethodCodeNode methodNode, string message, string exceptionNamespace, string exceptionName)
+        private bool TryCompileWithThrowingBody(MethodCodeNode methodNode, TypeSystemException exception)
         {
-            try
+            MethodDesc helper;
+
+            Type exceptionType = exception.GetType();
+            if (exceptionType == typeof(TypeSystemException.TypeLoadException))
             {
-                TypeDesc exceptionType = _typeSystemContext.SystemModule.GetKnownType(exceptionNamespace, exceptionName);
-                MethodDesc exceptionConstructor = exceptionType.GetKnownMethod(".ctor",
-                    new MethodSignature(0, 0, _typeSystemContext.GetWellKnownType(WellKnownType.Void),
-                    new[] { _typeSystemContext.GetWellKnownType(WellKnownType.String) }));
-
-                var emitter = new Internal.IL.Stubs.ILEmitter();
-                var codeStream = emitter.NewCodeStream();
-                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
-                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionConstructor));
-                codeStream.Emit(ILOpcode.throw_);
-
-                _corInfo.CompileMethod(methodNode, emitter.Link(methodNode.Method));
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadException");
             }
-            catch (Exception)
+            else if (exceptionType == typeof(TypeSystemException.MissingFieldException))
             {
-                // If anything happens, swallow the exception. This method is a fallback because something went wrong.
-                // We want the compiler to fail for the original reason.
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException");
+            }
+            else if (exceptionType == typeof(TypeSystemException.MissingMethodException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException");
+            }
+            else if (exceptionType == typeof(TypeSystemException.FileLoadException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFileLoadException");
+            }
+            else
+            {
                 return false;
             }
+
+            Debug.Assert(helper.Signature.Length == exception.Arguments.Count + 1);
+
+            var emitter = new Internal.IL.Stubs.ILEmitter();
+            var codeStream = emitter.NewCodeStream();
+
+            var infinityLabel = emitter.NewCodeLabel();
+            codeStream.EmitLabel(infinityLabel);
+
+            codeStream.EmitLdc((int)exception.StringID);
+
+            foreach (var arg in exception.Arguments)
+            {
+                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(arg));
+            }
+
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+
+            // The call will never return, but we still need to emit something. Emit a jump so that
+            // we don't have to bother balancing the stack if the method returns something.
+            codeStream.Emit(ILOpcode.br, infinityLabel);
+
+            _corInfo.CompileMethod(methodNode, emitter.Link(methodNode.Method));
 
             return true;
         }

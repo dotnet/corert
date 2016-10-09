@@ -44,6 +44,9 @@
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\ExceptionStringID.cs">
+      <Link>Internal\Runtime\ExceptionStringID.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\SR.Core.cs">
       <Link>Resources\Common</Link>
     </Compile>
@@ -88,6 +91,7 @@
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
+    <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
     <Compile Include="Internal\Threading\Tracing\SpinLockTrace.cs" />
     <Compile Include="Internal\Toolchain\NonExecutableAttribute.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
@@ -815,7 +819,7 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CastableObjectSupport.cs">
       <Link>Runtime.Base\src\System\Runtime\CastableObjectSupport.cs</Link>
-    </Compile>    
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExports.cs">
       <Link>Runtime.Base\src\System\Runtime\RuntimeExports.cs</Link>
     </Compile>

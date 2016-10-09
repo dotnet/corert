@@ -98,9 +98,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>TypeSystem\Common\ModuleDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemExceptionHelpers.cs">
-      <Link>TypeSystem\Common\TypeSystemExceptionHelpers.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemEntity.cs">
       <Link>TypeSystem\Common\TypeSystemEntity.cs</Link>
     </Compile>
@@ -377,6 +374,10 @@
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\System\FormattingHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\ExceptionStringID.cs">
+      <Link>Internal\Runtime\ExceptionStringID.cs</Link>
+    </Compile>
+
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
