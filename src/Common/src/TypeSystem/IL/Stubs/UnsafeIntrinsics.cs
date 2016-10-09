@@ -27,7 +27,7 @@ namespace Internal.IL.Stubs
                     return EmitSizeOf(method);
                 case "As":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-                case "AddRaw":
+                case "AddByteOffset":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.add, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
 

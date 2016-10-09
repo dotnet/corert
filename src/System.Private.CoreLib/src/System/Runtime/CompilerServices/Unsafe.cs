@@ -109,7 +109,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref T AddRaw<T>(ref T source, nint rawOffset)
+        public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
         {
             // This method is implemented by the toolchain
             throw new PlatformNotSupportedException();
@@ -127,7 +127,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
         {
-            return ref AddRaw(ref source, elementOffset * (nint)SizeOf<T>());
+            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
         }
 
         /// <summary>
