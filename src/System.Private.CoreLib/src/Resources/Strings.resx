@@ -996,6 +996,9 @@
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
+  <data name="InvalidProgram_Specific" xml:space="preserve">
+    <value>Common Language Runtime detected an invalid program. The body of method '{0}' is invalid.</value>
+  </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>
   </data>
@@ -1681,7 +1684,13 @@
   <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
     <value>Invalid assembly public key.</value>
   </data>
-  <data name="CryptoError_Sha1" xml:space="preserve">
-    <value>Unexpected cryptographic error while computing SHA1 ({0}).</value>
+  <data name="ClassLoad_General" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}'.</value>
+  </data>
+  <data name="EE_MissingMethod" xml:space="preserve">
+    <value>Method not found: '{0}'.</value>
+  </data>
+  <data name="EE_MissingField" xml:space="preserve">
+    <value>Field not found: '{0}'.</value>
   </data>
 </root>

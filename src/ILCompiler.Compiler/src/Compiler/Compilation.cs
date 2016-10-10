@@ -15,6 +15,8 @@ using Internal.JitInterface;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     public class CompilationOptions
@@ -205,40 +207,77 @@ namespace ILCompiler
                     Log.WriteLine("Compiling " + methodName);
                 }
 
-                var methodIL = GetMethodIL(method);
-                if (methodIL == null)
-                    return;
-
                 try
                 {
                     _corInfo.CompileMethod(methodCodeNodeNeedingCode);
                 }
-                catch (Exception e)
+                catch (TypeSystemException ex)
                 {
-                    Log.WriteLine("*** " + method + ": " + e.Message);
-
-                    // Call the __not_yet_implemented method
-                    DependencyAnalysis.X64.X64Emitter emit = new DependencyAnalysis.X64.X64Emitter(_nodeFactory);
-                    emit.Builder.RequireAlignment(_nodeFactory.Target.MinimumFunctionAlignment);
-                    emit.Builder.DefinedSymbols.Add(methodCodeNodeNeedingCode);
-
-                    emit.EmitLEAQ(emit.TargetRegister.Arg0, _nodeFactory.StringIndirection(method.ToString()));
-                    DependencyAnalysis.X64.AddrMode loadFromArg0 =
-                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg0, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
-                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
-                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
-
-                    emit.EmitLEAQ(emit.TargetRegister.Arg1, _nodeFactory.StringIndirection(e.Message));
-                    DependencyAnalysis.X64.AddrMode loadFromArg1 =
-                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg1, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
-                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
-                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
-
-                    emit.EmitJMP(_nodeFactory.ExternSymbol("__not_yet_implemented"));
-                    methodCodeNodeNeedingCode.SetCode(emit.Builder.ToObjectData());
-                    continue;
+                    // TODO: fail compilation if a switch was passed
+                    if (!TryCompileWithThrowingBody(methodCodeNodeNeedingCode, ex))
+                        throw;
+                    // TODO: Log as a warning
                 }
             }
+        }
+
+        /// <summary>
+        /// Compiles the provided method code node while swapping it's body with a throwing stub.
+        /// </summary>
+        private bool TryCompileWithThrowingBody(MethodCodeNode methodNode, TypeSystemException exception)
+        {
+            MethodDesc helper;
+
+            Type exceptionType = exception.GetType();
+            if (exceptionType == typeof(TypeSystemException.TypeLoadException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadException");
+            }
+            else if (exceptionType == typeof(TypeSystemException.MissingFieldException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException");
+            }
+            else if (exceptionType == typeof(TypeSystemException.MissingMethodException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException");
+            }
+            else if (exceptionType == typeof(TypeSystemException.FileNotFoundException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFileNotFoundException");
+            }
+            else if (exceptionType == typeof(TypeSystemException.InvalidProgramException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+            }
+            else
+            {
+                return false;
+            }
+
+            Debug.Assert(helper.Signature.Length == exception.Arguments.Count + 1);
+
+            var emitter = new Internal.IL.Stubs.ILEmitter();
+            var codeStream = emitter.NewCodeStream();
+
+            var infinityLabel = emitter.NewCodeLabel();
+            codeStream.EmitLabel(infinityLabel);
+
+            codeStream.EmitLdc((int)exception.StringID);
+
+            foreach (var arg in exception.Arguments)
+            {
+                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(arg));
+            }
+
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+
+            // The call will never return, but we still need to emit something. Emit a jump so that
+            // we don't have to bother balancing the stack if the method returns something.
+            codeStream.Emit(ILOpcode.br, infinityLabel);
+
+            _corInfo.CompileMethod(methodNode, emitter.Link(methodNode.Method));
+
+            return true;
         }
 
         private void CppCodeGenComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

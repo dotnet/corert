@@ -95,6 +95,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemEntity.cs">
       <Link>TypeSystem\Common\TypeSystemEntity.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemException.cs">
+      <Link>TypeSystem\Common\TypeSystemException.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
@@ -121,6 +124,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.cs">
       <Link>TypeSystem\Common\GenericParameterDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
+      <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldForInstantiatedType.cs">
       <Link>TypeSystem\Common\FieldForInstantiatedType.cs</Link>

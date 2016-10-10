@@ -29,6 +29,8 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
+        private Exception _lastException;
+
         [DllImport("clrjitilc")]
         private extern static IntPtr jitStartup(IntPtr host);
 
@@ -58,6 +60,8 @@ namespace Internal.JitInterface
 
         private IntPtr AllocException(Exception ex)
         {
+            _lastException = ex;
+
             string exString = ex.ToString();
             IntPtr nativeException = AllocException(exString, exString.Length);
             if (_nativeExceptions == null)
@@ -112,21 +116,25 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
-        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
+        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             try
             {
                 _methodCodeNode = methodCodeNodeNeedingCode;
 
                 CORINFO_METHOD_INFO methodInfo;
-                MethodIL methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
+                methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, out methodInfo);
+
+                // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
+                if (methodIL == null)
+                {
+                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                }
 
                 _methodScope = methodInfo.scope;
 
                 try
                 {
-                    CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-
                     MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
 
                     if (!_compilation.Options.NoLineNumbers)
@@ -166,9 +174,22 @@ namespace Internal.JitInterface
                         ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
                 if (exception != IntPtr.Zero)
                 {
+                    if (_lastException != null)
+                    {
+                        // If we captured a managed exception, rethrow that.
+                        // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
+                        // an inlining attempt with a type system problem in it...
+                        throw _lastException;
+                    }
+
+                    // This is a failure we don't know much about.
                     char* szMessage = GetExceptionMessage(exception);
                     string message = szMessage != null ? new string(szMessage) : "JIT Exception";
                     throw new Exception(message);
+                }
+                if (result == CorJitResult.CORJIT_BADCODE)
+                {
+                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
@@ -339,6 +360,8 @@ namespace Internal.JitInterface
             _sequencePoints = null;
             _debugLocInfos = null;
             _debugVarInfos = null;
+
+            _lastException = null;
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -374,9 +397,12 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
 
-        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, out CORINFO_METHOD_INFO methodInfo)
+        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, out CORINFO_METHOD_INFO methodInfo)
         {
-            MethodIL methodIL = _compilation.GetMethodIL(method);
+            // MethodIL can be provided externally for the case of a method whose IL was replaced because we couldn't compile it.
+            if (methodIL == null)
+                methodIL = _compilation.GetMethodIL(method);
+
             if (methodIL == null)
             {
                 methodInfo = default(CORINFO_METHOD_INFO);
@@ -627,7 +653,7 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info)
         {
-            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), out info);
+            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), null, out info);
             return methodIL != null;
         }
 
@@ -815,6 +841,12 @@ namespace Internal.JitInterface
             if (result is FieldDesc)
             {
                 FieldDesc field = result as FieldDesc;
+
+                // References to literal fields from IL body should never resolve.
+                // The CLR would throw a MissingFieldException while jitting and so should we.
+                if (field.IsLiteral)
+                    throw new TypeSystemException.MissingFieldException(field.OwningType, field.Name);
+
                 pResolvedToken.hField = ObjectToHandle(field);
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
             }

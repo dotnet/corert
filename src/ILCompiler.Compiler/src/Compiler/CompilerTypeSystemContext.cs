@@ -150,8 +150,11 @@ namespace ILCompiler
             {
                 if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
                 {
+                    // TODO: the exception is wrong for two reasons: for one, this should be assembly full name, not simple name.
+                    // The other reason is that on CoreCLR, the exception also captures the reason. We should be passing two
+                    // string IDs. This makes this rather annoying.
                     if (throwIfNotFound)
-                        throw new FileNotFoundException("Assembly not found: " + simpleName);
+                        throw new TypeSystemException.FileNotFoundException(ExceptionStringID.FileLoadErrorGeneric, simpleName);
                     return null;
                 }
             }
