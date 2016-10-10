@@ -4,6 +4,8 @@
 
 using System;
 
+using Internal.TypeSystem;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime
@@ -36,6 +38,11 @@ namespace Internal.Runtime
             throw new System.IO.FileNotFoundException(SR.Format(GetFormatString(id), fileName), fileName);
         }
 
+        public static Exception CreateInvalidProgramException(ExceptionStringID id, string methodName)
+        {
+            throw new InvalidProgramException(SR.Format(GetFormatString(id), methodName));
+        }
+
         // TODO: move to a place where we can share this with the compiler
         private static string GetFormatString(ExceptionStringID id)
         {
@@ -43,8 +50,8 @@ namespace Internal.Runtime
             {
                 case ExceptionStringID.ClassLoadGeneral:
                     return SR.ClassLoad_General;
-                case ExceptionStringID.ClassLoadMissingMethodRva:
-                    return SR.ClassLoad_MissingMethodRva;
+                case ExceptionStringID.InvalidProgramSpecific:
+                    return SR.InvalidProgram_Specific;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:

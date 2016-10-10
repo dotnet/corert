@@ -17,8 +17,6 @@ using Internal.IL;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
-using ExceptionStringID = Internal.Runtime.ExceptionStringID;
-
 namespace Internal.JitInterface
 {
     internal unsafe sealed partial class CorInfoImpl
@@ -127,11 +125,11 @@ namespace Internal.JitInterface
                 CORINFO_METHOD_INFO methodInfo;
                 methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, out methodInfo);
 
-                // This is bad program - CLR would fail to load a type that has a method with no IL (that is
-                // not a P/invoke, InternalCall or something like that). Throw a compatible exception and
-                // let the driver deal with that.
+                // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
                 if (methodIL == null)
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadMissingMethodRva, MethodBeingCompiled);
+                {
+                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                }
 
                 _methodScope = methodInfo.scope;
 
@@ -188,6 +186,10 @@ namespace Internal.JitInterface
                     char* szMessage = GetExceptionMessage(exception);
                     string message = szMessage != null ? new string(szMessage) : "JIT Exception";
                     throw new Exception(message);
+                }
+                if (result == CorJitResult.CORJIT_BADCODE)
+                {
+                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {

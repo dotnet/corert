@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Text;
 
 using Debug = System.Diagnostics.Debug;
-using ExceptionStringID = Internal.Runtime.ExceptionStringID;
 
 namespace Internal.TypeSystem
 {
@@ -16,6 +15,8 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract class TypeSystemException : Exception
     {
+        private string[] _arguments;
+
         /// <summary>
         /// Gets the resource string identifier.
         /// </summary>
@@ -24,13 +25,26 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the formatting arguments for the exception string.
         /// </summary>
-        public IReadOnlyList<string> Arguments { get; }
+        public IReadOnlyList<string> Arguments
+        {
+            get
+            {
+                return _arguments;
+            }
+        }
+
+        public override string Message
+        {
+            get
+            {
+                return GetExceptionString(StringID, _arguments);
+            }
+        }
 
         public TypeSystemException(ExceptionStringID id, params string[] args)
-            : base(GetExceptionString(id, args))
         {
             StringID = id;
-            Arguments = args;
+            _arguments = args;
         }
 
         private static string GetExceptionString(ExceptionStringID id, string[] args)
@@ -127,6 +141,18 @@ namespace Internal.TypeSystem
         {
             public FileNotFoundException(ExceptionStringID id, string fileName)
                 : base(id, fileName)
+            {
+            }
+        }
+
+        /// <summary>
+        /// The exception that is thrown when a program contains invalid Microsoft intermediate language (MSIL) or metadata.
+        /// Generally this indicates a bug in the compiler that generated the program.
+        /// </summary>
+        public class InvalidProgramException : TypeSystemException
+        {
+            public InvalidProgramException(ExceptionStringID id, MethodDesc method)
+                : base(id, Format.Method(method))
             {
             }
         }

@@ -2,22 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Internal.Runtime
+namespace Internal.TypeSystem
 {
     /// <summary>
     /// Represents an ID of a localized exception string.
     /// </summary>
     public enum ExceptionStringID
     {
-        // As a general guideline, try to use the same ID as mscorrc.rc in CoreCLR uses for the same string,
-        // if possible. Remove the IDS_ prefix, camel-case, and remove all underscores.
-
         ClassLoadGeneral,
-        ClassLoadMissingMethodRva,
 
         MissingMethod,
         MissingField,
 
         FileLoadErrorGeneric,
+
+        InvalidProgramSpecific,
     }
 }

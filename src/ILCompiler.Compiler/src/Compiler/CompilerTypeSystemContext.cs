@@ -15,8 +15,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.IL;
 
-using ExceptionStringID = Internal.Runtime.ExceptionStringID;
-
 namespace ILCompiler
 {
     public partial class CompilerTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider

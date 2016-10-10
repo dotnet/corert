@@ -131,6 +131,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.cs">
       <Link>TypeSystem\Common\GenericParameterDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
+      <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldForInstantiatedType.cs">
       <Link>TypeSystem\Common\FieldForInstantiatedType.cs</Link>
     </Compile>
@@ -374,10 +377,6 @@
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\System\FormattingHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\ExceptionStringID.cs">
-      <Link>Internal\Runtime\ExceptionStringID.cs</Link>
-    </Compile>
-
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

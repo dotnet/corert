@@ -4,6 +4,8 @@
 
 using System;
 
+using Internal.TypeSystem;
+
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
@@ -61,6 +63,11 @@ namespace Internal.Runtime.CompilerHelpers
         public static void ThrowFileNotFoundException(ExceptionStringID id, string fileName)
         {
             throw TypeLoaderExceptionHelper.CreateFileNotFoundException(id, fileName);
+        }
+
+        public static void ThrowInvalidProgramException(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id, methodName);
         }
 
         public static void ThrowArgumentException()

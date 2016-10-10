@@ -245,6 +245,10 @@ namespace ILCompiler
             {
                 helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFileNotFoundException");
             }
+            else if (exceptionType == typeof(TypeSystemException.InvalidProgramException))
+            {
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+            }
             else
             {
                 return false;
