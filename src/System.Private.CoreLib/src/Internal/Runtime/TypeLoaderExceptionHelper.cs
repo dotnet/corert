@@ -31,9 +31,9 @@ namespace Internal.Runtime
             throw new MissingMethodException(SR.Format(GetFormatString(id), methodName));
         }
 
-        public static Exception CreateFileLoadException(ExceptionStringID id, string fileName)
+        public static Exception CreateFileNotFoundException(ExceptionStringID id, string fileName)
         {
-            throw new System.IO.FileLoadException(SR.Format(GetFormatString(id), fileName));
+            throw new System.IO.FileNotFoundException(SR.Format(GetFormatString(id), fileName), fileName);
         }
 
         // TODO: move to a place where we can share this with the compiler
@@ -45,12 +45,12 @@ namespace Internal.Runtime
                     return SR.ClassLoad_General;
                 case ExceptionStringID.ClassLoadMissingMethodRva:
                     return SR.ClassLoad_MissingMethodRva;
-                case ExceptionStringID.EeMissingField:
+                case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
-                case ExceptionStringID.EeMissingMethod:
+                case ExceptionStringID.MissingMethod:
                     return SR.EE_MissingMethod;
-                case ExceptionStringID.EeFileLoadErrorGeneric:
-                    return SR.EE_FileLoadErrorGeneric;
+                case ExceptionStringID.FileLoadErrorGeneric:
+                    return SR.IO_FileNotFound_FileName;
                 default:
                     Debug.Assert(false);
                     throw new NotImplementedException();

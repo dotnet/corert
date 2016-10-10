@@ -99,7 +99,7 @@ namespace Internal.TypeSystem
             }
 
             public MissingMethodException(TypeDesc owningType, string methodName, MethodSignature signature)
-                : this(ExceptionStringID.EeMissingField, Format.Method(owningType, methodName, signature))
+                : this(ExceptionStringID.MissingField, Format.Method(owningType, methodName, signature))
             {
             }
         }
@@ -115,14 +115,17 @@ namespace Internal.TypeSystem
             }
 
             public MissingFieldException(TypeDesc owningType, string fieldName)
-                : this(ExceptionStringID.EeMissingField, Format.Field(owningType, fieldName))
+                : this(ExceptionStringID.MissingField, Format.Field(owningType, fieldName))
             {
             }
         }
 
-        public class FileLoadException : TypeSystemException
+        /// <summary>
+        /// The exception that is thrown when an attempt to access a file that does not exist on disk fails.
+        /// </summary>
+        public class FileNotFoundException : TypeSystemException
         {
-            public FileLoadException(ExceptionStringID id, string fileName)
+            public FileNotFoundException(ExceptionStringID id, string fileName)
                 : base(id, fileName)
             {
             }

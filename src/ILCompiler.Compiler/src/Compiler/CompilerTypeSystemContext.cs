@@ -158,7 +158,7 @@ namespace ILCompiler
                     // The other reason is that on CoreCLR, the exception also captures the reason. We should be passing two
                     // string IDs. This makes this rather annoying.
                     if (throwIfNotFound)
-                        throw new TypeSystemException.FileLoadException(ExceptionStringID.EeFileLoadErrorGeneric, simpleName);
+                        throw new TypeSystemException.FileNotFoundException(ExceptionStringID.FileLoadErrorGeneric, simpleName);
                     return null;
                 }
             }

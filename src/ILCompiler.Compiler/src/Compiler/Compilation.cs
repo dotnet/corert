@@ -241,9 +241,9 @@ namespace ILCompiler
             {
                 helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException");
             }
-            else if (exceptionType == typeof(TypeSystemException.FileLoadException))
+            else if (exceptionType == typeof(TypeSystemException.FileNotFoundException))
             {
-                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFileLoadException");
+                helper = _typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFileNotFoundException");
             }
             else
             {

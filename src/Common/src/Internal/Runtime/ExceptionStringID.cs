@@ -9,15 +9,15 @@ namespace Internal.Runtime
     /// </summary>
     public enum ExceptionStringID
     {
-        // As a general guideline, try to use the same ID as mscorrc.rc in CoreCLR uses for the same string.
-        // Remove the IDS_ prefix, camel-case, and remove all underscores.
+        // As a general guideline, try to use the same ID as mscorrc.rc in CoreCLR uses for the same string,
+        // if possible. Remove the IDS_ prefix, camel-case, and remove all underscores.
 
         ClassLoadGeneral,
         ClassLoadMissingMethodRva,
 
-        EeMissingMethod,
-        EeMissingField,
+        MissingMethod,
+        MissingField,
 
-        EeFileLoadErrorGeneric,
+        FileLoadErrorGeneric,
     }
 }

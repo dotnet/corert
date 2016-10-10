@@ -58,9 +58,9 @@ namespace Internal.Runtime.CompilerHelpers
             throw TypeLoaderExceptionHelper.CreateMissingFieldException(id, fieldName);
         }
 
-        public static void ThrowFileLoadException(ExceptionStringID id, string fileName)
+        public static void ThrowFileNotFoundException(ExceptionStringID id, string fileName)
         {
-            throw TypeLoaderExceptionHelper.CreateFileLoadException(id, fileName);
+            throw TypeLoaderExceptionHelper.CreateFileNotFoundException(id, fileName);
         }
 
         public static void ThrowArgumentException()
