@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitPointerReloc(factory.ModuleManagerIndirection);
             if (HasOptionalFields)
             {
-                dataBuilder.EmitPointerReloc(factory.EETypeOptionalFields(this));
+                dataBuilder.EmitPointerReloc(_optionalFieldsNode);
             }
 
             return dataBuilder.ToObjectData();

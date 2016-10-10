@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
             // all of the interface usage has been stabilized. If we end up not needing it, the EEType node will not
             // generate any relocs to it, and the optional fields node will instruct the object writer to skip
             // emitting it.
-            dependencyList.Add(factory.EETypeOptionalFields(this), "Optional fields");
+            dependencyList.Add(_optionalFieldsNode, "Optional fields");
             
             return dependencyList;
         }

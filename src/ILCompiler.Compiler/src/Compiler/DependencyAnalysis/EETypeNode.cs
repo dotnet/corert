@@ -59,12 +59,14 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected TypeDesc _type;
         protected EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        protected EETypeOptionalFieldsNode _optionalFieldsNode;
 
         public EETypeNode(TypeDesc type)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
+            _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
         }
 
         protected override string GetName()
@@ -357,7 +359,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (HasOptionalFields)
             {
-                objData.EmitPointerReloc(factory.EETypeOptionalFields(this));
+                objData.EmitPointerReloc(_optionalFieldsNode);
             }
         }
 
