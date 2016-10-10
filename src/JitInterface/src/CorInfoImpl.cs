@@ -2748,7 +2748,11 @@ namespace Internal.JitInterface
         }
 
         private void reportFatalError(CorJitResult result)
-        { throw new NotImplementedException("reportFatalError"); }
+        {
+            // We could add some logging here, but for now it's unnecessary.
+            // CompileMethod is going to fail with this CorJitResult anyway.
+        }
+
         private HRESULT allocBBProfileBuffer(uint count, ref ProfileBuffer* profileBuffer)
         { throw new NotImplementedException("allocBBProfileBuffer"); }
         private HRESULT getBBProfileData(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns)
