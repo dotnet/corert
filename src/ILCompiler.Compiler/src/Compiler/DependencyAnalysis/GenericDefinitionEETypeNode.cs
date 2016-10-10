@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             if (rareFlags != 0)
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
 
-            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (HasOptionalFields)
                 flags |= (short)EETypeFlags.OptionalFieldsFlag;
 
             dataBuilder.EmitShort((short)_type.Instantiation.Length);
@@ -60,9 +60,9 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitShort(0);       // No interface map
             dataBuilder.EmitInt(_type.GetHashCode());
             dataBuilder.EmitPointerReloc(factory.ModuleManagerIndirection);
-            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (HasOptionalFields)
             {
-                dataBuilder.EmitPointerReloc(factory.EETypeOptionalFields(_optionalFieldsBuilder));
+                dataBuilder.EmitPointerReloc(factory.EETypeOptionalFields(this));
             }
 
             return dataBuilder.ToObjectData();

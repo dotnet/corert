@@ -78,6 +78,12 @@ namespace ILCompiler.DependencyAnalysis
                 // at the final data emission phase. We need to report it as a non-relocation dependency.
                 dependencyList.Add(factory.TypeGenericDictionary(closestDefType), "Type generic dictionary");
             }
+
+            // Include the optional fields by default. We don't know if optional fields will be needed until
+            // all of the interface usage has been stabilized. If we end up not needing it, the EEType node will not
+            // generate any relocs to it, and the optional fields node will instruct the object writer to skip
+            // emitting it.
+            dependencyList.Add(factory.EETypeOptionalFields(this), "Optional fields");
             
             return dependencyList;
         }
@@ -142,24 +148,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
-        }
-
-        public override bool HasDynamicDependencies
-        {
-            get
-            {
-                // This node's EETypeOptionalFields node may change if this EEType implements interfaces
-                // that are used since the dispatch map table index is computed once we know the interface
-                // layout later on in compilation.
-                return _type.RuntimeInterfaces.Length > 0;
-            }
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
-        {
-            List<CombinedDependencyListEntry> dynamicNodes = new List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
-            dynamicNodes.Add(new CombinedDependencyListEntry(factory.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
-            return dynamicNodes;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
