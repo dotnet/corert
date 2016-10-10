@@ -83,7 +83,7 @@ build_managed_corert()
         ToolchainMilestone=testing
     fi
 
-    $__scriptpath/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs
+    $__scriptpath/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:TestNugetRuntimeId=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -135,12 +135,28 @@ build_native_corert()
     echo "CoreRT native components successfully built."
 }
 
+get_current_linux_distro() {
+    # Detect Distro
+    if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
+            echo "ubuntu.16.04"
+            return 0
+        fi
+
+        echo "ubuntu.14.04"
+        return 0
+    fi
+
+    # Cannot determine Linux distribution, assuming Ubuntu 14.04.
+    echo "ubuntu.14.04"
+    return 0
+}
+
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __ProjectRoot=$__scriptpath
 __packageroot=$__scriptpath/packages
 __sourceroot=$__scriptpath/src
 __rootbinpath="$__scriptpath/bin"
-__TestNugetRuntimeId=ubuntu.14.04-x64
 __buildmanaged=false
 __buildnative=false
 __dotnetclipath=$__scriptpath/Tools/dotnetcli
@@ -182,32 +198,31 @@ OSName=$(uname -s)
 case $OSName in
     Darwin)
         __BuildOS=OSX
-        __ToolNugetRuntimeId=osx.10.10-x64
-        __TestNugetRuntimeId=osx.10.10-x64
+        __NugetRuntimeId=osx.10.10-x64
         ulimit -n 2048
         ;;
 
     FreeBSD)
         __BuildOS=FreeBSD
         # TODO: Add proper FreeBSD target
-        __ToolNugetRuntimeId=osx.10.10-x64
-        __TestNugetRuntimeId=osx.10.10-x64
+        __NugetRuntimeId=ubuntu.14.04-x64
         ;;
 
     Linux)
         __BuildOS=Linux
+        __NugetRuntimeId=$(get_current_linux_distro)-x64
         ;;
 
     NetBSD)
         __BuildOS=NetBSD
         # TODO: Add proper NetBSD target
-        __ToolNugetRuntimeId=osx.10.10-x64
-        __TestNugetRuntimeId=osx.10.10-x64
+        __NugetRuntimeId=ubuntu.14.04-x64
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         __BuildOS=Linux
+        __NugetRuntimeId=ubuntu.14.04-x64
         ;;
 esac
 __BuildType=Debug

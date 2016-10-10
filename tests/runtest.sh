@@ -117,11 +117,6 @@ __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
 __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
 __LogDir=${CoreRT_TestRoot}/../bin/Logs/${__BuildStr}/tests
 __build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
-if [ ${__build_os_lowcase} != "osx" ]; then
-    __BuildRid=ubuntu.14.04-${CoreRT_BuildArch}
-else
-    __BuildRid=osx.10.10-${CoreRT_BuildArch}
-fi
 
 if [ ! -d ${CoreRT_ToolchainDir} ]; then
     echo "Toolchain not found in ${CoreRT_ToolchainDir}"
