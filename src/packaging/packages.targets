@@ -6,7 +6,6 @@
             <ToolchainMilestone Condition="'$(ToolchainMilestone)'==''">prerelease</ToolchainMilestone>
             <ToolchainVersion>1.0.6-$(ToolchainMilestone)-00003</ToolchainVersion>
             <RuntimeSdkVersion>$(ToolchainVersion)</RuntimeSdkVersion>
-            <NuPkgRid>$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform)</NuPkgRid>
 
             <ToolchainPackageName>Microsoft.DotNet.ILCompiler</ToolchainPackageName>
 
@@ -121,7 +120,7 @@
             <ILCompilerFrameworkFiles Include="System.Reflection.TypeExtensions/4.1.0/runtimes/aot/lib/netcore50/System.Reflection.TypeExtensions.dll" />
 
             <ILCompilerFrameworkFiles Include="Microsoft.NETCore.Portable.Compatibility/1.0.2/runtimes/aot/lib/netcore50/mscorlib.dll" />
-            <ILCompilerFrameworkFiles Include="toolchain.$(NuPkgRid).Microsoft.DotNet.AppDep/1.0.6-prerelease-00004/System.Resources.ResourceManager.dll" />
+            <ILCompilerFrameworkFiles Include="toolchain.win7-x64.Microsoft.DotNet.AppDep/1.0.6-prerelease-00004/System.Resources.ResourceManager.dll" />
 
             <ILCompilerFrameworkFiles Include="runtime.win.System.Runtime.Extensions/4.1.0/runtimes/win/lib/netstandard1.5/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Runtime.Extensions/4.1.0/runtimes/unix/lib/netstandard1.5/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
@@ -233,6 +232,11 @@
     "ubuntu.14.04-x64": {
       "%(RedirPackage)": {
         "toolchain.ubuntu.14.04-x64.%(RedirPackage)": "%(Version)"
+      }
+    },
+    "ubuntu.16.04-x64": {
+      "%(RedirPackage)": {
+        "toolchain.ubuntu.16.04-x64.%(RedirPackage)": "%(Version)"
       }
     }
   }
