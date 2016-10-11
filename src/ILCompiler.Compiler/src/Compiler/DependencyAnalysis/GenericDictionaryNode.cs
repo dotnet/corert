@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -97,6 +98,32 @@ namespace ILCompiler.DependencyAnalysis
             return factory.GenericDictionaryLayout(_owningType.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
+        public override bool HasConditionalStaticDependencies => true;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            // The generic dictionary layout is shared between all the canonically equivalent
+            // instantiations. We need to track the dependencies of all canonical method bodies
+            // that use the same dictionary layout.
+            foreach (var method in _owningType.GetAllMethods())
+            {
+                // Static and generic methods have their own generic dictionaries
+                if (method.Signature.IsStatic || method.HasInstantiation)
+                    continue;
+
+                // Abstract methods don't have a body
+                if (method.IsAbstract)
+                    continue;
+
+                // If a canonical method body was compiled, we need to track the dictionary
+                // dependencies in the context of the concrete type that owns this dictionary.
+                yield return new CombinedDependencyListEntry(
+                    factory.ShadowConcreteMethod(method),
+                    factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    "Generic dictionary dependency");
+            }
+        }
+
         public TypeGenericDictionaryNode(TypeDesc owningType)
         {
             Debug.Assert(!owningType.IsCanonicalSubtype(CanonicalFormKind.Any));
@@ -139,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodGenericDictionaryNode(MethodDesc owningMethod)
         {
-            Debug.Assert(!owningMethod.IsCanonicalMethod(CanonicalFormKind.Any));
+            Debug.Assert(!owningMethod.IsSharedByGenericInstantiations);
             Debug.Assert(owningMethod.HasInstantiation);
 
             _owningMethod = owningMethod;

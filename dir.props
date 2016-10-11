@@ -58,17 +58,6 @@
     <BinDirPlatform Condition="'$(BinDirPlatform)'=='AnyCPU' or '$(BinDirPlatform)'=='amd64'">x64</BinDirPlatform> 
   </PropertyGroup>
 
-  <!-- Initialize the NuPkg name specific RuntimeStr -->
-  <PropertyGroup>
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'==''">$(OSGroup)</NuPkgRuntimeOS>
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='Windows_NT'">win7</NuPkgRuntimeOS> 
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='Linux'">ubuntu.14.04</NuPkgRuntimeOS> 
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='OSX'">osx.10.10</NuPkgRuntimeOS> 
-
-    <NuPkgRuntimePlatform Condition="'$(NuPkgRuntimePlatform)'==''">$(Platform)</NuPkgRuntimePlatform>
-    <NuPkgRuntimePlatform Condition="'$(NuPkgRuntimePlatform)'=='AnyCPU' or '$(NuPkgRuntimePlatform)'=='amd64'">x64</NuPkgRuntimePlatform> 
-  </PropertyGroup>
-
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>

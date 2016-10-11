@@ -23,9 +23,7 @@ namespace ILCompiler
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
-        private CachingVirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new CachingVirtualMethodEnumerationAlgorithm();
-        private DelegateVirtualMethodEnumerationAlgorithm _delegateVirtualMethodEnumAlgorithm = new DelegateVirtualMethodEnumerationAlgorithm();
-
+        
         private MetadataStringDecoder _metadataStringDecoder;
 
         private class ModuleData
@@ -152,8 +150,11 @@ namespace ILCompiler
             {
                 if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
                 {
+                    // TODO: the exception is wrong for two reasons: for one, this should be assembly full name, not simple name.
+                    // The other reason is that on CoreCLR, the exception also captures the reason. We should be passing two
+                    // string IDs. This makes this rather annoying.
                     if (throwIfNotFound)
-                        throw new FileNotFoundException("Assembly not found: " + simpleName);
+                        throw new TypeSystemException.FileNotFoundException(ExceptionStringID.FileLoadErrorGeneric, simpleName);
                     return null;
                 }
             }
@@ -293,14 +294,34 @@ namespace ILCompiler
             return _virtualMethodAlgorithm;
         }
 
-        public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+        protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
         {
-            Debug.Assert(!type.IsArray, "Wanted to call GetClosestMetadataType?");
-
             if (type.IsDelegate)
-                return _delegateVirtualMethodEnumAlgorithm;
+            {
+                return GetAllMethodsForDelegate(type);
+            }
 
-            return _virtualMethodEnumAlgorithm;
+            return type.GetMethods();
+        }
+
+        private IEnumerable<MethodDesc> GetAllMethodsForDelegate(TypeDesc type)
+        {
+            // Inject the synthetic GetThunk virtual override
+            InstantiatedType instantiatedType = type as InstantiatedType;
+            if (instantiatedType != null)
+            {
+                DelegateInfo info = GetDelegateInfo(type.GetTypeDefinition());
+                yield return GetMethodForInstantiatedType(info.GetThunkMethod, instantiatedType);
+            }
+            else
+            {
+                DelegateInfo info = GetDelegateInfo(type);
+                yield return info.GetThunkMethod;
+            }
+
+            // Append all the methods defined in metadata
+            foreach (var m in type.GetMethods())
+                yield return m;
         }
 
         protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)

@@ -282,8 +282,11 @@ namespace Internal.TypeSystem
             // it to the uninstantiated version
             //MethodDesc implMethod = currentType.GetMethod(name, sig);
             MethodDesc implMethod = null;
-            foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
+            foreach (MethodDesc candidate in currentType.GetAllMethods())
             {
+                if (!candidate.IsVirtual)
+                    continue;
+
                 if (candidate.Name == name)
                 {
                     if (candidate.Signature.Equals(sig))
@@ -590,8 +593,11 @@ namespace Internal.TypeSystem
             {
                 do
                 {
-                    foreach (MethodDesc m in type.GetAllVirtualMethods())
+                    foreach (MethodDesc m in type.GetAllMethods())
                     {
+                        if (!m.IsVirtual)
+                            continue;
+
                         MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
                         if (!alreadyEnumerated.Contains(possibleVirtual))
                         {

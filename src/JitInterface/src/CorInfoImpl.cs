@@ -29,6 +29,8 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
+        private Exception _lastException;
+
         [DllImport("clrjitilc")]
         private extern static IntPtr jitStartup(IntPtr host);
 
@@ -58,6 +60,8 @@ namespace Internal.JitInterface
 
         private IntPtr AllocException(Exception ex)
         {
+            _lastException = ex;
+
             string exString = ex.ToString();
             IntPtr nativeException = AllocException(exString, exString.Length);
             if (_nativeExceptions == null)
@@ -112,21 +116,25 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
-        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
+        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             try
             {
                 _methodCodeNode = methodCodeNodeNeedingCode;
 
                 CORINFO_METHOD_INFO methodInfo;
-                MethodIL methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
+                methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, out methodInfo);
+
+                // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
+                if (methodIL == null)
+                {
+                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                }
 
                 _methodScope = methodInfo.scope;
 
                 try
                 {
-                    CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-
                     MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
 
                     if (!_compilation.Options.NoLineNumbers)
@@ -166,9 +174,22 @@ namespace Internal.JitInterface
                         ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
                 if (exception != IntPtr.Zero)
                 {
+                    if (_lastException != null)
+                    {
+                        // If we captured a managed exception, rethrow that.
+                        // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
+                        // an inlining attempt with a type system problem in it...
+                        throw _lastException;
+                    }
+
+                    // This is a failure we don't know much about.
                     char* szMessage = GetExceptionMessage(exception);
                     string message = szMessage != null ? new string(szMessage) : "JIT Exception";
                     throw new Exception(message);
+                }
+                if (result == CorJitResult.CORJIT_BADCODE)
+                {
+                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
@@ -339,6 +360,8 @@ namespace Internal.JitInterface
             _sequencePoints = null;
             _debugLocInfos = null;
             _debugVarInfos = null;
+
+            _lastException = null;
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -374,9 +397,12 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
 
-        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, out CORINFO_METHOD_INFO methodInfo)
+        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, out CORINFO_METHOD_INFO methodInfo)
         {
-            MethodIL methodIL = _compilation.GetMethodIL(method);
+            // MethodIL can be provided externally for the case of a method whose IL was replaced because we couldn't compile it.
+            if (methodIL == null)
+                methodIL = _compilation.GetMethodIL(method);
+
             if (methodIL == null)
             {
                 methodInfo = default(CORINFO_METHOD_INFO);
@@ -627,7 +653,7 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info)
         {
-            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), out info);
+            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), null, out info);
             return methodIL != null;
         }
 
@@ -785,7 +811,10 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    return ((TypeDesc)resultUninstantiated).InstantiateSignature(typeInstantiation, methodInstantiation);
+                    TypeDesc result = ((TypeDesc)resultUninstantiated).InstantiateSignature(typeInstantiation, methodInstantiation);
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                        result = result.MakeArrayType();
+                    return result;
                 }
             }
 
@@ -812,6 +841,12 @@ namespace Internal.JitInterface
             if (result is FieldDesc)
             {
                 FieldDesc field = result as FieldDesc;
+
+                // References to literal fields from IL body should never resolve.
+                // The CLR would throw a MissingFieldException while jitting and so should we.
+                if (field.IsLiteral)
+                    throw new TypeSystemException.MissingFieldException(field.OwningType, field.Name);
+
                 pResolvedToken.hField = ObjectToHandle(field);
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
             }
@@ -1171,6 +1206,13 @@ namespace Internal.JitInterface
                         return _compilation.NodeFactory.GenericLookup.Type((TypeDesc)resolvedToken);
                     else
                         return _compilation.NodeFactory.GenericLookup.Type(((MethodDesc)resolvedToken).OwningType);
+
+                case ReadyToRunFixupKind.MethodHandle:
+                    return _compilation.NodeFactory.GenericLookup.MethodDictionary((MethodDesc)resolvedToken);
+
+                case ReadyToRunFixupKind.VirtualEntry:
+                    return _compilation.NodeFactory.GenericLookup.VirtualCall((MethodDesc)resolvedToken);
+
                 default:
                     throw new NotImplementedException();
             }
@@ -2077,7 +2119,17 @@ namespace Internal.JitInterface
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
-        { throw new NotImplementedException("getFunctionEntryPoint"); }
+        {
+            MethodDesc method = HandleToObject(ftn);
+
+            // TODO: Implement MapMethodDeclToMethodImpl from CoreCLR
+            if (method.IsVirtual)
+                throw new NotImplementedException("getFunctionEntryPoint");
+
+            pResult.accessType = InfoAccessType.IAT_VALUE;
+            pResult.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(method));
+        }
+
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
@@ -2117,11 +2169,18 @@ namespace Internal.JitInterface
 
                 Debug.Assert(md.OwningType == td);
 
+                runtimeLookup = md.IsSharedByGenericInstantiations;
+
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
 
-                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
-
-                runtimeLookup = false;
+                if (!runtimeLookup)
+                {
+                    // TODO: LDTOKEN <method>?
+                }
+                else
+                {
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.MethodHandle;
+                }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
@@ -2381,13 +2440,11 @@ namespace Internal.JitInterface
                 {
                     // Calling a string constructor doesn't call the actual constructor.
                     directMethod = targetMethod.GetStringInitializer();
+                    concreteMethod = directMethod;
                 }
 
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(directMethod));
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
@@ -2395,6 +2452,24 @@ namespace Internal.JitInterface
                     // during the jitting of the call.
                     // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
                     // codegen emitted at crossgen time)
+
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+
+                    // Do not bother capturing the runtime determined context if we're inlining. The JIT is going
+                    // to abort the inlining attempt if the inlinee does any generic lookups.
+                    bool inlining = contextMethod != MethodBeingCompiled;
+
+                    if (directMethod.IsSharedByGenericInstantiations && !inlining)
+                    {
+                        MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.RuntimeDeterminedMethod(runtimeDeterminedMethod));
+                    }
+                    else
+                    {
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.MethodEntrypoint(directMethod));
+                    }
                 }
                 else
                 {
@@ -2413,6 +2488,19 @@ namespace Internal.JitInterface
                     {
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
                         pResult.instParamLookup.addr = (void*)ObjectToHandle(genericDictionary);
+
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                    }
+                    else if (targetMethod.AcquiresInstMethodTableFromThis())
+                    {
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                    }
+                    else
+                    {
+                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                            _compilation.NodeFactory.MethodEntrypoint(directMethod));
                     }
                 }
 
@@ -2435,14 +2523,27 @@ namespace Internal.JitInterface
                 // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
                 // call that should not be inlined.
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    throw new NotImplementedException();
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod != MethodBeingCompiled)
+                    {
+                        return;
+                    }
+
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.VirtualEntry;
                 }
                 else
                 {
+                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                     pResult.codePointerOrStubLookup.constLookup.addr =
                             (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
@@ -2647,7 +2748,11 @@ namespace Internal.JitInterface
         }
 
         private void reportFatalError(CorJitResult result)
-        { throw new NotImplementedException("reportFatalError"); }
+        {
+            // We could add some logging here, but for now it's unnecessary.
+            // CompileMethod is going to fail with this CorJitResult anyway.
+        }
+
         private HRESULT allocBBProfileBuffer(uint count, ref ProfileBuffer* profileBuffer)
         { throw new NotImplementedException("allocBBProfileBuffer"); }
         private HRESULT getBBProfileData(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns)

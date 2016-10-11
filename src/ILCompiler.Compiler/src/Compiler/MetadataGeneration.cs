@@ -49,8 +49,14 @@ namespace ILCompiler
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var typeMapNode = new TypeMetadataMapNode();
+            var externalReferencesTableNode = new ExternalReferencesTableNode();
+
+            var typeMapNode = new TypeMetadataMapNode(externalReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
+
+            // This one should go last
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
+                externalReferencesTableNode, externalReferencesTableNode, externalReferencesTableNode.EndSymbol);
         }
 
         private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)

@@ -1,4 +1,4 @@
-@if "%_echo%" neq "on" echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
 set __ThisScriptShort=%0
@@ -189,7 +189,7 @@ call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__BuildLog=%__LogsDir%\msbuild_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
+%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:NuPkgRid=win7-x64 /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
 IF NOT ERRORLEVEL 1 (
   findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__BuildLog%"
   goto AfterILCompilerBuild

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
 
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
@@ -23,7 +24,7 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 args[i] = new string(argv[i]);
             }
-            Environment.SetCommandLineArgs(args);
+            EnvironmentAugments.SetCommandLineArgs(args);
         }
 
         internal static unsafe void InitializeCommandLineArgs(int argc, byte** argv)
@@ -35,13 +36,13 @@ namespace Internal.Runtime.CompilerHelpers
                 int len = CStrLen(argval);
                 args[i] = Encoding.UTF8.GetString(argval, len);
             }
-            Environment.SetCommandLineArgs(args);
+            EnvironmentAugments.SetCommandLineArgs(args);
         }
 
         private static string[] GetMainMethodArguments()
         {
             // GetCommandLineArgs includes the executable name, Main() arguments do not.
-            string[] args = Environment.GetCommandLineArgs();
+            string[] args = EnvironmentAugments.GetCommandLineArgs();
 
             Debug.Assert(args.Length > 0);
 

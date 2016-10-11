@@ -47,8 +47,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (implementedInterface.HasVariance)
                     {
-                        foreach (var interfaceMethod in implementedInterface.GetAllVirtualMethods())
+                        foreach (var interfaceMethod in implementedInterface.GetAllMethods())
                         {
+                            if (interfaceMethod.Signature.IsStatic)
+                                continue;
+
                             MethodDesc implMethod = closestDefType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                             if (implMethod != null)
                             {
@@ -85,9 +88,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Since the vtable is dependency driven, generate conditional static dependencies for
                 // all possible vtable entries
-                if (_type.GetClosestDefType().GetAllVirtualMethods().GetEnumerator().MoveNext())
+                foreach (var method in _type.GetClosestDefType().GetAllMethods())
                 {
-                    return true;
+                    if (method.IsVirtual)
+                        return true;
                 }
 
                 // If the type implements at least one interface, calls against that interface could result in this type's
@@ -108,7 +112,8 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType == defType && !impl.IsAbstract)
                 {
-                    yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
+                    MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                 }
             }
 
@@ -124,8 +129,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Debug.Assert(interfaceType.IsInterface);
 
-                foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
+                foreach (MethodDesc interfaceMethod in interfaceType.GetAllMethods())
                 {
+                    if (interfaceMethod.Signature.IsStatic)
+                        continue;
+
                     MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
@@ -195,9 +203,14 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 if (!implMethod.IsAbstract)
-                    objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
+                {
+                    MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType));
+                }
                 else
+                {
                     objData.EmitZeroPointer();
+                }
             }
         }
 

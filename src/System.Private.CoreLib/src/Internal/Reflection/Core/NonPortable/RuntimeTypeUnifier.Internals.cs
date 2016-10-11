@@ -63,6 +63,10 @@ namespace Internal.Reflection.Core.NonPortable
                 {
                     return callbacks.GetPointerTypeForHandle(runtimeTypeHandle);
                 }
+                else if (eeType.IsByRef)
+                {
+                    return callbacks.GetByRefTypeForHandle(runtimeTypeHandle);
+                }
                 else
                 {
                     throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);

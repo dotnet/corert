@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -660,6 +661,11 @@ namespace Internal.TypeSystem
             return _signatureVariables.GetOrCreateValue(combinedIndex);
         }
 
+        protected internal virtual IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+        {
+            return type.GetMethods();
+        }
+
         /// <summary>
         /// Abstraction to allow the type system context to affect the field layout
         /// algorithm used by types to lay themselves out.
@@ -720,12 +726,6 @@ namespace Internal.TypeSystem
         public virtual VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
         {
             // Type system contexts that support virtual method resolution need to override this.
-            throw new NotSupportedException();
-        }
-
-        public virtual VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
-        {
-            // Type system contexts that support this need to override this.
             throw new NotSupportedException();
         }
 

@@ -69,22 +69,6 @@ namespace System
             return Encoding.UTF8.GetString((byte*)result, size);
         }
 
-        private const int MAX_HOST_NAME = 256; // 255 max and null 
-        public static unsafe string MachineName
-        {
-            get
-            {
-                byte *hostName = stackalloc byte[MAX_HOST_NAME];
-                int hostNameLength = Interop.Sys.GetMachineName(hostName, MAX_HOST_NAME);
-                if (hostNameLength < 0)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
-                }
-
-                return Encoding.UTF8.GetString(hostName, hostNameLength);
-            }
-        }
-
         public static void Exit(int exitCode)
         {
             // CORERT-TODO: Shut down the runtime

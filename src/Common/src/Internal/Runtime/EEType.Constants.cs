@@ -277,4 +277,15 @@ namespace Internal.Runtime
         Contravariant = 2,
         ArrayCovariant = 0x20,
     }
+
+    internal static class ParameterizedTypeShapeConstants
+    {
+        // NOTE: Parameterized type kind is stored in the BaseSize field of the EEType.
+        // Array types use their actual base size. Pointer and ByRef types are never boxed,
+        // so we can reuse the EEType BaseSize field to indicate the kind.
+        // It's important that these values always stay lower than any valid value of a base
+        // size for an actual array.
+        public const int Pointer = 0;
+        public const int ByRef = 1;
+    }
 }

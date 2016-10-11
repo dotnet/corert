@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
+using System.IO;
 
-using ILCompiler.DependencyAnalysisFramework;
+using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -15,10 +15,12 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class TypeMetadataMapNode : ObjectNode, ISymbolNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
+        private ExternalReferencesTableNode _externalReferences;
 
-        public TypeMetadataMapNode()
+        public TypeMetadataMapNode(ExternalReferencesTableNode externalReferences)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _externalReferences = externalReferences;
         }
 
         public ISymbolNode EndSymbol
@@ -72,7 +74,11 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+            var writer = new NativeWriter();
+            var typeMapHashTable = new VertexHashtable();
+
+            Section hashTableSection = writer.NewSection();
+            hashTableSection.Place(typeMapHashTable);
 
             foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping())
             {
@@ -96,23 +102,23 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (node.Marked)
                 {
-                    // TODO: this format got very inefficient due to not being able to use RVAs
-                    //       replace with a hash table
+                    Vertex vertex = writer.GetTuple(
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(node)),
+                        writer.GetUnsignedConstant((uint)mappingEntry.MetadataHandle)
+                        );
 
-                    builder.EmitPointerReloc(node);
-                    builder.EmitInt(mappingEntry.MetadataHandle);
-
-                    if (factory.Target.PointerSize == 8)
-                        builder.EmitInt(0); // Pad
+                    int hashCode = node.Type.GetHashCode();
+                    typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
                 }
             }
 
-            _endSymbol.SetSymbolOffset(builder.CountBytes);
-            
-            builder.DefinedSymbols.Add(this);
-            builder.DefinedSymbols.Add(_endSymbol);
+            MemoryStream ms = new MemoryStream();
+            writer.Save(ms);
+            byte[] hashTableBytes = ms.ToArray();
 
-            return builder.ToObjectData();
+            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
         }
     }
 }

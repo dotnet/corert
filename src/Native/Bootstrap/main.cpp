@@ -11,21 +11,14 @@
 #include <stdlib.h> 
 
 #ifndef CPPCODEGEN
+
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
 // startup of the application.
 //
-// Sections are created in the output obj file to mark the beginning and end of merged global data. They 
-// are named .modules$A and .modules$Z. Each section defines a sentinel symbol that is used to
-// get the addresses of the start and end of global data at runtime.
-//
-// Each obj file compiled from managed code has a .modules$I section containing a pointer to its ReadyToRun
-// data (which points at eager class constructors, frozen strings, etc).
-//
-// On Windows, the #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
-// obj files into .rdata in alphabetical order.
-//
-// On Linux and OSX, we use linker magic to get the sections start addresses and sizes. 
+// ILC creates sections in the output obj file to mark the beginning and end of merged global data.
+// It defines sentinel symbols that are used to get the addresses of the start and end of global data 
+// at runtime. The section names are platform-specific to match platform-specific linker conventions.
 //
 #if defined(_MSC_VER)
 
@@ -36,10 +29,16 @@ extern "C" __declspec(allocate(".modules$Z")) void * __modules_z[];
 
 __declspec(allocate(".modules$A")) void * __modules_a[] = { nullptr };
 __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
+
+//
+// Each obj file compiled from managed code has a .modules$I section containing a pointer to its ReadyToRun
+// data (which points at eager class constructors, frozen strings, etc).
+//
+// The #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
+// obj files into .rdata in alphabetical order.
+//
 #pragma comment(linker, "/merge:.modules=.rdata")
 
-// Sentinels for managed code section are not implemented here because of the C++ compiler
-// wraps them with a jump stub in debug builds. They are emitted in ilc instead.
 extern "C" void __managedcode_a();
 extern "C" void __managedcode_z();
 
@@ -201,37 +200,6 @@ namespace System_Private_CoreLib { namespace System {
 }; };
 
 using namespace System_Private_CoreLib;
-
-void PrintStringObject(System::String *pStringToPrint)
-{
-    // Get the number of characters in managed string (stored as UTF16)
-    int32_t length = *((int32_t*)((char*)(pStringToPrint)+sizeof(intptr_t)));
-
-    // Get the pointer to the start of the character array
-    uint16_t *pString = (uint16_t*)((char*)(pStringToPrint)+sizeof(intptr_t) + sizeof(int32_t));
-    
-    // Loop to display the string
-    int32_t index = 0;
-    while (index < length)
-    {
-        putwchar(*pString);
-        pString++;
-        index++;
-    }   
-}
-extern "C" void __not_yet_implemented(System::String * pMethodName, System::String * pMessage)
-{
-    printf("ILCompiler failed generating code for this method; execution cannot continue.\n");
-    printf("This is likely because of a feature that is not yet implemented in the compiler.\n");
-    printf("Method: ");
-    PrintStringObject(pMethodName);
-    printf("\n\n");
-    printf("Reason: ");
-    PrintStringObject(pMessage);
-    printf("\n");
-
-    exit(-1);
-}
 
 extern "C" void __fail_fast()
 {

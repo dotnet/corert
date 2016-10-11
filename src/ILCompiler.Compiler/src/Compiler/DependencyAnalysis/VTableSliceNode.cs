@@ -91,8 +91,11 @@ namespace ILCompiler.DependencyAnalysis
             var slots = new ArrayBuilder<MethodDesc>();
 
             DefType defType = _type.GetClosestDefType();
-            foreach (var method in defType.GetAllVirtualMethods())
+            foreach (var method in defType.GetAllMethods())
             {
+                if (!method.IsVirtual)
+                    continue;
+
                 slots.Add(method);
             }
 

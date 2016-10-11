@@ -32,7 +32,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             _RVAs = (IntPtr)pBlob;
-            _RVAsCount = cbBlob / sizeof(uint);
+            _RVAsCount = (uint)(cbBlob / sizeof(IntPtr));
             return true;
         }
 
@@ -68,26 +68,17 @@ namespace Internal.Runtime.TypeLoader
 
         unsafe public uint GetRvaFromIndex(uint index)
         {
+            throw new PlatformNotSupportedException();
+        }
+
+        unsafe public IntPtr GetIntPtrFromIndex(uint index)
+        {
             Debug.Assert(_moduleHandle != IntPtr.Zero);
 
             if (index >= _RVAsCount)
                 throw new BadImageFormatException();
 
-            return ((uint*)_RVAs)[index];
-        }
-
-        unsafe public IntPtr GetIntPtrFromIndex(uint index)
-        {
-            uint rva = GetRvaFromIndex(index);
-            if ((rva & 0x80000000) != 0)
-            {
-                // indirect through IAT
-                return *(IntPtr*)((byte*)_moduleHandle + (rva & ~0x80000000));
-            }
-            else
-            {
-                return (IntPtr)((byte*)_moduleHandle + rva);
-            }
+            return ((IntPtr*)_RVAs)[index];
         }
 
         public RuntimeTypeHandle GetRuntimeTypeHandleFromIndex(uint index)

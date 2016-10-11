@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetByRefType(this RuntimeTypeInfo targetType)
         {
-            return RuntimeByRefTypeInfo.GetByRefTypeInfo(targetType);
+            return targetType.GetByRefType(default(RuntimeTypeHandle));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -108,6 +108,12 @@ namespace System.Reflection.Runtime.General
         public static RuntimeTypeInfo GetPointerType(this RuntimeTypeInfo targetType, RuntimeTypeHandle precomputedTypeHandle)
         {
             return RuntimePointerTypeInfo.GetPointerTypeInfo(targetType, precomputedTypeHandle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RuntimeTypeInfo GetByRefType(this RuntimeTypeInfo targetType, RuntimeTypeHandle precomputedTypeHandle)
+        {
+            return RuntimeByRefTypeInfo.GetByRefTypeInfo(targetType, precomputedTypeHandle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -333,12 +339,25 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeByRefTypeInfo : RuntimeHasElementTypeInfo
     {
-        internal static RuntimeByRefTypeInfo GetByRefTypeInfo(RuntimeTypeInfo elementType)
+        internal static RuntimeByRefTypeInfo GetByRefTypeInfo(RuntimeTypeInfo elementType, RuntimeTypeHandle precomputedTypeHandle)
         {
-            RuntimeTypeHandle typeHandle = default(RuntimeTypeHandle);
+            RuntimeTypeHandle typeHandle = precomputedTypeHandle.IsNull() ? GetRuntimeTypeHandleIfAny(elementType) : precomputedTypeHandle;
             RuntimeByRefTypeInfo type = ByRefTypeTable.Table.GetOrAdd(new UnificationKey(elementType, typeHandle));
             type.EstablishDebugName();
             return type;
+        }
+
+        private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo elementType)
+        {
+            RuntimeTypeHandle elementTypeHandle = elementType.InternalTypeHandleIfAvailable;
+            if (elementTypeHandle.IsNull())
+                return default(RuntimeTypeHandle);
+
+            RuntimeTypeHandle typeHandle;
+            if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetByRefTypeForTargetType(elementTypeHandle, out typeHandle))
+                return default(RuntimeTypeHandle);
+
+            return typeHandle;
         }
 
         private sealed class ByRefTypeTable : ConcurrentUnifierWKeyed<UnificationKey, RuntimeByRefTypeInfo>

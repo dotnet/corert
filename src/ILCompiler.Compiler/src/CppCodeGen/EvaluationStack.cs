@@ -110,6 +110,11 @@ namespace Internal.IL
                 Debug.Assert(index >= 0 && index < _top, "Index not in range");
                 return _stack[index];
             }
+            set
+            {
+                Debug.Assert(index >= 0 && index < _top, "Index not in range");
+                _stack[index] = value;
+            }
         }
 
         /// <summary>

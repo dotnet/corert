@@ -95,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 MethodDesc method = _owningMethodOrType as MethodDesc;
-                Debug.Assert(method != null && method.IsCanonicalMethod(CanonicalFormKind.Any));
+                Debug.Assert(method != null && method.IsSharedByGenericInstantiations);
             }
         }
 

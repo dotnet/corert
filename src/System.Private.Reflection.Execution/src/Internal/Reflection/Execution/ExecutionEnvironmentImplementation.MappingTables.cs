@@ -436,6 +436,37 @@ namespace Internal.Reflection.Execution
         }
 
         //
+        // Given a RuntimeTypeHandle for any type E, return a RuntimeTypeHandle for type E&, if the pay-for-play policy denotes E& as browsable. This is used to
+        // ensure that "typeof(E&)" and "typeof(E).MakeByRefType()" returns the same Type object.
+        //
+        // Preconditions:
+        //     targetTypeHandle is a valid RuntimeTypeHandle.
+        //
+        public unsafe sealed override bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
+        {
+#if CORERT
+            throw new NotImplementedException();
+#else
+            // Project N is not capable of emitting EETypes for ByRefs.
+            byRefTypeHandle = default(RuntimeTypeHandle);
+            return false;
+#endif
+        }
+
+        //
+        // Given a RuntimeTypeHandle for any byref type E&, return a RuntimeTypeHandle for type E, if the pay-for-play policy denotes E& as browsable. 
+        // This is used to implement Type.GetElementType() for byrefs.
+        //
+        // Preconditions:
+        //      byRefTypeHandle is a valid RuntimeTypeHandle of a byref.
+        //
+        public unsafe sealed override bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        {
+            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
+            return true;
+        }
+
+        //
         // Given a RuntimeTypeHandle for a generic type G and a set of RuntimeTypeHandles T1, T2.., return the RuntimeTypeHandle for the generic
         // instance G<T1,T2...> if the pay-for-play policy denotes G<T1,T2...> as browsable. This is used to implement Type.MakeGenericType().
         //

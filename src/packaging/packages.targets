@@ -6,7 +6,6 @@
             <ToolchainMilestone Condition="'$(ToolchainMilestone)'==''">prerelease</ToolchainMilestone>
             <ToolchainVersion>1.0.6-$(ToolchainMilestone)-00003</ToolchainVersion>
             <RuntimeSdkVersion>$(ToolchainVersion)</RuntimeSdkVersion>
-            <NuPkgRid>$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform)</NuPkgRid>
 
             <ToolchainPackageName>Microsoft.DotNet.ILCompiler</ToolchainPackageName>
 
@@ -24,6 +23,10 @@
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
             <JitPackageVersion>1.1.0-preview1-24512-01</JitPackageVersion>
+          
+            <ObjectWriterPackageVersion>1.0.13-prerelease-00001</ObjectWriterPackageVersion>
+            <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
+            <ObjectWriterNuPkgRid Condition="'$(ObjectWriterNuPkgRid)'==''">$(NuPkgRid)</ObjectWriterNuPkgRid>
         </PropertyGroup>
         <ItemGroup>
             <!-- IL.Compiler target files -->
@@ -51,6 +54,15 @@
             <ILCompilerRepackageJitFiles Include="libclrjit.dylib" Condition="'$(OSGroup)'=='OSX'" />
             <ILCompilerBinPlace Include="@(ILCompilerRepackageJitFiles)">
                 <Text><![CDATA[        <file src="packages/runtime.$(NuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(NuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
+            </ILCompilerBinPlace>
+
+            <!-- Repackage the ObjectWriter dynamic library to workaround missing Ubuntu 16.04 build -->
+            <!-- TODO: Publish the Ubuntu 16.04 build -->
+            <ILCompilerRepackageObjectWriterFiles Include="objwriter.dll" Condition="'$(OSGroup)'=='Windows_NT'" />
+            <ILCompilerRepackageObjectWriterFiles Include="libobjwriter.so" Condition="'$(OSGroup)'=='Linux'" />
+            <ILCompilerRepackageObjectWriterFiles Include="libobjwriter.dylib" Condition="'$(OSGroup)'=='OSX'" />
+            <ILCompilerBinPlace Include="@(ILCompilerRepackageObjectWriterFiles)">
+              <Text><![CDATA[        <file src="packages/toolchain.$(ObjectWriterNuPkgRid).Microsoft.DotNet.ObjectWriter/$(ObjectWriterPackageVersion)/runtimes/$(ObjectWriterNuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.targets" />
@@ -121,7 +133,7 @@
             <ILCompilerFrameworkFiles Include="System.Reflection.TypeExtensions/4.1.0/runtimes/aot/lib/netcore50/System.Reflection.TypeExtensions.dll" />
 
             <ILCompilerFrameworkFiles Include="Microsoft.NETCore.Portable.Compatibility/1.0.2/runtimes/aot/lib/netcore50/mscorlib.dll" />
-            <ILCompilerFrameworkFiles Include="toolchain.$(NuPkgRid).Microsoft.DotNet.AppDep/1.0.6-prerelease-00004/System.Resources.ResourceManager.dll" />
+            <ILCompilerFrameworkFiles Include="toolchain.win7-x64.Microsoft.DotNet.AppDep/1.0.6-prerelease-00004/System.Resources.ResourceManager.dll" />
 
             <ILCompilerFrameworkFiles Include="runtime.win.System.Runtime.Extensions/4.1.0/runtimes/win/lib/netstandard1.5/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Runtime.Extensions/4.1.0/runtimes/unix/lib/netstandard1.5/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
@@ -164,7 +176,6 @@
                 <Files>@(ILCompilerBinPlace -> '%(Text)', '')</Files>
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
-        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.13-prerelease-00001" />
         <dependency id="NETStandard.Library" version="1.6.0" />
         <dependency id="System.Collections.Immutable" version="1.2.0" />
         <dependency id="System.IO.MemoryMappedFiles" version="4.0.0" />
@@ -233,6 +244,11 @@
     "ubuntu.14.04-x64": {
       "%(RedirPackage)": {
         "toolchain.ubuntu.14.04-x64.%(RedirPackage)": "%(Version)"
+      }
+    },
+    "ubuntu.16.04-x64": {
+      "%(RedirPackage)": {
+        "toolchain.ubuntu.16.04-x64.%(RedirPackage)": "%(Version)"
       }
     }
   }

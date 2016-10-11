@@ -357,7 +357,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && ParameterizedTypeShape != 0;
+                return IsParameterizedType && ParameterizedTypeShape >= SZARRAY_BASE_SIZE;
             }
         }
 
@@ -478,7 +478,17 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && ParameterizedTypeShape == 0;
+                return IsParameterizedType &&
+                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer;
+            }
+        }
+
+        internal bool IsByRefType
+        {
+            get
+            {
+                return IsParameterizedType &&
+                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.ByRef;
             }
         }
 
@@ -524,8 +534,8 @@ namespace Internal.Runtime
 
         // The parameterized type shape defines the particular form of parameterized type that
         // is being represented.
-        // Currently, the meaning is a shape of 0 indicates that this is a Pointer
-        // and non-zero indicates that this is an array.
+        // Currently, the meaning is a shape of 0 indicates that this is a Pointer,
+        // shape of 1 indicates a ByRef, and >=SZARRAY_BASE_SIZE indicates that this is an array.
         // Two types are not equivalent if their shapes do not exactly match.
         internal UInt32 ParameterizedTypeShape
         {
