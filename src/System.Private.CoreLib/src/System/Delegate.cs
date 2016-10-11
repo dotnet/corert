@@ -292,17 +292,23 @@ namespace System
 
             return false;
         }
+
+        [DebuggerGuidedStepThroughAttribute]
         public object DynamicInvoke(params object[] args)
         {
             if (IsDynamicDelegate())
             {
                 // DynamicDelegate case
-                return ((Func<object[], object>)m_helperObject)(args);
+                object result = ((Func<object[], object>)m_helperObject)(args);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                return result;
             }
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-                return System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args);
+                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                return result;
             }
         }
 
