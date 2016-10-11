@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Jit": "1.1.0-preview1-24512-01"
+    "Microsoft.NETCore.Jit": "1.1.0-preview1-24512-01",
+    "Microsoft.DotNet.ObjectWriter": "1.0.13-prerelease-00001"
   },
   "frameworks": {
     "dnxcore50": { }
