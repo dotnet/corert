@@ -23,6 +23,10 @@
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
             <JitPackageVersion>1.1.0-preview1-24512-01</JitPackageVersion>
+          
+            <ObjectWriterPackageVersion>1.0.13-prerelease-00001</ObjectWriterPackageVersion>
+            <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
+            <ObjectWriterNuPkgRid Condition="'$(ObjectWriterNuPkgRid)'==''">$(NuPkgRid)</ObjectWriterNuPkgRid>
         </PropertyGroup>
         <ItemGroup>
             <!-- IL.Compiler target files -->
@@ -50,6 +54,15 @@
             <ILCompilerRepackageJitFiles Include="libclrjit.dylib" Condition="'$(OSGroup)'=='OSX'" />
             <ILCompilerBinPlace Include="@(ILCompilerRepackageJitFiles)">
                 <Text><![CDATA[        <file src="packages/runtime.$(NuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(NuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
+            </ILCompilerBinPlace>
+
+            <!-- Repackage the ObjectWriter dynamic library to workaround missing Ubuntu 16.04 build -->
+            <!-- TODO: Publish the Ubuntu 16.04 build -->
+            <ILCompilerRepackageObjectWriterFiles Include="objwriter.dll" Condition="'$(OSGroup)'=='Windows_NT'" />
+            <ILCompilerRepackageObjectWriterFiles Include="libobjwriter.so" Condition="'$(OSGroup)'=='Linux'" />
+            <ILCompilerRepackageObjectWriterFiles Include="libobjwriter.dylib" Condition="'$(OSGroup)'=='OSX'" />
+            <ILCompilerBinPlace Include="@(ILCompilerRepackageObjectWriterFiles)">
+              <Text><![CDATA[        <file src="packages/toolchain.$(ObjectWriterNuPkgRid).Microsoft.DotNet.ObjectWriter/$(ObjectWriterPackageVersion)/runtimes/$(ObjectWriterNuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.targets" />
@@ -163,7 +176,6 @@
                 <Files>@(ILCompilerBinPlace -> '%(Text)', '')</Files>
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
-        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.13-prerelease-00001" />
         <dependency id="NETStandard.Library" version="1.6.0" />
         <dependency id="System.Collections.Immutable" version="1.2.0" />
         <dependency id="System.IO.MemoryMappedFiles" version="4.0.0" />
