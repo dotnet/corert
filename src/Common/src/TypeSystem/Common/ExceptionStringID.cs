@@ -9,13 +9,22 @@ namespace Internal.TypeSystem
     /// </summary>
     public enum ExceptionStringID
     {
+        // TypeLoadException
         ClassLoadGeneral,
+        ClassLoadExplicitGeneric,
+        ClassLoadBadFormat,
+        ClassLoadExplicitLayout,
 
+        // MissingMethodException
         MissingMethod,
+
+        // MissingFieldException
         MissingField,
 
+        // FileNotFoundException
         FileLoadErrorGeneric,
 
+        // InvalidProgramException
         InvalidProgramSpecific,
     }
 }

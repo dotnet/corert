@@ -53,11 +53,6 @@ namespace Internal.TypeSystem
             return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + String.Join(", ", args);
         }
 
-        protected static ModuleDesc GetOwningModule(MethodDesc method)
-        {
-            return (method.OwningType as MetadataType)?.Module;
-        }
-
         /// <summary>
         /// The exception that is thrown when type-loading failures occur.
         /// </summary>
@@ -67,7 +62,7 @@ namespace Internal.TypeSystem
 
             public string AssemblyName { get; }
 
-            public TypeLoadException(ExceptionStringID id, string typeName, string assemblyName, string messageArg = null)
+            private TypeLoadException(ExceptionStringID id, string typeName, string assemblyName, string messageArg = null)
                 : base(id, new string[] { typeName, assemblyName, messageArg })
             {
                 TypeName = typeName;
@@ -85,7 +80,12 @@ namespace Internal.TypeSystem
             }
 
             public TypeLoadException(ExceptionStringID id, MethodDesc method)
-                : this(id, Format.Type(method.OwningType), Format.Module(GetOwningModule(method)), Format.Method(method))
+                : this(id, Format.Type(method.OwningType), Format.OwningModule(method), Format.Method(method))
+            {
+            }
+
+            public TypeLoadException(ExceptionStringID id, TypeDesc type, string messageArg = null)
+                : this(id, Format.Type(type), Format.OwningModule(type), messageArg)
             {
             }
         }
@@ -161,6 +161,16 @@ namespace Internal.TypeSystem
 
         private static class Format
         {
+            public static string OwningModule(MethodDesc method)
+            {
+                return OwningModule(method.OwningType);
+            }
+
+            public static string OwningModule(TypeDesc type)
+            {
+                return Module((type as MetadataType)?.Module);
+            }
+
             public static string Module(ModuleDesc module)
             {
                 if (module == null)

@@ -37,6 +37,25 @@ namespace ILCompiler.DependencyAnalysis
         {
             _id = id;
             _target = target;
+
+            switch (id)
+            {
+                case ReadyToRunHelperId.NewHelper:
+                case ReadyToRunHelperId.NewArr1:
+                case ReadyToRunHelperId.IsInstanceOf:
+                case ReadyToRunHelperId.CastClass:
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                case ReadyToRunHelperId.GetGCStaticBase:
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    {
+                        // Make sure that if the EEType can't be generated, we throw the exception now.
+                        // This way we can fail generating code for the method that references the EEType
+                        // and (depending on the policy), we could avoid scraping the entire compilation.
+                        TypeDesc type = (TypeDesc)target;
+                        type.ValidateCanLoad();
+                    }
+                    break;
+            }
         }
 
         protected override string GetName()
