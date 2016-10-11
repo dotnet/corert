@@ -692,8 +692,6 @@ namespace ILCompiler.DependencyAnalysis
                     if (node == null)
                         continue;
 
-                    // TODO: Remove the need for the skip check
-                    // https://github.com/dotnet/corert/issues/1826
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 

@@ -219,11 +219,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenStringNode(data, Target);
             });
 
-            _typeOptionalFields = new NodeCache<EETypeOptionalFieldsBuilder, EETypeOptionalFieldsNode>((EETypeOptionalFieldsBuilder fieldBuilder) =>
-            {
-                return new EETypeOptionalFieldsNode(fieldBuilder, this.Target);
-            });
-
             _interfaceDispatchCells = new NodeCache<MethodDesc, InterfaceDispatchCellNode>((MethodDesc method) =>
             {
                 return new InterfaceDispatchCellNode(method);
@@ -387,13 +382,6 @@ namespace ILCompiler.DependencyAnalysis
         public BlobNode ReadOnlyDataBlob(string name, byte[] blobData, int alignment)
         {
             return _readOnlyDataBlobs.GetOrAdd(new Tuple<string, byte[], int>(name, blobData, alignment));
-        }
-
-        private NodeCache<EETypeOptionalFieldsBuilder, EETypeOptionalFieldsNode> _typeOptionalFields;
-
-        internal EETypeOptionalFieldsNode EETypeOptionalFields(EETypeOptionalFieldsBuilder fieldBuilder)
-        {
-            return _typeOptionalFields.GetOrAdd(fieldBuilder);
         }
 
         private NodeCache<TypeDesc, InterfaceDispatchMapNode> _interfaceDispatchMaps;
