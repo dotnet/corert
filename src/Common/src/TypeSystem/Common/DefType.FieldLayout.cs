@@ -281,8 +281,7 @@ namespace Internal.TypeSystem
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics);
         }
 
-
-        internal void ComputeInstanceLayout(InstanceLayoutKind layoutKind)
+        public void ComputeInstanceLayout(InstanceLayoutKind layoutKind)
         {
             if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeFieldsLayout | FieldLayoutFlags.ComputedInstanceTypeLayout))
                 return;
@@ -307,7 +306,7 @@ namespace Internal.TypeSystem
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceTypeLayout);
         }
 
-        internal void ComputeStaticFieldLayout(StaticLayoutKind layoutKind)
+        public void ComputeStaticFieldLayout(StaticLayoutKind layoutKind)
         {
             if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticFieldsLayout | FieldLayoutFlags.ComputedStaticRegionLayout))
                 return;

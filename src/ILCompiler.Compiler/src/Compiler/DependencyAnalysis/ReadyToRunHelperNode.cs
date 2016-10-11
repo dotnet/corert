@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
                         // This way we can fail generating code for the method that references the EEType
                         // and (depending on the policy), we could avoid scraping the entire compilation.
                         TypeDesc type = (TypeDesc)target;
-                        type.ValidateCanLoad();
+                        EETypeNode.CheckCanGenerateEEType(type);
                     }
                     break;
             }
