@@ -58,7 +58,6 @@
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidator.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />
-    <Compile Include="Internal\Reflection\Execution\ReflectionExecutionLogger.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
