@@ -335,6 +335,11 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static IntPtr RhpGetCastableObjectDispatchHelper_TailCalled();
 
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatch_CommonStub")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetCastableObjectDispatch_CommonStub();
+
         [RuntimeImport(Redhawk.BaseName, "RhpGetTailCallTLSDispatchCell")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

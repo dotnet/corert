@@ -30,6 +30,40 @@ GET_TLS_DISPATCH_CELL macro
         mov     eax, [eax + SECTIONREL _t_TLS_DispatchCell]
 endm
 
+SET_TLS_DISPATCH_CELL macro
+        ;; ecx: value to assign to the TLS variable
+        ASSUME fs : NOTHING
+        push    eax
+        mov     eax, [__tls_index]
+        add     eax, eax
+        add     eax, eax
+        add     eax, fs:[__tls_array]
+        mov     eax, [eax]
+        lea     eax, [eax + SECTIONREL _t_TLS_DispatchCell]
+        mov     [eax],ecx
+        pop     eax
+endm
+
+_RhpCastableObjectDispatch_CommonStub proc public
+        ;; There are arbitrary callers passing arguments with arbitrary signatures.
+        ;; Custom calling convention:
+        ;;      eax: pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
+
+        ;; make some scratch regs
+        push    ecx
+
+        ;; store dispatch cell address into the TLS variable
+        mov     ecx, [eax]
+        SET_TLS_DISPATCH_CELL
+        
+        ;; restore the regs we used
+        pop     ecx
+
+        ;; jump to the target
+        mov     eax, [eax + 4]                                  ;;   eax <- target slot data
+        jmp     eax
+_RhpCastableObjectDispatch_CommonStub endp
+
 _RhpTailCallTLSDispatchCell proc public
         ;; Load the dispatch cell out of the TLS variable
         GET_TLS_DISPATCH_CELL

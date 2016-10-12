@@ -297,7 +297,7 @@ namespace Internal.Reflection.Execution
         /// <param name="runtimeTypeHandle">Runtime type handle (EEType) for the given type</param>
         public unsafe sealed override bool TryGetNamedTypeForMetadata(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, out RuntimeTypeHandle runtimeTypeHandle)
         {
-            return TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(metadataReader, typeDefHandle, out runtimeTypeHandle);
+            return TypeLoaderEnvironment.Instance.TryGetOrCreateNamedTypeForMetadata(metadataReader, typeDefHandle, out runtimeTypeHandle);
         }
 
         /// <summary>
@@ -715,6 +715,12 @@ namespace Internal.Reflection.Execution
                 out methodInvokeMetadata))
             {
                 // Method invoke info not found
+                return null;
+            }
+
+            if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.CallingConventionMask) != 0)
+            {
+                // MethodInvokeInfo found, but it references a method with a native calling convention. 
                 return null;
             }
 
@@ -1159,182 +1165,83 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
-        public sealed override FieldAccessor TryGetFieldAccessor(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle)
+        public sealed override FieldAccessor TryGetFieldAccessor(
+            MetadataReader metadataReader,
+            RuntimeTypeHandle declaringTypeHandle,
+            RuntimeTypeHandle fieldTypeHandle,
+            FieldHandle fieldHandle)
         {
-            foreach (var moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
+            FieldAccessMetadata fieldAccessMetadata;
+
+            if (!TypeLoaderEnvironment.TryGetFieldAccessMetadata(
+                metadataReader,
+                declaringTypeHandle,
+                fieldHandle,
+                out fieldAccessMetadata))
             {
-                FieldAccessor result = TryGetFieldAccessor_Inner(moduleHandle, declaringTypeHandle, fieldTypeHandle, fieldHandle, CanonicalFormKind.Specific);
-
-                if (result != null)
-                    return result;
-            }
-
-            // If we can't find an specific canonical match, look for a universal match
-            foreach (var moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
-            {
-                FieldAccessor result = TryGetFieldAccessor_Inner(moduleHandle, declaringTypeHandle, fieldTypeHandle, fieldHandle, CanonicalFormKind.Universal);
-
-                if (result != null)
-                    return result;
-            }
-
-            return null;
-        }
-
-        private unsafe FieldAccessor TryGetFieldAccessor_Inner(IntPtr mappingTableModule, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle, CanonicalFormKind canonFormKind)
-        {
-            NativeReader fieldMapReader;
-            if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.FieldAccessMap, out fieldMapReader))
                 return null;
+            }
 
-            NativeParser fieldMapParser = new NativeParser(fieldMapReader, 0);
-            NativeHashtable fieldHashtable = new NativeHashtable(fieldMapParser);
-
-            ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-            externalReferences.InitializeCommonFixupsTable(mappingTableModule);
-
-            CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
-            var lookup = fieldHashtable.Lookup(canonWrapper.LookupHashCode);
-
-            string fieldName = null;
-
-            NativeParser entryParser;
-            while (!(entryParser = lookup.GetNext()).IsNull)
+            switch (fieldAccessMetadata.Flags & FieldTableFlags.StorageClass)
             {
-                // Grammar of a hash table entry:
-                // Flags + DeclaringType + MdHandle or Name + Cookie or Ordinal or Offset
-
-                FieldTableFlags entryFlags = (FieldTableFlags)entryParser.GetUnsigned();
-
-                if ((canonFormKind == CanonicalFormKind.Universal) != entryFlags.HasFlag(FieldTableFlags.IsUniversalCanonicalEntry))
-                    continue;
-
-                RuntimeTypeHandle entryDeclaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle)
-                    && !(canonWrapper.IsCanonicallyEquivalent(entryDeclaringTypeHandle)))
-                    continue;
-
-                if (entryFlags.HasFlag(FieldTableFlags.HasMetadataHandle))
-                {
-                    FieldHandle entryFieldHandle = (((int)HandleType.Field << 24) | (int)entryParser.GetUnsigned()).AsFieldHandle();
-                    if (!fieldHandle.Equals(entryFieldHandle))
-                        continue;
-                }
-                else
-                {
-                    if (fieldName == null)
+                case FieldTableFlags.Instance:
                     {
-                        MetadataReader mdReader;
-                        TypeDefinitionHandle typeDefHandleUnused;
-                        bool success = TryGetMetadataForNamedType(GetTypeDefinition(declaringTypeHandle), out mdReader, out typeDefHandleUnused);
-                        Debug.Assert(success);
-
-                        fieldName = fieldHandle.GetField(mdReader).Name.GetString(mdReader);
-                    }
-
-                    string entryFieldName = entryParser.GetString();
-
-                    if (fieldName != entryFieldName)
-                        continue;
-                }
-
-                int cookieOrOffsetOrOrdinal = (int)entryParser.GetUnsigned();
-                int fieldOffset;
-                int fieldOffsetDelta = RuntimeAugments.IsValueType(declaringTypeHandle) ? IntPtr.Size : 0;
-
-                if (canonFormKind == CanonicalFormKind.Universal)
-                {
-                    if (!TypeLoaderEnvironment.Instance.TryGetFieldOffset(declaringTypeHandle, (uint)cookieOrOffsetOrOrdinal, out fieldOffset))
-                    {
-                        Debug.Assert(false);
-                        return null;
-                    }
-                }
-                else
-                {
-                    fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
-                }
-
-                switch (entryFlags & FieldTableFlags.StorageClass)
-                {
-                    case FieldTableFlags.Instance:
+                        int fieldOffsetDelta = RuntimeAugments.IsValueType(declaringTypeHandle) ? IntPtr.Size : 0;
+            
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                            (FieldAccessor)new ValueTypeFieldAccessorForInstanceFields(fieldOffset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForInstanceFields(fieldOffset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle);
+                            (FieldAccessor)new ValueTypeFieldAccessorForInstanceFields(
+                                fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle) :
+                            (FieldAccessor)new ReferenceTypeFieldAccessorForInstanceFields(
+                                fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle);
+                    }
 
-                    case FieldTableFlags.Static:
+                case FieldTableFlags.Static:
+                    {
+                        IntPtr fieldAddress;
+
+                        if (RuntimeAugments.IsGenericType(declaringTypeHandle))
                         {
-                            IntPtr fieldAddress;
-
-                            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
+                            unsafe
                             {
-                                if (entryFlags.HasFlag(FieldTableFlags.IsGcSection))
-                                    fieldAddress = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(declaringTypeHandle) + fieldOffset;
+                                if (fieldAccessMetadata.Flags.HasFlag(FieldTableFlags.IsGcSection))
+                                    fieldAddress = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(declaringTypeHandle) + fieldAccessMetadata.Offset;
                                 else
-                                    fieldAddress = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(declaringTypeHandle) + fieldOffset;
+                                    fieldAddress = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(declaringTypeHandle) + fieldAccessMetadata.Offset;
                             }
-                            else
-                            {
-                                Debug.Assert(canonFormKind != CanonicalFormKind.Universal);
-                                fieldAddress = RvaToNonGenericStaticFieldAddress(mappingTableModule, fieldOffset);
-                            }
-
-                            return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                                (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), fieldAddress, fieldTypeHandle) :
-                                (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), fieldAddress, fieldTypeHandle);
-                        }
-
-                    case FieldTableFlags.ThreadStatic:
-                        bool useFieldOffsetAccessor = false;
-                        IntPtr fieldAddressCookie = IntPtr.Zero;
-
-                        if (canonFormKind != CanonicalFormKind.Universal)
-                        {
-                            fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule, fieldOffset);
-                        }
-
-                        if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
-                        {
-                            // In this case we didn't find an exact match, but we did find a canonically equivalent match
-                            // We might be in the dynamic type case, or the canonically equivalent, but not the same case.
-
-                            if (RuntimeAugments.IsDynamicType(declaringTypeHandle))
-                            {
-                                if (canonFormKind == CanonicalFormKind.Universal)
-                                {
-                                    // If the declaring type is dynamic, and we found a universal canon match, we should use the universal canon path as fieldOffset will be meaningful
-                                    useFieldOffsetAccessor = true;
-                                }
-                                else
-                                {
-                                    // We can use the non-universal path, as the fieldAddressCookie has two fields (field offset, and type offset), and for dynamic types, the type offset is ignored
-                                    useFieldOffsetAccessor = false;
-                                }
-                            }
-                            else
-                            {
-                                // We're working with a statically generated type, but we didn't find an exact match in the tables
-                                if (canonFormKind != CanonicalFormKind.Universal)
-                                    fieldOffset = checked((int)TypeLoaderEnvironment.GetThreadStaticTypeOffsetFromThreadStaticCookie(fieldAddressCookie));
-
-                                fieldAddressCookie = TypeLoaderEnvironment.Instance.TryGetThreadStaticFieldOffsetCookieForTypeAndFieldOffset(declaringTypeHandle, checked((uint)fieldOffset));
-                                useFieldOffsetAccessor = false;
-                            }
-                        }
-
-                        if (useFieldOffsetAccessor)
-                        {
-                            return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                                (FieldAccessor)new ValueTypeFieldAccessorForUniversalThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldOffset, fieldTypeHandle) :
-                                (FieldAccessor)new ReferenceTypeFieldAccessorForUniversalThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldOffset, fieldTypeHandle);
                         }
                         else
                         {
-                            return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                                (FieldAccessor)new ValueTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAddressCookie, fieldTypeHandle) :
-                                (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAddressCookie, fieldTypeHandle);
+                            Debug.Assert((fieldAccessMetadata.Flags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
+                            fieldAddress = RvaToNonGenericStaticFieldAddress(
+                                fieldAccessMetadata.MappingTableModule, fieldAccessMetadata.Offset);
                         }
-                }
+
+                        return RuntimeAugments.IsValueType(fieldTypeHandle) ?
+                            (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), fieldAddress, fieldTypeHandle) :
+                            (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), fieldAddress, fieldTypeHandle);
+                    }
+
+                case FieldTableFlags.ThreadStatic:
+                    if (fieldAccessMetadata.Cookie == IntPtr.Zero)
+                    {
+                        return RuntimeAugments.IsValueType(fieldTypeHandle) ?
+                            (FieldAccessor)new ValueTypeFieldAccessorForUniversalThreadStaticFields(
+                                TryGetStaticClassConstructionContext(declaringTypeHandle),
+                                declaringTypeHandle,
+                                fieldAccessMetadata.Offset,
+                                fieldTypeHandle) :
+                            (FieldAccessor)new ReferenceTypeFieldAccessorForUniversalThreadStaticFields(
+                                TryGetStaticClassConstructionContext(declaringTypeHandle),
+                                declaringTypeHandle,
+                                fieldAccessMetadata.Offset,
+                                fieldTypeHandle);
+                    }
+                    else
+                    {
+                        return RuntimeAugments.IsValueType(fieldTypeHandle) ?
+                            (FieldAccessor)new ValueTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAccessMetadata.Cookie, fieldTypeHandle) :
+                            (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAccessMetadata.Cookie, fieldTypeHandle);
+                    }
             }
 
             return null;

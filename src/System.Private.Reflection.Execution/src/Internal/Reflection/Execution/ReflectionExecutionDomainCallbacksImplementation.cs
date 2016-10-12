@@ -213,16 +213,6 @@ namespace Internal.Reflection.Execution
             return s;
         }
 
-        public override IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
-        }
-
-        public override IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForTypeUsingLocator(canonEquivalentEntryLocator);
-        }
-
         public sealed override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle)
         {
             return _executionEnvironment.TryGetStaticClassConstructionContext(runtimeTypeHandle);

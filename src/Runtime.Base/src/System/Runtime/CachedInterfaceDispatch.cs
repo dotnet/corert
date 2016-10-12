@@ -18,6 +18,7 @@ namespace System.Runtime
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
             object pObject = Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer);
             IntPtr dispatchResolveTarget = RhpCidResolve_Worker(pObject, pCell);
+
             if (dispatchResolveTarget == InternalCalls.RhpGetCastableObjectDispatchHelper())
             {
                 // Swap it out for the one which reads the TLS slot to put the cell in a consistent
@@ -25,6 +26,7 @@ namespace System.Runtime
                 dispatchResolveTarget = InternalCalls.RhpGetCastableObjectDispatchHelper_TailCalled();
                 InternalCalls.RhpSetTLSDispatchCell(pCell);
             }
+
             return dispatchResolveTarget;
         }
 
@@ -59,11 +61,18 @@ namespace System.Runtime
             // This method is used for the implementation of LOAD_VIRT_FUNCTION and in that case the mapping we want
             // may already be in the cache.
             IntPtr pTargetCode = InternalCalls.RhpSearchDispatchCellCache(pCell, pInstanceType);
-            if (pTargetCode != IntPtr.Zero)
-                return pTargetCode;
+            if (pTargetCode == IntPtr.Zero)
+            {
+                // Otherwise call the version of this method that knows how to resolve the method manually.
+                pTargetCode = RhpCidResolve_Worker(pObject, pCell);
+            }
 
-            // Otherwise call the version of this method that knows how to resolve the method manually.
-            return RhpCidResolve_Worker(pObject, pCell);
+            // Special case for CastableOjbects: we use a thunk for the call. The thunk deals with putting
+            // the correct cell address value in the TLS variable used by castable objects dispatch.
+            if (pTargetCode == InternalCalls.RhpGetCastableObjectDispatchHelper())
+                pTargetCode = CastableObjectSupport.GetCastableObjectDispatchCellThunk(pInstanceType, pCell);
+
+            return pTargetCode;
         }
 
         [RuntimeExport("RhResolveDispatch")]
@@ -140,7 +149,7 @@ namespace System.Runtime
             }
             else
             {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING                
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
                 // Attempt to convert dispatch cell to non-metadata form if we haven't acquired a cache for this cell yet
                 if (cellInfo.HasCache == 0)
                 {

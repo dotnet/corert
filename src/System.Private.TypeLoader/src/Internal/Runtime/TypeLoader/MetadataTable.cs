@@ -148,6 +148,13 @@ namespace Internal.Runtime.TypeLoader
         IsUniversalCanonicalEntry = 0x00000040,
         HasDefaultParameters = 0x00000080,
         NeedsParameterInterpretation = 0x00000100,
+        CallingConventionDefault = 0x00000000,
+        Cdecl = 0x00001000,
+        Winapi = 0x00002000,
+        StdCall = 0x00003000,
+        ThisCall = 0x00004000,
+        FastCall = 0x00005000,
+        CallingConventionMask = 0x00007000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
