@@ -755,6 +755,9 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
     case ClasslibFunctionId::UnhandledExceptionHandler:
         pMethod = m_pModuleHeader->Get_UnhandledExceptionHandler();
         break;
+    case ClasslibFunctionId::AllocateThunkWithData:
+        pMethod = m_pModuleHeader->Get_AllocateThunkWithData();
+        break;
     }
 
     return pMethod;

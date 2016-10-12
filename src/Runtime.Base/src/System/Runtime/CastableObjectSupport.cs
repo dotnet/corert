@@ -8,6 +8,7 @@ namespace System.Runtime
     static class CastableObjectSupport
     {
         private static object s_castFailCanary = new object();
+        private static CastableObjectCacheEntry<IntPtr>[] s_ThunkBasedDispatchCellTargets = new CastableObjectCacheEntry<IntPtr>[16];
 
         internal interface ICastableObject
         // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
@@ -35,32 +36,33 @@ namespace System.Runtime
             object CastToInterface(EETypePtr interfaceType, bool produceCastErrorException, out Exception castError);
         }
 
-        internal struct CastableObjectCacheEntry
+        internal struct CastableObjectCacheEntry<V>
         {
-            public unsafe EEType *Type;
-            public object InstanceObjectForType;
+            public IntPtr Key;
+            public V Value;
         }
 
         internal class CastableObject
         {
-            public CastableObjectCacheEntry[] Cache;
+            public CastableObjectCacheEntry<object>[] Cache;
         }
 
         // cache must be a size which is a power of two.
-        internal static unsafe object CastableTargetLookup(CastableObjectCacheEntry[] cache, EEType* interfaceType)
+        internal static unsafe V CacheLookup<V>(CastableObjectCacheEntry<V>[] cache, IntPtr keyToLookup)
         {
+            uint hashcode = unchecked((uint)keyToLookup.ToInt64());
             uint cacheMask = (uint)cache.Length - 1;
-            uint bucket = interfaceType->HashCode & cacheMask;
+            uint bucket = hashcode & cacheMask;
             uint curbucket = bucket;
 
             // hash algorithm is open addressing with linear probing
 
             while (curbucket < cache.Length)
             {
-                if (cache[curbucket].Type == interfaceType)
-                    return cache[curbucket].InstanceObjectForType;
-                if (cache[curbucket].Type == null)
-                    return null;
+                if (cache[curbucket].Key == keyToLookup)
+                    return cache[curbucket].Value;
+                if (cache[curbucket].Key == default(IntPtr))
+                    return default(V);
                 curbucket++;
             }
 
@@ -68,42 +70,43 @@ namespace System.Runtime
             curbucket = 0;
             while (curbucket < bucket)
             {
-                if (cache[curbucket].Type == interfaceType)
-                    return cache[curbucket].InstanceObjectForType;
-                if (cache[curbucket].Type == null)
-                    return null;
+                if (cache[curbucket].Key == keyToLookup)
+                    return cache[curbucket].Value;
+                if (cache[curbucket].Key == default(IntPtr))
+                    return default(V);
                 curbucket++;
             }
 
-            return null;
+            return default(V);
         }
 
-        internal unsafe static int GetCachePopulation(CastableObjectCacheEntry[] cache)
+        internal unsafe static int GetCachePopulation<V>(CastableObjectCacheEntry<V>[] cache)
         {
             int population = 0;
             for (int i = 0; i < cache.Length; i++)
             {
-                if (cache[i].Type != null)
+                if (cache[i].Key != default(IntPtr))
                     population++;
             }
 
             return population;
         }
 
-        internal unsafe static void AddToExistingCache(CastableObjectCacheEntry[] cache, EEType* interfaceType, object objectForType)
+        internal unsafe static void AddToExistingCache<V>(CastableObjectCacheEntry<V>[] cache, IntPtr key, V value)
         {
+            uint hashcode = unchecked((uint)key.ToInt64());
             uint cacheMask = (uint)cache.Length - 1;
-            uint bucket = interfaceType->HashCode & cacheMask;
+            uint bucket = hashcode & cacheMask;
             uint curbucket = bucket;
 
             // hash algorithm is open addressing with linear probing
 
             while (curbucket < cache.Length)
             {
-                if (cache[curbucket].Type == null)
+                if (cache[curbucket].Key == default(IntPtr))
                 {
-                    cache[curbucket].Type = interfaceType;
-                    cache[curbucket].InstanceObjectForType = objectForType;
+                    cache[curbucket].Key = key;
+                    cache[curbucket].Value = value;
                     return;
                 }
                 curbucket++;
@@ -113,10 +116,10 @@ namespace System.Runtime
             curbucket = 0;
             while (curbucket < bucket)
             {
-                if (cache[curbucket].Type == null)
+                if (cache[curbucket].Key == default(IntPtr))
                 {
-                    cache[curbucket].Type = interfaceType;
-                    cache[curbucket].InstanceObjectForType = objectForType;
+                    cache[curbucket].Key = key;
+                    cache[curbucket].Value = value;
                     return;
                 }
                 curbucket++;
@@ -126,6 +129,36 @@ namespace System.Runtime
             return;
         }
 
+        /// <summary>
+        /// Add the newly allocated thunk of a CastableObject dispatch cell call to the cache if possible. (OOM errors may cause caching failure. 
+        /// An OOM is specified not to introduce new failure points though.)
+        /// </summary>
+        internal unsafe static void AddToThunkCache(IntPtr pDispatchCell, IntPtr pThunkTarget)
+        {
+            // Expand old cache if it isn't big enough.
+            if (GetCachePopulation(s_ThunkBasedDispatchCellTargets) > (s_ThunkBasedDispatchCellTargets.Length / 2))
+            {
+                CastableObjectCacheEntry<IntPtr>[] oldCache = s_ThunkBasedDispatchCellTargets;
+                try
+                {
+                    s_ThunkBasedDispatchCellTargets = new CastableObjectCacheEntry<IntPtr>[oldCache.Length * 2];
+                }
+                catch (OutOfMemoryException)
+                {
+                    // Failed to allocate a bigger cache.  That is fine, keep the old one.
+                }
+
+                for (int i = 0; i < oldCache.Length; i++)
+                {
+                    if (oldCache[i].Key != default(IntPtr))
+                    {
+                        AddToExistingCache(s_ThunkBasedDispatchCellTargets, oldCache[i].Key, oldCache[i].Value);
+                    }
+                }
+            }
+
+            AddToExistingCache(s_ThunkBasedDispatchCellTargets, pDispatchCell, pThunkTarget);
+        }
 
         /// <summary>
         /// Add the results of a CastableObject call to the cache if possible. (OOM errors may cause caching failure. An OOM is specified not
@@ -133,7 +166,7 @@ namespace System.Runtime
         /// </summary>
         internal unsafe static void AddToCastableCache(ICastableObject castableObject, EEType* interfaceType, object objectForType)
         {
-            CastableObjectCacheEntry[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
+            CastableObjectCacheEntry<object>[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
             bool setNewCache = false;
 
             // If there is no cache, allocate one
@@ -141,7 +174,7 @@ namespace System.Runtime
             {
                 try
                 {
-                    cache = new CastableObjectCacheEntry[8];
+                    cache = new CastableObjectCacheEntry<object>[8];
                 }
                 catch (OutOfMemoryException)
                 {
@@ -156,10 +189,10 @@ namespace System.Runtime
             if (GetCachePopulation(cache) > (cache.Length / 2))
             {
                 setNewCache = true;
-                CastableObjectCacheEntry[] oldCache = cache;
+                CastableObjectCacheEntry<object>[] oldCache = cache;
                 try
                 {
-                    cache = new CastableObjectCacheEntry[oldCache.Length * 2];
+                    cache = new CastableObjectCacheEntry<object>[oldCache.Length * 2];
                 }
                 catch (OutOfMemoryException)
                 {
@@ -168,14 +201,14 @@ namespace System.Runtime
 
                 for (int i = 0; i < oldCache.Length; i++)
                 {
-                    if (oldCache[i].Type != null)
+                    if (oldCache[i].Key != default(IntPtr))
                     {
-                        AddToExistingCache(cache, oldCache[i].Type, oldCache[i].InstanceObjectForType);
+                        AddToExistingCache(cache, oldCache[i].Key, oldCache[i].Value);
                     }
                 }
             }
 
-            AddToExistingCache(cache, interfaceType, objectForType);
+            AddToExistingCache(cache, new IntPtr(interfaceType), objectForType);
 
             if (setNewCache)
             {
@@ -187,13 +220,13 @@ namespace System.Runtime
 
         internal static unsafe object GetCastableTargetIfPossible(ICastableObject castableObject, EEType *interfaceType, bool produceException, ref Exception exception)
         {
-            CastableObjectCacheEntry[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
+            CastableObjectCacheEntry<object>[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
 
             object targetObjectInitial = null;
 
             if (cache != null)
             {
-                targetObjectInitial = CastableTargetLookup(cache, interfaceType);
+                targetObjectInitial = CacheLookup(cache, new IntPtr(interfaceType));
                 if (targetObjectInitial != null)
                 {
                     if (targetObjectInitial != s_castFailCanary)
@@ -227,7 +260,7 @@ namespace System.Runtime
             object targetObjectInCache = null;
 
             if (cache != null)
-                targetObjectInCache = CastableTargetLookup(cache, interfaceType);
+                targetObjectInCache = CacheLookup(cache, new IntPtr(interfaceType));
 
             if (targetObjectInCache == null)
             {
@@ -241,6 +274,47 @@ namespace System.Runtime
                 return targetObjectInCache;
             else
                 return null;
+        }
+
+        internal static unsafe IntPtr GetCastableObjectDispatchCellThunk(EEType* pInstanceType, IntPtr pDispatchCell)
+        {
+            IntPtr pTargetCode = CacheLookup(s_ThunkBasedDispatchCellTargets, pDispatchCell);
+            if (pTargetCode != default(IntPtr))
+                return pTargetCode;
+
+            InternalCalls.RhpAcquireCastCacheLock();
+            {
+                // Look in the cache again after taking the lock
+
+                pTargetCode = CacheLookup(s_ThunkBasedDispatchCellTargets, pDispatchCell);
+                if (pTargetCode != default(IntPtr))
+                    return pTargetCode;
+
+
+                // Allocate a new thunk. Failure to allocate one will result in a fail-fast. We don't return nulls from this API.
+
+                // TODO: The allocation of thunks here looks like a layering duck tape. The allocation of the raw 
+                // thunks should be a core runtime service (ie it should live in MRT).
+                // Delete the callback logic once this moves to MRT.
+
+                IntPtr pAllocateThunkFunction = (IntPtr)InternalCalls.RhpGetClasslibFunction(
+                    pInstanceType->GetAssociatedModuleAddress(),
+                    EH.ClassLibFunctionId.AllocateThunkWithData);
+
+                pTargetCode = CalliIntrinsics.Call<IntPtr>(
+                    pAllocateThunkFunction,
+                    InternalCalls.RhpGetCastableObjectDispatch_CommonStub(),
+                    pDispatchCell,
+                    InternalCalls.RhpGetCastableObjectDispatchHelper_TailCalled());
+
+                if (pTargetCode == IntPtr.Zero)
+                    EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+
+                AddToThunkCache(pDispatchCell, pTargetCode);
+            }
+            InternalCalls.RhpReleaseCastCacheLock();
+
+            return pTargetCode;
         }
 
         [RuntimeExport("RhpCastableObjectResolve")]
