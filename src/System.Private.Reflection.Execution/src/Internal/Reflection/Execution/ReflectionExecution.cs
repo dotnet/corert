@@ -85,7 +85,7 @@ namespace Internal.Reflection.Execution
             return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
-        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
+        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; }
 
         internal static IList<string> DefaultAssemblyNamesForGetType;
     }

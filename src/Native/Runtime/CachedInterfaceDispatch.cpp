@@ -568,4 +568,10 @@ COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatchHelper_TailCalled, ())
     return &RhpCastableObjectDispatchHelper_TailCalled;
 }
 
+extern "C" void(*RhpCastableObjectDispatch_CommonStub)();
+COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatch_CommonStub, ())
+{
+    return &RhpCastableObjectDispatch_CommonStub;
+}
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

@@ -15,6 +15,7 @@ namespace Internal.Runtime.Augments
         public abstract bool GetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs);
         public abstract bool CompareMethodSignatures(RuntimeMethodSignature signature1, RuntimeMethodSignature signature2);
         public abstract IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind);
+        public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeMethodSignature methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
     }
 }
