@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using Internal.Reflection.Augments;
+using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -47,6 +48,7 @@ namespace System.Reflection
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
         public virtual bool ContainsGenericParameters => false;
 
+        [DebuggerStepThrough]
         public object Invoke(object obj, object[] parameters) => Invoke(obj, BindingFlags.Default, binder: null, parameters: parameters, culture: null);
         public abstract object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 

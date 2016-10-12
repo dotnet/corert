@@ -370,5 +370,22 @@ namespace System.Runtime.InteropServices
         }
 
         public static int GetThunkSize() { return AsmCode.GetThunkSize(); }
+
+        //
+        // Note: This method combines the AllocateThunk and SetThunkData APIs into one callable entry point.
+        // It is currently exported as a well-known method that the native runtime can calli into. Currently,
+        // ModuleHeaders support a limited number of well-known entry points (8 slots), so instead of using 2
+        // slots for AllocateThunk and SetThunkData, we just export a single API that combines both calls.
+        //
+        [RuntimeExport("AllocateThunkWithData")]
+        public unsafe static IntPtr AllocateThunkWithData(IntPtr commonStubAddress, IntPtr context, IntPtr target)
+        {
+            IntPtr thunk = AllocateThunk(commonStubAddress);
+
+            if (thunk != IntPtr.Zero)
+                SetThunkData(thunk, context, target);
+
+            return thunk;
+        }
     }
 }

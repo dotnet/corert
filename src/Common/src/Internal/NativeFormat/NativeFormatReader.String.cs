@@ -20,6 +20,11 @@ namespace Internal.NativeFormat
             _offset = _reader.DecodeString(_offset, out value);
             return value;
         }
+
+        public void SkipString()
+        {
+            _offset = _reader.SkipString(_offset);
+        }
     }
     
     internal partial class NativeReader
@@ -55,6 +60,24 @@ namespace Internal.NativeFormat
 #else
             value = Encoding.UTF8.GetString(_base + offset, (int)numBytes);
 #endif
+
+            return endOffset;
+        }
+
+        // Decode a string, but just skip it instead of returning it
+        public uint SkipString(uint offset)
+        {
+            uint numBytes;
+            offset = DecodeUnsigned(offset, out numBytes);
+
+            if (numBytes == 0)
+            {
+                return offset;
+            }
+
+            uint endOffset = offset + numBytes;
+            if (endOffset < numBytes || endOffset > _size)
+                ThrowBadImageFormatException();
 
             return endOffset;
         }

@@ -236,7 +236,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     }
                     else
                     {
-                        _lazyFieldAccessor = fieldAccessor = ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
+                        _lazyFieldAccessor = fieldAccessor = ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this._reader, this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
                         if (fieldAccessor == null)
                             throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(this);
                     }

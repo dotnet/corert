@@ -29,6 +29,21 @@
         pop         {r0}
     MEND
 
+    MACRO
+        SET_TLS_DISPATCH_CELL
+        EXTERN      _tls_index
+        ;; r12 : Value to be assigned to the TLS variable
+        push        {r0-r1}
+        ldr         r0, =_tls_index
+        ldr         r0, [r0]
+        mrc         p15, 0, r1, c13, c0, 2
+        ldr         r1, [r1, #__tls_array]
+        ldr         r0, [r1, r0, lsl #2]    ;; r0 <- our TLS base
+        ldr         r1, SECTIONREL_t_TLS_DispatchCell
+        str         r12, [r1, r0]
+        pop         {r0-r1}
+    MEND
+
     ;; Macro that generates code to check a single cache entry.
     MACRO
         CHECK_CACHE_ENTRY $entry
@@ -48,6 +63,22 @@
 SECTIONREL_t_TLS_DispatchCell
         DCD     t_TLS_DispatchCell
         RELOC   15 ;; SECREL
+
+    LEAF_ENTRY RhpCastableObjectDispatch_CommonStub
+        ;; Custom calling convention:
+        ;;      Red zone (i.e. [sp, #-4]) has pointer to the current thunk's data block
+        
+        ;; store dispatch cell address in thread static
+        ldr         r12, [sp, #-4]
+        push        {r12}
+        ldr         r12, [r12]
+        SET_TLS_DISPATCH_CELL
+        
+        ;; Now load the target address and jump to it.
+        pop         {r12}
+        ldr         r12, [r12, #4]
+        bx          r12
+    LEAF_END RhpCastableObjectDispatch_CommonStub
 
     LEAF_ENTRY RhpTailCallTLSDispatchCell
         ;; Load the dispatch cell out of the TLS variable

@@ -90,7 +90,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        public unsafe bool TryGetNamedTypeForMetadata(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, out RuntimeTypeHandle runtimeTypeHandle)
+        public unsafe bool TryGetOrCreateNamedTypeForMetadata(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, out RuntimeTypeHandle runtimeTypeHandle)
         {
             int hashCode = typeDefHandle.ComputeHashCode(metadataReader);
 
@@ -331,6 +331,15 @@ namespace Internal.Runtime.TypeLoader
             throw new NotImplementedException();
         }
 
+        public static bool TryGetFieldAccessMetadata(
+            MetadataReader metadataReader,
+            RuntimeTypeHandle runtimeTypeHandle,
+            FieldHandle fieldHandle,
+            out FieldAccessMetadata fieldAccessMetadata)
+        {
+            throw new NotImplementedException();
+        }
+
         internal unsafe static NativeReader GetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob)
         {
             NativeReader reader;
@@ -476,5 +485,31 @@ namespace Internal.Runtime.TypeLoader
         /// Invoke flags
         /// </summary>
         public InvokeTableFlags InvokeTableFlags;
+    }
+
+    /// <summary>
+    /// Helper structure describing all info needed to construct dynamic field accessors.
+    /// </summary>
+    public struct FieldAccessMetadata
+    {
+        /// <summary>
+        /// Module containing the relevant metadata, null when not found
+        /// </summary>
+        public IntPtr MappingTableModule;
+
+        /// <summary>
+        /// Cookie for field access. This field is set to IntPtr.Zero when the value is not available.
+        /// </summary>
+        public IntPtr Cookie;
+
+        /// <summary>
+        /// Field access and characteristics bitmask.
+        /// </summary>
+        public FieldTableFlags Flags;
+
+        /// <summary>
+        /// Field offset, address or cookie based on field access type.
+        /// </summary>
+        public int Offset;
     }
 }

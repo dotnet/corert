@@ -150,8 +150,11 @@ namespace System.Runtime
         {
             GetRuntimeException = 0,
             FailFast = 1,
-            // UnhandledExceptionHandler = 2, // unused
+            // UnhandledExceptionHandler = 2,     // unused
             AppendExceptionStackFrame = 3,
+            // CheckStaticClassConstruction = 4,  // unused
+            // InitializeFinalizerThread = 5,     // unused
+            AllocateThunkWithData = 6,
         }
 
         // Given an address pointing somewhere into a managed module, get the classlib-defined fail-fast 
