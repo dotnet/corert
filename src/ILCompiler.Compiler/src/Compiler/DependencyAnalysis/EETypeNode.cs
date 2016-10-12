@@ -59,12 +59,14 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected TypeDesc _type;
         protected EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        protected EETypeOptionalFieldsNode _optionalFieldsNode;
 
         public EETypeNode(TypeDesc type)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
+            _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
         }
 
         protected override string GetName()
@@ -92,6 +94,16 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     return ObjectNodeSection.DataSection;
             }
+        }
+
+        internal bool HasOptionalFields
+        {
+            get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
+        }
+
+        internal byte[] GetOptionalFieldsData()
+        {
+            return _optionalFieldsBuilder.GetBytes();
         }
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
@@ -224,7 +236,7 @@ namespace ILCompiler.DependencyAnalysis
             // Todo: RelatedTypeViaIATFlag when we support cross-module EETypes
             // Todo: Generic Type Definition EETypes
 
-            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (HasOptionalFields)
             {
                 flags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
             }
@@ -345,9 +357,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if(_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (HasOptionalFields)
             {
-                objData.EmitPointerReloc(factory.EETypeOptionalFields(_optionalFieldsBuilder));
+                objData.EmitPointerReloc(_optionalFieldsNode);
             }
         }
 

@@ -759,8 +759,9 @@ namespace ILCompiler.CppCodeGen
             {
                 string mangledName = ((ISymbolNode)node).MangledName;
 
-                // Rename generic composition nodes to avoid name clash with types
-                nodeCode.Append(node is GenericCompositionNode ? mangledName.Replace("::", "_") : mangledName);
+                // Rename generic composition and optional fields nodes to avoid name clash with types
+                bool shouldReplaceNamespaceQualifier = node is GenericCompositionNode || node is EETypeOptionalFieldsNode;
+                nodeCode.Append(shouldReplaceNamespaceQualifier ? mangledName.Replace("::", "_") : mangledName);
             }
             nodeCode.Append("()");
             nodeCode.AppendLine();
@@ -835,7 +836,8 @@ namespace ILCompiler.CppCodeGen
             // Node is either an non-emitted type or a generic composition - both are ignored for CPP codegen
             else if ((reloc.Target is ModuleManagerIndirectionNode || reloc.Target is InterfaceDispatchMapNode || reloc.Target is EETypeOptionalFieldsNode || reloc.Target is GenericCompositionNode) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
             {
-                relocCode.Append(reloc.Target is GenericCompositionNode ? reloc.Target.MangledName.Replace("::", "_") : reloc.Target.MangledName);
+                bool shouldReplaceNamespaceQualifier = reloc.Target is GenericCompositionNode || reloc.Target is EETypeOptionalFieldsNode;
+                relocCode.Append(shouldReplaceNamespaceQualifier ? reloc.Target.MangledName.Replace("::", "_") : reloc.Target.MangledName);
                 relocCode.Append("()");
             }
             else if (reloc.Target is ObjectAndOffsetSymbolNode && (reloc.Target as ISymbolNode).MangledName.Contains("DispatchMap"))

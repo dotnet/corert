@@ -82,13 +82,6 @@ export CoreRT_BuildArch
 export CoreRT_BuildType
 export CoreRT_BuildOS
 
-__build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
-if [ ${__build_os_lowcase} != "osx" ]; then
-    __BuildRid=ubuntu.14.04-${CoreRT_BuildArch}
-else
-    __BuildRid=osx.10.10-${CoreRT_BuildArch}
-fi
-
 __ScriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 export CoreRT_ToolchainDir=${__ScriptDir}/../bin/Product/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/packaging/publish1
