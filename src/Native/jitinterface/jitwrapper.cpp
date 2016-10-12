@@ -59,7 +59,12 @@ DLL_EXPORT int JitCompileMethod(
     GUID versionId;
     pJit->getVersionIdentifier(&versionId);
     if (memcmp(&versionId, &JITEEVersionIdentifier, sizeof(GUID)) != 0)
+    {
+        // JIT and the compiler disagree on how the interface looks like.
+        // Either get a matching version of the JIT from the CoreCLR repo or update the interface
+        // on the CoreRT side. Under no circumstances should you comment this line out.
         return 1;
+    }
 
     try
     {
