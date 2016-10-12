@@ -284,7 +284,7 @@ namespace System.Runtime
                         break;
                     case SignatureKind.DefaultConstructor:
                         {
-                            result = RuntimeAugments.Callbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
+                            result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
                             if (result == IntPtr.Zero)
                                 result = RuntimeAugments.GetFallbackDefaultConstructor();
                         }
