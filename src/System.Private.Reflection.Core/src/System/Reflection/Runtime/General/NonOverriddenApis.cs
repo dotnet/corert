@@ -29,7 +29,7 @@ using System.Collections.Generic;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
 #if DEBUG
         public sealed override Type GetType(string name) => base.GetType(name);

@@ -23,7 +23,7 @@ using Internal.LowLevelLinq;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
         public sealed override Type[] GetExportedTypes() => ExportedTypes.ToArray();
         public sealed override Module[] GetLoadedModules(bool getResourceModules) => Modules.ToArray();

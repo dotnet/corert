@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
         public sealed override string CodeBase { get { throw new NotImplementedException(); } }
         public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) { throw new NotImplementedException(); }

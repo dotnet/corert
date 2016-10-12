@@ -29,7 +29,7 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     // Assemblies (maps 1-1 with a MetadataReader/ScopeDefinitionHandle.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
         /// <summary>
         /// Returns non-null or throws.
@@ -88,7 +88,7 @@ namespace System.Reflection.Runtime.Assemblies
                 DispenserScenario.Scope_Assembly,
                 delegate (RuntimeAssemblyKey qScopeDefinition)
                 {
-                    return new RuntimeAssembly(qScopeDefinition.Reader, qScopeDefinition.Handle, qScopeDefinition.Overflows);
+                    return (RuntimeAssembly)new NativeFormat.NativeFormatRuntimeAssembly(qScopeDefinition.Reader, qScopeDefinition.Handle, qScopeDefinition.Overflows);
                 }
         );
 
