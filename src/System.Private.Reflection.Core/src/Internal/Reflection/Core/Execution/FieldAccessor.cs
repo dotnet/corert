@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Core.Execution
 {

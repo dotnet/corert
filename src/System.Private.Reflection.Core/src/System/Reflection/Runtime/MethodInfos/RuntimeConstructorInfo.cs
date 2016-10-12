@@ -13,8 +13,6 @@ using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.MethodInfos

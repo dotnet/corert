@@ -15,8 +15,6 @@ using Internal.LowLevelLinq;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 using CharSet = System.Runtime.InteropServices.CharSet;
 using LayoutKind = System.Runtime.InteropServices.LayoutKind;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;

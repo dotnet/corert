@@ -16,8 +16,6 @@ using System.Reflection.Runtime.BindingFlagSupport;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
