@@ -135,7 +135,7 @@ namespace System.IO
 
         public virtual Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
@@ -187,7 +187,7 @@ namespace System.IO
 
         public virtual void CopyTo(Stream destination, int bufferSize)
         {
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             byte[] buffer = new byte[bufferSize];
             int read;
@@ -364,34 +364,6 @@ namespace System.IO
             Write(oneByteArray, 0, 1);
         }
 
-        internal void ValidateCopyToArguments(Stream destination, int bufferSize)
-        {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            if (!CanRead && !CanWrite)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-            if (!destination.CanRead && !destination.CanWrite)
-            {
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-            if (!CanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-            if (!destination.CanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
-        }
-
         private sealed class NullStream : Stream
         {
             internal NullStream() { }
@@ -432,7 +404,7 @@ namespace System.IO
             {
                 // Validate arguments for compat, since previously this
                 // method was inherited from Stream, which did check its arguments.
-                ValidateCopyToArguments(destination, bufferSize);
+                StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
                 return cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
