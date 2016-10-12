@@ -50,6 +50,12 @@ namespace Internal.Runtime
             {
                 case ExceptionStringID.ClassLoadGeneral:
                     return SR.ClassLoad_General;
+                case ExceptionStringID.ClassLoadExplicitGeneric:
+                    return SR.ClassLoad_ExplicitGeneric;
+                case ExceptionStringID.ClassLoadBadFormat:
+                    return SR.ClassLoad_BadFormat;
+                case ExceptionStringID.ClassLoadExplicitLayout:
+                    return SR.ClassLoad_ExplicitLayout;
                 case ExceptionStringID.InvalidProgramSpecific:
                     return SR.InvalidProgram_Specific;
                 case ExceptionStringID.MissingField:

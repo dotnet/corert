@@ -444,7 +444,7 @@ namespace Internal.TypeSystem
                         return field.FieldType;
                 }
 
-                throw new BadImageFormatException();
+                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, this);
             }
         }
 
