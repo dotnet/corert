@@ -752,17 +752,18 @@ namespace Internal.TypeSystem
             if (((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed) &&
                 ((flags & TypeFlags.HasStaticConstructorComputed) == 0))
             {
-                MetadataType metadataType = type.GetTypeDefinition() as MetadataType;
-                if (metadataType != null)
+                TypeDesc typeDefinition = type.GetTypeDefinition();
+                
+                if (typeDefinition != type)
                 {
-                    if (metadataType != type)
-                    {
-                        // If we're the metadata type is different, the code was working with an instantiated generic.
-                        // In that case, just query the HasStaticConstructor property, as it can cache the answer
-                        if (metadataType.HasStaticConstructor)
-                            flags |= TypeFlags.HasStaticConstructor;
-                    }
-                    else if (metadataType.GetStaticConstructor() != null)
+                    // If the type definition is different, the code was working with an instantiated generic or some such.
+                    // In that case, just query the HasStaticConstructor property, as it can cache the answer
+                    if (type.HasStaticConstructor)
+                        flags |= TypeFlags.HasStaticConstructor;
+                }
+                else if (typeDefinition is MetadataType)
+                {
+                    if (((MetadataType)typeDefinition).GetStaticConstructor() != null)
                     {
                         flags |= TypeFlags.HasStaticConstructor;
                     }
