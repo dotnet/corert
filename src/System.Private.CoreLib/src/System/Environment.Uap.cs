@@ -43,5 +43,14 @@ namespace System
             // Store apps have their lifetime managed by the PLM
             throw new PlatformNotSupportedException();
         }
+
+        public static string MachineName
+        {
+            get
+            {
+                // MachineName not supported in UWP.
+                throw new PlatformNotSupportedException();
+            }
+        }
     }
 }

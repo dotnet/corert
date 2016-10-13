@@ -7,6 +7,7 @@ set(NATIVE_SOURCES
     pal_cruntime.cpp
     pal_datetime.cpp
     pal_dynamicload.cpp
+    pal_networking.cpp
 )
 
 add_library(System.Private.CoreLib.Native
