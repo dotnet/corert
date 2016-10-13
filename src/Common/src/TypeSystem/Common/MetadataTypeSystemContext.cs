@@ -77,7 +77,7 @@ namespace Internal.TypeSystem
             return _wellKnownTypes[(int)wellKnownType - 1];
         }
 
-        protected internal override bool ComputeHasStaticConstructor(TypeDesc type)
+        protected sealed internal override bool ComputeHasStaticConstructor(TypeDesc type)
         {
             if (type is MetadataType)
             {

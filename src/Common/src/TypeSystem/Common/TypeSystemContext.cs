@@ -741,7 +741,7 @@ namespace Internal.TypeSystem
         /// TypeSystemContext controlled type flags computation. This allows computation of flags which depend
         /// on the particular TypeSystemContext in use
         /// </summary>
-        protected internal virtual TypeFlags ComputeTypeFlags(TypeDesc type, TypeFlags flags, TypeFlags mask)
+        internal TypeFlags ComputeTypeFlags(TypeDesc type, TypeFlags flags, TypeFlags mask)
         {
             // If we are looking to compute HasStaticConstructor, and we haven't yet assigned a value
             if ((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed)
