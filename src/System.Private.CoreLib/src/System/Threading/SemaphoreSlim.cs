@@ -778,13 +778,11 @@ namespace System.Threading
 
                 // Signal to any synchronous waiters
                 int waitCount = m_waitCount;
-                if (currentCount == 1 || waitCount == 1)
+                
+                int waitersToNotify = Math.Min(releaseCount, waitCount);
+                for (int i = 0; i < waitersToNotify; i++)
                 {
                     m_condition.SignalOne();
-                }
-                else if (waitCount > 1)
-                {
-                    m_condition.SignalAll();
                 }
 
                 // Now signal to any asynchronous waiters, if there are any.  While we've already

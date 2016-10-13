@@ -53,5 +53,8 @@ namespace Internal.TypeSystem
 
         HasGenericVariance         = 0x400,
         HasGenericVarianceComputed = 0x800,
+
+        HasStaticConstructor         = 0x1000,
+        HasStaticConstructorComputed = 0x2000,
     }
 }

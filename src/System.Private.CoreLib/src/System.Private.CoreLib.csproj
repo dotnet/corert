@@ -135,6 +135,7 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\IO\SeekOrigin.cs" />
     <Compile Include="System\IO\Stream.cs" />
+    <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="System\Reflection\AmbiguousMatchException.cs" />
     <Compile Include="System\Reflection\Assembly.cs" />
     <Compile Include="System\Reflection\AssemblyContentType.cs" />

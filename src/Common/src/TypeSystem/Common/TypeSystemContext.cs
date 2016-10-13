@@ -736,5 +736,42 @@ namespace Internal.TypeSystem
             // Type system contexts that support this need to override this.
             throw new NotSupportedException();
         }
+
+        /// <summary>
+        /// TypeSystemContext controlled type flags computation. This allows computation of flags which depend
+        /// on the particular TypeSystemContext in use
+        /// </summary>
+        internal TypeFlags ComputeTypeFlags(TypeDesc type, TypeFlags flags, TypeFlags mask)
+        {
+            // If we are looking to compute HasStaticConstructor, and we haven't yet assigned a value
+            if ((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed)
+            {
+                TypeDesc typeDefinition = type.GetTypeDefinition();
+                
+                if (typeDefinition != type)
+                {
+                    // If the type definition is different, the code was working with an instantiated generic or some such.
+                    // In that case, just query the HasStaticConstructor property, as it can cache the answer
+                    if (typeDefinition.HasStaticConstructor)
+                        flags |= TypeFlags.HasStaticConstructor;
+                }
+                else
+                {
+                    if (ComputeHasStaticConstructor(typeDefinition))
+                    {
+                        flags |= TypeFlags.HasStaticConstructor;
+                    }
+                }
+
+                flags |= TypeFlags.HasStaticConstructorComputed;
+            }
+
+            return flags;
+        }
+
+        /// <summary>
+        /// Algorithm to control which types are considered to have static constructors
+        /// </summary>
+        protected internal abstract bool ComputeHasStaticConstructor(TypeDesc type);
     }
 }

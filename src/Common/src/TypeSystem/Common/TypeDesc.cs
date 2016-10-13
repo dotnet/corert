@@ -132,6 +132,9 @@ namespace Internal.TypeSystem
         {
             TypeFlags flags = ComputeTypeFlags(mask);
 
+            if ((flags & mask) == 0)
+                flags = Context.ComputeTypeFlags(this, flags, mask);
+
             Debug.Assert((flags & mask) != 0);
             _typeFlags |= flags;
 
@@ -444,7 +447,7 @@ namespace Internal.TypeSystem
                         return field.FieldType;
                 }
 
-                throw new BadImageFormatException();
+                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, this);
             }
         }
 
@@ -452,11 +455,11 @@ namespace Internal.TypeSystem
         /// Gets a value indicating whether this type has a class constructor method.
         /// Use <see cref="GetStaticConstructor"/> to retrieve it.
         /// </summary>
-        public virtual bool HasStaticConstructor
+        public bool HasStaticConstructor
         {
             get
             {
-                return false;
+                return (GetTypeFlags(TypeFlags.HasStaticConstructor | TypeFlags.HasStaticConstructorComputed) & TypeFlags.HasStaticConstructor) != 0;
             }
         }
 

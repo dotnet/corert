@@ -241,7 +241,6 @@ namespace Internal.TypeSystem.Ecma
                 }
             }
 
-            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 

@@ -244,6 +244,11 @@ COOP_PINVOKE_HELPER(void, RhpCastableObjectDispatchHelper_TailCalled, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
+COOP_PINVOKE_HELPER(void, RhpCastableObjectDispatch_CommonStub, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;

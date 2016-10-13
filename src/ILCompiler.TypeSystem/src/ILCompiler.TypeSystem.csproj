@@ -326,9 +326,6 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\NoMetadata\NoMetadataType.cs">
-      <Link>NoMetadata\NoMetadataType.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
