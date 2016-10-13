@@ -736,5 +736,42 @@ namespace Internal.TypeSystem
             // Type system contexts that support this need to override this.
             throw new NotSupportedException();
         }
+
+        /// <summary>
+        /// Extension point for computation of type flags. This extension point may be overriden to customize
+        /// type flags that are not computed by the ComputeTypeFlags api on TypeDesc.
+        /// At this time, the flag so computed are:
+        /// HasStaticConstructor
+        /// 
+        /// When overriding, return the value of calling this base implementation passing the flags value computed
+        /// in the override.
+        /// </summary>
+        protected internal virtual TypeFlags ComputeTypeFlags(TypeDesc type, TypeFlags flags, TypeFlags mask)
+        {
+            // If we are looking to compute HasStaticConstructor, and we haven't yet assigned a value
+            if (((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed) &&
+                ((flags & TypeFlags.HasStaticConstructorComputed) == 0))
+            {
+                MetadataType metadataType = type.GetTypeDefinition() as MetadataType;
+                if (metadataType != null)
+                {
+                    if (metadataType != type)
+                    {
+                        // If we're the metadata type is different, the code was working with an instantiated generic.
+                        // In that case, just query the HasStaticConstructor property, as it can cache the answer
+                        if (metadataType.HasStaticConstructor)
+                            flags |= TypeFlags.HasStaticConstructor;
+                    }
+                    else if (metadataType.GetStaticConstructor() != null)
+                    {
+                        flags |= TypeFlags.HasStaticConstructor;
+                    }
+                }
+
+                flags |= TypeFlags.HasStaticConstructorComputed;
+            }
+
+            return flags;
+        }
     }
 }

@@ -73,7 +73,6 @@ namespace Internal.TypeSystem
 
             // Not all masks are valid to ask on signature variables. If you hit this assert, you might
             // need to special case, or you have a bug.
-            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 
@@ -116,9 +115,6 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.SignatureMethodVariable;
             }
 
-            // Not all masks are valid to ask on signature variables. If you hit this assert, you might
-            // need to special case, or you have a bug.
-            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 
