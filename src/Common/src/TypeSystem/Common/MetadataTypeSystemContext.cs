@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -74,6 +75,15 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(_wellKnownTypes != null, "Forgot to call SetSystemModule?");
             return _wellKnownTypes[(int)wellKnownType - 1];
+        }
+
+        protected sealed internal override bool ComputeHasStaticConstructor(TypeDesc type)
+        {
+            if (type is MetadataType)
+            {
+                return ((MetadataType)type).GetStaticConstructor() != null;
+            }
+            return false;
         }
     }
 }

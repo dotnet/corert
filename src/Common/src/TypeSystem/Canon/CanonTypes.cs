@@ -123,7 +123,6 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.HasGenericVarianceComputed;
             }
 
-            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 
@@ -214,7 +213,6 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.ValueType;
             }
 
-            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 
