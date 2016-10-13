@@ -738,19 +738,13 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Extension point for computation of type flags. This extension point may be overriden to customize
-        /// type flags that are not computed by the ComputeTypeFlags api on TypeDesc.
-        /// At this time, the flag so computed are:
-        /// HasStaticConstructor
-        /// 
-        /// When overriding, return the value of calling this base implementation passing the flags value computed
-        /// in the override.
+        /// TypeSystemContext controlled type flags computation. This allows computation of flags which depend
+        /// on the particular TypeSystemContext in use
         /// </summary>
         protected internal virtual TypeFlags ComputeTypeFlags(TypeDesc type, TypeFlags flags, TypeFlags mask)
         {
             // If we are looking to compute HasStaticConstructor, and we haven't yet assigned a value
-            if (((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed) &&
-                ((flags & TypeFlags.HasStaticConstructorComputed) == 0))
+            if ((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed)
             {
                 TypeDesc typeDefinition = type.GetTypeDefinition();
                 
@@ -758,12 +752,12 @@ namespace Internal.TypeSystem
                 {
                     // If the type definition is different, the code was working with an instantiated generic or some such.
                     // In that case, just query the HasStaticConstructor property, as it can cache the answer
-                    if (type.HasStaticConstructor)
+                    if (typeDefinition.HasStaticConstructor)
                         flags |= TypeFlags.HasStaticConstructor;
                 }
-                else if (typeDefinition is MetadataType)
+                else
                 {
-                    if (((MetadataType)typeDefinition).GetStaticConstructor() != null)
+                    if (ComputeHasStaticConstructor(typeDefinition))
                     {
                         flags |= TypeFlags.HasStaticConstructor;
                     }
@@ -774,5 +768,10 @@ namespace Internal.TypeSystem
 
             return flags;
         }
+
+        /// <summary>
+        /// Algorithm to control which types are considered to have static constructors
+        /// </summary>
+        protected internal abstract bool ComputeHasStaticConstructor(TypeDesc type);
     }
 }

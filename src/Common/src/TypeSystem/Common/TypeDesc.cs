@@ -131,7 +131,9 @@ namespace Internal.TypeSystem
         private TypeFlags InitializeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = ComputeTypeFlags(mask);
-            flags = Context.ComputeTypeFlags(this, flags, mask);
+
+            if ((flags & mask) == 0)
+                flags = Context.ComputeTypeFlags(this, flags, mask);
 
             Debug.Assert((flags & mask) != 0);
             _typeFlags |= flags;
