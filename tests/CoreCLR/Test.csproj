@@ -1,0 +1,15 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <TargetName>$(TestFileName)</TargetName>
+    <TargetExt>.Exe</TargetExt>
+    <OutputType>Exe</OutputType>
+    <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
+  </PropertyGroup>
+  
+  <Import Project="C:\git\corert\tests\Test.Common.targets" />
+  
+  <!-- Since tests are already compiled, override Compile target to prevent CSC running -->
+  <Target Name="Compile" />
+</Project>

@@ -7,8 +7,7 @@ set CoreRT_BuildType=Debug
 set CoreRT_BuildOS=Windows_NT
 set CoreRT_TestRun=true
 set CoreRT_TestCompileMode=ryujit
-set CoreRT_TestExtRepo=
-set CoreRT_BuildExtRepo=
+set CoreRT_RunCoreCLRTests=
 
 :ArgLoop
 if "%1" == "" goto :ArgsDone
@@ -19,8 +18,7 @@ if /i "%1" == "arm"    (set CoreRT_BuildArch=arm&&shift&goto ArgLoop)
 
 if /i "%1" == "debug"    (set CoreRT_BuildType=Debug&shift&goto ArgLoop)
 if /i "%1" == "release"  (set CoreRT_BuildType=Release&shift&goto ArgLoop)
-if /i "%1" == "/extrepo"  (set CoreRT_TestExtRepo=%2&shift&shift&goto ArgLoop)
-if /i "%1" == "/buildextrepo" (set CoreRT_BuildExtRepo=%2&shift&shift&goto ArgLoop)
+if /i "%1" == "/coreclr"  (set CoreRT_RunCoreCLRTests=true&shift&goto ArgLoop)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
@@ -29,16 +27,15 @@ echo Invalid command line argument: %1
 goto :Usage
 
 :Usage
-echo %0 [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
+echo %0 [OS] [arch] [flavor] [/extrepo] [/mode] [/runtest]
 echo     /mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
-echo     /extrepo      : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
-echo     /buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
+echo     /coreclr      : Download and run the CoreCLR repo tests
 exit /b 2
 
 :ArgsDone
 
-call testenv.cmd
+call %CoreRT_TestRoot%testenv.cmd
 
 set CoreRT_RspTemplateDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 
@@ -47,7 +44,9 @@ set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
 
-if not "%CoreRT_TestExtRepo%"=="" goto :TestExtRepo
+call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
+
+if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepo
 
 if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrtd.lib
@@ -142,8 +141,6 @@ goto :eof
         )
     )
 
-    call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
-
     echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
     echo.
     msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
@@ -181,23 +178,59 @@ goto :eof
     powershell -Command Write-Host %1 -foreground "red"
     exit /b -1
 
-:TestExtRepo
-    echo Running external tests
-    if not exist "%CoreRT_TestExtRepo%" ((call :Fail "%CoreRT_TestExtRepo% does not exist") & exit /b -1)
-    if not "%CoreRT_BuildExtRepo%" == "false" (
-        pushd %CoreRT_TestExtRepo%
-        call build.cmd %CoreRT_BuildArch% %CoreRT_BuildType%
-        if not !ErrorLevel!==0 ((call :Fail "%CoreRT_TestExtRepo% build failed") & popd & exit /b -1)
-        popd
+:RestoreCoreCLRTests
+
+    set TESTS_SEMAPHORE=%CoreRT_TestExtRepo%\init-tests.completed
+
+    :: If sempahore exists do nothing
+    if exist "%TESTS_SEMAPHORE%" (
+      echo Tests are already initialized.
+      goto :EOF
     )
 
-    echo.
-    powershell -Command Write-Host "set CLRCustomTestLauncher=%CoreRT_TestRoot%ilc.cmd" -foreground "cyan"
-    set CLRCustomTestLauncher=%CoreRT_TestRoot%ilc.cmd
+    if exist "%CoreRT_TestExtRepo%" rmdir /S /Q "%CoreRT_TestExtRepo%"
+    mkdir "%CoreRT_TestExtRepo%"
 
-    set CORE_ROOT=%CoreRT_TestExtRepo%\bin\Product\%__BuildStr%
-    pushd %CoreRT_TestExtRepo%\tests
-    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% exclude %CoreRT_TestRoot%\CoreCLR.issues.targets
+    set /p TESTS_REMOTE_URL=< "%~dp0..\CoreCLRTestsURL.txt"
+    set TESTS_LOCAL_ZIP=%CoreRT_TestExtRepo%\tests.zip
+    set INIT_TESTS_LOG=%~dp0..\init-tests.log
+    echo Restoring tests (this may take a few minutes)..
+    echo Installing '%TESTS_REMOTE_URL%' to '%TESTS_LOCAL_ZIP%' >> "%INIT_TESTS_LOG%"
+    powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { (New-Object Net.WebClient).DownloadFile('%TESTS_REMOTE_URL%', '%TESTS_LOCAL_ZIP%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%TESTS_LOCAL_ZIP%', '%CoreRT_TestExtRepo%') } else { (New-Object -com shell.application).namespace('%CoreRT_TestExtRepo%').CopyHere((new-object -com shell.application).namespace('%TESTS_LOCAL_ZIP%').Items(),16) }" >> "%INIT_TESTS_LOG%"
+    if errorlevel 1 (
+      echo ERROR: Could not download CoreCLR tests correctly. See '%INIT_TESTS_LOG%' for more details. 1>&2
+      exit /b 1
+    )
+
+    echo Tests restored.
+    echo CoreCLR tests restored from %TESTS_REMOTE_URL% > %TESTS_SEMAPHORE%
+    exit /b 0
+
+:TestExtRepo
+    echo Running external tests
+    if "%CoreRT_TestExtRepo%" == "" (
+        set CoreRT_TestExtRepo=%CoreRT_TestRoot%\..\tests_downloaded\CoreCLR
+        call :RestoreCoreCLRTests
+        if errorlevel 1 (
+            exit /b 1
+        )
+    )
+
+    if not exist "%CoreRT_TestExtRepo%" ((call :Fail "%CoreRT_TestExtRepo% does not exist") & exit /b 1)
+
+    echo.
+    set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
+    set XunitTestBinBase=!CoreRT_TestExtRepo!
+    set CORE_ROOT=C:\git\corert\Tools\dotnetcli\shared\Microsoft.NETCore.App\1.0.0
+    echo CORE_ROOT IS NOW %CORE_ROOT%
+    pushd %CoreRT_TestRoot%\CoreCLR\runtest
+ 
+    msbuild src\TestWrappersConfig\XUnitTooling.depproj
+    if errorlevel 1 (
+        exit /b 1
+    )
+
+    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% exclude %CoreRT_TestRoot%\Top100Tests.issues.targets
     set __SavedErrorLevel=%ErrorLevel%
     popd
     exit /b %__SavedErrorLevel%
