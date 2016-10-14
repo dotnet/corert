@@ -76,13 +76,11 @@ namespace Internal.Reflection.Execution
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
-        public sealed override bool Bind(AssemblyName refName, out MetadataReader reader, out ScopeDefinitionHandle scopeDefinitionHandle, out IEnumerable<QScopeDefinition> overflowScopes, out Exception exception)
+        public sealed override bool Bind(AssemblyName refName, out AssemblyBindResult result, out Exception exception)
         {
             bool foundMatch = false;
-            reader = null;
-            scopeDefinitionHandle = default(ScopeDefinitionHandle);
+            result = default(AssemblyBindResult);
             exception = null;
-            overflowScopes = null;
 
             // At least one real-world app calls Type.GetType() for "char" using the assembly name "mscorlib". To accomodate this,
             // we will adopt the desktop CLR rule that anything named "mscorlib" automatically binds to the core assembly.
@@ -117,9 +115,9 @@ namespace Internal.Reflection.Execution
                     foundMatch = true;
                     ScopeDefinitionGroup scopeDefinitionGroup = group.Value;
 
-                    reader = scopeDefinitionGroup.CanonicalScope.Reader;
-                    scopeDefinitionHandle = scopeDefinitionGroup.CanonicalScope.Handle;
-                    overflowScopes = scopeDefinitionGroup.OverflowScopes;
+                    result.Reader = scopeDefinitionGroup.CanonicalScope.Reader;
+                    result.ScopeDefinitionHandle = scopeDefinitionGroup.CanonicalScope.Handle;
+                    result.OverflowScopes = scopeDefinitionGroup.OverflowScopes;
                 }
             }
 

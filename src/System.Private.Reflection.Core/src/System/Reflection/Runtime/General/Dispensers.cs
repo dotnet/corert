@@ -67,13 +67,11 @@ namespace System.Reflection.Runtime.Assemblies
                 {
                     AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
                     AssemblyName convertedAssemblyRefName = assemblyRefName.ToAssemblyName();
-                    MetadataReader reader;
-                    ScopeDefinitionHandle scope;
+                    AssemblyBindResult bindResult;
                     Exception exception;
-                    IEnumerable<QScopeDefinition> overflowScopes;
-                    if (!binder.Bind(convertedAssemblyRefName, out reader, out scope, out overflowScopes, out exception))
+                    if (!binder.Bind(convertedAssemblyRefName, out bindResult, out exception))
                         return null;
-                    return GetRuntimeAssembly(reader, scope, overflowScopes);
+                    return GetRuntimeAssembly(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes);
                 }
         );
 
