@@ -9,7 +9,6 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Reflection;
-using ECMA::System.Reflection.Metadata;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
@@ -21,6 +20,8 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Reflection.Tracing;
+
+using ECMA::System.Reflection.Metadata;
 
 namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
@@ -81,8 +82,9 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
         {
             get
             {
-                throw new NotImplementedException();
+                return Array.Empty<Type>();
                 /*
+                 * TODO! Implement
                 foreach (QScopeDefinition scope in AllScopes)
                 {
                     MetadataReader reader = scope.Reader;
@@ -121,35 +123,23 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.Assembly_GetName(this);
 #endif
-            throw new NotImplementedException();
-//            return Scope.Handle.ToRuntimeAssemblyName(Scope.Reader).ToAssemblyName();
+            return AssemblyDefinition.ToRuntimeAssemblyName(MetadataReader).ToAssemblyName();
         }
 
         public sealed override bool Equals(Object obj)
         {
-            throw new NotImplementedException();
-//            NativeFormatRuntimeAssembly other = obj as NativeFormamsbutRuntimeAssembly;
-  //          return Equals(other);
+            EcmaFormatRuntimeAssembly other = obj as EcmaFormatRuntimeAssembly;
+            return Equals(other);
         }
 
         public bool Equals(EcmaFormatRuntimeAssembly other)
         {
-            throw new NotImplementedException();
-/*
-            if (other == null)
-                return false;
-            if (!(this.Scope.Reader == other.Scope.Reader))
-                return false;
-            if (!(this.Scope.Handle.Equals(other.Scope.Handle)))
-                return false;
-            return true;*/
+            return Object.ReferenceEquals(other.MetadataReader, MetadataReader);
         }
 
         public sealed override int GetHashCode()
         {
-            throw new NotImplementedException();
-
-//            return Scope.Handle.GetHashCode();
+            return MetadataReader.GetHashCode();
         }
 
         internal AssemblyDefinition AssemblyDefinition { get; }
