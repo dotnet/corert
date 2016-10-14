@@ -324,26 +324,22 @@ namespace System.Threading
             observedOwner = m_owner;
             if ((observedOwner & LOCK_ANONYMOUS_OWNED) == LOCK_UNOWNED)
             {
-                if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner)
+                if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner
+                     || millisecondsTimeout == 0)
                 {
+                    // Aquired lock, or did not aquire lock as owned but timeout is 0 so fail fast
                     return;
                 }
+            }
+            else if (millisecondsTimeout == 0)
+            {
+                // Did not aquire lock as owned and timeout is 0 so fail fast
+                return;
             }
             else //failed to acquire the lock,then try to update the waiters. If the waiters count reached the maximum, jsut break the loop to avoid overflow
             {
                 if ((observedOwner & WAITERS_MASK) != MAXIMUM_WAITERS)
                     turn = (Interlocked.Add(ref m_owner, 2) & WAITERS_MASK) >> 1;
-            }
-
-
-
-            // Check the timeout.
-            if (millisecondsTimeout == 0 ||
-                (millisecondsTimeout != Timeout.Infinite &&
-                TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout) <= 0))
-            {
-                DecrementWaiters();
-                return;
             }
 
             //***Step 2. Spinning
@@ -371,13 +367,13 @@ namespace System.Threading
                         }
                     }
                 }
-            }
 
-            // Check the timeout.
-            if (millisecondsTimeout != Timeout.Infinite && TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout) <= 0)
-            {
-                DecrementWaiters();
-                return;
+                // Check the timeout.
+                if (millisecondsTimeout != Timeout.Infinite && TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout) <= 0)
+                {
+                    DecrementWaiters();
+                    return;
+                }
             }
 
             //*** Step 3, Yielding
