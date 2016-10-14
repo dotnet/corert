@@ -49,11 +49,17 @@ namespace System
         // Constructors
         //
 
+        /*=========================================================================================
+        **Action: Initializes a new instance of the Random class, using a default seed value
+        ===========================================================================================*/
         public Random()
-          : this(Environment.TickCount)
+          : this(GenerateSeed())
         {
         }
 
+        /*=========================================================================================
+        **Action: Initializes a new instance of the Random class, using a specified seed value
+        ===========================================================================================*/
         public Random(int Seed)
         {
             int ii = 0;
@@ -124,6 +130,37 @@ namespace System
             inextp = locINextp;
 
             return retVal;
+        }
+
+        [ThreadStatic]
+        private static Random t_threadRandom;
+        private static readonly Random s_globalRandom = new Random(GenerateGlobalSeed());
+
+        /*=====================================GenerateSeed=====================================
+        **Returns: An integer that can be used as seed values for consecutively
+                  creating lots of instances on the same thread within a short period of time.
+        ========================================================================================*/
+        private static int GenerateSeed()
+        {
+            Random rnd = t_threadRandom;
+            if (rnd == null) {
+                int seed;
+                lock (s_globalRandom) {
+                    seed = s_globalRandom.Next();
+                }
+                rnd = new Random(seed);
+                t_threadRandom = rnd;
+            }
+            return rnd.Next();
+        }
+
+        /*==================================GenerateGlobalSeed====================================
+        **Action:  Creates a number to use as global seed.
+        **Returns: An integer that is safe to use as seed values for thread-local seed generators.
+        ==========================================================================================*/
+        private static int GenerateGlobalSeed()
+        {
+            return Guid.NewGuid().GetHashCode();
         }
 
         //
