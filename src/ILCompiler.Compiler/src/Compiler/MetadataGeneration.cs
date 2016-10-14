@@ -29,8 +29,17 @@ namespace ILCompiler
         private byte[] _metadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings = new List<MetadataMapping<MetadataType>>();
 
+        private NodeFactory _nodeFactory;
+
         private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
         private HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
+        private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
+        private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
+
+        public MetadataGeneration(NodeFactory factory)
+        {
+            _nodeFactory = factory;
+        }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
@@ -54,6 +63,9 @@ namespace ILCompiler
             var typeMapNode = new TypeMetadataMapNode(externalReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
 
+            var cctorContextMapNode = new ClassConstructorContextMap(externalReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
+
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
                 externalReferencesTableNode, externalReferencesTableNode, externalReferencesTableNode.EndSymbol);
@@ -64,6 +76,7 @@ namespace ILCompiler
             var eetypeNode = obj as EETypeNode;
             if (eetypeNode != null)
             {
+                _typesWithEETypesGenerated.Add(eetypeNode.Type);
                 AddGeneratedType(eetypeNode.Type);
                 return;
             }
@@ -73,6 +86,12 @@ namespace ILCompiler
             {
                 AddGeneratedType(methodNode.Method.OwningType);
                 return;
+            }
+
+            var nonGcStaticSectionNode = obj as NonGCStaticsNode;
+            if (nonGcStaticSectionNode != null && _nodeFactory.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
+            {
+                _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }
         }
 
@@ -142,6 +161,16 @@ namespace ILCompiler
         {
             EnsureMetadataGenerated();
             return _typeMappings;
+        }
+
+        internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
+        {
+            return _cctorContextsGenerated;
+        }
+
+        internal bool TypeGeneratesEEType(TypeDesc type)
+        {
+            return _typesWithEETypesGenerated.Contains(type);
         }
 
         private struct DummyMetadataPolicy : IMetadataPolicy
