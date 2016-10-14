@@ -36,6 +36,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new VirtualDispatchGenericLookupResult(method);
                 });
+
+                _typeGCStaticBaseSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new TypeGCStaticBaseGenericLookupResult(type);
+                });
+
+                _typeNonGCStaticBaseSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new TypeGCStaticBaseGenericLookupResult(type);
+                });
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -43,6 +53,20 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult Type(TypeDesc type)
             {
                 return _typeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _typeGCStaticBaseSymbols;
+
+            public GenericLookupResult TypeGCStaticBase(TypeDesc type)
+            {
+                return _typeGCStaticBaseSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _typeNonGCStaticBaseSymbols;
+
+            public GenericLookupResult TypeNonGCStaticBase(TypeDesc type)
+            {
+                return _typeNonGCStaticBaseSymbols.GetOrAdd(type);
             }
 
             private NodeCache<MethodDesc, GenericLookupResult> _methodDictionaries;

@@ -1204,8 +1204,10 @@ namespace Internal.JitInterface
                 case ReadyToRunFixupKind.TypeHandle:
                     if (resolvedToken is TypeDesc)
                         return _compilation.NodeFactory.GenericLookup.Type((TypeDesc)resolvedToken);
-                    else
+                    else if (resolvedToken is MethodDesc)
                         return _compilation.NodeFactory.GenericLookup.Type(((MethodDesc)resolvedToken).OwningType);
+                    else
+                        return _compilation.NodeFactory.GenericLookup.Type(((FieldDesc)resolvedToken).OwningType);
 
                 case ReadyToRunFixupKind.MethodHandle:
                     return _compilation.NodeFactory.GenericLookup.MethodDictionary((MethodDesc)resolvedToken);
@@ -1568,6 +1570,57 @@ namespace Internal.JitInterface
                     {
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
+                }
+                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
+
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
+                    pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
+
+                    FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+                    // Find out what kind of base do we need to look up.
+                    GenericLookupResult lookupResult;
+                    if (field.IsThreadStatic)
+                    {
+                        throw new NotImplementedException();
+                    }
+                    else if (field.HasGCStaticBase)
+                    {
+                        lookupResult = _compilation.NodeFactory.GenericLookup.TypeGCStaticBase(runtimeDeterminedField.OwningType);
+                    }
+                    else
+                    {
+                        lookupResult = _compilation.NodeFactory.GenericLookup.TypeNonGCStaticBase(runtimeDeterminedField.OwningType);
+                    }
+
+                    // What generic context do we look up the base from.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    ReadyToRunHelperId helper;
+                    TypeSystemEntity dictionaryOwner;
+
+                    if (contextMethod.AcquiresInstMethodTableFromThis())
+                    {
+                        helper = ReadyToRunHelperId.GenericLookupFromThis;
+                        dictionaryOwner = MethodBeingCompiled.OwningType;
+                    }
+                    else if (contextMethod.RequiresInstMethodTableArg())
+                    {
+                        helper = ReadyToRunHelperId.GenericLookupFromDictionary;
+                        dictionaryOwner = MethodBeingCompiled.OwningType;
+                    }
+                    else
+                    {
+                        Debug.Assert(contextMethod.RequiresInstMethodDescArg());
+                        helper = ReadyToRunHelperId.GenericLookupFromDictionary;
+                        dictionaryOwner = MethodBeingCompiled;
+                    }
+
+                    GenericLookupDescriptor lookupDescriptor = new GenericLookupDescriptor(dictionaryOwner, lookupResult);
+
+                    pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helper, lookupDescriptor));
+                    pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
                 }
                 else
                 {
