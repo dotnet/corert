@@ -38,7 +38,7 @@ namespace Internal.JitInterface
         private extern static IntPtr getJit();
 
         [DllImport("jitinterface")]
-        private extern static IntPtr GetJitHost();
+        private extern static IntPtr GetJitHost(IntPtr configProvider);
 
         //
         // Per-method initialization and state
@@ -79,15 +79,17 @@ namespace Internal.JitInterface
         private extern static char* GetExceptionMessage(IntPtr obj);
 
         private Compilation _compilation;
+        private JitConfigProvider _jitConfig;
 
-        public CorInfoImpl(Compilation compilation)
+        public CorInfoImpl(Compilation compilation, JitConfigProvider jitConfig)
         {
             //
             // Global initialization
             //
             _compilation = compilation;
+            _jitConfig = jitConfig;
 
-            jitStartup(GetJitHost());
+            jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));
 
             _jit = getJit();
             if (_jit == IntPtr.Zero)

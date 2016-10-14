@@ -6,9 +6,29 @@
 
 #include "dllexport.h"
 
-class JitHost
+class JitConfigProvider
 {
 public:
+    virtual int getIntConfigValue(
+        const wchar_t* name, 
+        int defaultValue
+        ) = 0;
+
+    virtual int getStringConfigValue(
+        const wchar_t* name,
+        wchar_t* retBuffer,
+        int retBufferLength
+        ) = 0;
+};
+
+class JitHost
+{
+    JitConfigProvider* pConfigProvider;
+
+public:
+    JitHost(JitConfigProvider* pConfigProvider)
+        : pConfigProvider(pConfigProvider) { }
+
     virtual void* allocateMemory(size_t size, bool usePageAllocator = false)
     {
         return malloc(size);
@@ -24,26 +44,34 @@ public:
         int defaultValue
         )
     {
-        return defaultValue;
+        return pConfigProvider->getIntConfigValue(name, defaultValue);
     }
 
     virtual const wchar_t* getStringConfigValue(
         const wchar_t* name
         )
     {
-        return nullptr;
+        // Find out the required length of the buffer
+        int numCharacters = pConfigProvider->getStringConfigValue(name, nullptr, 0);
+        if (numCharacters == 0)
+            return nullptr;
+
+        // Allocate extra char for the null terminator
+        wchar_t* retBuffer = (wchar_t*)calloc(numCharacters + 1, sizeof(wchar_t));
+        pConfigProvider->getStringConfigValue(name, retBuffer, numCharacters);
+
+        return retBuffer;
     }
 
     virtual void freeStringConfigValue(
-        const wchar_t* value
+        wchar_t* value
         )
     {
+        free(value);
     }
 };
 
-static JitHost instance;
-
-DLL_EXPORT void* __stdcall GetJitHost()
+DLL_EXPORT void* __stdcall GetJitHost(JitConfigProvider* pConfigProvider)
 {
-    return &instance;
+    return new JitHost(pConfigProvider);
 }
