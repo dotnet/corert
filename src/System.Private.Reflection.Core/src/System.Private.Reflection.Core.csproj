@@ -29,11 +29,16 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
+    <ReferencePath Include="ECMA=$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\ActivatorImplementation.cs" />
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Empty.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
