@@ -21,6 +21,13 @@ public:
         ) = 0;
 };
 
+// Native implementation of the JIT host.
+// The native implementation calls into JitConfigProvider (implemented on the managed side) to get the actual
+// configuration values.
+// This dance is necessary because RyuJIT calls into the JitHost as part of the process shutdown (to free up
+// strings). JitHost therefore can't be implemented in managed code (because managed runtime might have
+// already shut down).
+
 class JitHost
 {
     JitConfigProvider* pConfigProvider;
