@@ -678,6 +678,8 @@ endif
         test        dword ptr [edx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
         jnz         DoneWaitingForGc
 
+        mov         [edx + OFFSETOF__Thread__m_pHackPInvokeTunnel], esp         ; esp is address of PInvokeTransitionFrame
+        
         ;;
         ;; Unhijack this thread, if necessary.
         ;;
@@ -702,8 +704,6 @@ ifdef FEATURE_GC_STRESS
         cmp         al, 0
         je          @F
 
-        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_pThread]    ; recover Thread * from Frame
-        mov         [edx + OFFSETOF__Thread__m_pHackPInvokeTunnel], esp         ; esp is address of PInvokeTransitionFrame
         mov         eax, REDHAWKGCINTERFACE__STRESSGC
         call        RhpCall
 @@:
