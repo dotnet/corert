@@ -4,10 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using Debug = System.Diagnostics.Debug;
+using NumberStyles = System.Globalization.NumberStyles;
 
 namespace Internal.JitInterface
 {
@@ -48,10 +47,11 @@ namespace Internal.JitInterface
 
         public int GetIntConfigValue(string name, int defaultValue)
         {
+            // Note: Parse the string as hex
             string stringValue;
             int intValue;
             if (_config.TryGetValue(name, out stringValue) &&
-                Int32.TryParse(stringValue, out intValue))
+                Int32.TryParse(stringValue, NumberStyles.AllowHexSpecifier, null, out intValue))
             {
                 return intValue;
             }
