@@ -171,7 +171,7 @@ public:
     bool    IsGCBreakOnOOMEnabled()         const { return false; }
 #ifdef USE_PORTABLE_HELPERS
     // CORERT-TODO: remove this
-    //              https://github.com/dotnet/corert/issues/913
+    //              https://github.com/dotnet/corert/issues/2033
     int     GetGCgen0size  ()               const { return 100 * 1024 * 1024; }
 #else
     int     GetGCgen0size  ()               const { return 0; }
