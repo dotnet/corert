@@ -28,6 +28,8 @@ namespace ILCompiler
         public string DgmlLog;
         public bool FullLog;
         public bool Verbose;
+
+        public IReadOnlyList<string> CodegenOptions = Array.Empty<string>();
     }
 
     public partial class Compilation
@@ -163,7 +165,7 @@ namespace ILCompiler
             }
             else
             {
-                _corInfo = new CorInfoImpl(this);
+                _corInfo = new CorInfoImpl(this, new JitConfigProvider(_options.CodegenOptions));
 
                 _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
 
