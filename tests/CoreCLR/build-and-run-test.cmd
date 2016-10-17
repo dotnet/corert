@@ -34,7 +34,7 @@ set CORE_ROOT=
 :: so override if we're doing a 64-bit test run
 ::
 if "%CoreRT_BuildArch%" == "x64" (
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+    call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"
 )
 
 echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" %TestFolder%\Test.csproj

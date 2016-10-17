@@ -8,7 +8,7 @@
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
   </PropertyGroup>
   
-  <Import Project="C:\git\corert\tests\Test.Common.targets" />
+  <Import Project="$(CoreRT_TestRoot)\Test.Common.targets" />
   
   <!-- Since tests are already compiled, override Compile target to prevent CSC running -->
   <Target Name="Compile" />

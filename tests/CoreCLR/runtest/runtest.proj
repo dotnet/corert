@@ -90,6 +90,7 @@ $(_XunitEpilog)
     <IsTestProject>true</IsTestProject>
     <ProjectJson>%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
     <ProjectLockJson>%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
+    <ReferencePath>$(ReferencePath);$(XunitTestBinBase)\Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper</ReferencePath>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Debug|AnyCPU' ">
@@ -102,17 +103,12 @@ $(_XunitEpilog)
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-   <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj">
-      <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
-      <Name>coreclr</Name>
-    </ProjectReference>
-  </ItemGroup>
  
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Runtime" />
     <Reference Include="mscorlib" />
+    <Reference Include="$(XunitTestBinBase)\Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper\Coreclr.TestWrapper.dll" />
   </ItemGroup>
   <PropertyGroup>
     <ProjectJson>%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
