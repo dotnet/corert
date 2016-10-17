@@ -66,7 +66,7 @@ namespace ILCompiler.Metadata
                 }
 
                 Cts.MetadataType moduleType = module.GetGlobalModuleType();
-                if (_policy.GeneratesMetadata(moduleType))
+                if (moduleType != null && _policy.GeneratesMetadata(moduleType))
                 {
                     scopeDefinition.GlobalModuleType = (TypeDefinition)HandleType(moduleType);
                 }
