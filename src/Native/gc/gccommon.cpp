@@ -22,6 +22,10 @@ SVAL_IMPL_INIT(uint32_t,IGCHeap,maxGeneration,2);
 
 IGCHeapInternal* g_theGCHeap;
 
+#ifdef FEATURE_STANDALONE_GC
+IGCToCLR* g_theGCToCLR;
+#endif // FEATURE_STANDALONE_GC
+
 /* global versions of the card table and brick table */ 
 GPTR_IMPL(uint32_t,g_card_table);
 
@@ -148,6 +152,14 @@ IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
 #endif
 
     g_theGCHeap = heap;
+
+#ifdef FEATURE_STANDALONE_GC
+    assert(clrToGC != nullptr);
+    g_theGCToCLR = clrToGC;
+#else
+    assert(clrToGC == nullptr);
+#endif
+
     return heap;
 }
 

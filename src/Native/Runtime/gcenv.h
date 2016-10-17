@@ -13,7 +13,6 @@
 #include "gcenv.os.h"
 #include "gcenv.interlocked.h"
 #include "gcenv.base.h"
-#include "gcenv.ee.h"
 
 #include "Crst.h"
 #include "event.h"
