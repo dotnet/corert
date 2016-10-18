@@ -7,18 +7,18 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
-
+using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
 
-namespace System.Reflection.Runtime.TypeInfos
+namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 {
-    internal sealed partial class RuntimeGenericParameterTypeInfoForTypes : RuntimeGenericParameterTypeInfo
+    internal sealed partial class NativeFormatRuntimeGenericParameterTypeInfoForTypes : NativeFormatRuntimeGenericParameterTypeInfo
     {
-        private RuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeInfo declaringRuntimeNamedTypeInfo)
-           : base(reader, genericParameterHandle)
+        private NativeFormatRuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeInfo declaringRuntimeNamedTypeInfo)
+           : base(reader, genericParameterHandle, genericParameterHandle.GetGenericParameter(reader))
         {
             _declaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
         }

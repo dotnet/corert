@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
@@ -254,7 +255,7 @@ namespace System.Reflection.Runtime.MethodInfos
                             owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(_common.MethodHandle, _common.DefiningTypeInfo, _common.ContextTypeInfo, _common.DeclaringType);
 
                     }
-                    RuntimeTypeInfo genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
+                    RuntimeTypeInfo genericParameterType = NativeFormatRuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
                     genericTypeParameters[i++] = genericParameterType;
                 }
                 return genericTypeParameters;

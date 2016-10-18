@@ -112,15 +112,16 @@
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeSyntheticParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\RuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\Tracing\ReflectionEventSource.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeArrayTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeByRefTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfoForMethods.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfoForMethods.UnificationKey.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfoForTypes.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfoForTypes.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForMethods.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForMethods.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForTypes.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForTypes.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeHasElementTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeHasElementTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNamedTypeInfo.cs" />
@@ -210,6 +211,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="System\Reflection\Runtime\TypeInfos\Ecma\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

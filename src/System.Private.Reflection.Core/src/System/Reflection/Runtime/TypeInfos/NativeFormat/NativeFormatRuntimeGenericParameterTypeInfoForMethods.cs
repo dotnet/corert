@@ -9,18 +9,19 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.TypeInfos;
 
 
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
 
-namespace System.Reflection.Runtime.TypeInfos
+namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 {
-    internal sealed partial class RuntimeGenericParameterTypeInfoForMethods : RuntimeGenericParameterTypeInfo, IKeyedItem<RuntimeGenericParameterTypeInfoForMethods.UnificationKey>
+    internal sealed partial class NativeFormatRuntimeGenericParameterTypeInfoForMethods : NativeFormatRuntimeGenericParameterTypeInfo, IKeyedItem<NativeFormatRuntimeGenericParameterTypeInfoForMethods.UnificationKey>
     {
-        private RuntimeGenericParameterTypeInfoForMethods(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeNamedMethodInfo declaringRuntimeNamedMethodInfo)
-           : base(reader, genericParameterHandle)
+        private NativeFormatRuntimeGenericParameterTypeInfoForMethods(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeNamedMethodInfo declaringRuntimeNamedMethodInfo)
+           : base(reader, genericParameterHandle, genericParameterHandle.GetGenericParameter(reader))
         {
             _declaringRuntimeNamedMethodInfo = declaringRuntimeNamedMethodInfo;
         }
