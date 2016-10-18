@@ -793,6 +793,42 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetUniversalTransitionThunk();
         }
 
+        public static object CreateThunksHeap(IntPtr commonStubAddress)
+        {
+            object newHeap = RuntimeImports.RhCreateThunksHeap(commonStubAddress);
+            if (newHeap == null)
+                throw new OutOfMemoryException();
+            return newHeap;
+        }
+
+        public static IntPtr AllocateThunk(object thunksHeap)
+        {
+            IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
+            if (newThunk == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return newThunk;
+        }
+
+        public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)
+        {
+            RuntimeImports.RhFreeThunk(thunksHeap, thunkAddress);
+        }
+
+        public static void SetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
+        {
+            RuntimeImports.RhSetThunkData(thunksHeap, thunkAddress, context, target);
+        }
+
+        public static bool TryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
+        {
+            return RuntimeImports.RhTryGetThunkData(thunksHeap, thunkAddress, out context, out target);
+        }
+
+        public static int GetThunkSize()
+        {
+            return RuntimeImports.RhGetThunkSize();
+        }
+
         public static unsafe IntPtr GetRawAddrOfPinnedObject(IntPtr gcHandleAsIntPtr)
         {
             GCHandle gcHandle = (GCHandle)gcHandleAsIntPtr;

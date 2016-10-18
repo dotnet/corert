@@ -89,6 +89,7 @@
     <Compile Include="System\Runtime\RuntimeExports.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\StackFrameIterator.cs" />
+    <Compile Include="System\Runtime\ThunkPool.cs" />
     <Compile Include="System\Runtime\TypeCast.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
