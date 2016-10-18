@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+extern alias ECMA;
+
 using System.IO;
 using System.Collections.Generic;
 
@@ -15,6 +17,7 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
+using Ecma = ECMA::System.Reflection.Metadata;
 
 //=================================================================================================================
 // This file collects the various chokepoints that create the various Runtime*Info objects. This allows
@@ -71,10 +74,55 @@ namespace System.Reflection.Runtime.Assemblies
                     Exception exception;
                     if (!binder.Bind(convertedAssemblyRefName, out bindResult, out exception))
                         return null;
-                    return GetRuntimeAssembly(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes);
+                    if (bindResult.Reader != null)
+                        return GetRuntimeAssembly(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes);
+                    else
+                        return GetRuntimeAssembly(bindResult.EcmaMetadataReader);
                 }
         );
 
+        private static RuntimeAssembly GetRuntimeAssembly(Ecma.MetadataReader reader)
+        {
+            return s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(reader));
+        }
+
+        private static readonly Dispenser<EcmaRuntimeAssemblyKey, RuntimeAssembly> s_EcmaAssemblyDispenser =
+            DispenserFactory.CreateDispenserV<EcmaRuntimeAssemblyKey, RuntimeAssembly>(
+                DispenserScenario.Scope_Assembly,
+                delegate (EcmaRuntimeAssemblyKey assemblyDefinition)
+                {
+                    return (RuntimeAssembly)new EcmaFormat.EcmaFormatRuntimeAssembly(assemblyDefinition.Reader);
+                }
+        );
+
+        private struct EcmaRuntimeAssemblyKey : IEquatable<EcmaRuntimeAssemblyKey>
+        {
+            public EcmaRuntimeAssemblyKey(Ecma.MetadataReader reader)
+            {
+                Reader = reader;
+            }
+
+            public override bool Equals(Object obj)
+            {
+                if (!(obj is RuntimeAssemblyKey))
+                    return false;
+                return Equals((RuntimeAssemblyKey)obj);
+            }
+
+
+            public bool Equals(EcmaRuntimeAssemblyKey other)
+            {
+                // Equality depends only on the metadata reader of an assembly
+                return Object.ReferenceEquals(Reader, other.Reader);
+            }
+
+            public override int GetHashCode()
+            {
+                return Reader.GetHashCode();
+            }
+
+            public Ecma.MetadataReader Reader { get; }
+        }
 
         private static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflows)
         {

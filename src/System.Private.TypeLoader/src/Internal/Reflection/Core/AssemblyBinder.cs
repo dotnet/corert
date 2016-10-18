@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+extern alias ECMA;
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -9,10 +11,14 @@ using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
 using Internal.Runtime.TypeLoader;
 
+using Ecma = ECMA::System.Reflection.Metadata;
+
 namespace Internal.Reflection.Core
 {
     public struct AssemblyBindResult
     {
+        public Ecma.MetadataReader EcmaMetadataReader;
+
         public MetadataReader Reader;
         public ScopeDefinitionHandle ScopeDefinitionHandle;
         public IEnumerable<QScopeDefinition> OverflowScopes;
