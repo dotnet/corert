@@ -12,15 +12,22 @@ using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
 using Internal.CommandLine;
+using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
     internal class Program
     {
-        private CompilationOptions _options;
-
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        private string _outputFilePath;
+        private bool _isCppCodegen;
+        private bool _isVerbose;
+
+        private string _dgmlLogFileName;
+        private bool _generateFullDgmlLog;
 
         private TargetArchitecture _targetArchitecture;
         private TargetOS _targetOS;
@@ -31,6 +38,8 @@ namespace ILCompiler
         private string _singleMethodTypeName;
         private string _singleMethodName;
         private IReadOnlyList<string> _singleMethodGenericArgs;
+
+        private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
         private bool _help;
 
@@ -51,8 +60,6 @@ namespace ILCompiler
 
         private void InitializeDefaultOptions()
         {
-            _options = new CompilationOptions();
-
 #if FXCORE
             // We could offer this as a command line option, but then we also need to
             // load a different RyuJIT, so this is a future nice to have...
@@ -105,17 +112,16 @@ namespace ILCompiler
 
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
-                syntax.DefineOption("o|out", ref _options.OutputFilePath, "Output file path");
-                syntax.DefineOption("cpp", ref _options.IsCppCodeGen, "Compile for C++ code-generation");
-                syntax.DefineOption("nolinenumbers", ref _options.NoLineNumbers, "Debug line numbers for C++ code-generation");
-                syntax.DefineOption("dgmllog", ref _options.DgmlLog, "Save result of dependency analysis as DGML");
-                syntax.DefineOption("fulllog", ref _options.FullLog, "Save detailed log of dependency analysis");
-                syntax.DefineOption("verbose", ref _options.Verbose, "Enable verbose logging");
+                syntax.DefineOption("o|out", ref _outputFilePath, "Output file path");
+                syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
+                syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
+                syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
+                syntax.DefineOption("verbose", ref _isVerbose, "Enable verbose logging");
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
-                syntax.DefineOptionList("codegenopt", ref _options.CodegenOptions, "Define a codegen option");
+                syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -151,7 +157,7 @@ namespace ILCompiler
             if (_inputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
 
-            if (_options.OutputFilePath == null)
+            if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
             //
@@ -192,9 +198,42 @@ namespace ILCompiler
             // Compile
             //
 
-            Compilation compilation = new Compilation(_options, typeSystemContext, compilationGroup);
-            compilation.Log = _options.Verbose ? Console.Out : TextWriter.Null;
-            compilation.Compile();
+            Compilation compilation;
+            if (_isCppCodegen)
+                compilation = new CppCodegenCompilation(typeSystemContext, compilationGroup);
+            else
+                compilation = new RyuJitCompilation(typeSystemContext, compilationGroup);
+
+            compilation
+                .UseBackendOptions(_codegenOptions)
+                .ConfigureDependencyGraph(factory =>
+                {
+                    // Choose which dependency graph implementation to use based on the amount of logging requested.
+                    if (_dgmlLogFileName == null)
+                    {
+                        // No log uses the NoLogStrategy
+                        return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(factory, null);
+                    }
+                    else
+                    {
+                        if (_generateFullDgmlLog)
+                        {
+                            // Full log uses the full log strategy
+                            return new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(factory, null);
+                        }
+                        else
+                        {
+                            // Otherwise, use the first mark strategy
+                            return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(factory, null);
+                        }
+                    }
+
+                });
+
+            if (_isVerbose)
+                compilation.UseLogger(new Logger(Console.Out, true));
+
+            compilation.Compile(_outputFilePath);
 
             return 0;
         }
