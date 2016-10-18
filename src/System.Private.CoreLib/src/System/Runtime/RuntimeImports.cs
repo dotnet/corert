@@ -321,8 +321,28 @@ namespace System.Runtime
         internal static unsafe extern IntPtr RhGetGcStaticFieldData(EETypePtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhAllocateThunksFromTemplate")]
-        internal static extern IntPtr RhAllocateThunksFromTemplate(IntPtr moduleHandle, int templateRva, int templateSize);
+        [RuntimeImport(RuntimeLibrary, "RhCreateThunksHeap")]
+        internal static extern object RhCreateThunksHeap(IntPtr commonStubAddress);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhAllocateThunk")]
+        internal static extern IntPtr RhAllocateThunk(object thunksHeap);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhFreeThunk")]
+        internal static extern void RhFreeThunk(object thunksHeap, IntPtr thunkAddress);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhSetThunkData")]
+        internal static extern void RhSetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhTryGetThunkData")]
+        internal static extern bool RhTryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetThunkSize")]
+        internal static extern int RhGetThunkSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadLocalStorageForDynamicType")]
