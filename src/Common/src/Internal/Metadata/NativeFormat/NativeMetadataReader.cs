@@ -132,6 +132,16 @@ namespace Internal.Metadata.NativeFormat
             return reader.IsNull(this);
         }
 
+        public int ToIntToken()
+        {
+            return _value;
+        }
+
+        public static Handle FromIntToken(int value)
+        {
+            return new Handle(value);
+        }
+
         internal int _value;
 
         public override string ToString()

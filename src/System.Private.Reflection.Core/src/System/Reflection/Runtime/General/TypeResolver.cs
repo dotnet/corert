@@ -33,6 +33,16 @@ namespace System.Reflection.Runtime.General
                 throw exception;
             return runtimeType;
         }
+        internal static RuntimeTypeInfo Resolve(this QTypeDefRefOrSpec typeDefOrRefOrSpec, TypeContext typeContext)
+        {
+            if (typeDefOrRefOrSpec.Reader is MetadataReader)
+            {
+                return Handle.FromIntToken(typeDefOrRefOrSpec.Handle).Resolve((MetadataReader)typeDefOrRefOrSpec.Reader, typeContext);
+            }
+
+            // Unable to resolve this form of QTypeDefOrSpec
+            throw new BadImageFormatException();
+        }
 
         internal static RuntimeTypeInfo TryResolve(this Handle typeDefRefOrSpec, MetadataReader reader, TypeContext typeContext, ref Exception exception)
         {

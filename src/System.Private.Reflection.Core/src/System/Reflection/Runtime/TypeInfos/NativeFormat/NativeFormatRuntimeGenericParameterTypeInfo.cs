@@ -65,49 +65,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return _genericParameter.Name.GetString(Reader);
         }
 
-        //
-        // Returns the base type as a typeDef, Ref, or Spec. Default behavior is to QTypeDefRefOrSpec.Null, which causes BaseType to return null.
-        //
-        internal sealed override QTypeDefRefOrSpec TypeRefDefOrSpecForBaseType
-        {
-            get
-            {
-                QTypeDefRefOrSpec[] constraints = Constraints;
-                TypeInfo[] constraintInfos = ConstraintInfos;
-                for (int i = 0; i < constraints.Length; i++)
-                {
-                    TypeInfo constraintInfo = constraintInfos[i];
-                    if (constraintInfo.IsInterface)
-                        continue;
-                    return constraints[i];
-                }
-
-                RuntimeNamedTypeInfo objectTypeInfo = CommonRuntimeTypes.Object.CastToRuntimeNamedTypeInfo();
-                return new QTypeDefRefOrSpec(objectTypeInfo.Reader, objectTypeInfo.TypeDefinitionHandle);
-            }
-        }
-
-        //
-        // Returns the *directly implemented* interfaces as typedefs, specs or refs. ImplementedInterfaces will take care of the transitive closure and
-        // insertion of the TypeContext.
-        //
-        internal sealed override QTypeDefRefOrSpec[] TypeRefDefOrSpecsForDirectlyImplementedInterfaces
-        {
-            get
-            {
-                LowLevelList<QTypeDefRefOrSpec> result = new LowLevelList<QTypeDefRefOrSpec>();
-                QTypeDefRefOrSpec[] constraints = Constraints;
-                TypeInfo[] constraintInfos = ConstraintInfos;
-                for (int i = 0; i < constraints.Length; i++)
-                {
-                    if (constraintInfos[i].IsInterface)
-                        result.Add(constraints[i]);
-                }
-                return result.ToArray();
-            }
-        }
-
-        private QTypeDefRefOrSpec[] Constraints
+        protected sealed override QTypeDefRefOrSpec[] Constraints
         {
             get
             {
@@ -118,22 +76,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle));
                 }
                 return constraints.ToArray();
-            }
-        }
-
-        protected sealed override TypeInfo[] ConstraintInfos
-        {
-            get
-            {
-                QTypeDefRefOrSpec[] constraints = Constraints;
-                if (constraints.Length == 0)
-                    return Array.Empty<TypeInfo>();
-                TypeInfo[] constraintInfos = new TypeInfo[constraints.Length];
-                for (int i = 0; i < constraints.Length; i++)
-                {
-                    constraintInfos[i] = constraints[i].Handle.Resolve(constraints[i].Reader, TypeContext);
-                }
-                return constraintInfos;
             }
         }
 
