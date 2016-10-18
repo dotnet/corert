@@ -10,7 +10,9 @@
 //   These source code are being published to InternalAPIs and consumed by RH builds
 //   Use PublishInteropAPI.bat to keep the InternalAPI copies in sync
 // ---------------------------------------------------------------------------------
-
+#if !CORECLR
+extern alias CoreFX_Collections;
+#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
