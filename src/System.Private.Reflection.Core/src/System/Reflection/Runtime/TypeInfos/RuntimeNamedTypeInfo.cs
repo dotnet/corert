@@ -30,9 +30,9 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>, but not Foo<int> or arrays/pointers/byrefs.)
     // 
     //
-    internal sealed partial class RuntimeNamedTypeInfo : RuntimeTypeInfo, IEquatable<RuntimeNamedTypeInfo>
+    internal abstract partial class RuntimeNamedTypeInfo : RuntimeTypeInfo, IEquatable<RuntimeNamedTypeInfo>
     {
-        private RuntimeNamedTypeInfo(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle, RuntimeTypeHandle typeHandle)
+        protected RuntimeNamedTypeInfo(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle, RuntimeTypeHandle typeHandle)
         {
             _reader = reader;
             _typeDefinitionHandle = typeDefinitionHandle;

@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
@@ -56,7 +57,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                     QualifiedMethod qualifiedMethod = _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
                     TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
                     MethodHandle methodHandle = qualifiedMethod.Method;
-                    RuntimeNamedTypeInfo attributeType = RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+                    RuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
                     return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, attributeType, attributeType);
                 }
                 else if (constructorHandleType == HandleType.MemberReference)

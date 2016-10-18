@@ -137,7 +137,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
     }
 
-    internal sealed partial class RuntimeNamedTypeInfo
+    internal abstract partial class RuntimeNamedTypeInfo
     {
         internal sealed override IEnumerable<Type> CoreGetDeclaredNestedTypes(NameFilter optionalNameFilter)
         {

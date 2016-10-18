@@ -11,7 +11,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.MethodInfos;
 
-using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 // 
@@ -36,14 +35,8 @@ using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.General
 {
-    internal static class TypeUnifier
+    internal static partial class TypeUnifier
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeTypeInfo GetNamedType(this TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader)
-        {
-            return typeDefinitionHandle.GetNamedType(reader, default(RuntimeTypeHandle));
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetArrayType(this RuntimeTypeInfo elementType)
         {
@@ -86,11 +79,6 @@ namespace System.Reflection.Runtime.General
         // in that case, we pass it in as an extra argument as an optimization (otherwise, the unifier will 
         // waste cycles looking up the handle again from the mapping tables.)
         //======================================================================================================
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeTypeInfo GetNamedType(this TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader, RuntimeTypeHandle precomputedTypeHandle)
-        {
-            return RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, typeDefinitionHandle, precomputedTypeHandle: precomputedTypeHandle);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetArrayType(this RuntimeTypeInfo elementType, RuntimeTypeHandle precomputedTypeHandle)
@@ -126,37 +114,6 @@ namespace System.Reflection.Runtime.General
 
 namespace System.Reflection.Runtime.TypeInfos
 {
-    //-----------------------------------------------------------------------------------------------------------
-    // TypeInfos for type definitions (i.e. "Foo" and "Foo<>" but not "Foo<int>")
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNamedTypeInfo : RuntimeTypeInfo
-    {
-        internal static RuntimeNamedTypeInfo GetRuntimeNamedTypeInfo(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, RuntimeTypeHandle precomputedTypeHandle)
-        {
-            RuntimeTypeHandle typeHandle = precomputedTypeHandle;
-            if (typeHandle.IsNull())
-            {
-                if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForMetadata(metadataReader, typeDefHandle, out typeHandle))
-                    typeHandle = default(RuntimeTypeHandle);
-            }
-            UnificationKey key = new UnificationKey(metadataReader, typeDefHandle, typeHandle);
-
-            RuntimeNamedTypeInfo type = NamedTypeTable.Table.GetOrAdd(key);
-            type.EstablishDebugName();
-            return type;
-        }
-
-        private sealed class NamedTypeTable : ConcurrentUnifierW<UnificationKey, RuntimeNamedTypeInfo>
-        {
-            protected sealed override RuntimeNamedTypeInfo Factory(UnificationKey key)
-            {
-                return new RuntimeNamedTypeInfo(key.Reader, key.TypeDefinitionHandle, key.TypeHandle);
-            }
-
-            public static readonly NamedTypeTable Table = new NamedTypeTable();
-        }
-    }
-
     //-----------------------------------------------------------------------------------------------------------
     // TypeInfos for type definitions (i.e. "Foo" and "Foo<>" but not "Foo<int>") that aren't opted into metadata.
     //-----------------------------------------------------------------------------------------------------------
@@ -473,63 +430,5 @@ namespace System.Reflection.Runtime.TypeInfos
         }
     }
 }
-namespace System.Reflection.Runtime.TypeInfos.NativeFormat
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // TypeInfos for generic parameters on types.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatRuntimeGenericParameterTypeInfoForTypes : NativeFormatRuntimeGenericParameterTypeInfo
-    {
-        //
-        // For app-compat reasons, we need to make sure that only TypeInfo instance exists for a given semantic type. If you change this, you must change the way
-        // RuntimeTypeInfo.Equals() is implemented.
-        // 
-        internal static NativeFormatRuntimeGenericParameterTypeInfoForTypes GetRuntimeGenericParameterTypeInfoForTypes(RuntimeNamedTypeInfo typeOwner, GenericParameterHandle genericParameterHandle)
-        {
-            UnificationKey key = new UnificationKey(typeOwner.Reader, typeOwner.TypeDefinitionHandle, genericParameterHandle);
-            NativeFormatRuntimeGenericParameterTypeInfoForTypes type = GenericParameterTypeForTypesTable.Table.GetOrAdd(key);
-            type.EstablishDebugName();
-            return type;
-        }
 
-        private sealed class GenericParameterTypeForTypesTable : ConcurrentUnifierW<UnificationKey, NativeFormatRuntimeGenericParameterTypeInfoForTypes>
-        {
-            protected sealed override NativeFormatRuntimeGenericParameterTypeInfoForTypes Factory(UnificationKey key)
-            {
-                RuntimeTypeInfo typeOwner = key.TypeDefinitionHandle.GetNamedType(key.Reader);
-                return new NativeFormatRuntimeGenericParameterTypeInfoForTypes(key.Reader, key.GenericParameterHandle, typeOwner);
-            }
-
-            public static readonly GenericParameterTypeForTypesTable Table = new GenericParameterTypeForTypesTable();
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
-    // TypeInfos for generic parameters on methods.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatRuntimeGenericParameterTypeInfoForMethods : NativeFormatRuntimeGenericParameterTypeInfo, IKeyedItem<NativeFormatRuntimeGenericParameterTypeInfoForMethods.UnificationKey>
-    {
-        //
-        // For app-compat reasons, we need to make sure that only TypeInfo instance exists for a given semantic type. If you change this, you must change the way
-        // RuntimeTypeInfo.Equals() is implemented.
-        // 
-        internal static NativeFormatRuntimeGenericParameterTypeInfoForMethods GetRuntimeGenericParameterTypeInfoForMethods(RuntimeNamedMethodInfo methodOwner, MetadataReader reader, GenericParameterHandle genericParameterHandle)
-        {
-            UnificationKey key = new UnificationKey(methodOwner, reader, genericParameterHandle);
-            NativeFormatRuntimeGenericParameterTypeInfoForMethods type = GenericParameterTypeForMethodsTable.Table.GetOrAdd(key);
-            type.EstablishDebugName();
-            return type;
-        }
-
-        private sealed class GenericParameterTypeForMethodsTable : ConcurrentUnifierWKeyed<UnificationKey, NativeFormatRuntimeGenericParameterTypeInfoForMethods>
-        {
-            protected sealed override NativeFormatRuntimeGenericParameterTypeInfoForMethods Factory(UnificationKey key)
-            {
-                return new NativeFormatRuntimeGenericParameterTypeInfoForMethods(key.Reader, key.GenericParameterHandle, key.MethodOwner);
-            }
-
-            public static readonly GenericParameterTypeForMethodsTable Table = new GenericParameterTypeForMethodsTable();
-        }
-    }
-}
 
