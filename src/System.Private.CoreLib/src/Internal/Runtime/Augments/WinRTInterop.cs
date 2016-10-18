@@ -115,7 +115,8 @@ namespace Internal.Runtime.Augments
         public abstract Object GetCurrentCoreDispatcher();
         public abstract void PostToCoreDispatcher(Object dispatcher, Action<object> action, object state);
         public abstract Object GetResourceMap(string subtreeName);
-        public abstract string GetResourceString(Object resourceMap, string resourceName, string languageName);
+        public abstract string GetResourceString(object resourceMap, string resourceName, string languageName);
+        public abstract string GetResourceString(object resourceMap, string resourceName, string languageName, string neutralResourcesCulture);
         public abstract bool IsAppxModel();
         public abstract bool ReportUnhandledError(Exception ex);
         public abstract void SetCOMWeakReferenceTarget(object weakReference, object target);
