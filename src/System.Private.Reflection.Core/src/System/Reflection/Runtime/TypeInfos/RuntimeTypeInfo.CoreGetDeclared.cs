@@ -11,7 +11,6 @@ using System.Reflection.Runtime.PropertyInfos;
 using System.Reflection.Runtime.EventInfos;
 using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
-using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 //
@@ -28,7 +27,7 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        internal IEnumerable<ConstructorInfo> CoreGetDeclaredConstructors(NameFilter optionalNameFilter)
+        internal virtual IEnumerable<ConstructorInfo> CoreGetDeclaredConstructors(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType = null)
         {
             //
             // - It may sound odd to get a non-null name filter for a constructor search, but Type.GetMember() is an api that does this.
@@ -36,22 +35,19 @@ namespace System.Reflection.Runtime.TypeInfos
             // - All GetConstructor() apis act as if BindingFlags.DeclaredOnly were specified. So the ReflectedType will always be the declaring type and so is not passed to this method.
             //
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
+            if (reflectedType == null)
+                reflectedType = this;
+
             if (definingType != null)
             {
-                MetadataReader reader = definingType.Reader;
-                RuntimeTypeInfo contextType = this;
-                foreach (MethodHandle methodHandle in definingType.DeclaredMethodAndConstructorHandles)
-                {
-                    Method method = methodHandle.GetMethod(reader);
-
-                    if (!MetadataReaderExtensions.IsConstructor(ref method, reader))
-                        continue;
-
-                    if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
-                        yield return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, definingType, contextType);
-                }
+                return definingType.CoreGetDeclaredConstructors(optionalNameFilter, reflectedType);
             }
 
+            return CoreGetDeclaredSyntheticConstructors(optionalNameFilter);
+        }
+
+        private IEnumerable<ConstructorInfo> CoreGetDeclaredSyntheticConstructors(NameFilter optionalNameFilter)
+        {
             foreach (RuntimeConstructorInfo syntheticConstructor in SyntheticConstructors)
             {
                 if (optionalNameFilter == null || optionalNameFilter.Matches(syntheticConstructor.IsStatic ? ConstructorInfo.TypeConstructorName : ConstructorInfo.ConstructorName))
@@ -59,24 +55,19 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                MetadataReader reader = definingType.Reader;
-                foreach (MethodHandle methodHandle in definingType.DeclaredMethodAndConstructorHandles)
-                {
-                    Method method = methodHandle.GetMethod(reader);
-
-                    if (MetadataReaderExtensions.IsConstructor(ref method, reader))
-                        continue;
-
-                    if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
-                        yield return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingType, this, reflectedType);
-                }
+                return definingType.CoreGetDeclaredMethods(optionalNameFilter, reflectedType);
             }
 
+            return CoreGetDeclaredSyntheticMethods(optionalNameFilter);
+        }
+
+        private IEnumerable<MethodInfo> CoreGetDeclaredSyntheticMethods(NameFilter optionalNameFilter)
+        {
             foreach (RuntimeMethodInfo syntheticMethod in SyntheticMethods)
             {
                 if (optionalNameFilter == null || optionalNameFilter.Matches(syntheticMethod.Name))
@@ -84,46 +75,35 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                MetadataReader reader = definingType.Reader;
-                foreach (EventHandle eventHandle in definingType.DeclaredEventHandles)
-                {
-                    if (optionalNameFilter == null || optionalNameFilter.Matches(eventHandle.GetEvent(reader).Name, reader))
-                        yield return RuntimeEventInfo.GetRuntimeEventInfo(eventHandle, definingType, this, reflectedType);
-                }
+                return definingType.CoreGetDeclaredEvents(optionalNameFilter, reflectedType);
             }
+            return Empty<EventInfo>.Enumerable;
         }
 
-        internal IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                MetadataReader reader = definingType.Reader;
-                foreach (FieldHandle fieldHandle in definingType.DeclaredFieldHandles)
-                {
-                    if (optionalNameFilter == null || optionalNameFilter.Matches(fieldHandle.GetField(reader).Name, reader))
-                        yield return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingType, this, reflectedType);
-                }
+                return definingType.CoreGetDeclaredFields(optionalNameFilter, reflectedType);
             }
+            return Empty<FieldInfo>.Enumerable;
         }
 
-        internal IEnumerable<PropertyInfo> CoreGetDeclaredProperties(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<PropertyInfo> CoreGetDeclaredProperties(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                MetadataReader reader = definingType.Reader;
-                foreach (PropertyHandle propertyHandle in definingType.DeclaredPropertyHandles)
-                {
-                    if (optionalNameFilter == null || optionalNameFilter.Matches(propertyHandle.GetProperty(reader).Name, reader))
-                        yield return RuntimePropertyInfo.GetRuntimePropertyInfo(propertyHandle, definingType, this, reflectedType);
-                }
+                return definingType.CoreGetDeclaredProperties(optionalNameFilter, reflectedType);
             }
+
+            return Empty<PropertyInfo>.Enumerable;
         }
 
         //
@@ -134,18 +114,6 @@ namespace System.Reflection.Runtime.TypeInfos
         internal virtual IEnumerable<Type> CoreGetDeclaredNestedTypes(NameFilter optionalNameFilter)
         {
             return Array.Empty<Type>();
-        }
-    }
-
-    internal abstract partial class RuntimeNamedTypeInfo
-    {
-        internal sealed override IEnumerable<Type> CoreGetDeclaredNestedTypes(NameFilter optionalNameFilter)
-        {
-            foreach (TypeDefinitionHandle nestedTypeHandle in _typeDefinition.NestedTypes)
-            {
-                if (optionalNameFilter == null || optionalNameFilter.Matches(nestedTypeHandle.GetTypeDefinition(_reader).Name, _reader))
-                    yield return nestedTypeHandle.GetNamedType(_reader);
-            }
         }
     }
 
