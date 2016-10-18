@@ -141,7 +141,6 @@ void InitializeHeapType(bool bServerHeap)
 IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
 {
     LIMITED_METHOD_CONTRACT;
-    UNREFERENCED_PARAMETER(clrToGC);
 
     IGCHeapInternal* heap;
 #ifdef FEATURE_SVR_GC
