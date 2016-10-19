@@ -10,20 +10,20 @@ using ILCompiler.CppCodeGen;
 
 namespace ILCompiler
 {
-    public class CppCodegenCompilation : Compilation
+    public sealed class CppCodegenCompilation : Compilation
     {
         private CppWriter _cppWriter = null;
 
-        public CppCodegenCompilation(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup)
-            : base(new CppCodegenNodeFactory(context, compilationGroup), new NameMangler(true))
-        {
-        }
+        internal CppCodegenConfigProvider Options { get; }
 
-        public override Compilation UseBackendOptions(IEnumerable<string> options)
+        internal CppCodegenCompilation(
+            DependencyAnalyzerBase<NodeFactory> dependencyGraph,
+            NodeFactory nodeFactory,
+            Logger logger,
+            CppCodegenConfigProvider options)
+            : base(dependencyGraph, nodeFactory, new NameMangler(true), logger)
         {
-            // TODO: NoLineNumbers
-
-            return this;
+            Options = options;
         }
 
         protected override void CompileInternal(string outputFile)

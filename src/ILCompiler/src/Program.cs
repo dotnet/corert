@@ -198,14 +198,17 @@ namespace ILCompiler
             // Compile
             //
 
-            Compilation compilation;
+            CompilationBuilder builder;
             if (_isCppCodegen)
-                compilation = new CppCodegenCompilation(typeSystemContext, compilationGroup);
+                builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else
-                compilation = new RyuJitCompilation(typeSystemContext, compilationGroup);
+                builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
-            compilation
+            var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
+
+            ICompilation compilation = builder
                 .UseBackendOptions(_codegenOptions)
+                .UseLogger(logger)
                 .ConfigureDependencyGraph(factory =>
                 {
                     // Choose which dependency graph implementation to use based on the amount of logging requested.
@@ -228,12 +231,13 @@ namespace ILCompiler
                         }
                     }
 
-                });
-
-            if (_isVerbose)
-                compilation.UseLogger(new Logger(Console.Out, true));
+                })
+                .ToCompilation();
 
             compilation.Compile(_outputFilePath);
+
+            if (_dgmlLogFileName != null)
+                compilation.WriteDependencyLog(_dgmlLogFileName);
 
             return 0;
         }

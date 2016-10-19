@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -15,23 +14,31 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public abstract class Compilation
+    public abstract class Compilation : ICompilation
     {
-        protected DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
+        protected readonly DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
+        protected readonly NameMangler _nameMangler;
+        protected readonly NodeFactory _nodeFactory;
+        protected readonly Logger _logger;
 
-        internal NameMangler NameMangler { get; }
-
-        internal NodeFactory NodeFactory { get; }
-
+        internal NameMangler NameMangler => _nameMangler;
+        internal NodeFactory NodeFactory => _nodeFactory;
         internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
+        internal Logger Logger => _logger;
 
-        internal Logger Logger { get; private set; } = Logger.Null;
-
-        protected Compilation(NodeFactory nodeFactory, NameMangler nameMangler)
+        protected Compilation(
+            DependencyAnalyzerBase<NodeFactory> dependencyGraph,
+            NodeFactory nodeFactory,
+            NameMangler nameMangler,
+            Logger logger)
         {
-            NameMangler = nameMangler;
-            NodeFactory = nodeFactory;
+            _dependencyGraph = dependencyGraph;
+            _nodeFactory = nodeFactory;
+            _nameMangler = nameMangler;
+            _logger = logger;
 
+            _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
+            NodeFactory.AttachToDependencyGraph(_dependencyGraph);
         }
 
         private ILProvider _methodILCache = new ILProvider();
@@ -45,59 +52,7 @@ namespace ILCompiler
             return _methodILCache.GetMethodIL(method);
         }
 
-        public abstract Compilation UseBackendOptions(IEnumerable<string> options);
-
-        public Compilation ConfigureDependencyGraph(Func<NodeFactory, DependencyAnalyzerBase<NodeFactory>> creator)
-        {
-            if (_dependencyGraph != null)
-                throw new InvalidOperationException();
-
-            _dependencyGraph = creator(NodeFactory);
-
-            _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
-
-            NodeFactory.AttachToDependencyGraph(_dependencyGraph);
-
-            return this;
-        }
-
-        public Compilation UseLogger(Logger logger)
-        {
-            Logger = logger;
-            return this;
-        }
-
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
-
-        public void Compile(string outputFile)
-        {
-            // TODO: Hacky static fields
-
-            NodeFactory.NameMangler = NameMangler;
-
-            string systemModuleName = ((IAssemblyDesc)NodeFactory.TypeSystemContext.SystemModule).GetName().Name;
-
-            // TODO: just something to get Runtime.Base compiled
-            if (systemModuleName != "System.Private.CoreLib")
-            {
-                NodeFactory.CompilationUnitPrefix = systemModuleName.Replace(".", "_");
-            }
-            else
-            {
-                NodeFactory.CompilationUnitPrefix = NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(outputFile));
-            }
-
-            CompileInternal(outputFile);
-        }
-
-        public void WriteDependencyLog(string fileName)
-        {
-            using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
-            {
-                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
-                dgmlOutput.Flush();
-            }
-        }
 
         protected abstract void CompileInternal(string outputFile);
 
@@ -135,5 +90,42 @@ namespace ILCompiler
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
         }
+
+        void ICompilation.Compile(string outputFile)
+        {
+            // TODO: Hacky static fields
+
+            NodeFactory.NameMangler = NameMangler;
+
+            string systemModuleName = ((IAssemblyDesc)NodeFactory.TypeSystemContext.SystemModule).GetName().Name;
+
+            // TODO: just something to get Runtime.Base compiled
+            if (systemModuleName != "System.Private.CoreLib")
+            {
+                NodeFactory.CompilationUnitPrefix = systemModuleName.Replace(".", "_");
+            }
+            else
+            {
+                NodeFactory.CompilationUnitPrefix = NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(outputFile));
+            }
+
+            CompileInternal(outputFile);
+        }
+
+        void ICompilation.WriteDependencyLog(string fileName)
+        {
+            using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
+            {
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                dgmlOutput.Flush();
+            }
+        }
+    }
+
+    // Interface under which Compilation is exposed externally.
+    public interface ICompilation
+    {
+        void Compile(string outputFileName);
+        void WriteDependencyLog(string outputFileName);
     }
 }

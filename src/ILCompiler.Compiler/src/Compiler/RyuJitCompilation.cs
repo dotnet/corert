@@ -16,20 +16,19 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    public class RyuJitCompilation : Compilation
+    public sealed class RyuJitCompilation : Compilation
     {
         private CorInfoImpl _corInfo;
         private JitConfigProvider _jitConfigProvider;
 
-        public RyuJitCompilation(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup)
-            : base(new RyuJitNodeFactory(context, compilationGroup), new NameMangler(false))
+        internal RyuJitCompilation(
+            DependencyAnalyzerBase<NodeFactory> dependencyGraph,
+            NodeFactory nodeFactory,
+            Logger logger,
+            JitConfigProvider configProvider)
+            : base(dependencyGraph, nodeFactory, new NameMangler(false), logger)
         {
-        }
-
-        public override Compilation UseBackendOptions(IEnumerable<string> options)
-        {
-            _jitConfigProvider = new JitConfigProvider(options);
-            return this;
+            _jitConfigProvider = configProvider;
         }
 
         protected override void CompileInternal(string outputFile)
@@ -81,7 +80,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Compiles the provided method code node while swapping it's body with a throwing stub.
+        /// Compiles the provided method code node while swapping its body with a throwing stub.
         /// </summary>
         private bool TryCompileWithThrowingBody(MethodCodeNode methodNode, TypeSystemException exception)
         {
