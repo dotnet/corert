@@ -4286,6 +4286,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Name = visitor.Visit(this, Name);
             Culture = visitor.Visit(this, Culture);
             RootNamespaceDefinition = visitor.Visit(this, RootNamespaceDefinition);
+            EntryPoint = visitor.Visit(this, EntryPoint);
+            GlobalModuleType = visitor.Visit(this, GlobalModuleType);
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
@@ -4344,6 +4346,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(PublicKey);
             writer.Write(Culture);
             writer.Write(RootNamespaceDefinition);
+            writer.Write(EntryPoint);
+            writer.Write(GlobalModuleType);
             writer.Write(CustomAttributes);
         } // Save
 
@@ -4377,6 +4381,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         public Byte[] PublicKey;
         public ConstantStringValue Culture;
         public NamespaceDefinition RootNamespaceDefinition;
+        public QualifiedMethod EntryPoint;
+        public TypeDefinition GlobalModuleType;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // ScopeDefinition
 

@@ -6750,6 +6750,26 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamespaceDefinitionHandle _rootNamespaceDefinition;
 
+        public QualifiedMethodHandle EntryPoint
+        {
+            get
+            {
+                return _entryPoint;
+            }
+        } // EntryPoint
+
+        internal QualifiedMethodHandle _entryPoint;
+
+        public TypeDefinitionHandle GlobalModuleType
+        {
+            get
+            {
+                return _globalModuleType;
+            }
+        } // GlobalModuleType
+
+        internal TypeDefinitionHandle _globalModuleType;
+
         public CustomAttributeHandleCollection CustomAttributes
         {
             get
@@ -11356,6 +11376,8 @@ namespace Internal.Metadata.NativeFormat
             offset = _streamReader.Read(offset, out record._publicKey);
             offset = _streamReader.Read(offset, out record._culture);
             offset = _streamReader.Read(offset, out record._rootNamespaceDefinition);
+            offset = _streamReader.Read(offset, out record._entryPoint);
+            offset = _streamReader.Read(offset, out record._globalModuleType);
             offset = _streamReader.Read(offset, out record._customAttributes);
             return record;
         } // GetScopeDefinition

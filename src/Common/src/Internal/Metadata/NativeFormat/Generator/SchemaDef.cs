@@ -461,6 +461,8 @@ class SchemaDef
                 new MemberDef("PublicKey", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
                 new MemberDef("Culture", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
                 new MemberDef("RootNamespaceDefinition", "NamespaceDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("EntryPoint", "QualifiedMethod", MemberDefFlags.RecordRef),
+                new MemberDef("GlobalModuleType", "TypeDefinition", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
