@@ -342,17 +342,17 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
     PalMemoryBarrier();
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetThunksBase, ())
+COOP_PINVOKE_HELPER(void, RhpGetThunksBase, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetNumThunksPerMapping, ())
+COOP_PINVOKE_HELPER(void, RhpGetNumThunksPerBlock, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetThunkSize, ())
+COOP_PINVOKE_HELPER(void, RhpGetThunkSize, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
