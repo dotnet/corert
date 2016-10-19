@@ -350,6 +350,25 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static void RhpSetTLSDispatchCell(IntPtr pCell);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunksBase")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetThunksBase();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunksPerBlock")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static int RhpGetNumThunksPerBlock();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkSize")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static int RhpGetThunkSize();
+
+        [RuntimeImport(Redhawk.BaseName, "RhAllocateThunksFromTemplate")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal static extern IntPtr RhAllocateThunksFromTemplate(IntPtr moduleHandle, int templateRva, int templateSize);
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
@@ -376,5 +395,11 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal extern static long PalGetTickCount64();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpAcquireThunkPoolLock();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpReleaseThunkPoolLock();
     }
 }

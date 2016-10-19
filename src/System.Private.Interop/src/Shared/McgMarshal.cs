@@ -11,25 +11,29 @@
 //   Use PublishInteropAPI.bat to keep the InternalAPI copies in sync
 // ----------------------------------------------------------------------------------
 
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Reflection;
-    using System.Runtime.InteropServices.WindowsRuntime;
-    using System.Runtime.InteropServices;
-    using System.Threading;
-    using System.Text;
-    using System.Runtime;
-    using System.Diagnostics.Contracts;
-    using Internal.NativeFormat;
-    using System.Runtime.CompilerServices;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Text;
+using System.Runtime;
+using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using Internal.NativeFormat;
+
+#if !CORECLR
+using Internal.Runtime.Augments;
+#endif
 
 #if RHTESTCL
-    using OutputClass = System.Console;
+using OutputClass = System.Console;
 #else
-    using OutputClass = System.Diagnostics.Debug;
+using OutputClass = System.Diagnostics.Debug;
 #endif
 
 namespace System.Runtime.InteropServices
@@ -42,6 +46,11 @@ namespace System.Runtime.InteropServices
     {
         [ThreadStatic]
         internal static int s_lastWin32Error;
+
+#if ENABLE_WINRT
+        private static object s_thunkPoolHeap;
+#endif
+
         public static void SaveLastWin32Error()
         {
             s_lastWin32Error = ExternalInterop.GetLastWin32Error();
@@ -127,7 +136,7 @@ namespace System.Runtime.InteropServices
             return obj.IsOfType(handle);
         }
 
-#if  ENABLE_MIN_WINRT
+#if ENABLE_MIN_WINRT
         public static unsafe void SetExceptionErrorCode(Exception exception, int errorCode)
         {
             InteropExtensions.SetExceptionErrorCode(exception, errorCode);
@@ -778,7 +787,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe __ComObject GetActivationFactory(string className, RuntimeTypeHandle factoryIntf)
         {
-#if  ENABLE_MIN_WINRT
+#if ENABLE_MIN_WINRT
             return FactoryCache.Get().GetActivationFactory(className, factoryIntf);
 #else
             throw new PlatformNotSupportedException("GetActivationFactory");
@@ -1284,7 +1293,7 @@ namespace System.Runtime.InteropServices
         }
 
         #region Shared templates
-#if  ENABLE_MIN_WINRT
+#if ENABLE_MIN_WINRT
         public static void CleanupNative<T>(IntPtr pObject)
         {
             if (typeof(T) == typeof(string))
@@ -1545,7 +1554,12 @@ namespace System.Runtime.InteropServices
                         return key.Thunk;
                 }
                 
-                IntPtr commonStubAddress = AsmCode.GetInteropCommonStubAddress();
+                if (s_thunkPoolHeap == null)
+                {
+                    s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(AsmCode.GetInteropCommonStubAddress());
+                    Debug.Assert(s_thunkPoolHeap != null);
+                }
+
                 //
                 // Keep allocating thunks until we reach the recycling frequency - we have a virtually unlimited
                 // number of thunks that we can allocate (until we run out of virtual address space), but we
@@ -1568,7 +1582,7 @@ namespace System.Runtime.InteropServices
                         // if the delegate has already been collected free the thunk and remove the entry from the hashset
                         if (delegateThunk.Handle.Target == null)
                         {
-                            ThunkPool.FreeThunk(commonStubAddress, delegateThunk.Thunk);
+                            RuntimeAugments.FreeThunk(s_thunkPoolHeap, delegateThunk.Thunk);
                             bool removed = delegateHashSet.Remove(delegateThunk, delegateThunk.HashCode);
                             if (!removed)
                                 Environment.FailFast("Inconsistency in delegate map");
@@ -1578,7 +1592,8 @@ namespace System.Runtime.InteropServices
                 }
 
 
-                IntPtr pThunk = ThunkPool.AllocateThunk(commonStubAddress);
+                IntPtr pThunk = RuntimeAugments.AllocateThunk(s_thunkPoolHeap);
+                Debug.Assert(pThunk != IntPtr.Zero);
 
                 if (pThunk == IntPtr.Zero)
                 {
@@ -1603,7 +1618,7 @@ namespace System.Runtime.InteropServices
                     //
                     IntPtr pTarget =  del.GetRawFunctionPointerForOpenStaticDelegate()  == IntPtr.Zero  ?  pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
                     
-                    ThunkPool.SetThunkData(pThunk, delegateThunk.ContextData, pTarget);
+                    RuntimeAugments.SetThunkData(s_thunkPoolHeap, pThunk, delegateThunk.ContextData, pTarget);
 
                     return pThunk;
                 }
@@ -1631,7 +1646,7 @@ namespace System.Runtime.InteropServices
             //
             IntPtr pContext;
             IntPtr pTarget;
-            if (ThunkPool.TryGetThunkData(AsmCode.GetInteropCommonStubAddress(), pStub, out pContext, out pTarget))
+            if (RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, pStub, out pContext, out pTarget))
             {
                 GCHandle handle;
                 unsafe
