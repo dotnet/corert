@@ -93,7 +93,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-                return _customAttribute.GetAttributeTypeHandle(_reader).FormatTypeName(_reader, new TypeContext(null, null));
+                return new QTypeDefRefOrSpec(_reader, _customAttribute.GetAttributeTypeHandle(_reader)).FormatTypeName(new TypeContext(null, null));
             }
         }
 

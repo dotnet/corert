@@ -266,8 +266,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 #endif
 
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
-                Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-                return typeHandle.Resolve(_reader, typeContext);
+                return PropertyTypeHandle.Resolve(typeContext);
             }
         }
 
@@ -325,13 +324,20 @@ namespace System.Reflection.Runtime.PropertyInfos
             _lazySetterInvoker.Invoke(obj, arguments);
         }
 
+        private QTypeDefRefOrSpec PropertyTypeHandle
+        {
+            get
+            {
+                return new QTypeDefRefOrSpec(_reader, _property.Signature.GetPropertySignature(_reader).Type);
+            }
+        }
+
         public sealed override String ToString()
         {
             StringBuilder sb = new StringBuilder(30);
 
             TypeContext typeContext = _contextTypeInfo.TypeContext;
-            Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-            sb.Append(typeHandle.FormatTypeName(_reader, typeContext));
+            sb.Append(PropertyTypeHandle.FormatTypeName(typeContext));
             sb.Append(' ');
             sb.Append(this.Name);
             ParameterInfo[] indexParameters = this.GetIndexParameters();

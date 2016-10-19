@@ -104,7 +104,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
         {
             TypeContext typeContext = _contextTypeInfo.TypeContext;
             Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-            return typeHandle.FormatTypeName(_reader, typeContext) + " " + this.Name;
+            return (new QTypeDefRefOrSpec(_reader, typeHandle).FormatTypeName(typeContext)) + " " + this.Name;
         }
 
         public sealed override bool Equals(Object obj)

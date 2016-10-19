@@ -5,8 +5,6 @@
 using System.Reflection.Runtime.TypeInfos;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.General
 {
     internal static class ToStringUtils
@@ -17,7 +15,7 @@ namespace System.Reflection.Runtime.General
         //
         // The Project N version takes a raw metadata handle rather than a completed type so that it remains robust in the face of missing metadata.
         //
-        public static String FormatTypeName(this Handle typeDefRefOrSpecHandle, MetadataReader reader, TypeContext typeContext)
+        public static String FormatTypeName(this QTypeDefRefOrSpec qualifiedTypeHandle, TypeContext typeContext)
         {
             try
             {
@@ -25,7 +23,7 @@ namespace System.Reflection.Runtime.General
                 // (non-error exceptions are very annoying when debugging.)
 
                 Exception exception = null;
-                RuntimeTypeInfo runtimeType = typeDefRefOrSpecHandle.TryResolve(reader, typeContext, ref exception);
+                RuntimeTypeInfo runtimeType = qualifiedTypeHandle.TryResolve(typeContext, ref exception);
                 if (runtimeType == null)
                     return UnavailableType;
 

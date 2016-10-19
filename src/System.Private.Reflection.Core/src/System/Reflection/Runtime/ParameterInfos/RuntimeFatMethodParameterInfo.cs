@@ -21,12 +21,21 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reader, typeHandle, typeContext)
+        private RuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
+            : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
             _methodHandle = methodHandle;
             _parameterHandle = parameterHandle;
-            _parameter = parameterHandle.GetParameter(reader);
+            _parameter = parameterHandle.GetParameter(Reader);
+        }
+
+        private MetadataReader Reader
+        {
+            get
+            {
+                Debug.Assert(_qualifiedParameterTypeHandle.Reader is MetadataReader);
+                return (MetadataReader)_qualifiedParameterTypeHandle.Reader;
+            }
         }
 
         public sealed override ParameterAttributes Attributes

@@ -35,13 +35,21 @@ namespace System.Reflection.Runtime.General
         }
         internal static RuntimeTypeInfo Resolve(this QTypeDefRefOrSpec typeDefOrRefOrSpec, TypeContext typeContext)
         {
+            Exception exception = null;
+            RuntimeTypeInfo runtimeType = typeDefOrRefOrSpec.TryResolve(typeContext, ref exception);
+            if (runtimeType == null)
+                throw exception;
+            return runtimeType;
+        }
+
+        internal static RuntimeTypeInfo TryResolve(this QTypeDefRefOrSpec typeDefOrRefOrSpec, TypeContext typeContext, ref Exception exception)
+        {
             if (typeDefOrRefOrSpec.Reader is MetadataReader)
             {
-                return Handle.FromIntToken(typeDefOrRefOrSpec.Handle).Resolve((MetadataReader)typeDefOrRefOrSpec.Reader, typeContext);
+                return Handle.FromIntToken(typeDefOrRefOrSpec.Handle).TryResolve((MetadataReader)typeDefOrRefOrSpec.Reader, typeContext, ref exception);
             }
 
-            // Unable to resolve this form of QTypeDefOrSpec
-            throw new BadImageFormatException();
+            throw new BadImageFormatException();  // Expected TypeRef, Def or Spec with MetadataReader
         }
 
         internal static RuntimeTypeInfo TryResolve(this Handle typeDefRefOrSpec, MetadataReader reader, TypeContext typeContext, ref Exception exception)

@@ -318,9 +318,9 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
         {
-            return new RuntimeThinMethodParameterInfo(member, position, reader, typeHandle, typeContext);
+            return new RuntimeThinMethodParameterInfo(member, position, qualifiedParameterType, typeContext);
         }
     }
 
@@ -329,9 +329,9 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static RuntimeFatMethodParameterInfo GetRuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+        internal static RuntimeFatMethodParameterInfo GetRuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
         {
-            return new RuntimeFatMethodParameterInfo(member, methodHandle, position, parameterHandle, reader, typeHandle, typeContext);
+            return new RuntimeFatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
         }
     }
 

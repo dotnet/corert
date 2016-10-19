@@ -217,8 +217,7 @@ namespace System.Reflection.Runtime.MethodInfos
                         _methodHandle,
                         index - 1,
                         parameterHandle,
-                        reader,
-                        typeSignatures[index],
+                        new QTypeDefRefOrSpec(reader, typeSignatures[index]),
                         typeContext);
             }
             for (int i = 0; i < count; i++)
@@ -229,9 +228,8 @@ namespace System.Reflection.Runtime.MethodInfos
                         RuntimeThinMethodParameterInfo.GetRuntimeThinMethodParameterInfo(
                             contextMethod,
                             i - 1,
-                        reader,
-                        typeSignatures[i],
-                        typeContext);
+                            new QTypeDefRefOrSpec(reader, typeSignatures[i]),
+                            typeContext);
                 }
             }
 
