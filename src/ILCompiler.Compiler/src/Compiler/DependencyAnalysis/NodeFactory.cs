@@ -185,6 +185,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
+            _fatFunctionPointers = new NodeCache<MethodDesc, FatFunctionPointerNode>(method =>
+            {
+                return new FatFunctionPointerNode(method);
+            });
+
             _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
                 return new ShadowConcreteMethodNode<MethodCodeNode>(method,
@@ -212,6 +217,11 @@ namespace ILCompiler.DependencyAnalysis
             _stringIndirectionNodes = new NodeCache<string, StringIndirectionNode>((string data) =>
             {
                 return new StringIndirectionNode(data);
+            });
+
+            _indirectionNodes = new NodeCache<ISymbolNode, IndirectionNode>(symbol =>
+            {
+                return new IndirectionNode(symbol);
             });
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
@@ -471,6 +481,13 @@ namespace ILCompiler.DependencyAnalysis
             return _methodEntrypoints.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, FatFunctionPointerNode> _fatFunctionPointers;
+
+        public IMethodNode FatFunctionPointer(MethodDesc method)
+        {
+            return _fatFunctionPointers.GetOrAdd(method);
+        }
+
         private NodeCache<MethodDesc, IMethodNode> _shadowConcreteMethods;
 
         public IMethodNode ShadowConcreteMethod(MethodDesc method)
@@ -580,6 +597,13 @@ namespace ILCompiler.DependencyAnalysis
         public StringIndirectionNode StringIndirection(string data)
         {
             return _stringIndirectionNodes.GetOrAdd(data);
+        }
+
+        private NodeCache<ISymbolNode, IndirectionNode> _indirectionNodes;
+
+        public IndirectionNode Indirection(ISymbolNode symbol)
+        {
+            return _indirectionNodes.GetOrAdd(symbol);
         }
 
         private NodeCache<string, FrozenStringNode> _frozenStringNodes;

@@ -47,6 +47,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>Common\MetadataBlob.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Common\RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -74,10 +77,12 @@
     <Compile Include="Compiler\DependencyAnalysis\DictionaryLayoutNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalReferencesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FatFunctionPointerNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectSentinelNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenStringNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericCompositionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDefinitionEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeDeterminedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
