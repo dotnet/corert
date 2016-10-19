@@ -106,7 +106,7 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
-    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeFatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\NativeFormat\NativeFormatMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimePropertyIndexParameterInfo.cs" />

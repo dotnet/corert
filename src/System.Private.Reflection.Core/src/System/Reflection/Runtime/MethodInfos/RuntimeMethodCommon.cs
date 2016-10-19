@@ -11,6 +11,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.ParameterInfos.NativeFormat;
 using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core;
@@ -212,7 +213,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 Parameter parameterRecord = parameterHandle.GetParameter(_reader);
                 int index = parameterRecord.Sequence;
                 result[index] =
-                    RuntimeFatMethodParameterInfo.GetRuntimeFatMethodParameterInfo(
+                    NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
                         contextMethod,
                         _methodHandle,
                         index - 1,

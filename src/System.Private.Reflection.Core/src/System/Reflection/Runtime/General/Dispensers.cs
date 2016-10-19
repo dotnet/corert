@@ -325,17 +325,6 @@ namespace System.Reflection.Runtime.ParameterInfos
     }
 
     //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos for MethodBase objects with Parameter metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
-    {
-        internal static RuntimeFatMethodParameterInfo GetRuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
-        {
-            return new RuntimeFatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
     // ParameterInfos returned by PropertyInfo.GetIndexParameters()
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimePropertyIndexParameterInfo : RuntimeParameterInfo
@@ -354,6 +343,20 @@ namespace System.Reflection.Runtime.ParameterInfos
         internal static RuntimeSyntheticParameterInfo GetRuntimeSyntheticParameterInfo(MemberInfo member, int position, RuntimeTypeInfo parameterType)
         {
             return new RuntimeSyntheticParameterInfo(member, position, parameterType);
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // ParameterInfos for MethodBase objects with Parameter metadata.
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class NativeFormatMethodParameterInfo : RuntimeMethodParameterInfo
+    {
+        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
+        {
+            return new NativeFormatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
         }
     }
 }
