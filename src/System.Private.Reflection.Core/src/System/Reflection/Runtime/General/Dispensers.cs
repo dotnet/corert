@@ -9,6 +9,7 @@ using System.Collections.Generic;
 
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.PropertyInfos;
@@ -215,7 +216,7 @@ namespace System.Reflection.Runtime.FieldInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeFieldInfo
     {
-        internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             return new RuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
@@ -229,7 +230,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimePlainConstructorInfo : RuntimeConstructorInfo
     {
-        internal static RuntimePlainConstructorInfo GetRuntimePlainConstructorInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimePlainConstructorInfo GetRuntimePlainConstructorInfo(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
             return new RuntimePlainConstructorInfo(methodHandle, definingTypeInfo, contextTypeInfo);
         }
@@ -251,7 +252,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeNamedMethodInfo : RuntimeMethodInfo
     {
-        internal static RuntimeNamedMethodInfo GetRuntimeNamedMethodInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        internal static RuntimeNamedMethodInfo GetRuntimeNamedMethodInfo(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedMethodInfo method = new RuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo, reflectedType);
             method.WithDebugName();
@@ -289,7 +290,7 @@ namespace System.Reflection.Runtime.PropertyInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimePropertyInfo
     {
-        internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             return new RuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
@@ -303,7 +304,7 @@ namespace System.Reflection.Runtime.EventInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeEventInfo
     {
-        internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             return new RuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }

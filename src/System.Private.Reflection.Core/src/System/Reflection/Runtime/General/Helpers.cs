@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
 
@@ -77,6 +78,13 @@ namespace System.Reflection.Runtime.General
         {
             Debug.Assert(type is RuntimeNamedTypeInfo);
             return (RuntimeNamedTypeInfo)type;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NativeFormatRuntimeNamedTypeInfo CastToNativeFormatRuntimeNamedTypeInfo(this Type type)
+        {
+            Debug.Assert(type is NativeFormatRuntimeNamedTypeInfo);
+            return (NativeFormatRuntimeNamedTypeInfo)type;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

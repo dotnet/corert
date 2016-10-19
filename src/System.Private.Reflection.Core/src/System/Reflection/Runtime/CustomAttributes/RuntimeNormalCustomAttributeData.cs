@@ -57,7 +57,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                     QualifiedMethod qualifiedMethod = _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
                     TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
                     MethodHandle methodHandle = qualifiedMethod.Method;
-                    RuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+                    NativeFormatRuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
                     return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, attributeType, attributeType);
                 }
                 else if (constructorHandleType == HandleType.MemberReference)

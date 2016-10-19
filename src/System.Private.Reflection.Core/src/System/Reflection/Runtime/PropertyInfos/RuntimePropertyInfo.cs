@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.CustomAttributes;
@@ -49,7 +50,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        private RuntimePropertyInfo(PropertyHandle propertyHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             _propertyHandle = propertyHandle;
             _definingTypeInfo = definingTypeInfo;
@@ -451,7 +452,7 @@ namespace System.Reflection.Runtime.PropertyInfos
             return this;
         }
 
-        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly PropertyHandle _propertyHandle;
         private readonly RuntimeTypeInfo _contextTypeInfo;
         private readonly RuntimeTypeInfo _reflectedType;

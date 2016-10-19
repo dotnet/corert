@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.CustomAttributes;
 
@@ -46,7 +47,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        public RuntimeMethodCommon(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        public RuntimeMethodCommon(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
             _definingTypeInfo = definingTypeInfo;
             _methodHandle = methodHandle;
@@ -156,7 +157,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public RuntimeNamedTypeInfo DefiningTypeInfo
+        public NativeFormatRuntimeNamedTypeInfo DefiningTypeInfo
         {
             get
             {
@@ -293,7 +294,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly MethodHandle _methodHandle;
         private readonly RuntimeTypeInfo _contextTypeInfo;
 

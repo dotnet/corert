@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
@@ -43,7 +44,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimePlainConstructorInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        private RuntimePlainConstructorInfo(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
             _common = new RuntimeMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo);
         }

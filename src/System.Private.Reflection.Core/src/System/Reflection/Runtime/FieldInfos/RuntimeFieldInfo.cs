@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.BindingFlagSupport;
 
@@ -48,7 +49,7 @@ namespace System.Reflection.Runtime.FieldInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        private RuntimeFieldInfo(FieldHandle fieldHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             _fieldHandle = fieldHandle;
             _definingTypeInfo = definingTypeInfo;
@@ -272,7 +273,7 @@ namespace System.Reflection.Runtime.FieldInfos
             return this;
         }
 
-        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldHandle _fieldHandle;
         private readonly RuntimeTypeInfo _contextTypeInfo;
         private readonly RuntimeTypeInfo _reflectedType;

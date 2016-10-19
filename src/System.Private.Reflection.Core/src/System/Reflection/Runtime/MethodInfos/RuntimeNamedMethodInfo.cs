@@ -43,7 +43,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimeNamedMethodInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        private RuntimeNamedMethodInfo(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
             : base()
         {
             _common = new RuntimeMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo);
@@ -245,7 +245,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     if (DeclaringType.IsConstructedGenericType)
                     {
                         // Desktop compat: Constructed generic types and their generic type definitions share the same Type objects for method generic parameters. 
-                        RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToRuntimeNamedTypeInfo();
+                        NativeFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToNativeFormatRuntimeNamedTypeInfo();
                         owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(Handle, genericTypeDefinition, genericTypeDefinition, genericTypeDefinition);
                     }
                     else

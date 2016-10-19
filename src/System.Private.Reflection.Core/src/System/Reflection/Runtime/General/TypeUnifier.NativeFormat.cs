@@ -100,7 +100,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         // For app-compat reasons, we need to make sure that only TypeInfo instance exists for a given semantic type. If you change this, you must change the way
         // RuntimeTypeInfo.Equals() is implemented.
         // 
-        internal static NativeFormatRuntimeGenericParameterTypeInfoForTypes GetRuntimeGenericParameterTypeInfoForTypes(RuntimeNamedTypeInfo typeOwner, GenericParameterHandle genericParameterHandle)
+        internal static NativeFormatRuntimeGenericParameterTypeInfoForTypes GetRuntimeGenericParameterTypeInfoForTypes(NativeFormatRuntimeNamedTypeInfo typeOwner, GenericParameterHandle genericParameterHandle)
         {
             UnificationKey key = new UnificationKey(typeOwner.Reader, typeOwner.TypeDefinitionHandle, genericParameterHandle);
             NativeFormatRuntimeGenericParameterTypeInfoForTypes type = GenericParameterTypeForTypesTable.Table.GetOrAdd(key);

@@ -27,7 +27,7 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        internal virtual IEnumerable<ConstructorInfo> CoreGetDeclaredConstructors(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType = null)
+        internal virtual IEnumerable<ConstructorInfo> CoreGetDeclaredConstructors(NameFilter optionalNameFilter, RuntimeTypeInfo contextTypeInfo = null)
         {
             //
             // - It may sound odd to get a non-null name filter for a constructor search, but Type.GetMember() is an api that does this.
@@ -35,12 +35,12 @@ namespace System.Reflection.Runtime.TypeInfos
             // - All GetConstructor() apis act as if BindingFlags.DeclaredOnly were specified. So the ReflectedType will always be the declaring type and so is not passed to this method.
             //
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
-            if (reflectedType == null)
-                reflectedType = this;
+            if (contextTypeInfo == null)
+                contextTypeInfo = this;
 
             if (definingType != null)
             {
-                return definingType.CoreGetDeclaredConstructors(optionalNameFilter, reflectedType);
+                return definingType.CoreGetDeclaredConstructors(optionalNameFilter, contextTypeInfo);
             }
 
             return CoreGetDeclaredSyntheticConstructors(optionalNameFilter);
@@ -55,12 +55,15 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal virtual IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo = null)
         {
+            if (contextTypeInfo == null)
+                contextTypeInfo = this;
+
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                return definingType.CoreGetDeclaredMethods(optionalNameFilter, reflectedType);
+                return definingType.CoreGetDeclaredMethods(optionalNameFilter, reflectedType, contextTypeInfo);
             }
 
             return CoreGetDeclaredSyntheticMethods(optionalNameFilter);
@@ -75,32 +78,41 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal virtual IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo = null)
         {
+            if (contextTypeInfo == null)
+                contextTypeInfo = this;
+
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                return definingType.CoreGetDeclaredEvents(optionalNameFilter, reflectedType);
+                return definingType.CoreGetDeclaredEvents(optionalNameFilter, reflectedType, contextTypeInfo);
             }
             return Empty<EventInfo>.Enumerable;
         }
 
-        internal virtual IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo = null)
         {
+            if (contextTypeInfo == null)
+                contextTypeInfo = this;
+
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                return definingType.CoreGetDeclaredFields(optionalNameFilter, reflectedType);
+                return definingType.CoreGetDeclaredFields(optionalNameFilter, reflectedType, contextTypeInfo);
             }
             return Empty<FieldInfo>.Enumerable;
         }
 
-        internal virtual IEnumerable<PropertyInfo> CoreGetDeclaredProperties(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal virtual IEnumerable<PropertyInfo> CoreGetDeclaredProperties(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo = null)
         {
+            if (contextTypeInfo == null)
+                contextTypeInfo = this;
+
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
             {
-                return definingType.CoreGetDeclaredProperties(optionalNameFilter, reflectedType);
+                return definingType.CoreGetDeclaredProperties(optionalNameFilter, reflectedType, contextTypeInfo);
             }
 
             return Empty<PropertyInfo>.Enumerable;

@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.MethodInfos;
@@ -145,7 +146,7 @@ namespace System.Reflection.Runtime.General
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
-            RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
+            NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
             MetadataReader reader = definingTypeInfo.Reader;
 
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
