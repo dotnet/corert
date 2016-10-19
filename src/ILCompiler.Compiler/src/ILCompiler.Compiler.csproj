@@ -68,6 +68,7 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClonedConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppCodegenNodeFactory.cs" />
