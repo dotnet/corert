@@ -58,7 +58,7 @@ namespace System.Reflection.Runtime.EventInfos
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
         public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit).ToArray();

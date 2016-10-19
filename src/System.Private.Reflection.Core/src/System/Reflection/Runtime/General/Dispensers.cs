@@ -209,16 +209,16 @@ namespace System.Reflection.Runtime.Modules
     }
 }
 
-namespace System.Reflection.Runtime.FieldInfos
+namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 {
     //-----------------------------------------------------------------------------------------------------------
     // FieldInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeFieldInfo
+    internal sealed partial class NativeFormatRuntimeFieldInfo
     {
         internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            return new RuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
+            return new NativeFormatRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
     }
 }

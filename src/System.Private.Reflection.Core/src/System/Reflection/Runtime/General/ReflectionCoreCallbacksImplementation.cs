@@ -11,7 +11,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.FieldInfos;
+using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.BindingFlagSupport;
 
@@ -151,7 +151,7 @@ namespace System.Reflection.Runtime.General
 
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
             RuntimeTypeInfo reflectedType = contextTypeInfo;
-            return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType);
+            return NativeFormatRuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType);
         }
 
         public sealed override object ActivatorCreateInstance(Type type, bool nonPublic)

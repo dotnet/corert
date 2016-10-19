@@ -76,7 +76,7 @@ namespace System.Reflection.Runtime.EventInfos
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;

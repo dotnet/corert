@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.EventInfos
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
         public sealed override RuntimeFieldHandle FieldHandle { get { throw new NotImplementedException(); } }
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
