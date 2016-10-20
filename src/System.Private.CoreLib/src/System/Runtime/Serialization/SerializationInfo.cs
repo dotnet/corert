@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
         private object[] _values;
         private Type[] _types;
         private int _count;
-        private ListDictionaryInternal _nameToIndex; // TODO: Replace with Dictionary<string, int>
+        private LowLevelListDictionary _nameToIndex; // TODO: Replace with Dictionary<string, int>
 
         private IFormatterConverter _converter;
         private string _rootTypeName;
@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
             _names = new string[DefaultSize];
             _values = new object[DefaultSize];
             _types = new Type[DefaultSize];
-            _nameToIndex = new ListDictionaryInternal();
+            _nameToIndex = new LowLevelListDictionary();
             _converter = converter;
         }
 
