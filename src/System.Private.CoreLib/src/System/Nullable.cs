@@ -83,7 +83,7 @@ namespace System
         {
             if (n1.HasValue)
             {
-                if (n2.HasValue) return LowLevelComparer<T>.Default.Compare(n1.value, n2.value);
+                if (n2.HasValue) return Comparer<T>.Default.Compare(n1.value, n2.value);
                 return 1;
             }
             if (n2.HasValue) return -1;
@@ -94,12 +94,7 @@ namespace System
         {
             if (n1.HasValue)
             {
-#if CORERT
-                if (n2.HasValue) return EqualOnlyComparer<T>.Equals(n1.value, n2.value);
-#else
-                // See comment above Array.GetComparerForReferenceTypesOnly for details
-                if (n2.HasValue) return LowLevelEqualityComparer<T>.Default.Equals(n1.value, n2.value);
-#endif
+                if (n2.HasValue) return EqualityComparer<T>.Default.Equals(n1.value, n2.value);
                 return false;
             }
             if (n2.HasValue) return false;
