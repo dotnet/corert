@@ -36,10 +36,35 @@ namespace ILCompiler.DependencyAnalysis
         private ReadyToRunHelperId _id;
         private Object _target;
 
-        public ReadyToRunHelperNode(ReadyToRunHelperId id, Object target)
+        public ReadyToRunHelperNode(NodeFactory factory, ReadyToRunHelperId id, Object target)
         {
             _id = id;
             _target = target;
+
+            switch (id)
+            {
+                case ReadyToRunHelperId.NewHelper:
+                case ReadyToRunHelperId.NewArr1:
+                case ReadyToRunHelperId.IsInstanceOf:
+                case ReadyToRunHelperId.CastClass:
+                    {
+                        // Make sure that if the EEType can't be generated, we throw the exception now.
+                        // This way we can fail generating code for the method that references the EEType
+                        // and (depending on the policy), we could avoid scraping the entire compilation.
+                        TypeDesc type = (TypeDesc)target;
+                        factory.NecessaryTypeSymbol(type);
+                    }
+                    break;
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                case ReadyToRunHelperId.GetGCStaticBase:
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    {
+                        // Make sure we can compute static field layout now so we can fail early
+                        DefType defType = (DefType)target;
+                        defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
+                    }
+                    break;
+            }
         }
 
         protected override string GetName()

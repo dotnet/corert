@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal class ConstructedEETypeNode : EETypeNode, ISymbolNode
     {
-        public ConstructedEETypeNode(TypeDesc type) : base(type)
+        public ConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
             Debug.Assert(!_type.IsGenericDefinition);
         }

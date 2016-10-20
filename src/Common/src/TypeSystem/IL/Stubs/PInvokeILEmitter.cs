@@ -135,6 +135,18 @@ namespace Internal.IL.Stubs
             if (importModule == "[MRT]" || importModule == "*")
                 return false;
 
+            //
+            // Work-around to enable a p/invoke with struct return value. When compiling the stub for
+            // System.Console's Interop.mincore.GetLargestConsoleWindowSize, the JIT decides it cannot
+            // generate an inline p/invoke because the return type is a struct. If the /pinvoke uses a
+            // calli, the JIT will always allow the inlining, so force a lazy p/invoke stub (which uses
+            // calli on the pointer returned by ResolvePInvoke.
+            //
+            // See: https://github.com/dotnet/corert/issues/2144
+            //
+            if (method.Signature.ReturnType.IsValueType && !method.Signature.ReturnType.IsPrimitive)
+                return true;
+
             if (method.Context.Target.IsWindows)
                 return !importModule.StartsWith("api-ms-win-");
             else

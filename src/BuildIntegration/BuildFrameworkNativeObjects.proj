@@ -1,0 +1,10 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IlcCompileDependsOn>IlcFramework</IlcCompileDependsOn>
+    <IlcMultiModule>true</IlcMultiModule>
+  </PropertyGroup>
+  
+  <Import Project="Microsoft.NETCore.Native.targets" />
+  
+</Project>
