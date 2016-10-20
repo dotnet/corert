@@ -115,6 +115,7 @@ namespace ILCompiler
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
+                syntax.DefineOptionList("codegenopt", ref _options.CodegenOptions, "Define a codegen option");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");

@@ -1,0 +1,13 @@
+<Project ToolsVersion="14.0" DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <CopyNuGetImplementations>false</CopyNuGetImplementations>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+  </PropertyGroup>
+
+  <!-- Use the source primary copy for development convenience -->
+  <Import Project="$(MSBuildThisFileDirectory)\..\src\BuildIntegration\Microsoft.NETCore.Native.targets" />
+  <!-- <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" /> -->
+</Project>

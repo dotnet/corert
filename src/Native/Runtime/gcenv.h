@@ -13,7 +13,6 @@
 #include "gcenv.os.h"
 #include "gcenv.interlocked.h"
 #include "gcenv.base.h"
-#include "gcenv.ee.h"
 
 #include "Crst.h"
 #include "event.h"
@@ -171,7 +170,7 @@ public:
     bool    IsGCBreakOnOOMEnabled()         const { return false; }
 #ifdef USE_PORTABLE_HELPERS
     // CORERT-TODO: remove this
-    //              https://github.com/dotnet/corert/issues/913
+    //              https://github.com/dotnet/corert/issues/2033
     int     GetGCgen0size  ()               const { return 100 * 1024 * 1024; }
 #else
     int     GetGCgen0size  ()               const { return 0; }

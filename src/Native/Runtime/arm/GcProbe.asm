@@ -97,9 +97,6 @@ PROBE_FRAME_SIZE    field 0
         str         $trashReg, [sp, #m_dwFlags]
         add         $trashReg, sp, #$frameSize
         str         $trashReg, [sp, #m_CallersSP]
-
-        ; Link the frame into the Thread.
-        str         sp, [$threadReg, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
     MEND
 
     ;; Simple macro to use when setting up the probe frame can comprise the entire prolog. Call this macro
@@ -132,6 +129,7 @@ __PPF_ThreadReg SETS "r2"
 
         ; Perform the rest of the PInvokeTransitionFrame initialization.
         INIT_PROBE_FRAME $__PPF_ThreadReg, $trashReg, $BITMASK, PROBE_FRAME_SIZE
+        str         sp, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
     MEND
 
     ; Simple macro to use when PROLOG_PROBE_FRAME was used to set up and initialize the prolog and
@@ -506,6 +504,7 @@ DREG_SZ equ     (SIZEOF__PAL_LIMITED_CONTEXT - (OFFSETOF__PAL_LIMITED_CONTEXT__L
 
         ; TRASHES r1
         INIT_PROBE_FRAME r2, r1, #PROBE_SAVE_FLAGS_R0_IS_GCREF, (PROBE_FRAME_SIZE + 8)
+        str         sp, [r2, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
     MEND
 
 ;;
@@ -669,7 +668,7 @@ VFP_EXTRA_SAVE_SIZE equ ((12*8) + (16*8))
         bne         DoneWaitingForGc
 
         ; link the frame into the Thread
-        str         sp,[r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        str         sp, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
 
         ;;
         ;; Unhijack this thread, if necessary.
@@ -694,7 +693,7 @@ VFP_EXTRA_SAVE_SIZE equ ((12*8) + (16*8))
 NoGcStress
 #endif ;; FEATURE_GC_STRESS
 
-        ldr         r2, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        mov         r2, sp ; sp is address of PInvokeTransitionFrame
         bl          RhpWaitForGC
 
 DoneWaitingForGc
