@@ -4,10 +4,6 @@
 //
 // LowLevelComparer emulates the desktop type System.Collections.Comparer.
 //
-// This type is not part of the Win8P surface area but it is used by some code inside System.Private.CoreLib as well as the
-// the implementation of Comparer<T> in System.Collections.
-//
-//
 
 using System;
 using System.Globalization;

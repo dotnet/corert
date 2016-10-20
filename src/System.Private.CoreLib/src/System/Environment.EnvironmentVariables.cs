@@ -24,7 +24,7 @@ namespace System
         {
             // Environment variable accessors are not approved modern API.
             // Behave as if no environment variables are defined in this case.
-            return new ListDictionaryInternal(); ;
+            return new LowLevelListDictionary();
         }
 
         public static void SetEnvironmentVariable(String variable, String value)
