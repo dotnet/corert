@@ -32,6 +32,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new MethodDictionaryGenericLookupResult(method);
                 });
 
+                _methodEntrypoints = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                {
+                    return new MethodEntryGenericLookupResult(method);
+                });
+
                 _virtualCallHelpers = new NodeCache<MethodDesc, GenericLookupResult>(method =>
                 {
                     return new VirtualDispatchGenericLookupResult(method);
@@ -57,6 +62,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult VirtualCall(MethodDesc method)
             {
                 return _virtualCallHelpers.GetOrAdd(method);
+            }
+
+            private NodeCache<MethodDesc, GenericLookupResult> _methodEntrypoints;
+
+            public GenericLookupResult MethodEntry(MethodDesc method)
+            {
+                return _methodEntrypoints.GetOrAdd(method);
             }
         }
 
