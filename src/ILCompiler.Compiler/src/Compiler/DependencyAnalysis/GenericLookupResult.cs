@@ -19,13 +19,20 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public abstract class GenericLookupResult
     {
-        public virtual int NumberOfIndirections => 0;
-
         public abstract ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
         public abstract string GetMangledName(NameMangler nameMangler);
         public abstract override string ToString();
 
+        /// <summary>
+        /// Gets the offset to be applied to the symbol returned by
+        /// <see cref="GetTarget(NodeFactory, Instantiation, Instantiation)"/> to get the actual target.
+        /// </summary>
         public virtual int TargetDelta => 0;
+
+        /// <summary>
+        /// Number of indirections to follow to get to the logical target of the lookup.
+        /// </summary>
+        public virtual int NumberOfIndirections => 0;
     }
 
     /// <summary>
@@ -145,6 +152,18 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class TypeNonGCStaticBaseGenericLookupResult : GenericLookupResult
     {
         private MetadataType _type;
+
+        public override int TargetDelta
+        {
+            get
+            {
+                // The NonGCStatics symbol might be pointing to the class constructor context.
+                if (((CompilerTypeSystemContext)_type.Context).HasLazyStaticConstructor(_type))
+                    return NonGCStaticsNode.GetClassConstructorContextStorageSize(_type.Context.Target, _type);
+                else
+                    return 0;
+            }
+        }
 
         public TypeNonGCStaticBaseGenericLookupResult(TypeDesc type)
         {
