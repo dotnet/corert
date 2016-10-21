@@ -122,7 +122,7 @@ namespace System.Reflection.Runtime.MethodInfos
             where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
         {
             RuntimeParameterInfo returnParameter;
-            RuntimeParameterInfo[] parameters = GetRuntimeParameters<TRuntimeMethodCommon>(ref runtimeMethodCommon, contextMethod, methodTypeArguments, out returnParameter);
+            RuntimeParameterInfo[] parameters = GetRuntimeParameters(ref runtimeMethodCommon, contextMethod, methodTypeArguments, out returnParameter);
             return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
         }
 

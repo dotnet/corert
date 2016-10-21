@@ -186,7 +186,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         internal protected override String ComputeToString(RuntimeMethodInfo contextMethod)
         {
-            return RuntimeMethodHelpers.ComputeToString<TRuntimeMethodCommon>(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
+            return RuntimeMethodHelpers.ComputeToString(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
         }
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
@@ -199,7 +199,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
         {
-            return RuntimeMethodHelpers.GetRuntimeParameters<TRuntimeMethodCommon>(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters, out returnParameter);
+            return RuntimeMethodHelpers.GetRuntimeParameters(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters, out returnParameter);
         }
 
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType

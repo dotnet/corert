@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return RuntimeMethodHelpers.ComputeToString<TRuntimeMethodCommon>(ref _common, this, Array.Empty<RuntimeTypeInfo>());
+            return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
@@ -153,7 +153,7 @@ namespace System.Reflection.Runtime.MethodInfos
             get
             {
                 RuntimeParameterInfo ignore;
-                return _lazyParameters ?? (_lazyParameters = RuntimeMethodHelpers.GetRuntimeParameters<TRuntimeMethodCommon>(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out ignore));
+                return _lazyParameters ?? (_lazyParameters = RuntimeMethodHelpers.GetRuntimeParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out ignore));
             }
         }
 
