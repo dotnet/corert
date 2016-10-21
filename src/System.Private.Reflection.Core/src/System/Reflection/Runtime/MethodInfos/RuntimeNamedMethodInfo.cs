@@ -28,7 +28,8 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // The runtime's implementation of non-constructor MethodInfo's that represent a method definition.
     //
-    internal sealed partial class RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo> : RuntimeNamedMethodInfo where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon> where TDefiningTypeInfo : RuntimeNamedTypeInfo
+    internal sealed partial class RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon> : RuntimeNamedMethodInfo 
+        where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
         //
         // methodHandle    - the "tkMethodDef" that identifies the method.
@@ -168,7 +169,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo> other = obj as RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo>;
+            RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon> other = obj as RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon>;
             if (other == null)
                 return false;
             if (!_common.Equals(other._common))
@@ -185,7 +186,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         internal protected override String ComputeToString(RuntimeMethodInfo contextMethod)
         {
-            return RuntimeMethodHelpers.ComputeToString<TRuntimeMethodCommon, TDefiningTypeInfo>(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
+            return RuntimeMethodHelpers.ComputeToString<TRuntimeMethodCommon>(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
         }
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
@@ -198,7 +199,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
         {
-            return RuntimeMethodHelpers.GetRuntimeParameters<TRuntimeMethodCommon, TDefiningTypeInfo>(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters, out returnParameter);
+            return RuntimeMethodHelpers.GetRuntimeParameters<TRuntimeMethodCommon>(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters, out returnParameter);
         }
 
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType
@@ -221,18 +222,18 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo> owningMethod = this;
+                RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon> owningMethod = this;
                 if (DeclaringType.IsConstructedGenericType)
                 {
                     // Desktop compat: Constructed generic types and their generic type definitions share the same Type objects for method generic parameters. 
                     TRuntimeMethodCommon uninstantiatedCommon = _common.RuntimeMethodCommonOfUninstantiatedMethod;
-                    owningMethod = RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo>.GetRuntimeNamedMethodInfo(uninstantiatedCommon, uninstantiatedCommon.DeclaringType);
+                    owningMethod = RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(uninstantiatedCommon, uninstantiatedCommon.DeclaringType);
                 }
                 else
                 {
                     // Desktop compat: DeclaringMethod always returns a MethodInfo whose ReflectedType is equal to DeclaringType.
                     if (!_reflectedType.Equals(_common.DeclaringType))
-                        owningMethod = RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo>.GetRuntimeNamedMethodInfo(_common, _common.DeclaringType);
+                        owningMethod = RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common, _common.DeclaringType);
                 }
 
                 return _common.GetGenericTypeParametersWithSpecifiedOwningMethod(owningMethod);

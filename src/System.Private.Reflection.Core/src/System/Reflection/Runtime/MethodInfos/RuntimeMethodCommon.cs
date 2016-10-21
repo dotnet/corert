@@ -51,7 +51,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public RuntimeParameterInfo[] Remainder { get; }
     }
 
-    internal interface IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon> where TDefiningTypeInfo : RuntimeNamedTypeInfo where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
+    internal interface IRuntimeMethodCommon<TRuntimeMethodCommon> where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
         MethodAttributes Attributes { get; }
         CallingConventions CallingConvention { get; }
@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.MethodInfos
         RuntimeTypeInfo ContextTypeInfo { get; }
         IEnumerable<CustomAttributeData> CustomAttributes { get; }
         RuntimeTypeInfo DeclaringType { get; }
-        TDefiningTypeInfo DefiningTypeInfo { get; }
+        RuntimeNamedTypeInfo DefiningTypeInfo { get; }
         MethodImplAttributes MethodImplementationFlags { get; }
         Module Module { get; }
 
@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         TRuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod { get; }
 
-        RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo> owningMethod);
+        RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon> owningMethod);
     }
 
     internal static class RuntimeMethodHelpers
@@ -89,9 +89,8 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         // Does not array-copy.
         //
-        internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon,TDefiningTypeInfo>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter) 
-            where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon> 
-            where TDefiningTypeInfo : RuntimeNamedTypeInfo
+        internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter) 
+            where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon> 
         {
             TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
@@ -119,12 +118,11 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         // Compute the ToString() value in a pay-to-play-safe way.
-        internal static string ComputeToString<TRuntimeMethodCommon, TDefiningTypeInfo>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
-            where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
-            where TDefiningTypeInfo : RuntimeNamedTypeInfo
+        internal static string ComputeToString<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
+            where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
         {
             RuntimeParameterInfo returnParameter;
-            RuntimeParameterInfo[] parameters = GetRuntimeParameters<TRuntimeMethodCommon, TDefiningTypeInfo>(ref runtimeMethodCommon, contextMethod, methodTypeArguments, out returnParameter);
+            RuntimeParameterInfo[] parameters = GetRuntimeParameters<TRuntimeMethodCommon>(ref runtimeMethodCommon, contextMethod, methodTypeArguments, out returnParameter);
             return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
         }
 
@@ -184,7 +182,7 @@ namespace System.Reflection.Runtime.MethodInfos
     // to derive from MethodInfo and ConstructorInfo because of the way the Reflection API are designed. Hence,
     // we use containment as a substitute.
     //
-    internal struct RuntimeMethodCommon : IRuntimeMethodCommon<NativeFormatRuntimeNamedTypeInfo, RuntimeMethodCommon>, IEquatable<RuntimeMethodCommon>
+    internal struct RuntimeMethodCommon : IRuntimeMethodCommon<RuntimeMethodCommon>, IEquatable<RuntimeMethodCommon>
     {
         public bool IsGenericMethodDefinition
         {
@@ -244,7 +242,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo> owningMethod)
+        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon> owningMethod)
         {
             Method method = MethodHandle.GetMethod(Reader);
             int genericParametersCount = method.GenericParameters.Count;
@@ -390,7 +388,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public NativeFormatRuntimeNamedTypeInfo DefiningTypeInfo
+        public RuntimeNamedTypeInfo DefiningTypeInfo
         {
             get
             {

@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // The runtime's implementation of ConstructorInfo's represented in the metadata (this is the 99% case.)
     //
-    internal sealed partial class RuntimePlainConstructorInfo<TRuntimeMethodCommon,TDefiningTypeInfo> : RuntimeConstructorInfo where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon> where TDefiningTypeInfo : RuntimeNamedTypeInfo
+    internal sealed partial class RuntimePlainConstructorInfo<TRuntimeMethodCommon> : RuntimeConstructorInfo where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
         //
         // methodHandle    - the "tkMethodDef" that identifies the method.
@@ -132,7 +132,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimePlainConstructorInfo<TRuntimeMethodCommon, TDefiningTypeInfo> other = obj as RuntimePlainConstructorInfo<TRuntimeMethodCommon, TDefiningTypeInfo>;
+            RuntimePlainConstructorInfo<TRuntimeMethodCommon> other = obj as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
             if (other == null)
                 return false;
             return _common.Equals(other._common);
@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return RuntimeMethodHelpers.ComputeToString<TRuntimeMethodCommon, TDefiningTypeInfo>(ref _common, this, Array.Empty<RuntimeTypeInfo>());
+            return RuntimeMethodHelpers.ComputeToString<TRuntimeMethodCommon>(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
@@ -153,7 +153,7 @@ namespace System.Reflection.Runtime.MethodInfos
             get
             {
                 RuntimeParameterInfo ignore;
-                return _lazyParameters ?? (_lazyParameters = RuntimeMethodHelpers.GetRuntimeParameters<TRuntimeMethodCommon, TDefiningTypeInfo>(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out ignore));
+                return _lazyParameters ?? (_lazyParameters = RuntimeMethodHelpers.GetRuntimeParameters<TRuntimeMethodCommon>(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out ignore));
             }
         }
 
