@@ -120,7 +120,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;

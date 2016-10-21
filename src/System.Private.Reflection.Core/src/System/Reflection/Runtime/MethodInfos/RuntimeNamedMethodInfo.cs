@@ -19,7 +19,7 @@ namespace System.Reflection.Runtime.MethodInfos
     internal abstract class RuntimeNamedMethodInfo : RuntimeMethodInfo
     {
         internal protected abstract String ComputeToString(RuntimeMethodInfo contextMethod);
-        internal protected abstract MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
+        internal abstract MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
     }
 
     //
@@ -237,7 +237,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal protected override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
+        internal override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
             return _common.GetUncachedMethodInvoker(methodArguments, exceptionPertainant);
         }

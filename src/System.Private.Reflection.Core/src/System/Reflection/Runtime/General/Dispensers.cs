@@ -283,16 +283,16 @@ namespace System.Reflection.Runtime.MethodInfos
     }
 }
 
-namespace System.Reflection.Runtime.PropertyInfos
+namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 {
     //-----------------------------------------------------------------------------------------------------------
     // PropertyInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimePropertyInfo
+    internal sealed partial class NativeFormatRuntimePropertyInfo
     {
         internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            return new RuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
+            return new NativeFormatRuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
     }
 }

@@ -109,7 +109,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }

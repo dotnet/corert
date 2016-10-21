@@ -12,7 +12,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // Singleton MethodInfo used as a sentinel for _lazy* latches where we can't use "null" as a sentinel.
     //
-    internal sealed class RuntimeDummyMethodInfo : RuntimeMethodInfo
+    internal sealed class RuntimeDummyMethodInfo : RuntimeNamedMethodInfo
     {
         private RuntimeDummyMethodInfo() { }
 
@@ -35,6 +35,9 @@ namespace System.Reflection.Runtime.MethodInfos
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType { get { throw NotImplemented.ByDesign; } }
         internal sealed override string RuntimeName { get { throw NotImplemented.ByDesign; } }
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get { throw NotImplemented.ByDesign; } }
+
+        protected internal override string ComputeToString(RuntimeMethodInfo contextMethod) { throw NotImplemented.ByDesign; }
+        internal override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant) { throw NotImplemented.ByDesign; }
 
         public static readonly RuntimeDummyMethodInfo Instance = new RuntimeDummyMethodInfo();
     }

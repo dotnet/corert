@@ -127,7 +127,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
         public sealed override MethodInfo GetGetMethod(bool nonPublic) => Getter?.FilterAccessor(nonPublic);
         public sealed override MethodInfo GetSetMethod(bool nonPublic) => Setter?.FilterAccessor(nonPublic);

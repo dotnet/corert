@@ -102,7 +102,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
         public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit: false).ToArray(); // Desktop compat: for properties, this form of the api ignores "inherit"

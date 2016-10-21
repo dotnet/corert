@@ -8,7 +8,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
-using System.Reflection.Runtime.PropertyInfos;
+using System.Reflection.Runtime.PropertyInfos.NativeFormat;
 using System.Reflection.Runtime.EventInfos.NativeFormat;
 using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
@@ -95,7 +95,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             foreach (PropertyHandle propertyHandle in DeclaredPropertyHandles)
             {
                 if (optionalNameFilter == null || optionalNameFilter.Matches(propertyHandle.GetProperty(reader).Name, reader))
-                    yield return RuntimePropertyInfo.GetRuntimePropertyInfo(propertyHandle, this, contextTypeInfo, reflectedType);
+                    yield return NativeFormatRuntimePropertyInfo.GetRuntimePropertyInfo(propertyHandle, this, contextTypeInfo, reflectedType);
             }
         }
 

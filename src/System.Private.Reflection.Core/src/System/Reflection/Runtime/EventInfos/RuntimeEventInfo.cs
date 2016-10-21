@@ -29,19 +29,6 @@ namespace System.Reflection.Runtime.EventInfos
             _reflectedType = reflectedType;
         }
 
-        protected enum EventMethodSemantics
-        {
-            Add,
-            Remove,
-            Fire
-        }
-
-        /// <summary>
-        /// Override to return the Method that corresponds to the specified semantic.
-        /// Return null if no method is to be found.
-        /// </summary>
-        protected abstract MethodInfo GetEventMethod(EventMethodSemantics whichMethod);
-
         public sealed override MethodInfo AddMethod
         {
             get
@@ -183,6 +170,19 @@ namespace System.Reflection.Runtime.EventInfos
             }
             return this;
         }
+
+        internal protected enum EventMethodSemantics
+        {
+            Add,
+            Remove,
+            Fire
+        }
+
+        /// <summary>
+        /// Override to return the Method that corresponds to the specified semantic.
+        /// Return null if no method is to be found.
+        /// </summary>
+        internal protected abstract MethodInfo GetEventMethod(EventMethodSemantics whichMethod);
 
         internal protected abstract string MetadataName { get; }
         internal protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }

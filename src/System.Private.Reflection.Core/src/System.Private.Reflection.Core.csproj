@@ -114,6 +114,7 @@
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimePropertyIndexParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeThinMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeSyntheticParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\PropertyInfos\NativeFormat\NativeFormatRuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\RuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\Tracing\ReflectionEventSource.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeNamedTypeInfo.cs" />
