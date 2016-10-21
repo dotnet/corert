@@ -3,16 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 //
-// These helper methods are known to a NUTC intrinsic used to implement the Comparer<T> class. We don't use them directly
-// from the framework and they have nothing to do with Reflection.
-//
-// These methods need to be housed in a framework assembly that's part of SharedLibrary. System.Private.Reflection.Execution is part of
-// the SharedLibrary so it got picked to be the host. 
-//
+// These helper methods are known to a NUTC intrinsic used to implement the Comparer<T> class.
 
-// The general issue here is that Comparer<T>.get_Default is not written in a manner which fully supports IEquatable
-// and Nullable types. Due to point in time restrictions it is not possible to change that code. So, the compiler will instead
-// replace the IL code within get_Default to call one of GetUnknownComparer, GetKnownGenericComparer,
+// the compiler will instead replace the IL code within get_Default to call one of GetUnknownComparer, GetKnownGenericComparer,
 // GetKnownNullableComparer, GetKnownEnumComparer or GetKnownObjectComparer based on what sort of
 // type is being compared.
 
@@ -20,7 +13,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Internal.Runtime.Augments;
-using Internal.Runtime.TypeLoader;
 
 namespace Internal.IntrinsicSupport
 {
@@ -93,7 +85,7 @@ namespace Internal.IntrinsicSupport
                 }
             }
 
-            bool success = TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(openComparerType, new RuntimeTypeHandle[] { comparerTypeArgument }, out comparerType);
+            bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetConstructedGenericTypeForComponents(openComparerType, new RuntimeTypeHandle[] { comparerTypeArgument }, out comparerType);
             if (!success)
             {
                 Environment.FailFast("Unable to create comparer");

@@ -128,6 +128,5 @@ namespace Internal.Runtime.Augments
         public abstract void TraceOperationRelation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalityRelation relation);
         public abstract void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySource source, CausalitySynchronousWork work);
         public abstract void TraceSynchronousWorkStart(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalitySynchronousWork work);
-        public abstract IList<T> CreateSystemCollectionsGenericList<T>();
     }
 }

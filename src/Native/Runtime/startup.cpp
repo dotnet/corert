@@ -50,6 +50,7 @@ extern RhConfig * g_pRhConfig;
 EXTERN_C bool g_fHasFastFxsave = false;
 
 CrstStatic g_CastCacheLock;
+CrstStatic g_ThunkPoolLock;
 
 bool InitDLL(HANDLE hPalInstance)
 {
@@ -113,6 +114,9 @@ bool InitDLL(HANDLE hPalInstance)
     DetectCPUFeatures();
 
     if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
+        return false;
+
+    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
         return false;
 
     return true;

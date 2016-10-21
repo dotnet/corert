@@ -4,7 +4,8 @@
 
 using Internal.TypeSystem;
 
-using Interlocked = System.Threading.Interlocked;
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -91,6 +92,106 @@ namespace Internal.IL.Stubs
                 return SystemDelegateType.GetKnownField("m_functionPointer");
             }
         }
+
+        protected void EmitTransformedCalli(ILEmitter emitter, ILCodeStream codestream, MethodSignature targetSignature)
+        {
+            TypeSystemContext context = targetSignature.ReturnType.Context;
+
+            int thisPointerParamDelta = 0;
+            if (!targetSignature.IsStatic)
+                thisPointerParamDelta = 1;
+
+            // Start by saving the pointer to call and all the args into locals
+
+            ILLocalVariable vPointerToCall = emitter.NewLocal(context.GetWellKnownType(WellKnownType.IntPtr));
+            codestream.EmitStLoc(vPointerToCall);
+
+            ILLocalVariable[] vParameters = new ILLocalVariable[targetSignature.Length + thisPointerParamDelta];
+            for (int i = thisPointerParamDelta; i < vParameters.Length; i++)
+            {
+                vParameters[vParameters.Length - i - 1 + thisPointerParamDelta] = emitter.NewLocal(targetSignature[targetSignature.Length - (i - thisPointerParamDelta) - 1]);
+                codestream.EmitStLoc(vParameters[vParameters.Length - i - 1 + thisPointerParamDelta]);
+            }
+            if (!targetSignature.IsStatic)
+            {
+                vParameters[0] = emitter.NewLocal(context.GetWellKnownType(WellKnownType.Object));
+                codestream.EmitStLoc(vParameters[0]);
+            }
+
+            // Is this a fat pointer?
+            codestream.EmitLdLoc(vPointerToCall);
+            Debug.Assert(((FatFunctionPointerConstants.Offset - 1) & FatFunctionPointerConstants.Offset) == 0);
+            codestream.EmitLdc(FatFunctionPointerConstants.Offset);
+            codestream.Emit(ILOpcode.and);
+
+            ILCodeLabel notAFatPointer = emitter.NewCodeLabel();
+            codestream.Emit(ILOpcode.brfalse, notAFatPointer);
+
+            //
+            // Fat pointer case
+            //
+            codestream.EmitLdLoc(vPointerToCall);
+            codestream.EmitLdc(FatFunctionPointerConstants.Offset);
+            codestream.Emit(ILOpcode.sub);
+
+            // Get the pointer to call from the fat pointer
+            codestream.Emit(ILOpcode.dup);
+            codestream.Emit(ILOpcode.ldind_i);
+            codestream.EmitStLoc(vPointerToCall);
+
+            // Get the instantiation argument
+            codestream.EmitLdc(context.Target.PointerSize);
+            codestream.Emit(ILOpcode.add);
+            codestream.Emit(ILOpcode.ldind_i);
+            codestream.Emit(ILOpcode.ldind_i);
+            ILLocalVariable instArg = emitter.NewLocal(context.GetWellKnownType(WellKnownType.IntPtr));
+            codestream.EmitStLoc(instArg);
+
+            // Load this
+            int firstRealParameter = 0;
+            if (!targetSignature.IsStatic)
+            {
+                codestream.EmitLdLoc(vParameters[0]);
+                firstRealParameter = 1;
+            }
+
+            // Load hidden arg
+            codestream.EmitLdLoc(instArg);
+
+            // Load rest of args
+            for (int i = firstRealParameter; i < vParameters.Length; i++)
+            {
+                codestream.EmitLdLoc(vParameters[i]);
+            }
+            codestream.EmitLdLoc(vPointerToCall);
+
+            // The signature has a hidden argument
+            TypeDesc[] newParameters = new TypeDesc[targetSignature.Length + 1];
+            for (int i = 0; i < targetSignature.Length; i++)
+                newParameters[i + 1] = targetSignature[i];
+            newParameters[0] = context.GetWellKnownType(WellKnownType.IntPtr);
+            MethodSignature newMethodSignature = new MethodSignature(targetSignature.Flags,
+                targetSignature.GenericParameterCount, targetSignature.ReturnType, newParameters);
+
+            codestream.Emit(ILOpcode.calli, emitter.NewToken(newMethodSignature));
+
+            ILCodeLabel done = emitter.NewCodeLabel();
+            codestream.Emit(ILOpcode.br, done);
+
+            //
+            // Not a fat pointer case
+            //
+            codestream.EmitLabel(notAFatPointer);
+
+            for (int i = 0; i < vParameters.Length; i++)
+            {
+                codestream.EmitLdLoc(vParameters[i]);
+            }
+            codestream.EmitLdLoc(vPointerToCall);
+            codestream.Emit(ILOpcode.calli, emitter.NewToken(targetSignature));
+
+            codestream.EmitLabel(done);
+        }
     }
 
     /// <summary>
@@ -123,7 +224,10 @@ namespace Internal.IL.Stubs
             // Indirectly call the delegate target static method.
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(builder.ToSignature()));
+
+            EmitTransformedCalli(emitter, codeStream, builder.ToSignature());
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(builder.ToSignature()));
+
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(this);
@@ -181,7 +285,10 @@ namespace Internal.IL.Stubs
             // Indirectly call the delegate target static method.
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
+
+            EmitTransformedCalli(emitter, codeStream, targetMethodSignature);
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
+
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(this);
@@ -296,7 +403,8 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdLoc(delegateToCallLocal);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(FunctionPointerField));
 
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
+            EmitTransformedCalli(emitter, codeStream, Signature);
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
 
             if (returnValueLocal != 0)
                 codeStream.EmitStLoc(returnValueLocal);
@@ -336,6 +444,55 @@ namespace Internal.IL.Stubs
             get
             {
                 return "InvokeMulticastThunk";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Invoke thunk for delegates that point to closed instance generic methods.
+    /// These need a thunk because the function pointer to invoke might be a fat function
+    /// pointer and we need a calli to unwrap it, inject the hidden argument, shuffle the
+    /// rest of the arguments, and call the unwrapped function pointer.
+    /// </summary>
+    public sealed class DelegateInvokeInstanceClosedOverGenericMethodThunk : DelegateThunk
+    {
+        internal DelegateInvokeInstanceClosedOverGenericMethodThunk(DelegateInfo delegateInfo)
+            : base(delegateInfo)
+        {
+        }
+
+        public override MethodIL EmitIL()
+        {
+            var emitter = new ILEmitter();
+            ILCodeStream codeStream = emitter.NewCodeStream();
+
+            // Load the stored 'this'
+            codeStream.EmitLdArg(0);
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
+
+            // Load all arguments except 'this'
+            for (int i = 0; i < Signature.Length; i++)
+            {
+                codeStream.EmitLdArg(i + 1);
+            }
+
+            // Indirectly call the delegate target
+            codeStream.EmitLdArg(0);
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
+
+            EmitTransformedCalli(emitter, codeStream, Signature);
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
+
+            codeStream.Emit(ILOpcode.ret);
+
+            return emitter.Link(this);
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return "InvokeInstanceClosedOverGenericMethodThunk";
             }
         }
     }

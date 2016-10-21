@@ -8,21 +8,21 @@ namespace Internal.Runtime
     {
         TypeMap                                     = 1,
         ArrayMap                                    = 2,
-        GenericInstanceMap                          = 3,
-        GenericParameterMap                         = 4,
+        GenericInstanceMap                          = 3, // unused
+        GenericParameterMap                         = 4, // unused
         BlockReflectionTypeMap                      = 5,
         InvokeMap                                   = 6,
         VirtualInvokeMap                            = 7,
         CommonFixupsTable                           = 8,
         FieldAccessMap                              = 9,
         CCtorContextMap                             = 10,
-        DiagGenericInstanceMap                      = 11,
-        DiagGenericParameterMap                     = 12,
+        DiagGenericInstanceMap                      = 11, // unused
+        DiagGenericParameterMap                     = 12, // unused
         EmbeddedMetadata                            = 13,
         DefaultConstructorMap                       = 14,
         UnboxingAndInstantiatingStubMap             = 15,
         InvokeInstantiations                        = 16, // unused
-        PointerTypeMap                              = 17,
+        PointerTypeMap                              = 17, // unused
         GenericVirtualMethodTable                   = 18,
         InterfaceGenericVirtualMethodTable          = 19,
 
@@ -30,6 +30,7 @@ namespace Internal.Runtime
         TypeTemplateMap                             = 21,
         GenericMethodsTemplateMap                   = 22,
         DynamicInvokeTemplateData                   = 23,
+
         //Native layout blobs:
         NativeLayoutInfo                            = 30, // Created by MDIL binder
         NativeReferences                            = 31, // Created by MDIL binder

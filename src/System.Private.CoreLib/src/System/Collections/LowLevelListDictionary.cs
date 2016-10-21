@@ -15,14 +15,14 @@ namespace System.Collections
     ///    This is a simple implementation of IDictionary using a singly linked list. This
     ///    will be smaller and faster than a Hashtable if the number of elements is 10 or less.
     ///    This should not be used if performance is important for large numbers of elements.
-    internal class ListDictionaryInternal : IDictionary
+    internal class LowLevelListDictionary : IDictionary
     {
         private DictionaryNode _head;
         private int _version;
         private int _count;
         private Object _syncRoot;
 
-        public ListDictionaryInternal()
+        public LowLevelListDictionary()
         {
         }
 
@@ -295,13 +295,13 @@ namespace System.Collections
 
         private class NodeEnumerator : IDictionaryEnumerator
         {
-            private ListDictionaryInternal _list;
+            private LowLevelListDictionary _list;
             private DictionaryNode _current;
             private int _version;
             private bool _start;
 
 
-            public NodeEnumerator(ListDictionaryInternal list)
+            public NodeEnumerator(LowLevelListDictionary list)
             {
                 _list = list;
                 _version = list._version;
@@ -388,10 +388,10 @@ namespace System.Collections
 
         private class NodeKeyValueCollection : ICollection
         {
-            private ListDictionaryInternal _list;
+            private LowLevelListDictionary _list;
             private bool _isKeys;
 
-            public NodeKeyValueCollection(ListDictionaryInternal list, bool isKeys)
+            public NodeKeyValueCollection(LowLevelListDictionary list, bool isKeys)
             {
                 _list = list;
                 _isKeys = isKeys;
@@ -452,13 +452,13 @@ namespace System.Collections
 
             private class NodeKeyValueEnumerator : IEnumerator
             {
-                private ListDictionaryInternal _list;
+                private LowLevelListDictionary _list;
                 private DictionaryNode _current;
                 private int _version;
                 private bool _isKeys;
                 private bool _start;
 
-                public NodeKeyValueEnumerator(ListDictionaryInternal list, bool isKeys)
+                public NodeKeyValueEnumerator(LowLevelListDictionary list, bool isKeys)
                 {
                     _list = list;
                     _isKeys = isKeys;

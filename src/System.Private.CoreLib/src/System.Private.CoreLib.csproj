@@ -44,6 +44,9 @@
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Internal\Runtime\RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
     </Compile>
@@ -79,6 +82,8 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
+    <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\SpinLockTraceCallbacks.cs" />
     <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
@@ -217,6 +222,7 @@
     <Compile Include="System\Collections\Generic\Comparer.cs" />
     <Compile Include="System\Collections\Generic\DebugView.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
+    <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
     <Compile Include="System\Collections\Generic\ICollection.cs" />
     <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="System\Collections\Generic\IComparer.cs" />
@@ -231,7 +237,6 @@
     <Compile Include="System\Collections\Generic\KeyNotFoundException.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePair.cs" />
     <Compile Include="System\Collections\Generic\List.cs" />
-    <Compile Include="System\Collections\Generic\LowLevelEqualityComparer.cs" />
     <Compile Include="System\Collections\ICollection.cs" />
     <Compile Include="System\Collections\IComparer.cs" />
     <Compile Include="System\Collections\IDictionary.cs" />
@@ -241,7 +246,9 @@
     <Compile Include="System\Collections\IList.cs" />
     <Compile Include="System\Collections\IStructuralComparable.cs" />
     <Compile Include="System\Collections\IStructuralEquatable.cs" />
-    <Compile Include="System\Collections\ListDictionaryInternal.cs" />
+    <Compile Include="System\Collections\LowLevelListDictionary.cs" />
+    <Compile Include="System\Collections\LowLevelComparer.cs" />
+    <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
@@ -439,7 +446,6 @@
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
-    <Compile Include="System\Runtime\InteropServices\ThunkPool.cs" />
     <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Versioning\NonVersionableAttribute.cs" />
@@ -724,9 +730,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Collections\LowLevelComparer.cs">
-      <Link>System\Collections\LowLevelComparer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
@@ -735,9 +738,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs">
       <Link>System\Collections\HashHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelComparer.cs">
-      <Link>System\Collections\Generic\LowLevelComparer.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs">
       <Link>System\Collections\Concurrent\ConcurrentUnifier.cs</Link>
@@ -829,6 +829,9 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.cs">
       <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ThunkPool.cs">
+      <Link>Runtime.Base\src\System\Runtime\ThunkPool.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>

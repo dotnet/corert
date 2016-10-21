@@ -99,7 +99,7 @@ namespace ILCompiler.Metadata
                 return null;
             }
 
-            public override Cts.TypeDesc GetGlobalModuleType()
+            public override Cts.MetadataType GetGlobalModuleType()
             {
                 return null;
             }
