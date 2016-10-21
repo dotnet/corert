@@ -249,6 +249,16 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
     ASSERT(GCHeapUtilities::UseAllocationContexts());
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
+#if BIT64
+    if (!g_pConfig->GetGCAllowVeryLargeObjects())
+    {
+        // Restrict maximum object size on 64-bit to historic limit. Framework implementation
+        // and tests depend on it currently.
+        if (cbSize >= 0x7FFFFFE0)
+            return NULL;
+    }
+#endif
+
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pEEType);
 
