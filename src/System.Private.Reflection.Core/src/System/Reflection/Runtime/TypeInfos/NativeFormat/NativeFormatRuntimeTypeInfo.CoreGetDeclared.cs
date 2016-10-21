@@ -37,7 +37,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     continue;
 
                 if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
-                    yield return RuntimePlainConstructorInfo<RuntimeMethodCommon>.GetRuntimePlainConstructorInfo(new RuntimeMethodCommon(methodHandle, this, contextTypeInfo));
+                    yield return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, this, contextTypeInfo));
             }
         }
 
@@ -55,7 +55,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     continue;
 
                 if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
-                    yield return RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(methodHandle, this, contextTypeInfo), reflectedType);
+                    yield return RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, this, contextTypeInfo), reflectedType);
             }
         }
 

@@ -347,7 +347,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 for (int i = 0; i < indexParameters.Length; i++)
                     indexRuntimeParameters[i] = (RuntimeParameterInfo)(indexParameters[i]);
                 sb.Append(" [");
-                sb.Append(RuntimeMethodCommon.ComputeParametersString(indexRuntimeParameters));
+                sb.Append(RuntimeMethodHelpers.ComputeParametersString(indexRuntimeParameters));
                 sb.Append(']');
             }
 
@@ -380,7 +380,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     MethodHandle getterHandle;
                     if (GetAccessor(MethodSemanticsAttributes.Getter, out getterHandle))
                     {
-                        getter = RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(getterHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
+                        getter = RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(getterHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                     }
                     else
                     {
@@ -403,7 +403,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     MethodHandle setterHandle;
                     if (GetAccessor(MethodSemanticsAttributes.Setter, out setterHandle))
                     {
-                        setter = RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(setterHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
+                        setter = RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(setterHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                     }
                     else
                     {

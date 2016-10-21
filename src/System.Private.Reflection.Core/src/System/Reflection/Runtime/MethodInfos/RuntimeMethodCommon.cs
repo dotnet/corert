@@ -182,7 +182,7 @@ namespace System.Reflection.Runtime.MethodInfos
     // to derive from MethodInfo and ConstructorInfo because of the way the Reflection API are designed. Hence,
     // we use containment as a substitute.
     //
-    internal struct RuntimeMethodCommon : IRuntimeMethodCommon<RuntimeMethodCommon>, IEquatable<RuntimeMethodCommon>
+    internal struct NativeFormatMethodCommon : IRuntimeMethodCommon<NativeFormatMethodCommon>, IEquatable<NativeFormatMethodCommon>
     {
         public bool IsGenericMethodDefinition
         {
@@ -216,12 +216,12 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public RuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod
+        public NativeFormatMethodCommon RuntimeMethodCommonOfUninstantiatedMethod
         {
             get
             {
                 NativeFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToNativeFormatRuntimeNamedTypeInfo();
-                return new RuntimeMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+                return new NativeFormatMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
             }
         }
 
@@ -242,7 +242,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon> owningMethod)
+        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon> owningMethod)
         {
             Method method = MethodHandle.GetMethod(Reader);
             int genericParametersCount = method.GenericParameters.Count;
@@ -278,7 +278,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        public RuntimeMethodCommon(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        public NativeFormatMethodCommon(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
             _definingTypeInfo = definingTypeInfo;
             _methodHandle = methodHandle;
@@ -301,63 +301,6 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 return MethodSignature.CallingConvention;
             }
-        }
-
-        // Compute the ToString() value in a pay-to-play-safe way.
-        public String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
-        {
-            RuntimeParameterInfo returnParameter;
-            RuntimeParameterInfo[] parameters = this.GetRuntimeParameters(contextMethod, methodTypeArguments, out returnParameter);
-            return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
-        }
-
-        public static String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] parameters, RuntimeParameterInfo returnParameter)
-        {
-            StringBuilder sb = new StringBuilder(30);
-            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterTypeString);  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
-            sb.Append(' ');
-            sb.Append(contextMethod.Name);
-            if (methodTypeArguments.Length != 0)
-            {
-                String sep = "";
-                sb.Append('[');
-                foreach (RuntimeTypeInfo methodTypeArgument in methodTypeArguments)
-                {
-                    sb.Append(sep);
-                    sep = ",";
-                    String name = methodTypeArgument.InternalNameIfAvailable;
-                    if (name == null)
-                        name = ToStringUtils.UnavailableType;
-                    sb.Append(methodTypeArgument.Name);
-                }
-                sb.Append(']');
-            }
-            sb.Append('(');
-            sb.Append(ComputeParametersString(parameters));
-            sb.Append(')');
-
-            return sb.ToString();
-        }
-
-        // Used by method and property ToString() methods to display the list of parameter types. Replicates the behavior of MethodBase.ConstructParameters()
-        // but in a pay-to-play-safe way.
-        public static String ComputeParametersString(RuntimeParameterInfo[] parameters)
-        {
-            StringBuilder sb = new StringBuilder(30);
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (i != 0)
-                    sb.Append(", ");
-                String parameterTypeString = parameters[i].ParameterTypeString;
-
-                // Legacy: Why use "ByRef" for by ref parameters? What language is this? 
-                // VB uses "ByRef" but it should precede (not follow) the parameter name.
-                // Why don't we just use "&"?
-                if (parameterTypeString.EndsWith("&"))
-                    parameterTypeString = parameterTypeString.Substring(0, parameterTypeString.Length - 1) + " ByRef";
-                sb.Append(parameterTypeString);
-            }
-            return sb.ToString();
         }
 
         public RuntimeTypeInfo ContextTypeInfo
@@ -494,12 +437,12 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public override bool Equals(Object obj)
         {
-            if (!(obj is RuntimeMethodCommon))
+            if (!(obj is NativeFormatMethodCommon))
                 return false;
-            return Equals((RuntimeMethodCommon)obj);
+            return Equals((NativeFormatMethodCommon)obj);
         }
 
-        public bool Equals(RuntimeMethodCommon other)
+        public bool Equals(NativeFormatMethodCommon other)
         {
             if (!(_reader == other._reader))
                 return false;
