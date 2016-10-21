@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
-using System;
 
 namespace ILCompiler
 {
@@ -28,7 +28,7 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            return new CppCodegenCompilation(_dependencyGraph, _nodeFactory, _logger, _config);
+            return new CppCodegenCompilation(CreateDependencyGraph(), _nodeFactory, _logger, _config);
         }
     }
 

@@ -17,12 +17,11 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         protected Logger _logger = Logger.Null;
-        protected DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
+        private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
 
         public CompilationBuilder(NodeFactory nodeFactory)
         {
             _nodeFactory = nodeFactory;
-            _dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(nodeFactory, null);
         }
 
         public CompilationBuilder UseLogger(Logger logger)
@@ -31,14 +30,54 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder ConfigureDependencyGraph(Func<NodeFactory, DependencyAnalyzerBase<NodeFactory>> creator)
+        public CompilationBuilder UseDependencyTracking(DependencyTrackingLevel trackingLevel)
         {
-            _dependencyGraph = creator(_nodeFactory);
+            _dependencyTrackingLevel = trackingLevel;
             return this;
         }
 
         public abstract CompilationBuilder UseBackendOptions(IEnumerable<string> options);
 
+        protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph()
+        {
+            // Choose which dependency graph implementation to use based on the amount of logging requested.
+            switch (_dependencyTrackingLevel)
+            {
+                case DependencyTrackingLevel.None:
+                    return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+
+                case DependencyTrackingLevel.First:
+                    return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+
+                case DependencyTrackingLevel.All:
+                    return new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
         public abstract ICompilation ToCompilation();
+    }
+
+    /// <summary>
+    /// Represents the level of dependency tracking within the dependency analysis system.
+    /// </summary>
+    public enum DependencyTrackingLevel
+    {
+        /// <summary>
+        /// Tracking disabled. This is the most performant and memory efficient option.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// The graph keeps track of the first dependency.
+        /// </summary>
+        First,
+
+        /// <summary>
+        /// The graph keeps track of all dependencies.
+        /// </summary>
+        All
     }
 }

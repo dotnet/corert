@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
@@ -12,8 +11,6 @@ using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
 using Internal.CommandLine;
-using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
@@ -206,32 +203,13 @@ namespace ILCompiler
 
             var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
 
+            DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
+                DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
+
             ICompilation compilation = builder
                 .UseBackendOptions(_codegenOptions)
                 .UseLogger(logger)
-                .ConfigureDependencyGraph(factory =>
-                {
-                    // Choose which dependency graph implementation to use based on the amount of logging requested.
-                    if (_dgmlLogFileName == null)
-                    {
-                        // No log uses the NoLogStrategy
-                        return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-                    }
-                    else
-                    {
-                        if (_generateFullDgmlLog)
-                        {
-                            // Full log uses the full log strategy
-                            return new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-                        }
-                        else
-                        {
-                            // Otherwise, use the first mark strategy
-                            return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-                        }
-                    }
-
-                })
+                .UseDependencyTracking(trackingLevel)
                 .ToCompilation();
 
             compilation.Compile(_outputFilePath);
