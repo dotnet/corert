@@ -1580,49 +1580,60 @@ namespace Internal.JitInterface
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
                     pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
 
-                    FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-
-                    // Find out what kind of base do we need to look up.
-                    GenericLookupResult lookupResult;
-                    if (field.IsThreadStatic)
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else if (field.HasGCStaticBase)
-                    {
-                        lookupResult = _compilation.NodeFactory.GenericLookup.TypeGCStaticBase(runtimeDeterminedField.OwningType);
-                    }
-                    else
-                    {
-                        lookupResult = _compilation.NodeFactory.GenericLookup.TypeNonGCStaticBase(runtimeDeterminedField.OwningType);
-                    }
-
-                    // What generic context do we look up the base from.
+                    // Don't try to compute the runtime lookup if we're inlining. The JIT is going to abort the inlining
+                    // attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    ReadyToRunHelperId helper;
-                    TypeSystemEntity dictionaryOwner;
-
-                    if (contextMethod.AcquiresInstMethodTableFromThis())
+                    if (contextMethod == MethodBeingCompiled)
                     {
-                        helper = ReadyToRunHelperId.GenericLookupFromThis;
-                        dictionaryOwner = MethodBeingCompiled.OwningType;
-                    }
-                    else if (contextMethod.RequiresInstMethodTableArg())
-                    {
-                        helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                        dictionaryOwner = MethodBeingCompiled.OwningType;
-                    }
-                    else
-                    {
-                        Debug.Assert(contextMethod.RequiresInstMethodDescArg());
-                        helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                        dictionaryOwner = MethodBeingCompiled;
-                    }
+                        FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
-                    GenericLookupDescriptor lookupDescriptor = new GenericLookupDescriptor(dictionaryOwner, lookupResult);
+                        // Find out what kind of base do we need to look up.
+                        GenericLookupResult lookupResult;
+                        if (field.IsThreadStatic)
+                        {
+                            throw new NotImplementedException();
+                        }
+                        else if (field.HasGCStaticBase)
+                        {
+                            lookupResult = _compilation.NodeFactory.GenericLookup.TypeGCStaticBase(runtimeDeterminedField.OwningType);
+                        }
+                        else
+                        {
+                            lookupResult = _compilation.NodeFactory.GenericLookup.TypeNonGCStaticBase(runtimeDeterminedField.OwningType);
+                        }
 
-                    pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helper, lookupDescriptor));
-                    pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                        // What generic context do we look up the base from.
+                        ReadyToRunHelperId helper;
+                        TypeSystemEntity dictionaryOwner;
+
+                        if (contextMethod.AcquiresInstMethodTableFromThis())
+                        {
+                            helper = ReadyToRunHelperId.GenericLookupFromThis;
+                            dictionaryOwner = contextMethod.OwningType;
+                        }
+                        else if (contextMethod.RequiresInstMethodTableArg())
+                        {
+                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
+                            dictionaryOwner = contextMethod.OwningType;
+                        }
+                        else
+                        {
+                            Debug.Assert(contextMethod.RequiresInstMethodDescArg());
+                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
+                            dictionaryOwner = contextMethod;
+                        }
+
+                        GenericLookupDescriptor lookupDescriptor = new GenericLookupDescriptor(dictionaryOwner, lookupResult);
+
+                        pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helper, lookupDescriptor));
+                        pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+
+                        // We are not going through a helper. The constructor has to be triggered explicitly.
+                        if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                        {
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                        }
+                    }
                 }
                 else
                 {

@@ -17,6 +17,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public abstract class GenericLookupResult
     {
+        public virtual int NumberOfIndirections => 0;
+
         public abstract ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
         public abstract string GetMangledName(NameMangler nameMangler);
         public abstract override string ToString();
@@ -138,6 +140,11 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class TypeGCStaticBaseGenericLookupResult : GenericLookupResult
     {
         private MetadataType _type;
+
+        // We need to indirect twice:
+        // 1. The dictionary points to a cell that is fixed up to point to the handle table.
+        // 2. From the handle table we get to the GC heap allocated object.
+        public override int NumberOfIndirections => 2;
 
         public TypeGCStaticBaseGenericLookupResult(TypeDesc type)
         {

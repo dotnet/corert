@@ -213,18 +213,28 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         var lookupInfo = (GenericLookupDescriptor)Target;
 
+                        GenericLookupResult lookupResult = lookupInfo.Signature;
+
                         // Find the generic dictionary slot
                         int dictionarySlot = 0;
                         if (!relocsOnly)
                         {
                             // The concrete slot won't be known until we're emitting data.
-                            dictionarySlot = factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).GetSlotForEntry(lookupInfo.Signature);
+                            dictionarySlot = factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).GetSlotForEntry(lookupResult);
                         }
 
                         // Load the generic dictionary cell
                         AddrMode loadEntry = new AddrMode(
                             encoder.TargetRegister.Arg0, null, dictionarySlot * factory.Target.PointerSize, 0, AddrModeSize.Int64);
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadEntry);
+
+                        // If the dictionary entry is an indirection, we need to follow the indirection
+                        for (int i = 0; i < lookupResult.NumberOfIndirections; i++)
+                        {
+                            AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
+                        }
+
                         encoder.EmitRET();
                     }
                     break;

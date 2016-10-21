@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 _typeNonGCStaticBaseSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
-                    return new TypeGCStaticBaseGenericLookupResult(type);
+                    return new TypeNonGCStaticBaseGenericLookupResult(type);
                 });
             }
 
