@@ -8,14 +8,11 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
 
 using Internal.Reflection.Tracing;
-
-using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos
 {

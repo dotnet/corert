@@ -94,6 +94,7 @@
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />

@@ -13,6 +13,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.CustomAttributes;
 

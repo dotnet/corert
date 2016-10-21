@@ -10,6 +10,7 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using Internal.Metadata.NativeFormat;

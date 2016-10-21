@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.PropertyInfos;
 using System.Reflection.Runtime.EventInfos;
