@@ -70,6 +70,7 @@
     <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatAlwaysReuses.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsKeyIsAlive.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsValueIsAlive.cs" />
+    <Compile Include="System\Reflection\Runtime\EventInfos\NativeFormat\NativeFormatRuntimeEventInfo.cs" />
     <Compile Include="System\Reflection\Runtime\EventInfos\RuntimeEventInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\NativeFormat\NativeFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />

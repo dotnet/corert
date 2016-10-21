@@ -9,7 +9,7 @@ using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.PropertyInfos;
-using System.Reflection.Runtime.EventInfos;
+using System.Reflection.Runtime.EventInfos.NativeFormat;
 using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
 using Internal.Reflection.Core.Execution;
@@ -69,7 +69,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             foreach (EventHandle eventHandle in DeclaredEventHandles)
             {
                 if (optionalNameFilter == null || optionalNameFilter.Matches(eventHandle.GetEvent(reader).Name, reader))
-                    yield return RuntimeEventInfo.GetRuntimeEventInfo(eventHandle, this, contextTypeInfo, reflectedType);
+                    yield return NativeFormatRuntimeEventInfo.GetRuntimeEventInfo(eventHandle, this, contextTypeInfo, reflectedType);
             }
         }
 

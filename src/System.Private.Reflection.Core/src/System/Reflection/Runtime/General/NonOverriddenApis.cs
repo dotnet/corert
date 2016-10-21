@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.CustomAttributes
 
 namespace System.Reflection.Runtime.EventInfos
 {
-    internal sealed partial class RuntimeEventInfo
+    internal abstract partial class RuntimeEventInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;

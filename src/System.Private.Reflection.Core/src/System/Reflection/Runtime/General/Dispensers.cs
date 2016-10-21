@@ -297,16 +297,16 @@ namespace System.Reflection.Runtime.PropertyInfos
     }
 }
 
-namespace System.Reflection.Runtime.EventInfos
+namespace System.Reflection.Runtime.EventInfos.NativeFormat
 {
     //-----------------------------------------------------------------------------------------------------------
     // EventInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeEventInfo
+    internal sealed partial class NativeFormatRuntimeEventInfo
     {
         internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            return new RuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
+            return new NativeFormatRuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
     }
 }
