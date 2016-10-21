@@ -1,13 +1,16 @@
 @echo off
+setlocal EnableDelayedExpansion
 
+set ThisScript=%0
 set CoreRT_TestRoot=%~dp0
 set CoreRT_CliDir=%CoreRT_TestRoot%../Tools/dotnetcli
 set CoreRT_BuildArch=x64
 set CoreRT_BuildType=Debug
 set CoreRT_BuildOS=Windows_NT
 set CoreRT_TestRun=true
-set CoreRT_TestCompileMode=ryujit
+set CoreRT_TestCompileMode=
 set CoreRT_RunCoreCLRTests=
+set CoreRT_CoreCLRTargetsFile=
 
 :ArgLoop
 if "%1" == "" goto :ArgsDone
@@ -18,7 +21,29 @@ if /i "%1" == "arm"    (set CoreRT_BuildArch=arm&&shift&goto ArgLoop)
 
 if /i "%1" == "debug"    (set CoreRT_BuildType=Debug&shift&goto ArgLoop)
 if /i "%1" == "release"  (set CoreRT_BuildType=Release&shift&goto ArgLoop)
-if /i "%1" == "/coreclr"  (set CoreRT_RunCoreCLRTests=true&shift&goto ArgLoop)
+if /i "%1" == "/coreclr"  (
+    set CoreRT_RunCoreCLRTests=true
+    set SelectedTests=%2&shift&shift
+    if "!SelectedTests!" == "" (
+        echo Error: Specify a test subset to run
+        goto :Usage
+    )
+
+    if /i "!SelectedTests!" == "All" (
+        set CoreRT_CoreCLRTargetsFile=
+        set CoreCLRExcludeText=
+        goto :ExtRepoTestsOk
+    )
+
+    if /i "!SelectedTests!" == "Top200" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\Top200.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
+    if /i "!SelectedTests!" == "KnownGood" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\KnownGood.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
+
+    echo Invalid test selection specified: !SelectedTests!
+    goto :Usage
+
+:ExtRepoTestsOk
+    goto ArgLoop
+)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
@@ -27,10 +52,17 @@ echo Invalid command line argument: %1
 goto :Usage
 
 :Usage
-echo %0 [OS] [arch] [flavor] [/extrepo] [/mode] [/runtest]
-echo     /mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit
+echo %ThisScript% [arch] [flavor] [/mode] [/runtest] [/coreclr ^<subset^>]
+echo     arch          : x64 / x86 / arm
+echo     flavor        : debug / release
+echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit. Default: both
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
+echo.
+echo     --- CoreCLR Subset ---
+echo        Top200     : Runs broad coverage / CI validation (~200 tests).
+echo        KnownGood  : Runs tests known to pass on CoreRT (~4800 tests).
+echo        All        : Runs all tests. There will be many failures (~7000 tests).
 exit /b 2
 
 :ArgsDone
@@ -39,7 +71,6 @@ call %CoreRT_TestRoot%testenv.cmd
 
 set CoreRT_RspTemplateDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 
-setlocal EnableDelayedExpansion
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
@@ -60,20 +91,22 @@ set /a __CppTotalTests=0
 set /a __CppPassedTests=0
 set /a __JitTotalTests=0
 set /a __JitPassedTests=0
-for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
+for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\*') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
     if exist "!__SourceFolder!\!__SourceFileName!.csproj" (
-
-        set __Mode=Jit
-        call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
-        set /a __JitTotalTests=!__JitTotalTests!+1
-
-        if not exist "!__SourceFolder!\no_cpp" (
-            set __Mode=Cpp
+        if /i not "%CoreRT_TestCompileMode%" == "cpp" (
+            set __Mode=Jit
             call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
-            set /a __CppTotalTests=!__CppTotalTests!+1
+            set /a __JitTotalTests=!__JitTotalTests!+1
+        )
+        if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
+            if not exist "!__SourceFolder!\no_cpp" (
+                set __Mode=Cpp
+                call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
+                set /a __CppTotalTests=!__CppTotalTests!+1
+            )
         )
     )
 )
@@ -93,18 +126,25 @@ echo ^</assembly^>  >> %__CoreRTTestBinDir%\testResults.xml
 echo ^</assemblies^>  >> %__CoreRTTestBinDir%\testResults.xml
 
 echo.
-set __JitStatusPassed=0
-if %__JitTotalTests% EQU %__JitPassedTests% (set __JitStatusPassed=1)
-if %__JitTotalTests% EQU 0 (set __JitStatusPassed=0)
-call :PassFail %__JitStatusPassed% "JIT - TOTAL: %__JitTotalTests% PASSED: %__JitPassedTests%"
+set __JitStatusPassed=1
+set __CppStatusPassed=1
 
-set __CppStatusPassed=0
-if %__CppTotalTests% EQU %__CppPassedTests% (set __CppStatusPassed=1)
-if %__CppTotalTests% EQU 0 (set __CppStatusPassed=0)
-call :PassFail %__CppStatusPassed% "CPP - TOTAL: %__CppTotalTests% PASSED: %__CppPassedTests%"
+if /i not "%CoreRT_TestCompileMode%" == "cpp" (
+    set __JitStatusPassed=0
+    if %__JitTotalTests% EQU %__JitPassedTests% (set __JitStatusPassed=1)
+    if %__JitTotalTests% EQU 0 (set __JitStatusPassed=1)
+    call :PassFail !__JitStatusPassed! "JIT - TOTAL: %__JitTotalTests% PASSED: %__JitPassedTests%"
+)
 
-if not %__JitStatusPassed% EQU 1 (exit /b 1)
-if not %__CppStatusPassed% EQU 1 (exit /b 1)
+if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
+    set __CppStatusPassed=0
+    if %__CppTotalTests% EQU %__CppPassedTests% (set __CppStatusPassed=1)
+    if %__CppTotalTests% EQU 0 (set __CppStatusPassed=1)
+    call :PassFail !__CppStatusPassed! "CPP - TOTAL: %__CppTotalTests% PASSED: %__CppPassedTests%"
+)
+
+if not !__JitStatusPassed! EQU 1 (exit /b 1)
+if not !__CppStatusPassed! EQU 1 (exit /b 1)
 exit /b 0
 
 :PassFail
@@ -207,6 +247,12 @@ goto :eof
     exit /b 0
 
 :TestExtRepo
+    :: Omit the exclude parameter to CoreCLR's test harness if we're running all tests
+    set CoreCLRExcludeText=exclude
+    if "%CoreRT_CoreCLRTargetsFile%" == "" (
+        set CoreCLRExcludeText=
+    )
+
     echo Running external tests
     if "%CoreRT_TestExtRepo%" == "" (
         set CoreRT_TestExtRepo=%CoreRT_TestRoot%\..\tests_downloaded\CoreCLR
@@ -229,8 +275,8 @@ goto :eof
     if errorlevel 1 (
         exit /b 1
     )
-
-    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% exclude %CoreRT_TestRoot%\Top100Tests.issues.targets
+    echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
     set __SavedErrorLevel=%ErrorLevel%
     popd
     exit /b %__SavedErrorLevel%

@@ -124,9 +124,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHCompaction\lohcompact_stress\lohcompact_stress.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHCompaction\lohpin\lohpin.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHFragmentation\lohfragmentation\lohfragmentation.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\PartialCompaction\eco1\eco1.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\PartialCompaction\partialcompactiontest\partialcompactiontest.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\PartialCompaction\partialcompactionwloh\partialcompactionwloh.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedCollect\PinnedCollect.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedHandle\PinnedHandle.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedInt\PinnedInt.cmd" />
@@ -168,9 +165,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\gcvariant3\gcvariant3.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\gcvariant4\gcvariant4.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\simpvariant\simpvariant.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\vararystress\vararystress.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\variantint\variantint.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\variantlinklist\variantlinklist.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleak\dlbigleak.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd\dlbigleakthd.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd_v2\dlbigleakthd_v2.cmd" />
@@ -185,10 +179,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\finalnstruct\finalnstruct.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\nstructresur\nstructresur.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\nstructtun\nstructtun.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FragMan\fragman\fragman.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCBase1\gc_base1\gc_base1.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCBase1\gc_base1_1\gc_base1_1.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCBench\gcbench\gcbench.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator\GCSimulator.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_10\GCSimulator_10.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_100\GCSimulator_100.cmd" />
@@ -397,15 +387,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_284\GCSimulator_284.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_285\GCSimulator_285.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_286\GCSimulator_286.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_287\GCSimulator_287.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_288\GCSimulator_288.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_289\GCSimulator_289.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_29\GCSimulator_29.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_290\GCSimulator_290.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_291\GCSimulator_291.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_292\GCSimulator_292.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_293\GCSimulator_293.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_294\GCSimulator_294.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_295\GCSimulator_295.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_296\GCSimulator_296.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCSimulator\GCSimulator_297\GCSimulator_297.cmd" />
@@ -630,12 +611,9 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\NDPin\ndpinfinal\ndpinfinal.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\RanCollect\rancollect\rancollect.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\ReflectObj\reflectobj\reflectobj.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Resurrection\continue\continue.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Rootmem\rootmem\rootmem.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\ServerModel\servermodel\servermodel.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\SingLinkList\singlinkgen\singlinkgen.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\SingLinkList\singlinkstay\singlinkstay.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\StringCreator\stringcreator\stringcreator.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\THDChaos\thdchaos\thdchaos.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\THDList\thdlist\thdlist.cmd" />
@@ -645,14 +623,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\FuncPtrAsDelegateParam\FuncPtrAsDelegateParam\FuncPtrAsDelegateParam.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyByteArray\CopyByteArray.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyCharArray\CopyCharArray.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyDoubleArray\CopyDoubleArray.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt16Array\CopyInt16Array.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt32Array\CopyInt32Array.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt64Array\CopyInt64Array.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyIntPtrArray\CopyIntPtrArray.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopySingleArray\CopySingleArray.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\FunctionPointer\FunctionPtrTest\FunctionPtrTest.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetExceptionForHR\GetExceptionForHR\GetExceptionForHR.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetNativeVariantForObject\GetNativeVariantForObject\GetNativeVariantForObject.cmd" />
@@ -916,10 +886,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\volatilecpobj_il_r\volatilecpobj_il_r.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\zeroinit_il_d\zeroinit_il_d.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\zeroinit_il_r\zeroinit_il_r.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\excepobj\excepobj\excepobj.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\fault\fault\fault.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\mixed\mixed\mixed.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\mixed3\mixed3\mixed3.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\FaultHandlers\CallOrder\CallOrder\CallOrder.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\FaultHandlers\Nesting\Nesting\Nesting.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\FaultHandlers\Simple\Simple\Simple.cmd" />
@@ -1058,8 +1024,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinstvaluetype_do\isinstvaluetype_do.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinstvaluetype_r\isinstvaluetype_r.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinstvaluetype_ro\isinstvaluetype_ro.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_d\isinst_d.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_do\isinst_do.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_r\isinst_r.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_ro\isinst_ro.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\tostring_d\tostring_d.cmd" />
@@ -6493,9 +6457,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Recursion\GenTypeItself\GenTypeItself.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Recursion\Struct_ImplementMscorlibGenInterface\Struct_ImplementMscorlibGenInterface.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Regressions\607\DevDiv607\DevDiv607.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01a_auto\Base01a_auto.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01a_auto_ser\Base01a_auto_ser.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01a_seq\Base01a_seq.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01a_seq_ser\Base01a_seq_ser.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01b_auto_ser\Base01b_auto_ser.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01b_seq\Base01b_seq.cmd" />
@@ -6518,7 +6479,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\class02_auto\class02_auto.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\class02_auto_ser\class02_auto_ser.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\class02_seq_ser\class02_seq_ser.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\struct01_auto\struct01_auto.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\struct01_auto_ser\struct01_auto_ser.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\struct01_seq\struct01_seq.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\struct01_seq_ser\struct01_seq_ser.cmd" />
@@ -6529,12 +6489,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Negative002\Negative002.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Negative004\Negative004.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Negative_ExplicitGen\Negative_ExplicitGen.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Positive007\Positive007.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Positive008\Positive008.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Positive009\Positive009.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Positive010\Positive010.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Misc\ConstraintsAndInheritance\ConstraintsAndInheritance.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Misc\TestWithManyParams\TestWithManyParams.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\109968\test\test.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\123712\repro123712\repro123712.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\137310\test137310\test137310.cmd" />
@@ -6556,9 +6510,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\vsw395780\testExplicitOverride2\testExplicitOverride2.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\vsw514968\vsw514968\vsw514968.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\vsw524571\StaticsProblem5\StaticsProblem5.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Statics\Regressions\524571\StaticsProblem1\StaticsProblem1.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Statics\Regressions\524571\StaticsProblem2\StaticsProblem2.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Statics\Regressions\524571\StaticsProblem3\StaticsProblem3.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Statics\Regressions\524571\StaticsProblem4\StaticsProblem4.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Statics\Regressions\524571\StaticsProblem5\StaticsProblem5.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\CoreCLR\Method001\Method001.cmd" />
@@ -6601,21 +6552,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ImplicitOverrideVirtualNewslot\Struct_ImplicitOverrideVirtualNewslot.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ImplicitOverrideVirtualNewslotFinal\Struct_ImplicitOverrideVirtualNewslotFinal.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\Ambiguous\Ambiguous.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase0\TestCase0.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase0_Nested_I\TestCase0_Nested_I.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase0_Nested_I_Nested_J\TestCase0_Nested_I_Nested_J.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase0_Nested_J\TestCase0_Nested_J.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase0_Nested_J_Nested_I\TestCase0_Nested_J_Nested_I.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase1\TestCase1.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase1_Nested_I\TestCase1_Nested_I.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase1_Nested_I_Nested_J\TestCase1_Nested_I_Nested_J.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase1_Nested_J\TestCase1_Nested_J.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase1_Nested_J_Nested_I\TestCase1_Nested_J_Nested_I.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase2\TestCase2.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase2_Nested_I\TestCase2_Nested_I.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase2_Nested_I_Nested_J\TestCase2_Nested_I_Nested_J.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase2_Nested_J\TestCase2_Nested_J.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase2_Nested_J_Nested_I\TestCase2_Nested_J_Nested_I.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase3\TestCase3.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase3_Nested_I\TestCase3_Nested_I.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase3_Nested_I_Nested_J\TestCase3_Nested_I_Nested_J.cmd" />
@@ -6692,9 +6629,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_443322\dev10_443322\dev10_443322.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_493135\dev10_493135\dev10_493135.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_526434\dev10_526434\dev10_526434.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\ConstrainedMethods\ConstrainedMethods.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\MethodCalls\MethodCalls.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\RecursiveGen\RecursiveGen.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\SealedTypes\SealedTypes.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance1\Variance1.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance2\Variance2.cmd" />
@@ -6754,10 +6689,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\Override\HelloWorld\HelloWorld.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\SameMethodImpl\CollapsedInterfaces\HelloWorld\HelloWorld.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\SameMethodImpl\Override\HelloWorld\HelloWorld.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\Variance\Covariant_CollapsedInterfaces\HelloWorld\HelloWorld.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\Variance\Covariant_InherittedCollision\HelloWorld\HelloWorld.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\Variance\Variant_CollapsedInterfaces\HelloWorld\HelloWorld.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\Variance\Variant_InherittedCollision\HelloWorld\HelloWorld.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeForwarding\UnitTest\UnitTest\UnitTest.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\backpatching\test1\test1.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorOpenFile\CctorOpenFile.cmd" />
@@ -6797,7 +6728,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\v1\Beta1\Layout\Matrix\cs\L-1-11-3\L-1-11-3.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\v1\Beta1\Layout\Matrix\cs\L-1-12-1\L-1-12-1.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\v1\Beta1\Layout\Matrix\cs\L-1-12-3\L-1-12-3.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\v1\Beta1\Layout\Matrix\cs\L-1-2-1\L-1-2-1.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\v1\Beta1\Layout\Matrix\cs\L-1-2-3\L-1-2-3.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\v1\Beta1\Layout\Matrix\cs\L-1-3-1\L-1-3-1.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\v1\Beta1\Layout\Matrix\cs\L-1-4-1\L-1-4-1.cmd" />
@@ -6856,6 +6786,5 @@
     <ExcludeList Include="$(XunitTestBinBase)\Regressions\common\ToLower\ToLower.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Regressions\common\Unsafe\Unsafe.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Regressions\coreclr\0014\avtest\avtest.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\Regressions\expl_double\expl_double\expl_double.cmd" />
   </ItemGroup>
 </Project>
