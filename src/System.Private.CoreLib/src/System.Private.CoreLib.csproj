@@ -44,6 +44,9 @@
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Internal\Runtime\RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
     </Compile>

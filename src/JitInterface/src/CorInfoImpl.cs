@@ -38,7 +38,7 @@ namespace Internal.JitInterface
         private extern static IntPtr getJit();
 
         [DllImport("jitinterface")]
-        private extern static IntPtr GetJitHost();
+        private extern static IntPtr GetJitHost(IntPtr configProvider);
 
         //
         // Per-method initialization and state
@@ -79,15 +79,17 @@ namespace Internal.JitInterface
         private extern static char* GetExceptionMessage(IntPtr obj);
 
         private Compilation _compilation;
+        private JitConfigProvider _jitConfig;
 
-        public CorInfoImpl(Compilation compilation)
+        public CorInfoImpl(Compilation compilation, JitConfigProvider jitConfig)
         {
             //
             // Global initialization
             //
             _compilation = compilation;
+            _jitConfig = jitConfig;
 
-            jitStartup(GetJitHost());
+            jitStartup(GetJitHost(_jitConfig.UnmanagedInstance));
 
             _jit = getJit();
             if (_jit == IntPtr.Zero)
@@ -425,12 +427,12 @@ namespace Internal.JitInterface
             return methodIL;
         }
 
-        private void Get_CORINFO_SIG_INFO(MethodDesc method, out CORINFO_SIG_INFO sig)
+        private void Get_CORINFO_SIG_INFO(MethodDesc method, out CORINFO_SIG_INFO sig, bool isFatFunctionPointer = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, out sig);
 
             // Does the method have a hidden parameter?
-            if (method.RequiresInstArg())
+            if (method.RequiresInstArg() && !isFatFunctionPointer)
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
@@ -1209,6 +1211,9 @@ namespace Internal.JitInterface
 
                 case ReadyToRunFixupKind.MethodHandle:
                     return _compilation.NodeFactory.GenericLookup.MethodDictionary((MethodDesc)resolvedToken);
+
+                case ReadyToRunFixupKind.MethodEntry:
+                    return _compilation.NodeFactory.GenericLookup.MethodEntry((MethodDesc)resolvedToken);
 
                 case ReadyToRunFixupKind.VirtualEntry:
                     return _compilation.NodeFactory.GenericLookup.VirtualCall((MethodDesc)resolvedToken);
@@ -2336,6 +2341,7 @@ namespace Internal.JitInterface
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
+            bool targetIsFatFunctionPointer = false;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (constrainedType == null)
@@ -2426,12 +2432,45 @@ namespace Internal.JitInterface
 
             pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
-            if (directCall)
+            bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
+
+            if (directCall && !allowInstParam && targetMethod.RequiresInstArg())
             {
-                bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
+                // JIT needs a single address to call this method but the method needs a hidden argument.
+                // We need a fat function pointer for this that captures both things.
+                targetIsFatFunctionPointer = true;
 
-                Debug.Assert(allowInstParam || !targetMethod.RequiresInstArg(), "Need an instantiating stub");
+                // JIT won't expect fat function pointers unless this is e.g. delegate creation
+                Debug.Assert((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0);
 
+                if (pResult.exactContextNeedsRuntimeLookup)
+                {
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod != MethodBeingCompiled)
+                    {
+                        return;
+                    }
+
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.MethodEntry;
+                }
+                else
+                {
+                    // Probably just grab a fat function pointer from the node factory and return it as the address.
+                    // Couldn't really test this so leaving it to throw. We'll also need to set the right bit.
+                    throw new NotImplementedException();
+                }
+            }
+            else if (directCall)
+            {
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -2563,7 +2602,7 @@ namespace Internal.JitInterface
             pResult.classFlags = getClassAttribsInternal(targetMethod.OwningType);
 
             pResult.methodFlags = getMethodAttribsInternal(targetMethod);
-            Get_CORINFO_SIG_INFO(targetMethod, out pResult.sig);
+            Get_CORINFO_SIG_INFO(targetMethod, out pResult.sig, targetIsFatFunctionPointer);
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
             {

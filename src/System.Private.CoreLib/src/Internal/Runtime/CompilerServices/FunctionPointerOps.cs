@@ -64,7 +64,6 @@ namespace Internal.Runtime.CompilerServices
 
         private static uint s_genericFunctionPointerNextIndex = 0;
         private const uint c_genericDictionaryChunkSize = 1024;
-        private const int c_genericFunctionPointerOffset = 2;
         private static LowLevelList<IntPtr> s_genericFunctionPointerCollection = new LowLevelList<IntPtr>();
         private static LowLevelDictionary<GenericMethodDescriptorInfo, uint> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, uint>();
 
@@ -118,7 +117,7 @@ namespace Internal.Runtime.CompilerServices
                 System.Diagnostics.Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
                 System.Diagnostics.Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
 
-                return (IntPtr)((byte*)genericFunctionPointer + c_genericFunctionPointerOffset);
+                return (IntPtr)((byte*)genericFunctionPointer + FatFunctionPointerConstants.Offset);
             }
         }
 
@@ -126,9 +125,9 @@ namespace Internal.Runtime.CompilerServices
         {
             // Check the low bit to find out what kind of function pointer we have here.
 #if BIT64
-            if ((functionPointer.ToInt64() & c_genericFunctionPointerOffset) == c_genericFunctionPointerOffset)
+            if ((functionPointer.ToInt64() & FatFunctionPointerConstants.Offset) == FatFunctionPointerConstants.Offset)
 #else
-            if ((functionPointer.ToInt32() & c_genericFunctionPointerOffset) == c_genericFunctionPointerOffset)
+            if ((functionPointer.ToInt32() & FatFunctionPointerConstants.Offset) == FatFunctionPointerConstants.Offset)
 #endif
             {
                 return true;
@@ -139,7 +138,7 @@ namespace Internal.Runtime.CompilerServices
         [CLSCompliant(false)]
         public static unsafe GenericMethodDescriptor* ConvertToGenericDescriptor(IntPtr functionPointer)
         {
-            return (GenericMethodDescriptor*)((byte*)functionPointer - c_genericFunctionPointerOffset);
+            return (GenericMethodDescriptor*)((byte*)functionPointer - FatFunctionPointerConstants.Offset);
         }
 
         public static unsafe bool Compare(IntPtr functionPointerA, IntPtr functionPointerB)

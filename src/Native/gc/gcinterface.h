@@ -5,6 +5,37 @@
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
 
+struct ScanContext;
+struct gc_alloc_context;
+class CrawlFrame;
+
+// Callback passed to GcScanRoots.
+typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
+
+// Callback passed to GcEnumAllocContexts.
+typedef void enum_alloc_context_func(gc_alloc_context*, void*);
+
+// Callback passed to CreateBackgroundThread.
+typedef uint32_t (__stdcall *GCBackgroundThreadFunction)(void* param);
+
+// Struct often used as a parameter to callbacks.
+typedef struct
+{
+    promote_func*  f;
+    ScanContext*   sc;
+    CrawlFrame *   cf;
+} GCCONTEXT;
+
+// SUSPEND_REASON is the reason why the GC wishes to suspend the EE,
+// used as an argument to IGCToCLR::SuspendEE.
+typedef enum
+{
+    SUSPEND_FOR_GC = 1,
+    SUSPEND_FOR_GC_PREP = 6
+} SUSPEND_REASON;
+
+#include "gcinterface.ee.h"
+
 // The allocation context must be known to the VM for use in the allocation
 // fast path and known to the GC for performing the allocation. Every Thread
 // has its own allocation context that it hands to the GC when allocating.
@@ -53,9 +84,12 @@ struct segment_info
 
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
 
+// The minimum size of an object is three pointers wide: one for the syncblock,
+// one for the object header, and one for the first field in the object.
+#define min_obj_size ((sizeof(uint8_t*) + sizeof(uintptr_t) + sizeof(size_t)))
+
 class Object;
 class IGCHeap;
-class IGCToCLR;
 
 // Initializes the garbage collector. Should only be called
 // once, during EE startup.
@@ -357,7 +391,16 @@ public:
     /*
     ===========================================================================
     Allocation routines. These all call into the GC's allocator and may trigger a garbage
-    collection.
+    collection. All allocation routines return NULL when the allocation request
+    couldn't be serviced due to being out of memory.
+
+    These allocation routines should not be called with allocation requests
+    larger than:
+       32-bit  -> 0x7FFFFFE0
+       64-bit  -> 0x7FFFFFFFFFFFFFE0
+
+    It is up to the caller of the API to raise appropriate errors if the amount
+    of requested memory is too large.
     ===========================================================================
     */
 

@@ -3,6 +3,9 @@ syntax: glob
 # Build tools related files
 /[Tt]ools/
 
+# External tests
+tests_downloaded/
+
 ### VisualStudio ###
 
 # User-specific files

@@ -47,6 +47,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>Common\MetadataBlob.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Common\RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -59,22 +62,28 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CreateInstanceIntrinsic.cs">
       <Link>IL\Stubs\CreateInstanceIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
+      <Link>JitInterface\JitConfigProvider.cs</Link>
+    </Compile>
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClonedConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppCodegenNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DictionaryLayoutNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalReferencesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FatFunctionPointerNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectSentinelNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenStringNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericCompositionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDefinitionEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeDeterminedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />

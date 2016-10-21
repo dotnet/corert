@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the global &lt;Module&gt; type.
         /// </summary>
-        public abstract TypeDesc GetGlobalModuleType();
+        public abstract MetadataType GetGlobalModuleType();
 
         /// <summary>
         /// Retrieves a collection of all types defined in the current module. This includes nested types.

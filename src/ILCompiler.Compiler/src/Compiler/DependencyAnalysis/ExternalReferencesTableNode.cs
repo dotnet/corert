@@ -14,8 +14,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
 
-        private Dictionary<ISymbolNode, uint> _insertedSymbolsDictionary = new Dictionary<ISymbolNode, uint>();
-        private List<ISymbolNode> _insertedSymbols = new List<ISymbolNode>();
+        private Dictionary<SymbolAndDelta, uint> _insertedSymbolsDictionary = new Dictionary<SymbolAndDelta, uint>();
+        private List<SymbolAndDelta> _insertedSymbols = new List<SymbolAndDelta>();
 
         public ExternalReferencesTableNode()
         {
@@ -50,14 +50,16 @@ namespace ILCompiler.DependencyAnalysis
         /// Adds a new entry to the table. Thread safety: not thread safe. Expected to be called at the final
         /// object data emission phase from a single thread.
         /// </summary>
-        public uint GetIndex(ISymbolNode symbol)
+        public uint GetIndex(ISymbolNode symbol, int delta = 0)
         {
+            SymbolAndDelta key = new SymbolAndDelta(symbol, delta);
+
             uint index;
-            if (!_insertedSymbolsDictionary.TryGetValue(symbol, out index))
+            if (!_insertedSymbolsDictionary.TryGetValue(key, out index))
             {
                 index = (uint)_insertedSymbols.Count;
-                _insertedSymbolsDictionary[symbol] = index;
-                _insertedSymbols.Add(symbol);
+                _insertedSymbolsDictionary[key] = index;
+                _insertedSymbols.Add(key);
             }
 
             return index;
@@ -95,10 +97,10 @@ namespace ILCompiler.DependencyAnalysis
 
             var builder = new ObjectDataBuilder(factory);
 
-            foreach (ISymbolNode symbol in _insertedSymbols)
+            foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {
                 // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
-                builder.EmitPointerReloc(symbol);
+                builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
             }
 
             _endSymbol.SetSymbolOffset(builder.CountBytes);
@@ -107,6 +109,33 @@ namespace ILCompiler.DependencyAnalysis
             builder.DefinedSymbols.Add(_endSymbol);
 
             return builder.ToObjectData();
+        }
+
+        struct SymbolAndDelta : IEquatable<SymbolAndDelta>
+        {
+            public readonly ISymbolNode Symbol;
+            public readonly int Delta;
+
+            public SymbolAndDelta(ISymbolNode symbol, int delta)
+            {
+                Symbol = symbol;
+                Delta = delta;
+            }
+
+            public bool Equals(SymbolAndDelta other)
+            {
+                return Symbol == other.Symbol && Delta == other.Delta;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return Equals((SymbolAndDelta)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return Symbol.GetHashCode();
+            }
         }
     }
 }

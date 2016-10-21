@@ -6,6 +6,8 @@ using System.Diagnostics;
 
 using Internal.TypeSystem;
 
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -20,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
         public abstract ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
         public abstract string GetMangledName(NameMangler nameMangler);
         public abstract override string ToString();
+
+        public virtual int TargetDelta => 0;
     }
 
     /// <summary>
@@ -75,6 +79,35 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"MethodHandle: {_method}";
+    }
+
+    /// <summary>
+    /// Generic lookup result that is a function pointer.
+    /// </summary>
+    internal sealed class MethodEntryGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public MethodEntryGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+            _method = method;
+        }
+
+        public override int TargetDelta => FatFunctionPointerConstants.Offset;
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.FatFunctionPointer(instantiatedMethod);
+        }
+
+        public override string GetMangledName(NameMangler nameMangler)
+        {
+            return $"MethodEntry_{nameMangler.GetMangledMethodName(_method)}";
+        }
+
+        public override string ToString() => $"MethodEntry: {_method}";
     }
 
     /// <summary>

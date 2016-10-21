@@ -111,8 +111,20 @@ namespace ILCompiler
 
                 bool useUnboxingStub = targetMethod.OwningType.IsValueType;
 
+                string initializeMethodName = "InitializeClosedInstance";
+                if (targetMethod.HasInstantiation)
+                {
+                    Debug.Assert(!targetMethod.IsVirtual, "TODO: delegate to generic virtual method");
+
+                    // Closed delegates to generic instance methods need to be constructed through a slow helper that
+                    // checks for the fat function pointer case (function pointer + instantiation argument in a single
+                    // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
+                    // the invocation if necessary.
+                    initializeMethodName = "InitializeClosedInstanceSlow";
+                }
+
                 return new DelegateCreationInfo(
-                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedInstance", null)),
+                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
                     factory.MethodEntrypoint(targetMethod, useUnboxingStub));
             }
         }
