@@ -122,13 +122,13 @@ namespace Internal.Reflection.Core.Execution
             MetadataReader reader = definingTypeInfo.Reader;
             if (methodHandle.IsConstructor(reader))
             {
-                return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+                return RuntimePlainConstructorInfo<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo>.GetRuntimePlainConstructorInfo(new RuntimeMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo));
             }
             else
             {
                 // RuntimeMethodHandles always yield methods whose ReflectedType is the DeclaringType.
                 RuntimeTypeInfo reflectedType = contextTypeInfo;
-                RuntimeNamedMethodInfo runtimeNamedMethodInfo = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo, reflectedType);
+                RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo> runtimeNamedMethodInfo = RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo), reflectedType);
                 if (!runtimeNamedMethodInfo.IsGenericMethod)
                 {
                     return runtimeNamedMethodInfo;

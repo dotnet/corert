@@ -380,7 +380,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     MethodHandle getterHandle;
                     if (GetAccessor(MethodSemanticsAttributes.Getter, out getterHandle))
                     {
-                        getter =  RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(getterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                        getter = RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(getterHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                     }
                     else
                     {
@@ -403,7 +403,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     MethodHandle setterHandle;
                     if (GetAccessor(MethodSemanticsAttributes.Setter, out setterHandle))
                     {
-                        setter = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(setterHandle, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                        setter = RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(setterHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                     }
                     else
                     {

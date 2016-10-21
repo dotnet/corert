@@ -73,7 +73,7 @@ namespace System.Reflection.Runtime.EventInfos
                         MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                         if (methodSemantics.Attributes == MethodSemanticsAttributes.AddOn)
                         {
-                            return _lazyAdder = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                            return _lazyAdder = RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                         }
                     }
                     throw new BadImageFormatException(); // Added is a required method.
@@ -199,7 +199,7 @@ namespace System.Reflection.Runtime.EventInfos
                     MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                     if (methodSemantics.Attributes == MethodSemanticsAttributes.Fire)
                     {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                        return RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                     }
                 }
                 return null;
@@ -223,7 +223,7 @@ namespace System.Reflection.Runtime.EventInfos
                         MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                         if (methodSemantics.Attributes == MethodSemanticsAttributes.RemoveOn)
                         {
-                            return _lazyRemover = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo, _reflectedType);
+                            return _lazyRemover = RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo>.GetRuntimeNamedMethodInfo(new RuntimeMethodCommon(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                         }
                     }
                     throw new BadImageFormatException(); // Removed is a required method.

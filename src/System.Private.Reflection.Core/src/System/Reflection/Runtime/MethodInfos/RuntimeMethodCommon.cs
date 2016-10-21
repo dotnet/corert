@@ -21,14 +21,246 @@ using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
+    // Helper for GetRuntimeParameters() - array mimic that supports an efficient "array.Skip(1).ToArray()" operation.
+    internal struct VirtualRuntimeParameterInfoArray
+    {
+        public VirtualRuntimeParameterInfoArray(int count)
+            : this()
+        {
+            Debug.Assert(count >= 1);
+            Remainder = (count == 1) ? Array.Empty<RuntimeParameterInfo>() : new RuntimeParameterInfo[count - 1];
+        }
+
+        public RuntimeParameterInfo this[int index]
+        {
+            get
+            {
+                return index == 0 ? First : Remainder[index - 1];
+            }
+
+            set
+            {
+                if (index == 0)
+                    First = value;
+                else
+                    Remainder[index - 1] = value;
+            }
+        }
+
+        public RuntimeParameterInfo First { get; private set; }
+        public RuntimeParameterInfo[] Remainder { get; }
+    }
+
+    internal interface IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon> where TDefiningTypeInfo : RuntimeNamedTypeInfo where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
+    {
+        MethodAttributes Attributes { get; }
+        CallingConventions CallingConvention { get; }
+
+        RuntimeTypeInfo ContextTypeInfo { get; }
+        IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        RuntimeTypeInfo DeclaringType { get; }
+        TDefiningTypeInfo DefiningTypeInfo { get; }
+        MethodImplAttributes MethodImplementationFlags { get; }
+        Module Module { get; }
+
+        QTypeDefRefOrSpec[] QualifiedMethodSignature { get; }
+        void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QTypeDefRefOrSpec[] parameterTypes, MethodBase contextMethod, TypeContext typeContext);
+
+        String Name { get; }
+
+        MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
+
+        bool IsGenericMethodDefinition { get; }
+
+        TRuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod { get; }
+
+        RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo> owningMethod);
+    }
+
+    internal static class RuntimeMethodHelpers
+    {
+        //
+        // Returns the ParameterInfo objects for the method parameters and return parameter.
+        //
+        // The ParameterInfo objects will report "contextMethod" as their Member property and use it to get type variable information from
+        // the contextMethod's declaring type. The actual metadata, however, comes from "this."
+        //
+        // The methodTypeArguments provides the fill-ins for any method type variable elements in the parameter type signatures.
+        //
+        // Does not array-copy.
+        //
+        internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon,TDefiningTypeInfo>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter) 
+            where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon> 
+            where TDefiningTypeInfo : RuntimeNamedTypeInfo
+        {
+            TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
+            typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
+            QTypeDefRefOrSpec[] typeSignatures = runtimeMethodCommon.QualifiedMethodSignature;
+            int count = typeSignatures.Length;
+
+            VirtualRuntimeParameterInfoArray result = new VirtualRuntimeParameterInfoArray(count);
+            runtimeMethodCommon.FillInMetadataDescribedParameters(ref result, typeSignatures, contextMethod, typeContext);
+
+            for (int i = 0; i < count; i++)
+            {
+                if (result[i] == null)
+                {
+                    result[i] =
+                        RuntimeThinMethodParameterInfo.GetRuntimeThinMethodParameterInfo(
+                            contextMethod,
+                            i - 1,
+                            typeSignatures[i],
+                            typeContext);
+                }
+            }
+
+            returnParameter = result.First;
+            return result.Remainder;
+        }
+
+        // Compute the ToString() value in a pay-to-play-safe way.
+        internal static string ComputeToString<TRuntimeMethodCommon, TDefiningTypeInfo>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
+            where TRuntimeMethodCommon : IRuntimeMethodCommon<TDefiningTypeInfo, TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
+            where TDefiningTypeInfo : RuntimeNamedTypeInfo
+        {
+            RuntimeParameterInfo returnParameter;
+            RuntimeParameterInfo[] parameters = GetRuntimeParameters<TRuntimeMethodCommon, TDefiningTypeInfo>(ref runtimeMethodCommon, contextMethod, methodTypeArguments, out returnParameter);
+            return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
+        }
+
+        // Used by method and property ToString() methods to display the list of parameter types. Replicates the behavior of MethodBase.ConstructParameters()
+        // but in a pay-to-play-safe way.
+        internal static String ComputeParametersString(RuntimeParameterInfo[] parameters)
+        {
+            StringBuilder sb = new StringBuilder(30);
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (i != 0)
+                    sb.Append(", ");
+                String parameterTypeString = parameters[i].ParameterTypeString;
+
+                // Legacy: Why use "ByRef" for by ref parameters? What language is this? 
+                // VB uses "ByRef" but it should precede (not follow) the parameter name.
+                // Why don't we just use "&"?
+                if (parameterTypeString.EndsWith("&"))
+                    parameterTypeString = parameterTypeString.Substring(0, parameterTypeString.Length - 1) + " ByRef";
+                sb.Append(parameterTypeString);
+            }
+            return sb.ToString();
+        }
+
+        internal static String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] parameters, RuntimeParameterInfo returnParameter)
+        {
+            StringBuilder sb = new StringBuilder(30);
+            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterTypeString);  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
+            sb.Append(' ');
+            sb.Append(contextMethod.Name);
+            if (methodTypeArguments.Length != 0)
+            {
+                String sep = "";
+                sb.Append('[');
+                foreach (RuntimeTypeInfo methodTypeArgument in methodTypeArguments)
+                {
+                    sb.Append(sep);
+                    sep = ",";
+                    String name = methodTypeArgument.InternalNameIfAvailable;
+                    if (name == null)
+                        name = ToStringUtils.UnavailableType;
+                    sb.Append(methodTypeArgument.Name);
+                }
+                sb.Append(']');
+            }
+            sb.Append('(');
+            sb.Append(ComputeParametersString(parameters));
+            sb.Append(')');
+
+            return sb.ToString();
+        }
+    }
+
     // 
     // Implements methods and properties common to RuntimeMethodInfo and RuntimeConstructorInfo. In a sensible world, this
     // struct would be a common base class for RuntimeMethodInfo and RuntimeConstructorInfo. But those types are forced
     // to derive from MethodInfo and ConstructorInfo because of the way the Reflection API are designed. Hence,
     // we use containment as a substitute.
     //
-    internal struct RuntimeMethodCommon
+    internal struct RuntimeMethodCommon : IRuntimeMethodCommon<NativeFormatRuntimeNamedTypeInfo, RuntimeMethodCommon>, IEquatable<RuntimeMethodCommon>
     {
+        public bool IsGenericMethodDefinition
+        {
+            get
+            {
+                Method method = MethodHandle.GetMethod(Reader);
+                return method.GenericParameters.GetEnumerator().MoveNext();
+            }
+        }
+
+        public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(Reader, DeclaringType, MethodHandle, methodArguments, exceptionPertainant);
+        }
+
+        public QTypeDefRefOrSpec[] QualifiedMethodSignature
+        {
+            get
+            {
+                MethodSignature methodSignature = this.MethodSignature;
+
+                QTypeDefRefOrSpec[] typeSignatures = new QTypeDefRefOrSpec[methodSignature.Parameters.Count + 1];
+                typeSignatures[0] = new QTypeDefRefOrSpec(_reader, methodSignature.ReturnType, true);
+                int paramIndex = 1;
+                foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
+                {
+                    typeSignatures[paramIndex++] = new QTypeDefRefOrSpec(_reader, parameterTypeSignatureHandle, true);
+                }
+
+                return typeSignatures;
+            }
+        }
+
+        public RuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod
+        {
+            get
+            {
+                NativeFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToNativeFormatRuntimeNamedTypeInfo();
+                return new RuntimeMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+            }
+        }
+
+        public void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QTypeDefRefOrSpec[] typeSignatures, MethodBase contextMethod, TypeContext typeContext)
+        {
+            foreach (ParameterHandle parameterHandle in _method.Parameters)
+            {
+                Parameter parameterRecord = parameterHandle.GetParameter(_reader);
+                int index = parameterRecord.Sequence;
+                result[index] =
+                    NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
+                        contextMethod,
+                        _methodHandle,
+                        index - 1,
+                        parameterHandle,
+                        typeSignatures[index],
+                        typeContext);
+            }
+        }
+
+        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<RuntimeMethodCommon, NativeFormatRuntimeNamedTypeInfo> owningMethod)
+        {
+            Method method = MethodHandle.GetMethod(Reader);
+            int genericParametersCount = method.GenericParameters.Count;
+            if (genericParametersCount == 0)
+                return Array.Empty<RuntimeTypeInfo>();
+
+            RuntimeTypeInfo[] genericTypeParameters = new RuntimeTypeInfo[genericParametersCount];
+            int i = 0;
+            foreach (GenericParameterHandle genericParameterHandle in method.GenericParameters)
+            {
+                RuntimeTypeInfo genericParameterType = NativeFormatRuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, Reader, genericParameterHandle);
+                genericTypeParameters[i++] = genericParameterType;
+            }
+            return genericTypeParameters;
+        }
+
         //
         // methodHandle    - the "tkMethodDef" that identifies the method.
         // definingType   - the "tkTypeDef" that defined the method (this is where you get the metadata reader that created methodHandle.)
@@ -300,35 +532,5 @@ namespace System.Reflection.Runtime.MethodInfos
         private readonly MetadataReader _reader;
 
         private readonly Method _method;
-
-        // Helper for GetRuntimeParameters() - array mimic that supports an efficient "array.Skip(1).ToArray()" operation.
-        private struct VirtualRuntimeParameterInfoArray
-        {
-            public VirtualRuntimeParameterInfoArray(int count)
-                : this()
-            {
-                Debug.Assert(count >= 1);
-                Remainder = (count == 1) ? Array.Empty<RuntimeParameterInfo>() : new RuntimeParameterInfo[count - 1];
-            }
-
-            public RuntimeParameterInfo this[int index]
-            {
-                get
-                {
-                    return index == 0 ? First : Remainder[index - 1];
-                }
-                
-                set
-                {
-                    if (index == 0)
-                        First = value;
-                    else
-                        Remainder[index - 1] = value;
-                }
-            }
-
-            public RuntimeParameterInfo First { get; private set; }
-            public RuntimeParameterInfo[] Remainder { get; }
-        }
     }
 }

@@ -228,11 +228,11 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     // ConstructorInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimePlainConstructorInfo : RuntimeConstructorInfo
+    internal sealed partial class RuntimePlainConstructorInfo<TRuntimeMethodCommon, TDefiningTypeInfo> : RuntimeConstructorInfo
     {
-        internal static RuntimePlainConstructorInfo GetRuntimePlainConstructorInfo(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimePlainConstructorInfo<TRuntimeMethodCommon, TDefiningTypeInfo> GetRuntimePlainConstructorInfo(TRuntimeMethodCommon common)
         {
-            return new RuntimePlainConstructorInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+            return new RuntimePlainConstructorInfo<TRuntimeMethodCommon, TDefiningTypeInfo>(common);
         }
     }
 
@@ -250,11 +250,11 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     // MethodInfos for method definitions (i.e. Foo.Moo() or Foo.Moo<>() but not Foo.Moo<int>)
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNamedMethodInfo : RuntimeMethodInfo
+    internal sealed partial class RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo>
     {
-        internal static RuntimeNamedMethodInfo GetRuntimeNamedMethodInfo(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        internal static RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo> GetRuntimeNamedMethodInfo(TRuntimeMethodCommon common, RuntimeTypeInfo reflectedType)
         {
-            RuntimeNamedMethodInfo method = new RuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo, reflectedType);
+            RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo> method = new RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon, TDefiningTypeInfo>(common, reflectedType);
             method.WithDebugName();
             return method;
         }
