@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-extern alias ECMA;
-
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -11,18 +9,16 @@ using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
 using Internal.Runtime.TypeLoader;
 
-using Ecma = ECMA::System.Reflection.Metadata;
-
 namespace Internal.Reflection.Core
 {
-    public struct AssemblyBindResult
+#pragma warning disable CS0282
+    public partial struct AssemblyBindResult
     {
-        public Ecma.MetadataReader EcmaMetadataReader;
-
         public MetadataReader Reader;
         public ScopeDefinitionHandle ScopeDefinitionHandle;
         public IEnumerable<QScopeDefinition> OverflowScopes;
     }
+#pragma warning restore CS0282
 
     //
     // Implements the assembly binding policy Reflection domain. This gets called any time the domain needs 
