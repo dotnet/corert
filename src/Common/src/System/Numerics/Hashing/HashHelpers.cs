@@ -10,6 +10,7 @@ namespace System.Numerics.Hashing
     {
         public static int Combine(int h1, int h2)
         {
+            // This should get optimized to use a single ROL instruction.
             uint shift5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
             return ((int)shift5 + h1) ^ h2;
         }

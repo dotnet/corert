@@ -77,17 +77,17 @@ namespace System
         {
             return CombineHashCodes(CombineHashCodes(h1, h2), h3);
         }
-        
+
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4)
         {
             return CombineHashCodes(CombineHashCodes(h1, h2, h3), h4);
         }
-        
+
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5)
         {
             return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4), h5);
         }
-        
+
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6)
         {
             return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4, h5), h6);
