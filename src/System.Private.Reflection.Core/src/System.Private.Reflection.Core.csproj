@@ -51,6 +51,7 @@
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberTypeIndex.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MethodPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NestedTypePolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\PropertyPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueriedMemberList.cs" />
@@ -225,6 +226,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="System\Reflection\Runtime\TypeInfos\Ecma\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.Ecma.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
