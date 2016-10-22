@@ -84,9 +84,12 @@ struct segment_info
 
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
 
+// The minimum size of an object is three pointers wide: one for the syncblock,
+// one for the object header, and one for the first field in the object.
+#define min_obj_size ((sizeof(uint8_t*) + sizeof(uintptr_t) + sizeof(size_t)))
+
 class Object;
 class IGCHeap;
-class IGCToCLR;
 
 // Initializes the garbage collector. Should only be called
 // once, during EE startup.
@@ -388,7 +391,8 @@ public:
     /*
     ===========================================================================
     Allocation routines. These all call into the GC's allocator and may trigger a garbage
-    collection.
+    collection. All allocation routines return NULL when the allocation request
+    couldn't be serviced due to being out of memory.
     ===========================================================================
     */
 

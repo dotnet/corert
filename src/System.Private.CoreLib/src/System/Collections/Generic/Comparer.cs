@@ -16,10 +16,7 @@ namespace System.Collections.Generic
         }
 
         // .NET Native for UWP toolchain overwrites the Default property with optimized 
-        // instantiation-specific implementation. It depends on subtle implementation details of this
-        // class to do so. Once the packaging infrastructure allows it, the implementation 
-        // of Comparer<T> should be moved to CoreRT repo to avoid the fragile dependency.
-        // Until that happens, nothing in this class can change.
+        // instantiation-specific implementation.
 
         // TODO: Initialize the _default field via implicit static constructor for better performance
         // (https://github.com/dotnet/coreclr/pull/4340).
@@ -29,7 +26,7 @@ namespace System.Collections.Generic
             get
             {
                 if (_default == null)
-                    _default = CreateComparer();
+                    _default = new DefaultComparer<T>();
                 return _default;
             }
         }
@@ -52,15 +49,6 @@ namespace System.Collections.Generic
             if (y == null) return 1;
             if (x is T && y is T) return Compare((T)x, (T)y);
             throw new ArgumentException(SR.Argument_InvalidArgumentForComparison);
-        }
-
-        private static Comparer<T> CreateComparer()
-        {
-            // NUTC compiler optimization see comments in EqualityComparer.cs
-            if (typeof(T) == typeof(int))
-                return (Comparer<T>)(object)(new Int32Comparer());
-
-            return new DefaultComparer<T>();
         }
 
         // WARNING: We allow diagnostic tools to directly inspect this member (_default). 
@@ -128,20 +116,6 @@ namespace System.Collections.Generic
         public override int Compare(T x, T y)
         {
             return _comparison(x, y);
-        }
-    }
-
-    [Serializable]
-    internal class Int32Comparer : Comparer<Int32>
-    {
-        public override int Compare(int x, int y)
-        {
-            if (x < y)
-                return -1;
-            else if (x > y)
-                return 1;
-            else
-                return 0;
         }
     }
 }

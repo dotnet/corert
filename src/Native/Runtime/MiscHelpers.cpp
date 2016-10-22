@@ -611,6 +611,18 @@ EXTERN_C REDHAWK_API void __cdecl RhpReleaseCastCacheLock()
     g_CastCacheLock.Leave();
 }
 
+extern CrstStatic g_ThunkPoolLock;
+
+EXTERN_C REDHAWK_API void __cdecl RhpAcquireThunkPoolLock()
+{
+    g_ThunkPoolLock.Enter();
+}
+
+EXTERN_C REDHAWK_API void __cdecl RhpReleaseThunkPoolLock()
+{
+    g_ThunkPoolLock.Leave();
+}
+
 EXTERN_C Int32 __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, UInt32 outputBufferLength);
 
 EXTERN_C REDHAWK_API Int32 __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, UInt32 outputBufferLength)

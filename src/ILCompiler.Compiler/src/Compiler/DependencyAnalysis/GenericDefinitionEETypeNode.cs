@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
 using Internal.TypeSystem;
 
@@ -28,6 +29,11 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             return false;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            return null;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

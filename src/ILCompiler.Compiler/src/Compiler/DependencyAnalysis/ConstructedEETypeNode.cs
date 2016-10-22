@@ -84,7 +84,14 @@ namespace ILCompiler.DependencyAnalysis
             // generate any relocs to it, and the optional fields node will instruct the object writer to skip
             // emitting it.
             dependencyList.Add(_optionalFieldsNode, "Optional fields");
-            
+
+            // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
+            // We need to make sure this is possible - we need the class constructor context.
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            {
+                dependencyList.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor");
+            }
+
             return dependencyList;
         }
 

@@ -65,6 +65,12 @@ namespace ILCompiler.Metadata
                     scopeDefinition.PublicKey = assemblyName.GetPublicKeyToken();
                 }
 
+                Cts.MetadataType moduleType = module.GetGlobalModuleType();
+                if (moduleType != null && _policy.GeneratesMetadata(moduleType))
+                {
+                    scopeDefinition.GlobalModuleType = (TypeDefinition)HandleType(moduleType);
+                }
+
                 Cts.Ecma.EcmaAssembly ecmaAssembly = module as Cts.Ecma.EcmaAssembly;
                 if (ecmaAssembly != null)
                 {
@@ -72,6 +78,12 @@ namespace ILCompiler.Metadata
                     if (customAttributes.Count > 0)
                     {
                         scopeDefinition.CustomAttributes = HandleCustomAttributes(ecmaAssembly, customAttributes);
+                    }
+
+                    Cts.MethodDesc entryPoint = ecmaAssembly.EntryPoint;
+                    if (entryPoint != null && _policy.GeneratesMetadata(entryPoint))
+                    {
+                        scopeDefinition.EntryPoint = (QualifiedMethod)HandleQualifiedMethod(entryPoint);
                     }
                 }
             }

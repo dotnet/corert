@@ -141,7 +141,6 @@ void InitializeHeapType(bool bServerHeap)
 IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
 {
     LIMITED_METHOD_CONTRACT;
-    UNREFERENCED_PARAMETER(clrToGC);
 
     IGCHeapInternal* heap;
 #ifdef FEATURE_SVR_GC
@@ -157,6 +156,7 @@ IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
     assert(clrToGC != nullptr);
     g_theGCToCLR = clrToGC;
 #else
+    UNREFERENCED_PARAMETER(clrToGC);
     assert(clrToGC == nullptr);
 #endif
 

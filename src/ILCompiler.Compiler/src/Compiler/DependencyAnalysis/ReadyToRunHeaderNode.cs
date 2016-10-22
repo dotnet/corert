@@ -87,7 +87,9 @@ namespace ILCompiler.DependencyAnalysis
             builder.Alignment = factory.Target.PointerSize;
             builder.DefinedSymbols.Add(this);
 
-            _items.Sort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
+            // Don't bother sorting if we're not emitting the contents
+            if (!relocsOnly)
+                _items.Sort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
 
             // ReadyToRunHeader.Magic
             builder.EmitInt((int)(ReadyToRunHeaderConstants.Signature));

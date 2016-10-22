@@ -70,6 +70,9 @@ namespace System
     public struct Char
     {
         private char _value;
+
+        public const char MaxValue = (char)0xFFFF;
+        public const char MinValue = (char)0x00;
     }
 
 
@@ -92,6 +95,9 @@ namespace System
     public struct SByte
     {
         private sbyte _value;
+
+        public const sbyte MaxValue = (sbyte)0x7F;
+        public const sbyte MinValue = unchecked((sbyte)0x80);
     }
 
 
@@ -115,6 +121,9 @@ namespace System
     public struct Byte
     {
         private byte _value;
+
+        public const byte MaxValue = (byte)0xFF;
+        public const byte MinValue = 0;
     }
 
 
@@ -138,6 +147,9 @@ namespace System
     public struct Int16
     {
         private short _value;
+
+        public const short MaxValue = (short)0x7FFF;
+        public const short MinValue = unchecked((short)0x8000);
     }
 
     /*============================================================
@@ -159,6 +171,9 @@ namespace System
     public struct UInt16
     {
         private ushort _value;
+
+        public const ushort MaxValue = (ushort)0xffff;
+        public const ushort MinValue = 0;
     }
 
     /*============================================================
@@ -180,6 +195,9 @@ namespace System
     public struct Int32
     {
         private int _value;
+
+        public const int MaxValue = 0x7fffffff;
+        public const int MinValue = unchecked((int)0x80000000);
     }
 
 
@@ -202,6 +220,9 @@ namespace System
     public struct UInt32
     {
         private uint _value;
+
+        public const uint MaxValue = (uint)0xffffffff;
+        public const uint MinValue = 0;
     }
 
 
@@ -224,6 +245,9 @@ namespace System
     public struct Int64
     {
         private long _value;
+
+        public const long MaxValue = 0x7fffffffffffffffL;
+        public const long MinValue = unchecked((long)0x8000000000000000L);
     }
 
 
@@ -246,6 +270,9 @@ namespace System
     public struct UInt64
     {
         private ulong _value;
+
+        public const ulong MaxValue = (ulong)0xffffffffffffffffL;
+        public const ulong MinValue = 0;
     }
 
 
