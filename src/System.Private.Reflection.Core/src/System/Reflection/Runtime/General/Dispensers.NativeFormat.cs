@@ -32,9 +32,10 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal partial class RuntimeAssembly
     {
-        private static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflows)
+        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
         {
-            return s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope, overflows));
+            if (bindResult.Reader != null)
+                runtimeAssembly = s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes));
         }
 
         private static readonly Dispenser<RuntimeAssemblyKey, RuntimeAssembly> s_scopeToAssemblyDispenser =

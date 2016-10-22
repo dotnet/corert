@@ -7,7 +7,6 @@ using System.Collections.Generic;
 
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.PropertyInfos;
@@ -71,12 +70,23 @@ namespace System.Reflection.Runtime.Assemblies
                     Exception exception;
                     if (!binder.Bind(convertedAssemblyRefName, out bindResult, out exception))
                         return null;
-                    if (bindResult.Reader != null)
-                        return GetRuntimeAssembly(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes);
-                    else
-                        return GetRuntimeAssembly(bindResult.EcmaMetadataReader);
+                    RuntimeAssembly result = null;
+
+                    GetNativeFormatRuntimeAssembly(bindResult, ref result);
+                    if (result != null)
+                        return result;
+
+                    GetEcmaRuntimeAssembly(bindResult, ref result);
+                    if (result != null)
+                        return result;
+
+                    return null;
                 }
         );
+
+        // Use C# partial method feature to avoid complex #if logic, whichever code files are included will drive behavior
+        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
+        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
     }
 }
 
