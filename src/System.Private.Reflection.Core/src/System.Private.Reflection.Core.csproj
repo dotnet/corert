@@ -93,6 +93,7 @@
     <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeResolver.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
