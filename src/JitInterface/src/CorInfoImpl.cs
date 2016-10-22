@@ -104,7 +104,7 @@ namespace Internal.JitInterface
         {
             get
             {
-                return _compilation.Log;
+                return _compilation.Logger.Writer;
             }
         }
 
@@ -139,7 +139,8 @@ namespace Internal.JitInterface
                 {
                     MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
 
-                    if (!_compilation.Options.NoLineNumbers)
+                    // TODO: NoLineNumbers
+                    //if (!_compilation.Options.NoLineNumbers)
                     {
                         IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
                         if (ilSequencePoints != null)
@@ -163,7 +164,7 @@ namespace Internal.JitInterface
                 catch (Exception e)
                 {
                     // Debug info not successfully loaded.
-                    _compilation.Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
+                    Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
                 }
 
                 CorInfoImpl _this = this;

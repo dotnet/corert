@@ -62,13 +62,19 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CreateInstanceIntrinsic.cs">
       <Link>IL\Stubs\CreateInstanceIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
+      <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
+    </Compile>
     <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
     <Compile Include="Compiler\Compilation.cs" />
+    <Compile Include="Compiler\CompilationBuilder.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="Compiler\CppCodegenCompilation.cs" />
+    <Compile Include="Compiler\CppCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
@@ -149,6 +155,8 @@
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
+    <Compile Include="Compiler\RyuJitCompilation.cs" />
+    <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
@@ -160,6 +168,7 @@
     <Compile Include="CppCodeGen\CppWriter.cs" />
     <Compile Include="CppCodeGen\NodeDataSection.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
+    <Compile Include="Logger.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
