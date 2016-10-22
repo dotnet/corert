@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-extern alias ECMA;
-
 using System.IO;
 using System.Collections.Generic;
 
@@ -17,8 +15,6 @@ using System.Reflection.Runtime.PropertyInfos;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-using Ecma = ECMA::System.Reflection.Metadata;
 
 //=================================================================================================================
 // This file collects the various chokepoints that create the various Runtime*Info objects. This allows
@@ -81,116 +77,6 @@ namespace System.Reflection.Runtime.Assemblies
                         return GetRuntimeAssembly(bindResult.EcmaMetadataReader);
                 }
         );
-
-        private static RuntimeAssembly GetRuntimeAssembly(Ecma.MetadataReader reader)
-        {
-            return s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(reader));
-        }
-
-        private static readonly Dispenser<EcmaRuntimeAssemblyKey, RuntimeAssembly> s_EcmaAssemblyDispenser =
-            DispenserFactory.CreateDispenserV<EcmaRuntimeAssemblyKey, RuntimeAssembly>(
-                DispenserScenario.Scope_Assembly,
-                delegate (EcmaRuntimeAssemblyKey assemblyDefinition)
-                {
-                    return (RuntimeAssembly)new EcmaFormat.EcmaFormatRuntimeAssembly(assemblyDefinition.Reader);
-                }
-        );
-
-        private struct EcmaRuntimeAssemblyKey : IEquatable<EcmaRuntimeAssemblyKey>
-        {
-            public EcmaRuntimeAssemblyKey(Ecma.MetadataReader reader)
-            {
-                Reader = reader;
-            }
-
-            public override bool Equals(Object obj)
-            {
-                if (!(obj is RuntimeAssemblyKey))
-                    return false;
-                return Equals((RuntimeAssemblyKey)obj);
-            }
-
-
-            public bool Equals(EcmaRuntimeAssemblyKey other)
-            {
-                // Equality depends only on the metadata reader of an assembly
-                return Object.ReferenceEquals(Reader, other.Reader);
-            }
-
-            public override int GetHashCode()
-            {
-                return Reader.GetHashCode();
-            }
-
-            public Ecma.MetadataReader Reader { get; }
-        }
-
-        private static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflows)
-        {
-            return s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope, overflows));
-        }
-
-        private static readonly Dispenser<RuntimeAssemblyKey, RuntimeAssembly> s_scopeToAssemblyDispenser =
-            DispenserFactory.CreateDispenserV<RuntimeAssemblyKey, RuntimeAssembly>(
-                DispenserScenario.Scope_Assembly,
-                delegate (RuntimeAssemblyKey qScopeDefinition)
-                {
-                    return (RuntimeAssembly)new NativeFormat.NativeFormatRuntimeAssembly(qScopeDefinition.Reader, qScopeDefinition.Handle, qScopeDefinition.Overflows);
-                }
-        );
-
-        //-----------------------------------------------------------------------------------------------------------
-        // Captures a qualified scope (a reader plus a handle) representing the canonical definition of an assembly,
-        // plus a set of "overflow" scopes representing additional pieces of the assembly.
-        //-----------------------------------------------------------------------------------------------------------
-        private struct RuntimeAssemblyKey : IEquatable<RuntimeAssemblyKey>
-        {
-            public RuntimeAssemblyKey(MetadataReader reader, ScopeDefinitionHandle handle, IEnumerable<QScopeDefinition> overflows)
-            {
-                _reader = reader;
-                _handle = handle;
-                _overflows = overflows;
-            }
-
-            public MetadataReader Reader { get { return _reader; } }
-            public ScopeDefinitionHandle Handle { get { return _handle; } }
-            public IEnumerable<QScopeDefinition> Overflows { get { return _overflows; } }
-            public ScopeDefinition ScopeDefinition
-            {
-                get
-                {
-                    return _handle.GetScopeDefinition(_reader);
-                }
-            }
-
-            public override bool Equals(Object obj)
-            {
-                if (!(obj is RuntimeAssemblyKey))
-                    return false;
-                return Equals((RuntimeAssemblyKey)obj);
-            }
-
-
-            public bool Equals(RuntimeAssemblyKey other)
-            {
-                // Equality depends only on the canonical definition of an assembly, not
-                // the overflows.
-                if (!(_reader == other._reader))
-                    return false;
-                if (!(_handle.Equals(other._handle)))
-                    return false;
-                return true;
-            }
-
-            public override int GetHashCode()
-            {
-                return _handle.GetHashCode();
-            }
-
-            private readonly MetadataReader _reader;
-            private readonly ScopeDefinitionHandle _handle;
-            private readonly IEnumerable<QScopeDefinition> _overflows;
-        }
     }
 }
 
@@ -205,20 +91,6 @@ namespace System.Reflection.Runtime.Modules
         internal static RuntimeModule GetRuntimeModule(RuntimeAssembly assembly)
         {
             return new RuntimeModule(assembly);
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.FieldInfos.NativeFormat
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // FieldInfos
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatRuntimeFieldInfo
-    {
-        internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
-        {
-            return new NativeFormatRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
         }
     }
 }
@@ -283,34 +155,6 @@ namespace System.Reflection.Runtime.MethodInfos
     }
 }
 
-namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // PropertyInfos
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatRuntimePropertyInfo
-    {
-        internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
-        {
-            return new NativeFormatRuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.EventInfos.NativeFormat
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // EventInfos
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatRuntimeEventInfo
-    {
-        internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
-        {
-            return new NativeFormatRuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
-        }
-    }
-}
-
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //-----------------------------------------------------------------------------------------------------------
@@ -343,40 +187,6 @@ namespace System.Reflection.Runtime.ParameterInfos
         internal static RuntimeSyntheticParameterInfo GetRuntimeSyntheticParameterInfo(MemberInfo member, int position, RuntimeTypeInfo parameterType)
         {
             return new RuntimeSyntheticParameterInfo(member, position, parameterType);
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos for MethodBase objects with Parameter metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatMethodParameterInfo : RuntimeMethodParameterInfo
-    {
-        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
-        {
-            return new NativeFormatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.CustomAttributes
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // CustomAttributeData objects returned by various CustomAttributes properties.
-    //-----------------------------------------------------------------------------------------------------------
-    internal abstract partial class RuntimeCustomAttributeData
-    {
-        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, IEnumerable<CustomAttributeHandle> customAttributeHandles)
-        {
-            foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
-                yield return GetCustomAttributeData(reader, customAttributeHandle);
-        }
-
-        private static CustomAttributeData GetCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
-        {
-            return new RuntimeNormalCustomAttributeData(reader, customAttributeHandle);
         }
     }
 }

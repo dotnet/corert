@@ -57,8 +57,8 @@
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.Enumerator.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\Shared.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\NativeFormat\NativeFormatCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeCustomAttributeData.cs" />
-    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeNormalCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimePseudoCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\DefaultDispenserPolicy.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\Dispenser.cs" />
@@ -78,6 +78,8 @@
     <Compile Include="System\Reflection\Runtime\General\ApiToDoList.cs" />
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Dispensers.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\EcmaMetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
