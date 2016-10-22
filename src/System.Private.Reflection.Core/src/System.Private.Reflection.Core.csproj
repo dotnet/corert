@@ -32,13 +32,18 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
     <ReferencePath Include="ECMA=$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
   </ItemGroup>
+  <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
+    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Dispensers.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EcmaMetadataReaderExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.Ecma.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\ActivatorImplementation.cs" />
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Empty.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
@@ -79,9 +84,7 @@
     <Compile Include="System\Reflection\Runtime\General\ApiToDoList.cs" />
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
-    <Compile Include="System\Reflection\Runtime\General\Dispensers.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
-    <Compile Include="System\Reflection\Runtime\General\EcmaMetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
@@ -226,9 +229,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="System\Reflection\Runtime\TypeInfos\Ecma\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.Ecma.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
