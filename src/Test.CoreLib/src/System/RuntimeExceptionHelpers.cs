@@ -102,5 +102,10 @@ namespace System
         {
             RuntimeImports.RhpFallbackFailFast();
         }
+
+        public static void FailFast()
+        {
+            RuntimeImports.RhpFallbackFailFast();
+        }
     }
 }

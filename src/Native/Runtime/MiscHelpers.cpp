@@ -634,6 +634,11 @@ EXTERN_C REDHAWK_API Int32 __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBu
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength);
 }
 
+EXTERN_C bool RhpRegisterFrozenSegment(void* pSegmentStart, UInt32 length)
+{
+    return RedhawkGCInterface::RegisterFrozenSection(pSegmentStart, length) != NULL;
+}
+
 #ifdef CORERT
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (ModuleManager* pModule, Int32 headerId, Int32* length))
 {

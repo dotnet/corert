@@ -86,6 +86,22 @@ namespace Internal.Runtime.CompilerHelpers
                 Debug.Assert(length % IntPtr.Size == 0);
                 InitializeStatics(staticsSection, length);
             }
+
+            // Initialize frozen object segment with GC present
+            IntPtr frozenObjectSection = GetModuleSection(moduleManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
+            if (frozenObjectSection != IntPtr.Zero)
+            {
+                InitializeFrozenObjectSegment(frozenObjectSection, length);
+            }
+        }
+
+        private static unsafe void InitializeFrozenObjectSegment(IntPtr segmentStart, int length)
+        {
+            if (!RuntimeImports.RhpRegisterFrozenSegment(segmentStart, length))
+            {
+                // This should only happen if we ran out of memory.
+                Environment.FailFast("Failed to register frozen object segment.");
+            }
         }
 
         private static unsafe void InitializeEagerClassConstructorsForModule(IntPtr moduleManager)

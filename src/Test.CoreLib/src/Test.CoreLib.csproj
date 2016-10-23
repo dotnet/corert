@@ -252,6 +252,7 @@
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
+    <Compile Include="System\Environment.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup>

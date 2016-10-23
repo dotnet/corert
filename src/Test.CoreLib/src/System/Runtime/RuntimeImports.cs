@@ -40,6 +40,10 @@ namespace System.Runtime
             return h;
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
+        internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
+
         //
         // calls to runtime for allocation
         // These calls are needed in types which cannot use "new" to allocate and need to do it manually
