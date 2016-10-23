@@ -45,7 +45,7 @@ namespace Internal.Runtime
     //
     enum ReadyToRunSectionType
     {
-        StringTable                 = 200,
+        StringTable                 = 200, // Unused
         GCStaticRegion              = 201,
         ThreadStaticRegion          = 202,
         InterfaceDispatchTable      = 203,

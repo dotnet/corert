@@ -209,16 +209,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
 
-            _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
-            {
-                return new StringDataNode(data);
-            });
-
-            _stringIndirectionNodes = new NodeCache<string, StringIndirectionNode>((string data) =>
-            {
-                return new StringIndirectionNode(data);
-            });
-
             _indirectionNodes = new NodeCache<ISymbolNode, IndirectionNode>(symbol =>
             {
                 return new IndirectionNode(symbol);
@@ -585,20 +575,6 @@ namespace ILCompiler.DependencyAnalysis
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
         }
 
-        private NodeCache<string, StringDataNode> _stringDataNodes;
-
-        public StringDataNode StringData(string data)
-        {
-            return _stringDataNodes.GetOrAdd(data);
-        }
-
-        private NodeCache<string, StringIndirectionNode> _stringIndirectionNodes;
-
-        public StringIndirectionNode StringIndirection(string data)
-        {
-            return _stringIndirectionNodes.GetOrAdd(data);
-        }
-
         private NodeCache<ISymbolNode, IndirectionNode> _indirectionNodes;
 
         public IndirectionNode Indirection(ISymbolNode symbol)
@@ -640,10 +616,6 @@ namespace ILCompiler.DependencyAnalysis
             CompilationUnitPrefix + "__ThreadStaticRegionStart",
             CompilationUnitPrefix + "__ThreadStaticRegionEnd", 
             null);
-        public ArrayOfEmbeddedDataNode StringTable = new ArrayOfEmbeddedDataNode(
-            CompilationUnitPrefix + "__StringTableStart",
-            CompilationUnitPrefix + "__StringTableEnd", 
-            null);
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             CompilationUnitPrefix + "__EagerCctorStart",
@@ -679,7 +651,6 @@ namespace ILCompiler.DependencyAnalysis
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
-            graph.AddRoot(StringTable, "StringTable is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(ModuleManagerIndirection, "ModuleManagerIndirection is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
@@ -687,7 +658,6 @@ namespace ILCompiler.DependencyAnalysis
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.StringTable, StringTable, StringTable.StartSymbol, StringTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleManagerIndirection, ModuleManagerIndirection, ModuleManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
