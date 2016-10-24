@@ -12,7 +12,6 @@ using System.Reflection.Runtime.PropertyInfos.NativeFormat;
 using System.Reflection.Runtime.EventInfos.NativeFormat;
 using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
-using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.TypeInfos.NativeFormat
@@ -26,9 +25,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             //
             // - All GetConstructor() apis act as if BindingFlags.DeclaredOnly were specified. So the ReflectedType will always be the declaring type and so is not passed to this method.
             //
-            if (contextTypeInfo == null)
-                contextTypeInfo = this;
-
             MetadataReader reader = Reader;
             foreach (MethodHandle methodHandle in DeclaredMethodAndConstructorHandles)
             {
@@ -44,9 +40,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         internal sealed override IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo)
         {
-            if (contextTypeInfo == null)
-                contextTypeInfo = this;
-
             MetadataReader reader = Reader;
             foreach (MethodHandle methodHandle in DeclaredMethodAndConstructorHandles)
             {
@@ -62,9 +55,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         internal sealed override IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo)
         {
-            if (contextTypeInfo == null)
-                contextTypeInfo = this;
-
             MetadataReader reader = Reader;
             foreach (EventHandle eventHandle in DeclaredEventHandles)
             {
@@ -75,9 +65,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         internal sealed override IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo)
         {
-            if (contextTypeInfo == null)
-                contextTypeInfo = this;
-
             MetadataReader reader = Reader;
             foreach (FieldHandle fieldHandle in DeclaredFieldHandles)
             {
@@ -88,9 +75,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         internal sealed override IEnumerable<PropertyInfo> CoreGetDeclaredProperties(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo)
         {
-            if (contextTypeInfo == null)
-                contextTypeInfo = this;
-
             MetadataReader reader = Reader;
             foreach (PropertyHandle propertyHandle in DeclaredPropertyHandles)
             {
