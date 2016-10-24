@@ -23,6 +23,7 @@ using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
+using NativeFormatMethodSemanticsAttributes = global::Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
 
 namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 {
@@ -143,15 +144,15 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         internal protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)
         {
-            MethodSemanticsAttributes localMethodSemantics;
+            NativeFormatMethodSemanticsAttributes localMethodSemantics;
             switch (whichMethod)
             {
                 case PropertyMethodSemantics.Getter:
-                    localMethodSemantics = MethodSemanticsAttributes.Getter;
+                    localMethodSemantics = NativeFormatMethodSemanticsAttributes.Getter;
                     break;
 
                 case PropertyMethodSemantics.Setter:
-                    localMethodSemantics = MethodSemanticsAttributes.Setter;
+                    localMethodSemantics = NativeFormatMethodSemanticsAttributes.Setter;
                     break;
 
                 default:

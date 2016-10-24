@@ -34,9 +34,9 @@ namespace System.Reflection.Runtime.General
 
         internal static RuntimeTypeInfo TryResolve(this QTypeDefRefOrSpec typeDefOrRefOrSpec, TypeContext typeContext, ref Exception exception)
         {
-            if (typeDefOrRefOrSpec.Reader is Internal.Metadata.NativeFormat.MetadataReader)
+            if (typeDefOrRefOrSpec.Reader is global::Internal.Metadata.NativeFormat.MetadataReader)
             {
-                return Internal.Metadata.NativeFormat.Handle.FromIntToken(typeDefOrRefOrSpec.Handle).TryResolve((Internal.Metadata.NativeFormat.MetadataReader)typeDefOrRefOrSpec.Reader, typeContext, ref exception);
+                return global::Internal.Metadata.NativeFormat.Handle.FromIntToken(typeDefOrRefOrSpec.Handle).TryResolve((global::Internal.Metadata.NativeFormat.MetadataReader)typeDefOrRefOrSpec.Reader, typeContext, ref exception);
             }
 
             throw new BadImageFormatException();  // Expected TypeRef, Def or Spec with MetadataReader

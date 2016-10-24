@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-extern alias ECMA;
-
 using System.IO;
 using System.Collections.Generic;
 
@@ -16,7 +14,7 @@ using System.Reflection.Runtime.PropertyInfos;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Ecma = ECMA::System.Reflection.Metadata;
+using System.Reflection.Metadata;
 
 //=================================================================================================================
 // This file collects the various chokepoints that create the various Runtime*Info objects. This allows
@@ -50,7 +48,7 @@ namespace System.Reflection.Runtime.Assemblies
 
         private struct EcmaRuntimeAssemblyKey : IEquatable<EcmaRuntimeAssemblyKey>
         {
-            public EcmaRuntimeAssemblyKey(Ecma.MetadataReader reader)
+            public EcmaRuntimeAssemblyKey(MetadataReader reader)
             {
                 Reader = reader;
             }
@@ -74,7 +72,7 @@ namespace System.Reflection.Runtime.Assemblies
                 return Reader.GetHashCode();
             }
 
-            public Ecma.MetadataReader Reader { get; }
+            public MetadataReader Reader { get; }
         }
     }
 }

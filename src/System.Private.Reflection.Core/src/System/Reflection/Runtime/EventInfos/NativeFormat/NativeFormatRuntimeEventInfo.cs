@@ -16,6 +16,7 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Metadata.NativeFormat;
+using NativeFormatMethodSemanticsAttributes = global::Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
@@ -55,19 +56,19 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
 
         protected internal override MethodInfo GetEventMethod(EventMethodSemantics whichMethod)
         {
-            MethodSemanticsAttributes localMethodSemantics;
+            NativeFormatMethodSemanticsAttributes localMethodSemantics;
             switch (whichMethod)
             {
                 case EventMethodSemantics.Add:
-                    localMethodSemantics = MethodSemanticsAttributes.AddOn;
+                    localMethodSemantics = NativeFormatMethodSemanticsAttributes.AddOn;
                     break;
 
                 case EventMethodSemantics.Fire:
-                    localMethodSemantics = MethodSemanticsAttributes.Fire;
+                    localMethodSemantics = NativeFormatMethodSemanticsAttributes.Fire;
                     break;
 
                 case EventMethodSemantics.Remove:
-                    localMethodSemantics = MethodSemanticsAttributes.RemoveOn;
+                    localMethodSemantics = NativeFormatMethodSemanticsAttributes.RemoveOn;
                     break;
 
                 default:
