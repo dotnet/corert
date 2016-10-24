@@ -86,7 +86,7 @@ namespace System.Reflection.Runtime.Assemblies
                     throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);  // Cannot specify an assembly qualifier in a typename passed to Assembly.GetType()
                 else
                     return null;
-            } 
+            }
 
             CoreAssemblyResolver coreAssemblyResolver = RuntimeAssembly.GetRuntimeAssemblyIfExists;
             CoreTypeResolver coreTypeResolver =
@@ -112,6 +112,17 @@ namespace System.Reflection.Runtime.Assemblies
             {
                 return false; // ReflectionOnly loading not supported.
             }
+        }
+
+        internal abstract RuntimeAssemblyName RuntimeAssemblyName { get; }
+
+        public sealed override AssemblyName GetName()
+        {
+#if ENABLE_REFLECTION_TRACE
+            if (ReflectionTrace.Enabled)
+                ReflectionTrace.Assembly_GetName(this);
+#endif
+            return RuntimeAssemblyName.ToAssemblyName();
         }
 
         /// <summary>

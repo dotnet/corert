@@ -117,13 +117,12 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             //return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
         }
 
-        public sealed override AssemblyName GetName()
+        internal sealed override RuntimeAssemblyName RuntimeAssemblyName
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Assembly_GetName(this);
-#endif
-            return AssemblyDefinition.ToRuntimeAssemblyName(MetadataReader).ToAssemblyName();
+            get
+            {
+                return AssemblyDefinition.ToRuntimeAssemblyName(MetadataReader).ToAssemblyName();
+            }
         }
 
         public sealed override bool Equals(Object obj)

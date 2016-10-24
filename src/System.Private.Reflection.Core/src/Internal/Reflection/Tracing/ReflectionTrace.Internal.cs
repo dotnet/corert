@@ -57,7 +57,7 @@ namespace Internal.Reflection.Tracing
                 RuntimeAssembly runtimeAssembly = assembly as RuntimeAssembly;
                 if (runtimeAssembly == null)
                     return null;
-                return runtimeAssembly.Scope.Handle.ToRuntimeAssemblyName(runtimeAssembly.Scope.Reader).FullName;
+                return runtimeAssembly.RuntimeAssemblyName.FullName;
             }
             catch
             {

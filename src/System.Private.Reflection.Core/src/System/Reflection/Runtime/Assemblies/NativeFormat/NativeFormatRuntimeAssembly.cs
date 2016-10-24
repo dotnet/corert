@@ -106,14 +106,12 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
         }
 
-        public sealed override AssemblyName GetName()
+        internal sealed override RuntimeAssemblyName RuntimeAssemblyName
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Assembly_GetName(this);
-#endif
-
-            return Scope.Handle.ToRuntimeAssemblyName(Scope.Reader).ToAssemblyName();
+            get
+            {
+                return Scope.Handle.ToRuntimeAssemblyName(Scope.Reader);
+            }
         }
 
         public sealed override bool Equals(Object obj)
