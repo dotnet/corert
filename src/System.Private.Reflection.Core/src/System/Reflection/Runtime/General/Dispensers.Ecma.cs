@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.PropertyInfos;
