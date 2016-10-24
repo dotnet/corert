@@ -5231,7 +5231,7 @@ void gc_heap::gc_thread_function ()
             gc_heap::ee_suspend_event.Wait(INFINITE, FALSE);
 
             BEGIN_TIMING(suspend_ee_during_log);
-            GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC);
+            GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
             END_TIMING(suspend_ee_during_log);
 
             proceed_with_gc_p = TRUE;
@@ -9972,8 +9972,8 @@ gc_heap::init_semi_shared()
         {
             goto cleanup;
         }
-#endif //BACKGROUND_GC
     }
+#endif //BACKGROUND_GC
 
     memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
 
@@ -26046,9 +26046,9 @@ gc_heap::suspend_EE ()
     dprintf (2, ("suspend_EE"));
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = gc_heap::g_heaps[0];
-    GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC_PREP);
+    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
 #else
-    GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC_PREP);
+    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
 #endif //MULTIPLE_HEAPS
 }
 
@@ -26062,7 +26062,7 @@ gc_heap::bgc_suspend_EE ()
     }
     gc_started = TRUE;
     dprintf (2, ("bgc_suspend_EE"));
-    GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC_PREP);
+    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
 
     gc_started = FALSE;
     for (int i = 0; i < n_heaps; i++)
@@ -26077,7 +26077,7 @@ gc_heap::bgc_suspend_EE ()
     reset_gc_done();
     gc_started = TRUE;
     dprintf (2, ("bgc_suspend_EE"));
-    GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC_PREP);
+    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
     gc_started = FALSE;
     set_gc_done();
 }
@@ -30484,14 +30484,11 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
 #endif //BACKGROUND_GC
 #endif // MARK_ARRAY
 
+    #if BIT64
+    size_t maxObjectSize = (INT64_MAX - 7 - Align(min_obj_size));
+    #else
     size_t maxObjectSize = (INT32_MAX - 7 - Align(min_obj_size));
-
-#ifdef BIT64
-    if (g_pConfig->GetGCAllowVeryLargeObjects())
-    {
-        maxObjectSize = (INT64_MAX - 7 - Align(min_obj_size));
-    }
-#endif
+    #endif
 
     if (jsize >= maxObjectSize)
     {
@@ -30499,12 +30496,7 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
         {
             GCToOSInterface::DebugBreak();
         }
-
-#ifndef FEATURE_REDHAWK
-        ThrowOutOfMemoryDimensionsExceeded();
-#else
-        return 0;
-#endif
+        return NULL;
     }
 
     size_t size = AlignQword (jsize);
@@ -34129,7 +34121,6 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
 #define REGISTER_FOR_FINALIZATION(_object, _size) true
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
-#ifdef FEATURE_REDHAWK
 #define CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(_object, _size, _register) do {  \
     if ((_object) == NULL || ((_register) && !REGISTER_FOR_FINALIZATION(_object, _size)))   \
     {                                                                                       \
@@ -34137,19 +34128,6 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
         return NULL;                                                                        \
     }                                                                                       \
 } while (false)
-#else // FEATURE_REDHAWK
-#define CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(_object, _size, _register) do {  \
-    if ((_object) == NULL)                                                                  \
-    {                                                                                       \
-        STRESS_LOG_OOM_STACK(_size);                                                        \
-        ThrowOutOfMemory();                                                                 \
-    }                                                                                       \
-    if (_register)                                                                          \
-    {                                                                                       \
-        REGISTER_FOR_FINALIZATION(_object, _size);                                          \
-    }                                                                                       \
-} while (false)
-#endif // FEATURE_REDHAWK
 
 //
 // Small Object Allocator
@@ -34159,22 +34137,9 @@ Object *
 GCHeap::Alloc( size_t size, uint32_t flags REQD_ALIGN_DCL)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -34255,12 +34220,7 @@ GCHeap::AllocAlign8( size_t size, uint32_t flags)
 {
 #ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
 
@@ -34294,12 +34254,7 @@ GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
 {
 #ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
 
@@ -34333,24 +34288,11 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 {
 #ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
 
     gc_heap* hp = (gc_heap*)_hp;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -34465,22 +34407,9 @@ Object *
 GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -34536,22 +34465,9 @@ Object*
 GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_DCL)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -35204,7 +35120,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 
         dprintf (2, ("Suspending EE"));
         BEGIN_TIMING(suspend_ee_during_log);
-        GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC);
+        GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
         END_TIMING(suspend_ee_during_log);
         gc_heap::proceed_with_gc_p = gc_heap::should_proceed_with_gc();
         gc_heap::disable_preemptive (current_thread, cooperative_mode);
@@ -36038,12 +35954,7 @@ bool
 CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk false is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
@@ -36081,11 +35992,7 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
             {
                 GCToOSInterface::DebugBreak();
             }
-#ifdef FEATURE_REDHAWK
             return false;
-#else
-            ThrowOutOfMemory();
-#endif
         }
     }
     Object*** end_si = &SegQueueLimit (dest);

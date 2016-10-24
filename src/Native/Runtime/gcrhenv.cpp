@@ -13,6 +13,12 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
+#ifdef FEATURE_STANDALONE_GC
+#include "gcenv.ee.h"
+#else
+#include "../gc/env/gcenv.ee.h"
+#endif // FEATURE_STANDALONE_GC
+
 #include "RestrictedCallouts.h"
 
 #include "gcrhinterface.h"
@@ -197,7 +203,15 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     InitializeHeapType(fUseServerGC);
 
     // Create the GC heap itself.
-    IGCHeap *pGCHeap = InitializeGarbageCollector(nullptr);
+#ifdef FEATURE_STANDALONE_GC
+    IGCToCLR* gcToClr = new (nothrow) GCToEEInterface();
+    if (!gcToClr)
+        return false;
+#else
+    IGCToCLR* gcToClr = nullptr;
+#endif // FEATURE_STANDALONE_GC
+
+    IGCHeap *pGCHeap = InitializeGarbageCollector(gcToClr);
     if (!pGCHeap)
         return false;
 
@@ -234,6 +248,16 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
 
     ASSERT(GCHeapUtilities::UseAllocationContexts());
     ASSERT(!pThread->IsDoNotTriggerGcSet());
+
+#if BIT64
+    if (!g_pConfig->GetGCAllowVeryLargeObjects())
+    {
+        // Restrict maximum object size on 64-bit to historic limit. Framework implementation
+        // and tests depend on it currently.
+        if (cbSize >= 0x7FFFFFE0)
+            return NULL;
+    }
+#endif
 
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pEEType);
@@ -941,7 +965,7 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
     tls_pLastAllocationEEType = pEEType;
 }
 
-void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
+void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
 #ifdef FEATURE_EVENT_TRACE
     ETW::GCLog::ETW_GC_INFO Info;

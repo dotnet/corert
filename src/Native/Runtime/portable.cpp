@@ -329,7 +329,7 @@ COOP_PINVOKE_HELPER(Int32, RhpLockCmpXchg32, (Int32 * location, Int32 value, Int
     return PalInterlockedCompareExchange(location, value, comparand);
 }
 
-COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int32 comparand))
+COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int64 comparand))
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     return PalInterlockedCompareExchange64(location, value, comparand);
@@ -342,17 +342,17 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
     PalMemoryBarrier();
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetThunksBase, ())
+COOP_PINVOKE_HELPER(void, RhpGetThunksBase, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetNumThunksPerMapping, ())
+COOP_PINVOKE_HELPER(void, RhpGetNumThunksPerBlock, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetThunkSize, ())
+COOP_PINVOKE_HELPER(void, RhpGetThunkSize, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }

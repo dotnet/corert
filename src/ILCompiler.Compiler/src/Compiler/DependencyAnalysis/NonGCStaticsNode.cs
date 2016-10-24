@@ -53,6 +53,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public MetadataType Type
+        {
+            get
+            {
+                return _type;
+            }
+        }
+
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
         {
             return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);

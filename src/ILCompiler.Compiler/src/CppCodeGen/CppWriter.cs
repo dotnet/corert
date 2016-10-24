@@ -21,7 +21,7 @@ namespace ILCompiler.CppCodeGen
 {
     internal class CppWriter
     {
-        private Compilation _compilation;
+        private CppCodegenCompilation _compilation;
 
         private void SetWellKnownTypeSignatureName(WellKnownType wellKnownType, string mangledSignatureName)
         {
@@ -31,11 +31,11 @@ namespace ILCompiler.CppCodeGen
             _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
-        public CppWriter(Compilation compilation)
+        public CppWriter(CppCodegenCompilation compilation, string outputFilePath)
         {
             _compilation = compilation;
 
-            _out = new StreamWriter(new FileStream(compilation.Options.OutputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, false));
+            _out = new StreamWriter(new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, false));
 
 
             // Unify this list with the one in CppCodegenNodeFactory
@@ -363,7 +363,7 @@ namespace ILCompiler.CppCodeGen
         {
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
-            _compilation.Log.WriteLine("Compiling " + method.ToString());
+            _compilation.Logger.Writer.WriteLine("Compiling " + method.ToString());
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
@@ -406,7 +406,7 @@ namespace ILCompiler.CppCodeGen
 
                 MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
 
-                if (!_compilation.Options.NoLineNumbers)
+                if (!_compilation.Options.HasOption(CppCodegenConfigProvider.NoLineNumbersString))
                 {
                     IEnumerable<ILSequencePoint> sequencePoints = debugInfo.GetSequencePoints();
                     if (sequencePoints != null)
@@ -425,7 +425,7 @@ namespace ILCompiler.CppCodeGen
             }
             catch (Exception e)
             {
-                _compilation.Log.WriteLine(e.Message + " (" + method + ")");
+                _compilation.Logger.Writer.WriteLine(e.Message + " (" + method + ")");
 
                 var sb = new CppGenerationBuffer();
                 sb.AppendLine();

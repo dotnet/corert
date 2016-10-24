@@ -669,6 +669,9 @@
   <data name="ArgumentOutOfRange_BadHourMinuteSecond" xml:space="preserve">
     <value>Hour, Minute, and Second parameters describe an un-representable DateTime.</value>
   </data>
+  <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
+    <value>Must be less than or equal to the size of the collection.</value>
+  </data>  
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
   </data>

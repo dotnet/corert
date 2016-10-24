@@ -85,31 +85,21 @@ namespace ILCompiler.DependencyAnalysis
                 if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
                     continue;
 
-                // We are looking for any EEType - constructed or not, it has to be in the mapping
-                // table so that we can map it to metadata.
-                EETypeNode node = null;
+                // Types that don't have EETypes don't need mapping table entries because there's no risk of them
+                // not unifying to the same System.Type at runtime.
+                if (!factory.MetadataManager.TypeGeneratesEEType(mappingEntry.Entity))
+                    continue;
                 
-                if (!mappingEntry.Entity.IsGenericDefinition)
-                {
-                    node = factory.ConstructedTypeSymbol(mappingEntry.Entity) as EETypeNode;
-                }
-                
-                if (node == null || !node.Marked)
-                {
-                    // This might have been a typeof() expression.
-                    node = factory.NecessaryTypeSymbol(mappingEntry.Entity) as EETypeNode;
-                }
+                // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
+                IEETypeNode typeSymbol = factory.NecessaryTypeSymbol(mappingEntry.Entity);
 
-                if (node.Marked)
-                {
-                    Vertex vertex = writer.GetTuple(
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(node)),
-                        writer.GetUnsignedConstant((uint)mappingEntry.MetadataHandle)
-                        );
+                Vertex vertex = writer.GetTuple(
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(typeSymbol)),
+                    writer.GetUnsignedConstant((uint)mappingEntry.MetadataHandle)
+                    );
 
-                    int hashCode = node.Type.GetHashCode();
-                    typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
-                }
+                int hashCode = typeSymbol.Type.GetHashCode();
+                typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
             MemoryStream ms = new MemoryStream();

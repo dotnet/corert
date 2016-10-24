@@ -260,7 +260,54 @@ namespace Internal.Runtime.TypeLoader
 
         public unsafe static IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
-            throw new NotImplementedException();
+            if (RuntimeAugments.HasCctor(typeHandle))
+            {
+                if (RuntimeAugments.IsDynamicType(typeHandle))
+                {
+                    // For dynamic types, its always possible to get the non-gc static data section directly.
+                    byte* ptr = (byte*)*(IntPtr*)RuntimeAugments.GetNonGcStaticFieldData(typeHandle);
+
+                    // what we have now is the base address of the non-gc statics of the type
+                    // what we need is the cctor context, which is just before that
+                    ptr = ptr - sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+
+                    return (IntPtr)ptr;
+                }
+                else
+                {
+                    // Non-dynamic types do not provide a way to directly get at the non-gc static region. 
+                    // Use the CctorContextMap instead.
+
+                    var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(typeHandle);
+                    Debug.Assert(moduleHandle != IntPtr.Zero);
+
+                    NativeReader typeMapReader;
+                    if (TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.CCtorContextMap, out typeMapReader))
+                    {
+                        NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                        NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
+
+                        ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                        externalReferences.InitializeCommonFixupsTable(moduleHandle);
+
+                        var lookup = typeHashtable.Lookup(typeHandle.GetHashCode());
+                        NativeParser entryParser;
+                        while (!(entryParser = lookup.GetNext()).IsNull)
+                        {
+                            RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                            if (foundType.Equals(typeHandle))
+                            {
+                                byte* pNonGcStaticBase = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+
+                                // cctor context is located before the non-GC static base
+                                return (IntPtr)(pNonGcStaticBase - sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext));
+                            }
+                        }
+                    }
+                }
+            }
+
+            return IntPtr.Zero;
         }
 
         public bool TryGetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)

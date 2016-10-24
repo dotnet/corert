@@ -498,13 +498,13 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public sealed override TypeDesc GetGlobalModuleType()
+        public sealed override MetadataType GetGlobalModuleType()
         {
             int typeDefinitionsCount = _metadataReader.TypeDefinitions.Count;
             if (typeDefinitionsCount == 0)
                 return null;
 
-            return GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
+            return (MetadataType)GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
         }
 
         protected static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)

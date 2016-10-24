@@ -10,6 +10,8 @@ namespace System.Runtime
         private static object s_castFailCanary = new object();
         private static CastableObjectCacheEntry<IntPtr>[] s_ThunkBasedDispatchCellTargets = new CastableObjectCacheEntry<IntPtr>[16];
 
+        private static ThunksHeap s_thunksHeap;
+
         internal interface ICastableObject
         // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
             : ICastable
@@ -290,25 +292,20 @@ namespace System.Runtime
                 if (pTargetCode != default(IntPtr))
                     return pTargetCode;
 
-
                 // Allocate a new thunk. Failure to allocate one will result in a fail-fast. We don't return nulls from this API.
 
-                // TODO: The allocation of thunks here looks like a layering duck tape. The allocation of the raw 
-                // thunks should be a core runtime service (ie it should live in MRT).
-                // Delete the callback logic once this moves to MRT.
+                if (s_thunksHeap == null)
+                {
+                    s_thunksHeap = ThunksHeap.CreateThunksHeap(InternalCalls.RhpGetCastableObjectDispatch_CommonStub());
+                    if (s_thunksHeap == null)
+                        EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+                }
 
-                IntPtr pAllocateThunkFunction = (IntPtr)InternalCalls.RhpGetClasslibFunction(
-                    pInstanceType->GetAssociatedModuleAddress(),
-                    EH.ClassLibFunctionId.AllocateThunkWithData);
-
-                pTargetCode = CalliIntrinsics.Call<IntPtr>(
-                    pAllocateThunkFunction,
-                    InternalCalls.RhpGetCastableObjectDispatch_CommonStub(),
-                    pDispatchCell,
-                    InternalCalls.RhpGetCastableObjectDispatchHelper_TailCalled());
-
+                pTargetCode = s_thunksHeap.AllocateThunk();
                 if (pTargetCode == IntPtr.Zero)
                     EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+
+                s_thunksHeap.SetThunkData(pTargetCode, pDispatchCell, InternalCalls.RhpGetCastableObjectDispatchHelper_TailCalled());
 
                 AddToThunkCache(pDispatchCell, pTargetCode);
             }

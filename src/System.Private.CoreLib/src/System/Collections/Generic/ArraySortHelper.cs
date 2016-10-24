@@ -50,7 +50,7 @@ namespace System.Collections.Generic
             {
                 if (comparer == null)
                 {
-                    comparer = LowLevelComparer<T>.Default;
+                    comparer = Comparer<T>.Default;
                 }
 
                 IntrospectiveSort(keys, index, length, comparer);
@@ -71,7 +71,7 @@ namespace System.Collections.Generic
             {
                 if (comparer == null)
                 {
-                    comparer = LowLevelComparer<T>.Default;
+                    comparer = Comparer<T>.Default;
                 }
 
                 return InternalBinarySearch(array, index, length, value, comparer);
@@ -339,9 +339,9 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null || comparer == LowLevelComparer<TKey>.Default)
+                if (comparer == null || comparer == Comparer<TKey>.Default)
                 {
-                    comparer = LowLevelComparer<TKey>.Default;
+                    comparer = Comparer<TKey>.Default;
                 }
 
                 IntrospectiveSort(keys, values, index, length, comparer);

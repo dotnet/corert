@@ -72,7 +72,8 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var entry in layout.Entries)
             {
                 ISymbolNode targetNode = entry.GetTarget(factory, typeInst, methodInst);
-                builder.EmitPointerReloc(targetNode);
+                int targetDelta = entry.TargetDelta;
+                builder.EmitPointerReloc(targetNode, targetDelta);
             }
         }
 

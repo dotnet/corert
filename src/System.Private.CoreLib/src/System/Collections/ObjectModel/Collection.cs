@@ -22,9 +22,9 @@ namespace System.Collections.ObjectModel
 
         public Collection()
         {
-            // Legacy compat: We must implement our backing list using List<T>() as we have store apps that call Collection<T>.Items and cast
+            // We must implement our backing list using List<T>() as we have store apps that call Collection<T>.Items and cast
             // the result to List<T>.
-            _items = WinRTInterop.Callbacks.CreateSystemCollectionsGenericList<T>();
+            _items = new List<T>();
         }
 
         public Collection(IList<T> list)

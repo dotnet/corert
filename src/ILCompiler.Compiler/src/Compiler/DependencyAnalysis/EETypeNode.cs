@@ -145,6 +145,21 @@ namespace ILCompiler.DependencyAnalysis
             return "__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type);
         }
 
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            {
+                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
+                // We need to make sure this is possible.
+                return new DependencyList
+                {
+                    new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor")
+                };
+            }
+
+            return null;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);

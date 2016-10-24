@@ -100,4 +100,9 @@ extern "C"
     {
         throw "GetTimeZoneInformationForYear";
     }
+
+    void GetCPInfo()
+    {
+        throw "GetCPInfo";
+    }
 }
