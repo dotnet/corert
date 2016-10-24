@@ -199,6 +199,10 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+#if ENABLE_REFLECTION_TRACE
+        internal abstract string TraceableTypeName { get; }
+#endif
+
         private readonly RuntimeTypeHandle _typeHandle;
 
         private static readonly NamedTypeToGuidTable s_namedTypeToGuidTable = new NamedTypeToGuidTable();

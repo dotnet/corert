@@ -302,6 +302,35 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return base.Equals(otherAsObject);
         }
 
+#if ENABLE_REFLECTION_TRACE
+        internal sealed override string TraceableTypeName
+        {
+            get
+            {
+                MetadataReader reader = Reader;
+
+                String s = "";
+                TypeDefinitionHandle typeDefinitionHandle = TypeDefinitionHandle;
+                do
+                {
+                    TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
+                    String name = typeDefinition.Name.GetString(reader);
+                    if (s == "")
+                        s = name;
+                    else
+                        s = name + "+" + s;
+                    typeDefinitionHandle = typeDefinition.EnclosingType;
+                }
+                while (!typeDefinitionHandle.IsNull(reader));
+
+                String ns = NamespaceChain.NameSpace;
+                if (ns != null)
+                    s = ns + "." + s;
+                return s;
+            }
+        }
+#endif
+
         private readonly MetadataReader _reader;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly TypeDefinition _typeDefinition;
