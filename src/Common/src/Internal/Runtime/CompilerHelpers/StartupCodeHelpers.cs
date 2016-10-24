@@ -79,14 +79,6 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr* section = (IntPtr*)GetModuleSection(moduleManager, ReadyToRunSectionType.ModuleManagerIndirection, out length);
             *section = moduleManager;
 
-            // Initialize strings if any are present
-            IntPtr stringSection = GetModuleSection(moduleManager, ReadyToRunSectionType.StringTable, out length);
-            if (stringSection != IntPtr.Zero)
-            {
-                Debug.Assert(length % IntPtr.Size == 0);
-                InitializeStringTable(stringSection, length);
-            }
-
             // Initialize statics if any are present
             IntPtr staticsSection = GetModuleSection(moduleManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
@@ -95,8 +87,6 @@ namespace Internal.Runtime.CompilerHelpers
                 InitializeStatics(staticsSection, length);
             }
         }
-
-        static unsafe partial void InitializeStringTable(IntPtr stringTableStart, int length);
 
         private static unsafe void InitializeEagerClassConstructorsForModule(IntPtr moduleManager)
         {
