@@ -77,6 +77,7 @@
     <Compile Include="Compiler\CppCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClonedConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
@@ -102,6 +103,7 @@
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
@@ -144,7 +146,6 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
-    <Compile Include="Compiler\GenericLookupDescriptor.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />

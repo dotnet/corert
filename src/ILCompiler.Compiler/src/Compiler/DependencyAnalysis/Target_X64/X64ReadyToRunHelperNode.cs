@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
+
 using ILCompiler.DependencyAnalysis.X64;
 using Internal.TypeSystem;
-using ILCompiler;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -183,59 +182,6 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);
                             encoder.EmitRET();
                         }
-                    }
-                    break;
-
-                case ReadyToRunHelperId.GenericLookupFromThis:
-                    {
-                        int pointerSize = factory.Target.PointerSize;
-
-                        var lookupInfo = (GenericLookupDescriptor)Target;
-
-                        // Arg0 points to the EEType
-
-                        // Locate the VTable slot that points to the dictionary
-                        int vtableSlot = 0;
-                        if (!relocsOnly)
-                            vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(factory, (TypeDesc)lookupInfo.CanonicalOwner);
-
-                        int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
-
-                        // Load the dictionary pointer from the VTable
-                        AddrMode loadDictionary = new AddrMode(encoder.TargetRegister.Arg0, null, slotOffset, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadDictionary);
-
-                        // What's left now is the actual dictionary lookup
-                        goto case ReadyToRunHelperId.GenericLookupFromDictionary;
-                    }
-
-                 case ReadyToRunHelperId.GenericLookupFromDictionary:
-                    {
-                        var lookupInfo = (GenericLookupDescriptor)Target;
-
-                        GenericLookupResult lookupResult = lookupInfo.Signature;
-
-                        // Find the generic dictionary slot
-                        int dictionarySlot = 0;
-                        if (!relocsOnly)
-                        {
-                            // The concrete slot won't be known until we're emitting data.
-                            dictionarySlot = factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).GetSlotForEntry(lookupResult);
-                        }
-
-                        // Load the generic dictionary cell
-                        AddrMode loadEntry = new AddrMode(
-                            encoder.TargetRegister.Arg0, null, dictionarySlot * factory.Target.PointerSize, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadEntry);
-
-                        // If the dictionary entry is an indirection, we need to follow the indirection
-                        for (int i = 0; i < lookupResult.NumberOfIndirections; i++)
-                        {
-                            AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
-                        }
-
-                        encoder.EmitRET();
                     }
                     break;
 

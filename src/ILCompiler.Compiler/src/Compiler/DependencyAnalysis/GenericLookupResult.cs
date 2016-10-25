@@ -28,11 +28,6 @@ namespace ILCompiler.DependencyAnalysis
         /// <see cref="GetTarget(NodeFactory, Instantiation, Instantiation)"/> to get the actual target.
         /// </summary>
         public virtual int TargetDelta => 0;
-
-        /// <summary>
-        /// Number of indirections to follow to get to the logical target of the lookup.
-        /// </summary>
-        public virtual int NumberOfIndirections => 0;
     }
 
     /// <summary>
@@ -153,18 +148,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MetadataType _type;
 
-        public override int TargetDelta
-        {
-            get
-            {
-                // The NonGCStatics symbol might be pointing to the class constructor context.
-                if (((CompilerTypeSystemContext)_type.Context).HasLazyStaticConstructor(_type))
-                    return NonGCStaticsNode.GetClassConstructorContextStorageSize(_type.Context.Target, _type);
-                else
-                    return 0;
-            }
-        }
-
         public TypeNonGCStaticBaseGenericLookupResult(TypeDesc type)
         {
             Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete static base in a generic dictionary?");
@@ -192,11 +175,6 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class TypeGCStaticBaseGenericLookupResult : GenericLookupResult
     {
         private MetadataType _type;
-
-        // We need to indirect twice:
-        // 1. The dictionary points to a cell that is fixed up to point to the handle table.
-        // 2. From the handle table we get to the GC heap allocated object.
-        public override int NumberOfIndirections => 2;
 
         public TypeGCStaticBaseGenericLookupResult(TypeDesc type)
         {

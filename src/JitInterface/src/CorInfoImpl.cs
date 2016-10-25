@@ -1200,29 +1200,20 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private GenericLookupResult GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
+        private object GetTargetForFixup(object resolvedToken, ReadyToRunHelperId helperId)
         {
-            switch (fixupKind)
+            switch (helperId)
             {
-                case ReadyToRunFixupKind.TypeHandle:
+                case ReadyToRunHelperId.TypeHandle:
                     if (resolvedToken is TypeDesc)
-                        return _compilation.NodeFactory.GenericLookup.Type((TypeDesc)resolvedToken);
+                        return resolvedToken;
                     else if (resolvedToken is MethodDesc)
-                        return _compilation.NodeFactory.GenericLookup.Type(((MethodDesc)resolvedToken).OwningType);
+                        return ((MethodDesc)resolvedToken).OwningType;
                     else
-                        return _compilation.NodeFactory.GenericLookup.Type(((FieldDesc)resolvedToken).OwningType);
-
-                case ReadyToRunFixupKind.MethodHandle:
-                    return _compilation.NodeFactory.GenericLookup.MethodDictionary((MethodDesc)resolvedToken);
-
-                case ReadyToRunFixupKind.MethodEntry:
-                    return _compilation.NodeFactory.GenericLookup.MethodEntry((MethodDesc)resolvedToken);
-
-                case ReadyToRunFixupKind.VirtualEntry:
-                    return _compilation.NodeFactory.GenericLookup.VirtualCall((MethodDesc)resolvedToken);
+                        return ((FieldDesc)resolvedToken).OwningType;
 
                 default:
-                    throw new NotImplementedException();
+                    return resolvedToken;
             }
         }
 
@@ -1283,32 +1274,25 @@ namespace Internal.JitInterface
                     {
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
-                        ReadyToRunFixupKind fixupKind = (ReadyToRunFixupKind)pGenericLookupKind.runtimeLookupFlags;
-                        object fixupTarget = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        GenericLookupResult target = GetTargetForFixup(fixupTarget, fixupKind);
+                        ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
+                        object fixupTarget = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
 
-                        ReadyToRunHelperId helper;
-                        TypeSystemEntity dictionaryOwner;
-
+                        ISymbolNode helper;
                         if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
                         {
-                            helper = ReadyToRunHelperId.GenericLookupFromThis;
-                            dictionaryOwner = MethodBeingCompiled.OwningType;
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(helperId, fixupTarget, MethodBeingCompiled.OwningType);
                         }
                         else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
                         {
-                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                            dictionaryOwner = MethodBeingCompiled.OwningType;
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, fixupTarget, MethodBeingCompiled.OwningType);
                         }
                         else
                         {
                             Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                            dictionaryOwner = MethodBeingCompiled;
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, fixupTarget, MethodBeingCompiled);
                         }
 
-                        GenericLookupDescriptor lookup = new GenericLookupDescriptor(dictionaryOwner, target);
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helper, lookup));
+                        pLookup.addr = (void*)ObjectToHandle(helper);
                     }
                     break;
                 default:
@@ -1591,52 +1575,43 @@ namespace Internal.JitInterface
                     {
                         FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
+                        ReadyToRunHelperId helperId;
+
                         // Find out what kind of base do we need to look up.
-                        GenericLookupResult lookupResult;
                         if (field.IsThreadStatic)
                         {
                             throw new NotImplementedException();
                         }
                         else if (field.HasGCStaticBase)
                         {
-                            lookupResult = _compilation.NodeFactory.GenericLookup.TypeGCStaticBase(runtimeDeterminedField.OwningType);
+                            helperId = ReadyToRunHelperId.GetGCStaticBase;
                         }
                         else
                         {
-                            lookupResult = _compilation.NodeFactory.GenericLookup.TypeNonGCStaticBase(runtimeDeterminedField.OwningType);
+                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                         }
 
                         // What generic context do we look up the base from.
-                        ReadyToRunHelperId helper;
-                        TypeSystemEntity dictionaryOwner;
-
+                        ISymbolNode helper;
                         if (contextMethod.AcquiresInstMethodTableFromThis())
                         {
-                            helper = ReadyToRunHelperId.GenericLookupFromThis;
-                            dictionaryOwner = contextMethod.OwningType;
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(
+                                helperId, runtimeDeterminedField.OwningType, contextMethod.OwningType);
                         }
                         else if (contextMethod.RequiresInstMethodTableArg())
                         {
-                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                            dictionaryOwner = contextMethod.OwningType;
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
+                                helperId, runtimeDeterminedField.OwningType, contextMethod.OwningType);
                         }
                         else
                         {
                             Debug.Assert(contextMethod.RequiresInstMethodDescArg());
-                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                            dictionaryOwner = contextMethod;
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
+                                helperId, runtimeDeterminedField.OwningType, contextMethod);
                         }
 
-                        GenericLookupDescriptor lookupDescriptor = new GenericLookupDescriptor(dictionaryOwner, lookupResult);
-
-                        pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helper, lookupDescriptor));
+                        pResult.fieldLookup.addr = (void*)ObjectToHandle(helper);
                         pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
-
-                        // We are not going through a helper. The constructor has to be triggered explicitly.
-                        if (_compilation.HasLazyStaticConstructor(field.OwningType))
-                        {
-                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
-                        }
                     }
                 }
                 else
@@ -2249,7 +2224,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.MethodHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
                 }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
@@ -2269,7 +2244,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.FieldHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
                 }
             }
             else
@@ -2290,7 +2265,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.TypeHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
                 }
             }
 
@@ -2525,7 +2500,7 @@ namespace Internal.JitInterface
                     }
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.MethodEntry;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
                 }
                 else
                 {
@@ -2643,7 +2618,7 @@ namespace Internal.JitInterface
                     }
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.VirtualEntry;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualCall;
                 }
                 else
                 {
