@@ -134,7 +134,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        internal protected override QTypeDefRefOrSpec PropertyTypeHandle
+        protected override QTypeDefRefOrSpec PropertyTypeHandle
         {
             get
             {
@@ -142,7 +142,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        internal protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)
+        protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)
         {
             NativeFormatMethodSemanticsAttributes localMethodSemantics;
             switch (whichMethod)
@@ -182,7 +182,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             return null;
         }
 
-        internal protected sealed override string MetadataName
+        protected sealed override string MetadataName
         {
             get
             {
@@ -190,7 +190,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        internal sealed protected override RuntimeTypeInfo DefiningTypeInfo
+        sealed protected override RuntimeTypeInfo DefiningTypeInfo
         {
             get
             {

@@ -54,7 +54,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             _event = eventHandle.GetEvent(_reader);
         }
 
-        protected internal override MethodInfo GetEventMethod(EventMethodSemantics whichMethod)
+        protected override MethodInfo GetEventMethod(EventMethodSemantics whichMethod)
         {
             NativeFormatMethodSemanticsAttributes localMethodSemantics;
             switch (whichMethod)
@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             }
         }
 
-        internal protected sealed override string MetadataName
+        protected sealed override string MetadataName
         {
             get
             {
@@ -156,7 +156,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             }
         }
 
-        internal sealed protected override RuntimeTypeInfo DefiningTypeInfo
+        sealed protected override RuntimeTypeInfo DefiningTypeInfo
         {
             get
             {

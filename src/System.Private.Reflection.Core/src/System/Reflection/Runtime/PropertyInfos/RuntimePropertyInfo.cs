@@ -48,7 +48,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        internal protected RuntimePropertyInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        protected RuntimePropertyInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
             _contextTypeInfo = contextTypeInfo;
             _reflectedType = reflectedType;
@@ -334,9 +334,9 @@ namespace System.Reflection.Runtime.PropertyInfos
             return this;
         }
 
-        internal protected abstract QTypeDefRefOrSpec PropertyTypeHandle { get; }
+        protected abstract QTypeDefRefOrSpec PropertyTypeHandle { get; }
 
-        internal protected enum PropertyMethodSemantics
+        protected enum PropertyMethodSemantics
         {
             Getter,
             Setter,
@@ -346,10 +346,10 @@ namespace System.Reflection.Runtime.PropertyInfos
         /// Override to return the Method that corresponds to the specified semantic.
         /// Return null if a method of the appropriate semantic does not exist
         /// </summary>
-        internal protected abstract RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod);
+        protected abstract RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod);
 
-        internal protected abstract string MetadataName { get; }
-        internal protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
+        protected abstract string MetadataName { get; }
+        protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
 
         protected readonly RuntimeTypeInfo _contextTypeInfo;
         protected readonly RuntimeTypeInfo _reflectedType;

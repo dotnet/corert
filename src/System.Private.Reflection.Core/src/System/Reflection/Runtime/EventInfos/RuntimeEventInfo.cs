@@ -171,7 +171,7 @@ namespace System.Reflection.Runtime.EventInfos
             return this;
         }
 
-        internal protected enum EventMethodSemantics
+        protected enum EventMethodSemantics
         {
             Add,
             Remove,
@@ -182,10 +182,10 @@ namespace System.Reflection.Runtime.EventInfos
         /// Override to return the Method that corresponds to the specified semantic.
         /// Return null if no method is to be found.
         /// </summary>
-        internal protected abstract MethodInfo GetEventMethod(EventMethodSemantics whichMethod);
+        protected abstract MethodInfo GetEventMethod(EventMethodSemantics whichMethod);
 
-        internal protected abstract string MetadataName { get; }
-        internal protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
+        protected abstract string MetadataName { get; }
+        protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
 
         protected readonly RuntimeTypeInfo _contextTypeInfo;
         protected readonly RuntimeTypeInfo _reflectedType;
