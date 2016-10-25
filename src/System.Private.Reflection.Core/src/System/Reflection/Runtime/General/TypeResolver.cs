@@ -34,7 +34,7 @@ namespace System.Reflection.Runtime.General
 
         internal static RuntimeTypeInfo TryResolve(this QTypeDefRefOrSpec typeDefOrRefOrSpec, TypeContext typeContext, ref Exception exception)
         {
-            if (typeDefOrRefOrSpec.Reader is global::Internal.Metadata.NativeFormat.MetadataReader)
+            if (typeDefOrRefOrSpec.IsNativeFormatMetadataBased)
             {
                 return global::Internal.Metadata.NativeFormat.Handle.FromIntToken(typeDefOrRefOrSpec.Handle).TryResolve((global::Internal.Metadata.NativeFormat.MetadataReader)typeDefOrRefOrSpec.Reader, typeContext, ref exception);
             }

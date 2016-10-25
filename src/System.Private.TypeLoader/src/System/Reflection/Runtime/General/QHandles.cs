@@ -153,6 +153,14 @@ namespace System.Reflection.Runtime.General
 
         public bool IsNull { get { return _reader == null; } }
 
+        public bool IsNativeFormatMetadataBased
+        {
+            get
+            {
+                return Reader is global::Internal.Metadata.NativeFormat.MetadataReader;
+            }
+        }
+
         public static readonly QTypeDefRefOrSpec Null = default(QTypeDefRefOrSpec);
 
         private readonly object _reader;
