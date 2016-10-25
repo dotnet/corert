@@ -101,7 +101,7 @@ namespace Internal.Runtime.CompilerHelpers
             if (!RuntimeImports.RhpRegisterFrozenSegment(segmentStart, length))
             {
                 // This should only happen if we ran out of memory.
-                Environment.FailFast("Failed to register frozen object segment.");
+                RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment.");
             }
         }
 
