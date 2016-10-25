@@ -37,7 +37,7 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.Ecma.cs" />
-    <Compile Include="System\Reflection\Runtime\General\EcmaMetadataReaderExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.Ecma.cs" />
   </ItemGroup>
   <ItemGroup>
