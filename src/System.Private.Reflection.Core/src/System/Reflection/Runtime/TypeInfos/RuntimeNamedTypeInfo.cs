@@ -50,6 +50,10 @@ namespace System.Reflection.Runtime.TypeInfos
             return base.Equals(otherAsObject);
         }
 
+        /// <summary>
+        /// Override this function to read the Guid attribute from a type's metadata. If the attribute
+        /// is not present, or isn't parseable, return null. Should be overriden by metadata specific logic
+        /// </summary>
         protected abstract Guid? ComputeGuidFromCustomAttributes();
 
         public sealed override Guid GUID

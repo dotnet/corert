@@ -65,7 +65,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected override Guid? ComputeGuidFromCustomAttributes()
+        protected sealed override Guid? ComputeGuidFromCustomAttributes()
         {
             //
             // Look for a [Guid] attribute. If found, return that.
