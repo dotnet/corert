@@ -49,7 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     continue;
 
                 if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
-                    yield return RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, this, contextTypeInfo), reflectedType);
+                    yield return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, this, contextTypeInfo), reflectedType);
             }
         }
 

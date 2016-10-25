@@ -175,7 +175,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
                             continue;
                     }
 
-                    return RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
+                    return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                 }
             }
             

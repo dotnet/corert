@@ -80,7 +80,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
                 MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                 if (methodSemantics.Attributes == localMethodSemantics)
                 {
-                    return RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo), _reflectedType);
+                    return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo), _reflectedType);
                 }
             }
 

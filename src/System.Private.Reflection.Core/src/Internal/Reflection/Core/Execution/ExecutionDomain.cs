@@ -129,7 +129,7 @@ namespace Internal.Reflection.Core.Execution
             {
                 // RuntimeMethodHandles always yield methods whose ReflectedType is the DeclaringType.
                 RuntimeTypeInfo reflectedType = contextTypeInfo;
-                RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon> runtimeNamedMethodInfo = RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo), reflectedType);
+                RuntimeNamedMethodInfo<NativeFormatMethodCommon> runtimeNamedMethodInfo = RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo), reflectedType);
                 if (!runtimeNamedMethodInfo.IsGenericMethod)
                 {
                     return runtimeNamedMethodInfo;

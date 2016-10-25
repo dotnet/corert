@@ -69,7 +69,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         TRuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod { get; }
 
-        RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon> owningMethod);
+        RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<TRuntimeMethodCommon> owningMethod);
     }
 
     internal static class RuntimeMethodHelpers

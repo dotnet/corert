@@ -132,11 +132,11 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     // MethodInfos for method definitions (i.e. Foo.Moo() or Foo.Moo<>() but not Foo.Moo<int>)
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon>
+    internal sealed partial class RuntimeNamedMethodInfo<TRuntimeMethodCommon>
     {
-        internal static RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon> GetRuntimeNamedMethodInfo(TRuntimeMethodCommon common, RuntimeTypeInfo reflectedType)
+        internal static RuntimeNamedMethodInfo<TRuntimeMethodCommon> GetRuntimeNamedMethodInfo(TRuntimeMethodCommon common, RuntimeTypeInfo reflectedType)
         {
-            RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon> method = new RuntimeNamedMethodInfoWithMetadata<TRuntimeMethodCommon>(common, reflectedType);
+            RuntimeNamedMethodInfo<TRuntimeMethodCommon> method = new RuntimeNamedMethodInfo<TRuntimeMethodCommon>(common, reflectedType);
             method.WithDebugName();
             return method;
         }

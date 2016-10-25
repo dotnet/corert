@@ -84,7 +84,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             }
         }
 
-        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfoWithMetadata<NativeFormatMethodCommon> owningMethod)
+        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<NativeFormatMethodCommon> owningMethod)
         {
             Method method = MethodHandle.GetMethod(Reader);
             int genericParametersCount = method.GenericParameters.Count;
