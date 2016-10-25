@@ -23,14 +23,12 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectAndOffsetSymbolNode _startSymbol;
         private ObjectAndOffsetSymbolNode _endSymbol;
         private IComparer<TEmbedded> _sorter;
-        private EmbeddedObjectNode _endOfArraySentinel;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter, EmbeddedObjectNode endOfArraySentinel)
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter)
         {
             _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName);
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName);
             _sorter = nodeSorter;
-            _endOfArraySentinel = endOfArraySentinel;
         }
 
         internal ObjectAndOffsetSymbolNode StartSymbol
@@ -84,17 +82,26 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        IEnumerable<EmbeddedObjectNode> NodesList
+        protected IEnumerable<TEmbedded> NodesList
         {
             get
             {
-                foreach (var node in _nestedNodesList)
-                {
-                    yield return node;
-                }
+                return _nestedNodesList;
+            }
+        }
 
-                if (_endOfArraySentinel != null)
-                    yield return _endOfArraySentinel;
+        protected virtual void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
+        {
+            foreach (TEmbedded node in NodesList)
+            {
+                if (!relocsOnly)
+                    node.Offset = builder.CountBytes;
+
+                node.EncodeData(ref builder, factory, relocsOnly);
+                if (node is ISymbolNode)
+                {
+                    builder.DefinedSymbols.Add((ISymbolNode)node);
+                }
             }
         }
 
@@ -107,17 +114,9 @@ namespace ILCompiler.DependencyAnalysis
                 _nestedNodesList.Sort(_sorter);
 
             builder.DefinedSymbols.Add(_startSymbol);
-            foreach (EmbeddedObjectNode node in NodesList)
-            {
-                if (!relocsOnly)
-                    node.Offset = builder.CountBytes;
 
-                node.EncodeData(ref builder, factory, relocsOnly);
-                if (node is ISymbolNode)
-                {
-                    builder.DefinedSymbols.Add((ISymbolNode)node);
-                }
-            }
+            GetElementDataForNodes(ref builder, factory, relocsOnly);
+
             _endSymbol.SetSymbolOffset(builder.CountBytes);
             builder.DefinedSymbols.Add(_endSymbol);
 
@@ -136,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis
     public class ArrayOfEmbeddedDataNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
     {
         public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
-            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter, null)
+            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
         {
         }
     }
