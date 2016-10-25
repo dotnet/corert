@@ -331,6 +331,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         }
 #endif
 
+        internal sealed override QTypeDefRefOrSpec TypeDefinitionQHandle
+        {
+            get
+            {
+                return new QTypeDefRefOrSpec(_reader, _typeDefinitionHandle, true);
+            }
+        }
+
         private readonly MetadataReader _reader;
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly TypeDefinition _typeDefinition;

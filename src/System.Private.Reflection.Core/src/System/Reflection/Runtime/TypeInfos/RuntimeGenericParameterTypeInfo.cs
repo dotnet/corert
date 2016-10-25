@@ -149,8 +149,8 @@ namespace System.Reflection.Runtime.TypeInfos
                     return constraints[i];
                 }
 
-                NativeFormat.NativeFormatRuntimeNamedTypeInfo objectTypeInfo = CommonRuntimeTypes.Object.CastToNativeFormatRuntimeNamedTypeInfo();
-                return new QTypeDefRefOrSpec(objectTypeInfo.Reader, objectTypeInfo.TypeDefinitionHandle);
+                RuntimeNamedTypeInfo objectTypeInfo = CommonRuntimeTypes.Object.CastToRuntimeNamedTypeInfo();
+                return objectTypeInfo.TypeDefinitionQHandle;
             }
         }
 

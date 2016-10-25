@@ -207,6 +207,12 @@ namespace System.Reflection.Runtime.TypeInfos
         internal abstract string TraceableTypeName { get; }
 #endif
 
+        /// <summary>
+        /// QTypeDefRefOrSpec handle that can be used to re-acquire this type. Must be implemented
+        /// for all metadata sourced type implementations.
+        /// </summary>
+        internal abstract QTypeDefRefOrSpec TypeDefinitionQHandle { get; }
+
         private readonly RuntimeTypeHandle _typeHandle;
 
         private static readonly NamedTypeToGuidTable s_namedTypeToGuidTable = new NamedTypeToGuidTable();
