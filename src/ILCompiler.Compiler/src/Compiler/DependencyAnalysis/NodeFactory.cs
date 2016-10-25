@@ -654,8 +654,7 @@ namespace ILCompiler.DependencyAnalysis
         public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfEmbeddedDataNode<FrozenStringNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
-            null,
-            new FrozenObjectSentinelNode());
+            null);
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
