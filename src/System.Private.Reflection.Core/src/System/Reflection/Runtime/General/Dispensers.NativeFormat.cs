@@ -32,7 +32,7 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal partial class RuntimeAssembly
     {
-        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
+       private static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
         {
             if (bindResult.Reader != null)
                 runtimeAssembly = s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes));

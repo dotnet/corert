@@ -156,7 +156,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             }
         }
 
-        sealed protected override RuntimeTypeInfo DefiningTypeInfo
+        protected sealed override RuntimeTypeInfo DefiningTypeInfo
         {
             get
             {
