@@ -119,6 +119,10 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        /// <summary>
+        /// Override to provide the metadata based name of a field. (Different from the Name
+        /// property in that it does not go into the reflection trace logic.)
+        /// </summary>
         protected abstract string MetadataName { get; }
 
         public sealed override String Name
@@ -142,9 +146,15 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        /// <summary>
+        /// Get the default value if exists for a field by parsing metadata. Return false if there is no default value.
+        /// </summary>
         protected abstract bool TryGetDefaultValue(out object defaultValue);
-        protected abstract FieldAccessor TryGetFieldAccessor();
 
+        /// <summary>
+        /// Return a FieldAccessor object for accessing the value of a non-literal field. May rely on metadata to create correct accessor.
+        /// </summary>
+        protected abstract FieldAccessor TryGetFieldAccessor();
 
         private FieldAccessor FieldAccessor
         {
@@ -177,6 +187,9 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        /// <summary>
+        /// Return the type of the field by parsing metadata.
+        /// </summary>
         protected abstract RuntimeTypeInfo FieldRuntimeType { get; }
 
         protected RuntimeFieldInfo WithDebugName()
@@ -196,6 +209,9 @@ namespace System.Reflection.Runtime.FieldInfos
             return this;
         }
 
+        /// <summary>
+        /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
+        /// </summary>
         protected abstract RuntimeTypeInfo DefiningType { get; }
 
         protected readonly RuntimeTypeInfo _contextTypeInfo;

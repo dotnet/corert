@@ -334,6 +334,9 @@ namespace System.Reflection.Runtime.PropertyInfos
             return this;
         }
 
+        /// <summary>
+        /// Return a qualified handle that can be used to get the type of the property.
+        /// </summary>
         protected abstract QTypeDefRefOrSpec PropertyTypeHandle { get; }
 
         protected enum PropertyMethodSemantics
@@ -348,7 +351,15 @@ namespace System.Reflection.Runtime.PropertyInfos
         /// </summary>
         protected abstract RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod);
 
+        /// <summary>
+        /// Override to provide the metadata based name of a property. (Different from the Name
+        /// property in that it does not go into the reflection trace logic.)
+        /// </summary>
         protected abstract string MetadataName { get; }
+
+        /// <summary>
+        /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
+        /// </summary>
         protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
 
         protected readonly RuntimeTypeInfo _contextTypeInfo;

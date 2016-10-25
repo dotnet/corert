@@ -16,7 +16,10 @@ using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
-    // Helper for GetRuntimeParameters() - array mimic that supports an efficient "array.Skip(1).ToArray()" operation.
+    /// <summary>
+    /// These api's are to be implemented by parsing metadata. 
+    /// </summary>
+    /// <typeparam name="TRuntimeMethodCommon"></typeparam>
     internal interface IRuntimeMethodCommon<TRuntimeMethodCommon> where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
         MethodAttributes Attributes { get; }
@@ -29,7 +32,16 @@ namespace System.Reflection.Runtime.MethodInfos
         MethodImplAttributes MethodImplementationFlags { get; }
         Module Module { get; }
 
+        /// <summary>
+        /// Return an array of the types of the return value and parameter types.
+        /// </summary>
         QTypeDefRefOrSpec[] QualifiedMethodSignature { get; }
+
+        /// <summary>
+        /// Parse the metadata that describes parameters, and for each parameter for which there is specific metadata
+        /// construct a RuntimeParameterInfo and fill in the VirtualRuntimeParamterInfoArray. Do remember to use contextMethod
+        /// instead of using the one internal to the RuntimeMethodCommon, as the runtime may pass in a subtly different context.
+        /// </summary>
         void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QTypeDefRefOrSpec[] parameterTypes, MethodBase contextMethod, TypeContext typeContext);
 
         String Name { get; }

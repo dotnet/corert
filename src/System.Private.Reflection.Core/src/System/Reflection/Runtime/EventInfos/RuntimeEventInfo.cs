@@ -184,8 +184,17 @@ namespace System.Reflection.Runtime.EventInfos
         /// </summary>
         protected abstract MethodInfo GetEventMethod(EventMethodSemantics whichMethod);
 
+        /// <summary>
+        /// Override to provide the metadata based name of an event. (Different from the Name
+        /// property in that it does not go into the reflection trace logic.)
+        /// </summary>
         protected abstract string MetadataName { get; }
+
+        /// <summary>
+        /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
+        /// </summary>
         protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
+
 
         protected readonly RuntimeTypeInfo _contextTypeInfo;
         protected readonly RuntimeTypeInfo _reflectedType;

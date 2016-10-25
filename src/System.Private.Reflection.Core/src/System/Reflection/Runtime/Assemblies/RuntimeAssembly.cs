@@ -140,7 +140,21 @@ namespace System.Reflection.Runtime.Assemblies
                 return GetTypeCoreCaseSensitive(fullName);
         }
 
+        /// <summary>
+        /// Perform a lookup for a type based on a name. Overriders are expected to
+        /// have a non-cached implementation, as the result is expected to be cached by
+        /// callers of this method. Should be implemented by every format specific 
+        /// RuntimeAssembly implementor
+        /// </summary>
         internal abstract RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName);
+
+
+        /// <summary>
+        /// Perform a lookup for a type based on a name. Overriders may or may not 
+        /// have a cached implementation, as the result is not expected to be cached by
+        /// callers of this method, but it is also a rarely used api. Should be 
+        /// implemented by every format specific RuntimeAssembly implementor
+        /// </summary>
         internal abstract RuntimeTypeInfo GetTypeCoreCaseInsensitive(string fullName);
 
         internal RuntimeTypeInfo GetTypeCoreCaseSensitive(string fullName)
