@@ -56,7 +56,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal virtual IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
@@ -79,7 +79,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal virtual IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
@@ -89,7 +89,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return Empty<EventInfo>.Enumerable;
         }
 
-        internal virtual IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal IEnumerable<FieldInfo> CoreGetDeclaredFields(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
@@ -99,7 +99,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return Empty<FieldInfo>.Enumerable;
         }
 
-        internal virtual IEnumerable<PropertyInfo> CoreGetDeclaredProperties(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
+        internal IEnumerable<PropertyInfo> CoreGetDeclaredProperties(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             RuntimeNamedTypeInfo definingType = AnchoringTypeDefinitionForDeclaredMembers;
             if (definingType != null)
@@ -123,6 +123,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
     internal abstract partial class RuntimeNamedTypeInfo
     {
+        // Metadata providing implementations of RuntimeNamedTypeInfo implement the following methods
+        // to provide filtered access to the various reflection objects by reading metadata directly.
+        // The loop of examining methods is done in a metadata specific manner for greater efficiency.
         internal abstract IEnumerable<ConstructorInfo> CoreGetDeclaredConstructors(NameFilter optionalNameFilter, RuntimeTypeInfo contextTypeInfo);
         internal abstract IEnumerable<MethodInfo> CoreGetDeclaredMethods(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo);
         internal abstract IEnumerable<EventInfo> CoreGetDeclaredEvents(NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType, RuntimeTypeInfo contextTypeInfo);
