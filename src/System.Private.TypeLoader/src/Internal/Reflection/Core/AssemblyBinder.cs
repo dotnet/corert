@@ -8,20 +8,18 @@ using System.Reflection;
 using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
 using Internal.Runtime.TypeLoader;
+using System.Runtime.InteropServices;
 
 namespace Internal.Reflection.Core
 {
-    // disable warning that indicates that the order of fields in a partial struct is not specified
-    // This warning is disabled to allow the assembly bind result to have a set of fields that differ
-    // based on which set of compilation directives is currently in use.
-#pragma warning disable CS0282
+    // Auto StructLayout used to suppress warning that order of fields is not garaunteed in partial structs
+    [StructLayout(LayoutKind.Auto)]
     public partial struct AssemblyBindResult
     {
         public MetadataReader Reader;
         public ScopeDefinitionHandle ScopeDefinitionHandle;
         public IEnumerable<QScopeDefinition> OverflowScopes;
     }
-#pragma warning restore CS0282
 
     //
     // Implements the assembly binding policy Reflection domain. This gets called any time the domain needs 
