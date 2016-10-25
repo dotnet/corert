@@ -627,7 +627,7 @@ namespace ILCompiler.DependencyAnalysis
             CompilationUnitPrefix + "__DispatchMapTableEnd",
             null);
 
-        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfEmbeddedDataNode<FrozenStringNode>(
+        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<FrozenStringNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
             null);
