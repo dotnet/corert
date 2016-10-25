@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {
     internal sealed partial class NativeFormatRuntimeAssembly : RuntimeAssembly
     {
-        public NativeFormatRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflowScopes)
+        private NativeFormatRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflowScopes)
         {
             Scope = new QScopeDefinition(reader, scope);
             OverflowScopes = overflowScopes;

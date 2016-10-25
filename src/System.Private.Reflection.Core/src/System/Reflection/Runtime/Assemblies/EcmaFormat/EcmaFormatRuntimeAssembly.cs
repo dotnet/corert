@@ -25,7 +25,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
     internal sealed partial class EcmaFormatRuntimeAssembly : RuntimeAssembly
     {
-        public EcmaFormatRuntimeAssembly(MetadataReader reader)
+        private EcmaFormatRuntimeAssembly(MetadataReader reader)
         {
             AssemblyDefinition = reader.GetAssemblyDefinition();
             MetadataReader = reader;

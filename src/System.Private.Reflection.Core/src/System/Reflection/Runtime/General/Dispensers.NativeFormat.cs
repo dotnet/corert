@@ -9,6 +9,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.Assemblies.NativeFormat;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.PropertyInfos;
 
@@ -35,7 +36,18 @@ namespace System.Reflection.Runtime.Assemblies
        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
         {
             if (bindResult.Reader != null)
-                runtimeAssembly = s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes));
+                runtimeAssembly = NativeFormatRuntimeAssembly.GetRuntimeAssembly(bindResult.Reader, bindResult.ScopeDefinitionHandle, bindResult.OverflowScopes);
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.Assemblies.NativeFormat
+{
+    internal sealed partial class NativeFormatRuntimeAssembly
+    {
+        internal static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflowScopes)
+        {
+            return s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope, overflowScopes));
         }
 
         private static readonly Dispenser<RuntimeAssemblyKey, RuntimeAssembly> s_scopeToAssemblyDispenser =

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.Assemblies.EcmaFormat;
 using System.Reflection.Runtime.Dispensers;
 using System.Reflection.Runtime.PropertyInfos;
 
@@ -31,10 +32,21 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal partial class RuntimeAssembly
     {
-       static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
+        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
         {
             if (bindResult.EcmaMetadataReader != null)
-                runtimeAssembly = s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(bindResult.EcmaMetadataReader));
+                runtimeAssembly = EcmaFormatRuntimeAssembly.GetRuntimeAssembly(bindResult.EcmaMetadataReader);
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.Assemblies.EcmaFormat
+{
+    internal sealed partial class EcmaFormatRuntimeAssembly
+    {
+        internal static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader)
+        {
+            return s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(bindResult.EcmaMetadataReader));
         }
 
         private static readonly Dispenser<EcmaRuntimeAssemblyKey, RuntimeAssembly> s_EcmaAssemblyDispenser =
@@ -42,7 +54,7 @@ namespace System.Reflection.Runtime.Assemblies
                 DispenserScenario.Scope_Assembly,
                 delegate (EcmaRuntimeAssemblyKey assemblyDefinition)
                 {
-                    return (RuntimeAssembly)new EcmaFormat.EcmaFormatRuntimeAssembly(assemblyDefinition.Reader);
+                    return (RuntimeAssembly)new EcmaFormatRuntimeAssembly(assemblyDefinition.Reader);
                 }
         );
 
