@@ -23,7 +23,7 @@ using System.Reflection.Metadata;
 
 namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
-    internal partial class EcmaFormatRuntimeAssembly : RuntimeAssembly
+    internal sealed partial class EcmaFormatRuntimeAssembly : RuntimeAssembly
     {
         public EcmaFormatRuntimeAssembly(MetadataReader reader)
         {
