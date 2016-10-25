@@ -31,7 +31,7 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal partial class RuntimeAssembly
     {
-       private static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
+       static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
         {
             if (bindResult.EcmaMetadataReader != null)
                 runtimeAssembly = s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(bindResult.EcmaMetadataReader));
