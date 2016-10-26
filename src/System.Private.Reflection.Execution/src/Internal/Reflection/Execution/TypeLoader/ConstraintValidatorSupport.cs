@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
-using Internal.Reflection.Extensibility;
+
 using Debug = global::System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
@@ -24,72 +24,48 @@ namespace Internal.Reflection.Execution
 
         private struct SigTypeContext
         {
-            public readonly TypeInfo[] TypeInstantiation;
-            public readonly TypeInfo[] MethodInstantiation;
+            public readonly Type[] TypeInstantiation;
+            public readonly Type[] MethodInstantiation;
 
-            public SigTypeContext(TypeInfo[] typeInstantiation, TypeInfo[] methodInstantiation)
+            public SigTypeContext(Type[] typeInstantiation, Type[] methodInstantiation)
             {
                 TypeInstantiation = typeInstantiation;
                 MethodInstantiation = methodInstantiation;
             }
         }
 
-        private class InstantiatedTypeInfo : ExtensibleTypeInfo
+        private sealed class InstantiatedTypeInfo : TypeInfo
         {
-            private TypeInfo _underlyingTypeInfo;
+            private Type _underlyingType;
             private SigTypeContext _context;
 
-            public InstantiatedTypeInfo(TypeInfo underlyingTypeInfo, SigTypeContext context)
+            public InstantiatedTypeInfo(Type underlyingType, SigTypeContext context)
             {
-                _underlyingTypeInfo = underlyingTypeInfo;
+                _underlyingType = underlyingType;
                 _context = context;
             }
 
-            public TypeInfo UnderlyingTypeInfo
+            public Type UnderlyingType
             {
                 get
                 {
-                    return _underlyingTypeInfo;
+                    return _underlyingType;
                 }
             }
 
-            public override Type AsType()
+            public override Type[] GetInterfaces()
             {
-                return this;
-            }
-
-            public override TypeAttributes Attributes
-            {
-                get
-                {
-                    return _underlyingTypeInfo.Attributes;
-                }
-            }
-
-            public override IEnumerable<Type> ImplementedInterfaces
-            {
-                get
-                {
-                    foreach (var iface in _underlyingTypeInfo.ImplementedInterfaces)
-                    {
-                        yield return iface.GetTypeInfo().Instantiate(_context).AsType();
-                    }
-                }
+                Type[] interfaces = _underlyingType.GetInterfaces();
+                for (int i = 0; i < interfaces.Length; i++)
+                    interfaces[i] = interfaces[i].Instantiate(_context);
+                return interfaces;
             }
 
             public override bool IsConstructedGenericType
             {
                 get
                 {
-                    return _underlyingTypeInfo.IsConstructedGenericType;
-                }
-            }
-
-            public override bool IsValueType
-            {
-                get
-                {
-                    return _underlyingTypeInfo.IsValueType;
+                    return _underlyingType.IsConstructedGenericType;
                 }
             }
 
@@ -97,105 +73,101 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    return _underlyingTypeInfo.IsGenericType;
+                    return _underlyingType.IsGenericType;
                 }
             }
 
             public override Type GetGenericTypeDefinition()
             {
-                return _underlyingTypeInfo.GetGenericTypeDefinition();
+                return _underlyingType.GetGenericTypeDefinition();
             }
 
             public override int GetArrayRank()
             {
-                return _underlyingTypeInfo.GetArrayRank();
+                return _underlyingType.GetArrayRank();
             }
 
             public override Type GetElementType()
             {
-                return _underlyingTypeInfo.GetElementType().GetTypeInfo().Instantiate(_context).AsType();
+                return _underlyingType.GetElementType().Instantiate(_context);
             }
 
-            public override Type[] GenericTypeArguments
+            public override Type[] GetGenericArguments()
             {
-                get
+                Type[] arguments = _underlyingType.GetGenericArguments();
+                for (int i = 0; i < arguments.Length; i++)
                 {
-                    Type[] arguments = _underlyingTypeInfo.GenericTypeArguments;
-                    for (int i = 0; i < arguments.Length; i++)
-                    {
-                        TypeInfo typeInfo = arguments[i].GetTypeInfo();
-                        typeInfo = typeInfo.Instantiate(_context);
-                        arguments[i] = typeInfo.AsType();
-                    }
-                    return arguments;
+                    arguments[i] = arguments[i].Instantiate(_context);
                 }
+                return arguments;
             }
 
             public override Type BaseType
             {
                 get
                 {
-                    return _underlyingTypeInfo.BaseType.GetTypeInfo().Instantiate(_context).AsType();
+                    return _underlyingType.BaseType.Instantiate(_context);
                 }
             }
 
-            public sealed override Assembly Assembly { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public sealed override String AssemblyQualifiedName { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override bool ContainsGenericParameters { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override MethodBase DeclaringMethod { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+            protected override TypeAttributes GetAttributeFlagsImpl()
+            {
+                return _underlyingType.Attributes;
+            }
+
+            protected override bool IsValueTypeImpl()
+            {
+                return _underlyingType.IsValueType;
+            }
+
+            protected override bool IsArrayImpl()
+            {
+                return _underlyingType.IsArray;
+            }
+
+            protected override bool IsByRefImpl()
+            {
+                return _underlyingType.IsByRef;
+            }
+
+            protected override bool IsPointerImpl()
+            {
+                return _underlyingType.IsPointer;
+            }
+
+            public override Assembly Assembly { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+            public override String AssemblyQualifiedName { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override String FullName { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override GenericParameterAttributes GenericParameterAttributes { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override int GenericParameterPosition { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override object[] GetCustomAttributes(bool inherit) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override EventInfo[] GetEvents(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override FieldInfo GetField(string name, BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override FieldInfo[] GetFields(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Type GetInterface(string name, bool ignoreCase) { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public override Type[] GetInterfaces() { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Type GetNestedType(string name, BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Type[] GetNestedTypes(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override bool IsDefined(Type attributeType, bool inherit) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Guid GUID { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public override bool IsEnum { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override bool IsGenericParameter { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override bool IsGenericTypeDefinition { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override bool IsSerializable { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override Module Module { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override String Namespace { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public override Type[] GetGenericParameterConstraints() { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public sealed override Type MakeArrayType() { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public sealed override Type MakeArrayType(int rank) { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public sealed override Type MakeByRefType() { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public sealed override Type MakeGenericType(params Type[] instantiation) { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public sealed override Type MakePointerType() { Debug.Assert(false); throw NotImplemented.ByDesign; }
-            public override Type DeclaringType { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            public sealed override String Name { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+            public override String Name { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+            public override Type UnderlyingSystemType { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
 
             protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) { Debug.Assert(false); throw NotImplemented.ByDesign; }
-
-            protected override bool IsArrayImpl()
-            {
-                return _underlyingTypeInfo.IsArray;
-            }
-
-            protected override bool IsByRefImpl()
-            {
-                return _underlyingTypeInfo.IsByRef;
-            }
-
-            protected override bool IsPointerImpl()
-            {
-                return _underlyingTypeInfo.IsPointer;
-            }
+            protected override bool IsCOMObjectImpl() { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            protected override bool IsPrimitiveImpl() { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            protected override bool HasElementTypeImpl() { Debug.Assert(false); throw NotImplemented.ByDesign; }
         }
 
-        private static TypeInfo Instantiate(this TypeInfo type, SigTypeContext context)
+        private static Type Instantiate(this Type type, SigTypeContext context)
         {
             if (type.IsGenericParameter)
             {
@@ -219,9 +191,9 @@ namespace Internal.Reflection.Execution
                 // interface IFoo<T> { }
                 // class Foo<U> : IFoo<U[]> { }
                 //
-                // var foo = typeof(Foo<>).GetTypeInfo();
-                // var ifoo = foo.ImplementedInterfaces.First().GetTypeInfo();
-                // var arg = ifoo.GetGenericArguments()[0].GetTypeInfo();
+                // var foo = typeof(Foo<>);
+                // var ifoo = foo.ImplementedInterfaces.First();
+                // var arg = ifoo.GetGenericArguments()[0];
                 //
                 // arg.ContainsGenericParameters will be true, but arg.IsGenericType will be false.
                 //
@@ -231,7 +203,7 @@ namespace Internal.Reflection.Execution
             return type;
         }
 
-        private static bool IsInstantiatedTypeInfo(this TypeInfo type)
+        private static bool IsInstantiatedTypeInfo(this Type type)
         {
             return type is InstantiatedTypeInfo;
         }
@@ -240,52 +212,52 @@ namespace Internal.Reflection.Execution
         // Other helper methods to support constraint validation
         //
 
-        private static bool IsNullable(this TypeInfo type)
+        private static bool IsNullable(this Type type)
         {
-            return type.IsGenericType && CommonRuntimeTypes.Nullable.Equals(type.GetGenericTypeDefinition());
+            return type.IsGenericType && Object.ReferenceEquals(CommonRuntimeTypes.Nullable, type.GetGenericTypeDefinition());
         }
 
-        private static Type GetNullableType(this TypeInfo type)
+        private static Type GetNullableType(this Type type)
         {
             Debug.Assert(type.IsNullable());
 
-            Type[] arguments = type.GenericTypeArguments;
+            Type[] arguments = type.GetGenericArguments();
             Debug.Assert(arguments.Length == 1);
 
             return arguments[0];
         }
 
-        private static bool IsSystemObject(this TypeInfo type)
+        private static bool IsSystemObject(this Type type)
         {
-            return CommonRuntimeTypes.Object.Equals(type.AsType());
+            return Object.ReferenceEquals(CommonRuntimeTypes.Object, type);
         }
 
-        private static bool IsSystemValueType(this TypeInfo type)
+        private static bool IsSystemValueType(this Type type)
         {
-            return CommonRuntimeTypes.ValueType.Equals(type.AsType());
+            return Object.ReferenceEquals(CommonRuntimeTypes.ValueType, type);
         }
 
-        private static bool IsSystemArray(this TypeInfo type)
+        private static bool IsSystemArray(this Type type)
         {
-            return CommonRuntimeTypes.Array.Equals(type.AsType());
+            return Object.ReferenceEquals(CommonRuntimeTypes.Array, type);
         }
 
-        private static bool IsSystemVoid(this TypeInfo type)
+        private static bool IsSystemVoid(this Type type)
         {
-            return CommonRuntimeTypes.Void.Equals(type.AsType());
+            return Object.ReferenceEquals(CommonRuntimeTypes.Void, type);
         }
 
-        private static bool HasExplicitOrImplicitPublicDefaultConstructor(this TypeInfo type)
+        private static bool HasExplicitOrImplicitPublicDefaultConstructor(this Type type)
         {
-            // Strip InstantiatedTypeInfo - DeclaredConstructors is not implemented on InstantiatedTypeInfo
+            // Strip InstantiatedTypeInfo - GetConstructors is not implemented on InstantiatedTypeInfo
             if (type is InstantiatedTypeInfo)
-                type = ((InstantiatedTypeInfo)type).UnderlyingTypeInfo;
+                type = ((InstantiatedTypeInfo)type).UnderlyingType;
 
             // valuetypes have public default ctors implicitly
             if (type.IsValueType)
                 return true;
 
-            foreach (var ctor in type.DeclaredConstructors)
+            foreach (var ctor in type.GetConstructors())
             {
                 if (!ctor.IsStatic && ctor.IsPublic && ctor.GetParametersNoCopy().Length == 0)
                     return true;
@@ -293,42 +265,42 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private unsafe static int NormalizedPrimitiveTypeSizeForIntegerTypes(this TypeInfo type)
+        private unsafe static int NormalizedPrimitiveTypeSizeForIntegerTypes(this Type type)
         {
             // Strip InstantiatedTypeInfo - IsEnum is not implemented on InstantiatedTypeInfo
             if (type is InstantiatedTypeInfo)
-                type = ((InstantiatedTypeInfo)type).UnderlyingTypeInfo;
+                type = ((InstantiatedTypeInfo)type).UnderlyingType;
 
             Type normalizedType;
 
             if (type.IsEnum)
             {
                 // TODO: Enum.GetUnderlyingType does not work for generic type definitions
-                return NormalizedPrimitiveTypeSizeForIntegerTypes(Enum.GetUnderlyingType(type.AsType()).GetTypeInfo());
+                return NormalizedPrimitiveTypeSizeForIntegerTypes(Enum.GetUnderlyingType(type));
             }
             else
             if (type.IsPrimitive)
             {
-                normalizedType = type.AsType();
+                normalizedType = type;
             }
             else
             {
                 return 0;
             }
 
-            if (CommonRuntimeTypes.Byte.Equals(normalizedType) || CommonRuntimeTypes.SByte.Equals(normalizedType))
+            if (Object.ReferenceEquals(CommonRuntimeTypes.Byte, normalizedType) || Object.ReferenceEquals(CommonRuntimeTypes.SByte, normalizedType))
                 return 1;
 
-            if (CommonRuntimeTypes.UInt16.Equals(normalizedType) || CommonRuntimeTypes.Int16.Equals(normalizedType))
+            if (Object.ReferenceEquals(CommonRuntimeTypes.UInt16, normalizedType) || Object.ReferenceEquals(CommonRuntimeTypes.Int16, normalizedType))
                 return 2;
 
-            if (CommonRuntimeTypes.UInt32.Equals(normalizedType) || CommonRuntimeTypes.Int32.Equals(normalizedType))
+            if (Object.ReferenceEquals(CommonRuntimeTypes.UInt32, normalizedType) || Object.ReferenceEquals(CommonRuntimeTypes.Int32, normalizedType))
                 return 4;
 
-            if (CommonRuntimeTypes.UInt64.Equals(normalizedType) || CommonRuntimeTypes.Int64.Equals(normalizedType))
+            if (Object.ReferenceEquals(CommonRuntimeTypes.UInt64, normalizedType) || Object.ReferenceEquals(CommonRuntimeTypes.Int64, normalizedType))
                 return 8;
 
-            if (CommonRuntimeTypes.UIntPtr.Equals(normalizedType) || CommonRuntimeTypes.IntPtr.Equals(normalizedType))
+            if (Object.ReferenceEquals(CommonRuntimeTypes.UIntPtr, normalizedType) || Object.ReferenceEquals(CommonRuntimeTypes.IntPtr, normalizedType))
                 return sizeof(IntPtr);
 
             return 0;
