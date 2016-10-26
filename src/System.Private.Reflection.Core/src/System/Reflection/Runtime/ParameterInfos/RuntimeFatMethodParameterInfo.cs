@@ -45,7 +45,7 @@ namespace System.Reflection.Runtime.ParameterInfos
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
                 MethodHandle declaringMethodHandle = _methodHandle;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(this.Reader, _parameterHandle, declaringMethodHandle))
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(this.Reader, _parameterHandle, declaringMethodHandle))
                     yield return cad;
             }
         }
