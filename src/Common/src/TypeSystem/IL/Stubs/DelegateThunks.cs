@@ -93,8 +93,15 @@ namespace Internal.IL.Stubs
             }
         }
 
-        protected void EmitTransformedCalli(ILEmitter emitter, ILCodeStream codestream, MethodSignature targetSignature)
+        public static void EmitTransformedCalli(ILEmitter emitter, ILCodeStream codestream, MethodSignature targetSignature)
         {
+            if ((targetSignature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0)
+            {
+                // Fat function pointer only ever exist for managed targets
+                codestream.Emit(ILOpcode.calli, emitter.NewToken(targetSignature));
+                return;
+            }
+
             TypeSystemContext context = targetSignature.ReturnType.Context;
 
             int thisPointerParamDelta = 0;

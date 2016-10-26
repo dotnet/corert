@@ -4,6 +4,8 @@
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public class GCStaticsNode : ObjectNode, ISymbolNode
@@ -12,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public GCStaticsNode(MetadataType type)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
         }
 

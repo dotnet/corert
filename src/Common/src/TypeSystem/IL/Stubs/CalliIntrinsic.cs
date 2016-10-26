@@ -45,7 +45,8 @@ namespace Internal.IL.Stubs
 
             var signature = new MethodSignature(template.Flags, 0, returnType, parameters);
 
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(signature));
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(signature));
+            DelegateThunk.EmitTransformedCalli(emitter, codeStream, signature);
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(target);
