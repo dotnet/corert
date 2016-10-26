@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices
 #if RHTESTCL
             : Type
 #else
-            : Internal.Reflection.Extensibility.ExtensibleTypeInfo
+            : TypeInfo
 #endif
         {
             /// <summary>
@@ -130,6 +130,8 @@ namespace System.Runtime.InteropServices
             public override String Name { get { throw new System.Reflection.MissingMetadataException(_fullTypeName); } }
             public override String Namespace { get { throw new System.Reflection.MissingMetadataException(_fullTypeName); } }
 
+            public override Type UnderlyingSystemType { get { throw new System.Reflection.MissingMetadataException(_fullTypeName); } }
+
             public override int GetArrayRank() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
             public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
             public override Type GetElementType() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
@@ -145,6 +147,10 @@ namespace System.Runtime.InteropServices
             public override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
             public override Type[] GetNestedTypes(BindingFlags bindingAttr) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
             public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+            public override object[] GetCustomAttributes(bool inherit) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+
+            public override bool IsDefined(Type attributeType, bool inherit) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
 
             public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
 
@@ -180,6 +186,10 @@ namespace System.Runtime.InteropServices
                 return _fullTypeName.GetHashCode();
             }
 
+            protected override TypeAttributes GetAttributeFlagsImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+            protected override bool IsPrimitiveImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+            protected override bool HasElementTypeImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+            protected override bool IsCOMObjectImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
             protected override bool IsArrayImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
             protected override bool IsByRefImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
             protected override bool IsPointerImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }

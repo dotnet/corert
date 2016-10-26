@@ -12,7 +12,6 @@ using global::Internal.Runtime.Augments;
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
 using global::Internal.Reflection.Execution.MethodInvokers;
-using global::Internal.Reflection.Extensibility;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -132,7 +131,7 @@ namespace Internal.Reflection.Execution
             if (layoutKind == TypeAttributes.ExplicitLayout)
             {
                 int offset = (int)(fieldHandle.GetField(reader).Offset);
-                CustomAttributeTypedArgument offsetArgument = ExtensibleCustomAttributeData.CreateCustomAttributeTypedArgument(typeof(Int32), offset);
+                CustomAttributeTypedArgument offsetArgument = new CustomAttributeTypedArgument(typeof(Int32), offset);
                 yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(FieldOffsetAttribute), new CustomAttributeTypedArgument[] { offsetArgument }, null);
             }
         }
