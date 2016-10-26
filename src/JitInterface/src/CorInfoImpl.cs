@@ -1270,6 +1270,39 @@ namespace Internal.JitInterface
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
+                    {
+                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
+
+                        // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
+                        Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
+
+                        DefType typeToInitialize = (DefType)HandleToObject(pResolvedToken.hClass);
+                        Debug.Assert(typeToInitialize == MethodBeingCompiled.OwningType);
+
+                        DefType sharedTypeToInitialize = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
+
+                        ISymbolNode helper;
+                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+                        {
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(
+                                ReadyToRunHelperId.GetNonGCStaticBase, sharedTypeToInitialize, MethodBeingCompiled.OwningType);
+                        }
+                        else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
+                        {
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
+                                ReadyToRunHelperId.GetNonGCStaticBase, sharedTypeToInitialize, MethodBeingCompiled.OwningType);
+                        }
+                        else
+                        {
+                            Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
+                                ReadyToRunHelperId.GetNonGCStaticBase, sharedTypeToInitialize, MethodBeingCompiled);
+                        }
+
+                        pLookup.addr = (void*)ObjectToHandle(helper);
+                    }
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                     {
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
