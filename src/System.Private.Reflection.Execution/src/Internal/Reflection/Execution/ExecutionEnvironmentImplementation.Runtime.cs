@@ -96,26 +96,26 @@ namespace Internal.Reflection.Execution
         //==============================================================================================
         // Pseudo Custom Attributes
         //==============================================================================================
-        public sealed override IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle)
+        public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle)
         {
             return Empty<CustomAttributeData>.Enumerable;
         }
 
-        public sealed override IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle)
+        public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle)
         {
             TypeAttributes attributes = typeDefinitionHandle.GetTypeDefinition(reader).Flags;
             if (0 != (attributes & TypeAttributes.Import))
                 yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(ComImportAttribute), null, null);
         }
 
-        public sealed override IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, MethodHandle methodHandle, TypeDefinitionHandle declaringTypeHandle)
+        public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, MethodHandle methodHandle, TypeDefinitionHandle declaringTypeHandle)
         {
             MethodImplAttributes implAttributes = methodHandle.GetMethod(reader).ImplFlags;
             if (0 != (implAttributes & MethodImplAttributes.PreserveSig))
                 yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(PreserveSigAttribute), null, null);
         }
 
-        public sealed override IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, ParameterHandle parameterHandle, MethodHandle declaringMethodHandle)
+        public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, ParameterHandle parameterHandle, MethodHandle declaringMethodHandle)
         {
             ParameterAttributes attributes = parameterHandle.GetParameter(reader).Flags;
             if (0 != (attributes & ParameterAttributes.In))
@@ -126,7 +126,7 @@ namespace Internal.Reflection.Execution
                 yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(OptionalAttribute), null, null);
         }
 
-        public sealed override IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, FieldHandle fieldHandle, TypeDefinitionHandle declaringTypeHandle)
+        public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, FieldHandle fieldHandle, TypeDefinitionHandle declaringTypeHandle)
         {
             TypeAttributes layoutKind = declaringTypeHandle.GetTypeDefinition(reader).Flags & TypeAttributes.LayoutMask;
             if (layoutKind == TypeAttributes.ExplicitLayout)
@@ -137,12 +137,12 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, PropertyHandle propertyHandle, TypeDefinitionHandle declaringTypeHandle)
+        public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, PropertyHandle propertyHandle, TypeDefinitionHandle declaringTypeHandle)
         {
             return Empty<CustomAttributeData>.Enumerable;
         }
 
-        public sealed override IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, EventHandle eventHandle, TypeDefinitionHandle declaringTypeHandle)
+        public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, EventHandle eventHandle, TypeDefinitionHandle declaringTypeHandle)
         {
             return Empty<CustomAttributeData>.Enumerable;
         }
