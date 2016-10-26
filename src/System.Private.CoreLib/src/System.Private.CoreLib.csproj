@@ -122,8 +122,6 @@
     <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Extensibility\ExtensibleType.cs" />
-    <Compile Include="Internal\Reflection\Extensibility\ReflectionExtensibility.cs" />
     <Compile Include="Internal\Runtime\Augments\WinRTInterop.cs" />
     <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
