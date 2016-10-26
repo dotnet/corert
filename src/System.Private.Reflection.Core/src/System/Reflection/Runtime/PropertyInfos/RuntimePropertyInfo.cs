@@ -96,7 +96,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                 foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes))
                     yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
                     yield return cad;
             }
         }
