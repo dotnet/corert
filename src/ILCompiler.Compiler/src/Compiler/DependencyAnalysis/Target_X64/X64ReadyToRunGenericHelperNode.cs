@@ -50,15 +50,15 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
-                            EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
+                            EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, _lookupSignature, relocsOnly);
 
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
 
-                            AddrMode loadBase = new AddrMode(encoder.TargetRegister.Arg1, null, cctorContextSize, 0, AddrModeSize.Int64);
+                            AddrMode loadBase = new AddrMode(encoder.TargetRegister.Arg0, null, cctorContextSize, 0, AddrModeSize.Int64);
                             encoder.EmitLEA(encoder.TargetRegister.Result, ref loadBase);
 
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg1, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
                             encoder.EmitCMP(ref initialized, 1);
                             encoder.EmitRETIfEqual();
 
