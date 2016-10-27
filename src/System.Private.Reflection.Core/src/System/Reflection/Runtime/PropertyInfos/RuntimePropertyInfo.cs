@@ -334,6 +334,14 @@ namespace System.Reflection.Runtime.PropertyInfos
             return this;
         }
 
+        // Types that derive from RuntimePropertyInfo must implement the following public surface area members
+        public abstract override PropertyAttributes Attributes { get; }
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract override bool Equals(Object obj);
+        public abstract override int GetHashCode();
+        public abstract override Object GetConstantValue();
+        public abstract override int MetadataToken { get; }
+
         /// <summary>
         /// Return a qualified handle that can be used to get the type of the property.
         /// </summary>

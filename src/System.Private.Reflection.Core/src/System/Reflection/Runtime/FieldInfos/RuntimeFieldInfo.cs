@@ -146,6 +146,14 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        // Types that derive from RuntimeFieldInfo must implement the following public surface area members
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract override FieldAttributes Attributes { get; }
+        public abstract override int MetadataToken { get; }
+        public abstract override String ToString();
+        public abstract override bool Equals(Object obj);
+        public abstract override int GetHashCode();
+
         /// <summary>
         /// Get the default value if exists for a field by parsing metadata. Return false if there is no default value.
         /// </summary>

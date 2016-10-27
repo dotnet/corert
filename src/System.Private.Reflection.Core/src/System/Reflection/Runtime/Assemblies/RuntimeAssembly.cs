@@ -140,6 +140,17 @@ namespace System.Reflection.Runtime.Assemblies
                 return GetTypeCoreCaseSensitive(fullName);
         }
 
+        // Types that derive from RuntimeAssembly must implement the following public surface area members
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract override IEnumerable<TypeInfo> DefinedTypes { get; }
+        public abstract override IEnumerable<Type> ExportedTypes { get; }
+        public abstract override ManifestResourceInfo GetManifestResourceInfo(String resourceName);
+        public abstract override String[] GetManifestResourceNames();
+        public abstract override Stream GetManifestResourceStream(String name);
+        public abstract override bool Equals(Object obj);
+        public abstract override int GetHashCode();
+
+
         /// <summary>
         /// Perform a lookup for a type based on a name. Overriders are expected to
         /// have a non-cached implementation, as the result is expected to be cached by
