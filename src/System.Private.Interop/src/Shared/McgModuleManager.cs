@@ -52,6 +52,8 @@ namespace System.Runtime.InteropServices
 
         static McgModuleManager()
         {
+            UseDynamicInterop = false;
+            
             CCWLookupMap.InitializeStatics();
             ContextEntry.ContextEntryManager.InitializeStatics();
             ComObjectCache.InitializeStatics();
@@ -63,27 +65,7 @@ namespace System.Runtime.InteropServices
 
         private static InternalModule s_internalModule;
 
-        #region "Dynamic Interop"
-        // Whether to use dynamic interop or not
-        private static bool s_useDynamicInterop = true;
-
-        public static bool UseDynamicInterop
-        {
-            get
-            {
-                return s_useDynamicInterop;
-            }
-        }
-
-        /// <summary>
-        /// Helper function to enable Dynamic Interop
-        /// in future, useDynamicInterop should be always true
-        /// </summary>
-        public static void EnableDynamicInterop()
-        {
-            s_useDynamicInterop = true;
-        }
-        #endregion
+        public static bool UseDynamicInterop { get; set; }
 
         /// <summary>
         /// Register the module and add it into global module list

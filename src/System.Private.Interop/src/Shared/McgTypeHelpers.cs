@@ -790,6 +790,11 @@ namespace System.Runtime.InteropServices
                 return interfaceInfo.HasDynamicAdapterClass;
             }
 
+#if !CORECLR
+            if (McgModuleManager.UseDynamicInterop && Internal.Runtime.Augments.RuntimeAugments.IsGenericType(interfaceType))
+                return false;
+#endif
+
 #if ENABLE_MIN_WINRT
            throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
 #else
@@ -812,7 +817,7 @@ namespace System.Runtime.InteropServices
         internal static Guid GetInterfaceGuid(this RuntimeTypeHandle interfaceType)
         {
             McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
-            if(interfaceInfo != null)
+            if (interfaceInfo != null)
             {
                 return interfaceInfo.ItfGuid;
             }
