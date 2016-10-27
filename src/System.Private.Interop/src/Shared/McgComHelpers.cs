@@ -616,6 +616,25 @@ namespace System.Runtime.InteropServices
             return comObject;
         }
 
+        internal static __ComGenericInterfaceDispatcher CreateGenericComDispatcher(RuntimeTypeHandle genericDispatcherDef, RuntimeTypeHandle[] genericArguments, __ComObject comThisPointer)
+        {
+#if !CORECLR
+            Debug.Assert(Internal.Runtime.Augments.RuntimeAugments.IsGenericTypeDefinition(genericDispatcherDef));
+            Debug.Assert(genericArguments != null && genericArguments.Length > 0);
+
+            RuntimeTypeHandle instantiatedDispatcherType;
+            if (!Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericDispatcherDef, genericArguments, out instantiatedDispatcherType))
+                return null;    // ERROR
+
+            __ComGenericInterfaceDispatcher dispatcher = (__ComGenericInterfaceDispatcher)InteropExtensions.RuntimeNewObject(instantiatedDispatcherType);
+            dispatcher.m_comObject = comThisPointer;
+
+            return dispatcher;
+#else
+            return null;
+#endif
+        }
+
         private static __ComObject CreateComObjectInternal(RuntimeTypeHandle classType, IntPtr pComItf)
         {
             Debug.Assert(!classType.IsNull());

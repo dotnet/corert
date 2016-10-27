@@ -171,6 +171,9 @@
   <data name="Arg_SizeOfNonValueType" xml:space="preserve">
     <value>Marshal.SizeOf may only be used with value types.</value>
   </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added.</value>
+  </data>
   <data name="Argument_InvalidOffLength" xml:space="preserve">
     <value>The offset and length provided do not fit within the bounds of the array</value>
   </data>
