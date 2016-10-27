@@ -107,9 +107,10 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeDummyMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodHelpers.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimePlainConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticConstructorInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\IRuntimeMethodCommon.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeNamedMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticMethodInfo.cs" />

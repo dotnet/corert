@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,45 +16,6 @@ using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
-    /// <summary>
-    /// These api's are to be implemented by parsing metadata. 
-    /// </summary>
-    /// <typeparam name="TRuntimeMethodCommon"></typeparam>
-    internal interface IRuntimeMethodCommon<TRuntimeMethodCommon> where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
-    {
-        MethodAttributes Attributes { get; }
-        CallingConventions CallingConvention { get; }
-
-        RuntimeTypeInfo ContextTypeInfo { get; }
-        IEnumerable<CustomAttributeData> CustomAttributes { get; }
-        RuntimeTypeInfo DeclaringType { get; }
-        RuntimeNamedTypeInfo DefiningTypeInfo { get; }
-        MethodImplAttributes MethodImplementationFlags { get; }
-        Module Module { get; }
-
-        /// <summary>
-        /// Return an array of the types of the return value and parameter types.
-        /// </summary>
-        QTypeDefRefOrSpec[] QualifiedMethodSignature { get; }
-
-        /// <summary>
-        /// Parse the metadata that describes parameters, and for each parameter for which there is specific metadata
-        /// construct a RuntimeParameterInfo and fill in the VirtualRuntimeParamterInfoArray. Do remember to use contextMethod
-        /// instead of using the one internal to the RuntimeMethodCommon, as the runtime may pass in a subtly different context.
-        /// </summary>
-        void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QTypeDefRefOrSpec[] parameterTypes, MethodBase contextMethod, TypeContext typeContext);
-
-        String Name { get; }
-
-        MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
-
-        bool IsGenericMethodDefinition { get; }
-
-        TRuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod { get; }
-
-        RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<TRuntimeMethodCommon> owningMethod);
-    }
-
     internal static class RuntimeMethodHelpers
     {
         //
@@ -67,8 +28,8 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         // Does not array-copy.
         //
-        internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter) 
-            where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon> 
+        internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter)
+            where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
         {
             TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
