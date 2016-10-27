@@ -1217,6 +1217,21 @@ namespace Internal.JitInterface
             }
         }
 
+        private ISymbolNode GetGenericLookupHelper(CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, ReadyToRunHelperId helperId, object helperArgument)
+        {
+            if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+            {
+                return _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
+            }
+            else if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
+            {
+                return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
+            }
+            
+            Debug.Assert(runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
+            return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled);
+        }
+
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
             pLookup.accessType = InfoAccessType.IAT_VALUE;
@@ -1272,34 +1287,15 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
                     {
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
                         // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
                         Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
+                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
-                        DefType typeToInitialize = (DefType)HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(typeToInitialize == MethodBeingCompiled.OwningType);
+                        DefType typeToInitialize = (DefType)MethodBeingCompiled.OwningType;
+                        Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
-                        DefType sharedTypeToInitialize = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-
-                        ISymbolNode helper;
-                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
-                        {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(
-                                ReadyToRunHelperId.GetNonGCStaticBase, sharedTypeToInitialize, MethodBeingCompiled.OwningType);
-                        }
-                        else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
-                        {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
-                                ReadyToRunHelperId.GetNonGCStaticBase, sharedTypeToInitialize, MethodBeingCompiled.OwningType);
-                        }
-                        else
-                        {
-                            Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
-                                ReadyToRunHelperId.GetNonGCStaticBase, sharedTypeToInitialize, MethodBeingCompiled);
-                        }
-
+                        DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
+                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, helperArg);
                         pLookup.addr = (void*)ObjectToHandle(helper);
                     }
                     break;
@@ -1308,23 +1304,8 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object fixupTarget = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
-
-                        ISymbolNode helper;
-                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
-                        {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(helperId, fixupTarget, MethodBeingCompiled.OwningType);
-                        }
-                        else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
-                        {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, fixupTarget, MethodBeingCompiled.OwningType);
-                        }
-                        else
-                        {
-                            Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, fixupTarget, MethodBeingCompiled);
-                        }
-
+                        object helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
+                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
                         pLookup.addr = (void*)ObjectToHandle(helper);
                     }
                     break;
