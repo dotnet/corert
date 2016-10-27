@@ -16,18 +16,13 @@ using Internal.Reflection.Core.Execution;
 
 using Internal.Reflection.Tracing;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract class RuntimeGenericParameterTypeInfo : RuntimeTypeInfo
     {
-        protected RuntimeGenericParameterTypeInfo(MetadataReader reader, GenericParameterHandle genericParameterHandle)
+        protected RuntimeGenericParameterTypeInfo(int position)
         {
-            Reader = reader;
-            GenericParameterHandle = genericParameterHandle;
-            _genericParameter = genericParameterHandle.GetGenericParameter(reader);
-            _position = _genericParameter.Number;
+            _position = position;
         }
 
         public sealed override Assembly Assembly
@@ -46,28 +41,9 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
-                return RuntimeCustomAttributeData.GetCustomAttributes(Reader, _genericParameter.CustomAttributes);
-            }
-        }
-
         public abstract override MethodBase DeclaringMethod { get; }
 
-        public sealed override GenericParameterAttributes GenericParameterAttributes
-        {
-            get
-            {
-                return _genericParameter.Flags;
-            }
-        }
+
 
         public sealed override Type[] GetGenericParameterConstraints()
         {
@@ -132,15 +108,6 @@ namespace System.Reflection.Runtime.TypeInfos
             return TypeAttributes.Public;
         }
 
-        protected sealed override int InternalGetHashCode()
-        {
-            return GenericParameterHandle.GetHashCode();
-        }
-
-        protected GenericParameterHandle GenericParameterHandle { get; }
-
-        protected MetadataReader Reader { get; }
-
         internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
 
         internal sealed override string InternalFullNameOfAssembly
@@ -152,13 +119,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
-        {
-            if (_genericParameter.Name.IsNull(Reader))
-                return string.Empty;
-            return _genericParameter.Name.GetString(Reader);
-        }
-
         internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
         {
             get
@@ -166,6 +126,11 @@ namespace System.Reflection.Runtime.TypeInfos
                 return default(RuntimeTypeHandle);
             }
         }
+
+        //
+        // Returns the generic parameter substitutions to use when enumerating declared members, base class and implemented interfaces.
+        //
+        internal abstract override TypeContext TypeContext { get; }
 
         //
         // Returns the base type as a typeDef, Ref, or Spec. Default behavior is to QTypeDefRefOrSpec.Null, which causes BaseType to return null.
@@ -185,7 +150,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
 
                 RuntimeNamedTypeInfo objectTypeInfo = CommonRuntimeTypes.Object.CastToRuntimeNamedTypeInfo();
-                return new QTypeDefRefOrSpec(objectTypeInfo.Reader, objectTypeInfo.TypeDefinitionHandle);
+                return objectTypeInfo.TypeDefinitionQHandle;
             }
         }
 
@@ -209,24 +174,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        //
-        // Returns the generic parameter substitutions to use when enumerating declared members, base class and implemented interfaces.
-        //
-        internal abstract override TypeContext TypeContext { get; }
-
-        private QTypeDefRefOrSpec[] Constraints
-        {
-            get
-            {
-                MetadataReader reader = Reader;
-                LowLevelList<QTypeDefRefOrSpec> constraints = new LowLevelList<QTypeDefRefOrSpec>();
-                foreach (Handle constraintHandle in GenericParameterHandle.GetGenericParameter(reader).Constraints)
-                {
-                    constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle));
-                }
-                return constraints.ToArray();
-            }
-        }
+        protected abstract QTypeDefRefOrSpec[] Constraints { get; }
 
         private TypeInfo[] ConstraintInfos
         {
@@ -238,13 +186,12 @@ namespace System.Reflection.Runtime.TypeInfos
                 TypeInfo[] constraintInfos = new TypeInfo[constraints.Length];
                 for (int i = 0; i < constraints.Length; i++)
                 {
-                    constraintInfos[i] = constraints[i].Handle.Resolve(constraints[i].Reader, TypeContext);
+                    constraintInfos[i] = constraints[i].Resolve(TypeContext);
                 }
                 return constraintInfos;
             }
         }
 
-        private readonly GenericParameter _genericParameter;
         private readonly int _position;
     }
 }

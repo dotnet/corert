@@ -11,7 +11,7 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public override Object InvokeMember(
+        public sealed override Object InvokeMember(
             String name, BindingFlags bindingFlags, Binder binder, Object target,
             Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)
         {

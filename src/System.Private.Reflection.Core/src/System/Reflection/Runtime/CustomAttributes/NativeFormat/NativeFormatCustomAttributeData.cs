@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,7 +10,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
@@ -18,14 +20,14 @@ using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
 
-namespace System.Reflection.Runtime.CustomAttributes
+namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
 {
     //
     // The Runtime's implementation of CustomAttributeData for normal metadata-based attributes
     //
-    internal sealed class RuntimeNormalCustomAttributeData : RuntimeCustomAttributeData
+    internal sealed class NativeFormatCustomAttributeData : RuntimeCustomAttributeData
     {
-        internal RuntimeNormalCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
+        internal NativeFormatCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
         {
             _reader = reader;
             _customAttribute = customAttributeHandle.GetCustomAttribute(reader);
@@ -56,8 +58,8 @@ namespace System.Reflection.Runtime.CustomAttributes
                     QualifiedMethod qualifiedMethod = _customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader);
                     TypeDefinitionHandle declaringType = qualifiedMethod.EnclosingType;
                     MethodHandle methodHandle = qualifiedMethod.Method;
-                    RuntimeNamedTypeInfo attributeType = RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
-                    return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, attributeType, attributeType);
+                    NativeFormatRuntimeNamedTypeInfo attributeType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringType, default(RuntimeTypeHandle));
+                    return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, attributeType, attributeType));
                 }
                 else if (constructorHandleType == HandleType.MemberReference)
                 {
@@ -92,7 +94,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-                return _customAttribute.GetAttributeTypeHandle(_reader).FormatTypeName(_reader, new TypeContext(null, null));
+                return new QTypeDefRefOrSpec(_reader, _customAttribute.GetAttributeTypeHandle(_reader)).FormatTypeName(new TypeContext(null, null));
             }
         }
 

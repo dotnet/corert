@@ -12,8 +12,6 @@ using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
@@ -132,12 +130,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(
-                        _genericMethodDefinition.Reader,
-                        _genericMethodDefinition.RuntimeDeclaringType,
-                        _genericMethodDefinition.Handle,
-                        _genericTypeArguments,
-                        this);
+                return _genericMethodDefinition.GetUncachedMethodInvoker(_genericTypeArguments, this);
             }
         }
 

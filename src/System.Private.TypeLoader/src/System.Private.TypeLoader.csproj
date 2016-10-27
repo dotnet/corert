@@ -27,6 +27,8 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
@@ -58,10 +60,11 @@
       <Link>LowLevelDictionary.cs</Link>
     </Compile>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
+    <Compile Condition="'$(EcmaMetadataSupport)' == 'true'" Include="Internal\Reflection\Core\AssemblyBindResult.Ecma.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
     <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
-    <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs" >
+    <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs">
       <Link>LowLevelStringConverter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />

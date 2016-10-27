@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,7 +9,9 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.ParameterInfos.NativeFormat;
 using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core;
@@ -17,16 +19,88 @@ using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
 
-namespace System.Reflection.Runtime.MethodInfos
+namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 {
     // 
-    // Implements methods and properties common to RuntimeMethodInfo and RuntimeConstructorInfo. In a sensible world, this
-    // struct would be a common base class for RuntimeMethodInfo and RuntimeConstructorInfo. But those types are forced
-    // to derive from MethodInfo and ConstructorInfo because of the way the Reflection API are designed. Hence,
-    // we use containment as a substitute.
+    // Implements methods and properties common to RuntimeMethodInfo and RuntimeConstructorInfo.
     //
-    internal struct RuntimeMethodCommon
+    internal struct NativeFormatMethodCommon : IRuntimeMethodCommon<NativeFormatMethodCommon>, IEquatable<NativeFormatMethodCommon>
     {
+        public bool IsGenericMethodDefinition
+        {
+            get
+            {
+                Method method = MethodHandle.GetMethod(Reader);
+                return method.GenericParameters.GetEnumerator().MoveNext();
+            }
+        }
+
+        public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(Reader, DeclaringType, MethodHandle, methodArguments, exceptionPertainant);
+        }
+
+        public QTypeDefRefOrSpec[] QualifiedMethodSignature
+        {
+            get
+            {
+                MethodSignature methodSignature = this.MethodSignature;
+
+                QTypeDefRefOrSpec[] typeSignatures = new QTypeDefRefOrSpec[methodSignature.Parameters.Count + 1];
+                typeSignatures[0] = new QTypeDefRefOrSpec(_reader, methodSignature.ReturnType, true);
+                int paramIndex = 1;
+                foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
+                {
+                    typeSignatures[paramIndex++] = new QTypeDefRefOrSpec(_reader, parameterTypeSignatureHandle, true);
+                }
+
+                return typeSignatures;
+            }
+        }
+
+        public NativeFormatMethodCommon RuntimeMethodCommonOfUninstantiatedMethod
+        {
+            get
+            {
+                NativeFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToNativeFormatRuntimeNamedTypeInfo();
+                return new NativeFormatMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+            }
+        }
+
+        public void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QTypeDefRefOrSpec[] typeSignatures, MethodBase contextMethod, TypeContext typeContext)
+        {
+            foreach (ParameterHandle parameterHandle in _method.Parameters)
+            {
+                Parameter parameterRecord = parameterHandle.GetParameter(_reader);
+                int index = parameterRecord.Sequence;
+                result[index] =
+                    NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
+                        contextMethod,
+                        _methodHandle,
+                        index - 1,
+                        parameterHandle,
+                        typeSignatures[index],
+                        typeContext);
+            }
+        }
+
+        public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<NativeFormatMethodCommon> owningMethod)
+        {
+            Method method = MethodHandle.GetMethod(Reader);
+            int genericParametersCount = method.GenericParameters.Count;
+            if (genericParametersCount == 0)
+                return Array.Empty<RuntimeTypeInfo>();
+
+            RuntimeTypeInfo[] genericTypeParameters = new RuntimeTypeInfo[genericParametersCount];
+            int i = 0;
+            foreach (GenericParameterHandle genericParameterHandle in method.GenericParameters)
+            {
+                RuntimeTypeInfo genericParameterType = NativeFormatRuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, Reader, genericParameterHandle);
+                genericTypeParameters[i++] = genericParameterType;
+            }
+            return genericTypeParameters;
+        }
+
         //
         // methodHandle    - the "tkMethodDef" that identifies the method.
         // definingType   - the "tkTypeDef" that defined the method (this is where you get the metadata reader that created methodHandle.)
@@ -46,7 +120,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        public RuntimeMethodCommon(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        public NativeFormatMethodCommon(MethodHandle methodHandle, NativeFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
             _definingTypeInfo = definingTypeInfo;
             _methodHandle = methodHandle;
@@ -69,63 +143,6 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 return MethodSignature.CallingConvention;
             }
-        }
-
-        // Compute the ToString() value in a pay-to-play-safe way.
-        public String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
-        {
-            RuntimeParameterInfo returnParameter;
-            RuntimeParameterInfo[] parameters = this.GetRuntimeParameters(contextMethod, methodTypeArguments, out returnParameter);
-            return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
-        }
-
-        public static String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] parameters, RuntimeParameterInfo returnParameter)
-        {
-            StringBuilder sb = new StringBuilder(30);
-            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterTypeString);  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
-            sb.Append(' ');
-            sb.Append(contextMethod.Name);
-            if (methodTypeArguments.Length != 0)
-            {
-                String sep = "";
-                sb.Append('[');
-                foreach (RuntimeTypeInfo methodTypeArgument in methodTypeArguments)
-                {
-                    sb.Append(sep);
-                    sep = ",";
-                    String name = methodTypeArgument.InternalNameIfAvailable;
-                    if (name == null)
-                        name = ToStringUtils.UnavailableType;
-                    sb.Append(methodTypeArgument.Name);
-                }
-                sb.Append(']');
-            }
-            sb.Append('(');
-            sb.Append(ComputeParametersString(parameters));
-            sb.Append(')');
-
-            return sb.ToString();
-        }
-
-        // Used by method and property ToString() methods to display the list of parameter types. Replicates the behavior of MethodBase.ConstructParameters()
-        // but in a pay-to-play-safe way.
-        public static String ComputeParametersString(RuntimeParameterInfo[] parameters)
-        {
-            StringBuilder sb = new StringBuilder(30);
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (i != 0)
-                    sb.Append(", ");
-                String parameterTypeString = parameters[i].ParameterTypeString;
-
-                // Legacy: Why use "ByRef" for by ref parameters? What language is this? 
-                // VB uses "ByRef" but it should precede (not follow) the parameter name.
-                // Why don't we just use "&"?
-                if (parameterTypeString.EndsWith("&"))
-                    parameterTypeString = parameterTypeString.Substring(0, parameterTypeString.Length - 1) + " ByRef";
-                sb.Append(parameterTypeString);
-            }
-            return sb.ToString();
         }
 
         public RuntimeTypeInfo ContextTypeInfo
@@ -211,13 +228,12 @@ namespace System.Reflection.Runtime.MethodInfos
                 Parameter parameterRecord = parameterHandle.GetParameter(_reader);
                 int index = parameterRecord.Sequence;
                 result[index] =
-                    RuntimeFatMethodParameterInfo.GetRuntimeFatMethodParameterInfo(
+                    NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
                         contextMethod,
                         _methodHandle,
                         index - 1,
                         parameterHandle,
-                        reader,
-                        typeSignatures[index],
+                        new QTypeDefRefOrSpec(reader, typeSignatures[index]),
                         typeContext);
             }
             for (int i = 0; i < count; i++)
@@ -228,9 +244,8 @@ namespace System.Reflection.Runtime.MethodInfos
                         RuntimeThinMethodParameterInfo.GetRuntimeThinMethodParameterInfo(
                             contextMethod,
                             i - 1,
-                        reader,
-                        typeSignatures[i],
-                        typeContext);
+                            new QTypeDefRefOrSpec(reader, typeSignatures[i]),
+                            typeContext);
                 }
             }
 
@@ -264,12 +279,12 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public override bool Equals(Object obj)
         {
-            if (!(obj is RuntimeMethodCommon))
+            if (!(obj is NativeFormatMethodCommon))
                 return false;
-            return Equals((RuntimeMethodCommon)obj);
+            return Equals((NativeFormatMethodCommon)obj);
         }
 
-        public bool Equals(RuntimeMethodCommon other)
+        public bool Equals(NativeFormatMethodCommon other)
         {
             if (!(_reader == other._reader))
                 return false;
@@ -293,42 +308,12 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly MethodHandle _methodHandle;
         private readonly RuntimeTypeInfo _contextTypeInfo;
 
         private readonly MetadataReader _reader;
 
         private readonly Method _method;
-
-        // Helper for GetRuntimeParameters() - array mimic that supports an efficient "array.Skip(1).ToArray()" operation.
-        private struct VirtualRuntimeParameterInfoArray
-        {
-            public VirtualRuntimeParameterInfoArray(int count)
-                : this()
-            {
-                Debug.Assert(count >= 1);
-                Remainder = (count == 1) ? Array.Empty<RuntimeParameterInfo>() : new RuntimeParameterInfo[count - 1];
-            }
-
-            public RuntimeParameterInfo this[int index]
-            {
-                get
-                {
-                    return index == 0 ? First : Remainder[index - 1];
-                }
-                
-                set
-                {
-                    if (index == 0)
-                        First = value;
-                    else
-                        Remainder[index - 1] = value;
-                }
-            }
-
-            public RuntimeParameterInfo First { get; private set; }
-            public RuntimeParameterInfo[] Remainder { get; }
-        }
     }
 }

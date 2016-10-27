@@ -16,6 +16,7 @@ using Internal.Reflection.Core;
 using Internal.Runtime.Augments;
 
 using Internal.Metadata.NativeFormat;
+using NativeFormatAssemblyFlags = global::Internal.Metadata.NativeFormat.AssemblyFlags;
 
 namespace System.Reflection.Runtime.General
 {
@@ -675,12 +676,12 @@ namespace System.Reflection.Runtime.General
             ushort revisionNumber,
             ConstantStringValueHandle culture,
             IEnumerable<byte> publicKeyOrToken,
-            AssemblyFlags assemblyFlags)
+            NativeFormatAssemblyFlags assemblyFlags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & AssemblyFlags.PublicKey))
+            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.PublicKey))
                 assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & AssemblyFlags.Retargetable))
+            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.Retargetable))
                 assemblyNameFlags |= AssemblyNameFlags.Retargetable;
             int contentType = ((int)assemblyFlags) & 0x00000E00;
             assemblyNameFlags |= (AssemblyNameFlags)contentType;

@@ -13,8 +13,6 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.CustomAttributes;
 
-using Internal.Metadata.NativeFormat;
-
 namespace Internal.Reflection.Tracing
 {
     public static partial class ReflectionTrace
@@ -57,7 +55,7 @@ namespace Internal.Reflection.Tracing
                 RuntimeAssembly runtimeAssembly = assembly as RuntimeAssembly;
                 if (runtimeAssembly == null)
                     return null;
-                return runtimeAssembly.Scope.Handle.ToRuntimeAssemblyName(runtimeAssembly.Scope.Reader).FullName;
+                return runtimeAssembly.RuntimeAssemblyName.FullName;
             }
             catch
             {
@@ -200,29 +198,8 @@ namespace Internal.Reflection.Tracing
                 RuntimeNamedTypeInfo runtimeNamedTypeInfo = type.GetTypeInfo() as RuntimeNamedTypeInfo;
                 if (runtimeNamedTypeInfo == null)
                     return null;
-                MetadataReader reader = runtimeNamedTypeInfo.Reader;
 
-                String s = "";
-                TypeDefinitionHandle typeDefinitionHandle = runtimeNamedTypeInfo.TypeDefinitionHandle;
-                NamespaceDefinitionHandle namespaceDefinitionHandle;
-                do
-                {
-                    TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
-                    String name = typeDefinition.Name.GetString(reader);
-                    if (s == "")
-                        s = name;
-                    else
-                        s = name + "+" + s;
-                    namespaceDefinitionHandle = typeDefinition.NamespaceDefinition;
-                    typeDefinitionHandle = typeDefinition.EnclosingType;
-                }
-                while (!typeDefinitionHandle.IsNull(reader));
-
-                NamespaceChain namespaceChain = new NamespaceChain(reader, namespaceDefinitionHandle);
-                String ns = namespaceChain.NameSpace;
-                if (ns != null)
-                    s = ns + "." + s;
-                return s;
+                return runtimeNamedTypeInfo.TraceableTypeName;
             }
         }
 

@@ -6,33 +6,31 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.MethodInfos;
-
+using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
 
-namespace System.Reflection.Runtime.TypeInfos
+namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 {
-    internal sealed partial class RuntimeGenericParameterTypeInfoForMethods : RuntimeGenericParameterTypeInfo, IKeyedItem<RuntimeGenericParameterTypeInfoForMethods.UnificationKey>
+    internal sealed partial class NativeFormatRuntimeGenericParameterTypeInfoForTypes : NativeFormatRuntimeGenericParameterTypeInfo
     {
         //
         // Key for unification.
         //
         internal struct UnificationKey : IEquatable<UnificationKey>
         {
-            public UnificationKey(RuntimeNamedMethodInfo methodOwner, MetadataReader reader, GenericParameterHandle genericParameterHandle)
+            public UnificationKey(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle, GenericParameterHandle genericParameterHandle)
             {
-                MethodOwner = methodOwner;
-                GenericParameterHandle = genericParameterHandle;
                 Reader = reader;
+                TypeDefinitionHandle = typeDefinitionHandle;
+                GenericParameterHandle = genericParameterHandle;
             }
 
-            public RuntimeNamedMethodInfo MethodOwner { get; }
             public MetadataReader Reader { get; }
+            public TypeDefinitionHandle TypeDefinitionHandle { get; }
             public GenericParameterHandle GenericParameterHandle { get; }
 
             public override bool Equals(object obj)
@@ -44,18 +42,18 @@ namespace System.Reflection.Runtime.TypeInfos
 
             public bool Equals(UnificationKey other)
             {
-                if (!(GenericParameterHandle.Equals(other.GenericParameterHandle)))
+                if (!TypeDefinitionHandle.Equals(other.TypeDefinitionHandle))
                     return false;
                 if (!(Reader == other.Reader))
                     return false;
-                if (!MethodOwner.Equals(other.MethodOwner))
+                if (!(GenericParameterHandle.Equals(other.GenericParameterHandle)))
                     return false;
                 return true;
             }
 
             public override int GetHashCode()
             {
-                return GenericParameterHandle.GetHashCode();
+                return TypeDefinitionHandle.GetHashCode();
             }
         }
     }

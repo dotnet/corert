@@ -9,6 +9,7 @@ using System.Reflection.Runtime.Assemblies;
 using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
+using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 using Debug = System.Diagnostics.Debug;
 

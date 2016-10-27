@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -14,19 +14,28 @@ using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
 
-namespace System.Reflection.Runtime.ParameterInfos
+namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 {
     //
     // This implements ParameterInfo objects owned by MethodBase objects that have an associated Parameter metadata entity.
     //
-    internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
+    internal sealed partial class NativeFormatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reader, typeHandle, typeContext)
+        private NativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
+            : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
             _methodHandle = methodHandle;
             _parameterHandle = parameterHandle;
-            _parameter = parameterHandle.GetParameter(reader);
+            _parameter = parameterHandle.GetParameter(Reader);
+        }
+
+        private MetadataReader Reader
+        {
+            get
+            {
+                Debug.Assert(QualifiedParameterTypeHandle.Reader is MetadataReader);
+                return (MetadataReader)QualifiedParameterTypeHandle.Reader;
+            }
         }
 
         public sealed override ParameterAttributes Attributes

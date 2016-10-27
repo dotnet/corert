@@ -8,8 +8,6 @@ using System.Diagnostics;
 using System.Reflection.Runtime.Assemblies;
 using System.Collections.Generic;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.Modules
 {
     //

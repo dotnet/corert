@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
         public sealed override string CodeBase { get { throw new NotImplementedException(); } }
         public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) { throw new NotImplementedException(); }
@@ -51,7 +51,7 @@ namespace System.Reflection.Runtime.CustomAttributes
 
 namespace System.Reflection.Runtime.EventInfos
 {
-    internal sealed partial class RuntimeEventInfo
+    internal abstract partial class RuntimeEventInfo
     {
         public sealed override MethodInfo[] GetOtherMethods(bool nonPublic) { throw new NotImplementedException(); }
     }
@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.EventInfos
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
         public sealed override RuntimeFieldHandle FieldHandle { get { throw new NotImplementedException(); } }
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
@@ -109,7 +109,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
