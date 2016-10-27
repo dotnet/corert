@@ -59,20 +59,22 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitPointerReloc(factory.MethodEntrypoint(canonMethod));
 
             // Find out what's the context to use
-            GenericDictionaryNode dictionary;
+            ISymbolNode contextParameter;
             if (canonMethod.RequiresInstMethodDescArg())
             {
-                dictionary = factory.MethodGenericDictionary(Method);
+                contextParameter = factory.MethodGenericDictionary(Method);
             }
             else
             {
                 Debug.Assert(canonMethod.RequiresInstMethodTableArg());
-                dictionary = factory.TypeGenericDictionary(Method.OwningType);
+
+                // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+                contextParameter = factory.ConstructedTypeSymbol(Method.OwningType);
             }
 
             // The next entry is a pointer to the pointer to the context to be used for the canonical method
             // TODO: in multi-module, this points to the import cell, and is no longer this weird pointer
-            builder.EmitPointerReloc(factory.Indirection(dictionary));
+            builder.EmitPointerReloc(factory.Indirection(contextParameter));
             
             return builder.ToObjectData();
         }

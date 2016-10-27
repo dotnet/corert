@@ -119,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    partial class ReadyToRunGenericLookupFromThisNode
+    partial class ReadyToRunGenericLookupFromTypeNode
     {
         protected override void EmitLoadGenericContext(NodeFactory factory, ref X64Emitter encoder, bool relocsOnly)
         {

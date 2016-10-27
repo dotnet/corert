@@ -1228,15 +1228,12 @@ namespace Internal.JitInterface
 
         private ISymbolNode GetGenericLookupHelper(CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, ReadyToRunHelperId helperId, object helperArgument)
         {
-            if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+            if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ
+                || runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
             {
-                return _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
+                return _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
             }
-            else if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
-            {
-                return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
-            }
-            
+
             Debug.Assert(runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
             return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled);
         }
@@ -1616,14 +1613,9 @@ namespace Internal.JitInterface
 
                         // What generic context do we look up the base from.
                         ISymbolNode helper;
-                        if (contextMethod.AcquiresInstMethodTableFromThis())
+                        if (contextMethod.AcquiresInstMethodTableFromThis() || contextMethod.RequiresInstMethodTableArg())
                         {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromThisLookup(
-                                helperId, runtimeDeterminedField.OwningType, contextMethod.OwningType);
-                        }
-                        else if (contextMethod.RequiresInstMethodTableArg())
-                        {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(
                                 helperId, runtimeDeterminedField.OwningType, contextMethod.OwningType);
                         }
                         else
@@ -2575,21 +2567,22 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    ISymbolNode genericDictionary = null;
+                    ISymbolNode instParam = null;
 
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
-                        genericDictionary = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
+                        instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
                     }
                     else if (targetMethod.RequiresInstMethodTableArg())
                     {
-                        genericDictionary = _compilation.NodeFactory.TypeGenericDictionary(concreteMethod.OwningType);
+                        // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+                        instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
                     }
 
-                    if (genericDictionary != null)
+                    if (instParam != null)
                     {
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
-                        pResult.instParamLookup.addr = (void*)ObjectToHandle(genericDictionary);
+                        pResult.instParamLookup.addr = (void*)ObjectToHandle(instParam);
 
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                             _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
