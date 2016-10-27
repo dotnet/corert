@@ -6,7 +6,7 @@ using System.Reflection.Metadata;
 
 namespace Internal.Reflection.Core
 {
-    // Auto StructLayout used to suppress warning that order of fields is not garaunteed in partial structs
+    // Auto StructLayout used to suppress warning that order of fields is not guaranteed in partial structs
     [StructLayout(LayoutKind.Auto)]
     public partial struct AssemblyBindResult
     {
