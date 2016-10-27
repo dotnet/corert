@@ -41,6 +41,13 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32, delta);
         }
 
+        public void EmitLEA(Register reg, ref AddrMode addrMode)
+        {
+            Debug.Assert(addrMode.Size != AddrModeSize.Int8 &&
+                addrMode.Size != AddrModeSize.Int16);
+            EmitIndirInstruction(0x8D, reg, ref addrMode);
+        }
+
         public void EmitCMP(ref AddrMode addrMode, sbyte immediate)
         {
             if (addrMode.Size == AddrModeSize.Int16)

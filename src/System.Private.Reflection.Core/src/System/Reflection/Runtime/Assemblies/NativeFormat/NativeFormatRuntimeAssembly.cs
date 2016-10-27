@@ -44,7 +44,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.CustomAttributes))
                         yield return cad;
 
-                    foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(scope.Reader, scope.Handle))
+                    foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(scope.Reader, scope.Handle))
                         yield return cad;
                 }
             }

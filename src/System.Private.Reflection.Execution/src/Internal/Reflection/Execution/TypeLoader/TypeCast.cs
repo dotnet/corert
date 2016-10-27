@@ -22,14 +22,14 @@ namespace Internal.Reflection.Execution
     // This is not a general purpose type comparison facility. It is limited to what constraint validation needs.
     internal static partial class ConstraintValidator
     {
-        private static bool ImplementsInterface(TypeInfo pObjType, TypeInfo pTargetType)
+        private static bool ImplementsInterface(Type pObjType, Type pTargetType)
         {
             Debug.Assert(!pTargetType.IsArray, "did not expect array type");
             Debug.Assert(pTargetType.IsInterface, "IsInstanceOfInterface called with non-interface EEType");
 
-            foreach (var pInterfaceType in pObjType.ImplementedInterfaces)
+            foreach (var pInterfaceType in pObjType.GetInterfaces())
             {
-                if (AreTypesEquivalentInternal(pInterfaceType.GetTypeInfo(), pTargetType))
+                if (AreTypesEquivalentInternal(pInterfaceType, pTargetType))
                 {
                     return true;
                 }
@@ -53,10 +53,8 @@ namespace Internal.Reflection.Execution
                 Type[] pTargetInstantiation = null;
                 Type[] pTargetGenericInstantiation = null;
 
-                foreach (var pInterface in pObjType.ImplementedInterfaces)
+                foreach (var pInterfaceType in pObjType.GetInterfaces())
                 {
-                    TypeInfo pInterfaceType = pInterface.GetTypeInfo();
-
                     // We can ignore interfaces which are not also marked as having generic variance
                     // unless we're dealing with array covariance. 
                     // if (pInterfaceType.HasGenericVariance || (fArrayCovariance && pInterfaceType.IsGenericType))
@@ -68,14 +66,14 @@ namespace Internal.Reflection.Execution
                     if (!pInterfaceType.GetGenericTypeDefinition().Equals(pTargetGenericType))
                         continue;
 
-                    Type[] pInterfaceInstantiation = pInterfaceType.GenericTypeArguments;
+                    Type[] pInterfaceInstantiation = pInterfaceType.GetGenericArguments();
 
                     if (pTargetInstantiation == null)
                     {
-                        pTargetInstantiation = pTargetType.GenericTypeArguments;
+                        pTargetInstantiation = pTargetType.GetGenericArguments();
 
                         if (!fArrayCovariance)
-                            pTargetGenericInstantiation = pTargetGenericType.GetTypeInfo().GenericTypeParameters;
+                            pTargetGenericInstantiation = pTargetGenericType.GetGenericArguments();
                     }
 
                     // Compare the instantiations to see if they're compatible taking variance into account.
@@ -93,8 +91,8 @@ namespace Internal.Reflection.Execution
                         // Special case for generic interfaces on arrays. Arrays of integral types (including enums)
                         // can be cast to generic interfaces over the integral types of the same size. For example
                         // int[] . IList<uint>.
-                        if (ArePrimitveTypesEquivalentSize(pInterfaceInstantiation[0].GetTypeInfo(),
-                                                           pTargetInstantiation[0].GetTypeInfo()))
+                        if (ArePrimitveTypesEquivalentSize(pInterfaceInstantiation[0],
+                                                           pTargetInstantiation[0]))
                         {
                             // We have checked that the interface type definition matches above. The checks are ordered differently
                             // here compared with rtm\system\runtime\typecast.cs version because of TypeInfo does not let us do
@@ -109,7 +107,7 @@ namespace Internal.Reflection.Execution
         }
 
         // Compare two types to see if they are compatible via generic variance.
-        private static bool TypesAreCompatibleViaGenericVariance(TypeInfo pSourceType, TypeInfo pTargetType)
+        private static bool TypesAreCompatibleViaGenericVariance(Type pSourceType, Type pTargetType)
         {
             Type pTargetGenericType = pTargetType.GetGenericTypeDefinition();
             Type pSourceGenericType = pSourceType.GetGenericTypeDefinition();
@@ -118,9 +116,9 @@ namespace Internal.Reflection.Execution
             if (pTargetGenericType.Equals(pSourceGenericType))
             {
                 // Compare the instantiations to see if they're compatible taking variance into account.
-                if (TypeParametersAreCompatible(pSourceType.GenericTypeArguments,
-                                                pTargetType.GenericTypeArguments,
-                                                pTargetGenericType.GetTypeInfo().GenericTypeParameters,
+                if (TypeParametersAreCompatible(pSourceType.GetGenericArguments(),
+                                                pTargetType.GetGenericArguments(),
+                                                pTargetGenericType.GetGenericArguments(),
                                                 false))
                 {
                     return true;
@@ -150,14 +148,14 @@ namespace Internal.Reflection.Execution
             // of type args.
             for (int i = 0; i < pTargetInstantiation.Length; i++)
             {
-                TypeInfo pTargetArgType = pTargetInstantiation[i].GetTypeInfo();
-                TypeInfo pSourceArgType = pSourceInstantiation[i].GetTypeInfo();
+                Type pTargetArgType = pTargetInstantiation[i];
+                Type pSourceArgType = pSourceInstantiation[i];
 
                 GenericParameterAttributes varType;
                 if (fForceCovariance)
                     varType = GenericParameterAttributes.Covariant;
                 else
-                    varType = pVarianceInfo[i].GetTypeInfo().GenericParameterAttributes & GenericParameterAttributes.VarianceMask;
+                    varType = pVarianceInfo[i].GenericParameterAttributes & GenericParameterAttributes.VarianceMask;
 
                 switch (varType)
                 {
@@ -214,7 +212,7 @@ namespace Internal.Reflection.Execution
         // This routine assumes that the source type is boxed, i.e. a value type source is presumed to be
         // compatible with Object and ValueType and an enum source is additionally compatible with Enum.
         //
-        private static bool AreTypesAssignable(TypeInfo pSourceType, TypeInfo pTargetType)
+        private static bool AreTypesAssignable(Type pSourceType, Type pTargetType)
         {
             // Special case: T can be cast to Nullable<T> (where T is a value type). Call this case out here
             // since this is only applicable if T is boxed, which is not true for any other callers of
@@ -223,7 +221,7 @@ namespace Internal.Reflection.Execution
             {
                 Type pNullableType = pTargetType.GetNullableType();
 
-                return AreTypesEquivalentInternal(pSourceType, pNullableType.GetTypeInfo());
+                return AreTypesEquivalentInternal(pSourceType, pNullableType);
             }
 
             return AreTypesAssignableInternal(pSourceType, pTargetType, true, false);
@@ -234,7 +232,7 @@ namespace Internal.Reflection.Execution
         //                            compatible with Object, ValueType and Enum (if applicable)
         //  fAllowSizeEquivalence   : allow identically sized integral types and enums to be considered
         //                            equivalent (currently used only for array element types)
-        private static bool AreTypesAssignableInternal(TypeInfo pSourceType, TypeInfo pTargetType, bool fBoxedSource, bool fAllowSizeEquivalence)
+        private static bool AreTypesAssignableInternal(Type pSourceType, Type pTargetType, bool fBoxedSource, bool fAllowSizeEquivalence)
         {
             //
             // Are the types identical?
@@ -274,7 +272,7 @@ namespace Internal.Reflection.Execution
             {
                 if (pSourceType.IsArray)
                 {
-                    if (pSourceType.GetElementType().GetTypeInfo().IsPointer)
+                    if (pSourceType.GetElementType().IsPointer)
                     {
                         // If the element types are pointers, then only exact matches are correct.
                         // As we've already called AreTypesEquivalent at the start of this function,
@@ -287,7 +285,7 @@ namespace Internal.Reflection.Execution
                         // Source type is also a pointer. Are the element types compatible? Note that using
                         // AreTypesAssignableInternal here handles array covariance as well as IFoo[] . Foo[]
                         // etc. Pass false for fBoxedSource since int[] is not assignable to object[].
-                        return AreTypesAssignableInternal(pSourceType.GetElementType().GetTypeInfo(), pTargetType.GetElementType().GetTypeInfo(), false, true);
+                        return AreTypesAssignableInternal(pSourceType.GetElementType(), pTargetType.GetElementType(), false, true);
                     }
                 }
 
@@ -307,7 +305,7 @@ namespace Internal.Reflection.Execution
             {
                 if (pSourceType.IsPointer)
                 {
-                    if (pSourceType.GetElementType().GetTypeInfo().IsPointer)
+                    if (pSourceType.GetElementType().IsPointer)
                     {
                         // If the element types are pointers, then only exact matches are correct.
                         // As we've already called AreTypesEquivalent at the start of this function,
@@ -320,7 +318,7 @@ namespace Internal.Reflection.Execution
                         // Source type is also a pointer. Are the element types compatible? Note that using
                         // AreTypesAssignableInternal here handles array covariance as well as IFoo[] . Foo[]
                         // etc. Pass false for fBoxedSource since int[] is not assignable to object[].
-                        return AreTypesAssignableInternal(pSourceType.GetElementType().GetTypeInfo(), pTargetType.GetElementType().GetTypeInfo(), false, true);
+                        return AreTypesAssignableInternal(pSourceType.GetElementType(), pTargetType.GetElementType(), false, true);
                     }
                 }
 
@@ -377,7 +375,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private static bool IsDerived(TypeInfo pDerivedType, TypeInfo pBaseType)
+        private static bool IsDerived(Type pDerivedType, Type pBaseType)
         {
             Debug.Assert(!pBaseType.IsInterface, "did not expect interface type");
 
@@ -390,14 +388,14 @@ namespace Internal.Reflection.Execution
                 if (baseType == null)
                     return false;
 
-                pDerivedType = baseType.GetTypeInfo();
+                pDerivedType = baseType;
             }
         }
 
         // Method to compare two types pointers for type equality
         // We cannot just compare the pointers as there can be duplicate type instances
         // for cloned and constructed types.
-        private static bool AreTypesEquivalentInternal(TypeInfo pType1, TypeInfo pType2)
+        private static bool AreTypesEquivalentInternal(Type pType1, Type pType2)
         {
             if (!pType1.IsInstantiatedTypeInfo() && !pType2.IsInstantiatedTypeInfo())
                 return pType1.Equals(pType2);
@@ -407,13 +405,13 @@ namespace Internal.Reflection.Execution
                 if (!pType1.GetGenericTypeDefinition().Equals(pType2.GetGenericTypeDefinition()))
                     return false;
 
-                Type[] args1 = pType1.GenericTypeArguments;
-                Type[] args2 = pType2.GenericTypeArguments;
+                Type[] args1 = pType1.GetGenericArguments();
+                Type[] args2 = pType2.GetGenericArguments();
                 Debug.Assert(args1.Length == args2.Length);
 
                 for (int i = 0; i < args1.Length; i++)
                 {
-                    if (!AreTypesEquivalentInternal(args1[i].GetTypeInfo(), args2[i].GetTypeInfo()))
+                    if (!AreTypesEquivalentInternal(args1[i], args2[i]))
                         return false;
                 }
 
@@ -425,18 +423,18 @@ namespace Internal.Reflection.Execution
                 if (pType1.GetArrayRank() != pType2.GetArrayRank())
                     return false;
 
-                return AreTypesEquivalentInternal(pType1.GetElementType().GetTypeInfo(), pType2.GetElementType().GetTypeInfo());
+                return AreTypesEquivalentInternal(pType1.GetElementType(), pType2.GetElementType());
             }
 
             if (pType1.IsPointer && pType2.IsPointer)
             {
-                return AreTypesEquivalentInternal(pType1.GetElementType().GetTypeInfo(), pType2.GetElementType().GetTypeInfo());
+                return AreTypesEquivalentInternal(pType1.GetElementType(), pType2.GetElementType());
             }
 
             return false;
         }
 
-        private static bool ArePrimitveTypesEquivalentSize(TypeInfo pType1, TypeInfo pType2)
+        private static bool ArePrimitveTypesEquivalentSize(Type pType1, Type pType2)
         {
             int normalizedType1 = NormalizedPrimitiveTypeSizeForIntegerTypes(pType1);
             if (normalizedType1 == 0)

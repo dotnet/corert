@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
                 IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
                     yield return cad;
             }
         }

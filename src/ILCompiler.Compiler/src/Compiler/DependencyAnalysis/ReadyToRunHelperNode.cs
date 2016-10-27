@@ -24,11 +24,14 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
-        GenericLookupFromThis,
-        GenericLookupFromDictionary,
+
+        TypeHandle,
+        FieldHandle,
+        MethodDictionary,
+        MethodEntry,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithRuntimeDeterminedDependencies
+    public partial class ReadyToRunHelperNode : AssemblyStubNode
     {
         private ReadyToRunHelperId _id;
         private Object _target;
@@ -93,30 +96,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     case ReadyToRunHelperId.ResolveVirtualFunction:
                         return "__ResolveVirtualFunction_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
-                    case ReadyToRunHelperId.GenericLookupFromThis:
-                        {
-                            var lookupInfo = (GenericLookupDescriptor)_target;
-
-                            string mangledContextName;
-                            if (lookupInfo.CanonicalOwner is MethodDesc)
-                                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)lookupInfo.CanonicalOwner);
-                            else
-                                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)lookupInfo.CanonicalOwner);
-
-                            return string.Concat("__GenericLookupFromThis_", mangledContextName, "_", lookupInfo.Signature.GetMangledName(NodeFactory.NameMangler));
-                        }
-                    case ReadyToRunHelperId.GenericLookupFromDictionary:
-                        {
-                            var lookupInfo = (GenericLookupDescriptor)_target;
-
-                            string mangledContextName;
-                            if (lookupInfo.CanonicalOwner is MethodDesc)
-                                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)lookupInfo.CanonicalOwner);
-                            else
-                                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)lookupInfo.CanonicalOwner);
-
-                            return string.Concat("__GenericLookupFromDict_", mangledContextName, "_", lookupInfo.Signature.GetMangledName(NodeFactory.NameMangler));
-                        }
                     default:
                         throw new NotImplementedException();
                 }
@@ -146,38 +125,6 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 return null;
-            }
-        }
-
-        protected override void OnMarked(NodeFactory factory)
-        {
-            switch (_id)
-            {
-                case ReadyToRunHelperId.GenericLookupFromThis:
-                case ReadyToRunHelperId.GenericLookupFromDictionary:
-                    {
-                        // When the helper call gets marked, ensure the generic layout for the associated dictionaries
-                        // includes the signature.
-                        var lookupInfo = (GenericLookupDescriptor)_target;
-                        factory.GenericDictionaryLayout(lookupInfo.CanonicalOwner).EnsureEntry(lookupInfo.Signature);
-                    }
-                    break;
-            }
-        }
-
-        public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
-        {
-            switch (_id)
-            {
-                case ReadyToRunHelperId.GenericLookupFromDictionary:
-                case ReadyToRunHelperId.GenericLookupFromThis:
-                    {
-                        var lookupInfo = (GenericLookupDescriptor)_target;
-                        yield return new DependencyListEntry(
-                            lookupInfo.Signature.GetTarget(factory, typeInstantiation, methodInstantiation),
-                            "Dictionary dependency");
-                    }
-                    break;
             }
         }
     }

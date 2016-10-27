@@ -209,6 +209,16 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
 
+            _genericReadyToRunHelpersFromDict = new NodeCache<Tuple<ReadyToRunHelperId, object, TypeSystemEntity>, ISymbolNode>(data =>
+            {
+                return new ReadyToRunGenericLookupFromDictionaryNode(this, data.Item1, data.Item2, data.Item3);
+            });
+
+            _genericReadyToRunHelpersFromThis = new NodeCache<Tuple<ReadyToRunHelperId, object, TypeSystemEntity>, ISymbolNode>(data =>
+            {
+                return new ReadyToRunGenericLookupFromThisNode(this, data.Item1, data.Item2, data.Item3);
+            });
+
             _indirectionNodes = new NodeCache<ISymbolNode, IndirectionNode>(symbol =>
             {
                 return new IndirectionNode(symbol);
@@ -575,6 +585,20 @@ namespace ILCompiler.DependencyAnalysis
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
         }
 
+        private NodeCache<Tuple<ReadyToRunHelperId, Object, TypeSystemEntity>, ISymbolNode> _genericReadyToRunHelpersFromDict;
+
+        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        {
+            return _genericReadyToRunHelpersFromDict.GetOrAdd(new Tuple<ReadyToRunHelperId, object, TypeSystemEntity>(id, target, dictionaryOwner));
+        }
+
+        private NodeCache<Tuple<ReadyToRunHelperId, Object, TypeSystemEntity>, ISymbolNode> _genericReadyToRunHelpersFromThis;
+
+        public ISymbolNode ReadyToRunHelperFromThisLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        {
+            return _genericReadyToRunHelpersFromThis.GetOrAdd(new Tuple<ReadyToRunHelperId, object, TypeSystemEntity>(id, target, dictionaryOwner));
+        }
+
         private NodeCache<ISymbolNode, IndirectionNode> _indirectionNodes;
 
         public IndirectionNode Indirection(ISymbolNode symbol)
@@ -627,11 +651,10 @@ namespace ILCompiler.DependencyAnalysis
             CompilationUnitPrefix + "__DispatchMapTableEnd",
             null);
 
-        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfEmbeddedDataNode<FrozenStringNode>(
+        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<FrozenStringNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
-            null,
-            new FrozenObjectSentinelNode());
+            null);
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 

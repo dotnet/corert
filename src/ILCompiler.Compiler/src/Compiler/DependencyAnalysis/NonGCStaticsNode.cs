@@ -6,6 +6,7 @@ using System;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public NonGCStaticsNode(MetadataType type, NodeFactory factory)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
         }
 
@@ -124,8 +126,12 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitZeros(classConstructorContextStorageSize - GetClassConstructorContextSize(_type.Context.Target));
 
                 // Emit the actual StaticClassConstructionContext
-                var cctorMethod = _type.GetStaticConstructor();
-                builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
+                MethodDesc cctorMethod = _type.GetStaticConstructor();
+                MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (cctorMethod != canonCctorMethod)
+                    builder.EmitPointerReloc(factory.FatFunctionPointer(cctorMethod), FatFunctionPointerConstants.Offset);
+                else
+                    builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
                 builder.EmitZeroPointer();
             }
             else
