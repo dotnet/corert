@@ -115,11 +115,6 @@ namespace System.Runtime.InteropServices
             s_moduleCount++;
         }
 
-        internal static McgModule GetModule(int moduleIndex)
-        {
-            return s_modules[moduleIndex];
-        }
-
         /// <summary>
         /// This function scans all McgModules in search of the m_classData table row that "best
         /// describes" the requested type (i.e., describes the exact requested type or describes the
@@ -574,6 +569,27 @@ namespace System.Runtime.InteropServices
             }
 
             structMarshalData = default(McgStructMarshalData);
+            return false;
+        }
+
+        /// <summary>
+        /// Fetch struct WinRT Name for a given struct. 
+        /// The returned WinRT name is only valid for computing guid during runtime
+        /// </summary>
+        /// <param name="structTypeHandle">Specified struct</param>
+        /// <param name="structWinRTName">Struct WinRT Name</param>
+        /// <returns>true, if the structs exists in mcg generated module</returns>
+        internal static bool TryGetStructWinRTName(RuntimeTypeHandle structTypeHandle, out string structWinRTName)
+        {
+            for (int i = 0; i < s_moduleCount; i++)
+            {
+                if (s_modules[i].TryGetStructWinRTName(structTypeHandle, out structWinRTName))
+                {
+                    return true;
+                }
+            }
+
+            structWinRTName = default(string);
             return false;
         }
 
