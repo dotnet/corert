@@ -80,7 +80,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
                 MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
                 if (methodSemantics.Attributes == localMethodSemantics)
                 {
-                    return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo), _reflectedType);
+                    return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodSemantics.Method, _definingTypeInfo, ContextTypeInfo), ReflectedTypeInfo);
                 }
             }
 
@@ -120,9 +120,9 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
                 return false;
             if (!(_eventHandle.Equals(other._eventHandle)))
                 return false;
-            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
+            if (!(ContextTypeInfo.Equals(other.ContextTypeInfo)))
                 return false;
-            if (!(_reflectedType.Equals(other._reflectedType)))
+            if (!(ReflectedType.Equals(other.ReflectedType)))
                 return false;
             return true;
         }
@@ -136,7 +136,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
         {
             get
             {
-                return _event.Type.Resolve(_reader, _contextTypeInfo.TypeContext);
+                return _event.Type.Resolve(_reader, ContextTypeInfo.TypeContext);
             }
         }
 

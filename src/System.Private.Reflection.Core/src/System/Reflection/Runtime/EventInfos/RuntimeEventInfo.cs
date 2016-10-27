@@ -25,8 +25,8 @@ namespace System.Reflection.Runtime.EventInfos
     {
         protected RuntimeEventInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            _contextTypeInfo = contextTypeInfo;
-            _reflectedType = reflectedType;
+            ContextTypeInfo = contextTypeInfo;
+            ReflectedTypeInfo = reflectedType;
         }
 
         public sealed override MethodInfo AddMethod
@@ -60,7 +60,7 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo;
+                return ContextTypeInfo;
             }
         }
 
@@ -89,7 +89,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _reflectedType;
+                return ReflectedTypeInfo;
             }
         }
 
@@ -150,7 +150,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _contextTypeInfo;
+                return ContextTypeInfo;
             }
         }
 
@@ -196,8 +196,8 @@ namespace System.Reflection.Runtime.EventInfos
         protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
 
 
-        protected readonly RuntimeTypeInfo _contextTypeInfo;
-        protected readonly RuntimeTypeInfo _reflectedType;
+        protected readonly RuntimeTypeInfo ContextTypeInfo;
+        protected readonly RuntimeTypeInfo ReflectedTypeInfo;
 
         private volatile MethodInfo _lazyAdder;
         private volatile MethodInfo _lazyRemover;

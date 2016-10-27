@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         protected RuntimeMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
             : base(member, position)
         {
-            _qualifiedParameterTypeHandle = qualifiedParameterTypeHandle;
+            QualifiedParameterTypeHandle = qualifiedParameterTypeHandle;
             _typeContext = typeContext;
         }
 
@@ -29,7 +29,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _lazyParameterType ?? (_lazyParameterType = _qualifiedParameterTypeHandle.Resolve(_typeContext));
+                return _lazyParameterType ?? (_lazyParameterType = QualifiedParameterTypeHandle.Resolve(_typeContext));
             }
         }
 
@@ -37,11 +37,11 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _qualifiedParameterTypeHandle.FormatTypeName(_typeContext);
+                return QualifiedParameterTypeHandle.FormatTypeName(_typeContext);
             }
         }
 
-        protected readonly QTypeDefRefOrSpec _qualifiedParameterTypeHandle;
+        protected readonly QTypeDefRefOrSpec QualifiedParameterTypeHandle;
         private readonly TypeContext _typeContext;
         private volatile Type _lazyParameterType;
     }

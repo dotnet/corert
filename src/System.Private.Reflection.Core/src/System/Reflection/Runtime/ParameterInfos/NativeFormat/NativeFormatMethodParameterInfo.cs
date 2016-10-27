@@ -33,8 +33,8 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
         {
             get
             {
-                Debug.Assert(_qualifiedParameterTypeHandle.Reader is MetadataReader);
-                return (MetadataReader)_qualifiedParameterTypeHandle.Reader;
+                Debug.Assert(QualifiedParameterTypeHandle.Reader is MetadataReader);
+                return (MetadataReader)QualifiedParameterTypeHandle.Reader;
             }
         }
 

@@ -50,7 +50,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         //
         protected RuntimePropertyInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            _contextTypeInfo = contextTypeInfo;
+            ContextTypeInfo = contextTypeInfo;
             _reflectedType = reflectedType;
         }
 
@@ -79,7 +79,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo;
+                return ContextTypeInfo;
             }
         }
 
@@ -183,7 +183,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_PropertyType(this);
 #endif
 
-                TypeContext typeContext = _contextTypeInfo.TypeContext;
+                TypeContext typeContext = ContextTypeInfo.TypeContext;
                 return PropertyTypeHandle.Resolve(typeContext);
             }
         }
@@ -245,7 +245,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             StringBuilder sb = new StringBuilder(30);
 
-            TypeContext typeContext = _contextTypeInfo.TypeContext;
+            TypeContext typeContext = ContextTypeInfo.TypeContext;
             sb.Append(PropertyTypeHandle.FormatTypeName(typeContext));
             sb.Append(' ');
             sb.Append(this.Name);
@@ -275,7 +275,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                return _contextTypeInfo;
+                return ContextTypeInfo;
             }
         }
 
@@ -362,7 +362,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         /// </summary>
         protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
 
-        protected readonly RuntimeTypeInfo _contextTypeInfo;
+        protected readonly RuntimeTypeInfo ContextTypeInfo;
         protected readonly RuntimeTypeInfo _reflectedType;
 
         private volatile MethodInvoker _lazyGetterInvoker = null;

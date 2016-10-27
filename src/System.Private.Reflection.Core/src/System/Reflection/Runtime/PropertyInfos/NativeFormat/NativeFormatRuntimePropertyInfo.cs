@@ -94,7 +94,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
                 return false;
             if (!(_propertyHandle.Equals(other._propertyHandle)))
                 return false;
-            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
+            if (!(ContextTypeInfo.Equals(other.ContextTypeInfo)))
                 return false;
             if (!(_reflectedType.Equals(other._reflectedType)))
                 return false;
@@ -159,7 +159,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
                     return null;
             }
 
-            bool inherited = !_reflectedType.Equals(_contextTypeInfo);
+            bool inherited = !_reflectedType.Equals(ContextTypeInfo);
 
             foreach (MethodSemanticsHandle methodSemanticsHandle in _property.MethodSemantics)
             {
@@ -175,7 +175,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
                             continue;
                     }
 
-                    return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, _definingTypeInfo, _contextTypeInfo), _reflectedType);
+                    return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, _definingTypeInfo, ContextTypeInfo), _reflectedType);
                 }
             }
             
