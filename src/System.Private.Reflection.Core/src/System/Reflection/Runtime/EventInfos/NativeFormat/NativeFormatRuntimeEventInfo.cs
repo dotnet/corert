@@ -54,7 +54,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             _event = eventHandle.GetEvent(_reader);
         }
 
-        protected override MethodInfo GetEventMethod(EventMethodSemantics whichMethod)
+        protected sealed override MethodInfo GetEventMethod(EventMethodSemantics whichMethod)
         {
             NativeFormatMethodSemanticsAttributes localMethodSemantics;
             switch (whichMethod)

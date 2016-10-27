@@ -25,7 +25,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
     internal partial class EcmaFormatRuntimeAssembly
     {
-        internal override RuntimeTypeInfo GetTypeCoreCaseInsensitive(string fullName)
+        internal sealed override RuntimeTypeInfo GetTypeCoreCaseInsensitive(string fullName)
         {
             LowLevelDictionary<string, Handle> dict = CaseInsensitiveTypeDictionary;
             Handle typeDefOrForwarderHandle;

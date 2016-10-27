@@ -36,8 +36,8 @@ namespace System.Reflection.Runtime.MethodInfos
         internal sealed override string RuntimeName { get { throw NotImplemented.ByDesign; } }
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get { throw NotImplemented.ByDesign; } }
 
-        protected internal override string ComputeToString(RuntimeMethodInfo contextMethod) { throw NotImplemented.ByDesign; }
-        internal override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant) { throw NotImplemented.ByDesign; }
+        protected internal sealed override string ComputeToString(RuntimeMethodInfo contextMethod) { throw NotImplemented.ByDesign; }
+        internal sealed override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant) { throw NotImplemented.ByDesign; }
 
         public static readonly RuntimeDummyMethodInfo Instance = new RuntimeDummyMethodInfo();
     }

@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {
     internal partial class NativeFormatRuntimeAssembly
     {
-        internal override RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName)
+        internal sealed override RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName)
         {
             string[] parts = fullName.Split('.');
             int numNamespaceParts = parts.Length - 1;

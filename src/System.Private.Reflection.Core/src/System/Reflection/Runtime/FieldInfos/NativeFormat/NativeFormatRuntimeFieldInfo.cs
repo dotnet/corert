@@ -92,7 +92,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             }
         }
 
-        protected override string MetadataName
+        protected sealed override string MetadataName
         {
             get
             {
@@ -128,7 +128,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             return _fieldHandle.GetHashCode();
         }
 
-        protected override bool TryGetDefaultValue(out object defaultValue)
+        protected sealed override bool TryGetDefaultValue(out object defaultValue)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
                             _reader,
@@ -138,12 +138,12 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
                             out defaultValue);
         }
 
-        protected override FieldAccessor TryGetFieldAccessor()
+        protected sealed override FieldAccessor TryGetFieldAccessor()
         {
             return ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this._reader, this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
         }
 
-        protected override RuntimeTypeInfo FieldRuntimeType
+        protected sealed override RuntimeTypeInfo FieldRuntimeType
         {
             get
             {
@@ -153,7 +153,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             }
         }
 
-        protected override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
+        protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
 
         private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldHandle _fieldHandle;

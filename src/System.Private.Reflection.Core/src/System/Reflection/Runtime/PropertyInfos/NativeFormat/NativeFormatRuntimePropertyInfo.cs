@@ -134,7 +134,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        protected override QTypeDefRefOrSpec PropertyTypeHandle
+        protected sealed override QTypeDefRefOrSpec PropertyTypeHandle
         {
             get
             {

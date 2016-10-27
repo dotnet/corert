@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
     internal partial class EcmaFormatRuntimeAssembly
     {
-        internal override RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName)
+        internal sealed override RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName)
         {
             foreach (TypeDefinitionHandle typeDefinitionHandle in MetadataReader.TypeDefinitions)
             {

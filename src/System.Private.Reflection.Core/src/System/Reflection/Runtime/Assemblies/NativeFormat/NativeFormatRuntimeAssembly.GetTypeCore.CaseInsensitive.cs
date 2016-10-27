@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {
     internal partial class NativeFormatRuntimeAssembly
     {
-        internal override RuntimeTypeInfo GetTypeCoreCaseInsensitive(string fullName)
+        internal sealed override RuntimeTypeInfo GetTypeCoreCaseInsensitive(string fullName)
         {
             LowLevelDictionary<string, QHandle> dict = CaseInsensitiveTypeDictionary;
             QHandle qualifiedHandle;

@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // 
         // The most specific match will be selected.  
         // 
-        public override MethodBase BindToMethod(
+        public sealed override MethodBase BindToMethod(
             BindingFlags bindingAttr, MethodBase[] match, ref Object[] args,
             ParameterModifier[] modifiers, CultureInfo cultureInfo, String[] names, out Object state)
         {
@@ -426,7 +426,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
-        public override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, Object value, CultureInfo cultureInfo)
+        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, Object value, CultureInfo cultureInfo)
         {
             if (match == null)
             {
@@ -516,7 +516,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // Given a set of methods that match the base criteria, select a method based
         // upon an array of types.  This method should return null if no method matchs
         // the criteria.
-        public override MethodBase SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
+        public sealed override MethodBase SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
         {
             int i;
             int j;
@@ -598,7 +598,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         // Given a set of properties that match the base criteria, select one.
-        public override PropertyInfo SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type returnType,
+        public sealed override PropertyInfo SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type returnType,
                     Type[] indexes, ParameterModifier[] modifiers)
         {
             // Allow a null indexes array. But if it is not null, every element must be non-null as well.
@@ -717,12 +717,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // ChangeType
         // The default binder doesn't support any change type functionality.
         // This is because the default is built into the low level invoke code.
-        public override Object ChangeType(Object value, Type type, CultureInfo cultureInfo)
+        public sealed override Object ChangeType(Object value, Type type, CultureInfo cultureInfo)
         {
             throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
 
-        public override void ReorderArgumentArray(ref Object[] args, Object state)
+        public sealed override void ReorderArgumentArray(ref Object[] args, Object state)
         {
             BinderState binderState = (BinderState)state;
             ReorderParams(binderState.m_argsMap, args);

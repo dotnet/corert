@@ -181,7 +181,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.GetHashCode();
         }
 
-        internal protected override String ComputeToString(RuntimeMethodInfo contextMethod)
+        internal protected sealed override String ComputeToString(RuntimeMethodInfo contextMethod)
         {
             return RuntimeMethodHelpers.ComputeToString(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
         }
@@ -237,7 +237,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
+        internal sealed override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
             return _common.GetUncachedMethodInvoker(methodArguments, exceptionPertainant);
         }
