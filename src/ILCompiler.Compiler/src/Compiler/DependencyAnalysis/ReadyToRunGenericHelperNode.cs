@@ -123,9 +123,9 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    public partial class ReadyToRunGenericLookupFromThisNode : ReadyToRunGenericHelperNode
+    public partial class ReadyToRunGenericLookupFromTypeNode : ReadyToRunGenericHelperNode
     {
-        public ReadyToRunGenericLookupFromThisNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        public ReadyToRunGenericLookupFromTypeNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
             : base(factory, helperId, target, dictionaryOwner)
         {
         }
@@ -140,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
-                return string.Concat("__GenericLookupFromThis_", mangledContextName, "_", _lookupSignature.GetMangledName(NodeFactory.NameMangler));
+                return string.Concat("__GenericLookupFromType_", mangledContextName, "_", _lookupSignature.GetMangledName(NodeFactory.NameMangler));
             }
         }
     }
