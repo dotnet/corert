@@ -36,7 +36,7 @@ if /i "%1" == "/coreclr"  (
     )
 
     if /i "!SelectedTests!" == "Top200" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\Top200.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
-    if /i "!SelectedTests!" == "KnownGood" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\KnownGood.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
+    if /i "!SelectedTests!" == "KnownGood" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\CoreCLR.issues.targets&&goto :ExtRepoTestsOk
 
     echo Invalid test selection specified: !SelectedTests!
     goto :Usage
