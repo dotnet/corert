@@ -15,8 +15,7 @@ class Program
         // Missing support in RyuJIT: we can't just call Func..ctor and hope for the best
         //TestDelegateFatFunctionPointers.Run();
 
-        // Pull request in flight
-        //TestVirtualMethodUseTracking.Run();
+        TestVirtualMethodUseTracking.Run();
 
         return 100;
     }
