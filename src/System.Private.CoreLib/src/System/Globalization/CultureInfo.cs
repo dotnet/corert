@@ -325,12 +325,14 @@ namespace System.Globalization
                     throw new ArgumentNullException("value");
                 }
 
+#if ENABLE_WINRT
                 WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
                 if (callbacks != null && callbacks.IsAppxModel())
                 {
                     callbacks.SetGlobalDefaultCulture(value);
                     return;
                 }
+#endif
 
                 s_currentThreadCulture = value;
             }
@@ -382,12 +384,14 @@ namespace System.Globalization
 
                 CultureInfo.VerifyCultureName(value, true);
 
+#if ENABLE_WINRT
                 WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
                 if (callbacks != null && callbacks.IsAppxModel())
                 {
                     callbacks.SetGlobalDefaultCulture(value);
                     return;
                 }
+#endif
 
                 s_currentThreadUICulture = value;
             }

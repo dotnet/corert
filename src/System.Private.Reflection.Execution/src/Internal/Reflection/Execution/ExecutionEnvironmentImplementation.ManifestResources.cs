@@ -136,8 +136,10 @@ namespace Internal.Reflection.Execution
 
         private Stream ReadFileFromAppPackage(String name)
         {
+#if ENABLE_WINRT
             if (WinRTInterop.Callbacks.IsAppxModel())
                 return (Stream)WinRTInterop.Callbacks.ReadFileIntoStream(name);
+#endif // ENABLE_WINRT
 
             String pathToRunningExe = RuntimeAugments.TryGetFullPathToMainApplication();
             String directoryContainingRunningExe = Path.GetDirectoryName(pathToRunningExe);

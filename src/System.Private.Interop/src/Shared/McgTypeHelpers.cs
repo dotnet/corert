@@ -790,6 +790,11 @@ namespace System.Runtime.InteropServices
                 return interfaceInfo.HasDynamicAdapterClass;
             }
 
+#if !CORECLR
+            if (McgModuleManager.UseDynamicInterop && Internal.Runtime.Augments.RuntimeAugments.IsGenericType(interfaceType))
+                return false;
+#endif
+
 #if ENABLE_MIN_WINRT
            throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
 #else
@@ -812,11 +817,19 @@ namespace System.Runtime.InteropServices
         internal static Guid GetInterfaceGuid(this RuntimeTypeHandle interfaceType)
         {
             McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
-            if(interfaceInfo != null)
+            if (interfaceInfo != null)
             {
                 return interfaceInfo.ItfGuid;
             }
-
+            
+#if !RHTESTCL && !CORECLR && !CORERT
+            // Fall back to dynamic interop to generate guid
+            // Currently dynamic interop wil generate guid for generic type(interface/delegate)
+            if(interfaceType.IsGenericType() && McgModuleManager.UseDynamicInterop)
+            {
+                return DynamicInteropGuidHelpers.GetGuid_NoThrow(interfaceType);
+            }
+#endif
             return default(Guid);
         }
 
@@ -919,6 +932,17 @@ namespace System.Runtime.InteropServices
                 return classInfo.DefaultInterface;
 
             return default(RuntimeTypeHandle);
+        }
+
+        /// <summary>
+        /// Fetch class(or Enum)'s WinRT type name to calculate GUID
+        /// </summary>
+        /// <param name="classType"></param>
+        /// <returns></returns>
+        internal static string GetWinRTTypeName(this RuntimeTypeHandle classType)
+        {
+            bool isWinRT;
+            return McgModuleManager.GetTypeName(classType, out isWinRT);
         }
         #endregion
 
@@ -1108,6 +1132,18 @@ namespace System.Runtime.InteropServices
 
             GetIIDsImpl(ccwType, iids);
             return iids;
+        }
+        #endregion
+
+        #region "Struct Data"
+        internal static string StructWinRTName(this RuntimeTypeHandle structType)
+        {
+#if ENABLE_MIN_WINRT
+            string typeName;
+            if (McgModuleManager.TryGetStructWinRTName(structType, out typeName))
+                return typeName;
+#endif
+            return null;
         }
         #endregion
 

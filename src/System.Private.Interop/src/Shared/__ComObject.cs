@@ -16,6 +16,7 @@ extern alias CoreFX_Collections;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Generic.Internal;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -26,7 +27,13 @@ using System.Threading;
 using System.Text;
 using System.Runtime;
 using System.Diagnostics.Contracts;
+
 using Internal.NativeFormat;
+
+#if !RHTESTCL && !CORECLR && !CORERT
+using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
+#endif
 
 namespace System
 {
@@ -56,13 +63,22 @@ namespace System
         }
     }
 
+    internal abstract class __ComGenericInterfaceDispatcher
+    {
+        internal __ComObject m_comObject;
+    }
+
     /// <summary>
     /// This is the weakly-typed RCW and also base class of all strongly-typed RCWs
     /// NOTE: Managed debugger depends on type name: "System.__ComObject"
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [CLSCompliant(false)]
+#if !RHTESTCL && !CORECLR && !CORERT
+    public unsafe class __ComObject : CastableObject, ICastable
+#else
     public unsafe class __ComObject : ICastable
+#endif
     {
         #region Private variables
 
@@ -135,6 +151,10 @@ namespace System
         /// See RCWFinalizer class for more details.
         /// </summary>
         private RCWFinalizer m_finalizer;
+
+#if !RHTESTCL && !CORECLR && !CORERT
+        private static readonly Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = new Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
+#endif
 
         #endregion
 
@@ -294,6 +314,29 @@ namespace System
         }
 
         #region Constructor and Finalizer
+
+        static __ComObject()
+        {
+#if !RHTESTCL && !CORECLR && !CORERT
+            // Projected types
+            s_DynamicRCWAdapters[typeof(IEnumerable<>).TypeHandle]                                                  = typeof(IEnumerable_RCWAdapter<>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(IList<>).TypeHandle]                                                        = typeof(IList_RCWAdapter<>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(IReadOnlyList<>).TypeHandle]                                                = typeof(IReadOnlyList_RCWAdapter<>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(IDictionary<,>).TypeHandle]                                                 = typeof(IDictionary_RCWAdapter<,>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(IReadOnlyDictionary<,>).TypeHandle]                                         = typeof(IReadOnlyDictionary_RCWAdapter<,>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IKeyValuePair<,>).TypeHandle]        = typeof(IKeyValuePair_RCWAdapter<,>).TypeHandle;
+            
+            // Non-projected types
+            s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IIterator<>).TypeHandle]             = typeof(IIterator_RCWAdapter<>).TypeHandle;
+            //s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IObservableVector<>).TypeHandle]     = typeof(IObservableVector_RCWAdapter<>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IMapChangedEventArgs<>).TypeHandle]  = typeof(IMapChangedEventArgs_RCWAdapter<>).TypeHandle;
+            //s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IObservableMap<,>).TypeHandle]       = typeof(IObservableMap_RCWAdapter<,>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IAsyncOperationWithProgress<,>).TypeHandle]      = typeof(IAsyncOperationWithProgress_RCWAdapter<,>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IAsyncOperation<>).TypeHandle]                   = typeof(IAsyncOperation_RCWAdapter<>).TypeHandle;
+            s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IAsyncActionWithProgress<>).TypeHandle]          = typeof(IAsyncActionWithProgress_RCWAdapter<>).TypeHandle;
+            //s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IReferenceArray<>).TypeHandle]                   = typeof(IReferenceArray_RCWAdapter<>).TypeHandle;
+#endif
+        }
 
         /// <summary>
         /// Default constructor for RCW 'new' code path
@@ -587,9 +630,9 @@ namespace System
             }
         }
 
-#endregion
+        #endregion
 
-#region Properties
+        #region Properties
 
         /// <summary>
         /// Whether this __ComObject represents a Jupiter UI object that implements IJupiterObject for life
@@ -642,9 +685,9 @@ namespace System
             }
         }
 
-#endregion
+        #endregion
 
-#region Jupiter Lifetime
+        #region Jupiter Lifetime
 
         /// <remarks>
         /// WARNING: This function might be called under a GC callback. Please read the comments in
@@ -661,9 +704,9 @@ namespace System
             return (__com_IJupiterObject*)m_cachedInterfaces[0].GetPtr().ToPointer();
         }
 
-#endregion
+        #endregion
 
-#region Lifetime Management
+        #region Lifetime Management
 
         /// <summary>
         /// AddRef on the RCW
@@ -935,9 +978,9 @@ namespace System
             }
         }
 
-#endregion
+        #endregion
 
-#region Properties
+        #region Properties
 
         /// <summary>
         /// Whether the RCW is free-threaded
@@ -1034,7 +1077,7 @@ namespace System
                     //
                     // Check whether this is the same COM interface as cached
                     //
-                    if(m_cachedInterfaces[i].TryReadCachedNativeInterface(interfaceType, out pComPtr))
+                    if (m_cachedInterfaces[i].TryReadCachedNativeInterface(interfaceType, out pComPtr))
                     {
                         return Interop.COM.S_OK;
                     }
@@ -1085,7 +1128,7 @@ namespace System
                     {
                         return cachedComPtr;
                     }
-                } while(++i < m_cachedInterfaces.Length);
+                } while (++i < m_cachedInterfaces.Length);
             }
 
             IntPtr pComPtr;
@@ -1244,6 +1287,86 @@ namespace System
             }
         }
 
+        internal RuntimeTypeHandle FindCastableGenericInterfaceInCache(RuntimeTypeHandle interfaceType, out IntPtr pComPtr)
+        {
+            pComPtr = IntPtr.Zero;
+
+#if !RHTESTCL
+            // Throw if the underlying object is already disposed.
+            if (m_baseIUnknown.IsDisposed)
+            {
+                throw new InvalidComObjectException(SR.Excep_InvalidComObject_NoRCW_Wrapper);
+            }
+#endif
+
+#if !RHTESTCL && !CORECLR && !CORERT
+
+            //
+            // Search the existing cached interfaces in the simple cache that we can cast to the input interface type
+            //
+
+            // For free-threaded RCWs we don't care about context
+            bool matchContext = m_baseIUnknown.IsFreeThreaded;
+
+            if (!matchContext)
+            {
+                // In most cases WinRT objects are free-threaded, so we'll usually skip the context cookie
+                // check
+                // If we did came here, initialize the currentCookie for use later and check whether the
+                // coookie matches
+                matchContext = ContextCookie.Current.Equals(m_baseIUnknown.ContextCookie);
+            }
+
+            if (matchContext)
+            {
+                //
+                // Search for simple fixed locking cache where context always match
+                // NOTE: it is important to use Length instead of the constant because the compiler would
+                // eliminate the range check (for the most part) when we are using Length
+                //
+                for (int i = 0; i < m_cachedInterfaces.Length; ++i)
+                {
+                    RuntimeTypeHandle castableInterface;
+                    if (m_cachedInterfaces[i].IsCastableEntry(interfaceType, out pComPtr, out castableInterface))
+                    {
+                        if (RuntimeAugments.IsGenericType(castableInterface))
+                            return castableInterface;
+                    }
+                }
+            }
+            
+            //
+            // Search for additional growable interface cache
+            //
+            AdditionalComInterfaceCacheContext[] cacheContext = AcquireAdditionalCacheForRead();
+            if (cacheContext != null)
+            {
+                for (int i = 0; i < cacheContext.Length; i++)
+                {
+                    var cache = cacheContext[i];
+                    if (cache == null) continue;
+
+                    if (cache.context.ContextCookie.Equals(ContextCookie.Current))
+                    {
+                        foreach (var item in cache.items)
+                        {
+                            if (!RuntimeAugments.IsGenericType(item.typeHandle))
+                                continue;
+
+                            if (!InteropExtensions.AreTypesAssignable(item.typeHandle, interfaceType))
+                                continue;
+
+                            pComPtr = item.ptr;
+                            return item.typeHandle;
+                        }
+                    }
+                }
+            }
+#endif
+
+            return default(RuntimeTypeHandle);
+        }
+
         private InvalidCastException CreateInvalidCastExceptionForFailedQI(RuntimeTypeHandle interfaceType, int hr)
         {
 #if RHTESTCL
@@ -1302,8 +1425,9 @@ namespace System
 #endif
         }
 
-#endregion
-#region Cache Management
+        #endregion
+
+        #region Cache Management
 
         /// <summary>
         /// Insert COM interface pointer into our cache. The cache will NOT do a AddRef and will transfer
@@ -1417,11 +1541,230 @@ namespace System
             pComPtr = default(IntPtr);
             return false;
         }
+        #endregion
 
-#endregion
+        #region CastableObject implementation for weakly typed RCWs
+#if !RHTESTCL && !CORECLR && !CORERT
+        object CastToICollectionHelper(RuntimeTypeHandle genericTypeDef, RuntimeTypeHandle[] genericArguments, bool testForIDictionary)
+        {
+            Debug.Assert(genericTypeDef.Equals(typeof(ICollection<>).TypeHandle) || genericTypeDef.Equals(typeof(IReadOnlyCollection<>).TypeHandle));
 
-#region ICastable implementation for weakly typed RCWs
+            bool isReadOnly = genericTypeDef.Equals(typeof(IReadOnlyCollection<>).TypeHandle);
 
+            bool isICollectionOfKvp = false;
+            RuntimeTypeHandle[] ikvpArgs = null;
+
+            if (RuntimeAugments.IsGenericType(genericArguments[0]))
+            {
+                RuntimeTypeHandle kvpTypeDef = RuntimeAugments.GetGenericInstantiation(genericArguments[0], out ikvpArgs);
+                isICollectionOfKvp = kvpTypeDef.Equals(typeof(KeyValuePair<,>).TypeHandle);
+            }
+
+            // Ignore a QI on the IDictionary<,> type if the ICollection<T> interface is not instantiated over KeyValuePair<,>
+            if (testForIDictionary && !isICollectionOfKvp)
+                return null;
+
+            RuntimeTypeHandle iTypeToQI;
+            RuntimeTypeHandle genericTypeDefToQuery = testForIDictionary ? typeof(IDictionary<,>).TypeHandle : typeof(IList<>).TypeHandle;
+            RuntimeTypeHandle[] genericTypeArgs = testForIDictionary ? ikvpArgs : genericArguments;
+
+            if (isReadOnly)
+                genericTypeDefToQuery = testForIDictionary ? typeof(IReadOnlyDictionary<,>).TypeHandle : typeof(IReadOnlyList<>).TypeHandle;
+
+            Debug.Assert(
+                ( testForIDictionary && genericTypeArgs != null && genericTypeArgs.Length == 2) ||
+                (!testForIDictionary && genericTypeArgs != null && genericTypeArgs.Length == 1));
+
+            if (!TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefToQuery, genericTypeArgs, out iTypeToQI))
+                return null;    // ERROR
+
+            RuntimeTypeHandle resolvedICollectionType;
+            if (TryQITypeForICollection(iTypeToQI, default(RuntimeTypeHandle), out resolvedICollectionType))
+            {
+                Debug.Assert(iTypeToQI.Equals(resolvedICollectionType));
+
+                if (testForIDictionary)
+                {
+                    // IDictionary<,> case
+                    if (isReadOnly)
+                        return McgComHelpers.CreateGenericComDispatcher(typeof(IReadOnlyDictionary_RCWAdapter<,>).TypeHandle, genericTypeArgs, this);
+                    else
+                        return McgComHelpers.CreateGenericComDispatcher(typeof(IDictionary_RCWAdapter<,>).TypeHandle, genericTypeArgs, this);
+                }
+                else
+                {
+                    // IList<> case
+                    if (isReadOnly)
+                        return McgComHelpers.CreateGenericComDispatcher(typeof(IReadOnlyList_RCWAdapter<>).TypeHandle, genericTypeArgs, this);
+                    else
+                        return McgComHelpers.CreateGenericComDispatcher(typeof(IList_RCWAdapter<>).TypeHandle, genericTypeArgs, this);
+                }
+            }
+
+            // Cannot cast...
+            return null;
+        }
+
+        /// <summary>
+        /// ================================================================================================
+        /// COMMENTS from CastableObject.CastToInterface
+        ///
+        /// This is called if casting this object to the given interface type would otherwise fail. Casting
+        /// here means the IL isinst and castclass instructions in the case where they are given an interface
+        /// type as the target type.
+        ///
+        /// It allows the implementor to return an alternate class type which does implement the interface. The
+        /// interface lookup shall be performed again on this type and the corresponding implemented method on 
+        /// that class called instead.
+        ///
+        /// Naturally, since the call is dispatched to a method on a class which does not match the type of the
+        /// this pointer, extreme care must be taken in the implementation of the interface methods of this
+        /// surrogate type.
+        ///
+        /// No exception should be thrown from this method (it will cause unpredictable effects, including the
+        /// possibility of an immediate failfast).
+        /// If the cast cannot be done and this API is called during castclass, then we simply return null so that
+        /// the usual InvalidCastException can be thrown, otherwise we also assign an alternate exception to the 
+        /// castError output parameter. This parameter is ignored on successful casts or during the evaluation of 
+        /// an isinst.
+        /// 
+        /// The results of this call should be invariant for the same class, interface type pair. That is
+        /// because this is the only guard placed before an interface invocation at runtime. If a type decides
+        /// it no longer wants to implement a given interface it has no way to synchronize with callers that
+        /// have already cached this relationship and can invoke directly via the interface pointer.
+        /// 
+        /// The results of this lookup are cached so computation of the result is not as perf-sensitive as
+        /// IsInstanceOfInterface.
+        /// ==========================================================================================
+        ///
+        /// If this function is called, this means we are being casted with a non-supported interface.
+        /// This means:
+        /// 1. The object is a weakly-typed RCW __ComObject
+        /// 2. The object is a strongly-typed RCW __ComObject derived type, but might support more interface
+        /// than what its metadata has specified
+        ///
+        /// In this case, we perform a QueryInterface to see if we really support that interface
+        /// 
+        /// Once the QueryInterface is successful, we need to return the correct stub class that implement the 
+        /// interface so that RH knows how to dispatch the call, for example:
+        ///
+        /// class IFoo_RCWAdapter<T>: __ComGenericInterfaceDispatcher, IFoo<T>
+        /// {
+        ///     public IFoo<T>.Func()
+        ///     {
+        ///         // ...
+        ///     }
+        /// }
+        /// 
+        /// </summary>
+        /// <param name="interfaceType">The interface being casted to</param>
+        /// <param name="produceCastErrorException">Flag indicating whether casting exceptions should be
+        /// produced on unsuccessful casts (i.e. this is a castclass scenario).</param>
+        /// <param name="castError">More specific cast failure other than the default InvalidCastException
+        /// prepared by the runtime</param>
+        /// <returns>Dispatcher class that implements the interface if the cast is valid, null otherwise. </returns>
+        protected override object CastToInterface(RuntimeTypeHandle interfaceType, bool produceCastErrorException, out Exception castError)
+        {
+            // TODO: We currently don't search into any of the MCG generated data in this function, because we still have the old ICastable
+            // support. The runtime will call into the ICastable.IsInstanceOfInterface API first (which searches the MCG data), and 
+            // will *only* call CastableObject.CastToInterface when the former returns null.
+            // When we completely remove the support for ICastable, we'll need to change the behavior of this API to first search into the 
+            // MCG generated data for a cast, before returning a dynamically instantiated RCW dispatcher.
+
+            castError = null;
+            IntPtr pComPtr = IntPtr.Zero;
+
+            if (!McgModuleManager.UseDynamicInterop)
+                return null;
+
+            // CastableObject support used for generics *only* for now
+
+            if (!RuntimeAugments.IsGenericType(interfaceType))
+            {
+                RuntimeTypeHandle genericInterfaceType = FindCastableGenericInterfaceInCache(interfaceType, out pComPtr);
+                if (genericInterfaceType.IsInvalid())
+                    return null;
+            
+                Debug.Assert(RuntimeAugments.IsGenericType(genericInterfaceType));
+
+                InsertIntoCache(interfaceType, ContextCookie.Current, ref pComPtr, true);
+
+                interfaceType = genericInterfaceType;
+            }
+
+            try
+            {
+                RuntimeTypeHandle[] genericArguments;
+                RuntimeTypeHandle genericTypeDef = RuntimeAugments.GetGenericInstantiation(interfaceType, out genericArguments);
+            
+                //
+                // ICollection<T> is a very special interface, which could map to either IDictionary<,> or IList<>
+                //
+                if (genericTypeDef.Equals(typeof(ICollection<>).TypeHandle) || genericTypeDef.Equals(typeof(IReadOnlyCollection<>).TypeHandle))
+                {
+                    // QI for the IDictionary<,> interface before looking for the IList<KVP<>> interface.
+                    // The reason we do it in 2 steps and try the IDictionary cast first is for performance. 
+                    // Dynamically instantiating the interface type could be an expensive operation if the 
+                    // instantiation was not compiled statically by the toolchain, so we dynamically instantiate 
+                    // and QI one type at a time (QI is much cheaper than dynamic type creation).
+
+                    object adapter;
+
+                    if ((adapter = CastToICollectionHelper(genericTypeDef, genericArguments, true /* testForIDictionary */)) != null)
+                        return adapter;
+
+                    if ((adapter = CastToICollectionHelper(genericTypeDef, genericArguments, false /* testForIDictionary */)) != null)
+                        return adapter;
+
+                    // Cannot cast...
+                    return null;
+                }
+            
+                //
+                // Check if we can cast the COM object to the requested interface type
+                //
+                IntPtr interfacePtr = QueryInterface_NoAddRef_Internal(interfaceType, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
+                if (interfacePtr == IntPtr.Zero)
+                {
+                    ContextCookie currentCookie = ContextCookie.Current;
+            
+                    QueryInterface_NoAddRef_SlowNoCacheLookup(interfaceType, currentCookie, out interfacePtr);
+                    if (interfacePtr == IntPtr.Zero)
+                    {
+                        //
+                        // Check for a variant type cast in the cache
+                        //
+                        RuntimeTypeHandle variantInterfaceType = FindCastableGenericInterfaceInCache(interfaceType, out pComPtr);
+                        if (variantInterfaceType.IsInvalid())
+                            return null;
+
+                        InsertIntoCache(interfaceType, currentCookie, ref pComPtr, true);
+                    }
+                }
+
+                //
+                // Handle various interface types. Currently, there are a handful of generic 
+                // interfaces in WinRT, and we have hand-written dispatchers for all of them.
+                //
+                RuntimeTypeHandle rcwAdapterType;
+                if (s_DynamicRCWAdapters.TryGetValue(genericTypeDef, out rcwAdapterType))
+                {
+                    return McgComHelpers.CreateGenericComDispatcher(rcwAdapterType, genericArguments, this);
+                }
+            }
+            catch (Exception ex)
+            {
+                // We are not allowed to leak exception out from here
+                // Instead, set castError to the exception being thrown
+                castError = ex;
+            }
+
+            return null;
+        }
+#endif
+        #endregion
+
+        #region ICastable implementation for weakly typed RCWs
         /// <summary>
         /// ================================================================================================
         /// COMMENTS from ICastable.IsInstanceOfInterface
@@ -1464,11 +1807,29 @@ namespace System
         {
             castError = null;
             IntPtr pComPtr;
+
+            //
+            // We have a mode where we force everything to go through the dynamic interop path. When that mode
+            // is used, mcg will not generate dispatchers for generic RCWs, so we need to make sure that we
+            // don't return true in this API, and end up with a FailFast in the implementation of ICastable.GetImplType 
+            // below, just because we can't find the adapter.
+            // When dynamic interop is not enabled, we can just skip that check here, and pretend the interface has
+            // a valid dispatcher, if the checks in this function succeed.
+            // TODO: This will change when we remove the support for the traditional ICastable and replace it with CastableObject.
+            //
+            bool hasValidDispatcher = true;
+
+#if !RHTESTCL && !CORECLR && !CORERT
+            hasValidDispatcher = McgModuleManager.UseDynamicInterop && RuntimeAugments.IsGenericType(interfaceType) ? 
+                !interfaceType.GetDispatchClassType().IsInvalid() : 
+                true;
+#endif
+
             try
             {
                 pComPtr = QueryInterface_NoAddRef_Internal(interfaceType, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
                 if (pComPtr != default(IntPtr))
-                    return true;
+                    return hasValidDispatcher;
 
                 //
                 // This is typeHandle for ICollection<KeyValuePair<>> which could be
@@ -1478,11 +1839,20 @@ namespace System
                 RuntimeTypeHandle firstTypeHandle;
                 if (McgModuleManager.TryGetTypeHandleForICollecton(interfaceType, out firstTypeHandle, out secondTypeHandle))
                 {
-                    if (!firstTypeHandle.IsNull() || !secondTypeHandle.IsNull())
+                    RuntimeTypeHandle resolvedICollectionType;
+
+                    if (!secondTypeHandle.IsNull())
                     {
-                        RuntimeTypeHandle resolvedTypeHandle;
-                        return TryQITypeForICollection(firstTypeHandle, secondTypeHandle, out resolvedTypeHandle);
+                        if (!TryQITypeForICollection(firstTypeHandle, secondTypeHandle, out resolvedICollectionType))
+                            return false;
                     }
+                    else
+                    {
+                        resolvedICollectionType = firstTypeHandle;
+                    }
+
+                    // Again... only check for a valid dispatcher when dynamic interop is in use (see explanation above)
+                    return McgModuleManager.UseDynamicInterop ? !resolvedICollectionType.GetDispatchClassType().IsInvalid() : true;
                 }
 
                 //
@@ -1496,13 +1866,13 @@ namespace System
                 //
                 int hr = QueryInterface_NoAddRef(interfaceType, /* cacheOnly= */ false, out pComPtr);
                 if (pComPtr != default(IntPtr))
-                    return true;
+                    return hasValidDispatcher;
 
                 //
                 // Is there a dynamic adapter for the interface?
                 //
                 if (interfaceType.HasDynamicAdapterClass() && GetDynamicAdapterInternal(interfaceType, default(RuntimeTypeHandle)) != null)
-                    return true;
+                    return hasValidDispatcher;
 
                 castError = CreateInvalidCastExceptionForFailedQI(interfaceType, hr);
                 return false;
@@ -2944,6 +3314,23 @@ namespace System.Runtime.InteropServices
                     return true;
             }
 
+            return false;
+        }
+
+        internal bool IsCastableEntry(RuntimeTypeHandle interfaceType, out IntPtr pComPtr, out RuntimeTypeHandle entryType)
+        {
+            if (HasValue)
+            {
+                if (InteropExtensions.AreTypesAssignable(typeHandle, interfaceType))
+                {
+                    pComPtr = ptr;
+                    entryType = typeHandle;
+                    return true;
+                }
+            }
+
+            pComPtr = IntPtr.Zero;
+            entryType = default(RuntimeTypeHandle);
             return false;
         }
 

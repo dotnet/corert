@@ -90,6 +90,15 @@ namespace System.Runtime.InteropServices
         internal static int StdCall__int(
                     IntPtr pfn,
                     IntPtr pComThis,
+                    uint arg0)
+        {
+            // This method is implemented elsewhere in the toolchain
+            return default(int);
+        }
+
+        internal static int StdCall__int(
+                    IntPtr pfn,
+                    IntPtr pComThis,
                     void* arg0)
         {
             // This method is implemented elsewhere in the toolchain
