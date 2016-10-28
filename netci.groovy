@@ -47,7 +47,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
 
                         if (configuration == 'Debug') {
                             prJobDescription += " + CoreCLR tests"
-                            batchFile("tests\\runtest.cmd /coreclr")
+                            batchFile("tests\\runtest.cmd /coreclr Top200")
                         }
                     }
                     else {
