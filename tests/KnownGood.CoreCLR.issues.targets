@@ -2106,8 +2106,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads02BFI\CircularCctorThreeThreads02BFI.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads03\CircularCctorThreeThreads03.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads03BFI\CircularCctorThreeThreads03BFI.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\CctorThrowStaticFieldBFI\CctorThrowStaticFieldBFI.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\CircularCctorThreeThreads03\CircularCctorThreeThreads03.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\GenMethInlined\GenMethInlined.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\GenMethInlined_Multinested\GenMethInlined_Multinested.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\GenTypeInlined\GenTypeInlined.cmd" />
@@ -2149,6 +2147,35 @@
     <ExcludeList Include="$(XunitTestBinBase)\Regressions\common\ThreadCulture\ThreadCulture.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Regressions\common\ToLower\ToLower.cmd" />
     <ExcludeList Include="$(XunitTestBinBase)\Regressions\common\Unsafe\Unsafe.cmd" />
-    <ExcludeList Include="$(XunitTestBinBase)\0014\avtest\avtest.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\simpvariant\simpvariant.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\SingLinkList\singlinkstay\singlinkstay.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\BBT\Scenario4\Not-Int32\Not-Int32.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\Add1\Add1.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\array-il\_Arrayscomplex3\_Arrayscomplex3.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxinterface_d\boxunboxinterface_d.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\general_class_instance01\general_class_instance01.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\directed\heap_ovf\heap_ovf.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\loopEH\loopEH.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\539509\test1\test1.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value039\box-unbox-value039.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\valuetypes\nullable\castclass\interface\castclass-interface002\castclass-interface002.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\apps\bouncingball_cs_d\bouncingball_cs_d.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\arrays\_rellcs_long\_rellcs_long.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\arrays\_speed_rellcs_long\_speed_rellcs_long.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Locals\Locals.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\v1-m10\b02353\b02353\b02353.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b06020\b06020\b06020.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M02\b00719\b00719\b00719.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\BitwiseOperations_r\BitwiseOperations_r.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\BitwiseOperations_ro\BitwiseOperations_ro.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\CoreCLR\Method001\Method001.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\CoreCLR\Method003\Method003.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\TestCase1_Nested_J_Nested_I\TestCase1_Nested_J_Nested_I.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\nesting\coreclr\exec16\exec16.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\nesting\coreclr\exec3\exec3.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CoreCLR\CctorThrowStaticFieldBFI\CctorThrowStaticFieldBFI.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CoreCLR\CircularCctorThreeThreads03\CircularCctorThreeThreads03.cmd" />
+    <ExcludeList Include="$(XunitTestBinBase)\Regressions\coreclr\0014\avtest\avtest.cmd" />
   </ItemGroup>
 </Project>

@@ -25,8 +25,8 @@ if /i "%1" == "/coreclr"  (
     set CoreRT_RunCoreCLRTests=true
     set SelectedTests=%2&shift&shift
     if "!SelectedTests!" == "" (
-        echo Error: Specify a test subset to run
-        goto :Usage
+        set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\Top200.CoreCLR.issues.targets
+        goto :ExtRepoTestsOk
     )
 
     if /i "!SelectedTests!" == "All" (
