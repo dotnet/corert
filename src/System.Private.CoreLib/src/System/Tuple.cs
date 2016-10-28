@@ -7,6 +7,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+//
+// Note: F# compiler depends on the exact tuple hashing algorithm. Do not ever change it.
+//
+
 namespace System
 {
     /// <summary>
