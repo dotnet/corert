@@ -103,6 +103,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.TypeHandle:
                 case ReadyToRunHelperId.MethodDictionary:
                 case ReadyToRunHelperId.VirtualCall:
+                case ReadyToRunHelperId.MethodEntry:
                     {
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();
