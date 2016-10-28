@@ -152,7 +152,7 @@ namespace System
         /// </summary>
         private RCWFinalizer m_finalizer;
 
-#if !CORECLR
+#if !RHTESTCL && !CORECLR && !CORERT
         private static readonly Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = new Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
 #endif
 
@@ -317,7 +317,7 @@ namespace System
 
         static __ComObject()
         {
-#if !CORECLR
+#if !RHTESTCL && !CORECLR && !CORERT
             // Projected types
             s_DynamicRCWAdapters[typeof(IEnumerable<>).TypeHandle]                                                  = typeof(IEnumerable_RCWAdapter<>).TypeHandle;
             s_DynamicRCWAdapters[typeof(IList<>).TypeHandle]                                                        = typeof(IList_RCWAdapter<>).TypeHandle;
@@ -1299,7 +1299,7 @@ namespace System
             }
 #endif
 
-#if !CORECLR
+#if !RHTESTCL && !CORECLR && !CORERT
 
             //
             // Search the existing cached interfaces in the simple cache that we can cast to the input interface type

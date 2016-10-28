@@ -1356,7 +1356,7 @@ namespace System.Runtime.InteropServices
 
         internal void VerifyWinRTGenericInterfaceGuids()
         {
-#if !CORECLR
+#if !RHTESTCL && !CORECLR && !CORERT
             // Check dynamic guid generation generates same guid as mcg generated one
             if (m_interfaceData != null)
             {
