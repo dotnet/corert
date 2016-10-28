@@ -39,6 +39,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.MethodDictionary((MethodDesc)target);
                 case ReadyToRunHelperId.VirtualCall:
                     return factory.GenericLookup.VirtualCall((MethodDesc)target);
+                case ReadyToRunHelperId.MethodEntry:
+                    return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 default:
                     throw new NotImplementedException();
             }
