@@ -79,14 +79,6 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr* section = (IntPtr*)GetModuleSection(moduleManager, ReadyToRunSectionType.ModuleManagerIndirection, out length);
             *section = moduleManager;
 
-            // Initialize strings if any are present
-            IntPtr stringSection = GetModuleSection(moduleManager, ReadyToRunSectionType.StringTable, out length);
-            if (stringSection != IntPtr.Zero)
-            {
-                Debug.Assert(length % IntPtr.Size == 0);
-                InitializeStringTable(stringSection, length);
-            }
-
             // Initialize statics if any are present
             IntPtr staticsSection = GetModuleSection(moduleManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
@@ -94,9 +86,24 @@ namespace Internal.Runtime.CompilerHelpers
                 Debug.Assert(length % IntPtr.Size == 0);
                 InitializeStatics(staticsSection, length);
             }
+
+            // Initialize frozen object segment with GC present
+            IntPtr frozenObjectSection = GetModuleSection(moduleManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
+            if (frozenObjectSection != IntPtr.Zero)
+            {
+                Debug.Assert(length % IntPtr.Size == 0);
+                InitializeFrozenObjectSegment(frozenObjectSection, length);
+            }
         }
 
-        static unsafe partial void InitializeStringTable(IntPtr stringTableStart, int length);
+        private static unsafe void InitializeFrozenObjectSegment(IntPtr segmentStart, int length)
+        {
+            if (!RuntimeImports.RhpRegisterFrozenSegment(segmentStart, length))
+            {
+                // This should only happen if we ran out of memory.
+                RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment.");
+            }
+        }
 
         private static unsafe void InitializeEagerClassConstructorsForModule(IntPtr moduleManager)
         {

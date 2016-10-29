@@ -29,7 +29,7 @@ using System.Collections.Generic;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
 #if DEBUG
         public sealed override Type GetType(string name) => base.GetType(name);
@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.CustomAttributes
 
 namespace System.Reflection.Runtime.EventInfos
 {
-    internal sealed partial class RuntimeEventInfo
+    internal abstract partial class RuntimeEventInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
@@ -76,7 +76,7 @@ namespace System.Reflection.Runtime.EventInfos
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
@@ -120,7 +120,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;

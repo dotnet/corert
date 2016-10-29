@@ -145,16 +145,26 @@ namespace System.Reflection.Runtime.General
             }
             Debug.Assert(handle.IsTypeDefRefOrSpecHandle(reader));
             _reader = reader;
-            _handle = handle;
+            _handle = handle.ToIntToken();
         }
 
-        public MetadataReader Reader { get { return _reader; } }
-        public Handle Handle { get { return _handle; } }
+        public object Reader { get { return _reader; } }
+        public int Handle { get { return _handle; } }
+
+        public bool IsNull { get { return _reader == null; } }
+
+        public bool IsNativeFormatMetadataBased
+        {
+            get
+            {
+                return Reader is global::Internal.Metadata.NativeFormat.MetadataReader;
+            }
+        }
 
         public static readonly QTypeDefRefOrSpec Null = default(QTypeDefRefOrSpec);
 
-        private readonly MetadataReader _reader;
-        private readonly Handle _handle;
+        private readonly object _reader;
+        private readonly int _handle;
     }
 
     public struct QGenericParameter : IEquatable<QGenericParameter>

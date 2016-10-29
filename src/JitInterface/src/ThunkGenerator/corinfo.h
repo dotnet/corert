@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 0b17dfeb-1ead-4e06-b025-d60d3a493b53 */
-    0x0b17dfeb,
-    0x1ead,
-    0x4e06,
-    { 0xb0, 0x25, 0xd6, 0x0d, 0x3a, 0x49, 0x3b, 0x53 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 8d588c98-4cef-4e6d-9792-08e1f5ab88c5 */
+    0x8d588c98,
+    0x4cef,
+    0x4e6d,
+    {0x97, 0x92, 0x08, 0xe1, 0xf5, 0xab, 0x88, 0xc5}
 };
 
 #else
@@ -642,6 +642,7 @@ enum CorInfoHelpFunc
 #if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
     CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
+    CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
 #else
     #define CORINFO_HELP_READYTORUN_DELEGATE_CTOR CORINFO_HELP_EE_PRESTUB
 #endif // COR_JIT_EE_VERSION
@@ -1706,6 +1707,9 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+#if COR_JIT_EE_VERSION > 460
+    CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
+#endif
 
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
     CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)

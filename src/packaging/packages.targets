@@ -22,7 +22,7 @@
             <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
-            <JitPackageVersion>1.2.0-beta-24614-02</JitPackageVersion>
+            <JitPackageVersion>1.2.0-beta-24627-05</JitPackageVersion>
           
             <ObjectWriterPackageVersion>1.0.13-prerelease-00001</ObjectWriterPackageVersion>
             <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
@@ -113,24 +113,25 @@
             <ILCompilerAOTFrameworkFiles Include="System.Globalization" />
             <ILCompilerAOTFrameworkFiles Include="System.IO" />
             <ILCompilerAOTFrameworkFiles Include="System.Reflection" />
-            <ILCompilerAOTFrameworkFiles Include="System.Reflection.Extensions" />
             <ILCompilerAOTFrameworkFiles Include="System.Reflection.Primitives" />
             <ILCompilerAOTFrameworkFiles Include="System.Runtime" />
             <ILCompilerAOTFrameworkFiles Include="System.Runtime.Handles" />
-            <ILCompilerAOTFrameworkFiles Include="System.Runtime.InteropServices" />
-            <ILCompilerAOTFrameworkFiles Include="System.Text.Encoding" />
-            <ILCompilerAOTFrameworkFiles Include="System.Text.Encoding.Extensions" />
             <ILCompilerAOTFrameworkFiles Include="System.Threading.Tasks" />
             <ILCompilerAOTFrameworkFiles Include="System.Collections" />
-            <ILCompilerAOTFrameworkFiles Include="System.Diagnostics.Tools" />
-            <ILCompilerAOTFrameworkFiles Include="System.Diagnostics.Tracing" />
-            <ILCompilerAOTFrameworkFiles Include="System.Globalization.Calendars" />
-            <ILCompilerAOTFrameworkFiles Include="System.Threading.Timer" />
             <ILCompilerSdkBinPlace Include="@(ILCompilerAOTFrameworkFiles)">
-              <Text><![CDATA[        <file src="packages/runtime.aot.%(Identity)/4.3.0-beta-devapi-24514-04/runtimes/aot/lib/netcore50/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
+              <Text><![CDATA[        <file src="packages/runtime.aot.%(Identity)/4.4.0-beta-24614-04/runtimes/aot/lib/uap10.1/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
 
-            <ILCompilerFrameworkFiles Include="System.Reflection.TypeExtensions/4.1.0/runtimes/aot/lib/netcore50/System.Reflection.TypeExtensions.dll" />
+            <ILCompilerFrameworkFiles Include="System.Reflection.Extensions/4.4.0-beta-24614-04/runtimes/aot/lib/uap10.1/System.Reflection.Extensions.dll" />
+            <ILCompilerFrameworkFiles Include="System.Reflection.TypeExtensions/4.4.0-beta-24614-04/runtimes/aot/lib/uap10.1/System.Reflection.TypeExtensions.dll" />
+
+            <ILCompilerFrameworkFiles Include="runtime.aot.System.Diagnostics.Tools/4.4.0-beta-24614-04/runtimes/aot/lib/netcore50/System.Diagnostics.Tools.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.aot.System.Diagnostics.Tracing/4.4.0-beta-24614-04/runtimes/aot/lib/netcore50/System.Diagnostics.Tracing.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.aot.System.Globalization.Calendars/4.4.0-beta-24614-04/runtimes/aot/lib/netcore50/System.Globalization.Calendars.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.aot.System.Runtime.InteropServices/4.4.0-beta-24614-04/runtimes/aot/lib/netcore50/System.Runtime.InteropServices.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.aot.System.Text.Encoding/4.4.0-beta-24614-04/runtimes/aot/lib/netcore50/System.Text.Encoding.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.aot.System.Text.Encoding.Extensions/4.4.0-beta-24614-04/runtimes/aot/lib/netcore50/System.Text.Encoding.Extensions.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.aot.System.Threading.Timer/4.4.0-beta-24614-04/runtimes/aot/lib/netcore50/System.Threading.Timer.dll" />
 
             <ILCompilerFrameworkFiles Include="Microsoft.NETCore.Portable.Compatibility/1.0.2/runtimes/aot/lib/netcore50/mscorlib.dll" />
             <ILCompilerFrameworkFiles Include="toolchain.win7-x64.Microsoft.DotNet.AppDep/1.0.6-prerelease-00004/System.Resources.ResourceManager.dll" />

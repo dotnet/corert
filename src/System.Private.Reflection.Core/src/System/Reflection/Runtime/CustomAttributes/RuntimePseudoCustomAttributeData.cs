@@ -10,10 +10,6 @@ using System.Collections.ObjectModel;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
-using Internal.LowLevelLinq;
-using Internal.Reflection.Core;
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.CustomAttributes
 {
     //

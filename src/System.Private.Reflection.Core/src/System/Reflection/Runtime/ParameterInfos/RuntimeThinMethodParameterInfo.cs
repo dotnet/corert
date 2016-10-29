@@ -10,8 +10,6 @@ using System.Reflection.Runtime.General;
 
 using Internal.Reflection.Core;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //
@@ -20,8 +18,8 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeThinMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reader, typeHandle, typeContext)
+        private RuntimeThinMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
+            : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
         }
 

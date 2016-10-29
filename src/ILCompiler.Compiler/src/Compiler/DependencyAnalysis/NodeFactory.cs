@@ -209,14 +209,14 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
 
-            _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
+            _genericReadyToRunHelpersFromDict = new NodeCache<Tuple<ReadyToRunHelperId, object, TypeSystemEntity>, ISymbolNode>(data =>
             {
-                return new StringDataNode(data);
+                return new ReadyToRunGenericLookupFromDictionaryNode(this, data.Item1, data.Item2, data.Item3);
             });
 
-            _stringIndirectionNodes = new NodeCache<string, StringIndirectionNode>((string data) =>
+            _genericReadyToRunHelpersFromType = new NodeCache<Tuple<ReadyToRunHelperId, object, TypeSystemEntity>, ISymbolNode>(data =>
             {
-                return new StringIndirectionNode(data);
+                return new ReadyToRunGenericLookupFromTypeNode(this, data.Item1, data.Item2, data.Item3);
             });
 
             _indirectionNodes = new NodeCache<ISymbolNode, IndirectionNode>(symbol =>
@@ -585,18 +585,18 @@ namespace ILCompiler.DependencyAnalysis
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
         }
 
-        private NodeCache<string, StringDataNode> _stringDataNodes;
+        private NodeCache<Tuple<ReadyToRunHelperId, Object, TypeSystemEntity>, ISymbolNode> _genericReadyToRunHelpersFromDict;
 
-        public StringDataNode StringData(string data)
+        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
         {
-            return _stringDataNodes.GetOrAdd(data);
+            return _genericReadyToRunHelpersFromDict.GetOrAdd(new Tuple<ReadyToRunHelperId, object, TypeSystemEntity>(id, target, dictionaryOwner));
         }
 
-        private NodeCache<string, StringIndirectionNode> _stringIndirectionNodes;
+        private NodeCache<Tuple<ReadyToRunHelperId, Object, TypeSystemEntity>, ISymbolNode> _genericReadyToRunHelpersFromType;
 
-        public StringIndirectionNode StringIndirection(string data)
+        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
         {
-            return _stringIndirectionNodes.GetOrAdd(data);
+            return _genericReadyToRunHelpersFromType.GetOrAdd(new Tuple<ReadyToRunHelperId, object, TypeSystemEntity>(id, target, dictionaryOwner));
         }
 
         private NodeCache<ISymbolNode, IndirectionNode> _indirectionNodes;
@@ -640,10 +640,6 @@ namespace ILCompiler.DependencyAnalysis
             CompilationUnitPrefix + "__ThreadStaticRegionStart",
             CompilationUnitPrefix + "__ThreadStaticRegionEnd", 
             null);
-        public ArrayOfEmbeddedDataNode StringTable = new ArrayOfEmbeddedDataNode(
-            CompilationUnitPrefix + "__StringTableStart",
-            CompilationUnitPrefix + "__StringTableEnd", 
-            null);
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             CompilationUnitPrefix + "__EagerCctorStart",
@@ -655,11 +651,10 @@ namespace ILCompiler.DependencyAnalysis
             CompilationUnitPrefix + "__DispatchMapTableEnd",
             null);
 
-        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfEmbeddedDataNode<FrozenStringNode>(
+        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<FrozenStringNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
-            null,
-            new FrozenObjectSentinelNode());
+            null);
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
@@ -679,7 +674,6 @@ namespace ILCompiler.DependencyAnalysis
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
-            graph.AddRoot(StringTable, "StringTable is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(ModuleManagerIndirection, "ModuleManagerIndirection is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
@@ -687,7 +681,6 @@ namespace ILCompiler.DependencyAnalysis
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.StringTable, StringTable, StringTable.StartSymbol, StringTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleManagerIndirection, ModuleManagerIndirection, ModuleManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);

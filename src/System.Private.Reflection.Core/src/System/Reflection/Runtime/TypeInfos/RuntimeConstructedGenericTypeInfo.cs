@@ -12,7 +12,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Tracing;
-using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;

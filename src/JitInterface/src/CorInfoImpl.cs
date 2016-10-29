@@ -104,7 +104,7 @@ namespace Internal.JitInterface
         {
             get
             {
-                return _compilation.Log;
+                return _compilation.Logger.Writer;
             }
         }
 
@@ -139,7 +139,8 @@ namespace Internal.JitInterface
                 {
                     MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
 
-                    if (!_compilation.Options.NoLineNumbers)
+                    // TODO: NoLineNumbers
+                    //if (!_compilation.Options.NoLineNumbers)
                     {
                         IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
                         if (ilSequencePoints != null)
@@ -163,7 +164,7 @@ namespace Internal.JitInterface
                 catch (Exception e)
                 {
                     // Debug info not successfully loaded.
-                    _compilation.Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
+                    Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
                 }
 
                 CorInfoImpl _this = this;
@@ -384,8 +385,17 @@ namespace Internal.JitInterface
             return handle;
         }
 
+        // We don't have System.TypedReference but RyuJIT can ask for a classhandle for it anyway.
+        // This is the classhandle we give out. RyuJIT will only use it for comparisons and those
+        // will always be false as expected. It's not valid to pass it back to us.
+        // https://github.com/dotnet/corert/issues/2092
+        private const int FakeTypedReferenceTypeHandle = 0xBEF;
+
         private Object HandleToObject(IntPtr handle)
         {
+            if (handle == (IntPtr)FakeTypedReferenceTypeHandle)
+                throw new InvalidOperationException();
+
             int index = ((int)handle - handleBase) / handleMultipler;
             return _handleToObject[index];
         }
@@ -1199,28 +1209,33 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private GenericLookupResult GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
+        private object GetTargetForFixup(object resolvedToken, ReadyToRunHelperId helperId)
         {
-            switch (fixupKind)
+            switch (helperId)
             {
-                case ReadyToRunFixupKind.TypeHandle:
+                case ReadyToRunHelperId.TypeHandle:
                     if (resolvedToken is TypeDesc)
-                        return _compilation.NodeFactory.GenericLookup.Type((TypeDesc)resolvedToken);
+                        return resolvedToken;
+                    else if (resolvedToken is MethodDesc)
+                        return ((MethodDesc)resolvedToken).OwningType;
                     else
-                        return _compilation.NodeFactory.GenericLookup.Type(((MethodDesc)resolvedToken).OwningType);
-
-                case ReadyToRunFixupKind.MethodHandle:
-                    return _compilation.NodeFactory.GenericLookup.MethodDictionary((MethodDesc)resolvedToken);
-
-                case ReadyToRunFixupKind.MethodEntry:
-                    return _compilation.NodeFactory.GenericLookup.MethodEntry((MethodDesc)resolvedToken);
-
-                case ReadyToRunFixupKind.VirtualEntry:
-                    return _compilation.NodeFactory.GenericLookup.VirtualCall((MethodDesc)resolvedToken);
+                        return ((FieldDesc)resolvedToken).OwningType;
 
                 default:
-                    throw new NotImplementedException();
+                    return resolvedToken;
             }
+        }
+
+        private ISymbolNode GetGenericLookupHelper(CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, ReadyToRunHelperId helperId, object helperArgument)
+        {
+            if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ
+                || runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
+            {
+                return _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, MethodBeingCompiled.OwningType);
+            }
+
+            Debug.Assert(runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
+            return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled);
         }
 
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
@@ -1276,36 +1291,28 @@ namespace Internal.JitInterface
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
+                    {
+                        // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
+                        Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
+                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
+
+                        DefType typeToInitialize = (DefType)MethodBeingCompiled.OwningType;
+                        Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
+
+                        DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
+                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, helperArg);
+                        pLookup.addr = (void*)ObjectToHandle(helper);
+                    }
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                     {
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
-                        ReadyToRunFixupKind fixupKind = (ReadyToRunFixupKind)pGenericLookupKind.runtimeLookupFlags;
-                        object fixupTarget = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        GenericLookupResult target = GetTargetForFixup(fixupTarget, fixupKind);
-
-                        ReadyToRunHelperId helper;
-                        TypeSystemEntity dictionaryOwner;
-
-                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
-                        {
-                            helper = ReadyToRunHelperId.GenericLookupFromThis;
-                            dictionaryOwner = MethodBeingCompiled.OwningType;
-                        }
-                        else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
-                        {
-                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                            dictionaryOwner = MethodBeingCompiled.OwningType;
-                        }
-                        else
-                        {
-                            Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-                            helper = ReadyToRunHelperId.GenericLookupFromDictionary;
-                            dictionaryOwner = MethodBeingCompiled;
-                        }
-
-                        GenericLookupDescriptor lookup = new GenericLookupDescriptor(dictionaryOwner, target);
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helper, lookup));
+                        ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
+                        object helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
+                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
+                        pLookup.addr = (void*)ObjectToHandle(helper);
                     }
                     break;
                 default:
@@ -1399,8 +1406,8 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
-                    // TODO: better exception type: invalid input IL
-                    throw new NotSupportedException("TypedReference not supported in .NET Core");
+                    // PREFER: return null: https://github.com/dotnet/corert/issues/2092
+                    return (CORINFO_CLASS_STRUCT_*)FakeTypedReferenceTypeHandle;
 
                 case CorInfoClassId.CLASSID_TYPE_HANDLE:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeTypeHandle));
@@ -1572,6 +1579,54 @@ namespace Internal.JitInterface
                     if (_compilation.HasLazyStaticConstructor(field.OwningType))
                     {
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                    }
+                }
+                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
+
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
+                    pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
+
+                    // Don't try to compute the runtime lookup if we're inlining. The JIT is going to abort the inlining
+                    // attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod == MethodBeingCompiled)
+                    {
+                        FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+                        ReadyToRunHelperId helperId;
+
+                        // Find out what kind of base do we need to look up.
+                        if (field.IsThreadStatic)
+                        {
+                            throw new NotImplementedException();
+                        }
+                        else if (field.HasGCStaticBase)
+                        {
+                            helperId = ReadyToRunHelperId.GetGCStaticBase;
+                        }
+                        else
+                        {
+                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        }
+
+                        // What generic context do we look up the base from.
+                        ISymbolNode helper;
+                        if (contextMethod.AcquiresInstMethodTableFromThis() || contextMethod.RequiresInstMethodTableArg())
+                        {
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(
+                                helperId, runtimeDeterminedField.OwningType, contextMethod.OwningType);
+                        }
+                        else
+                        {
+                            Debug.Assert(contextMethod.RequiresInstMethodDescArg());
+                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
+                                helperId, runtimeDeterminedField.OwningType, contextMethod);
+                        }
+
+                        pResult.fieldLookup.addr = (void*)ObjectToHandle(helper);
+                        pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
                     }
                 }
                 else
@@ -2184,7 +2239,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.MethodHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
                 }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
@@ -2204,7 +2259,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.FieldHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
                 }
             }
             else
@@ -2225,7 +2280,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.TypeHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
                 }
             }
 
@@ -2460,7 +2515,7 @@ namespace Internal.JitInterface
                     }
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.MethodEntry;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
                 }
                 else
                 {
@@ -2512,21 +2567,22 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    ISymbolNode genericDictionary = null;
+                    ISymbolNode instParam = null;
 
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
-                        genericDictionary = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
+                        instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
                     }
                     else if (targetMethod.RequiresInstMethodTableArg())
                     {
-                        genericDictionary = _compilation.NodeFactory.TypeGenericDictionary(concreteMethod.OwningType);
+                        // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+                        instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
                     }
 
-                    if (genericDictionary != null)
+                    if (instParam != null)
                     {
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
-                        pResult.instParamLookup.addr = (void*)ObjectToHandle(genericDictionary);
+                        pResult.instParamLookup.addr = (void*)ObjectToHandle(instParam);
 
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                             _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
@@ -2578,7 +2634,7 @@ namespace Internal.JitInterface
                     }
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.VirtualEntry;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualCall;
                 }
                 else
                 {
@@ -2647,8 +2703,8 @@ namespace Internal.JitInterface
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
             object literal = methodIL.GetObject((int)metaTok);
-            ppValue = (void*)ObjectToHandle(_compilation.NodeFactory.StringIndirection((string)literal));
-            return InfoAccessType.IAT_PPVALUE;
+            ppValue = (void*)ObjectToHandle(_compilation.NodeFactory.SerializedStringObject((string)literal));
+            return InfoAccessType.IAT_VALUE;
         }
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)

@@ -23,7 +23,7 @@ using Internal.LowLevelLinq;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
         public sealed override Type[] GetExportedTypes() => ExportedTypes.ToArray();
         public sealed override Module[] GetLoadedModules(bool getResourceModules) => Modules.ToArray();
@@ -80,7 +80,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
 namespace System.Reflection.Runtime.EventInfos
 {
-    internal sealed partial class RuntimeEventInfo
+    internal abstract partial class RuntimeEventInfo
     {
         public sealed override MethodInfo GetAddMethod(bool nonPublic) =>  AddMethod.FilterAccessor(nonPublic);
         public sealed override MethodInfo GetRemoveMethod(bool nonPublic) => RemoveMethod.FilterAccessor(nonPublic);
@@ -90,7 +90,7 @@ namespace System.Reflection.Runtime.EventInfos
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
         public sealed override object GetRawConstantValue()
         {
@@ -127,7 +127,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
         public sealed override MethodInfo GetGetMethod(bool nonPublic) => Getter?.FilterAccessor(nonPublic);
         public sealed override MethodInfo GetSetMethod(bool nonPublic) => Setter?.FilterAccessor(nonPublic);

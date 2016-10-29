@@ -23,6 +23,10 @@ namespace ILCompiler.DependencyAnalysis
         public abstract string GetMangledName(NameMangler nameMangler);
         public abstract override string ToString();
 
+        /// <summary>
+        /// Gets the offset to be applied to the symbol returned by
+        /// <see cref="GetTarget(NodeFactory, Instantiation, Instantiation)"/> to get the actual target.
+        /// </summary>
         public virtual int TargetDelta => 0;
     }
 
@@ -135,5 +139,61 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"VirtualCall: {_method}";
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to the non-GC static base of a type.
+    /// </summary>
+    internal sealed class TypeNonGCStaticBaseGenericLookupResult : GenericLookupResult
+    {
+        private MetadataType _type;
+
+        public TypeNonGCStaticBaseGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete static base in a generic dictionary?");
+            Debug.Assert(type is MetadataType);
+            _type = (MetadataType)type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.TypeNonGCStaticsSymbol(instantiatedType);
+        }
+
+        public override string GetMangledName(NameMangler nameMangler)
+        {
+            return $"NonGCStaticBase_{nameMangler.GetMangledTypeName(_type)}";
+        }
+
+        public override string ToString() => $"NonGCStaticBase: {_type}";
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to the GC static base of a type.
+    /// </summary>
+    internal sealed class TypeGCStaticBaseGenericLookupResult : GenericLookupResult
+    {
+        private MetadataType _type;
+
+        public TypeGCStaticBaseGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete static base in a generic dictionary?");
+            Debug.Assert(type is MetadataType);
+            _type = (MetadataType)type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.TypeGCStaticsSymbol(instantiatedType);
+        }
+
+        public override string GetMangledName(NameMangler nameMangler)
+        {
+            return $"GCStaticBase_{nameMangler.GetMangledTypeName(_type)}";
+        }
+
+        public override string ToString() => $"GCStaticBase: {_type}";
     }
 }

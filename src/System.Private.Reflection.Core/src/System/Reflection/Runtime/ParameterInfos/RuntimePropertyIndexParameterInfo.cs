@@ -8,8 +8,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.PropertyInfos;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //

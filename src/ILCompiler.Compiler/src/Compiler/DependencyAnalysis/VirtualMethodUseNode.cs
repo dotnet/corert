@@ -80,6 +80,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            MethodDesc canonDecl = _decl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (canonDecl != _decl)
+                return new[] { new DependencyListEntry(factory.VirtualMethodUse(canonDecl), "Canonical method") };
+
             return null;
         }
 

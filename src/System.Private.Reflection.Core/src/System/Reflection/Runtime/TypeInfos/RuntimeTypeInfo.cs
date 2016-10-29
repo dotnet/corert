@@ -12,8 +12,6 @@ using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Augments;
 
-using Internal.Metadata.NativeFormat;
-
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -237,7 +235,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         result.AddRange(baseType.GetInterfaces());
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
-                        Type ifc = directlyImplementedInterface.Handle.Resolve(directlyImplementedInterface.Reader, typeContext);
+                        Type ifc = directlyImplementedInterface.Resolve(typeContext);
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);
@@ -821,12 +819,10 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 QTypeDefRefOrSpec baseTypeDefRefOrSpec = TypeRefDefOrSpecForBaseType;
-                MetadataReader reader = baseTypeDefRefOrSpec.Reader;
                 RuntimeTypeInfo baseType = null;
-                if (reader != null)
+                if (!baseTypeDefRefOrSpec.IsNull)
                 {
-                    Handle typeDefRefOrSpec = baseTypeDefRefOrSpec.Handle;
-                    baseType = typeDefRefOrSpec.Resolve(reader, this.TypeContext);
+                    baseType = baseTypeDefRefOrSpec.Resolve(this.TypeContext);
                 }
                 return baseType;
             }

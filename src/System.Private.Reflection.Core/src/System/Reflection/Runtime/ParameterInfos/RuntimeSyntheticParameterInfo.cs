@@ -14,8 +14,6 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.ParameterInfos
 {
     // This class is used for the "Get/Set" methods on array types.

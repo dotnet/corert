@@ -12,8 +12,6 @@ using System.Reflection.Runtime.ParameterInfos;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     internal enum SyntheticMethodId

@@ -114,6 +114,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetLastGCDuration")]
         internal static extern long RhGetLastGCDuration(int generation);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
+        internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
