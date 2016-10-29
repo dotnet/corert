@@ -32,6 +32,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\FunctionPointerType.Canon.cs">
       <Link>TypeSystem\Canon\FunctionPointerType.Canon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\GenericParameterDesc.Canon.cs">
+      <Link>TypeSystem\Canon\GenericParameterDesc.Canon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs">
       <Link>TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs</Link>
     </Compile>
@@ -241,9 +244,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
       <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Canon.cs">
-      <Link>Ecma\EcmaGenericParameter.Canon.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
       <Link>Ecma\EcmaModule.Symbols.cs</Link>
