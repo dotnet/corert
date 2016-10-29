@@ -27,7 +27,8 @@ namespace ILCompiler
         {
             base.AddCompilationRoots(rootProvider);
 
-            AddCompilationRootsForExports((EcmaModule)_typeSystemContext.SystemModule, rootProvider);
+            var coreLib = _typeSystemContext.GetModuleForSimpleName("System.Private.CoreLib");
+            AddCompilationRootsForExports(coreLib, rootProvider);
         }
 
         public override bool IsSingleFileCompilation

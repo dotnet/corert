@@ -137,6 +137,15 @@ namespace ILCompiler
             foreach (var reference in referenceFiles)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
 
+            List<string> referencePathsToRemove = new List<string>();
+            foreach (var reference in _referenceFilePaths)
+            {
+                if (reference.Key.EndsWith("mscorlib.ni.dll"))
+                    referencePathsToRemove.Add(reference.Key);
+            }
+            foreach (var key in referencePathsToRemove)
+                _referenceFilePaths.Remove(key);
+
             return argSyntax;
         }
 
