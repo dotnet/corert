@@ -23,14 +23,6 @@ namespace Internal.TypeSystem.Ecma
             _handle = handle;
         }
 
-        public override int GetHashCode()
-        {
-            // TODO: Determine what a the right hash function should be. Use stable hashcode based on the type name?
-            // For now, use the same hash as a SignatureVariable type.
-            GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-            return TypeHashingAlgorithms.ComputeSignatureVariableHashCode(parameter.Index, parameter.Parent.Kind == HandleKind.MethodDefinition);
-        }
-
         public GenericParameterHandle Handle
         {
             get
@@ -70,19 +62,6 @@ namespace Internal.TypeSystem.Ecma
                 MetadataReader reader = _module.MetadataReader;
                 return reader.GetString(reader.GetGenericParameter(_handle).Name);
             }
-        }
-
-        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
-        {
-            TypeFlags flags = 0;
-
-            flags |= TypeFlags.ContainsGenericVariablesComputed | TypeFlags.ContainsGenericVariables;
-
-            flags |= TypeFlags.GenericParameter;
-
-            flags |= TypeFlags.HasGenericVarianceComputed;
-
-            return flags;
         }
 
         public override GenericParameterKind Kind
