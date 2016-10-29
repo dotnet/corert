@@ -74,5 +74,7 @@ namespace System
             // CORERT-TODO: Shut down the runtime
             Interop.Sys.ExitProcess(exitCode);
         }
+
+        public static string MachineName => Interop.Sys.GetHostName();
     }
 }

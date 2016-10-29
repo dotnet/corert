@@ -1705,4 +1705,7 @@
   <data name="EE_MissingField" xml:space="preserve">
     <value>Field not found: '{0}'.</value>
   </data>
+  <data name="InvalidOperation_GetHostName" xml:space="preserve">
+    <value>gethostname returned unexpected error code: {0}.</value>
+  </data>
 </root>

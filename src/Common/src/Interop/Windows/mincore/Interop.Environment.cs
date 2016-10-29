@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -16,5 +17,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
         internal static extern void ExitProcess(int exitCode);
+
+        [DllImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW", CharSet = CharSet.Unicode, BestFitMapping = false)]
+        internal extern static bool GetComputerName(StringBuilder nameBuffer, ref int bufferSize);
     }
 }
