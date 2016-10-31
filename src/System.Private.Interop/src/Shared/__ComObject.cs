@@ -1839,20 +1839,15 @@ namespace System
                 RuntimeTypeHandle firstTypeHandle;
                 if (McgModuleManager.TryGetTypeHandleForICollecton(interfaceType, out firstTypeHandle, out secondTypeHandle))
                 {
-                    RuntimeTypeHandle resolvedICollectionType;
-
-                    if (!secondTypeHandle.IsNull())
+                    if (!firstTypeHandle.IsNull() || !secondTypeHandle.IsNull())
                     {
-                        if (!TryQITypeForICollection(firstTypeHandle, secondTypeHandle, out resolvedICollectionType))
+                        RuntimeTypeHandle resolvedTypeHandle;
+                        if (!TryQITypeForICollection(firstTypeHandle, secondTypeHandle, out resolvedTypeHandle))
                             return false;
-                    }
-                    else
-                    {
-                        resolvedICollectionType = firstTypeHandle;
-                    }
 
-                    // Again... only check for a valid dispatcher when dynamic interop is in use (see explanation above)
-                    return McgModuleManager.UseDynamicInterop ? !resolvedICollectionType.GetDispatchClassType().IsInvalid() : true;
+                        // Again... only check for a valid dispatcher when dynamic interop is in use (see explanation above)
+                        return McgModuleManager.UseDynamicInterop ? !resolvedTypeHandle.GetDispatchClassType().IsInvalid() : true;
+                    }
                 }
 
                 //
