@@ -278,9 +278,13 @@ namespace TypeSystemTests
                 arrayOfStruct.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Universal));
         }
 
-        [Fact]
-        public void TestUpgradeToUniversalCanon()
+        [Theory]
+        [InlineData(CanonicalizationMode.Standard)]
+        [InlineData(CanonicalizationMode.RuntimeDetermined)]
+        public void TestUpgradeToUniversalCanon(CanonicalizationMode algorithmType)
         {
+            _context.CanonMode = algorithmType;
+
             var gstOverUniversalCanon = _genericStructType.MakeInstantiatedType(_context.UniversalCanonType);
             var grtOverRtRtStOverUniversal = _genericReferenceTypeWithThreeParams.MakeInstantiatedType(
                 _referenceType, _referenceType, gstOverUniversalCanon);
@@ -291,6 +295,33 @@ namespace TypeSystemTests
             // GenericReferenceTypeWithThreeParams<T__UniversalCanon, U__UniversalCanon, V__UniversalCanon>
             Assert.Same(_context.UniversalCanonType, grtOverRtRtStOverUniversalCanon.Instantiation[0]);
             Assert.Same(_context.UniversalCanonType, grtOverRtRtStOverUniversalCanon.Instantiation[2]);
+        }
+
+        [Theory]
+        [InlineData(CanonicalizationMode.Standard)]
+        [InlineData(CanonicalizationMode.RuntimeDetermined)]
+        public void TestDowngradeFromUniversalCanon(CanonicalizationMode algorithmType)
+        {
+            _context.CanonMode = algorithmType;
+            var grtOverUniversalCanon = _genericReferenceType.MakeInstantiatedType(_context.UniversalCanonType);
+            var gstOverGrtOverUniversalCanon = _genericStructType.MakeInstantiatedType(grtOverUniversalCanon);
+            var gstOverCanon = _genericStructType.MakeInstantiatedType(_context.CanonType);
+            Assert.Same(gstOverCanon, gstOverGrtOverUniversalCanon.ConvertToCanonForm(CanonicalFormKind.Specific));
+
+            var gstOverGstOverGrtOverUniversalCanon = _genericStructType.MakeInstantiatedType(gstOverGrtOverUniversalCanon);
+            var gstOverGstOverCanon = _genericStructType.MakeInstantiatedType(gstOverCanon);
+            Assert.Same(gstOverGstOverCanon, gstOverGstOverGrtOverUniversalCanon.ConvertToCanonForm(CanonicalFormKind.Specific));
+        }
+
+        [Fact]
+        public void TestCanonicalizationOfRuntimeDeterminedUniversalGeneric()
+        {
+            var gstOverUniversalCanon = _genericStructType.MakeInstantiatedType(_context.UniversalCanonType);
+            var rdtUniversalCanon = (RuntimeDeterminedType)gstOverUniversalCanon.ConvertToSharedRuntimeDeterminedForm().Instantiation[0];
+            Assert.Same(_context.UniversalCanonType, rdtUniversalCanon.CanonicalType);
+
+            var gstOverRdtUniversalCanon = _genericStructType.MakeInstantiatedType(rdtUniversalCanon);
+            Assert.Same(gstOverUniversalCanon, gstOverRdtUniversalCanon.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
     }
 }
