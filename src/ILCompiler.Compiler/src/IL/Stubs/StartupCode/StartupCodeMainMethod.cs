@@ -7,6 +7,8 @@ using Internal.IL;
 using Internal.IL.Stubs;
 using System;
 
+using ILCompiler;
+
 namespace Internal.IL.Stubs.StartupCode
 {
     /// <summary>
@@ -15,12 +17,14 @@ namespace Internal.IL.Stubs.StartupCode
     /// </summary>
     public sealed class StartupCodeMainMethod : ILStubMethod
     {
+        private CompilerTypeSystemContext _typeSystemContext;
         private TypeDesc _owningType;
         private MethodDesc _mainMethod;
         private MethodSignature _signature;
 
-        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod)
+        public StartupCodeMainMethod(CompilerTypeSystemContext typeSystemContext, TypeDesc owningType, MethodDesc mainMethod)
         {
+            _typeSystemContext = typeSystemContext;
             _owningType = owningType;
             _mainMethod = mainMethod;
         }
@@ -29,7 +33,7 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                return OwningType.Context;
+                return _typeSystemContext;
             }
         }
 
@@ -53,6 +57,14 @@ namespace Internal.IL.Stubs.StartupCode
         {
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
+
+            ModuleDesc developerExperience = _typeSystemContext.GetModuleForSimpleName("System.Private.DeveloperExperience.Console", false);
+            if (developerExperience != null)
+            {
+                TypeDesc connectorType = developerExperience.GetKnownType("Internal.DeveloperExperience", "DeveloperExperienceConnectorConsole");
+                MethodDesc initializeMethod = connectorType.GetKnownMethod("Initialize", null);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(initializeMethod));
+            }
 
             MetadataType startup = Context.GetHelperType("StartupCodeHelpers");
 
