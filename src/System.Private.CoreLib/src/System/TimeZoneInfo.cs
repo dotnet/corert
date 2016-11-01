@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -361,7 +361,7 @@ namespace System
         {
             if (!SupportsDaylightSavingTime)
             {
-                throw new ArgumentException(SR.Argument_DateTimeOffsetIsNotAmbiguous, "dateTimeOffset");
+                throw new ArgumentException(SR.Argument_DateTimeOffsetIsNotAmbiguous, nameof(dateTimeOffset));
             }
             Contract.EndContractBlock();
 
@@ -377,7 +377,7 @@ namespace System
 
             if (!isAmbiguous)
             {
-                throw new ArgumentException(SR.Argument_DateTimeOffsetIsNotAmbiguous, "dateTimeOffset");
+                throw new ArgumentException(SR.Argument_DateTimeOffsetIsNotAmbiguous, nameof(dateTimeOffset));
             }
 
             // the passed in dateTime is ambiguous in this TimeZoneInfo instance
@@ -403,7 +403,7 @@ namespace System
         {
             if (!SupportsDaylightSavingTime)
             {
-                throw new ArgumentException(SR.Argument_DateTimeIsNotAmbiguous, "dateTime");
+                throw new ArgumentException(SR.Argument_DateTimeIsNotAmbiguous, nameof(dateTime));
             }
             Contract.EndContractBlock();
 
@@ -433,7 +433,7 @@ namespace System
 
             if (!isAmbiguous)
             {
-                throw new ArgumentException(SR.Argument_DateTimeIsNotAmbiguous, "dateTime");
+                throw new ArgumentException(SR.Argument_DateTimeIsNotAmbiguous, nameof(dateTime));
             }
 
             // the passed in dateTime is ambiguous in this TimeZoneInfo instance
@@ -729,7 +729,7 @@ namespace System
         {
             if (destinationTimeZone == null)
             {
-                throw new ArgumentNullException("destinationTimeZone");
+                throw new ArgumentNullException(nameof(destinationTimeZone));
             }
 
             Contract.EndContractBlock();
@@ -763,7 +763,7 @@ namespace System
         {
             if (destinationTimeZone == null)
             {
-                throw new ArgumentNullException("destinationTimeZone");
+                throw new ArgumentNullException(nameof(destinationTimeZone));
             }
             Contract.EndContractBlock();
 
@@ -793,19 +793,19 @@ namespace System
         {
             if (sourceTimeZone == null)
             {
-                throw new ArgumentNullException("sourceTimeZone");
+                throw new ArgumentNullException(nameof(sourceTimeZone));
             }
 
             if (destinationTimeZone == null)
             {
-                throw new ArgumentNullException("destinationTimeZone");
+                throw new ArgumentNullException(nameof(destinationTimeZone));
             }
             Contract.EndContractBlock();
 
             DateTimeKind sourceKind = cachedData.GetCorrespondingKind(sourceTimeZone);
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && (dateTime.Kind != DateTimeKind.Unspecified) && (dateTime.Kind != sourceKind))
             {
-                throw new ArgumentException(SR.Argument_ConvertMismatch, "sourceTimeZone");
+                throw new ArgumentException(SR.Argument_ConvertMismatch, nameof(sourceTimeZone));
             }
 
             //
@@ -831,7 +831,7 @@ namespace System
                     // period that supports DST 
                     if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && GetIsInvalidTime(dateTime, sourceRule, sourceDaylightTime))
                     {
-                        throw new ArgumentException(SR.Argument_DateTimeIsInvalid, "dateTime");
+                        throw new ArgumentException(SR.Argument_DateTimeIsInvalid, nameof(dateTime));
                     }
                     sourceIsDaylightSavings = GetIsDaylightSavings(dateTime, sourceRule, sourceDaylightTime, flags);
 
@@ -908,7 +908,7 @@ namespace System
         {
             if (id == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             }
             else if (id.Length == 0 || id.Length > 255 || id.Contains("\0"))
             {
@@ -954,7 +954,7 @@ namespace System
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             // check the utcOffset and supportsDaylightSavingTime members
@@ -2476,22 +2476,22 @@ namespace System
         {
             if (id == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             }
 
             if (id.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidId, id), "id");
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidId, id), nameof(id));
             }
 
             if (UtcOffsetOutOfRange(baseUtcOffset))
             {
-                throw new ArgumentOutOfRangeException("baseUtcOffset", SR.ArgumentOutOfRange_UtcOffset);
+                throw new ArgumentOutOfRangeException(nameof(baseUtcOffset), SR.ArgumentOutOfRange_UtcOffset);
             }
 
             if (baseUtcOffset.Ticks % TimeSpan.TicksPerMinute != 0)
             {
-                throw new ArgumentException(SR.Argument_TimeSpanHasSeconds, "baseUtcOffset");
+                throw new ArgumentException(SR.Argument_TimeSpanHasSeconds, nameof(baseUtcOffset));
             }
             Contract.EndContractBlock();
 
@@ -2732,48 +2732,48 @@ namespace System
             {
                 if (dateStart.Kind != DateTimeKind.Unspecified)
                 {
-                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, "dateStart");
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(dateStart));
                 }
 
                 if (dateEnd.Kind != DateTimeKind.Unspecified)
                 {
-                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, "dateEnd");
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(dateEnd));
                 }
 
                 if (daylightTransitionStart.Equals(daylightTransitionEnd))
                 {
                     throw new ArgumentException(SR.Argument_TransitionTimesAreIdentical,
-                                                "daylightTransitionEnd");
+                                                nameof(daylightTransitionEnd));
                 }
 
 
                 if (dateStart > dateEnd)
                 {
-                    throw new ArgumentException(SR.Argument_OutOfOrderDateTimes, "dateStart");
+                    throw new ArgumentException(SR.Argument_OutOfOrderDateTimes, nameof(dateStart));
                 }
 
                 if (TimeZoneInfo.UtcOffsetOutOfRange(daylightDelta))
                 {
-                    throw new ArgumentOutOfRangeException("daylightDelta", daylightDelta,
+                    throw new ArgumentOutOfRangeException(nameof(daylightDelta), daylightDelta,
                         SR.ArgumentOutOfRange_UtcOffset);
                 }
 
                 if (daylightDelta.Ticks % TimeSpan.TicksPerMinute != 0)
                 {
                     throw new ArgumentException(SR.Argument_TimeSpanHasSeconds,
-                        "daylightDelta");
+                        nameof(daylightDelta));
                 }
 
                 if (dateStart.TimeOfDay != TimeSpan.Zero)
                 {
                     throw new ArgumentException(SR.Argument_DateTimeHasTimeOfDay,
-                        "dateStart");
+                        nameof(dateStart));
                 }
 
                 if (dateEnd.TimeOfDay != TimeSpan.Zero)
                 {
                     throw new ArgumentException(SR.Argument_DateTimeHasTimeOfDay,
-                        "dateEnd");
+                        nameof(dateEnd));
                 }
                 Contract.EndContractBlock();
             }
@@ -2973,38 +2973,38 @@ namespace System
             {
                 if (timeOfDay.Kind != DateTimeKind.Unspecified)
                 {
-                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, "timeOfDay");
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(timeOfDay));
                 }
 
                 // Month range 1-12
                 if (month < 1 || month > 12)
                 {
-                    throw new ArgumentOutOfRangeException("month", SR.ArgumentOutOfRange_MonthParam);
+                    throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_MonthParam);
                 }
 
                 // Day range 1-31
                 if (day < 1 || day > 31)
                 {
-                    throw new ArgumentOutOfRangeException("day", SR.ArgumentOutOfRange_DayParam);
+                    throw new ArgumentOutOfRangeException(nameof(day), SR.ArgumentOutOfRange_DayParam);
                 }
 
                 // Week range 1-5
                 if (week < 1 || week > 5)
                 {
-                    throw new ArgumentOutOfRangeException("week", SR.ArgumentOutOfRange_Week);
+                    throw new ArgumentOutOfRangeException(nameof(week), SR.ArgumentOutOfRange_Week);
                 }
 
                 // DayOfWeek range 0-6
                 if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6)
                 {
-                    throw new ArgumentOutOfRangeException("dayOfWeek", SR.ArgumentOutOfRange_DayOfWeek);
+                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), SR.ArgumentOutOfRange_DayOfWeek);
                 }
                 Contract.EndContractBlock();
 
                 if (timeOfDay.Year != 1 || timeOfDay.Month != 1
                 || timeOfDay.Day != 1 || (timeOfDay.Ticks % TimeSpan.TicksPerMillisecond != 0))
                 {
-                    throw new ArgumentException(SR.Argument_DateTimeHasTicks, "timeOfDay");
+                    throw new ArgumentException(SR.Argument_DateTimeHasTicks, nameof(timeOfDay));
                 }
             }
         }

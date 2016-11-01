@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             return _container.TryGetValueWorker(key, out value);
@@ -58,7 +58,7 @@ namespace System.Runtime.CompilerServices
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             using (LockHolder.Hold(_lock))
@@ -87,7 +87,7 @@ namespace System.Runtime.CompilerServices
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             using (LockHolder.Hold(_lock))
@@ -123,7 +123,7 @@ namespace System.Runtime.CompilerServices
 
             if (createValueCallback == null)
             {
-                throw new ArgumentNullException("createValueCallback");
+                throw new ArgumentNullException(nameof(createValueCallback));
             }
 
             TValue existingValue;

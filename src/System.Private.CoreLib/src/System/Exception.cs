@@ -142,7 +142,7 @@ namespace System
             {
                 // We might not need to store this value any more.
                 restrictedError = (string)Data["RestrictedDescription"];
-                restrictedErrorReference = (string)Data["restrictedErrorReference"];
+                restrictedErrorReference = (string)Data[nameof(restrictedErrorReference)];
                 restrictedCapabilitySid = (string)Data["RestrictedCapabilitySid"];
                 return true;
             }

@@ -121,7 +121,7 @@ namespace System
         {
             if (conversionType == null)
             {
-                throw new ArgumentNullException("conversionType");
+                throw new ArgumentNullException(nameof(conversionType));
             }
 
             Contract.EndContractBlock();
@@ -250,7 +250,7 @@ namespace System
             Debug.Assert(value != null, "[Convert.DefaultToType]value!=null");
             if (targetType == null)
             {
-                throw new ArgumentNullException("targetType");
+                throw new ArgumentNullException(nameof(targetType));
             }
             Contract.EndContractBlock();
 
@@ -492,7 +492,7 @@ namespace System
         public static char ToChar(String value, IFormatProvider provider)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             if (value.Length != 1)
@@ -2338,7 +2338,7 @@ namespace System
         {
             if (inArray == null)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2350,7 +2350,7 @@ namespace System
         {
             if (inArray == null)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2367,11 +2367,11 @@ namespace System
         {
             //Do data verfication
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options));
             Contract.Ensures(Contract.Result<string>() != null);
@@ -2382,7 +2382,7 @@ namespace System
 
             inArrayLength = inArray.Length;
             if (offset > (inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_OffsetLength);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
             if (inArrayLength == 0)
                 return String.Empty;
@@ -2417,15 +2417,15 @@ namespace System
         {
             //Do data verfication
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (outArray == null)
-                throw new ArgumentNullException("outArray");
+                throw new ArgumentNullException(nameof(outArray));
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offsetIn < 0)
-                throw new ArgumentOutOfRangeException("offsetIn", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_GenericPositive);
             if (offsetOut < 0)
-                throw new ArgumentOutOfRangeException("offsetOut", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_GenericPositive);
 
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
             {
@@ -2445,7 +2445,7 @@ namespace System
             inArrayLength = inArray.Length;
 
             if (offsetIn > (int)(inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offsetIn", SR.ArgumentOutOfRange_OffsetLength);
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_OffsetLength);
 
             if (inArrayLength == 0)
                 return 0;
@@ -2458,7 +2458,7 @@ namespace System
             numElementsToCopy = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
             if (offsetOut > (int)(outArrayLength - numElementsToCopy))
-                throw new ArgumentOutOfRangeException("offsetOut", SR.ArgumentOutOfRange_OffsetOut);
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_OffsetOut);
 
             fixed (char* outChars = &outArray[offsetOut])
             {
@@ -2570,7 +2570,7 @@ namespace System
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.
 
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
 
             Contract.EndContractBlock();
 
@@ -2594,16 +2594,16 @@ namespace System
         public static Byte[] FromBase64CharArray(Char[] inArray, Int32 offset, Int32 length)
         {
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
 
             if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_OffsetLength);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
             Contract.EndContractBlock();
 

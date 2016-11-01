@@ -40,9 +40,9 @@ namespace System
         public Guid(byte[] b)
         {
             if (b == null)
-                throw new ArgumentNullException("b");
+                throw new ArgumentNullException(nameof(b));
             if (b.Length != 16)
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), "b");
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
             Contract.EndContractBlock();
 
             _a = ((int)b[3] << 24) | ((int)b[2] << 16) | ((int)b[1] << 8) | b[0];
@@ -80,10 +80,10 @@ namespace System
         public Guid(int a, short b, short c, byte[] d)
         {
             if (d == null)
-                throw new ArgumentNullException("d");
+                throw new ArgumentNullException(nameof(d));
             // Check that array is not too big
             if (d.Length != 8)
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), "d");
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), nameof(d));
             Contract.EndContractBlock();
 
             _a = a;
@@ -237,7 +237,7 @@ namespace System
         {
             if (g == null)
             {
-                throw new ArgumentNullException("g");
+                throw new ArgumentNullException(nameof(g));
             }
             Contract.EndContractBlock();
             this = Guid.Empty;
@@ -259,7 +259,7 @@ namespace System
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Contract.EndContractBlock();
 
@@ -294,10 +294,10 @@ namespace System
         public static Guid ParseExact(String input, String format)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             if (format == null)
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
 
             if (format.Length != 1)
             {
@@ -1118,7 +1118,7 @@ namespace System
             }
             if (!(value is Guid))
             {
-                throw new ArgumentException(SR.Arg_MustBeGuid, "value");
+                throw new ArgumentException(SR.Arg_MustBeGuid, nameof(value));
             }
             Guid g = (Guid)value;
 

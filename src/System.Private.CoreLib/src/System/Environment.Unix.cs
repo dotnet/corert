@@ -19,7 +19,7 @@ namespace System
         public unsafe static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
             {
@@ -54,7 +54,7 @@ namespace System
         public unsafe static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
 
             IntPtr result;
             int size = Interop.Sys.GetEnvironmentVariable(variable, out result);

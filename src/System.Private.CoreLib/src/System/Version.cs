@@ -26,16 +26,16 @@ namespace System
         public Version(int major, int minor, int build, int revision)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException("major", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException("minor", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
 
             if (build < 0)
-                throw new ArgumentOutOfRangeException("build", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
 
             if (revision < 0)
-                throw new ArgumentOutOfRangeException("revision", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(revision), SR.ArgumentOutOfRange_Version);
             Contract.EndContractBlock();
 
             _Major = major;
@@ -47,13 +47,13 @@ namespace System
         public Version(int major, int minor, int build)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException("major", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException("minor", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
 
             if (build < 0)
-                throw new ArgumentOutOfRangeException("build", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
 
             Contract.EndContractBlock();
 
@@ -65,10 +65,10 @@ namespace System
         public Version(int major, int minor)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException("major", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException("minor", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
             Contract.EndContractBlock();
 
             _Major = major;
@@ -207,17 +207,17 @@ namespace System
                     return (String.Concat(FormatComponent(_Major), ".", FormatComponent(_Minor)));
                 default:
                     if (_Build == -1)
-                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "2"), "fieldCount");
+                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "2"), nameof(fieldCount));
                     if (fieldCount == 3)
                         return (FormatComponent(_Major) + "." + FormatComponent(_Minor) + "." + FormatComponent(_Build));
 
                     if (_Revision == -1)
-                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "3"), "fieldCount");
+                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "3"), nameof(fieldCount));
 
                     if (fieldCount == 4)
                         return (FormatComponent(Major) + "." + FormatComponent(_Minor) + "." + FormatComponent(_Build) + "." + FormatComponent(_Revision));
 
-                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), "fieldCount");
+                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), nameof(fieldCount));
             }
         }
 
@@ -225,12 +225,12 @@ namespace System
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Contract.EndContractBlock();
 
             VersionResult r = new VersionResult();
-            r.Init("input", true);
+            r.Init(nameof(input), true);
             if (!TryParseVersion(input, ref r))
             {
                 throw r.GetVersionParseException();
@@ -241,7 +241,7 @@ namespace System
         public static bool TryParse(string input, out Version result)
         {
             VersionResult r = new VersionResult();
-            r.Init("input", false);
+            r.Init(nameof(input), false);
             bool b = TryParseVersion(input, ref r);
             result = r.m_parsedVersion;
             return b;
@@ -265,12 +265,12 @@ namespace System
                 return false;
             }
 
-            if (!TryParseComponent(parsedComponents[0], "version", ref result, out major))
+            if (!TryParseComponent(parsedComponents[0], nameof(version), ref result, out major))
             {
                 return false;
             }
 
-            if (!TryParseComponent(parsedComponents[1], "version", ref result, out minor))
+            if (!TryParseComponent(parsedComponents[1], nameof(version), ref result, out minor))
             {
                 return false;
             }
@@ -354,7 +354,7 @@ namespace System
         public static bool operator <(Version v1, Version v2)
         {
             if ((Object)v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) < 0);
         }
@@ -362,7 +362,7 @@ namespace System
         public static bool operator <=(Version v1, Version v2)
         {
             if ((Object)v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) <= 0);
         }

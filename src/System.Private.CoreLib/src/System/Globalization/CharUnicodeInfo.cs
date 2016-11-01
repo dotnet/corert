@@ -213,11 +213,11 @@ namespace System.Globalization
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
             return (InternalGetNumericValue(InternalConvertToUtf32(s, index)));
@@ -231,10 +231,10 @@ namespace System.Globalization
         public static UnicodeCategory GetUnicodeCategory(String s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             return InternalGetUnicodeCategory(s, index);

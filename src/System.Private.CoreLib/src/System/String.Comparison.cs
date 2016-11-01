@@ -426,7 +426,7 @@ namespace System
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
             
             if (object.ReferenceEquals(strA, strB))
@@ -526,7 +526,7 @@ namespace System
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
 
             if (strA == null || strB == null)
@@ -543,18 +543,18 @@ namespace System
             // @TODO: Spec#: Figure out what to do here with the return statement above.
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
 
             if (indexA < 0 || indexB < 0)
             {
-                string paramName = indexA < 0 ? "indexA" : "indexB";
+                string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
 
             if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
             {
-                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                string paramName = strA.Length - indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
             
@@ -633,12 +633,12 @@ namespace System
 
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeCount);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeCount);
             }
 
             if (indexA < 0 || indexB < 0)
             {
-                string paramName = indexA < 0 ? "indexA" : "indexB";
+                string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
             
@@ -647,7 +647,7 @@ namespace System
 
             if (lengthA < 0 || lengthB < 0)
             {
-                string paramName = lengthA < 0 ? "indexA" : "indexB";
+                string paramName = lengthA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
 
@@ -704,12 +704,12 @@ namespace System
         {
             if ((Object)value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
 
             if ((Object)this == (Object)value)
@@ -737,7 +737,7 @@ namespace System
                     return this.Length < value.Length ? false : (FormatProvider.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -794,7 +794,7 @@ namespace System
         public bool Equals(String value, StringComparison comparisonType)
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
 
             if ((Object)this == (Object)value)
             {
@@ -828,7 +828,7 @@ namespace System
                     }
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -852,7 +852,7 @@ namespace System
         public static bool Equals(String a, String b, StringComparison comparisonType)
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
 
             if ((Object)a == (Object)b)
             {
@@ -885,7 +885,7 @@ namespace System
                         return FormatProvider.CompareOrdinalIgnoreCase(a, 0, a.Length, b, 0, b.Length) == 0;
                     }
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -961,7 +961,7 @@ namespace System
         {
             if ((Object)value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             return StartsWith(value, StringComparison.CurrentCulture);
         }
@@ -970,12 +970,12 @@ namespace System
         {
             if ((Object)value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
 
             if ((Object)this == (Object)value)
@@ -1013,7 +1013,7 @@ namespace System
                     return FormatProvider.CompareOrdinalIgnoreCase(this, 0, value.Length, value, 0, value.Length) == 0;
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
     }

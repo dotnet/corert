@@ -32,7 +32,7 @@ namespace System.Collections
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key", SR.ArgumentNull_Key);
+                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
                 Contract.EndContractBlock();
                 DictionaryNode node = _head;
@@ -51,7 +51,7 @@ namespace System.Collections
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key", SR.ArgumentNull_Key);
+                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
                 Contract.EndContractBlock();
 
@@ -160,7 +160,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key", SR.ArgumentNull_Key);
+                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
             Contract.EndContractBlock();
 
@@ -215,7 +215,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key", SR.ArgumentNull_Key);
+                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
             Contract.EndContractBlock();
             for (DictionaryNode node = _head; node != null; node = node.next)
@@ -231,16 +231,16 @@ namespace System.Collections
         public void CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (array.Length - index < this.Count)
-                throw new ArgumentException(SR.ArgumentOutOfRange_Index, "index");
+                throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
             Contract.EndContractBlock();
 
             for (DictionaryNode node = _head; node != null; node = node.next)
@@ -264,7 +264,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key", SR.ArgumentNull_Key);
+                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
             Contract.EndContractBlock();
             _version++;
@@ -400,14 +400,14 @@ namespace System.Collections
             void ICollection.CopyTo(Array array, int index)
             {
                 if (array == null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
                 Contract.EndContractBlock();
                 if (array.Length - index < _list.Count)
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Index, "index");
+                    throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
                 for (DictionaryNode node = _list._head; node != null; node = node.next)
                 {
                     array.SetValue(_isKeys ? node.key : node.value, index);

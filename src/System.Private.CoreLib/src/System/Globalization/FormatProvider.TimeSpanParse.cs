@@ -720,7 +720,7 @@ namespace System.Globalization
             {
                 if (input == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "input");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(input));
                     return false;
                 }
 
@@ -1299,12 +1299,12 @@ namespace System.Globalization
             {
                 if (input == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "input");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(input));
                     return false;
                 }
                 if (format == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "format");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(format));
                     return false;
                 }
                 if (format.Length == 0)
@@ -1595,7 +1595,7 @@ namespace System.Globalization
 
                     if (input == null)
                     {
-                        result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "input");
+                        result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(input));
                         return false;
                     }
                     _str = input;
@@ -1760,12 +1760,12 @@ namespace System.Globalization
             {
                 if (input == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "input");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(input));
                     return false;
                 }
                 if (formats == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "formats");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(formats));
                     return false;
                 }
 

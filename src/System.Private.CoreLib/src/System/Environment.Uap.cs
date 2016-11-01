@@ -21,7 +21,7 @@ namespace System
         public unsafe static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             // Environment variable accessors are not approved modern API.
             // Behave as if no variables are defined in this case.
@@ -31,7 +31,7 @@ namespace System
         public unsafe static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
 
             // Environment variable accessors are not approved modern API.
             // Behave as if the variable was not found in this case.

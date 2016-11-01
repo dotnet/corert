@@ -30,7 +30,7 @@ namespace System.Reflection
         public AssemblyName(string assemblyName)
         {
             if (assemblyName == null)
-                throw new ArgumentNullException("assemblyName");
+                throw new ArgumentNullException(nameof(assemblyName));
             RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(assemblyName);
             runtimeAssemblyName.CopyToAssemblyName(this);
         }

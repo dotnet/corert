@@ -154,7 +154,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
 
             bool rval = m_task.TrySetException(exception);
             if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
@@ -183,18 +183,18 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetException(IEnumerable<Exception> exceptions)
         {
-            if (exceptions == null) throw new ArgumentNullException("exceptions");
+            if (exceptions == null) throw new ArgumentNullException(nameof(exceptions));
 
             LowLevelListWithIList<Exception> defensiveCopy = new LowLevelListWithIList<Exception>();
             foreach (Exception e in exceptions)
             {
                 if (e == null)
-                    throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NullException, "exceptions");
+                    throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NullException, nameof(exceptions));
                 defensiveCopy.Add(e);
             }
 
             if (defensiveCopy.Count == 0)
-                throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NoExceptions, "exceptions");
+                throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NoExceptions, nameof(exceptions));
 
             bool rval = m_task.TrySetException(defensiveCopy);
             if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
@@ -236,7 +236,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
 
             if (!TrySetException(exception))
             {
