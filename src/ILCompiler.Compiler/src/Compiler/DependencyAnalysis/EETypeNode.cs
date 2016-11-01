@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// UInt32          | Hash code
     ///                 |
-    /// [Pointer Size]  | Pointer to containing Module indirection cell
+    /// [Pointer Size]  | Pointer to containing TypeManager indirection cell
     ///                 |
     /// X * [Ptr Size]  | VTable entries (optional)
     ///                 |
@@ -181,7 +181,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             objData.EmitInt(_type.GetHashCode());
-            objData.EmitPointerReloc(factory.ModuleManagerIndirection);
+            objData.EmitPointerReloc(factory.TypeManagerIndirection);
             
             // Avoid consulting VTable slots until they're guaranteed complete during final data emission
             if (!relocsOnly)

@@ -115,7 +115,7 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromPointer, (PTR_VOID pPointerVal))
 COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
 {
 #if CORERT
-    return (HANDLE)(pEEType->GetModuleManager());
+    return (HANDLE)(pEEType->GetTypeManager());
 #else
     // For dynamically created types, return the module handle that contains the template type
     if (pEEType->IsDynamicType())
@@ -144,7 +144,7 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (HANDLE hOsModule, UInt32 blobId, UInt8
         (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
     ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
 
-    ModuleManager* pModule = (ModuleManager*)hOsModule;
+    TypeManager* pModule = (TypeManager*)hOsModule;
 
     int length;
     void* pBlob;
@@ -640,14 +640,14 @@ COOP_PINVOKE_HELPER(Boolean, RhpRegisterFrozenSegment, (void* pSegmentStart, UIn
 }
 
 #ifdef CORERT
-COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (ModuleManager* pModule, Int32 headerId, Int32* length))
+COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManager* pModule, Int32 headerId, Int32* length))
 {
     return pModule->GetModuleSection((ReadyToRunSectionType)headerId, length);
 }
 
-COOP_PINVOKE_HELPER(void*, RhpCreateModuleManager, (void* pModuleHeader))
+COOP_PINVOKE_HELPER(void*, RhpCreateTypeManager, (void* pModuleHeader))
 {
-    return ModuleManager::Create(pModuleHeader);
+    return TypeManager::Create(pModuleHeader);
 }
 #endif
 

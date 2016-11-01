@@ -8,10 +8,10 @@
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "holder.h"
-#include "ModuleManager.h"
+#include "TypeManager.h"
 
 /* static */
-ModuleManager * ModuleManager::Create(void * pModuleHeader)
+TypeManager * TypeManager::Create(void * pModuleHeader)
 {
     ReadyToRunHeader * pReadyToRunHeader = (ReadyToRunHeader *)pModuleHeader;
 
@@ -25,15 +25,15 @@ ModuleManager * ModuleManager::Create(void * pModuleHeader)
     if (pReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants::CurrentMajorVersion)
         return nullptr;
 
-    return new (nothrow) ModuleManager(pReadyToRunHeader);
+    return new (nothrow) TypeManager(pReadyToRunHeader);
 }
 
-ModuleManager::ModuleManager(ReadyToRunHeader * pHeader)
+TypeManager::TypeManager(ReadyToRunHeader * pHeader)
     : m_pHeader(pHeader), m_pDispatchMapTable(nullptr)
 {
 }
 
-void * ModuleManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)
+void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)
 {
     ModuleInfoRow * pModuleInfoRows = (ModuleInfoRow *)(m_pHeader + 1);
 
@@ -54,7 +54,7 @@ void * ModuleManager::GetModuleSection(ReadyToRunSectionType sectionId, int * le
     return nullptr;
 }
 
-DispatchMap** ModuleManager::GetDispatchMapLookupTable()
+DispatchMap** TypeManager::GetDispatchMapLookupTable()
 {
     if (m_pDispatchMapTable == nullptr)
     {
@@ -66,12 +66,12 @@ DispatchMap** ModuleManager::GetDispatchMapLookupTable()
     return m_pDispatchMapTable;
 }
 
-bool ModuleManager::ModuleInfoRow::HasEndPointer()
+bool TypeManager::ModuleInfoRow::HasEndPointer()
 {
     return Flags & (int32_t)ModuleInfoFlags::HasEndPointer;
 }
 
-int ModuleManager::ModuleInfoRow::GetLength()
+int TypeManager::ModuleInfoRow::GetLength()
 {
     if (HasEndPointer())
     {
