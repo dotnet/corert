@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Globalization;
@@ -1128,7 +1129,7 @@ namespace System.Globalization
                     index++;
                 }
 
-                //Contract.Assert(val == 0, "DateTimeFormat.AppendNumber(): digits less than size of val");
+                Debug.Assert(val == 0, "DateTimeFormat.AppendNumber(): digits less than size of val");
             }
 
             // This is a placeholder for an MDA to detect when the user is using a
