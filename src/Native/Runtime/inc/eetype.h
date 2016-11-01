@@ -12,7 +12,7 @@
 class MdilModule;
 class EEType;
 class OptionalFields;
-class ModuleManager;
+class TypeManager;
 class DynamicModule;
 struct EETypeRef;
 enum GenericVarianceType : UInt8;
@@ -225,7 +225,7 @@ private:
     UInt16              m_usNumInterfaces;
     UInt32              m_uHashCode;
 #if defined(CORERT)
-    ModuleManager**     m_ppModuleManager;
+    TypeManager**     m_ppTypeManager;
 #endif
 
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
@@ -471,8 +471,8 @@ public:
     DynamicModule* get_DynamicModule();
 
 #if defined(CORERT)
-    ModuleManager* GetModuleManager()
-         { return *m_ppModuleManager; }
+    TypeManager* GetTypeManager()
+         { return *m_ppTypeManager; }
 #endif
 
 #ifndef BINDER

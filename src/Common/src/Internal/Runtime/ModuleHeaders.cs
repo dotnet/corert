@@ -49,7 +49,7 @@ namespace Internal.Runtime
         GCStaticRegion              = 201,
         ThreadStaticRegion          = 202,
         InterfaceDispatchTable      = 203,
-        ModuleManagerIndirection    = 204,
+        TypeManagerIndirection      = 204,
         EagerCctor                  = 205,
         FrozenObjectRegion          = 206,
 

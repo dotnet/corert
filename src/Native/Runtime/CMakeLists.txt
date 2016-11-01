@@ -21,7 +21,7 @@ set(COMMON_RUNTIME_SOURCES
     MathHelpers.cpp
     MiscHelpers.cpp
     module.cpp
-    ModuleManager.cpp
+    TypeManager.cpp
     ObjectLayout.cpp
     OptionalFieldsRuntime.cpp
     portable.cpp
