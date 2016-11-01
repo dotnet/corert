@@ -1454,7 +1454,7 @@ namespace Internal.Reflection.Execution
                 bool requiresCallingConventionConverter = false;
                 forcedByRefParams = new bool[handles.Length];
                 for (int i = 0; i < handles.Length; i++)
-                    if ((forcedByRefParams[i] = TypeSignatureHasVarsNeedingCallingConventionConverter(handles[i], types[i])))
+                    if ((forcedByRefParams[i] = TypeSignatureHasVarsNeedingCallingConventionConverter(handles[i], types[i], isTopLevelParameterType:true)))
                         requiresCallingConventionConverter = true;
 
                 return requiresCallingConventionConverter;
@@ -1491,7 +1491,36 @@ namespace Internal.Reflection.Execution
                 Debug.Assert(handles != null && types != null);
             }
 
-            private bool TypeSignatureHasVarsNeedingCallingConventionConverter(Handle typeHandle, Type type)
+            /// <summary>
+            /// IF THESE SEMANTICS EVER CHANGE UPDATE THE LOGIC WHICH DEFINES THIS BEHAVIOR IN 
+            /// THE DYNAMIC TYPE LOADER AS WELL AS THE COMPILER. 
+            ///
+            /// Parameter's are considered to have type layout dependent on their generic instantiation
+            /// if the type of the parameter in its signature is a type variable, or if the type is a generic 
+            /// structure which meets 2 characteristics:
+            /// 1. Structure size/layout is affected by the size/layout of one or more of its generic parameters
+            /// 2. One or more of the generic parameters is a type variable, or a generic structure which also recursively
+            ///    would satisfy constraint 2. (Note, that in the recursion case, whether or not the structure is affected
+            ///    by the size/layout of its generic parameters is not investigated.)
+            ///    
+            /// Examples parameter types, and behavior.
+            /// 
+            /// T -> true
+            /// List<T> -> false
+            /// StructNotDependentOnArgsForSize<T> -> false
+            /// GenStructDependencyOnArgsForSize<T> -> true
+            /// StructNotDependentOnArgsForSize<GenStructDependencyOnArgsForSize<T>> -> true
+            /// StructNotDependentOnArgsForSize<GenStructDependencyOnArgsForSize<List<T>>>> -> false
+            /// 
+            /// Example non-parameter type behavior
+            /// T -> true
+            /// List<T> -> false
+            /// StructNotDependentOnArgsForSize<T> -> *true*
+            /// GenStructDependencyOnArgsForSize<T> -> true
+            /// StructNotDependentOnArgsForSize<GenStructDependencyOnArgsForSize<T>> -> true
+            /// StructNotDependentOnArgsForSize<GenStructDependencyOnArgsForSize<List<T>>>> -> false
+            /// </summary>
+            private bool TypeSignatureHasVarsNeedingCallingConventionConverter(Handle typeHandle, Type type, bool isTopLevelParameterType)
             {
                 if (typeHandle.HandleType == HandleType.TypeSpecification)
                 {
@@ -1516,7 +1545,7 @@ namespace Internal.Reflection.Execution
                                     bool needsCallingConventionConverter = false;
                                     foreach (Handle genericTypeArgumentHandle in sig.GenericTypeArguments)
                                     {
-                                        if (TypeSignatureHasVarsNeedingCallingConventionConverter(genericTypeArgumentHandle, type.GenericTypeArguments[genArgIndex++]))
+                                        if (TypeSignatureHasVarsNeedingCallingConventionConverter(genericTypeArgumentHandle, type.GenericTypeArguments[genArgIndex++], isTopLevelParameterType:false))
                                         {
                                             needsCallingConventionConverter = true;
                                             break;
@@ -1525,6 +1554,9 @@ namespace Internal.Reflection.Execution
 
                                     if (needsCallingConventionConverter)
                                     {
+                                        if (!isTopLevelParameterType)
+                                            return true;
+
                                         if (!TypeLoaderEnvironment.Instance.TryComputeHasInstantiationDeterminedSize(type.TypeHandle, out needsCallingConventionConverter))
                                             Environment.FailFast("Unable to setup calling convention converter correctly");
                                         return needsCallingConventionConverter;
