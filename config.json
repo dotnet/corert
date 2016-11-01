@@ -1,5 +1,11 @@
 ﻿{
   "settings": {
+    "NewBuildScripts": {
+      "description": "This is a temporary setting to separate the code paths in common paths in context of the new build scripts",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": "True",
+    },
     "SkipTests": {
       "description": "Enables/Disables running tests.",
       "valueType": "property",
@@ -326,7 +332,8 @@
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
-          "MsBuildError":"default"
+          "MsBuildError":"default",
+          "NewBuildScripts" : "default"
         }
       }
     },
