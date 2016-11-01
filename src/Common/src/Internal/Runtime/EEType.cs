@@ -179,7 +179,7 @@ namespace Internal.Runtime
         private UInt32 _uHashCode;
 
 #if CORERT
-        private IntPtr _ppModuleManager;
+        private IntPtr _ppTypeManager;
 #endif
 
         // vtable follows
@@ -1094,20 +1094,20 @@ namespace Internal.Runtime
         }
 
 #if CORERT
-        internal IntPtr ModuleManager
+        internal IntPtr TypeManager
         {
             get
             {
                 // This is always a pointer to a pointer to a module manager
-                return *(IntPtr *)_ppModuleManager;
+                return *(IntPtr *)_ppTypeManager;
             }
         }
 #if TYPE_LOADER_IMPLEMENTATION
-        internal IntPtr PointerToModuleManager
+        internal IntPtr PointerToTypeManager
         {
             set
             {
-                _ppModuleManager = value;
+                _ppTypeManager = value;
             }
         }
 #endif

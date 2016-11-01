@@ -4,7 +4,7 @@
 #include "ICodeManager.h"
 
 #include "SectionMethodList.h"
-#include "ModuleManager.h"
+#include "TypeManager.h"
 
 struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
