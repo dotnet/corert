@@ -17,8 +17,8 @@
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="Internal\StackTraceGenerator\StackTraceGenerator.cs" />
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="Internal\StackTraceGenerator\StackTraceGenerator.Windows.cs" />
     <Compile Include="Internal\LightweightInterop\ComInterface.cs" />
     <Compile Include="Internal\LightweightInterop\StdCall.cs" />
     <Compile Include="Internal\LightweightInterop\MarshalExtensions.cs" />
@@ -26,14 +26,16 @@
     <Compile Include="Internal\Dia\StdCall.cs" />
     <Compile Include="Internal\Dia\DiaEnums.cs" />
     <Compile Include="Internal\Dia\DiaInterfaces.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
       <Link>System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)'!='true'">
+    <Compile Include="Internal\StackTraceGenerator\StackTraceGenerator.Unix.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

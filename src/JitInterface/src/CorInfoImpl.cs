@@ -293,6 +293,7 @@ namespace Internal.JitInterface
             _methodCodeNode.SetCode(objectData);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
+            _methodCodeNode.InitializeGCInfo(_gcInfo);
             if (_ehClauses != null)
                 _methodCodeNode.InitializeEHInfo(EncodeEHInfo());
 
@@ -358,6 +359,7 @@ namespace Internal.JitInterface
             _usedFrameInfos = 0;
             _frameInfos = null;
 
+            _gcInfo = null;
             _ehClauses = null;
 
             _sequencePoints = null;
@@ -2740,6 +2742,7 @@ namespace Internal.JitInterface
         private int _usedFrameInfos;
         private FrameInfo[] _frameInfos;
 
+        private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
         private Dictionary<int, SequencePoint> _sequencePoints;
@@ -2790,26 +2793,31 @@ namespace Internal.JitInterface
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
         {
-            // The unwind info blob are followed by byte that identifies the type of the funclet
-            // and other optional data that follows
-            const int extraBlobData = 1;
+            Debug.Assert(FrameInfoFlags.Filter == (FrameInfoFlags)CorJitFuncKind.CORJIT_FUNC_FILTER);
+            Debug.Assert(FrameInfoFlags.Handler == (FrameInfoFlags)CorJitFuncKind.CORJIT_FUNC_HANDLER);
 
-            byte[] blobData = new byte[unwindSize + extraBlobData];
+            FrameInfoFlags flags = (FrameInfoFlags)funcKind;
+
+            if (funcKind == CorJitFuncKind.CORJIT_FUNC_ROOT)
+            {
+                if (this.MethodBeingCompiled.IsNativeCallable)
+                    flags |= FrameInfoFlags.ReversePInvoke;
+            }
+
+            byte[] blobData = new byte[unwindSize];
 
             for (uint i = 0; i < unwindSize; i++)
             {
                 blobData[i] = pUnwindBlock[i];
             }
 
-            // Capture the type of the funclet in unwind info blob
-            blobData[unwindSize] = (byte)funcKind;
-            _frameInfos[_usedFrameInfos++] = new FrameInfo((int)startOffset, (int)endOffset, blobData);
+            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
         }
 
         private void* allocGCInfo(UIntPtr size)
         {
-            // TODO: GC Info
-            return (void*)GetPin(new byte[(int)size]);
+            _gcInfo = new byte[(int)size];
+            return (void*)GetPin(_gcInfo);
         }
 
         private void yieldExecution()

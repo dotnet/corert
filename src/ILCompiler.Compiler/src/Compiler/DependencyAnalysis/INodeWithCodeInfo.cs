@@ -2,16 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 namespace ILCompiler.DependencyAnalysis
 {
+    [Flags]
+    public enum FrameInfoFlags
+    {
+        Handler         = 0x01,
+        Filter          = 0x02,
+
+        HasEHInfo       = 0x04,
+        ReversePInvoke  = 0x08,
+    }
+
     public struct FrameInfo
     {
+        public readonly FrameInfoFlags Flags;
         public readonly int StartOffset;
         public readonly int EndOffset;
         public readonly byte[] BlobData;
 
-        public FrameInfo(int startOffset, int endOffset, byte[] blobData)
+        public FrameInfo(FrameInfoFlags flags, int startOffset, int endOffset, byte[] blobData)
         {
+            Flags = flags;
             StartOffset = startOffset;
             EndOffset = endOffset;
             BlobData = blobData;
@@ -21,6 +35,11 @@ namespace ILCompiler.DependencyAnalysis
     public interface INodeWithCodeInfo
     {
         FrameInfo[] FrameInfos
+        {
+            get;
+        }
+
+        byte[] GCInfo
         {
             get;
         }

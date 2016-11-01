@@ -148,8 +148,8 @@ namespace ILCompiler
             if (mainMethod == null)
                 throw new Exception("No managed entrypoint defined for executable module");
 
-            var owningType = module.GetGlobalModuleType();
-            StartupCodeMain = new StartupCodeMainMethod(owningType, mainMethod);
+            TypeDesc owningType = module.GetGlobalModuleType();
+            StartupCodeMain = new StartupCodeMainMethod(_typeSystemContext, owningType, mainMethod);
 
             rootProvider.AddCompilationRoot(StartupCodeMain, "Startup Code Main Method", "__managed__Main");
         }

@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
+        private byte[] _gcInfo;
         private ObjectData _ehInfo;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -123,6 +124,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public byte[] GCInfo
+        {
+            get
+            {
+                return _gcInfo;
+            }
+        }
+
         public ObjectData EHInfo
         {
             get
@@ -135,6 +144,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_frameInfos == null);
             _frameInfos = frameInfos;
+        }
+
+        public void InitializeGCInfo(byte[] gcInfo)
+        {
+            Debug.Assert(_gcInfo == null);
+            _gcInfo = gcInfo;
         }
 
         public void InitializeEHInfo(ObjectData ehInfo)
