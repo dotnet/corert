@@ -221,7 +221,7 @@ namespace System
         private void SetBits(int[] bits)
         {
             if (bits == null)
-                throw new ArgumentNullException("bits");
+                throw new ArgumentNullException(nameof(bits));
             Contract.EndContractBlock();
             if (bits.Length == 4)
             {
@@ -243,7 +243,7 @@ namespace System
         public Decimal(int lo, int mid, int hi, bool isNegative, byte scale)
         {
             if (scale > 28)
-                throw new ArgumentOutOfRangeException("scale", SR.ArgumentOutOfRange_DecimalScale);
+                throw new ArgumentOutOfRangeException(nameof(scale), SR.ArgumentOutOfRange_DecimalScale);
             Contract.EndContractBlock();
             _lo = (uint)lo;
             _mid = (uint)mid;
@@ -443,7 +443,7 @@ namespace System
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, "style");
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
@@ -545,7 +545,7 @@ namespace System
             Decimal result = new Decimal();
 
             if (decimals < 0 || decimals > 28)
-                throw new ArgumentOutOfRangeException("decimals", SR.ArgumentOutOfRange_DecimalRound);
+                throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
 
             DecCalc.VarDecRound(ref d, decimals, ref result);
 
@@ -556,9 +556,9 @@ namespace System
         internal static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
         {
             if (decimals < 0 || decimals > 28)
-                throw new ArgumentOutOfRangeException("decimals", SR.ArgumentOutOfRange_DecimalRound);
+                throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), "mode");
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), nameof(mode));
             Contract.EndContractBlock();
 
             if (mode == MidpointRounding.ToEven)

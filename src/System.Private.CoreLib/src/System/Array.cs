@@ -74,7 +74,7 @@ namespace System
         public static Array CreateInstance(Type elementType, int length)
         {
             if ((object)elementType == null)
-                throw new ArgumentNullException("elementType");
+                throw new ArgumentNullException(nameof(elementType));
 
             Contract.Ensures(Contract.Result<Array>() != null);
             Contract.Ensures(Contract.Result<Array>().Rank == 1);
@@ -86,9 +86,9 @@ namespace System
         public static Array CreateInstance(Type elementType, params int[] lengths)
         {
             if ((object)elementType == null)
-                throw new ArgumentNullException("elementType");
+                throw new ArgumentNullException(nameof(elementType));
             if (lengths == null)
-                throw new ArgumentNullException("lengths");
+                throw new ArgumentNullException(nameof(lengths));
             if (lengths.Length == 0)
                 throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
 
@@ -110,11 +110,11 @@ namespace System
         public static Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             if (elementType == null)
-                throw new ArgumentNullException("elementType");
+                throw new ArgumentNullException(nameof(elementType));
             if (lengths == null)
-                throw new ArgumentNullException("lengths");
+                throw new ArgumentNullException(nameof(lengths));
             if (lowerBounds == null)
-                throw new ArgumentNullException("lowerBounds");
+                throw new ArgumentNullException(nameof(lowerBounds));
             if (lengths.Length != lowerBounds.Length)
                 throw new ArgumentException(SR.Arg_RanksAndBounds);
             if (lengths.Length == 0)
@@ -139,7 +139,7 @@ namespace System
             // Though our callers already validated length once, this parameter is passed via arrays, so we must check it again
             // in case a malicious caller modified the array after the check.
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
 
             Type arrayType = GetArrayTypeFromElementType(elementType, false, 1);
             return RuntimeImports.RhNewArray(arrayType.TypeHandle.ToEETypePtr(), length);
@@ -213,7 +213,7 @@ namespace System
         public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array)
         {
             if (array == null) {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             // T[] implements IList<T>.
@@ -223,7 +223,7 @@ namespace System
         public static void Resize<T>(ref T[] array, int newSize)
         {
             if (newSize < 0)
-                throw new ArgumentOutOfRangeException("newSize", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(newSize), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             T[] larray = array;
             if (larray == null)
@@ -273,9 +273,9 @@ namespace System
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             if (sourceArray == null)
-                throw new ArgumentNullException("sourceArray");
+                throw new ArgumentNullException(nameof(sourceArray));
             if (destinationArray == null)
-                throw new ArgumentNullException("destinationArray");
+                throw new ArgumentNullException(nameof(destinationArray));
 
             int sourceRank = sourceArray.Rank;
             int destinationRank = destinationArray.Rank;
@@ -794,17 +794,17 @@ namespace System
         internal static unsafe void CopyToManaged(IntPtr source, Array destination, int startIndex, int length)
         {
             if (source == IntPtr.Zero)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             if (destination == null)
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             if (!destination.IsElementTypeBlittable)
-                throw new ArgumentException("destination", SR.Arg_CopyNonBlittableArray);
+                throw new ArgumentException(nameof(destination), SR.Arg_CopyNonBlittableArray);
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.Arg_CopyOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.Arg_CopyOutOfRange);
             if ((uint)startIndex + (uint)length > (uint)destination.Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
 
             nuint bytesToCopy = (nuint)length * destination.ElementSize;
             nuint startOffset = (nuint)startIndex * destination.ElementSize;
@@ -827,17 +827,17 @@ namespace System
         internal static unsafe void CopyToNative(Array source, int startIndex, IntPtr destination, int length)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             if (!source.IsElementTypeBlittable)
-                throw new ArgumentException("source", SR.Arg_CopyNonBlittableArray);
+                throw new ArgumentException(nameof(source), SR.Arg_CopyNonBlittableArray);
             if (destination == IntPtr.Zero)
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.Arg_CopyOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.Arg_CopyOutOfRange);
             if ((uint)startIndex + (uint)length > (uint)source.Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
             Contract.EndContractBlock();
 
             nuint bytesToCopy = (nuint)length * source.ElementSize;
@@ -859,7 +859,7 @@ namespace System
         private static unsafe void ReportClearErrors(Array array, int index, int length)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (index < 0 || index > array.Length || length < 0 || length > array.Length)
                 throw new IndexOutOfRangeException();
@@ -1033,7 +1033,7 @@ namespace System
 
             if (o == null || this.Length != o.Length)
             {
-                throw new ArgumentException(SR.ArgumentException_OtherNotArrayOfCorrectLength, "other");
+                throw new ArgumentException(SR.ArgumentException_OtherNotArrayOfCorrectLength, nameof(other));
             }
 
             int i = 0;
@@ -1095,7 +1095,7 @@ namespace System
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
             if (comparer == null)
-                throw new ArgumentNullException("comparer");
+                throw new ArgumentNullException(nameof(comparer));
 
             int ret = 0;
 
@@ -1123,7 +1123,7 @@ namespace System
         public static int BinarySearch(Array array, Object value)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             return BinarySearch(array, 0, array.Length, value, null);
         }
 
@@ -1162,7 +1162,7 @@ namespace System
         public static int BinarySearch(Array array, Object value, IComparer comparer)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             return BinarySearch(array, 0, array.Length, value, comparer);
         }
 
@@ -1184,10 +1184,10 @@ namespace System
         public static int BinarySearch(Array array, int index, int length, Object value, IComparer comparer)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (index < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "length"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(length)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             if (array.Rank != 1)
@@ -1263,14 +1263,14 @@ namespace System
         public static int BinarySearch<T>(T[] array, T value)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             return BinarySearch<T>(array, 0, array.Length, value, null);
         }
 
         public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T> comparer)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             return BinarySearch<T>(array, 0, array.Length, value, comparer);
         }
 
@@ -1282,9 +1282,9 @@ namespace System
         public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T> comparer)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "length"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(length)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1299,7 +1299,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return IndexOf(array, value, 0, array.Length);
@@ -1315,7 +1315,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return IndexOf(array, value, startIndex, array.Length - startIndex);
@@ -1330,13 +1330,13 @@ namespace System
         public static int IndexOf(Array array, Object value, int startIndex, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
             if (startIndex < 0 || startIndex > array.Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             if (count < 0 || count > array.Length - startIndex)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
             Object[] objArray = array as Object[];
             int endIndex = startIndex + count;
@@ -1421,7 +1421,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             // See comment above Array.GetComparerForReferenceTypesOnly for details
@@ -1451,7 +1451,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return IndexOf(array, value, startIndex, array.Length - startIndex);
@@ -1461,17 +1461,17 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (startIndex < 0 || startIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
             if (count < 0 || count > array.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
             int endIndex = startIndex + count;
@@ -1502,7 +1502,7 @@ namespace System
         public static int LastIndexOf(Array array, Object value)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             return LastIndexOf(array, value, array.Length - 1, array.Length);
         }
@@ -1515,7 +1515,7 @@ namespace System
         public static int LastIndexOf(Array array, Object value, int startIndex)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             return LastIndexOf(array, value, startIndex, startIndex + 1);
         }
@@ -1529,7 +1529,7 @@ namespace System
         public static int LastIndexOf(Array array, Object value, int startIndex, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (array.Length == 0)
             {
@@ -1537,9 +1537,9 @@ namespace System
             }
 
             if (startIndex < 0 || startIndex >= array.Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             if (count > startIndex + 1)
                 throw new ArgumentOutOfRangeException("endIndex", SR.ArgumentOutOfRange_EndIndexStartIndex);
             if (array.Rank != 1)
@@ -1587,7 +1587,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return LastIndexOf(array, value, array.Length - 1, array.Length);
@@ -1597,7 +1597,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             // if array is empty and startIndex is 0, we need to pass 0 as count
@@ -1608,7 +1608,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Length == 0)
@@ -1619,13 +1619,13 @@ namespace System
                 //
                 if (startIndex != -1 && startIndex != 0)
                 {
-                    throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
                 }
 
                 // only 0 is a valid value for count if array is empty
                 if (count != 0)
                 {
-                    throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                    throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
                 }
                 return -1;
             }
@@ -1633,13 +1633,13 @@ namespace System
             // Make sure we're not out of range            
             if (startIndex < 0 || startIndex >= array.Length)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
             // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
             // See comment above Array.GetComparerForReferenceTypesOnly for details
@@ -1674,7 +1674,7 @@ namespace System
         public static void Reverse(Array array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             Reverse(array, 0, array.Length);
         }
@@ -1688,10 +1688,10 @@ namespace System
         public static void Reverse(Array array, int index, int length)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             int lowerBound = array.GetLowerBound(0);
             if (index < lowerBound || length < 0)
-                throw new ArgumentOutOfRangeException((index < lowerBound ? "index" : "length"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < lowerBound ? nameof(index) : nameof(length)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - (index - lowerBound) < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             if (array.Rank != 1)
@@ -1727,7 +1727,7 @@ namespace System
         public static void Reverse<T>(T[] array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             Reverse(array, 0, array.Length);
         }
@@ -1735,9 +1735,9 @@ namespace System
         public static void Reverse<T>(T[] array, int index, int length)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "length"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(length)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1760,7 +1760,7 @@ namespace System
         public static void Sort(Array array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             Sort(array, null, 0, array.Length, null);
         }
@@ -1783,7 +1783,7 @@ namespace System
         public static void Sort(Array array, IComparer comparer)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             Sort(array, null, 0, array.Length, comparer);
         }
@@ -1803,7 +1803,7 @@ namespace System
         {
             if (keys == null)
             {
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             }
 
             Sort(keys, items, keys.GetLowerBound(0), keys.Length, null);
@@ -1813,7 +1813,7 @@ namespace System
         {
             if (keys == null)
             {
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             }
 
             Sort(keys, items, keys.GetLowerBound(0), keys.Length, comparer);
@@ -1827,14 +1827,14 @@ namespace System
         public static void Sort(Array keys, Array items, int index, int length, IComparer comparer)
         {
             if (keys == null)
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             if (keys.Rank != 1 || (items != null && items.Rank != 1))
                 throw new RankException(SR.Rank_MultiDimNotSupported);
             int keysLowerBound = keys.GetLowerBound(0);
             if (items != null && keysLowerBound != items.GetLowerBound(0))
                 throw new ArgumentException(SR.Arg_LowerBoundsMustMatch);
             if (index < keysLowerBound || length < 0)
-                throw new ArgumentOutOfRangeException((length < 0 ? "length" : "index"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((length < 0 ? nameof(length) : nameof(index)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (keys.Length - (index - keysLowerBound) < length || (items != null && (index - keysLowerBound) > items.Length - length))
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1893,7 +1893,7 @@ namespace System
         public static void Sort<T>(T[] array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             Sort<T>(array, 0, array.Length, null);
         }
@@ -1906,16 +1906,16 @@ namespace System
         public static void Sort<T>(T[] array, System.Collections.Generic.IComparer<T> comparer)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             Sort<T>(array, 0, array.Length, comparer);
         }
 
         public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T> comparer)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((length < 0 ? "length" : "index"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((length < 0 ? nameof(length) : nameof(index)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1927,12 +1927,12 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (comparison == null)
             {
-                throw new ArgumentNullException("comparison");
+                throw new ArgumentNullException(nameof(comparison));
             }
 
             IComparer<T> comparer = new FunctorComparer<T>(comparison);
@@ -1957,7 +1957,7 @@ namespace System
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items)
         {
             if (keys == null)
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             Contract.EndContractBlock();
             Sort<TKey, TValue>(keys, items, 0, keys.Length, null);
         }
@@ -1970,7 +1970,7 @@ namespace System
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, IComparer<TKey> comparer)
         {
             if (keys == null)
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             Contract.EndContractBlock();
             Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
         }
@@ -1978,9 +1978,9 @@ namespace System
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length, IComparer<TKey> comparer)
         {
             if (keys == null)
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             if (index < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((length < 0 ? "length" : "index"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((length < 0 ? nameof(length) : nameof(index)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (keys.Length - index < length || (items != null && index > items.Length - length))
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
@@ -2028,12 +2028,12 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             for (int i = 0; i < array.Length; i++)
@@ -2050,12 +2050,12 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             LowLevelList<T> list = new LowLevelList<T>();
@@ -2074,7 +2074,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return FindIndex(array, 0, array.Length, match);
@@ -2084,7 +2084,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return FindIndex(array, startIndex, array.Length - startIndex, match);
@@ -2094,22 +2094,22 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (startIndex < 0 || startIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
             if (count < 0 || startIndex > array.Length - count)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             int endIndex = startIndex + count;
@@ -2124,12 +2124,12 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             for (int i = array.Length - 1; i >= 0; i--)
@@ -2146,7 +2146,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return FindLastIndex(array, array.Length - 1, array.Length, match);
@@ -2156,7 +2156,7 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             return FindLastIndex(array, startIndex, startIndex + 1, match);
@@ -2166,12 +2166,12 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             if (array.Length == 0)
@@ -2179,7 +2179,7 @@ namespace System
                 // Special case for 0 length List
                 if (startIndex != -1)
                 {
-                    throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
                 }
             }
             else
@@ -2187,14 +2187,14 @@ namespace System
                 // Make sure we're not out of range            
                 if (startIndex < 0 || startIndex >= array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
                 }
             }
 
             // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
             int endIndex = startIndex - count;
@@ -2260,12 +2260,12 @@ namespace System
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             for (int i = 0; i < array.Length; i++)
@@ -2297,7 +2297,7 @@ namespace System
         public unsafe Object GetValue(params int[] indices)
         {
             if (indices == null)
-                throw new ArgumentNullException("indices");
+                throw new ArgumentNullException(nameof(indices));
 
             if (IsSzArray && indices.Length == 1)
                 return GetValue(indices[0]);
@@ -2402,7 +2402,7 @@ namespace System
         public unsafe void SetValue(Object value, params int[] indices)
         {
             if (indices == null)
-                throw new ArgumentNullException("indices");
+                throw new ArgumentNullException(nameof(indices));
 
             if (IsSzArray && indices.Length == 1)
             {
@@ -2651,7 +2651,7 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                 }
             }
             set
@@ -2662,7 +2662,7 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                 }
             }
         }

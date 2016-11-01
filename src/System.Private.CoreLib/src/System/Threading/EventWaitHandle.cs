@@ -139,12 +139,12 @@ namespace System.Threading
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name", SR.ArgumentNull_WithParamName);
+                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_WithParamName);
             }
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.Argument_EmptyName, "name");
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
 
             if (null != name && ((int)Interop.Constants.MaxPath) < name.Length)

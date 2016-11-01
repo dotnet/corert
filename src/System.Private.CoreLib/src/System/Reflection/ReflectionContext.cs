@@ -24,7 +24,7 @@ namespace System.Reflection
         public virtual TypeInfo GetTypeForObject(Object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             return MapType(value.GetType().GetTypeInfo());
         }

@@ -187,7 +187,7 @@ namespace System
         public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode)
         {
             if (valueFactory == null)
-                throw new ArgumentNullException("valueFactory");
+                throw new ArgumentNullException(nameof(valueFactory));
 
             _threadSafeObj = GetObjectFromMode(mode);
             _valueFactory = valueFactory;
@@ -203,7 +203,7 @@ namespace System
             else if (mode == LazyThreadSafetyMode.PublicationOnly)
                 return s_PUBLICATION_ONLY_SENTINEL;
             else if (mode != LazyThreadSafetyMode.None)
-                throw new ArgumentOutOfRangeException("mode", SR.Lazy_ctor_ModeInvalid);
+                throw new ArgumentOutOfRangeException(nameof(mode), SR.Lazy_ctor_ModeInvalid);
 
             return null; // None mode
         }

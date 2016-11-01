@@ -30,10 +30,10 @@ namespace System
         public unsafe int IndexOf(char value, int startIndex, int count)
         {
             if (startIndex < 0 || startIndex > Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || count > Length - startIndex)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
             fixed (char* pChars = &_firstChar)
             {
@@ -86,13 +86,13 @@ namespace System
         public unsafe int IndexOfAny(char[] anyOf, int startIndex, int count)
         {
             if (anyOf == null)
-                throw new ArgumentNullException("anyOf");
+                throw new ArgumentNullException(nameof(anyOf));
 
             if (startIndex < 0 || startIndex > Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || count > Length - startIndex)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
             // use probabilistic map, see InitializeProbabilisticMap
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
@@ -184,12 +184,12 @@ namespace System
         {
             if (startIndex < 0 || startIndex > this.Length)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
             if (count < 0 || count > this.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
             return IndexOf(value, startIndex, count, StringComparison.CurrentCulture);
@@ -214,13 +214,13 @@ namespace System
         {
             // Validate inputs
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (startIndex < 0 || startIndex > this.Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || startIndex > this.Length - count)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
             switch (comparisonType)
             {
@@ -237,7 +237,7 @@ namespace System
                     return FormatProvider.OrdinalIndexOfIgnoreCase(this, value, startIndex, count);
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -263,10 +263,10 @@ namespace System
                 return -1;
 
             if (startIndex < 0 || startIndex >= Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || count - 1 > startIndex)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
             fixed (char* pChars = &_firstChar)
             {
@@ -324,17 +324,17 @@ namespace System
         public unsafe int LastIndexOfAny(char[] anyOf, int startIndex, int count)
         {
             if (anyOf == null)
-                throw new ArgumentNullException("anyOf");
+                throw new ArgumentNullException(nameof(anyOf));
 
             if (Length == 0)
                 return -1;
 
             if ((startIndex < 0) || (startIndex >= Length))
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
 
             if ((count < 0) || ((count - 1) > startIndex))
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
             // use probabilistic map, see InitializeProbabilisticMap
@@ -376,7 +376,7 @@ namespace System
         {
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
             return LastIndexOf(value, startIndex, count, StringComparison.CurrentCulture);
@@ -395,7 +395,7 @@ namespace System
         public int LastIndexOf(String value, int startIndex, int count, StringComparison comparisonType)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             // Special case for 0 length input strings
             if (this.Length == 0 && (startIndex == -1 || startIndex == 0))
@@ -403,7 +403,7 @@ namespace System
 
             // Now after handling empty strings, make sure we're not out of range
             if (startIndex < 0 || startIndex > this.Length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
 
             // Make sure that we allow startIndex == this.Length
             if (startIndex == this.Length)
@@ -419,7 +419,7 @@ namespace System
 
             // 2nd half of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
             switch (comparisonType)
             {
@@ -435,7 +435,7 @@ namespace System
                 case StringComparison.OrdinalIgnoreCase:
                     return FormatProvider.OrdinalLastIndexOfIgnoreCase(this, value, startIndex, count);
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
     }

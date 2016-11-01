@@ -226,7 +226,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
+                    nameof(timeout), timeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
             // Call reliable enter with the int-based timeout milliseconds
@@ -284,7 +284,7 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "millisecondsTimeout", millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
 

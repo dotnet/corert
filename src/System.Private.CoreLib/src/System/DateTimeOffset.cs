@@ -86,14 +86,14 @@ namespace System
             {
                 if (offset != TimeZoneInfo.GetLocalUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime))
                 {
-                    throw new ArgumentException(SR.Argument_OffsetLocalMismatch, "offset");
+                    throw new ArgumentException(SR.Argument_OffsetLocalMismatch, nameof(offset));
                 }
             }
             else if (dateTime.Kind == DateTimeKind.Utc)
             {
                 if (offset != TimeSpan.Zero)
                 {
-                    throw new ArgumentException(SR.Argument_OffsetUtcMismatch, "offset");
+                    throw new ArgumentException(SR.Argument_OffsetUtcMismatch, nameof(offset));
                 }
             }
             _offsetMinutes = ValidateOffset(offset);
@@ -519,7 +519,7 @@ namespace System
 
             if (seconds < MinSeconds || seconds > MaxSeconds)
             {
-                throw new ArgumentOutOfRangeException("seconds",
+                throw new ArgumentOutOfRangeException(nameof(seconds),
                     string.Format(SR.ArgumentOutOfRange_Range, MinSeconds, MaxSeconds));
             }
 
@@ -534,7 +534,7 @@ namespace System
 
             if (milliseconds < MinMilliseconds || milliseconds > MaxMilliseconds)
             {
-                throw new ArgumentOutOfRangeException("milliseconds",
+                throw new ArgumentOutOfRangeException(nameof(milliseconds),
                     string.Format(SR.ArgumentOutOfRange_Range, MinMilliseconds, MaxMilliseconds));
             }
 
@@ -574,7 +574,7 @@ namespace System
 
         public static DateTimeOffset Parse(String input, IFormatProvider formatProvider, DateTimeStyles styles)
         {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult = FormatProvider.ParseDateTime(input,
                                                       formatProvider,
@@ -598,7 +598,7 @@ namespace System
         // 
         public static DateTimeOffset ParseExact(String input, String format, IFormatProvider formatProvider, DateTimeStyles styles)
         {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult = FormatProvider.ParseDateTimeExact(input,
                                                            format,
@@ -610,7 +610,7 @@ namespace System
 
         public static DateTimeOffset ParseExact(String input, String[] formats, IFormatProvider formatProvider, DateTimeStyles styles)
         {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult = FormatProvider.ParseDateTimeExactMultiple(input,
                                                                    formats,
@@ -711,7 +711,7 @@ namespace System
 
         public static Boolean TryParse(String input, IFormatProvider formatProvider, DateTimeStyles styles, out DateTimeOffset result)
         {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
             Boolean parsed = FormatProvider.TryParseDateTime(input,
@@ -726,7 +726,7 @@ namespace System
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
             Boolean parsed = FormatProvider.TryParseDateTimeExact(input,
@@ -742,7 +742,7 @@ namespace System
         public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
             Boolean parsed = FormatProvider.TryParseDateTimeExactMultiple(input,
@@ -761,11 +761,11 @@ namespace System
             Int64 ticks = offset.Ticks;
             if (ticks % TimeSpan.TicksPerMinute != 0)
             {
-                throw new ArgumentException(SR.Argument_OffsetPrecision, "offset");
+                throw new ArgumentException(SR.Argument_OffsetPrecision, nameof(offset));
             }
             if (ticks < MinOffset || ticks > MaxOffset)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.Argument_OffsetOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Argument_OffsetOutOfRange);
             }
             return (Int16)(offset.Ticks / TimeSpan.TicksPerMinute);
         }
@@ -781,7 +781,7 @@ namespace System
             Int64 utcTicks = dateTime.Ticks - offset.Ticks;
             if (utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.Argument_UTCOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Argument_UTCOutOfRange);
             }
             // make sure the Kind is set to Unspecified
             //

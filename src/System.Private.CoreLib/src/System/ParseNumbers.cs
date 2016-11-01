@@ -63,7 +63,7 @@ namespace System
                 r = (-1 == radix) ? 10 : radix;
 
                 if (r != 2 && r != 10 && r != 8 && r != 16)
-                    throw new ArgumentException(SR.Arg_InvalidBase, "radix");
+                    throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
 
                 length = s.Length;
 
@@ -163,7 +163,7 @@ namespace System
                 r = (-1 == radix) ? 10 : radix;
 
                 if (r != 2 && r != 10 && r != 8 && r != 16)
-                    throw new ArgumentException(SR.Arg_InvalidBase, "radix");
+                    throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
 
                 length = s.Length;
 
@@ -259,7 +259,7 @@ namespace System
             char[] buffer = new char[66];  // Longest possible string length for an integer in binary notation with prefix
 
             if (radix < MinRadix || radix > MaxRadix)
-                throw new ArgumentException(SR.Arg_InvalidBase, "radix");
+                throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
 
             // If the number is negative, make it positive and remember the sign.
             // If the number is MIN_VALUE, this will still be negative, so we'll have to
@@ -375,7 +375,7 @@ namespace System
             char[] buffer = new char[67];//Longest possible string length for an integer in binary notation with prefix
 
             if (radix < MinRadix || radix > MaxRadix)
-                throw new ArgumentException(SR.Arg_InvalidBase, "radix");
+                throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
 
             //If the number is negative, make it positive and remember the sign.
             if (n < 0)

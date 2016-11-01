@@ -456,9 +456,9 @@ namespace System.Threading
                      int period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Contract.EndContractBlock();
 
             TimerSetup(callback, state, (UInt32)dueTime, (UInt32)period);
@@ -500,9 +500,9 @@ namespace System.Threading
         public bool Change(int dueTime, int period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Contract.EndContractBlock();
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
@@ -516,13 +516,13 @@ namespace System.Threading
         private bool Change(long dueTime, long period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (dueTime > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_TimeoutTooLarge);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
             if (period > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_PeriodTooLarge);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
             Contract.EndContractBlock();
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);

@@ -57,7 +57,7 @@ namespace System.Threading
         {
             if (millisecondsTimeout < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             Contract.EndContractBlock();
             return WaitOne((long)millisecondsTimeout);
@@ -68,7 +68,7 @@ namespace System.Threading
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return WaitOne(tm);
         }
@@ -147,7 +147,7 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException("waitHandles", SR.ArgumentNull_Waithandles);
+                throw new ArgumentNullException(nameof(waitHandles), SR.ArgumentNull_Waithandles);
             }
             if (waitHandles.Length == 0)
             {
@@ -160,7 +160,7 @@ namespace System.Threading
                 // in CoreCLR, and ArgumentNullException in the desktop CLR.  This is ugly, but so is breaking
                 // user code.
                 //
-                throw new ArgumentNullException("waitHandles", SR.Argument_EmptyWaithandleArray);
+                throw new ArgumentNullException(nameof(waitHandles), SR.Argument_EmptyWaithandleArray);
             }
             if (waitHandles.Length > LowLevelThread.MAX_WAITHANDLES)
             {
@@ -168,7 +168,7 @@ namespace System.Threading
             }
             if (-1 > millisecondsTimeout)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             Contract.EndContractBlock();
             WaitHandle[] internalWaitHandles = new WaitHandle[waitHandles.Length];
@@ -206,7 +206,7 @@ namespace System.Threading
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return WaitAll(waitHandles, (int)tm);
         }
@@ -227,7 +227,7 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException("waitHandles", SR.ArgumentNull_Waithandles);
+                throw new ArgumentNullException(nameof(waitHandles), SR.ArgumentNull_Waithandles);
             }
             if (waitHandles.Length == 0)
             {
@@ -239,7 +239,7 @@ namespace System.Threading
             }
             if (-1 > millisecondsTimeout)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             Contract.EndContractBlock();
             WaitHandle[] internalWaitHandles = new WaitHandle[waitHandles.Length];
@@ -282,7 +282,7 @@ namespace System.Threading
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return WaitAny(waitHandles, (int)tm);
         }

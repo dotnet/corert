@@ -104,9 +104,9 @@ namespace System.Runtime.InteropServices
         public unsafe static String PtrToStringAnsi(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
-                throw new ArgumentException("len");
+                throw new ArgumentException(nameof(len));
 
             return ConvertToUnicode(ptr, len);
         }
@@ -114,9 +114,9 @@ namespace System.Runtime.InteropServices
         public unsafe static String PtrToStringUni(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
-                throw new ArgumentException("len");
+                throw new ArgumentException(nameof(len));
 
             return new String((char*)ptr, 0, len);
         }
@@ -157,7 +157,7 @@ namespace System.Runtime.InteropServices
         public static int SizeOf(Object structure)
         {
             if (structure == null)
-                throw new ArgumentNullException("structure");
+                throw new ArgumentNullException(nameof(structure));
             // we never had a check for generics here
             Contract.EndContractBlock();
 
@@ -168,9 +168,9 @@ namespace System.Runtime.InteropServices
         public static int SizeOf(Type t)
         {
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             if (t.TypeHandle.IsGenericType())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, "t");
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             Contract.EndContractBlock();
 
             return SizeOfHelper(t, true);
@@ -202,13 +202,13 @@ namespace System.Runtime.InteropServices
         public static IntPtr OffsetOf(Type t, String fieldName)
         {
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
 
             if (String.IsNullOrEmpty(fieldName))
-                throw new ArgumentNullException("fieldName");
+                throw new ArgumentNullException(nameof(fieldName));
 
             if (t.TypeHandle.IsGenericType())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, "t");
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             Contract.EndContractBlock();
 
@@ -227,7 +227,7 @@ namespace System.Runtime.InteropServices
             // if we can find the struct but couldn't find its field, throw Argument Exception
             if (structExists)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.TypeHandle.GetDisplayName()), "fieldName");
+                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.TypeHandle.GetDisplayName()), nameof(fieldName));
             }
             else
             {
@@ -778,7 +778,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 IntPtr hglobal = ExternalInterop.MemAlloc(new IntPtr(nb));
                 ConvertToAnsi(s, hglobal, nb);
@@ -798,7 +798,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 IntPtr hglobal = ExternalInterop.MemAlloc(new UIntPtr((uint)nb));
                 fixed (char* firstChar = s)
@@ -818,7 +818,7 @@ namespace System.Runtime.InteropServices
         {
             if (o == null)
             {
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
             }
             return MarshalAdapter.GetIUnknownForObject(o);
         }
@@ -830,7 +830,7 @@ namespace System.Runtime.InteropServices
         {
             if (pUnk == default(IntPtr))
             {
-                throw new ArgumentNullException("pUnk");
+                throw new ArgumentNullException(nameof(pUnk));
             }
             return MarshalAdapter.GetObjectForIUnknown(pUnk);
         }
@@ -841,7 +841,7 @@ namespace System.Runtime.InteropServices
         public static bool IsComObject(Object o)
         {
             if (o == null)
-                throw new ArgumentNullException("o", SR.Arg_InvalidHandle);
+                throw new ArgumentNullException(nameof(o), SR.Arg_InvalidHandle);
 
             return McgComHelpers.IsComObject(o);
         }
@@ -868,7 +868,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 IntPtr hglobal = new IntPtr( ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
 
@@ -899,7 +899,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 IntPtr hglobal = new IntPtr(ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
 
@@ -930,7 +930,7 @@ namespace System.Runtime.InteropServices
         public static int ReleaseComObject(Object o)
         {
             if (o == null)
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
 
             __ComObject co = null;
 
@@ -941,7 +941,7 @@ namespace System.Runtime.InteropServices
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(SR.Argument_ObjNotComObject, "o");
+                throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
 
             return McgMarshal.Release(co);
@@ -954,7 +954,7 @@ namespace System.Runtime.InteropServices
         public static Int32 FinalReleaseComObject(Object o)
         {
             if (o == null)
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
             Contract.EndContractBlock();
 
             __ComObject co = null;
@@ -966,7 +966,7 @@ namespace System.Runtime.InteropServices
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(SR.Argument_ObjNotComObject, "o");
+                throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
 
             co.FinalReleaseSelf();
@@ -981,7 +981,7 @@ namespace System.Runtime.InteropServices
         public static int /* HRESULT */ QueryInterface(IntPtr /* IUnknown */ pUnk, ref Guid iid, out IntPtr ppv)
         {
             if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException("pUnk");
+                throw new ArgumentNullException(nameof(pUnk));
 
             return McgMarshal.ComQueryInterfaceWithHR(pUnk, ref iid, out ppv);
         }
@@ -989,7 +989,7 @@ namespace System.Runtime.InteropServices
         public static int /* ULONG */ AddRef(IntPtr /* IUnknown */ pUnk)
         {
             if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException("pUnk");
+                throw new ArgumentNullException(nameof(pUnk));
 
             return McgMarshal.ComAddRef(pUnk);
         }
@@ -997,7 +997,7 @@ namespace System.Runtime.InteropServices
         public static int /* ULONG */ Release(IntPtr /* IUnknown */ pUnk)
         {
             if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException("pUnk");
+                throw new ArgumentNullException(nameof(pUnk));
 
             // This is documented to have "undefined behavior" when the ref count is already zero, so
             // let's not AV if we can help it
@@ -1033,7 +1033,7 @@ namespace System.Runtime.InteropServices
 
             // Overflow checking
             if (s.Length + 1 < s.Length)
-                throw new ArgumentOutOfRangeException("s");
+                throw new ArgumentOutOfRangeException(nameof(s));
 
             fixed (char* pch = s)
             {
@@ -1086,7 +1086,7 @@ namespace System.Runtime.InteropServices
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
         {
             if (d == null)
-                throw new ArgumentNullException("d");
+                throw new ArgumentNullException(nameof(d));
 
             return McgMarshal.GetStubForPInvokeDelegate(d);
         }
@@ -1151,10 +1151,10 @@ namespace System.Runtime.InteropServices
             // not the autoboxed copy
 
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
 
             if (structureType == null)
-                throw new ArgumentNullException("structureType");
+                throw new ArgumentNullException(nameof(structureType));
 
             Object boxedStruct = InteropExtensions.RuntimeNewObject(structureType.TypeHandle);
             PtrToStructureHelper(ptr, boxedStruct);
@@ -1169,15 +1169,15 @@ namespace System.Runtime.InteropServices
         public static void PtrToStructure(IntPtr ptr, Object structure)
         {
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
 
             if (structure == null)
-                throw new ArgumentNullException("structure");
+                throw new ArgumentNullException(nameof(structure));
 
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
             if (structureTypeHandle.IsValueType())
             {
-                throw new ArgumentException("structure", SR.Argument_StructMustNotBeValueClass);
+                throw new ArgumentException(nameof(structure), SR.Argument_StructMustNotBeValueClass);
             }
 
             PtrToStructureHelper(ptr, structure);
@@ -1196,10 +1196,10 @@ namespace System.Runtime.InteropServices
         public static unsafe void StructureToPtr(Object structure, IntPtr ptr, bool fDeleteOld)
         {
             if (structure == null)
-                throw new ArgumentNullException("structure");
+                throw new ArgumentNullException(nameof(structure));
 
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
 
             if (fDeleteOld)
             {
@@ -1210,7 +1210,7 @@ namespace System.Runtime.InteropServices
 
             if (structureTypeHandle.IsGenericType())
             {
-                throw new ArgumentException("structure", SR.Argument_NeedNonGenericObject);
+                throw new ArgumentException(nameof(structure), SR.Argument_NeedNonGenericObject);
             }
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
@@ -1269,10 +1269,10 @@ namespace System.Runtime.InteropServices
         public static void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
 
             if (structuretype == null)
-                throw new ArgumentNullException("structuretype");
+                throw new ArgumentNullException(nameof(structuretype));
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
@@ -1351,20 +1351,20 @@ namespace System.Runtime.InteropServices
         {
             // Validate the parameters
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
 
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             Contract.EndContractBlock();
 
             if (t.TypeHandle.IsGenericType())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, "t");
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             bool isDelegateType = InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(MulticastDelegate).TypeHandle) ||
                                   InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(Delegate).TypeHandle);
 
             if (!isDelegateType)
-                throw new ArgumentException(SR.Arg_MustBeDelegateType, "t");
+                throw new ArgumentException(SR.Arg_MustBeDelegateType, nameof(t));
 
             return MarshalAdapter.GetDelegateForFunctionPointer(ptr, t);
         }
@@ -1385,7 +1385,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException("pSrcNativeVariant");
 
             if (obj != null && obj.GetType().TypeHandle.IsGenericType())
-                throw new ArgumentException(SR.Argument_NeedNonGenericObject, "obj");
+                throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(obj));
 
             Contract.EndContractBlock();
 
@@ -1406,7 +1406,7 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             if (pSrcNativeVariant == IntPtr.Zero)
-                throw new ArgumentNullException("pSrcNativeVariant");
+                throw new ArgumentNullException(nameof(pSrcNativeVariant));
             Contract.EndContractBlock();
 
             Variant* pNativeVar = (Variant*)pSrcNativeVariant;
@@ -1421,10 +1421,10 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             if (aSrcNativeVariant == IntPtr.Zero)
-                throw new ArgumentNullException("aSrcNativeVariant");
+                throw new ArgumentNullException(nameof(aSrcNativeVariant));
 
             if (cVars < 0)
-                throw new ArgumentOutOfRangeException("cVars", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(cVars), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             Object[] obj = new Object[cVars];
@@ -1463,10 +1463,10 @@ namespace System.Runtime.InteropServices
         public static IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
             if (arr == null)
-                throw new ArgumentNullException("arr");
+                throw new ArgumentNullException(nameof(arr));
 
             if (index < 0 || index >= arr.Length)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             Contract.EndContractBlock();
 
             int offset = checked(index * arr.GetElementSize());
