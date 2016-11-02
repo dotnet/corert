@@ -371,8 +371,6 @@
         "settings": {
            "BuildArchitecture": "default", 
            "CmakeBuildType": "default",           
-           "HostOs": "default",
-           "ProcessorCount": "default"
          }
       }
     },

@@ -121,10 +121,10 @@ get_current_linux_distro() {
 }
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
-__ProjectRoot=$__scriptpath
-__packageroot=$__scriptpath/packages
-__sourceroot=$__scriptpath/src
-__rootbinpath="$__scriptpath/bin"
+__ProjectRoot=$__scriptpath/../..
+__packageroot=$__ProjectRoot/packages
+__sourceroot=$__ProjectRoot/src
+__rootbinpath="$__ProjectRoot/bin"
 __buildnative=false
 
 # Use uname to determine what the CPU is.
@@ -284,6 +284,7 @@ if [ $__CrossBuild == 1 ]; then
     fi
 fi
 
+# Create necessary folders
 setup_dirs
 
 # Check prereqs.
