@@ -2,10 +2,9 @@
 
 usage()
 {
-    echo "Usage: $0 [platform] [useservergc]"
+    echo "Usage: $0 [platform]"
     echo
     echo "platform can be: FreeBSD, Linux, NetBSD, OSX, Windows."
-    echo "useservergc - Switch used by configure the hosted coreclr instance when executing tests."
     echo
 }
 
@@ -55,7 +54,7 @@ while :; do
     shift
 done
 
-export CORECLR_SERVER_GC="$__ServerGC"
+mkdir -p bin/Logs
 
 $__scriptpath/run.sh build-managed $__BuildOS $__TargetOS $__TestNugetRuntimeId $__UnprocessedBuildArgs
 exit $?
