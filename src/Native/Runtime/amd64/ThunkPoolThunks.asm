@@ -250,5 +250,13 @@ LEAF_ENTRY RhpGetThunkSize, _TEXT
         ret   
 LEAF_END RhpGetThunkSize, _TEXT
 
+;;
+;; int RhpGetNumThunkBlocksPerMapping()
+;;
+LEAF_ENTRY RhpGetNumThunkBlocksPerMapping, _TEXT
+        mov     rax, 8
+        ret   
+LEAF_END RhpGetNumThunkBlocksPerMapping, _TEXT
+
 
 end

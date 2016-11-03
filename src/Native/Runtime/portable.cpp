@@ -342,19 +342,28 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
     PalMemoryBarrier();
 }
 
-COOP_PINVOKE_HELPER(void, RhpGetThunksBase, ())
+COOP_PINVOKE_HELPER(void *, RhpGetThunksBase, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
 }
 
-COOP_PINVOKE_HELPER(void, RhpGetNumThunksPerBlock, ())
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
 }
 
-COOP_PINVOKE_HELPER(void, RhpGetThunkSize, ())
+COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+
+COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
 }
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
