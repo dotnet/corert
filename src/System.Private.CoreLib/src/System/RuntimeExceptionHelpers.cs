@@ -143,10 +143,14 @@ namespace System
             // (in APPX scenarios, this one will get overwritten by the one with the CCW pointer)
             GenerateExceptionInformationForDump(exception, IntPtr.Zero);
 
+#if ENABLE_WINRT
             // If possible report the exception to GEH, if not fail fast.
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
             if (callbacks == null || !callbacks.ReportUnhandledError(exception))
                 FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+#else
+            FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+#endif
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime

@@ -264,10 +264,12 @@
     <Compile Include="System\Globalization\HebrewCalendar.cs" />
     <Compile Include="System\Globalization\HebrewNumber.cs" />
     <Compile Include="System\Globalization\HijriCalendar.cs" />
-    <Compile Include="System\Globalization\HijriCalendar.Windows.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
     <Compile Include="System\Globalization\InternalGlobalizationHelper.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Windows.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
     <Compile Include="System\Globalization\KoreanCalendar.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\FormatProvider.CultureAwareComparer.cs" />
@@ -463,6 +465,7 @@
     <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
     <Compile Include="System\SByte.cs" />
+    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
     <Compile Include="System\Security\Attributes.cs" />
     <Compile Include="System\Security\SecurityException.cs" />
     <Compile Include="System\Security\VerificationException.cs" />
@@ -630,6 +633,16 @@
     <Compile Include="System\Globalization\CalendarData.Windows.cs" />
     <Compile Include="System\DateTime.Windows.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\RegistryHive.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\RegistryKey.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\RegistryKey.Windows.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\RegistryOptions.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\RegistryValueKind.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\RegistryValueOptions.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\RegistryView.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Microsoft\Win32\ThrowHelper.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs">
       <Link>Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
@@ -641,6 +654,39 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegistryOptions.cs">
+      <Link>Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegCloseKey.cs">
+      <Link>Interop\Windows\mincore\Interop.RegCloseKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegCreateKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegEnumKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegEnumValue.cs">
+      <Link>Interop\Windows\mincore\Interop.RegEnumValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegFlushKey.cs">
+      <Link>Interop\Windows\mincore\Interop.RegFlushKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegOpenKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs">
+      <Link>Interop\Windows\mincore\Interop.RegQueryInfoKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs">
