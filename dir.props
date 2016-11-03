@@ -84,6 +84,9 @@
     <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
   </PropertyGroup>
 
+  <!-- Import the packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)packaging.props" Condition="'$(NewBuildScripts)'=='true'"/>
+
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)</OSPlatformConfig>
