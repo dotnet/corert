@@ -47,12 +47,12 @@ namespace System.Globalization
             return CultureInfo.InvariantCulture;
         }
 
-        private static string GetLanguageDisplayName(string cultureName)
+        private string GetLanguageDisplayName(string cultureName)
         {
             return "Invariant";
         }
 
-        private static string GetRegionDisplayName(string isoCountryCode)
+        private string GetRegionDisplayName(string isoCountryCode)
         {
             return "Invariant";
         }

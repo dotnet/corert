@@ -265,14 +265,48 @@ namespace System.Globalization
             return null;
         }
 
-        private static string GetLanguageDisplayName(string cultureName)
+        private string GetLanguageDisplayName(string cultureName)
         {
+#if ENABLE_WINRT
             return WinRTInterop.Callbacks.GetLanguageDisplayName(cultureName);
+#else
+            // Usually the UI culture shouldn't be different than what we got from WinRT except
+            // if DefaultThreadCurrentUICulture was set
+            CultureInfo ci;
+
+            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
+                ((ci = GetUserDefaultCulture()) != null) &&
+                !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
+            {
+                return SNATIVEDISPLAYNAME;
+            }
+            else
+            {
+                return GetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName);
+            }
+#endif // ENABLE_WINRT
         }
 
-        private static string GetRegionDisplayName(string isoCountryCode)
+        private string GetRegionDisplayName(string isoCountryCode)
         {
+#if ENABLE_WINRT
             return WinRTInterop.Callbacks.GetRegionDisplayName(isoCountryCode);
+#else
+            // Usually the UI culture shouldn't be different than what we got from WinRT except
+            // if DefaultThreadCurrentUICulture was set
+            CultureInfo ci;
+
+            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
+                ((ci = GetUserDefaultCulture()) != null) &&
+                !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
+            {
+                return SNATIVECOUNTRY;
+            }
+            else
+            {
+                return GetLocaleInfo(LocaleStringData.LocalizedCountryName);
+            }
+#endif // ENABLE_WINRT
         }
 
         private static CultureInfo GetUserDefaultCulture()
