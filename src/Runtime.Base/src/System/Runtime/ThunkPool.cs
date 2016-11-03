@@ -49,6 +49,10 @@ namespace System.Runtime
         public const uint AllocationGranularity = 0x10000;     // 64k
         public const nuint PageSizeMask = 0xFFF;
         public const nuint AllocationGranularityMask = 0xFFFF;
+
+        public static readonly int ThunkSize = InternalCalls.RhpGetThunkSize();
+        public static readonly int NumThunksPerBlock = InternalCalls.RhpGetNumThunksPerBlock();
+        public static readonly int NumThunkBlocksPerMapping = InternalCalls.RhpGetNumThunkBlocksPerMapping();
     }
 
     internal class ThunksHeap
@@ -103,7 +107,7 @@ namespace System.Runtime
 
                 // Set the head and end of the linked list
                 _nextAvailableThunkPtr = thunksBlock + (int)Constants.PageSize;
-                _lastThunkPtr = _nextAvailableThunkPtr + 2 * IntPtr.Size * (InternalCalls.RhpGetNumThunksPerBlock() - 1);
+                _lastThunkPtr = _nextAvailableThunkPtr + 2 * IntPtr.Size * (Constants.NumThunksPerBlock - 1);
 
                 _allocatedBlocks._blockBaseAddress = thunksBlock;
             }
@@ -156,7 +160,7 @@ namespace System.Runtime
                 *((IntPtr*)_lastThunkPtr) = newBlockAddress + (int)Constants.PageSize;
 
                 // Update the pointer to the last entry in the list
-                _lastThunkPtr = newBlockAddress + (int)Constants.PageSize + 2 * IntPtr.Size * (InternalCalls.RhpGetNumThunksPerBlock() - 1);
+                _lastThunkPtr = newBlockAddress + (int)Constants.PageSize + 2 * IntPtr.Size * (Constants.NumThunksPerBlock - 1);
 
                 newBlockInfo._blockBaseAddress = newBlockAddress;
                 newBlockInfo._nextBlock = _allocatedBlocks;
@@ -209,7 +213,7 @@ namespace System.Runtime
             thunkIndex = thunkIndex / (2 * IntPtr.Size);
 
             IntPtr thunksBlockBaseAddress = new IntPtr((void*)(((nuint)nextAvailableThunkPtr & ~Constants.PageSizeMask) - Constants.PageSize));
-            IntPtr thunkAddress = thunksBlockBaseAddress + thunkIndex * InternalCalls.RhpGetThunkSize();
+            IntPtr thunkAddress = thunksBlockBaseAddress + thunkIndex * Constants.ThunkSize;
 
             return SetThumbBit(thunkAddress);
         }
@@ -248,7 +252,7 @@ namespace System.Runtime
             while (currentBlock != null)
             {
                 if (thunkAddressValue >= (nuint)currentBlock._blockBaseAddress &&
-                    thunkAddressValue < (nuint)currentBlock._blockBaseAddress + (nuint)(InternalCalls.RhpGetNumThunksPerBlock() * InternalCalls.RhpGetThunkSize()))
+                    thunkAddressValue < (nuint)currentBlock._blockBaseAddress + (nuint)(Constants.NumThunksPerBlock * Constants.ThunkSize))
                 {
                     return true;
                 }
@@ -267,11 +271,11 @@ namespace System.Runtime
             nuint currentThunkMapAddress = thunkAddressValue & ~Constants.PageSizeMask;
 
             // Make sure the thunk address is valid by checking alignment
-            if ((thunkAddressValue - currentThunkMapAddress) % (nuint)InternalCalls.RhpGetThunkSize() != 0)
+            if ((thunkAddressValue - currentThunkMapAddress) % (nuint)Constants.ThunkSize != 0)
                 return IntPtr.Zero;
 
             // Compute the thunk's index
-            int thunkIndex = (int)(thunkAddressValue - currentThunkMapAddress) / InternalCalls.RhpGetThunkSize();
+            int thunkIndex = (int)(thunkAddressValue - currentThunkMapAddress) / Constants.ThunkSize;
 
             // Compute the address of the data block that corresponds to the current thunk
             return (IntPtr)(currentThunkMapAddress + (nuint)(Constants.PageSize + thunkIndex * 2 * IntPtr.Size));
@@ -329,10 +333,8 @@ namespace System.Runtime
 
     internal class ThunkBlocks
     {
-        private const uint NumThunkBlocksMapping = ((Constants.AllocationGranularity / 2) / Constants.PageSize);
-
-        private static IntPtr[] s_currentlyMappedThunkBlocks = new IntPtr[NumThunkBlocksMapping];
-        private static uint s_currentlyMappedThunkBlocksIndex = NumThunkBlocksMapping;        
+        private static IntPtr[] s_currentlyMappedThunkBlocks = new IntPtr[Constants.NumThunkBlocksPerMapping];
+        private static int s_currentlyMappedThunkBlocksIndex = Constants.NumThunkBlocksPerMapping;        
         private static IntPtr s_thunksTemplate;
 
         private static IntPtr s_thunksModuleBaseAddress;
@@ -344,7 +346,7 @@ namespace System.Runtime
 
             // Check the most recently mapped thunks block. Each mapping consists of multiple
             // thunk stubs pages, and multiple thunk data pages (typically 8 pages of each in a single mapping)
-            if (s_currentlyMappedThunkBlocksIndex < NumThunkBlocksMapping)
+            if (s_currentlyMappedThunkBlocksIndex < Constants.NumThunkBlocksPerMapping)
             {
                 nextThunkMapBlock = s_currentlyMappedThunkBlocks[s_currentlyMappedThunkBlocksIndex++];
 #if DEBUG
@@ -382,7 +384,7 @@ namespace System.Runtime
                     nextThunkMapBlock = InternalCalls.RhAllocateThunksFromTemplate(
                         s_thunksModuleBaseAddress,
                         s_thunksTemplateRva,
-                        (int)(NumThunkBlocksMapping * Constants.PageSize * 2));
+                        (int)(Constants.NumThunkBlocksPerMapping * Constants.PageSize * 2));
 
                     if (nextThunkMapBlock == IntPtr.Zero)
                     {
@@ -401,7 +403,7 @@ namespace System.Runtime
 
                 // Each mapping consists of multiple blocks of thunk stubs/data pairs. Keep track of those
                 // so that we do not create a new mapping until all blocks in the sections we just mapped are consumed
-                for (int i = 0; i < NumThunkBlocksMapping; i++)
+                for (int i = 0; i < Constants.NumThunkBlocksPerMapping; i++)
                     s_currentlyMappedThunkBlocks[i] = nextThunkMapBlock + (int)(Constants.PageSize * i * 2);
                 s_currentlyMappedThunkBlocksIndex = 1;
             }
@@ -410,7 +412,7 @@ namespace System.Runtime
 
             // Setup the thunks in the new block as a linked list of thunks.
             // Use the first data field of the thunk to build the linked list.
-            int numThunksPerBlock = InternalCalls.RhpGetNumThunksPerBlock();
+            int numThunksPerBlock = Constants.NumThunksPerBlock;
             IntPtr dataAddress = nextThunkMapBlock + (int)Constants.PageSize;
             for (int i = 0; i < numThunksPerBlock; i++)
             {

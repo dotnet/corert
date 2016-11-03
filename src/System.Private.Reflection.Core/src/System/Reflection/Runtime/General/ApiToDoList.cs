@@ -20,16 +20,9 @@ namespace System.Reflection.Runtime.Assemblies
 {
     internal partial class RuntimeAssembly
     {
-        public sealed override string CodeBase { get { throw new NotImplementedException(); } }
         public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) { throw new NotImplementedException(); }
         public sealed override MethodInfo EntryPoint { get { throw new NotImplementedException(); } }
-        public sealed override Module GetModule(string name) { throw new NotImplementedException(); }
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
-        public sealed override AssemblyName[] GetReferencedAssemblies() { throw new NotImplementedException(); }
-        public sealed override Assembly GetSatelliteAssembly(CultureInfo culture) { throw new NotImplementedException(); }
-        public sealed override Assembly GetSatelliteAssembly(CultureInfo culture, Version version) { throw new NotImplementedException(); }
-        public sealed override string ImageRuntimeVersion { get { throw new NotImplementedException(); } }
-        public sealed override string Location { get { throw new NotImplementedException(); } }
     }
 }
 
@@ -85,16 +78,12 @@ namespace System.Reflection.Runtime.Modules
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotImplementedException(); }
         public sealed override MethodInfo[] GetMethods(BindingFlags bindingFlags) { throw new NotImplementedException(); }
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
-        public sealed override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw new NotImplementedException(); }
-        public sealed override bool IsResource() { throw new NotImplementedException(); }
-        public sealed override int MDStreamVersion { get { throw new NotImplementedException(); } }
         public sealed override FieldInfo ResolveField(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new NotImplementedException(); }
         public sealed override MemberInfo ResolveMember(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new NotImplementedException(); }
         public sealed override MethodBase ResolveMethod(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new NotImplementedException(); }
         public sealed override byte[] ResolveSignature(int metadataToken) { throw new NotImplementedException(); }
         public sealed override string ResolveString(int metadataToken) { throw new NotImplementedException(); }
         public sealed override Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new NotImplementedException(); }
-        public sealed override string ScopeName { get { throw new NotImplementedException(); } }
     }
 }
 
