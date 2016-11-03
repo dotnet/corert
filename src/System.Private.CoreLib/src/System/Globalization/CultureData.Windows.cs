@@ -311,7 +311,11 @@ namespace System.Globalization
 
         private static CultureInfo GetUserDefaultCulture()
         {
+#if ENABLE_WINRT
             return (CultureInfo)WinRTInterop.Callbacks.GetUserDefaultCulture();
+#else
+            return CultureInfo.GetUserDefaultCulture();
+#endif // ENABLE_WINRT
         }
 
         // PAL methods end here.
