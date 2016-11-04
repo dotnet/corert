@@ -18,6 +18,11 @@ namespace Internal.Runtime
     /// </summary>
     internal static class TypeLoaderExceptionHelper
     {
+        public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName)
+        {
+            return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName), typeName);
+        }
+
         public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName, string messageArg)
         {
             return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName, messageArg), typeName);
