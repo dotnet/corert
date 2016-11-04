@@ -441,7 +441,7 @@ namespace Internal.Runtime.TypeLoader
 
             RegisterNewModules(ModuleType.Eager);
 
-            IntPtr systemObjectModule = RuntimeAugments.GetModuleFromTypeHandle(typeof(object).TypeHandle);
+            IntPtr systemObjectModule = RuntimeAugments.GetModuleFromTypeHandle(RuntimeAugments.RuntimeTypeHandleOf<object>());
             foreach (ModuleInfo m in _loadedModuleMap.Modules)
             {
                 if (m.Handle == systemObjectModule)
