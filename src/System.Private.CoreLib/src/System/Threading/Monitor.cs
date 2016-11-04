@@ -33,7 +33,7 @@ namespace System.Threading
         private static Lock GetLock(Object obj)
         {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
 
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
@@ -67,7 +67,7 @@ namespace System.Threading
         public static void Enter(Object obj, ref bool lockTaken)
         {
             if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
+                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
             Lock lck = GetLock(obj);
             if (lck.TryAcquire(0))
@@ -87,7 +87,7 @@ namespace System.Threading
         public static void TryEnter(Object obj, ref bool lockTaken)
         {
             if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
+                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
             lockTaken = GetLock(obj).TryAcquire(0);
         }
@@ -95,7 +95,7 @@ namespace System.Threading
         public static bool TryEnter(Object obj, int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
             Lock lck = GetLock(obj);
             if (lck.TryAcquire(0))
@@ -106,9 +106,9 @@ namespace System.Threading
         public static void TryEnter(Object obj, int millisecondsTimeout, ref bool lockTaken)
         {
             if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
+                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
             if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
             Lock lck = GetLock(obj);
             if (lck.TryAcquire(0))
@@ -123,7 +123,7 @@ namespace System.Threading
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             int millisecondsTimeout = (int)tm;
 
             Lock lck = GetLock(obj);
@@ -135,10 +135,10 @@ namespace System.Threading
         public static void TryEnter(Object obj, TimeSpan timeout, ref bool lockTaken)
         {
             if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
+                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             int millisecondsTimeout = (int)tm;
 
             Lock lck = GetLock(obj);

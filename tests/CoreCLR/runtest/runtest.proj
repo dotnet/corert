@@ -208,10 +208,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <ItemGroup>
       <CanonicalExcludeList Include="%(ExcludeList.FullPath)" Condition="$(HaveExcludes)"/>
+      <CanonicalIncludeList Include="%(IncludeList.FullPath)" Condition="$(HaveExcludes)"/>
     </ItemGroup>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
+      <AllCMDsPresent Condition="'@(CanonicalIncludeList)' == ''" Include="$(_CMDDIR)\**\*.cmd" />
+      <AllCMDsPresent Condition="'@(CanonicalIncludeList)' != '' AND $([System.IO.Path]::GetFullPath(%(CanonicalIncludeList.FullPath)).StartsWith('$(_CMDDIR)')) == 'true'" Include="$([System.IO.Path]::GetFullPath(%(CanonicalIncludeList.FullPath)))" />
       <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="$(HaveExcludes)"/>
       <AllCMDs Include="@(AllCMDsPresent)" Exclude="@(AllCMDExcludeFilter)"/>
 

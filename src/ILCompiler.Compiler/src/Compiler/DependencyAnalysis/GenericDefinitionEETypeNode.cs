@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitShort(0);       // No VTable
             dataBuilder.EmitShort(0);       // No interface map
             dataBuilder.EmitInt(_type.GetHashCode());
-            dataBuilder.EmitPointerReloc(factory.ModuleManagerIndirection);
+            dataBuilder.EmitPointerReloc(factory.TypeManagerIndirection);
             if (HasOptionalFields)
             {
                 dataBuilder.EmitPointerReloc(_optionalFieldsNode);

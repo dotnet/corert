@@ -96,19 +96,10 @@ namespace Internal.TypeSystem
                     }
                     else if (typeToConvert.HasInstantiation)
                     {
-                        // This is a generic struct type. If the generic struct is instantiated over universal canon,
-                        // the entire struct becomes universally canonical.
-                        if (typeToConvert.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                        {
-                            kind = CanonicalFormKind.Universal;
-                            return context.UniversalCanonType;
-                        }
-
                         TypeDesc canonicalType = typeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                        // We could still have ended up with a universal canonical form here because conversion to
-                        // canon form strips runtime determined types from their constituents.
-                        // MyStruct<T__UniversalCanon> (which is not universally canonical) becomes MyStruct<__UniversalCanon>.
+                        // This is a generic struct type. If the generic struct is instantiated over universal canon,
+                        // the entire struct becomes universally canonical.
                         if (canonicalType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                         {
                             kind = CanonicalFormKind.Universal;

@@ -75,9 +75,7 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
         }
         else
         {
-            Int32 relAddr = *dac_cast<PTR_Int32>(lsdaPtr);
-            lsdaPtr += sizeof(Int32);
-            ehInfoPtr = lsdaPtr + relAddr;
+            ehInfoPtr = lsdaPtr + *dac_cast<PTR_Int32>(lsdaPtr);
         }
     }
 

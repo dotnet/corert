@@ -45,7 +45,7 @@ namespace Internal.Reflection.Execution
         public sealed override Stream GetManifestResourceStream(Assembly assembly, String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             Stream resultFromFile = ReadFileFromAppPackage(name);
             if (resultFromFile != null)
@@ -136,8 +136,10 @@ namespace Internal.Reflection.Execution
 
         private Stream ReadFileFromAppPackage(String name)
         {
+#if ENABLE_WINRT
             if (WinRTInterop.Callbacks.IsAppxModel())
                 return (Stream)WinRTInterop.Callbacks.ReadFileIntoStream(name);
+#endif // ENABLE_WINRT
 
             String pathToRunningExe = RuntimeAugments.TryGetFullPathToMainApplication();
             String directoryContainingRunningExe = Path.GetDirectoryName(pathToRunningExe);

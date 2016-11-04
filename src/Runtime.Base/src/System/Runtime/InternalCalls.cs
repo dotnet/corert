@@ -355,6 +355,11 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static IntPtr RhpGetThunksBase();
 
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static int RhpGetNumThunkBlocksPerMapping();
+
         [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunksPerBlock")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

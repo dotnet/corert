@@ -139,15 +139,15 @@ namespace System
         public static String Format(Type enumType, Object value, String format)
         {
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
 
             EnumInfo enumInfo = GetEnumInfo(enumType);
 
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (format == null)
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
             Contract.EndContractBlock();
 
             if (value.EETypePtr.IsEnum)
@@ -481,12 +481,12 @@ namespace System
         public static String GetName(Type enumType, Object value)
         {
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             ulong rawValue;
             if (!TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
-                throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, "value");
+                throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
             // For desktop compatibility, do not bounce an incoming integer that's the wrong size. 
             // Do a value-preserving cast of both it and the enum values and do a 64-bit compare.
@@ -499,7 +499,7 @@ namespace System
         public static String[] GetNames(Type enumType)
         {
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
             KeyValuePair<String, ulong>[] namesAndValues = GetEnumInfo(enumType).NamesAndValues;
             String[] names = new String[namesAndValues.Length];
             for (int i = 0; i < namesAndValues.Length; i++)
@@ -510,12 +510,12 @@ namespace System
         public static Type GetUnderlyingType(Type enumType)
         {
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
 
             RuntimeTypeHandle runtimeTypeHandle = enumType.TypeHandle;
             EETypePtr eeType = runtimeTypeHandle.ToEETypePtr();
             if (!eeType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 
             switch (eeType.CorElementType)
             {
@@ -547,7 +547,7 @@ namespace System
         public static Array GetValues(Type enumType)
         {
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
             Array values = GetEnumInfo(enumType).Values;
             int count = values.Length;
             EETypePtr enumArrayType = enumType.MakeArrayType().TypeHandle.ToEETypePtr();
@@ -559,7 +559,7 @@ namespace System
         public Boolean HasFlag(Enum flag)
         {
             if (flag == null)
-                throw new ArgumentNullException("flag");
+                throw new ArgumentNullException(nameof(flag));
             Contract.EndContractBlock();
 
             if (!(this.EETypePtr == flag.EETypePtr))
@@ -587,9 +587,9 @@ namespace System
         public static bool IsDefined(Type enumType, Object value)
         {
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (value.EETypePtr == EETypePtr.EETypePtrOf<string>())
             {
@@ -663,13 +663,13 @@ namespace System
         public static unsafe Object ToObject(Type enumType, Object value)
         {
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
 
             if (!enumType.TypeHandle.ToEETypePtr().IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             ulong rawValue;
             bool success = TryGetUnboxedValueOfEnumOrInteger(value, out rawValue);
@@ -881,10 +881,10 @@ namespace System
             result = null;
 
             if (enumType == null)
-                throw new ArgumentNullException("enumType");
+                throw new ArgumentNullException(nameof(enumType));
 
             if (!enumType.IsRuntimeImplemented())
-                throw new ArgumentException(SR.Arg_MustBeType, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
 
             if (value == null)
             {
@@ -909,7 +909,7 @@ namespace System
 
             EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
             if (!enumEEType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 
             if (TryParseAsInteger(enumEEType, value, firstNonWhitespaceIndex, out result))
                 return true;

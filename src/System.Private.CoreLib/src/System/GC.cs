@@ -42,7 +42,7 @@ namespace System
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
 
             return RuntimeImports.RhGetGeneration(obj);
@@ -70,12 +70,12 @@ namespace System
         {
             if (generation < 0)
             {
-                throw new ArgumentOutOfRangeException("generation", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
             }
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
             {
-                throw new ArgumentOutOfRangeException("mode", SR.ArgumentOutOfRange_Enum);
+                throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
 
             int iInternalModes = 0;
@@ -107,7 +107,7 @@ namespace System
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
 
             RuntimeImports.RhSuppressFinalize(obj);
@@ -116,7 +116,7 @@ namespace System
         public static void ReRegisterForFinalize(Object obj)
         {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
 
             RuntimeImports.RhReRegisterForFinalize(obj);
         }
@@ -137,7 +137,7 @@ namespace System
         public static int CollectionCount(int generation)
         {
             if (generation < 0)
-                throw new ArgumentOutOfRangeException("generation", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
 
             return RuntimeImports.RhGetGcCollectionCount(generation, false);
         }
@@ -220,14 +220,14 @@ namespace System
         {
             if (bytesAllocated <= 0)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
 #if !BIT64
             if (bytesAllocated > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 #endif
@@ -289,14 +289,14 @@ namespace System
         {
             if (bytesAllocated <= 0)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
 #if !BIT64
             if (bytesAllocated > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 #endif

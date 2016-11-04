@@ -897,7 +897,7 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
 
         // The first field of the Nullable is a Boolean which we must set to false in this case to indicate no
         // value is present.
-        *(Boolean*)pData = FALSE;
+        *(Boolean*)pData = Boolean_false;
 
         // Clear the value (in case there were GC references we wish to stop reporting).
         EEType * pEEType = pUnboxToEEType->GetNullableType();
@@ -921,7 +921,7 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
         ASSERT(pUnboxToEEType->GetNullableType()->IsEquivalentTo(pEEType));
 
         // Set the first field of the Nullable to true to indicate the value is present.
-        *(Boolean*)pData = TRUE;
+        *(Boolean*)pData = Boolean_true;
 
         // Adjust the data pointer so that it points at the value field in the Nullable.
         pData = (UInt8*)pData + pUnboxToEEType->GetNullableValueOffset();

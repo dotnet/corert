@@ -352,6 +352,7 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
+            byte[] gcInfo = nodeWithCodeInfo.GCInfo;
             ObjectNode.ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
             string mainEhInfoSymbolName = null;
 
@@ -374,21 +375,38 @@ namespace ILCompiler.DependencyAnalysis
                         CreateCustomSection(section);
                     }
                     SwitchSection(_nativeObjectWriter, section.Name);
-                    
+
                     EmitAlignment(4);
                     EmitSymbolDef(blobSymbolName);
 
+                    FrameInfoFlags flags = frameInfo.Flags;
                     if (ehInfo != null)
                     {
-                        blob[blob.Length - 1] |= 0x04; // Flag to indicate that EHClauses follows
+                        flags |= FrameInfoFlags.HasEHInfo;
                     }
 
                     EmitBlob(blob);
 
+                    EmitIntValue((byte)flags, 1);
+
                     if (ehInfo != null)
                     {
+                        mainEhInfoSymbolName = "_ehInfo" + _currentNodeName;
+                        EmitSymbolRef(mainEhInfoSymbolName, RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                    }
+
+                    if (gcInfo != null)
+                    {
+                        EmitBlob(gcInfo);
+                        gcInfo = null;
+                    }
+
+                    if (ehInfo != null)
+                    {
+                        // TODO: Place EHInfo into different section for better locality
                         Debug.Assert(ehInfo.Alignment == 1);
                         Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
+                        EmitSymbolDef(mainEhInfoSymbolName);
                         EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                         ehInfo = null;
                     }
@@ -414,14 +432,12 @@ namespace ILCompiler.DependencyAnalysis
                     EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
 
                     // emit last byte from the blob - the function kind
-                    byte funcKind = blob[len - 1];
+                    FrameInfoFlags flags = frameInfo.Flags;
                     if ((ehInfo != null) || (mainEhInfoSymbolName != null))
                     {
-                        funcKind |= 0x04;
+                        flags |= FrameInfoFlags.HasEHInfo;
                     }
-                    EmitIntValue(funcKind, 1);
-
-                    --len;
+                    EmitIntValue((byte)flags, 1);
 
                     if (ehInfo != null)
                     {
@@ -434,7 +450,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     else if (mainEhInfoSymbolName != null)
                     {
-                        EmitSymbolRef(mainEhInfoSymbolName, RelocType.IMAGE_REL_BASED_REL32);
+                        EmitSymbolRef(mainEhInfoSymbolName, RelocType.IMAGE_REL_BASED_REL32, 4);
                     }
 
                     // For Unix, we build CFI blob map for each offset.

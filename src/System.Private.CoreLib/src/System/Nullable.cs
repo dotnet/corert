@@ -105,7 +105,7 @@ namespace System
         {
             if ((object)nullableType == null)
             {
-                throw new ArgumentNullException("nullableType");
+                throw new ArgumentNullException(nameof(nullableType));
             }
             Contract.EndContractBlock();
 

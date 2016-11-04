@@ -235,4 +235,12 @@ RW$name % 4
         bx      lr
     LEAF_END RhpGetThunkSize
 
+    ;;
+    ;; int RhpGetNumThunkBlocksPerMapping()
+    ;;
+    LEAF_ENTRY RhpGetNumThunkBlocksPerMapping
+        mov     r0, 8
+        bx      lr
+    LEAF_END RhpGetNumThunkBlocksPerMapping
+
     END

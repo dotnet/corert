@@ -156,7 +156,7 @@ inline DispatchMap * EEType::GetDispatchMap()
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
 #ifdef CORERT
-    return GetModuleManager()->GetDispatchMapLookupTable()[idxDispatchMap];
+    return GetTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
 #endif
 
     // handle case of R2R cloned string type correctly - the cloned string type is just a copy

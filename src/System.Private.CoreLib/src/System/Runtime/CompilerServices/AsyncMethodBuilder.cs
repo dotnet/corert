@@ -342,7 +342,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void SetException(Task task, Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
             Contract.EndContractBlock();
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
@@ -867,7 +867,7 @@ namespace System.Runtime.CompilerServices
             // to this method.
             //
             if (stateMachine == null)
-                throw new ArgumentNullException("stateMachine");
+                throw new ArgumentNullException(nameof(stateMachine));
             Contract.EndContractBlock();
             if (cachedMoveNextAction == null)
                 throw new InvalidOperationException(SR.AsyncMethodBuilder_InstanceNotInitialized);
@@ -909,7 +909,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="targetContext">The target context on which to propagate the exception.  Null to use the ThreadPool.</param>
         internal static void ThrowAsync(Exception exception, SynchronizationContext targetContext)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
             Contract.EndContractBlock();
 
             // If the user supplied a SynchronizationContext...

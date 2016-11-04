@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(Object o, Type t)
         {
             if (o == null)
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
 
             if (t == null)
                 throw new ArgumentNullException("type");
@@ -37,13 +37,13 @@ namespace System.Runtime.InteropServices
         public static bool IsComObject(object o)
         {
             if (o == null)
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
             return McgMarshal.IsCOMObject(o.GetType());
         }
         public static int ReleaseComObject(object o)
         {
             if (o == null)
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
             return McgMarshal.Release(o as __ComObject);            
         }
 

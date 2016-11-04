@@ -28,7 +28,7 @@ namespace System.Collections.Generic.Internal
         //
         public List(int capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             _items = new T[capacity];
@@ -41,7 +41,7 @@ namespace System.Collections.Generic.Internal
         public List(IEnumerable<T> collection)
         {
             if (collection == null)
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             Contract.EndContractBlock();
 
             ICollection<T> c = collection as ICollection<T>;
@@ -93,7 +93,7 @@ namespace System.Collections.Generic.Internal
             {
                 if (value < _size)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_SmallCapacity);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 }
 
                 Contract.EndContractBlock();
@@ -286,7 +286,7 @@ namespace System.Collections.Generic.Internal
         public int IndexOf(T item, int index)
         {
             if (index > _size)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < Count);
@@ -307,10 +307,10 @@ namespace System.Collections.Generic.Internal
         public int IndexOf(T item, int index, int count)
         {
             if (index > _size)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             if (count < 0 || index > _size - count)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < Count);
@@ -328,7 +328,7 @@ namespace System.Collections.Generic.Internal
             // Note that insertions at the end are legal.
             if ((uint)index > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
 
@@ -367,7 +367,7 @@ namespace System.Collections.Generic.Internal
         {
             if ((uint)index >= (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
 

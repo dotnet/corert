@@ -54,7 +54,6 @@ while :; do
     shift
 done
 
-mkdir -p bin/Logs
 
 $__scriptpath/run.sh build-managed $__BuildOS $__TargetOS $__TestNugetRuntimeId $__UnprocessedBuildArgs
 exit $?

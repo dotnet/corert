@@ -16,11 +16,13 @@ namespace System.Globalization
         /// </remarks>
         private static CultureInfo GetUserDefaultCultureCacheOverride()
         {
+#if ENABLE_WINRT
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
             if (callbacks != null && callbacks.IsAppxModel())
             {
                 return (CultureInfo)callbacks.GetUserDefaultCulture();
             }
+#endif
 
             return null;
         }

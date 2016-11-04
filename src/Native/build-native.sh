@@ -22,7 +22,6 @@ setup_dirs()
 
     mkdir -p "$__ProductBinDir"
     mkdir -p "$__IntermediatesDir"
-    mkdir -p "$__LogsDir"
 }
 
 # Performs "clean build" type actions (deleting and remaking directories)
@@ -32,7 +31,6 @@ clean()
     echo "Cleaning previous output for the selected configuration"
     rm -rf "$__ProductBinDir"
     rm -rf "$__IntermediatesDir"
-    rm -rf "$__LogsDir"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -257,7 +255,6 @@ done
 
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__BuildType"
-__LogsDir="$__rootbinpath/bin/Logs"
 __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __RelativeProductBinDir="bin/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
@@ -284,7 +281,6 @@ if [ $__CrossBuild == 1 ]; then
     fi
 fi
 
-# Create necessary folders
 setup_dirs
 
 # Check prereqs.

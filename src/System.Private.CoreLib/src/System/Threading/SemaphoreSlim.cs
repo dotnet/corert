@@ -173,13 +173,13 @@ namespace System.Threading
             if (initialCount < 0 || initialCount > maxCount)
             {
                 throw new ArgumentOutOfRangeException(
-                    "initialCount", initialCount, SR.SemaphoreSlim_ctor_InitialCountWrong);
+                    nameof(initialCount), initialCount, SR.SemaphoreSlim_ctor_InitialCountWrong);
             }
 
             //validate input
             if (maxCount <= 0)
             {
-                throw new ArgumentOutOfRangeException("maxCount", maxCount, SR.SemaphoreSlim_ctor_MaxCountWrong);
+                throw new ArgumentOutOfRangeException(nameof(maxCount), maxCount, SR.SemaphoreSlim_ctor_MaxCountWrong);
             }
 
             m_maxCount = maxCount;
@@ -237,7 +237,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -267,7 +267,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -565,7 +565,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -757,7 +757,7 @@ namespace System.Threading
             if (releaseCount < 1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "releaseCount", releaseCount, SR.SemaphoreSlim_Release_CountWrong);
+                    nameof(releaseCount), releaseCount, SR.SemaphoreSlim_Release_CountWrong);
             }
             int returnCount;
 

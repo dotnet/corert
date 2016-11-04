@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -158,7 +158,7 @@ namespace System.Text
             // Validate code page
             if (codePage < 0)
             {
-                throw new ArgumentOutOfRangeException("codePage");
+                throw new ArgumentOutOfRangeException(nameof(codePage));
             }
             Contract.EndContractBlock();
 
@@ -177,7 +177,7 @@ namespace System.Text
             // Validate code page
             if (codePage < 0)
             {
-                throw new ArgumentOutOfRangeException("codePage");
+                throw new ArgumentOutOfRangeException(nameof(codePage));
             }
             Contract.EndContractBlock();
 
@@ -207,7 +207,7 @@ namespace System.Text
             byte[] bytes)
         {
             if (bytes == null)
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             Contract.Ensures(Contract.Result<byte[]>() != null);
 
             return Convert(srcEncoding, dstEncoding, bytes, 0, bytes.Length);
@@ -224,12 +224,12 @@ namespace System.Text
         {
             if (srcEncoding == null || dstEncoding == null)
             {
-                throw new ArgumentNullException((srcEncoding == null ? "srcEncoding" : "dstEncoding"),
+                throw new ArgumentNullException((srcEncoding == null ? nameof(srcEncoding) : nameof(dstEncoding)),
                     SR.ArgumentNull_Array);
             }
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
             }
             Contract.Ensures(Contract.Result<byte[]>() != null);
@@ -259,7 +259,7 @@ namespace System.Text
             if (codepage < 0 || codepage > 65535)
             {
                 throw new ArgumentOutOfRangeException(
-                    "codepage", SR.Format(SR.ArgumentOutOfRange_Range,
+                    nameof(codepage), SR.Format(SR.ArgumentOutOfRange_Range,
                         0, 65535));
             }
 
@@ -283,7 +283,7 @@ namespace System.Text
                 case CodePageNoThread:                           // 3 CP_THREAD_ACP
                 case CodePageNoSymbol:                           // 42 CP_SYMBOL
                     throw new ArgumentException(SR.Format(
-                        SR.Argument_CodepageNotSupported, codepage), "codepage");
+                        SR.Argument_CodepageNotSupported, codepage), nameof(codepage));
             }
 
             // Is it a valid code page?
@@ -453,7 +453,7 @@ namespace System.Text
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
 
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 Contract.EndContractBlock();
 
                 encoderFallback = value;
@@ -475,7 +475,7 @@ namespace System.Text
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
 
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 Contract.EndContractBlock();
 
                 decoderFallback = value;
@@ -522,7 +522,7 @@ namespace System.Text
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars",
+                throw new ArgumentNullException(nameof(chars),
                     SR.ArgumentNull_Array);
             }
             Contract.EndContractBlock();
@@ -534,7 +534,7 @@ namespace System.Text
         public virtual int GetByteCount(String s)
         {
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             Contract.EndContractBlock();
 
             char[] chars = s.ToCharArray();
@@ -558,11 +558,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null)
-                throw new ArgumentNullException("chars",
+                throw new ArgumentNullException(nameof(chars),
                       SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
@@ -593,7 +593,7 @@ namespace System.Text
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars",
+                throw new ArgumentNullException(nameof(chars),
                     SR.ArgumentNull_Array);
             }
             Contract.EndContractBlock();
@@ -630,7 +630,7 @@ namespace System.Text
         public virtual byte[] GetBytes(String s)
         {
             if (s == null)
-                throw new ArgumentNullException("s",
+                throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
             Contract.EndContractBlock();
 
@@ -645,7 +645,7 @@ namespace System.Text
                                        byte[] bytes, int byteIndex)
         {
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             Contract.EndContractBlock();
             return GetBytes(s.ToCharArray(), charIndex, charCount, bytes, byteIndex);
         }
@@ -682,11 +682,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars",
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
                     SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"),
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
@@ -728,7 +728,7 @@ namespace System.Text
         {
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
             }
             Contract.EndContractBlock();
@@ -750,11 +750,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                       SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
@@ -782,7 +782,7 @@ namespace System.Text
         {
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
             }
             Contract.EndContractBlock();
@@ -838,11 +838,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? "chars" : "bytes",
+                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
                     SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount < 0 ? "byteCount" : "charCount"),
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
@@ -891,10 +891,10 @@ namespace System.Text
         public unsafe string GetString(byte* bytes, int byteCount)
         {
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (byteCount < 0)
-                throw new ArgumentOutOfRangeException("byteCount", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             return String.CreateStringFromEncoding(bytes, byteCount, this);
@@ -983,7 +983,7 @@ namespace System.Text
         public virtual String GetString(byte[] bytes)
         {
             if (bytes == null)
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
             Contract.EndContractBlock();
 

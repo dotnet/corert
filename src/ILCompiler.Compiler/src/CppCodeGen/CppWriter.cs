@@ -834,7 +834,7 @@ namespace ILCompiler.CppCodeGen
                 relocCode.Append("()");
             }
             // Node is either an non-emitted type or a generic composition - both are ignored for CPP codegen
-            else if ((reloc.Target is ModuleManagerIndirectionNode || reloc.Target is InterfaceDispatchMapNode || reloc.Target is EETypeOptionalFieldsNode || reloc.Target is GenericCompositionNode) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+            else if ((reloc.Target is TypeManagerIndirectionNode || reloc.Target is InterfaceDispatchMapNode || reloc.Target is EETypeOptionalFieldsNode || reloc.Target is GenericCompositionNode) && !(reloc.Target as ObjectNode).ShouldSkipEmittingObjectNode(factory))
             {
                 bool shouldReplaceNamespaceQualifier = reloc.Target is GenericCompositionNode || reloc.Target is EETypeOptionalFieldsNode;
                 relocCode.Append(shouldReplaceNamespaceQualifier ? reloc.Target.MangledName.Replace("::", "_") : reloc.Target.MangledName);
@@ -959,7 +959,7 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is EETypeNode)
                     OutputTypeNode(node as EETypeNode, factory, forwardDefinitions, typeDefinitions, methodTables);
-                else if ((node is EETypeOptionalFieldsNode || node is ModuleManagerIndirectionNode || node is GenericCompositionNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
+                else if ((node is EETypeOptionalFieldsNode || node is TypeManagerIndirectionNode || node is GenericCompositionNode) && !(node as ObjectNode).ShouldSkipEmittingObjectNode(factory))
                     additionalNodes.Append(GetCodeForObjectNode(node as ObjectNode, factory));
                 else if (node is InterfaceDispatchMapNode)
                 {

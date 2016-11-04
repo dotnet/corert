@@ -6,16 +6,16 @@
 
 class DispatchMap;
 
-class ModuleManager
+class TypeManager
 {
     ReadyToRunHeader *          m_pHeader;
 
     DispatchMap**               m_pDispatchMapTable;
 
-    ModuleManager(ReadyToRunHeader * pHeader);
+    TypeManager(ReadyToRunHeader * pHeader);
 
 public:
-    static ModuleManager * Create(void * pModuleHeader);
+    static TypeManager * Create(void * pModuleHeader);
     void * GetModuleSection(ReadyToRunSectionType sectionId, int * length);
     DispatchMap ** GetDispatchMapLookupTable();
 

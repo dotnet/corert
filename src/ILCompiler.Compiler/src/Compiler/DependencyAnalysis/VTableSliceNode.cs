@@ -177,5 +177,30 @@ namespace ILCompiler.DependencyAnalysis
 
             return null;
         }
+
+        public override bool HasConditionalStaticDependencies
+        {
+            get
+            {
+                return _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+            }
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
+            // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
+            DefType defType = _type.GetClosestDefType();
+            foreach (var method in defType.GetAllMethods())
+            {
+                if (!method.IsVirtual)
+                    continue;
+
+                yield return new CombinedDependencyListEntry(
+                    factory.VirtualMethodUse(method),
+                    factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    "Canonically equivalent virtual method use");
+            }
+        }
     }
 }
