@@ -366,6 +366,12 @@
   <data name="Arg_RanksAndBounds" xml:space="preserve">
     <value>Number of lengths and lowerBounds must match.</value>
   </data>
+  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
+    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
+  </data>
+  <data name="Arg_RegKeyNotFound" xml:space="preserve">
+    <value>The specified registry key does not exist.</value>
+  </data>
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
   </data>
@@ -1687,6 +1693,9 @@
   <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
     <value>Invalid assembly public key.</value>
   </data>
+  <data name="Security_RegistryPermission" xml:space="preserve">
+    <value>Requested registry access is not allowed.</value>
+  </data>
   <data name="ClassLoad_General" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}'.</value>
   </data>
@@ -1704,5 +1713,8 @@
   </data>
   <data name="EE_MissingField" xml:space="preserve">
     <value>Field not found: '{0}'.</value>
+  </data>
+  <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
+    <value>Access to the registry key '{0}' is denied.</value>
   </data>
 </root>

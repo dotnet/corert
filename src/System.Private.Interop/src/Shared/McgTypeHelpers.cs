@@ -822,7 +822,7 @@ namespace System.Runtime.InteropServices
                 return interfaceInfo.ItfGuid;
             }
             
-#if !RHTESTCL && !CORECLR && !CORERT
+#if !CORECLR && ENABLE_WINRT
             // Fall back to dynamic interop to generate guid
             // Currently dynamic interop wil generate guid for generic type(interface/delegate)
             if(interfaceType.IsGenericType() && McgModuleManager.UseDynamicInterop)

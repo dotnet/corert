@@ -323,7 +323,7 @@ namespace Internal.Runtime.TypeLoader
                         switch (typeHandle.HandleType)
                         {
                             case HandleType.TypeDefinition:
-                                if (!TypeLoaderEnvironment.Instance.TryGetOrCreateNamedTypeForMetadata(
+                                if (!TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(
                                     _metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader), out type2))
                                 {
                                     return false;
@@ -331,7 +331,7 @@ namespace Internal.Runtime.TypeLoader
                                 break;
 
                             case HandleType.TypeReference:
-                                if (!TypeLoaderEnvironment.TryGetNamedTypeForTypeReference(
+                                if (!TypeLoaderEnvironment.TryResolveNamedTypeForTypeReference(
                                     _metadataReader, typeHandle.ToTypeReferenceHandle(_metadataReader), out type2))
                                 {
                                     return false;

@@ -1,0 +1,1384 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+
+#if ARM
+#define _TARGET_ARM_
+#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
+#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
+#define ENREGISTERED_RETURNTYPE_MAXSIZE
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+#define FEATURE_HFA
+#elif ARM64
+#define _TARGET_ARM64_
+#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
+#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
+#define ENREGISTERED_RETURNTYPE_MAXSIZE
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+#define ENREGISTERED_PARAMTYPE_MAXSIZE
+#define FEATURE_HFA
+#elif X86
+#define _TARGET_X86_
+#define ENREGISTERED_RETURNTYPE_MAXSIZE
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
+#define CALLINGCONVENTION_CALLEE_POPS
+#elif AMD64
+#if UNIXAMD64
+#define UNIX_AMD64_ABI
+#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
+#else
+#endif
+#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define _TARGET_AMD64_
+#define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
+#define ENREGISTERED_RETURNTYPE_MAXSIZE
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+#define ENREGISTERED_PARAMTYPE_MAXSIZE
+#else
+#error Unknown architecture!
+#endif
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using Internal.Runtime.Augments;
+using System.Runtime;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
+using Internal.NativeFormat;
+using Internal.TypeSystem;
+using Internal.Runtime.TypeLoader;
+using Internal.Runtime.CallConverter;
+
+using CallingConvention = Internal.Runtime.CallConverter.CallingConvention;
+
+namespace Internal.Runtime.CallInterceptor
+{
+    public delegate void LocalVariableSetFunc<T>(ref T param, ref LocalVariableSet variables);
+
+    /// <summary>
+    /// Represents a set of local variables. Must be used as if it has local variable scoping
+    /// </summary>
+    public struct LocalVariableSet
+    {
+        private unsafe IntPtr* _pbMemory;
+        private LocalVariableType[] _types;
+
+        /// <summary>
+        /// Construct from memory. Must not be used with LocalVariableType[] where the types contains 
+        /// GC references, or is itself a reference type, unless the memory is externally protected
+        /// pbMemory MUST point to a region of memory of at least IntPtr.Size*types.Length, and must 
+        /// be aligned for IntPtr access. Callers of this constructor are responsible for
+        /// ensuring that the memory is appropriately gc-protected
+        /// </summary>
+        unsafe public LocalVariableSet(IntPtr* pbMemory, LocalVariableType[] types)
+        {
+            _pbMemory = pbMemory;
+            _types = types;
+        }
+
+        /// <summary>
+        /// Get the variable at index. Error checking is not performed
+        /// </summary>
+        public unsafe T GetVar<T>(int index)
+        {
+            IntPtr address = _pbMemory[index];
+            if (_types[index].ByRef)
+            {
+                address = *(IntPtr*)address.ToPointer();
+            }
+            return Unsafe.Read<T>((void*)address);
+        }
+
+        /// <summary>
+        /// Set the variable at index. Error checking is not performed
+        /// </summary>
+        public unsafe void SetVar<T>(int index, T value)
+        {
+            IntPtr address = _pbMemory[index];
+            if (_types[index].ByRef)
+            {
+                address = *(IntPtr*)address.ToPointer();
+            }
+            Unsafe.Write<T>((void*)address, value);
+        }
+
+        /// <summary>
+        /// Copy a byref from source to to this local variable set. Instead of copying the data a, la Get/Set,
+        /// copy the actual byref pointer. This function may be used with pointer types as well, (although 
+        /// more interesting is the case where its a translation between a pinned byref and a pointer)
+        /// </summary>
+        public unsafe void SetByRef(int targetIndex, ref LocalVariableSet sourceLocalSet, int sourceIndex)
+        {
+            if ((targetIndex >= _types.Length) || (sourceIndex >= sourceLocalSet._types.Length))
+                throw new ArgumentOutOfRangeException();
+
+            *((IntPtr*)_pbMemory[targetIndex]) = *((IntPtr*)sourceLocalSet._pbMemory[sourceIndex]);
+        }
+
+        /// <summary>
+        /// Get the address of the variable data. This function must not be used with a non-pinned byref type 
+        /// (IntPtr isn't GC protected in that case)
+        /// </summary>
+        public unsafe IntPtr GetAddressOfVarData(int index)
+        {
+            if (index >= _types.Length)
+                throw new ArgumentOutOfRangeException();
+
+            if (_types[index].ByRef)
+            {
+                return *((IntPtr*)_pbMemory[index]);
+            }
+            else
+            {
+                return _pbMemory[index];
+            }
+        }
+
+        internal unsafe IntPtr* GetRawMemoryPointer()
+        {
+            return (IntPtr*)_pbMemory;
+        }
+
+
+        private struct SetupLocalVariableSetInfo<T>
+        {
+            public LocalVariableType[] Types;
+            public LocalVariableSetFunc<T> Callback;
+        }
+
+        private unsafe delegate void SetupArbitraryLocalVariableSet_InnerDel<T>(IntPtr* localData, ref T context, ref SetupLocalVariableSetInfo<T> localVarSetInfo);
+        private unsafe static void SetupArbitraryLocalVariableSet_Inner<T>(IntPtr* localData, ref T context, ref SetupLocalVariableSetInfo<T> localVarSetInfo)
+        {
+            LocalVariableSet localVars = new LocalVariableSet(localData, localVarSetInfo.Types);
+            DefaultInitializeLocalVariableSet(ref localVars);
+            localVarSetInfo.Callback(ref context, ref localVars);
+        }
+
+        /// <summary>
+        /// Helper api to setup a space where a LocalVariableSet is defined. Note that the lifetime of the variable 
+        /// set is the lifetime of until the callback function returns
+        /// </summary>
+        unsafe public static void SetupArbitraryLocalVariableSet<T>(LocalVariableSetFunc<T> callback, ref T param, LocalVariableType[] types) where T : struct
+        {
+            SetupLocalVariableSetInfo<T> localVarSetInfo = new SetupLocalVariableSetInfo<T>();
+            localVarSetInfo.Callback = callback;
+            localVarSetInfo.Types = types;
+
+            RuntimeAugments.RunFunctionWithConservativelyReportedBuffer(
+                ComputeNecessaryMemoryForStackLocalVariableSet(types),
+                Intrinsics.AddrOf<SetupArbitraryLocalVariableSet_InnerDel<T>>(SetupArbitraryLocalVariableSet_Inner<T>),
+                ref param,
+                ref localVarSetInfo);
+        }
+
+        /// <summary>
+        /// Helper api to initialize a local variable set initialized with as much memory as 
+        /// ComputeNecessaryMemoryForStackLocalVariableSet specifies. Used as part of pattern for manual construction
+        /// of LocalVariableSet
+        /// </summary>
+        public unsafe static void DefaultInitializeLocalVariableSet(ref LocalVariableSet localSet)
+        {
+            int localRegionOffset = IntPtr.Size * localSet._types.Length;
+            byte* baseAddress = (byte*)localSet._pbMemory;
+
+            for (int i = 0; i < localSet._types.Length; i++)
+            {
+                LocalVariableType type = localSet._types[i];
+
+                // If the type is a byref, then the pointer in the pointers region actually will point to the byref, but
+                // also allocate a target for the byref, and have the byref point to that
+                if (type.ByRef)
+                {
+                    localRegionOffset = localRegionOffset.AlignUp(IntPtr.Size);
+                    localSet._pbMemory[i] = (IntPtr)(baseAddress + localRegionOffset);
+                    localRegionOffset += IntPtr.Size;
+                    localRegionOffset = localRegionOffset.AlignUp(type.TypeInstanceFieldAlignment);
+                    *((IntPtr*)localSet._pbMemory[i]) = (IntPtr)(baseAddress + localRegionOffset);
+                }
+                else
+                {
+                    localRegionOffset = localRegionOffset.AlignUp(type.TypeInstanceFieldAlignment);
+                    localSet._pbMemory[i] = (IntPtr)(baseAddress + localRegionOffset);
+                }
+
+                localRegionOffset += type.TypeInstanceFieldSize;
+            }
+        }
+
+        /// <summary>
+        /// Compute the size of the memory region needed to hold the set of types provided
+        /// </summary>
+        public static int ComputeNecessaryMemoryForStackLocalVariableSet(LocalVariableType[] types)
+        {
+            int memoryNeeded = IntPtr.Size * types.Length;
+
+            foreach (var type in types)
+            {
+                if (type.ByRef)
+                {
+                    memoryNeeded = memoryNeeded.AlignUp(IntPtr.Size);
+                    memoryNeeded += IntPtr.Size;
+                }
+
+                memoryNeeded = memoryNeeded.AlignUp(type.TypeInstanceFieldAlignment);
+                memoryNeeded += type.TypeInstanceFieldSize;
+            }
+
+            memoryNeeded = memoryNeeded.AlignUp(IntPtr.Size);
+
+            return memoryNeeded;
+        }
+
+#if CCCONVERTER_TRACE
+        public unsafe void DumpDebugInfo()
+        {
+            TypeSystemContext context = TypeSystemContextFactory.Create();
+            {
+                CallingConventionConverterLogger.WriteLine("LocalVariableSet @ 0x" + new IntPtr(_pbMemory).LowLevelToString());
+                for (int i = 0; i < _types.Length; i++)
+                {
+                    CallingConventionConverterLogger.WriteLine("    " +
+                        (_types[i].ByRef ? "byref @ 0x" : "      @ 0x") + GetAddressOfVarData(i).LowLevelToString() +
+                        " - RTTH = " + context.ResolveRuntimeTypeHandle(_types[i].TypeHandle).ToString());
+                }
+            }
+            TypeSystemContextFactory.Recycle(context);
+        }
+#endif
+    }
+
+    /// <summary>
+    /// Abstraction for the type information needed to be a local
+    /// </summary>
+    public struct LocalVariableType
+    {
+        public LocalVariableType(RuntimeTypeHandle typeHandle, bool pinned, bool byRef)
+        {
+            TypeHandle = typeHandle;
+            Pinned = pinned;
+            ByRef = byRef;
+        }
+
+        public RuntimeTypeHandle TypeHandle;
+        public bool Pinned;
+        public bool ByRef;
+
+        internal int TypeInstanceFieldSize
+        {
+            get
+            {
+                unsafe
+                {
+                    if (IsValueType)
+                        return (int)TypeHandle.ToEETypePtr()->ValueTypeSize;
+                    else
+                        return IntPtr.Size;
+                }
+            }
+        }
+
+        internal int TypeInstanceFieldAlignment
+        {
+            get
+            {
+                unsafe
+                {
+                    return (int)TypeHandle.ToEETypePtr()->FieldAlignmentRequirement;
+                }
+            }
+        }
+
+        internal bool IsValueType
+        {
+            get
+            {
+                unsafe
+                {
+                    return TypeHandle.ToEETypePtr()->IsValueType;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Arguments passed into CallInterceptor.ExecuteThunk
+    /// </summary>
+    public struct CallInterceptorArgs
+    {
+        /// <summary>
+        /// The set of arguments and return value. The return value is located at the Zero-th index.
+        /// </summary>
+        public LocalVariableSet ArgumentsAndReturnValue;
+        /// <summary>
+        /// Convenience set of locals, most like for use with MakeDynamicCall
+        /// </summary>
+        public LocalVariableSet Locals;
+    }
+
+    /// <summary>
+    /// Cache of information on how to make a dynamic call
+    /// </summary>
+    public class DynamicCallSignature
+    {
+        private CallConversionOperation[] _callConversionOpsNormal;
+        private CallConversionOperation[] _callConversionOpsFatPtr;
+        private CallingConvention _callingConvention;
+
+        internal CallConversionOperation[] NormalOps
+        {
+            get
+            {
+                return _callConversionOpsNormal;
+            }
+        }
+
+        internal CallConversionOperation[] FatOps
+        {
+            get
+            {
+                return _callConversionOpsFatPtr;
+            }
+        }
+
+        internal CallingConvention CallingConvention
+        {
+            get
+            {
+                return _callingConvention;
+            }
+        }
+
+        internal static LocalVariableType[] s_returnBlockDescriptor = new LocalVariableType[1] { new LocalVariableType() { ByRef = false, Pinned = true, TypeHandle = typeof(ReturnBlock).TypeHandle } };
+
+        /// <summary>
+        ///  Construct a DynamicCallSignature. This is a somewhat expensive object to create, so please consider caching it
+        /// </summary>
+        public DynamicCallSignature(CallingConvention callingConvention, LocalVariableType[] returnAndArgumentTypes, int returnAndArgTypesToUse)
+        {
+            _callConversionOpsNormal = ProduceOpcodesForDynamicCall(callingConvention, returnAndArgumentTypes, returnAndArgTypesToUse, false);
+            if (callingConvention == CallingConvention.ManagedInstance || callingConvention == CallingConvention.ManagedStatic)
+                _callConversionOpsFatPtr = ProduceOpcodesForDynamicCall(callingConvention, returnAndArgumentTypes, returnAndArgTypesToUse, true);
+
+            _callingConvention = callingConvention;
+        }
+
+        private static CallConversionOperation[] ProduceOpcodesForDynamicCall(CallingConvention callingConvention, LocalVariableType[] returnAndArgumentTypes, int returnAndArgTypesToUse, bool fatFunctionPointer)
+        {
+            ArrayBuilder<CallConversionOperation> callConversionOps = new ArrayBuilder<CallConversionOperation>();
+
+            bool hasThis = callingConvention == CallingConvention.ManagedInstance;
+            int firstArgumentOffset = 1 + (hasThis ? 1 : 0);
+            Debug.Assert(returnAndArgTypesToUse >= 1);
+            Debug.Assert(returnAndArgTypesToUse <= returnAndArgumentTypes.Length);
+
+            TypeHandle[] args = new TypeHandle[returnAndArgTypesToUse - firstArgumentOffset];
+            TypeHandle returnType = new TypeHandle(returnAndArgumentTypes[0].ByRef, returnAndArgumentTypes[0].TypeHandle);
+
+            for (int i = firstArgumentOffset; i < returnAndArgTypesToUse; i++)
+            {
+                args[i - firstArgumentOffset] = new TypeHandle(returnAndArgumentTypes[i].ByRef, returnAndArgumentTypes[i].TypeHandle);
+            }
+
+            ArgIteratorData data = new ArgIteratorData(hasThis, false, args, returnType);
+
+            ArgIterator calleeArgs = new ArgIterator(data, callingConvention, fatFunctionPointer, false, null, false, false);
+
+            // Ensure return block is setup
+            int returnBlockSize = LocalVariableSet.ComputeNecessaryMemoryForStackLocalVariableSet(s_returnBlockDescriptor);
+            callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y, returnBlockSize, CallConversionInterpreter.LocalBlock
+#if CCCONVERTER_TRACE
+                , "ReturnBlock"
+#endif
+                ));
+            callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.DEFAULT_INIT_LOCALBLOCK_X, CallConversionInterpreter.LocalBlock));
+
+            // Allocate transition block
+            int nStackBytes = calleeArgs.SizeOfFrameArgumentArray();
+            unsafe
+            {
+                int transitionBlockAllocSize = TransitionBlock.GetNegSpaceSize() + sizeof(TransitionBlock) + nStackBytes;
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.ALLOC_X_TRANSITIONBLOCK_BYTES, transitionBlockAllocSize));
+            }
+
+            if (calleeArgs.HasRetBuffArg())
+            {
+                // Setup ret buffer
+                int ofsRetBuffArg = calleeArgs.GetRetBuffArgOffset();
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK, IntPtr.Size, CallConversionInterpreter.ArgBlock, 0, ofsRetBuffArg
+#if CCCONVERTER_TRACE
+                    , "ReturnBuffer"
+#endif
+                    ));
+            }
+
+            if (hasThis)
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK, IntPtr.Size, CallConversionInterpreter.ArgBlock, 1, ArgIterator.GetThisOffset()
+#if CCCONVERTER_TRACE
+                    , "ThisPointer"
+#endif
+                    ));
+            }
+
+            if (calleeArgs.HasParamType())
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK, calleeArgs.GetParamTypeArgOffset()));
+            }
+
+            bool needsFloatArgs = false;
+
+            for (int i = firstArgumentOffset; i < returnAndArgTypesToUse; i++)
+            {
+                int ofsCallee = calleeArgs.GetNextOffset();
+                if (ofsCallee < 0)
+                    needsFloatArgs = true;
+
+                TypeHandle dummyTypeHandle;
+                if (calleeArgs.IsArgPassedByRef() && calleeArgs.GetArgType(out dummyTypeHandle) != CorElementType.ELEMENT_TYPE_BYREF)
+                {
+                    callConversionOps.Add(new CallConversionOperation(
+                        CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+                        IntPtr.Size,
+                        CallConversionInterpreter.ArgBlock,
+                        IntPtr.Size * i,
+                        ofsCallee
+#if CCCONVERTER_TRACE
+                        , "ByRef Arg #" + i.LowLevelToString()
+#endif
+                        ));
+                }
+                else
+                {
+                    callConversionOps.Add(new CallConversionOperation(
+                        CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+                        calleeArgs.GetArgSize(),
+                        CallConversionInterpreter.ArgBlock,
+                        i,
+                        ofsCallee
+#if CCCONVERTER_TRACE
+                        , "Arg #" + i.LowLevelToString()
+#endif
+                        ));
+                }
+            }
+
+            int fpArgInfo = checked((int)calleeArgs.GetFPReturnSize());
+            if (fpArgInfo >= CallConversionOperation.HasFPArgsFlag)
+                throw new OverflowException();
+
+            if (needsFloatArgs)
+                fpArgInfo |= CallConversionOperation.HasFPArgsFlag;
+
+            switch (callingConvention)
+            {
+                case CallingConvention.ManagedInstance:
+                case CallingConvention.ManagedStatic:
+                    callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W, CallConversionInterpreter.LocalBlock, 0, calleeArgs.SizeOfFrameArgumentArray() / ArchitectureConstants.STACK_ELEM_SIZE, fpArgInfo));
+                    break;
+
+                case CallingConvention.StdCall:
+                    callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W, CallConversionInterpreter.LocalBlock, 0, calleeArgs.SizeOfFrameArgumentArray() / ArchitectureConstants.STACK_ELEM_SIZE, fpArgInfo));
+                    break;
+
+                default:
+                    Debug.Fail("Unknown calling convention");
+                    break;
+            }
+
+            if (!calleeArgs.HasRetBuffArg())
+            {
+                if (returnType.GetCorElementType() == CorElementType.ELEMENT_TYPE_VOID)
+                {
+                    // do nothing
+                }
+                else
+                {
+                    // Copy from return buffer into return value local
+                    callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z, checked((int)returnType.GetSize()), CallConversionInterpreter.ArgBlock, 0));
+                }
+            }
+
+            return callConversionOps.ToArray();
+        }
+    }
+
+    internal struct CallConversionOperation
+    {
+        public const int HasFPArgsFlag = 0x40000000;
+
+#if CCCONVERTER_TRACE
+        public string Comment;
+
+        public CallConversionOperation(OpCode op, int X, int Y, int Z, int W, string Comment = null)
+        {
+            this.Op = op;
+            this.X = X;
+            this.Y = Y;
+            this.Z = Z;
+            this.W = W;
+            this.Comment = Comment;
+        }
+        public CallConversionOperation(OpCode op, int X, int Y, int Z, string Comment = null) : this(op, X, Y, Z, 0, Comment) { }
+        public CallConversionOperation(OpCode op, int X, int Y, string Comment = null) : this(op, X, Y, 0, 0, Comment) { }
+        public CallConversionOperation(OpCode op, int X, string Comment = null) : this(op, X, 0, 0, 0, Comment) { }
+        public CallConversionOperation(OpCode op, string Comment = null) : this(op, 0, 0, 0, 0, Comment) { }
+
+        public string DebugString
+        {
+            get
+            {
+                string s = "";
+
+                switch (Op)
+                {
+                    case OpCode.ALLOC_X_TRANSITIONBLOCK_BYTES:
+                        s = "ALLOC_X_TRANSITIONBLOCK_BYTES";
+                        break;
+                    case OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y:
+                        s = "ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y";
+                        break;
+                    case OpCode.DEFAULT_INIT_LOCALBLOCK_X:
+                        s = "DEFAULT_INIT_LOCALBLOCK_X";
+                        break;
+                    case OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_TRANSITION_BLOCK:
+                        s = "SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_LOCALBLOCK:
+                        s = "SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_LOCALBLOCK";
+                        break;
+                    case OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        s = "COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        s = "COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_POINTER_Z_FROM_OFFSET_W_IN_TRANSITION_BLOCK:
+                        s = "COPY_X_BYTES_TO_LOCALBLOCK_Y_POINTER_Z_FROM_OFFSET_W_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK:
+                        s = "COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.CALL_INTERCEPTOR:
+                        s = "CALL_INTERCEPTOR";
+                        break;
+                    case OpCode.SETUP_CALLERPOP_X_BYTES:
+                        s = "SETUP_CALLERPOP_X_BYTES";
+                        break;
+                    case OpCode.RETURN_VOID:
+                        s = "RETURN_VOID";
+                        break;
+                    case OpCode.RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK:
+                        s = "RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        s = "__RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z__";
+                        break;
+                    case OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        s = "RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z";
+                        break;
+                    case OpCode.CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W:
+                        s = "CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W";
+                        break;
+                    case OpCode.CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W:
+                        s = "CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W";
+                        break;
+                    case OpCode.COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z:
+                        s = "COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z";
+                        break;
+                    case OpCode.COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK:
+                        s = "COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK";
+                        break;
+                    default:
+                        s = "";
+                        break;
+                }
+
+                s = s.Replace("_X_", "_" + X.LowLevelToString() + "_");
+                s = s.Replace("_Y_", "_" + Y.LowLevelToString() + "_");
+                s = s.Replace("_Z_", "_" + Z.LowLevelToString() + "_");
+                s = s.Replace("_W_", "_" + W.LowLevelToString() + "_");
+
+                if (s.EndsWith("_X"))
+                    s = s.Substring(0, s.Length - 1) + X.LowLevelToString();
+                if (s.EndsWith("_Y"))
+                    s = s.Substring(0, s.Length - 1) + Y.LowLevelToString();
+                if (s.EndsWith("_Z"))
+                    s = s.Substring(0, s.Length - 1) + Z.LowLevelToString();
+                if (s.EndsWith("_W"))
+                    s = s.Substring(0, s.Length - 1) + W.LowLevelToString();
+
+                if (!String.IsNullOrEmpty(Comment))
+                    s += " - Comment: " + Comment;
+
+                return s;
+            }
+        }
+
+#else
+        public CallConversionOperation(OpCode op, int X, int Y, int Z, int W)
+        {
+            this.Op = op;
+            this.X = X;
+            this.Y = Y;
+            this.Z = Z;
+            this.W = W;
+        }
+        public CallConversionOperation(OpCode op, int X, int Y, int Z)
+        {
+            this.Op = op;
+            this.X = X;
+            this.Y = Y;
+            this.Z = Z;
+            this.W = 0;
+        }
+        public CallConversionOperation(OpCode op, int X, int Y)
+        {
+            this.Op = op;
+            this.X = X;
+            this.Y = Y;
+            this.Z = 0;
+            this.W = 0;
+        }
+        public CallConversionOperation(OpCode op, int X)
+        {
+            this.Op = op;
+            this.X = X;
+            this.Y = 0;
+            this.Z = 0;
+            this.W = 0;
+        }
+        public CallConversionOperation(OpCode op)
+        {
+            this.Op = op;
+            this.X = 0;
+            this.Y = 0;
+            this.Z = 0;
+            this.W = 0;
+        }
+#endif
+        public enum OpCode
+        {
+            ALLOC_X_TRANSITIONBLOCK_BYTES,
+            ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y,
+            DEFAULT_INIT_LOCALBLOCK_X,
+            SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_TRANSITION_BLOCK,
+            SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_LOCALBLOCK,
+            COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+            COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+            COPY_X_BYTES_TO_LOCALBLOCK_Y_POINTER_Z_FROM_OFFSET_W_IN_TRANSITION_BLOCK,
+            COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK,
+            CALL_INTERCEPTOR,
+            SETUP_CALLERPOP_X_BYTES,
+            RETURN_VOID,
+            RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK,
+            RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z,
+            RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z,
+            CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W,
+            CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W,
+            COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z,
+            COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK
+        }
+
+        public OpCode Op;
+        public int X;
+        public int Y;
+        public int Z;
+        public int W;
+    }
+
+    internal static class CallConversionInterpreter
+    {
+        public const int ArgBlock = 1;
+        public const int LocalBlock = 2;
+
+        internal unsafe struct CallConversionInterpreterLocals
+        {
+            public LocalVariableSet Locals1;
+            public LocalVariableSet Locals2;
+            public byte* TransitionBlockPtr;
+            public int Index;
+            public CallConversionOperation[] Opcodes;
+            public CallInterceptor Interceptor;
+
+            public LocalVariableType[] LocalVarSetTypes1;
+            public LocalVariableType[] LocalVarSetTypes2;
+
+            public IntPtr IntPtrReturnVal;
+            public IntPtr IntPtrFnPtr;
+            public IntPtr IntPtrGenericContextArg;
+
+            public LocalVariableSet GetLocalBlock(int blockNum)
+            {
+                if (blockNum == 1)
+                {
+                    return Locals1;
+                }
+                else
+                {
+                    Debug.Assert(blockNum == 2);
+                    return Locals2;
+                }
+            }
+        }
+
+        private unsafe delegate void SetupBlockDelegate(void* pBuffer, ref CallConversionInterpreterLocals locals);
+        private unsafe static void SetupLocalsBlock1(void* pBuffer, ref CallConversionInterpreterLocals locals)
+        {
+#if CCCONVERTER_TRACE
+            CallingConventionConverterLogger.WriteLine("     -> Setup Locals Block 1 @ " + new IntPtr(pBuffer).LowLevelToString());
+#endif
+
+            locals.Locals1 = new LocalVariableSet((IntPtr*)pBuffer, locals.LocalVarSetTypes1);
+            Interpret(ref locals);
+        }
+
+        private unsafe static void SetupLocalsBlock2(void* pBuffer, ref CallConversionInterpreterLocals locals)
+        {
+#if CCCONVERTER_TRACE
+            CallingConventionConverterLogger.WriteLine("     -> Setup Locals Block 2 @ " + new IntPtr(pBuffer).LowLevelToString());
+#endif
+
+            locals.Locals2 = new LocalVariableSet((IntPtr*)pBuffer, locals.LocalVarSetTypes2);
+            Interpret(ref locals);
+        }
+
+        private unsafe static void SetupTransitionBlock(void* pBuffer, ref CallConversionInterpreterLocals locals)
+        {
+#if CCCONVERTER_TRACE
+            CallingConventionConverterLogger.WriteLine("     -> Setup Transition Block @ " + new IntPtr(pBuffer).LowLevelToString());
+#endif
+
+            locals.TransitionBlockPtr = ((byte*)pBuffer) + TransitionBlock.GetNegSpaceSize();
+            Interpret(ref locals);
+        }
+
+        public unsafe static void Interpret(ref CallConversionInterpreterLocals locals)
+        {
+            while (locals.Index < locals.Opcodes.Length)
+            {
+                CallConversionOperation op = locals.Opcodes[locals.Index++];
+
+#if CCCONVERTER_TRACE
+                CallingConventionConverterLogger.WriteLine("  " + op.DebugString);
+#endif
+
+                switch (op.Op)
+                {
+                    case CallConversionOperation.OpCode.DEFAULT_INIT_LOCALBLOCK_X:
+                        {
+                            LocalVariableSet localBlock = locals.GetLocalBlock(op.X);
+                            LocalVariableSet.DefaultInitializeLocalVariableSet(ref localBlock);
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y:
+                        if (op.Y == 1)
+                        {
+                            RuntimeAugments.RunFunctionWithConservativelyReportedBuffer(op.X, Intrinsics.AddrOf<SetupBlockDelegate>(SetupLocalsBlock1), ref locals);
+                        }
+                        else
+                        {
+                            Debug.Assert(op.Y == 2);
+                            RuntimeAugments.RunFunctionWithConservativelyReportedBuffer(op.X, Intrinsics.AddrOf<SetupBlockDelegate>(SetupLocalsBlock2), ref locals);
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.ALLOC_X_TRANSITIONBLOCK_BYTES:
+                        RuntimeAugments.RunFunctionWithConservativelyReportedBuffer(op.X, Intrinsics.AddrOf<SetupBlockDelegate>(SetupTransitionBlock), ref locals);
+                        break;
+
+                    case CallConversionOperation.OpCode.CALL_INTERCEPTOR:
+                        {
+                            CallInterceptorArgs args = new CallInterceptorArgs();
+                            args.ArgumentsAndReturnValue = locals.Locals1;
+                            args.Locals = locals.Locals2;
+                            locals.Interceptor.ThunkExecute(ref args);
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        {
+                            void* pSrc = ((byte*)locals.GetLocalBlock(op.Y).GetRawMemoryPointer()) + op.Z;
+                            void* pDst = locals.TransitionBlockPtr + op.W;
+                            Buffer.MemoryCopy(pSrc, pDst, op.X, op.X);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " bytes from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        {
+                            void* pSrc = locals.GetLocalBlock(op.Y).GetRawMemoryPointer()[op.Z].ToPointer();
+                            void* pDst = locals.TransitionBlockPtr + op.W;
+                            Buffer.MemoryCopy(pSrc, pDst, op.X, op.X);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " bytes from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK:
+                        {
+                            void* pSrc = locals.TransitionBlockPtr + op.W;
+                            void* pDst = ((byte*)locals.GetLocalBlock(op.Y).GetRawMemoryPointer()) + op.Z;
+                            Buffer.MemoryCopy(pSrc, pDst, op.X, op.X);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " bytes " + new IntPtr(pSrc).LowLevelToString() + " -> " + new IntPtr(pDst).LowLevelToString());
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_POINTER_Z_FROM_OFFSET_W_IN_TRANSITION_BLOCK:
+                        {
+                            void* pSrc = locals.TransitionBlockPtr + op.W;
+                            void* pDst = locals.GetLocalBlock(op.Y).GetRawMemoryPointer()[op.Z].ToPointer();
+                            Buffer.MemoryCopy(pSrc, pDst, op.X, op.X);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " bytes from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_LOCALBLOCK:
+                        {
+                            locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y] = (IntPtr)(((byte*)locals.GetLocalBlock(op.X).GetRawMemoryPointer()) + op.Z);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Set " +
+                                new IntPtr(locals.GetLocalBlock(op.X).GetRawMemoryPointer()).LowLevelToString() + "[" + op.Y.LowLevelToString() + "] = " +
+                                new IntPtr(((byte*)locals.GetLocalBlock(op.X).GetRawMemoryPointer()) + op.Z).LowLevelToString());
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_TRANSITION_BLOCK:
+                        {
+                            locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y] = (IntPtr)(locals.TransitionBlockPtr + op.Z);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Set " +
+                                new IntPtr(locals.GetLocalBlock(op.X).GetRawMemoryPointer()).LowLevelToString() + "[" + op.Y.LowLevelToString() + "] = " +
+                                new IntPtr(locals.TransitionBlockPtr + op.Z).LowLevelToString());
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.RETURN_VOID:
+                        locals.IntPtrReturnVal = CallConverterThunk.ReturnVoidReturnThunk;
+                        break;
+
+                    case CallConversionOperation.OpCode.SETUP_CALLERPOP_X_BYTES:
+#if X86
+                        ((TransitionBlock*)locals.TransitionBlockPtr)->m_argumentRegisters.ecx = new IntPtr(op.X);
+#else
+                        Debug.Assert(false);
+#endif
+                        break;
+
+                    case CallConversionOperation.OpCode.RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK:
+                        {
+#if X86
+                            CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
+                            // On X86 the return buffer pointer is returned in eax.
+                            CallConverterThunk.t_NonArgRegisterReturnSpace.returnValue = *(IntPtr*)(locals.TransitionBlockPtr + op.X);
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
+#else
+                            // Because the return value was really returned on the heap, simply return as if void was returned.
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnVoidReturnThunk;
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        {
+#if X86
+                            CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
+                            fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
+                            {
+                                Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), retBlk, op.Z, op.Z);
+                            }
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
+#else
+                            byte* returnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfArgumentRegisters();
+                            MemoryHelpers.Memset((IntPtr)returnBlock, IntPtr.Size, 0);
+                            Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z, op.Z);
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
+#endif
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.Z.LowLevelToString() + " bytes from [" + new IntPtr(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer()).LowLevelToString() + "] to return block");
+#endif
+                        }
+                        break;
+                    case CallConversionOperation.OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        {
+#if CALLDESCR_FPARGREGSARERETURNREGS
+                            byte* returnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfFloatArgumentRegisters();
+                            MemoryHelpers.Memset((IntPtr)returnBlock, IntPtr.Size, 0);
+                            Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z, op.Z);
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnVoidReturnThunk;
+#elif X86
+                            CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
+                            fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
+                            {
+                                Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), retBlk, op.Z, op.Z);
+                            }
+                            if (op.Z == 4)
+                            {
+                                locals.IntPtrReturnVal = CallConverterThunk.ReturnFloatingPointReturn4Thunk;
+                            }
+                            else
+                            {
+                                Debug.Assert(op.Z == 8);
+                                locals.IntPtrReturnVal = CallConverterThunk.ReturnFloatingPointReturn8Thunk;
+                            }
+#else
+                            Debug.Assert(false);
+#endif
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.Z.LowLevelToString() + " bytes from [" + new IntPtr(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer()).LowLevelToString() + "] to return block");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W:
+                    case CallConversionOperation.OpCode.CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W:
+                        {
+                            locals.IntPtrReturnVal = locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y];
+                            CallConverterThunk.CallDescrData callDescrData = new CallConverterThunk.CallDescrData();
+                            callDescrData.fpReturnSize = (uint)(op.W & ~CallConversionOperation.HasFPArgsFlag);
+                            callDescrData.numStackSlots = op.Z;
+                            callDescrData.pArgumentRegisters = (ArgumentRegisters*)(locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfArgumentRegisters());
+#if CALLDESCR_FPARGREGS
+                            // Under CALLDESCR_FPARGREGS -ve offsets indicate arguments in floating point registers. If we
+                            // have at least one such argument we point the call worker at the floating point area of the
+                            // frame (we leave it null otherwise since the worker can perform a useful optimization if it
+                            // knows no floating point registers need to be set up).
+                            if ((op.W & CallConversionOperation.HasFPArgsFlag) != 0)
+                                callDescrData.pFloatArgumentRegisters = (FloatArgumentRegisters*)(locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfFloatArgumentRegisters());
+#endif
+                            callDescrData.pReturnBuffer = locals.IntPtrReturnVal.ToPointer();
+                            callDescrData.pSrc = locals.TransitionBlockPtr + sizeof(TransitionBlock);
+                            callDescrData.pTarget = locals.IntPtrFnPtr.ToPointer();
+                            if (op.Op == CallConversionOperation.OpCode.CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W)
+                                RuntimeAugments.CallDescrWorker(new IntPtr(&callDescrData));
+                            else
+                                RuntimeAugments.CallDescrWorkerNative(new IntPtr(&callDescrData));
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z:
+                        {
+                            void* pSrc = locals.IntPtrReturnVal.ToPointer();
+                            void* pDst = locals.GetLocalBlock(op.Y).GetRawMemoryPointer()[op.Z].ToPointer();
+                            Buffer.MemoryCopy(pSrc, pDst, op.X, op.X);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " bytes from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK:
+                        {
+                            *(IntPtr*)(locals.TransitionBlockPtr + op.X) = locals.IntPtrGenericContextArg;
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> Set [" + new IntPtr(locals.TransitionBlockPtr + op.X).LowLevelToString() + "] = " + locals.IntPtrGenericContextArg.LowLevelToString());
+#endif
+                        }
+                        break;
+
+                    default:
+                        Debug.Fail("Unknown call convention interpreter opcode");
+                        break;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// CallInterceptor abstract class. To implement a call interceptor, derive from this class and implement the abstract methods
+    /// </summary>
+    public abstract class CallInterceptor
+    {
+        private bool _nativeToManaged;
+        private int _id;
+        private IntPtr _thunkAddress;
+
+        private static object s_thunkPoolHeap;
+
+        /// <summary>
+        /// Construct a call interceptor object. At time of construction whether it is a native to managed, or managed to managed 
+        /// call interceptor must be known. Derive from this type to implement custom call interceptors.
+        /// </summary>
+        protected CallInterceptor(bool nativeToManaged)
+        {
+            _nativeToManaged = nativeToManaged;
+        }
+
+        /// <summary>
+        /// Array of size >= 1
+        /// Return type is the first type, the rest are parameters
+        /// This function is called when the thunk is executed at least once.
+        /// </summary>
+        /// 
+        public abstract LocalVariableType[] ArgumentAndReturnTypes { get; }
+        /// <summary>
+        /// Calling convention of the interceptor.
+        /// This function is called when the thunk is executed at least once.
+        /// </summary>
+        public abstract CallingConvention CallingConvention { get; }
+
+        /// <summary>
+        /// Extra local variables to create. This is intended as a convenience feature for developers of CallInterceptors that 
+        /// immediately make dynamic calls.
+        /// This function is called when the thunk is executed at least once.
+        /// </summary>
+        public abstract LocalVariableType[] LocalVariableTypes { get; }
+
+        internal static CallConverterThunk.CallingConventionConverter_CommonCallingStub_PointerData s_managedToManagedCommonStubData;
+        internal static CallConverterThunk.CallingConventionConverter_CommonCallingStub_PointerData s_nativeToManagedCommonStubData;
+        internal static LowLevelList<CallInterceptor> s_callInterceptors = new LowLevelList<CallInterceptor>();
+        internal static LowLevelList<int> s_freeCallInterceptorIds = new LowLevelList<int>();
+        private static int s_countFreeCallInterceptorId = 0;
+
+        static CallInterceptor()
+        {
+            s_managedToManagedCommonStubData = CallConverterThunk.s_commonStubData;
+            s_managedToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<Func<IntPtr, IntPtr, IntPtr>>(CallInterceptorThunk);
+            s_nativeToManagedCommonStubData = CallConverterThunk.s_commonStubData;
+            s_nativeToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<Func<IntPtr, IntPtr, IntPtr>>(CallInterceptorThunkNativeCallable);
+        }
+
+        /// <summary>
+        /// Callback executed when the function pointer returned by GetThunkAddress is called
+        /// </summary>
+        public abstract void ThunkExecute(ref CallInterceptorArgs callInterceptor);
+
+        private int GetThunkId()
+        {
+            int newId = 0;
+            if (s_countFreeCallInterceptorId > 0)
+            {
+                newId = s_freeCallInterceptorIds[s_countFreeCallInterceptorId - 1];
+                s_countFreeCallInterceptorId--;
+            }
+            else
+            {
+                newId = s_callInterceptors.Count;
+                s_callInterceptors.Add(null);
+            }
+
+            _id = newId;
+            s_callInterceptors[newId] = this;
+            return newId;
+        }
+
+
+        /// <summary>
+        /// Get the function pointer for this call interceptor. It will create the function pointer on 
+        /// first access, or after it has been freed via FreeThunk()
+        /// </summary>
+        public IntPtr GetThunkAddress()
+        {
+            if (_thunkAddress == IntPtr.Zero)
+            {
+                lock (s_callInterceptors)
+                {
+                    if (_thunkAddress == IntPtr.Zero)
+                    {
+                        int thunkId = GetThunkId();
+
+                        if (s_thunkPoolHeap == null)
+                        {
+                            s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(CallConverterThunk.CommonInputThunkStub);
+                            Debug.Assert(s_thunkPoolHeap != null);
+                        }
+
+                        _thunkAddress = RuntimeAugments.AllocateThunk(s_thunkPoolHeap);
+                        Debug.Assert(_thunkAddress != IntPtr.Zero);
+
+                        unsafe
+                        {
+                            if (_nativeToManaged)
+                            {
+                                fixed (CallConverterThunk.CallingConventionConverter_CommonCallingStub_PointerData* commonStubData = &s_nativeToManagedCommonStubData)
+                                {
+                                    RuntimeAugments.SetThunkData(s_thunkPoolHeap, _thunkAddress, new IntPtr(thunkId), new IntPtr(commonStubData));
+                                }
+                            }
+                            else
+                            {
+                                fixed (CallConverterThunk.CallingConventionConverter_CommonCallingStub_PointerData* commonStubData = &s_managedToManagedCommonStubData)
+                                {
+                                    RuntimeAugments.SetThunkData(s_thunkPoolHeap, _thunkAddress, new IntPtr(thunkId), new IntPtr(commonStubData));
+                                }
+                            }
+                        }
+
+                        SerializedDebugData.RegisterTailCallThunk(_thunkAddress);
+                    }
+                }
+            }
+
+            return _thunkAddress;
+        }
+
+        /// <summary>
+        /// Free the underlying memory associated with the thunk. Once this is called, the old thunk address
+        /// is invalid.
+        /// </summary>
+        public void FreeThunk()
+        {
+            if (_thunkAddress != IntPtr.Zero)
+            {
+                lock (s_callInterceptors)
+                {
+                    if (_thunkAddress != IntPtr.Zero)
+                    {
+                        RuntimeAugments.FreeThunk(s_thunkPoolHeap, _thunkAddress);
+
+                        _thunkAddress = IntPtr.Zero;
+
+                        s_callInterceptors[_id] = null;
+                        if (s_countFreeCallInterceptorId == s_freeCallInterceptorIds.Count)
+                        {
+                            s_freeCallInterceptorIds.Add(_id);
+                        }
+                        else
+                        {
+                            s_freeCallInterceptorIds[s_countFreeCallInterceptorId] = _id;
+                        }
+
+                        s_countFreeCallInterceptorId++;
+                        _id = 0;
+                    }
+                }
+            }
+        }
+
+        private static LocalVariableType[] s_ReturnBlockTypes = new LocalVariableType[1] { new LocalVariableType(typeof(ReturnBlock).TypeHandle, false, false) };
+
+        /// <summary>
+        /// Make a dynamic call to a function pointer passing arguments from arguments, using the signature described in callSignature
+        /// </summary>
+        public unsafe static void MakeDynamicCall(IntPtr address, DynamicCallSignature callSignature, LocalVariableSet arguments)
+        {
+#if CCCONVERTER_TRACE
+            CallingConventionConverterLogger.WriteLine("MakeDynamicCall executing... ");
+            arguments.DumpDebugInfo();
+#endif
+
+            CallConversionInterpreter.CallConversionInterpreterLocals locals = new CallConversionInterpreter.CallConversionInterpreterLocals();
+            locals.Locals1 = arguments;
+            locals.LocalVarSetTypes2 = s_ReturnBlockTypes;
+
+            if ((callSignature.CallingConvention == CallingConvention.ManagedInstance || callSignature.CallingConvention == CallingConvention.ManagedStatic) &&
+                FunctionPointerOps.IsGenericMethodPointer(address))
+            {
+                locals.Opcodes = callSignature.FatOps;
+                var genericFunctionPointerDescriptor = FunctionPointerOps.ConvertToGenericDescriptor(address);
+                locals.IntPtrFnPtr = genericFunctionPointerDescriptor->MethodFunctionPointer;
+                locals.IntPtrGenericContextArg = genericFunctionPointerDescriptor->InstantiationArgument;
+            }
+            else
+            {
+                locals.Opcodes = callSignature.NormalOps;
+                locals.IntPtrFnPtr = address;
+            }
+
+            CallConversionInterpreter.Interpret(ref locals);
+        }
+
+
+        private static CallInterceptor GetInterceptorFromId(IntPtr id)
+        {
+            lock (s_callInterceptors)
+            {
+                return s_callInterceptors[id.ToInt32()];
+            }
+        }
+
+        private CallConversionInterpreter.CallConversionInterpreterLocals GetInterpreterLocals()
+        {
+            CallConversionInterpreter.CallConversionInterpreterLocals locals = new CallConversionInterpreter.CallConversionInterpreterLocals();
+            locals.LocalVarSetTypes1 = ArgumentAndReturnTypes;
+            locals.LocalVarSetTypes2 = LocalVariableTypes;
+            locals.Interceptor = this;
+            locals.Opcodes = BuildOpsListForThunk(CallingConvention, locals.LocalVarSetTypes1, locals.LocalVarSetTypes2);
+            return locals;
+        }
+
+        private CallConversionOperation[] BuildOpsListForThunk(CallingConvention callingConvention, LocalVariableType[] returnAndArgumentTypes, LocalVariableType[] locals)
+        {
+            ArrayBuilder<CallConversionOperation> callConversionOps = new ArrayBuilder<CallConversionOperation>();
+
+            bool hasThis = callingConvention == CallingConvention.ManagedInstance;
+            int firstArgumentOffset = 1 + (hasThis ? 1 : 0);
+
+            TypeHandle[] args = new TypeHandle[returnAndArgumentTypes.Length - firstArgumentOffset];
+            TypeHandle returnType = new TypeHandle(returnAndArgumentTypes[0].ByRef, returnAndArgumentTypes[0].TypeHandle);
+
+            for (int i = firstArgumentOffset; i < returnAndArgumentTypes.Length; i++)
+            {
+                args[i - firstArgumentOffset] = new TypeHandle(returnAndArgumentTypes[i].ByRef, returnAndArgumentTypes[i].TypeHandle);
+            }
+
+            ArgIteratorData data = new ArgIteratorData(hasThis, false, args, returnType);
+
+            ArgIterator callerArgs = new ArgIterator(data, callingConvention, false, false, null, false, false);
+#if CALLINGCONVENTION_CALLEE_POPS
+            // CbStackPop must be executed before general argument iteration begins
+            int cbStackToPop = callerArgs.CbStackPop();
+#endif
+
+            int localBlockSize = IntPtr.Size * returnAndArgumentTypes.Length;
+            callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y, localBlockSize, CallConversionInterpreter.ArgBlock));
+
+            // Handle locals block
+            if (locals.Length > 0)
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y, LocalVariableSet.ComputeNecessaryMemoryForStackLocalVariableSet(locals), CallConversionInterpreter.LocalBlock
+#if CCCONVERTER_TRACE
+                    , "Locals"
+#endif
+                    ));
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.DEFAULT_INIT_LOCALBLOCK_X, CallConversionInterpreter.LocalBlock));
+            }
+
+            if (callerArgs.HasRetBuffArg())
+            {
+                int ofsRetBuffArg = callerArgs.GetRetBuffArgOffset();
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK, IntPtr.Size, CallConversionInterpreter.ArgBlock, 0, ofsRetBuffArg
+#if CCCONVERTER_TRACE
+                    , "ReturnBuffer"
+#endif
+                    ));
+            }
+            else if (returnType.GetCorElementType() == CorElementType.ELEMENT_TYPE_VOID)
+            {
+                // Do nothing for void
+            }
+            else
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_LOCALBLOCK, CallConversionInterpreter.ArgBlock, 0, IntPtr.Size * returnAndArgumentTypes.Length
+#if CCCONVERTER_TRACE
+                    , "ReturnValue"
+#endif
+                    ));
+                localBlockSize += checked((int)returnType.GetSize());
+            }
+
+            if (hasThis)
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_TRANSITION_BLOCK, CallConversionInterpreter.ArgBlock, 1, ArgIterator.GetThisOffset()
+#if CCCONVERTER_TRACE
+                    , "ThisPointer"
+#endif
+                    ));
+            }
+
+            for (int i = firstArgumentOffset; i < returnAndArgumentTypes.Length; i++)
+            {
+                int ofsCaller = callerArgs.GetNextOffset();
+
+                TypeHandle dummyTypeHandle;
+                if (callerArgs.IsArgPassedByRef() && callerArgs.GetArgType(out dummyTypeHandle) != CorElementType.ELEMENT_TYPE_BYREF)
+                {
+                    callConversionOps.Add(new CallConversionOperation(
+                        CallConversionOperation.OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK,
+                        IntPtr.Size,
+                        CallConversionInterpreter.ArgBlock,
+                        i * IntPtr.Size,
+                        ofsCaller
+#if CCCONVERTER_TRACE
+                        , "ByRef Arg #" + i.LowLevelToString()
+#endif
+                        ));
+                }
+                else
+                {
+                    callConversionOps.Add(new CallConversionOperation(
+                        CallConversionOperation.OpCode.SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_TRANSITION_BLOCK,
+                        CallConversionInterpreter.ArgBlock,
+                        i,
+                        ofsCaller
+#if CCCONVERTER_TRACE
+                        , "Arg #" + i.LowLevelToString()
+#endif
+                        ));
+                }
+            }
+
+            callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.CALL_INTERCEPTOR));
+
+#if CALLINGCONVENTION_CALLEE_POPS
+            callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.SETUP_CALLERPOP_X_BYTES, cbStackToPop));
+#endif
+
+            if (returnType.GetCorElementType() == CorElementType.ELEMENT_TYPE_VOID)
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_VOID));
+            }
+            else if (callerArgs.HasRetBuffArg())
+            {
+                int ofsRetBuffArg = callerArgs.GetRetBuffArgOffset();
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK, ofsRetBuffArg));
+            }
+            else if (callerArgs.GetFPReturnSize() > 0)
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)callerArgs.GetFPReturnSize())));
+            }
+            else
+            {
+                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)returnType.GetSize())));
+            }
+
+            Debug.Assert(callConversionOps[0].Op == CallConversionOperation.OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y);
+            Debug.Assert(callConversionOps[0].Y == CallConversionInterpreter.ArgBlock);
+            callConversionOps[0] = new CallConversionOperation(CallConversionOperation.OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y, localBlockSize, CallConversionInterpreter.ArgBlock
+#if CCCONVERTER_TRACE
+                , "ReturnAndArguments"
+#endif
+                );
+
+            return callConversionOps.ToArray();
+        }
+
+        private unsafe static IntPtr CallInterceptorThunk(IntPtr callerTransitionBlockParam, IntPtr thunkId)
+        {
+#if CCCONVERTER_TRACE
+            CallingConventionConverterLogger.WriteLine("CallInterceptorThunk executing... ID = " + thunkId.LowLevelToString());
+#endif
+
+            CallInterceptor interceptor = GetInterceptorFromId(thunkId);
+            var locals = interceptor.GetInterpreterLocals();
+            locals.TransitionBlockPtr = (byte*)callerTransitionBlockParam;
+            CallConversionInterpreter.Interpret(ref locals);
+            return locals.IntPtrReturnVal;
+        }
+
+#if _TARGET_X86_
+        [NativeCallable(CallingConvention = System.Runtime.InteropServices.CallingConvention.FastCall)]
+#else
+        [NativeCallable]
+#endif
+        private static IntPtr CallInterceptorThunkNativeCallable(IntPtr callerTransitionBlockParam, IntPtr thunkId)
+        {
+            return CallInterceptorThunk(callerTransitionBlockParam, thunkId);
+        }
+    }
+}
