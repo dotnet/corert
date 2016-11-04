@@ -695,7 +695,7 @@ namespace Internal.Runtime.TypeLoader
                     if (!canonHelper.IsCanonicallyEquivalent(entryType))
                         continue;
 
-                    return RvaToFunctionPointer(mappingTableModule, externalReferences.GetRvaFromIndex(entryParser.GetUnsigned()));
+                    return externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
                 }
             }
 
@@ -716,7 +716,7 @@ namespace Internal.Runtime.TypeLoader
                     if (!canonHelper.IsCanonicallyEquivalent(entryType))
                         continue;
 
-                    return RvaToFunctionPointer(mappingTableModule, externalReferencesForDefaultCtorMap.GetRvaFromIndex(defaultCtorParser.GetUnsigned()));
+                    return externalReferencesForDefaultCtorMap.GetFunctionPointerFromIndex(defaultCtorParser.GetUnsigned());
                 }
             }
             return IntPtr.Zero;
@@ -1596,7 +1596,7 @@ namespace Internal.Runtime.TypeLoader
                 _isMatchingMethodHandleAndDeclaringType = true;
 
                 if (_hasEntryPoint)
-                    _methodEntrypoint = RvaToFunctionPointer(_moduleHandle, extRefTable.GetRvaFromIndex(entryParser.GetUnsigned()));
+                    _methodEntrypoint = extRefTable.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
 
                 if ((_flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                     _dynamicInvokeCookie = entryParser.GetUnsigned();
