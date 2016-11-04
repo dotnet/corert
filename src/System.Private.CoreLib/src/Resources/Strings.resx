@@ -762,6 +762,9 @@
   <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
     <value>The specified length exceeds the maximum value of {0}.</value>
   </data>
+  <data name="ArgumentOutOfRange_LengthGreaterThanCapacity" xml:space="preserve">
+    <value>The length cannot be greater than the capacity.</value>
+  </data>
   <data name="ArgumentOutOfRange_ListInsert" xml:space="preserve">
     <value>Index must be within the bounds of the List.</value>
   </data>

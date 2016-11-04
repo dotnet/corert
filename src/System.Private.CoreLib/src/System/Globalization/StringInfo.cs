@@ -208,7 +208,7 @@ namespace System.Globalization
             //
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
 
@@ -219,7 +219,7 @@ namespace System.Globalization
                 {
                     return (String.Empty);
                 }
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             int charLen;
@@ -239,14 +239,14 @@ namespace System.Globalization
             //
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
 
             int len = str.Length;
             if (index < 0 || (index > len))
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             return (new TextElementEnumerator(str, index, len));
@@ -268,7 +268,7 @@ namespace System.Globalization
         {
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
 

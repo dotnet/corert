@@ -172,7 +172,7 @@ namespace System
         public static double Round(double value, int digits)
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
-                throw new ArgumentOutOfRangeException("digits", SR.ArgumentOutOfRange_RoundingDigits);
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
             Contract.EndContractBlock();
             return InternalRound(value, digits, MidpointRounding.ToEven);
         }
@@ -185,10 +185,10 @@ namespace System
         public static double Round(double value, int digits, MidpointRounding mode)
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
-                throw new ArgumentOutOfRangeException("digits", SR.ArgumentOutOfRange_RoundingDigits);
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), "mode");
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), nameof(mode));
             }
             Contract.EndContractBlock();
             return InternalRound(value, digits, mode);

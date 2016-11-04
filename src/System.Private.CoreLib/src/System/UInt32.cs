@@ -121,7 +121,7 @@ namespace System
             // Check for undefined flags
             if ((style & Decimal.InvalidNumberStyles) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, "style");
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)

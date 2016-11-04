@@ -210,7 +210,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -232,11 +232,11 @@ namespace System.Threading
             if (millisecondsTimeout < Timeout.Infinite)
             {
                 throw new ArgumentOutOfRangeException(
-                   "millisecondsTimeout", millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
+                   nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
             if (condition == null)
             {
-                throw new ArgumentNullException("condition", SR.SpinWait_SpinUntil_ArgumentNull);
+                throw new ArgumentNullException(nameof(condition), SR.SpinWait_SpinUntil_ArgumentNull);
             }
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)

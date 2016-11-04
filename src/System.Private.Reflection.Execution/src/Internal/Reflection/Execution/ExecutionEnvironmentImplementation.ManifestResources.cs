@@ -45,7 +45,7 @@ namespace Internal.Reflection.Execution
         public sealed override Stream GetManifestResourceStream(Assembly assembly, String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             Stream resultFromFile = ReadFileFromAppPackage(name);
             if (resultFromFile != null)

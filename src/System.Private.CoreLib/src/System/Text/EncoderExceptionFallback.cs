@@ -60,7 +60,7 @@ namespace System.Text
         {
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
-                throw new ArgumentOutOfRangeException("charUnknownHigh",
+                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
                     SR.Format(SR.ArgumentOutOfRange_Range,
                     0xD800, 0xDBFF));
             }
@@ -138,7 +138,7 @@ namespace System.Text
         {
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
-                throw new ArgumentOutOfRangeException("charUnknownHigh",
+                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
                     SR.Format(SR.ArgumentOutOfRange_Range,
                     0xD800, 0xDBFF));
             }

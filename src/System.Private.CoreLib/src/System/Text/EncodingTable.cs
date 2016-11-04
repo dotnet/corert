@@ -13,7 +13,7 @@ namespace System.Text
         internal static int GetCodePageFromName(string name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             return (int)NameToCodePageCache.Instance.GetOrAdd(name);
@@ -79,7 +79,7 @@ namespace System.Text
             // The encoding name is not valid.
             throw new ArgumentException(
                 SR.Format(SR.Argument_EncodingNotSupported, name),
-                "name");
+                nameof(name));
         }
 
         private static int CompareOrdinal(string s1, string s2, int index, int length)

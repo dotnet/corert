@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -162,7 +162,7 @@ namespace System.Globalization
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name",
+                throw new ArgumentNullException(nameof(name),
                     SR.ArgumentNull_String);
             }
 
@@ -184,7 +184,7 @@ namespace System.Globalization
 
             if (this.m_cultureData == null)
                 throw new CultureNotFoundException(
-                    "name", name, SR.Argument_CultureNotSupported);
+                    nameof(name), name, SR.Argument_CultureNotSupported);
 
             this.m_name = this.m_cultureData.CultureName;
             this.m_isInherited = !this.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<CultureInfo>());
@@ -322,7 +322,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
 #if ENABLE_WINRT
@@ -379,7 +379,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 CultureInfo.VerifyCultureName(value, true);
@@ -761,7 +761,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
                 }
                 VerifyWritable();
                 numInfo = value;
@@ -795,7 +795,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
                 }
                 VerifyWritable();
                 dateTimeInfo = value;
@@ -957,7 +957,7 @@ namespace System.Globalization
         {
             if (ci == null)
             {
-                throw new ArgumentNullException("ci");
+                throw new ArgumentNullException(nameof(ci));
             }
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
             Contract.EndContractBlock();
@@ -1098,14 +1098,14 @@ namespace System.Globalization
             // Make sure we have a valid, non-zero length string as name
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             CultureInfo retval = GetCultureInfoHelper(name);
             if (retval == null)
             {
                 throw new CultureNotFoundException(
-                    "name", name, SR.Argument_CultureNotSupported);
+                    nameof(name), name, SR.Argument_CultureNotSupported);
             }
             return retval;
         }

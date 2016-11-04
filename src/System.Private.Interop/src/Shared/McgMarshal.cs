@@ -243,7 +243,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
         {
             if (newBuffer == null)
-                throw new ArgumentNullException("newBuffer");
+                throw new ArgumentNullException(nameof(newBuffer));
 
             int lenAnsi;
             int lenUnicode;
@@ -387,7 +387,7 @@ namespace System.Runtime.InteropServices
 
             // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
             if (pNative == null)
-                throw new ArgumentNullException("pNative");
+                throw new ArgumentNullException(nameof(pNative));
 
             int lenUnicode = managedArray.Length;
             fixed (char* pManaged = managedArray)
@@ -416,7 +416,7 @@ namespace System.Runtime.InteropServices
 
             // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
             if (managedArray == null)
-                throw new ArgumentNullException("managedArray");
+                throw new ArgumentNullException(nameof(managedArray));
 
             // COMPAT: Use the managed array length as the maximum length of native buffer
             // This obviously doesn't make sense but desktop CLR does that
@@ -468,7 +468,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
         {
             if (pNative == null)
-                throw new ArgumentNullException("pNative");
+                throw new ArgumentNullException(nameof(pNative));
 
             if (str != null)
             {
@@ -763,7 +763,7 @@ namespace System.Runtime.InteropServices
         public static int FinalReleaseComObject(object o)
         {
             if (o == null)
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
 
             __ComObject co = null;
 
@@ -774,7 +774,7 @@ namespace System.Runtime.InteropServices
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(SR.Argument_ObjNotComObject, "o");
+                throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
             co.FinalReleaseSelf();
             return 0;

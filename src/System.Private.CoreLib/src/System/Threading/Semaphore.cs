@@ -24,12 +24,12 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException("initialCount", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException("maximumCount", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
             if (initialCount > maximumCount)
@@ -60,12 +60,12 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException("initialCount", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException("maximumCount", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             }
 
             if (initialCount > maximumCount)
@@ -125,11 +125,11 @@ namespace System.Threading
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, "name"), "name");
+                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(name)), nameof(name));
             }
             if (null != name && MAX_PATH < name.Length)
             {
@@ -170,7 +170,7 @@ namespace System.Threading
         {
             if (releaseCount < 1)
             {
-                throw new ArgumentOutOfRangeException("releaseCount", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(releaseCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             }
             int previousCount;
 

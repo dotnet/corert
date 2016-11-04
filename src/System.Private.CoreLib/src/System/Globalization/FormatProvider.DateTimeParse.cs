@@ -102,12 +102,12 @@ namespace System.Globalization
             {
                 if (s == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "s");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(s));
                     return false;
                 }
                 if (format == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "format");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(format));
                     return false;
                 }
                 if (s.Length == 0)
@@ -200,12 +200,12 @@ namespace System.Globalization
             {
                 if (s == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "s");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(s));
                     return false;
                 }
                 if (formats == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "formats");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(formats));
                     return false;
                 }
 
@@ -2443,7 +2443,7 @@ namespace System.Globalization
             {
                 if (s == null)
                 {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, "s");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, SR.ArgumentNull_String, null, nameof(s));
                     return false;
                 }
                 if (s.Length == 0)

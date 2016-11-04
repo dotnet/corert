@@ -42,7 +42,7 @@ namespace System
         private static void CheckEnvironmentVariableName(String variable)
         {
             if (variable == null)
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
 
             if (variable.Length == 0)
                 throw new ArgumentException(SR.Argument_StringZeroLength);

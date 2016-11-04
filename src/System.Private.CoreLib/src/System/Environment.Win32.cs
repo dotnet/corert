@@ -9,7 +9,7 @@ namespace System
         public unsafe static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
 
             // The convention of the API is as follows:
             // You call the API with a buffer of a given size. 

@@ -1,0 +1,31 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+
+namespace Internal.StackTraceGenerator
+{
+    public static class StackTraceGenerator
+    {
+        //
+        // Makes reasonable effort to construct one useful line of a stack trace. Returns null if it can't.
+        //
+        public static String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
+        {
+            // CORERT-TODO: Implement StackTraceGenerator on Unix
+            return null;
+        }
+
+        //
+        // Makes reasonable effort to get source info. Returns null sourceFile and 0 lineNumber/columnNumber if it can't.
+        //
+        public static void TryGetSourceLineInfo(IntPtr ip, out string fileName, out int lineNumber, out int columnNumber)
+        {
+            // CORERT-TODO: Implement StackTraceGenerator on Unix
+            fileName = null;
+            lineNumber = 0;
+            columnNumber = 0;
+        }
+    }
+}

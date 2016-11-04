@@ -271,7 +271,7 @@ namespace System.Threading
             long totalMilliseconds = (long)delay.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("delay");
+                throw new ArgumentOutOfRangeException(nameof(delay));
             }
 
             InitializeWithTimer((int)totalMilliseconds);
@@ -300,7 +300,7 @@ namespace System.Threading
         {
             if (millisecondsDelay < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsDelay");
+                throw new ArgumentOutOfRangeException(nameof(millisecondsDelay));
             }
 
             InitializeWithTimer(millisecondsDelay);
@@ -402,7 +402,7 @@ namespace System.Threading
             long totalMilliseconds = (long)delay.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("delay");
+                throw new ArgumentOutOfRangeException(nameof(delay));
             }
 
             CancelAfter((int)totalMilliseconds);
@@ -438,7 +438,7 @@ namespace System.Threading
 
             if (millisecondsDelay < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsDelay");
+                throw new ArgumentOutOfRangeException(nameof(millisecondsDelay));
             }
 
             if (IsCancellationRequested) return;
@@ -860,7 +860,7 @@ namespace System.Threading
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
             if (tokens == null)
-                throw new ArgumentNullException("tokens");
+                throw new ArgumentNullException(nameof(tokens));
 
             if (tokens.Length == 0)
                 throw new ArgumentException(SR.CancellationToken_CreateLinkedToken_TokensIsEmpty);

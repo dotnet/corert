@@ -119,7 +119,7 @@ namespace System.Diagnostics
         public DebuggerBrowsableAttribute(DebuggerBrowsableState state)
         {
             if (state < DebuggerBrowsableState.Never || state > DebuggerBrowsableState.RootHidden)
-                throw new ArgumentOutOfRangeException("state");
+                throw new ArgumentOutOfRangeException(nameof(state));
             Contract.EndContractBlock();
 
             _state = state;
@@ -143,7 +143,7 @@ namespace System.Diagnostics
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
 
@@ -165,7 +165,7 @@ namespace System.Diagnostics
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
 
@@ -238,7 +238,7 @@ namespace System.Diagnostics
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
 

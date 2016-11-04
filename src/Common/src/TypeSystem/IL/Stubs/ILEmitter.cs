@@ -341,6 +341,7 @@ namespace Internal.IL.Stubs
 
         private ILToken NewToken(Object value, int tokenType)
         {
+            Debug.Assert(value != null);
             _tokens.Add(value);
             return (ILToken)(_tokens.Count | tokenType);
         }

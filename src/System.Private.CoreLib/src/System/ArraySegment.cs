@@ -35,7 +35,7 @@ namespace System
         public ArraySegment(T[] array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             Contract.EndContractBlock();
 
             _array = array;
@@ -46,11 +46,11 @@ namespace System
         public ArraySegment(T[] array, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
@@ -158,7 +158,7 @@ namespace System
                 if (_array == null)
                     throw new InvalidOperationException(SR.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
 
                 return _array[_offset + index];
@@ -169,7 +169,7 @@ namespace System
                 if (_array == null)
                     throw new InvalidOperationException(SR.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
 
                 _array[_offset + index] = value;
@@ -209,7 +209,7 @@ namespace System
                 if (_array == null)
                     throw new InvalidOperationException(SR.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
 
                 return _array[_offset + index];

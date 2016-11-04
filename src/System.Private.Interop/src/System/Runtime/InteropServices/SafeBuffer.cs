@@ -109,13 +109,13 @@ namespace System.Runtime.InteropServices
         public void Initialize(ulong numBytes)
         {
             if (numBytes < 0)
-                throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (IntPtr.Size == 4 && numBytes > UInt32.MaxValue)
-                throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_AddressSpace);
+                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_AddressSpace);
             Contract.EndContractBlock();
 
             if (numBytes >= (ulong)Uninitialized)
-                throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
+                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
 
             _numBytes = (UIntPtr)numBytes;
         }
@@ -128,16 +128,16 @@ namespace System.Runtime.InteropServices
         public void Initialize(uint numElements, uint sizeOfEachElement)
         {
             if (numElements < 0)
-                throw new ArgumentOutOfRangeException("numElements", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (sizeOfEachElement < 0)
-                throw new ArgumentOutOfRangeException("sizeOfEachElement", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(sizeOfEachElement), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (IntPtr.Size == 4 && numElements * sizeOfEachElement > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_AddressSpace);
             Contract.EndContractBlock();
 
             if (numElements * sizeOfEachElement >= (ulong)Uninitialized)
-                throw new ArgumentOutOfRangeException("numElements", SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
+                throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
 
             _numBytes = checked((UIntPtr)(numElements * sizeOfEachElement));
         }
@@ -248,11 +248,11 @@ namespace System.Runtime.InteropServices
             where T : struct
         {
             if (array == null)
-                throw new ArgumentNullException("array", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLength);
             Contract.EndContractBlock();
@@ -317,11 +317,11 @@ namespace System.Runtime.InteropServices
             where T : struct
         {
             if (array == null)
-                throw new ArgumentNullException("array", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLength);
             Contract.EndContractBlock();
@@ -449,10 +449,10 @@ namespace System.Runtime.InteropServices
         [Pure]
         private static int SizeOf(Type t)
         {
-            Debug.Assert(t != null, "t");
+            Debug.Assert(t != null, nameof(t));
 
             if (t.TypeHandle.IsGenericType())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, "t");
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             RuntimeTypeHandle typeHandle = t.TypeHandle;
             if (!(typeHandle.IsBlittable() && typeHandle.IsValueType()))
