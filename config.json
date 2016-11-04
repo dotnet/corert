@@ -338,7 +338,7 @@
         }
       }
     },
-    "build-native": {
+    "build-native-unix": {
       "alias": {
         "debug": {
           "description": "Passes Debug to respective build-native script.",
