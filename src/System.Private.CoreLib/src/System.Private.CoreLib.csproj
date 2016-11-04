@@ -465,7 +465,6 @@
     <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
     <Compile Include="System\SByte.cs" />
-    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
     <Compile Include="System\Security\Attributes.cs" />
     <Compile Include="System\Security\SecurityException.cs" />
     <Compile Include="System\Security\VerificationException.cs" />
@@ -636,6 +635,7 @@
     <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
     <Compile Include="Microsoft\Win32\RegistryView.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
+    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
     </Compile>
