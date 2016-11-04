@@ -9,9 +9,9 @@ using System.Reflection.Runtime.Assemblies;
 using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
-using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 using Debug = System.Diagnostics.Debug;
+using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -35,6 +35,26 @@ namespace Internal.Runtime.TypeLoader
         public static unsafe Handle AsHandle(this uint token)
         {
             return *(Handle*)&token;
+        }
+
+        /// <summary>
+        /// Convert typed metadata handle to the raw token value.
+        /// </summary>
+        /// <param name="handle">Typed metadata handle</param>
+        /// <returns>Token - raw integral handle represented as signed int</returns>
+        public static unsafe int AsInt(this Handle handle)
+        {
+            return *(int*)&handle;
+        }
+
+        /// <summary>
+        /// Convert typed metadata handle to the raw token value.
+        /// </summary>
+        /// <param name="handle">Typed metadata handle</param>
+        /// <returns>Token - raw integral handle represented as unsigned int</returns>
+        public static unsafe uint AsUInt(this Handle handle)
+        {
+            return *(uint*)&handle;
         }
 
         public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)

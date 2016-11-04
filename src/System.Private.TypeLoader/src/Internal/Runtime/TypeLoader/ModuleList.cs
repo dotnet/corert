@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime;
 using System.Text;
 using System.Threading;
 using Internal.Runtime.Augments;
@@ -18,12 +19,12 @@ namespace Internal.Runtime.TypeLoader
         Eager,
         ReadyToRun
     }
-    
+
     /// <summary>
     /// This class represents basic information about a native binary module including its
     /// metadata.
     /// </summary>
-    public unsafe sealed class ModuleInfo
+    public sealed unsafe class ModuleInfo
     {
         /// <summary>
         /// Module handle is equal to its starting virtual address in memory (i.e. it points
@@ -39,7 +40,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// A reference to the dynamic module is part of the EEType for dynamically allocated types.
         /// </summary>
-        internal DynamicModule *DynamicModulePtr { get; private set; }
+        internal DynamicModule* DynamicModulePtr { get; private set; }
 
         /// <summary>
         /// What sort of module is this? (Eager, ReadyToRun)?
@@ -50,11 +51,10 @@ namespace Internal.Runtime.TypeLoader
         /// Initialize module info and construct per-module metadata reader.
         /// </summary>
         /// <param name="moduleHandle">Handle (address) of module to initialize</param>
-        internal unsafe ModuleInfo(IntPtr moduleHandle, ModuleType moduleType)
+        internal ModuleInfo(IntPtr moduleHandle, ModuleType moduleType)
         {
             Handle = moduleHandle;
             ModuleType = moduleType;
-            DynamicModulePtr = null;
 
             byte* pBlob;
             uint cbBlob;
@@ -63,6 +63,30 @@ namespace Internal.Runtime.TypeLoader
             {
                 MetadataReader = new MetadataReader((IntPtr)pBlob, (int)cbBlob);
             }
+
+            DynamicModule* dynamicModulePtr = (DynamicModule*)MemoryHelpers.AllocateMemory(sizeof(DynamicModule));
+            dynamicModulePtr->CbSize = DynamicModule.DynamicModuleSize;
+            Debug.Assert(sizeof(DynamicModule) >= dynamicModulePtr->CbSize);
+
+#if SUPPORTS_R2R_LOADING                
+            if (moduleType == ModuleType.ReadyToRun)
+            {
+                // ReadyToRun modules utilize dynamic type resolution
+                dynamicModulePtr->DynamicTypeSlotDispatchResolve = Intrinsics.AddrOf(
+                    (Func<IntPtr, IntPtr, ushort, IntPtr>)ReadyToRunCallbacks.ResolveTypeSlotDispatch);
+            }
+            else
+#endif
+            {
+                Debug.Assert(moduleType == ModuleType.Eager);
+                // Pre-generated modules do not
+                dynamicModulePtr->DynamicTypeSlotDispatchResolve = IntPtr.Zero;
+            }
+
+            dynamicModulePtr->GetRuntimeException = Intrinsics.AddrOf(
+                (Func<ExceptionIDs, Exception>)RuntimeExceptionHelpers.GetRuntimeException);
+
+            DynamicModulePtr = dynamicModulePtr;
         }
     }
 
@@ -402,6 +426,11 @@ namespace Internal.Runtime.TypeLoader
         private Lock _moduleRegistrationLock;
 
         /// <summary>
+        /// Base Module (module that contains System.Object)
+        /// </summary>
+        private ModuleInfo _systemModule;
+
+        /// <summary>
         /// Register initially (eagerly) loaded modules.
         /// </summary>
         internal ModuleList()
@@ -411,6 +440,16 @@ namespace Internal.Runtime.TypeLoader
             _moduleRegistrationLock = new Lock();
 
             RegisterNewModules(ModuleType.Eager);
+
+            IntPtr systemObjectModule = RuntimeAugments.GetModuleFromTypeHandle(RuntimeAugments.RuntimeTypeHandleOf<object>());
+            foreach (ModuleInfo m in _loadedModuleMap.Modules)
+            {
+                if (m.Handle == systemObjectModule)
+                {
+                    _systemModule = m;
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -555,6 +594,17 @@ namespace Internal.Runtime.TypeLoader
             // We should never have a reader that is not associated with a module (where does it come from?!)
             Debug.Assert(false);
             return IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Base Module (module that contains System.Object)
+        /// </summary>
+        public ModuleInfo SystemModule
+        {
+            get
+            {
+                return _systemModule;
+            }
         }
 
         /// <summary>

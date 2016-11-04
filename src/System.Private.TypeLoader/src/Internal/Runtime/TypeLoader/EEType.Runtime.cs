@@ -11,16 +11,20 @@ using Internal.Runtime.TypeLoader;
 namespace Internal.Runtime
 {
     // Supplies type loader specific extentions to EEType
-    partial struct EEType
+    internal partial struct EEType
     {
         private unsafe static EEType* GetArrayEEType()
         {
-            return ToEETypePtr(typeof(Array).TypeHandle);
+            return typeof(Array).TypeHandle.ToEETypePtr();
         }
 
-        private static unsafe EEType* ToEETypePtr(RuntimeTypeHandle rtth)
+        internal unsafe RuntimeTypeHandle ToRuntimeTypeHandle()
         {
-            return (EEType*)(*(IntPtr*)&rtth);
+            fixed (EEType* pThis = &this)
+            {
+                IntPtr result = (IntPtr)pThis;
+                return *(RuntimeTypeHandle*)&result;
+            }
         }
     }
 }

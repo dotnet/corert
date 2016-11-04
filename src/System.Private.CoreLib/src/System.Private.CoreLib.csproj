@@ -264,10 +264,8 @@
     <Compile Include="System\Globalization\HebrewCalendar.cs" />
     <Compile Include="System\Globalization\HebrewNumber.cs" />
     <Compile Include="System\Globalization\HijriCalendar.cs" />
-    <Compile Include="System\Globalization\HijriCalendar.Windows.cs" />
     <Compile Include="System\Globalization\InternalGlobalizationHelper.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Windows.cs" />
     <Compile Include="System\Globalization\KoreanCalendar.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\FormatProvider.CultureAwareComparer.cs" />
@@ -622,7 +620,57 @@
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
   <!-- Windows is default build -->
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">  
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
+    <Compile Include="Microsoft\Win32\RegistryHive.cs" />
+    <Compile Include="Microsoft\Win32\RegistryKey.cs" />
+    <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
+    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryView.cs" />
+    <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
+    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegistryOptions.cs">
+      <Link>Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegCloseKey.cs">
+      <Link>Interop\Windows\mincore\Interop.RegCloseKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegCreateKeyEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegCreateKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegEnumKeyEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegEnumKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegEnumValue.cs">
+      <Link>Interop\Windows\mincore\Interop.RegEnumValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegFlushKey.cs">
+      <Link>Interop\Windows\mincore\Interop.RegFlushKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegOpenKeyEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegOpenKeyEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryInfoKey.cs">
+      <Link>Interop\Windows\mincore\Interop.RegQueryInfoKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
+      <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
     <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="System\Globalization\CultureData.Windows.cs" />
@@ -694,6 +742,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
+    <Compile Include="System\Globalization\JapaneseCalendar.Unix.cs" />
     <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
     <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
     <Compile Include="System\Globalization\CultureData.Dummy.cs" />

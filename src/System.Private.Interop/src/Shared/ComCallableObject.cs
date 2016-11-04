@@ -106,7 +106,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr vt = typeHandle.GetCcwVtable();
 
-#if !RHTESTCL && !CORECLR && !CORERT
+#if !CORECLR && ENABLE_WINRT
             if (vt == default(IntPtr) && McgModuleManager.UseDynamicInterop)
             {
                 // TODO Design an interface, such as IMcgCCWData and each McgModule implements this interface

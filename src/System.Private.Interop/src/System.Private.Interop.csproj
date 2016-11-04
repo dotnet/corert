@@ -97,7 +97,7 @@
     <Compile Include="Shared\StandardInterfaces.cs" />
     <Compile Include="Shared\StringPool.cs" /> 
     <Compile Include="Shared\McgWindowsRuntimeVersionAttribute.cs" />    
-    <Compile Include="Shared\WindowsRuntimeMarshal.cs" />
+    <Compile Condition="'$(EnableWinRT)'=='true'" Include="Shared\WindowsRuntimeMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffset.cs" />
@@ -235,6 +235,13 @@
   
 
    <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">     
+    <Compile Include="System\Reflection\DispatchProxy.cs" />
+    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
+    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
+    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
+  </ItemGroup> 
+
+  <ItemGroup Condition="'$(EnableWinRT)'=='true'">  
     <Compile Include="InteropCallbacks.cs"/>
     <Compile Include="WinRT\ExceptionHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
@@ -246,12 +253,7 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
-    <Compile Include="System\Reflection\DispatchProxy.cs" />
-    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
-    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
-    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
-  </ItemGroup> 
-
+  </ItemGroup>
   
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsProjectKLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">

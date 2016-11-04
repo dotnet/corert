@@ -24,7 +24,9 @@ internal partial class Interop
             internal const int ERROR_ALREADY_EXISTS = 0xB7;
             internal const int ERROR_ENVVAR_NOT_FOUND = 0xCB;
             internal const int ERROR_FILENAME_EXCED_RANGE = 0xCE;
+            internal const int ERROR_MORE_DATA = 0xEA;
             internal const int ERROR_NO_MORE_ITEMS = 0x103;
+            internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         }
     }
 }
