@@ -110,6 +110,29 @@ namespace Internal.Runtime.TypeLoader
 #endif
         }
 
+        unsafe public IntPtr GetFunctionPointerFromIndex(uint index)
+        {
+#if CORERT
+            if (index >= _elementsCount)
+                throw new BadImageFormatException();
+
+            // TODO: indirection through IAT
+
+            return ((IntPtr*)_elements)[index];
+#else
+            uint rva = GetRvaFromIndex(index);
+
+            if ((rva & DynamicInvokeMapEntry.IsImportMethodFlag) == DynamicInvokeMapEntry.IsImportMethodFlag)
+            {
+                return *((IntPtr*)((byte*)_moduleHandle + (rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
+            }
+            else
+            {
+                return (IntPtr)((byte*)_moduleHandle + rva);
+            }
+#endif
+        }
+
         public RuntimeTypeHandle GetRuntimeTypeHandleFromIndex(uint index)
         {
             return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));

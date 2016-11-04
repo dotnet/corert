@@ -604,7 +604,7 @@ namespace Internal.Reflection.Execution
                 ExternalReferencesTable extRefs = default(ExternalReferencesTable);
                 extRefs.InitializeCommonFixupsTable(moduleHandle);
 
-                dynamicInvokeMethod = RvaToFunctionPointer(moduleHandle, extRefs.GetRvaFromIndex(cookie >> 1));
+                dynamicInvokeMethod = extRefs.GetFunctionPointerFromIndex(cookie >> 1);
                 dynamicInvokeMethodGenericDictionary = IntPtr.Zero;
             }
         }
@@ -1070,7 +1070,7 @@ namespace Internal.Reflection.Execution
                 uint entryMethodHandleOrNameAndSigRaw = entryParser.GetUnsigned();
                 uint entryDeclaringTypeRaw = entryParser.GetUnsigned();
 
-                IntPtr entryMethodEntrypoint = RvaToFunctionPointer(mappingTableModule, externalReferences.GetRvaFromIndex(entryParser.GetUnsigned()));
+                IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
                 functionPointers.Add(new FunctionPointerOffsetPair(entryMethodEntrypoint, parserOffset));
             }
 
@@ -1110,7 +1110,7 @@ namespace Internal.Reflection.Execution
             uint entryMethodHandleOrNameAndSigRaw = entryParser.GetUnsigned();
             uint entryDeclaringTypeRaw = entryParser.GetUnsigned();
 
-            IntPtr entryMethodEntrypoint = RvaToFunctionPointer(mappingTableModule, externalReferences.GetRvaFromIndex(entryParser.GetUnsigned()));
+            IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
 
             if ((entryFlags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 entryParser.GetUnsigned(); // skip dynamic invoke cookie
