@@ -402,7 +402,7 @@ namespace Internal.Runtime.TypeLoader
                     optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
 
 #if CORERT
-                    pEEType->PointerToModuleManager = PermanentAllocatedMemberBlobs.GetPointerToIntPtr(moduleInfo.Handle);
+                    pEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle);
 #endif
                     pEEType->DynamicModule = dynamicModulePtr;
 

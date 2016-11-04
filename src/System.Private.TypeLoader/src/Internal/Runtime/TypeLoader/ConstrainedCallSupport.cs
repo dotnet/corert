@@ -51,8 +51,14 @@ namespace Internal.Runtime.TypeLoader
 
         static ConstrainedCallSupport()
         {
+            // TODO: export this unmanaged API in CoreRT
+#if !CORERT
             ConstrainedCallSupport_GetStubs(out s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub,
                                             out s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
+#else
+            s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub = IntPtr.Zero;
+            s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub = IntPtr.Zero;
+#endif
         }
 
         // There are multiple possible paths here.

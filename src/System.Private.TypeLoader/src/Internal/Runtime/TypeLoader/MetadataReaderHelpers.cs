@@ -10,6 +10,7 @@ using global::System.Collections.Generic;
 using global::Internal.Metadata.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
+using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 namespace Internal.Runtime.TypeLoader
 {

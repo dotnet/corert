@@ -116,6 +116,8 @@ namespace Internal.Runtime.TypeLoader
 
         static unsafe CallConverterThunk()
         {
+            // TODO: export CallingConventionConverter_GetStubs on CoreRT
+#if !CORERT
             CallingConventionConverter_GetStubs(out ReturnVoidReturnThunk, out ReturnIntegerPointReturnThunk, out CommonInputThunkStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
 #else
@@ -129,6 +131,8 @@ namespace Internal.Runtime.TypeLoader
             {
                 CallingConventionConverter_SpecifyCommonStubData((IntPtr)commonStubData);
             }
+#endif
+
 #endif
         }
 

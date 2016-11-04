@@ -37,7 +37,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             _elements = (IntPtr)pBlob;
-            _elementsCount = cbBlob / sizeof(TableElement);
+            _elementsCount = (uint)(cbBlob / sizeof(TableElement));
             return true;
         }
 
