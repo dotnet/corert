@@ -14,6 +14,7 @@ namespace Internal.TypeSystem
         ClassLoadExplicitGeneric,
         ClassLoadBadFormat,
         ClassLoadExplicitLayout,
+        ClassLoadValueClassTooLarge,
 
         // MissingMethodException
         MissingMethod,

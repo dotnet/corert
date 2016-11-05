@@ -59,6 +59,8 @@ namespace Internal.Runtime
                     return SR.ClassLoad_ExplicitGeneric;
                 case ExceptionStringID.ClassLoadBadFormat:
                     return SR.ClassLoad_BadFormat;
+                case ExceptionStringID.ClassLoadValueClassTooLarge:
+                    return SR.ClassLoad_ValueClassTooLarge;
                 case ExceptionStringID.ClassLoadExplicitLayout:
                     return SR.ClassLoad_ExplicitLayout;
                 case ExceptionStringID.InvalidProgramSpecific:
