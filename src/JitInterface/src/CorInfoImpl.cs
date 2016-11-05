@@ -174,7 +174,7 @@ namespace Internal.JitInterface
                 uint codeSize;
                 var result = JitCompileMethod(out exception, 
                         _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
-                        ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
+                        ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
                 if (exception != IntPtr.Zero)
                 {
                     if (_lastException != null)
@@ -2992,20 +2992,18 @@ namespace Internal.JitInterface
 
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
-            flags.corJitFlags = 
-                CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
-                CorJitFlag.CORJIT_FLG_READYTORUN |
-                CorJitFlag.CORJIT_FLG_RELOC |
-                CorJitFlag.CORJIT_FLG_DEBUG_INFO |
-                CorJitFlag.CORJIT_FLG_PREJIT;
-
-            flags.corJitFlags2 = CorJitFlag2.CORJIT_FLG2_USE_PINVOKE_HELPERS;
+            flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
+            flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
+            flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
+            flags.Set(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+            flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
+            flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
             if (this.MethodBeingCompiled.IsNativeCallable)
-                flags.corJitFlags2 |= CorJitFlag2.CORJIT_FLG2_REVERSE_PINVOKE;
+                flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
 
             if (this.MethodBeingCompiled.IsPInvoke)
-                flags.corJitFlags |= CorJitFlag.CORJIT_FLG_IL_STUB;
+                flags.Set(CorJitFlag.CORJIT_FLAG_IL_STUB);
 
             return (uint)sizeof(CORJIT_FLAGS);
         }
