@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -77,7 +79,20 @@ namespace ILCompiler
                 if (type.IsDelegate || type.ContainsGenericVariables)
                     continue;
 
-                rootProvider.AddCompilationRoot(type, "Library module type");
+                try
+                {
+                    rootProvider.AddCompilationRoot(type, "Library module type");
+                }
+                catch (TypeSystemException)
+                {
+                    // TODO: fail compilation if a switch was passed
+
+                    // Swallow type load exceptions while rooting
+                    continue;
+
+                    // TODO: Log as a warning
+                }
+
                 RootMethods(type, "Library module method", rootProvider);
             }
         }
@@ -147,7 +162,21 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     continue;
 
-                rootProvider.AddCompilationRoot(method, reason);
+                try
+                {
+                    CheckCanGenerateMethod(method);
+                    rootProvider.AddCompilationRoot(method, reason);
+                }
+                catch (TypeSystemException)
+                {
+                    // TODO: fail compilation if a switch was passed
+
+                    // Individual methods can fail to load types referenced in their signatures.
+                    // Skip them in library mode since they're not going to be callable.
+                    continue;
+
+                    // TODO: Log as a warning
+                }
             }
         }
 
@@ -179,6 +208,33 @@ namespace ILCompiler
                 }
 
                 return _compilationModuleSet;
+            }
+        }
+
+        /// <summary>
+        /// Validates that it will be possible to generate '<paramref name="method"/>' based on the types 
+        /// in its signature. Unresolvable types in a method's signature prevent RyuJIT from generating
+        /// even a stubbed out throwing implementation.
+        /// </summary>
+        private static void CheckCanGenerateMethod(MethodDesc method)
+        {
+            MethodSignature signature = method.Signature;
+
+            CheckTypeCanBeUsedInSignature(signature.ReturnType);
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                CheckTypeCanBeUsedInSignature(signature[i]);
+            }
+        }
+
+        private static void CheckTypeCanBeUsedInSignature(TypeDesc type)
+        {
+            MetadataType defType = type as MetadataType;
+
+            if (defType != null)
+            {
+                defType.ComputeTypeContainsGCPointers();
             }
         }
     }

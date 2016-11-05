@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
         {
             // TODO: this is wrong: this returns an assembly stub node
-            return new ReadyToRunHelperNode(helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
 
         private void AddWellKnownType(WellKnownType wellKnownType, DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)

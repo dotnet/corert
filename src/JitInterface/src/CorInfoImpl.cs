@@ -1485,7 +1485,11 @@ namespace Internal.JitInterface
         }
 
         private uint getArrayRank(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("getArrayRank"); }
+        {
+            var td = HandleToObject(cls) as ArrayType;
+            Debug.Assert(td != null);
+            return (uint) td.Rank;
+        }
 
         private void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)
         {
@@ -2999,6 +3003,9 @@ namespace Internal.JitInterface
 
             if (this.MethodBeingCompiled.IsNativeCallable)
                 flags.corJitFlags2 |= CorJitFlag2.CORJIT_FLG2_REVERSE_PINVOKE;
+
+            if (this.MethodBeingCompiled.IsPInvoke)
+                flags.corJitFlags |= CorJitFlag.CORJIT_FLG_IL_STUB;
 
             return (uint)sizeof(CORJIT_FLAGS);
         }

@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
         {
-            return new ReadyToRunHelperNode(helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
     }
 }

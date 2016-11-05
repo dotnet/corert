@@ -96,16 +96,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (type.IsGenericDefinition)
                     {
-                        return new GenericDefinitionEETypeNode(type);
+                        return new GenericDefinitionEETypeNode(this, type);
                     }
                     else
                     {
-                        return new EETypeNode(type);
+                        return new EETypeNode(this, type);
                     }
                 }
                 else
                 {
-                    return new ExternEETypeSymbolNode(type);
+                    return new ExternEETypeSymbolNode(this, type);
                 }
             });
 
@@ -113,11 +113,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    return new ConstructedEETypeNode(type);
+                    return new ConstructedEETypeNode(this, type);
                 }
                 else
                 {
-                    return new ExternEETypeSymbolNode(type);
+                    return new ExternEETypeSymbolNode(this, type);
                 }
             });
 
@@ -125,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Only types that reside in other binaries should be cloned
                 Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
-                return new ClonedConstructedEETypeNode(type);
+                return new ClonedConstructedEETypeNode(this, type);
             });
 
             _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>

@@ -8,7 +8,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ClonedConstructedEETypeNode : ConstructedEETypeNode, ISymbolNode
     {
-        public ClonedConstructedEETypeNode(TypeDesc type) : base(type)
+        public ClonedConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
         }
 
