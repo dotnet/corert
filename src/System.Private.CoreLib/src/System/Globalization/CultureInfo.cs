@@ -166,19 +166,6 @@ namespace System.Globalization
                     SR.ArgumentNull_String);
             }
 
-#if CORERT
-            // CORERT-TODO CultureInfo
-            if (s_InvariantCultureInfo == null)
-            {
-                m_cultureData = CultureData.GetCultureData("", useUserOverride);
-            }
-            else
-            {
-                m_cultureData = s_InvariantCultureInfo.m_cultureData;
-            }
-            m_name = _sortName = _nonSortName = name;
-            m_isInherited = false;
-#else
             // Get our data providing record
             this.m_cultureData = CultureData.GetCultureData(name, useUserOverride);
 
@@ -188,7 +175,6 @@ namespace System.Globalization
 
             this.m_name = this.m_cultureData.CultureName;
             this.m_isInherited = !this.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<CultureInfo>());
-#endif // CORERT
         }
 
 
@@ -285,10 +271,6 @@ namespace System.Globalization
         {
             get
             {
-#if CORERT
-                // CORERT-TODO CultureInfo                
-                return CultureInfo.InvariantCulture;
-#else
                 CultureInfo ci = GetUserDefaultCultureCacheOverride();
                 if (ci != null)
                 {
@@ -315,7 +297,6 @@ namespace System.Globalization
 
                 Debug.Assert(s_userDefaultCulture != null);
                 return s_userDefaultCulture;
-#endif
             }
 
             set
@@ -342,10 +323,6 @@ namespace System.Globalization
         {
             get
             {
-#if CORERT
-                // CORERT-TODO CultureInfo
-                return CultureInfo.InvariantCulture;
-#else
                 CultureInfo ci = GetUserDefaultCultureCacheOverride();
                 if (ci != null)
                 {
@@ -372,7 +349,6 @@ namespace System.Globalization
 
                 Debug.Assert(s_userDefaultCulture != null);
                 return s_userDefaultCulture;
-#endif // CORERT
             }
 
             set
