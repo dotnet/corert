@@ -1708,6 +1708,9 @@
   <data name="ClassLoad_BadFormat" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because the format is invalid.</value>
   </data>
+  <data name="ClassLoad_ValueClassTooLarge" xml:space="preserve">
+    <value>Array of type '{0}' from assembly '{1}' cannot be created because base value type is too large.</value>
+  </data>
   <data name="ClassLoad_ExplicitLayout" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because it contains an object field at offset '{2}' that is incorrectly aligned or overlapped by a non-object field.</value>
   </data>
