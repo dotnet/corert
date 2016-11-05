@@ -486,6 +486,33 @@ namespace Internal.NativeFormat
 #else
     internal
 #endif
+    class VertexSequence : Vertex
+    {
+        private List<Vertex> _elements;
+
+        public VertexSequence()
+        {
+            _elements = new List<Vertex>();
+        }
+
+        public void Append(Vertex vertex)
+        {
+            _elements.Add(vertex);
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.WriteUnsigned((uint)_elements.Count);
+            foreach (var elem in _elements)
+                elem.Save(writer);
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     class VertexHashtable : Vertex
     {
         struct Entry
