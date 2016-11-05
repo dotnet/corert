@@ -278,20 +278,20 @@ namespace System.Globalization
         // specified. Note, however, that the Parse methods do not accept
         // NaNs or Infinities.
         //
-        //This class contains only static members and does not need to be serializable 
+        // This class contains only static members and does not need to be serializable 
 
         private partial class Number
         {
             private Number() { }
 
             // Constants used by number parsing
-            private const Int32 NumberMaxDigits = 32;
+            private const int NumberMaxDigits = 32;
 
             internal const int DECIMAL_PRECISION = 29; // Decimal.DecCalc also uses this value
 
             private const int MIN_SB_BUFFER_SIZE = 105;
 
-            private static Boolean IsWhite(char ch)
+            private static bool IsWhite(char ch)
             {
                 return (((ch) == 0x20) || ((ch) >= 0x09 && (ch) <= 0x0D));
             }
@@ -303,9 +303,10 @@ namespace System.Globalization
                     return MatchChars(p, stringPointer);
                 }
             }
+
             private unsafe static char* MatchChars(char* p, char* str)
             {
-                Debug.Assert(p != null && str != null, "");
+                Debug.Assert(p != null && str != null);
 
                 if (*str == '\0')
                 {
@@ -321,30 +322,25 @@ namespace System.Globalization
                     str++;
                     if (*str == '\0') return p;
                 }
-
                 return null;
             }
 
-            private unsafe static Boolean ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, Boolean parseDecimal)
+            private unsafe static bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
-                const Int32 StateSign = 0x0001;
-                const Int32 StateParens = 0x0002;
-                const Int32 StateDigits = 0x0004;
-                const Int32 StateNonZero = 0x0008;
-                const Int32 StateDecimal = 0x0010;
-                const Int32 StateCurrency = 0x0020;
+                const int StateSign = 0x0001;
+                const int StateParens = 0x0002;
+                const int StateDigits = 0x0004;
+                const int StateNonZero = 0x0008;
+                const int StateDecimal = 0x0010;
+                const int StateCurrency = 0x0020;
 
                 number.scale = 0;
                 number.sign = false;
-                string decSep;                  // decimal separator from NumberFormatInfo.
-                string groupSep;                // group separator from NumberFormatInfo.
-                string currSymbol = null;       // currency symbol from NumberFormatInfo.
+                string decSep;                  // Decimal separator from NumberFormatInfo.
+                string groupSep;                // Group separator from NumberFormatInfo.
+                string currSymbol = null;       // Currency symbol from NumberFormatInfo.
 
-                // The alternative currency symbol used in ANSI codepage, that can not roundtrip between ANSI and Unicode.
-                // Currently, only ja-JP and ko-KR has non-null values (which is U+005c, backslash)
-                string ansicurrSymbol = null;   // currency symbol from NumberFormatInfo.
-
-                Boolean parsingCurrency = false;
+                bool parsingCurrency = false;
                 if ((options & NumberStyles.AllowCurrencySymbol) != 0)
                 {
                     currSymbol = numfmt.CurrencySymbol;
@@ -360,9 +356,9 @@ namespace System.Globalization
                     groupSep = numfmt.NumberGroupSeparator;
                 }
 
-                Int32 state = 0;
-                Boolean bigNumber = (sb != null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
-                Int32 maxParseDigits = bigNumber ? Int32.MaxValue : NumberMaxDigits;
+                int state = 0;
+                bool bigNumber = (sb != null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
+                int maxParseDigits = bigNumber ? int.MaxValue : NumberMaxDigits;
 
                 char* p = str;
                 char ch = *p;
@@ -386,11 +382,11 @@ namespace System.Globalization
                             state |= StateSign | StateParens;
                             number.sign = true;
                         }
-                        else if ((currSymbol != null && (next = MatchChars(p, currSymbol)) != null) || (ansicurrSymbol != null && (next = MatchChars(p, ansicurrSymbol)) != null))
+                        else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null)
                         {
                             state |= StateCurrency;
                             currSymbol = null;  
-                            ansicurrSymbol = null;  
+
                             // We already found the currency symbol. There should not be more currency symbols. Set
                             // currSymbol to NULL so that we won't search it again in the later code path.
                             p = next - 1;
@@ -399,12 +395,12 @@ namespace System.Globalization
                         {
                             break;
                         }
-				    }
+                    }
                     ch = *++p;
                 }
 
-                Int32 digCount = 0;
-                Int32 digEnd = 0;
+                int digCount = 0;
+                int digEnd = 0;
                 while (true)
                 {
                     if ((ch >= '0' && ch <= '9') || (((options & NumberStyles.AllowHexSpecifier) != 0) && ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'))))
@@ -451,7 +447,7 @@ namespace System.Globalization
                     ch = *++p;
                 }
 
-                Boolean negExp = false;
+                bool negExp = false;
                 number.precision = digEnd;
                 if (bigNumber)
                     sb.Append('\0');
@@ -474,7 +470,7 @@ namespace System.Globalization
                         }
                         if (ch >= '0' && ch <= '9')
                         {
-                            Int32 exp = 0;
+                            int exp = 0;
                             do
                             {
                                 exp = exp * 10 + (ch - '0');
@@ -513,16 +509,15 @@ namespace System.Globalization
                             {
                                 state &= ~StateParens;
                             }
-                            else if ((currSymbol != null && (next = MatchChars(p, currSymbol)) != null) || (ansicurrSymbol != null && (next = MatchChars(p, ansicurrSymbol)) != null))
+                            else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null)
                             {
                                 currSymbol = null;
-                                ansicurrSymbol = null;
                                 p = next - 1;
                             }
                             else
                             {
                                 break;
-                            }	
+                            }
                         }
                         ch = *++p;
                     }
@@ -547,9 +542,9 @@ namespace System.Globalization
                 return false;
             }
 
-            private static Boolean TrailingZeros(String s, Int32 index)
+            private static bool TrailingZeros(string s, int index)
             {
-                // For compatability, we need to allow trailing zeros at the end of a number string
+                // For compatibility, we need to allow trailing zeros at the end of a number string
                 for (int i = index; i < s.Length; i++)
                 {
                     if (s[i] != '\0')
@@ -560,13 +555,13 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static Boolean TryStringToNumber(String str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, Boolean parseDecimal)
+            internal unsafe static bool TryStringToNumber(string str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
                 if (str == null)
                 {
                     return false;
                 }
-                Debug.Assert(numfmt != null, "");
+                Debug.Assert(numfmt != null);
 
                 fixed (char* stringPointer = str)
                 {
@@ -859,16 +854,14 @@ namespace System.Globalization
                 {
                     if (groupDigits != null)
                     {
-                        int groupSizeIndex = 0;                             // index into the groupDigits array.
-                        int groupSizeCount = groupDigits[groupSizeIndex];   // the current total of group size.
-                        int groupSizeLen = groupDigits.Length;            // the length of groupDigits array.
-                        int bufferSize = digPos;                        // the length of the result buffer string.
-                        int groupSeparatorLen = sGroup.Length;              // the length of the group separator string.
-                        int groupSize = 0;                                  // the current group size.
+                        int groupSizeIndex = 0;                             // Index into the groupDigits array.
+                        int groupSizeCount = groupDigits[groupSizeIndex];   // The current total of group size.
+                        int groupSizeLen = groupDigits.Length;              // The length of groupDigits array.
+                        int bufferSize = digPos;                            // The length of the result buffer string.
+                        int groupSeparatorLen = sGroup.Length;              // The length of the group separator string.
+                        int groupSize = 0;                                  // The current group size.
 
-                        //
                         // Find out the size of the string buffer for the result.
-                        //
                         if (groupSizeLen != 0) // You can pass in 0 length arrays
                         {
                             while (digPos > groupSizeCount)
@@ -883,7 +876,7 @@ namespace System.Globalization
 
                                 groupSizeCount += groupDigits[groupSizeIndex];
                                 if (groupSizeCount < 0 || bufferSize < 0)
-                                    throw new ArgumentOutOfRangeException(); // if we overflow
+                                    throw new ArgumentOutOfRangeException(); // If we overflow
                             }
                             if (groupSizeCount == 0) // If you passed in an array with one entry as 0, groupSizeCount == 0
                                 groupSize = 0;
@@ -1310,7 +1303,7 @@ namespace System.Globalization
                 src = section;
 
                 // Adjust can be negative, so we make this an int instead of an unsigned int.
-                // Adjust represents the number of characters over the formatting eg. format string is "0000" and you are trying to
+                // Adjust represents the number of characters over the formatting e.g. format string is "0000" and you are trying to
                 // format 100000 (6 digits). Means adjust will be 2. On the other hand if you are trying to format 10 adjust will be
                 // -2 and we'll need to fixup these digits with 0 padding if we have 0 formatting as in this example.
                 int[] thousandsSepPos = new int[4];
@@ -1321,22 +1314,22 @@ namespace System.Globalization
                     // We need to precompute this outside the number formatting loop
                     if (info.NumberGroupSeparator.Length > 0)
                     {
-                        // We need this array to figure out where to insert the thousands seperator. We would have to traverse the string
-                        // backwords. PIC formatting always traverses forwards. These indices are precomputed to tell us where to insert
-                        // the thousands seperator so we can get away with traversing forwards. Note we only have to compute upto digPos.
+                        // We need this array to figure out where to insert the thousands separator. We would have to traverse the string
+                        // backwards. PIC formatting always traverses forwards. These indices are precomputed to tell us where to insert
+                        // the thousands separator so we can get away with traversing forwards. Note we only have to compute up to digPos.
                         // The max is not bound since you can have formatting strings of the form "000,000..", and this
                         // should handle that case too.
 
                         int[] groupDigits = info.NumberGroupSizes;
 
-                        int groupSizeIndex = 0;     // index into the groupDigits array.
+                        int groupSizeIndex = 0;     // Index into the groupDigits array.
                         int groupTotalSizeCount = 0;
-                        int groupSizeLen = groupDigits.Length;    // the length of groupDigits array.
+                        int groupSizeLen = groupDigits.Length;    // The length of groupDigits array.
                         if (groupSizeLen != 0)
-                            groupTotalSizeCount = groupDigits[groupSizeIndex];   // the current running total of group size.
+                            groupTotalSizeCount = groupDigits[groupSizeIndex];   // The current running total of group size.
                         int groupSize = groupTotalSizeCount;
 
-                        int totalDigits = digPos + ((adjust < 0) ? adjust : 0); // actual number of digits in o/p
+                        int totalDigits = digPos + ((adjust < 0) ? adjust : 0); // Actual number of digits in o/p
                         int numDigits = (firstDigit > totalDigits) ? firstDigit : totalDigits;
                         while (numDigits > groupTotalSizeCount)
                         {
@@ -1431,7 +1424,7 @@ namespace System.Globalization
                                 {
                                     if (digPos != 0 || decimalWritten)
                                     {
-                                        // For compatability, don't echo repeated decimals
+                                        // For compatibility, don't echo repeated decimals
                                         break;
                                     }
                                     // If the format has trailing zeros or the format has a decimal and digits remain
@@ -1470,18 +1463,18 @@ namespace System.Globalization
                                     {
                                         if (pFormat[src] == '0')
                                         {
-                                            //Handles E0, which should format the same as E-0
+                                            // Handles E0, which should format the same as E-0
                                             i++;
                                         }
                                         else if (pFormat[src] == '+' && pFormat[src + 1] == '0')
                                         {
-                                            //Handles E+0
+                                            // Handles E+0
                                             positiveSign = true;
                                         }
                                         else if (pFormat[src] == '-' && pFormat[src + 1] == '0')
                                         {
-                                            //Handles E-0
-                                            //Do nothing, this is just a place holder s.t. we don't break out of the loop.
+                                            // Handles E-0
+                                            // Do nothing, this is just a place holder s.t. we don't break out of the loop.
                                         }
                                         else
                                         {
@@ -1520,4 +1513,3 @@ namespace System.Globalization
         }
     }
 }
-
