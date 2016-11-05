@@ -222,7 +222,8 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsArray)
             {
                 int elementSize = ((ArrayType)_type).ElementType.GetElementSize();
-                objData.EmitShort((short)elementSize);
+                // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                objData.EmitShort(checked((short)elementSize));
             }
             else if (_type.IsString)
             {
