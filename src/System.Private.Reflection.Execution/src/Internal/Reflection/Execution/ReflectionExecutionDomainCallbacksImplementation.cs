@@ -41,11 +41,6 @@ namespace Internal.Reflection.Execution
             return _executionEnvironment.IsReflectionBlocked(typeHandle);
         }
 
-        public sealed override bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name)
-        {
-            return _executionEnvironment.TryGetMetadataNameForRuntimeTypeHandle(rtth, out name);
-        }
-
         //=======================================================================================
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
         // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.

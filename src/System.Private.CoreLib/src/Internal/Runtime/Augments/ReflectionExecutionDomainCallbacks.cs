@@ -32,8 +32,6 @@ namespace Internal.Runtime.Augments
 
         public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
 
-        public abstract bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name);
-
         //=======================================================================================
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
         // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.

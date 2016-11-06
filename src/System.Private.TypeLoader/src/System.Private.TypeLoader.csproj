@@ -288,6 +288,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\McgIntrinsics.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataFixupKind.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
