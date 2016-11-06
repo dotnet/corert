@@ -47,6 +47,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
       <Link>EEType.Constants.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\MappingTableFlags.cs">
+      <Link>MappingTableFlags.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>EETypeBuilderHelpers.cs</Link>
     </Compile>
@@ -285,9 +288,9 @@
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\McgIntrinsics.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataFixupKind.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\MetadataTable.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldDesc.cs" />

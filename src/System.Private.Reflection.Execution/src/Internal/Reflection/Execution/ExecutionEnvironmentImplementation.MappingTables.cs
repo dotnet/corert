@@ -47,41 +47,6 @@ namespace Internal.Reflection.Execution
 
         private LowLevelDictionary<IntPtr, MethodTargetAndDictionary> _callConverterWrappedMethodEntrypoints = new LowLevelDictionary<IntPtr, MethodTargetAndDictionary>();
 
-#if REFLECTION_EXECUTION_TRACE
-        private string GetTypeNameDebug(RuntimeTypeHandle rtth)
-        {
-            string result;
-
-            if (RuntimeAugments.IsGenericType(rtth))
-            {
-                RuntimeTypeHandle[] typeArgumentsHandles;
-                RuntimeTypeHandle openTypeDef = RuntimeAugments.GetGenericInstantiation(rtth, out typeArgumentsHandles);;
-                result = GetTypeNameDebug(openTypeDef) + "<";
-                for (int i = 0; i < typeArgumentsHandles.Length; i++)
-                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(typeArgumentsHandles[i]);
-                return result + ">";
-            }
-            else
-            {
-                if (TryGetMetadataNameForRuntimeTypeHandle(rtth, out result))
-                    return result;
-            }
-
-            result = "EEType:0x";
-            ulong num = (ulong)RuntimeAugments.GetPointerFromTypeHandle(rtth);
-
-            int shift = IntPtr.Size * 8;
-            const string HexDigits = "0123456789ABCDEF";
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((num >> shift) & 0xF);
-                result += HexDigits[digit];
-            } 
-            return result;
-        }
-#endif
-
         private RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
@@ -188,43 +153,6 @@ namespace Internal.Reflection.Execution
 
             reader = default(NativeReader);
             return false;
-        }
-
-        private bool TryGetDiagnosticNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name)
-        {
-            // This API is not designed to decompose generic types into components since the consumers already do this.
-            Debug.Assert(!RuntimeAugments.IsGenericType(rtth));
-
-            MetadataReader reader;
-            TypeReferenceHandle typeRefHandle;
-
-            if (TryGetTypeReferenceForNamedType(rtth, out reader, out typeRefHandle))
-            {
-                name = typeRefHandle.GetFullName(reader);
-                return true;
-            }
-
-            name = null;
-            return false;
-        }
-
-        public sealed override bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name)
-        {
-            // This API is not designed to decompose generic types into components since the consumers already do this
-            Debug.Assert(!RuntimeAugments.IsGenericType(rtth));
-
-            MetadataReader reader;
-            TypeDefinitionHandle typeDefHandle;
-
-            // Check if we have metadata.
-            if (TryGetMetadataForNamedType(rtth, out reader, out typeDefHandle))
-            {
-                name = typeDefHandle.GetFullName(reader);
-                return true;
-            }
-
-            // No metadata, but maybe the diagnostic infrastructure has a name
-            return TryGetDiagnosticNameForRuntimeTypeHandle(rtth, out name);
         }
 
         /// <summary>
