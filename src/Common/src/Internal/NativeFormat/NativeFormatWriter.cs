@@ -506,6 +506,16 @@ namespace Internal.NativeFormat
             foreach (var elem in _elements)
                 elem.Save(writer);
         }
+
+        public override bool Equals(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
+        }
     }
 
 #if NATIVEFORMAT_PUBLICWRITER
@@ -699,6 +709,16 @@ namespace Internal.NativeFormat
                     _entryIndexSize = newEntryIndexSize;
                 }
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
         }
     }
 }
