@@ -403,6 +403,10 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &regDisplay->IP);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &regDisplay->SP);
 
+#if defined(_AMD64_)
+    regDisplay->pIP = PTR_PCODE(regDisplay->SP - sizeof(TADDR));
+#endif
+
 #if defined(_ARM_) || defined(_ARM64_)
     regDisplay->IP |= 1;
 #endif
