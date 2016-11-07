@@ -509,12 +509,27 @@ namespace Internal.NativeFormat
 
         public override bool Equals(object obj)
         {
-            throw new NotImplementedException();
+            var other = obj as VertexSequence;
+            if (other == null || other._elements.Count != _elements.Count)
+                return false;
+
+            for (int i = 0; i < _elements.Count; i++)
+                if (!Object.Equals(_elements[i], other._elements[i]))
+                    return false;
+
+            return true;
         }
 
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            int hashCode = 13;
+            foreach (var element in _elements)
+            {
+                int value = (element != null ? element.GetHashCode() : 0) * 0x5498341 + 0x832424;
+                hashCode = hashCode * 31 + value;
+            }
+
+            return hashCode;
         }
     }
 
