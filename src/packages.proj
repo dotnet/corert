@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)packaging\Microsoft.TargetingPack.Private.CoreRT\Microsoft.TargetingPack.Private.CoreRT.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true'">
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
+    
+    <Project Include="$(MSBuildThisFileDirectory)packaging\Microsoft.DotNet.CoreRT.Targets\Microsoft.DotNet.CoreRT.Targets.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true'"/>
+    <Project Include="$(MSBuildThisFileDirectory)packaging\Microsoft.TargetingPack.Private.CoreRT\Microsoft.TargetingPack.Private.CoreRT.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'"/>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

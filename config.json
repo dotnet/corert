@@ -28,7 +28,7 @@
       "description": "FilterToOSGroup for result binaries.",
       "valueType": "property",
       "values": ["Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
-      "defaultValue": "${OSRid}"
+      "defaultValue": "${OSName}"
     },
     "TestNugetRuntimeId": {
       "description": "Target OS for result binaries.",

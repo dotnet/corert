@@ -9,6 +9,9 @@
     <ItemGroup>
       <!-- list each append as a seperate item to force re-evaluation of AdditionalProperties metadata -->
       <Project>
+        <AdditionalProperties>NewBuildScripts=$(NewBuildScripts);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
         <AdditionalProperties Condition="'%(Project.TargetGroup)'!=''">TargetGroup=%(Project.TargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>

@@ -14,4 +14,10 @@
     "Description": "Provides a set of core libraries that CoreRT specific implementations of upstack libraries depend on." ,
     "CommonTypes": []
   },
+  {
+    "Name": "Microsoft.DotNet.CoreRT.Targets",
+    "Description": "Provides runtime.json which enumerates the runtime specific dependencies of the CoreRT packages",
+    "CommonTypes": []
+  },
+
 ]
