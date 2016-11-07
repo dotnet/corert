@@ -356,9 +356,10 @@ namespace ILCompiler.DependencyAnalysis
             ObjectNode.ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
             string mainEhInfoSymbolName = null;
 
-            int i = 0;
-            foreach (var frameInfo in frameInfos)
+            for (int i = 0; i < frameInfos.Length; i++)
             {
+                FrameInfo frameInfo = frameInfos[i];
+
                 int start = frameInfo.StartOffset;
                 int end = frameInfo.EndOffset;
                 int len = frameInfo.BlobData.Length;
@@ -366,7 +367,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_targetPlatform.OperatingSystem == TargetOS.Windows)
                 {
-                    string blobSymbolName = "_unwind" + (i++).ToStringInvariant() + _currentNodeName;
+                    string blobSymbolName = "_unwind" + i.ToStringInvariant() + _currentNodeName;
 
                     ObjectNodeSection section = ObjectNodeSection.XDataSection;
                     if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
@@ -421,36 +422,47 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    string blobSymbolName = "_lsda" + (i++).ToStringInvariant() + _currentNodeName;
+                    string blobSymbolName = "_lsda" + i.ToStringInvariant() + _currentNodeName;
 
                     SwitchSection(_nativeObjectWriter, LsdaSection.Name);
 
-                    EmitAlignment(4);
                     EmitSymbolDef(blobSymbolName);
 
-                    // emit relative offset from the main function
-                    EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
-
-                    // emit last byte from the blob - the function kind
                     FrameInfoFlags flags = frameInfo.Flags;
-                    if ((ehInfo != null) || (mainEhInfoSymbolName != null))
+                    if (ehInfo != null)
                     {
                         flags |= FrameInfoFlags.HasEHInfo;
                     }
                     EmitIntValue((byte)flags, 1);
 
+                    if (i != 0)
+                    {
+                        EmitSymbolRef("_lsda0" + _currentNodeName, RelocType.IMAGE_REL_BASED_REL32, 4);
+
+                        // emit relative offset from the main function
+                        EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
+                    }
+
                     if (ehInfo != null)
                     {
+                        mainEhInfoSymbolName = "_ehInfo" + _currentNodeName;
+                        EmitSymbolRef(mainEhInfoSymbolName, RelocType.IMAGE_REL_BASED_REL32, 4);
+                    }
+
+                    if (gcInfo != null)
+                    {
+                        EmitBlob(gcInfo);
+                        gcInfo = null;
+                    }
+
+                    if (ehInfo != null)
+                    {
+                        // TODO: Place EHInfo into different section for better locality
                         Debug.Assert(ehInfo.Alignment == 1);
                         Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
-                        mainEhInfoSymbolName = "_ehInfo" + _currentNodeName;
                         EmitSymbolDef(mainEhInfoSymbolName);
                         EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                         ehInfo = null;
-                    }
-                    else if (mainEhInfoSymbolName != null)
-                    {
-                        EmitSymbolRef(mainEhInfoSymbolName, RelocType.IMAGE_REL_BASED_REL32, 4);
                     }
 
                     // For Unix, we build CFI blob map for each offset.
