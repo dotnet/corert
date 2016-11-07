@@ -9,7 +9,7 @@ using Debug = System.Diagnostics.Debug;
 
 using global::Internal.Metadata.NativeFormat;
 
-namespace Internal.Runtime.TypeLoader
+namespace Internal.Reflection.Execution
 {
     internal static class MetadataNameExtentions
     {

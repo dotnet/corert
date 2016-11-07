@@ -72,6 +72,8 @@ namespace Internal.Reflection.Core.Execution
 
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
 
+        public abstract bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name);
+
         //==============================================================================================
         // Invoke and field access support.
         //==============================================================================================

@@ -5,8 +5,6 @@
 
 using System;
 using System.Text;
-
-using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 
@@ -69,23 +67,15 @@ namespace Internal.Runtime.TypeLoader
 
         public static string LowLevelToString(this RuntimeTypeHandle rtth)
         {
-            MetadataReader reader;
-            TypeDefinitionHandle typeDefHandle;
-            TypeReferenceHandle typeRefHandle;
-
-            // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out reader, out typeDefHandle))
+            // If reflection callbacks are already initialized, we can use that to get a metadata name.
+            // Otherwise it's too early and the best we can do is to return the pointer.
+            if (RuntimeAugments.CallbacksIfAvailable != null)
             {
-                return typeDefHandle.GetFullName(reader);
+                string name;
+                if (RuntimeAugments.Callbacks.TryGetMetadataNameForRuntimeTypeHandle(rtth, out name))
+                    return name;
             }
 
-            // Try to get the name from diagnostic metadata
-            if (TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(rtth, out reader, out typeRefHandle))
-            {
-                return typeRefHandle.GetFullName(reader);
-            }
-
-            // Fallback implementation when no metadata available
             string prefix = "EEType:0x";
 
             StringBuilder sb = new StringBuilder(prefix.Length + IntPtr.Size * 4);
