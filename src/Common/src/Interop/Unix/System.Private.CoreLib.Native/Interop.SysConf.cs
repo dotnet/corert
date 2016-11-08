@@ -15,7 +15,7 @@ internal static partial class Interop
             _SC_NPROCESSORS_ONLN = 3,
         }
 
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_SysConf", SetLastError = true)]
+        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_SysConf", SetLastError = true)]
         internal static extern long SysConf(SysConfName name);
     }
 }
