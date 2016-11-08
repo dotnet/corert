@@ -298,7 +298,11 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
 
     ASSIGN_REG(UNW_REG_IP, IP)
     ASSIGN_REG(UNW_REG_SP, SP)
+#if defined(__APPLE__)    
+    ASSIGN_REG(UNW_X86_64_RBP, FP)
+#else    
     ASSIGN_REG_PTR(UNW_X86_64_RBP, Rbp)
+#endif    
     ASSIGN_REG_PTR(UNW_X86_64_RBX, Rbx)
     ASSIGN_REG_PTR(UNW_X86_64_R12, R12)
     ASSIGN_REG_PTR(UNW_X86_64_R13, R13)
@@ -402,6 +406,11 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
 
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &regDisplay->IP);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &regDisplay->SP);
+
+//WORKAROUND for exception unwind on OSX. Issue #1867
+#if defined(__APPLE__) && (defined(_TARGET_X86_) || defined(_TARGET_AMD64_))
+    unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &regDisplay->FP);
+#endif    
 
 #if defined(_AMD64_)
     regDisplay->pIP = PTR_PCODE(regDisplay->SP - sizeof(TADDR));
