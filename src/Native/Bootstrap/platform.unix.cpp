@@ -61,11 +61,6 @@ extern "C"
         throw "CreateEventExW";
     }
 
-    void GetNativeSystemInfo()
-    {
-        throw "GetNativeSystemInfo";
-    }
-
     void OutputDebugStringW()
     {
     }
