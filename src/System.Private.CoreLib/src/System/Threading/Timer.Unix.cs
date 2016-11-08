@@ -23,7 +23,6 @@ namespace System.Threading
         {
             get
             {
-                //TODO: Implement correctly for UNIX 
                 return Environment.TickCount;
             }
         }        
