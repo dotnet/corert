@@ -36,6 +36,12 @@
       "values": ["win7-x64", "osx.10.10-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "etc-other-rids"],
       "defaultValue": "${OSRid}-x64"
     },
+    "NuPkgRid": {
+      "description": "RID to be used in naming and configuring NuGet packages.",
+      "valueType": "property",
+      "values": ["win7-x64", "osx.10.10-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "etc-other-rids"],
+      "defaultValue": "${OSRid}-x64"
+    },
     "TestWithLocalLibraries": {
       "description": "Enables/Disables building and running tests against local libraries.",
       "valueType": "property",
@@ -257,7 +263,8 @@
           "settings": {
             "Project": "src/packages.proj",
             "FilterToOSGroup":"default",
-            "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log"
+            "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log",
+	    "NuPkgRid": "default",
           }
         },
         "tests": {
