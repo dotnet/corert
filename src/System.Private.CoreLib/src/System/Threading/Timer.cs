@@ -53,29 +53,6 @@ namespace System.Threading
 
         #region interface to native per-AppDomain timer
 
-        //
-        // We need to keep our notion of time synchronized with the calls to SleepEx that drive
-        // the underlying native timer.  In Win8, SleepEx does not count the time the machine spends
-        // sleeping/hibernating.  Environment.TickCount (GetTickCount) *does* count that time,
-        // so we will get out of sync with SleepEx if we use that method.
-        //
-        // So, on Win8, we use QueryUnbiasedInterruptTime instead; this does not count time spent
-        // in sleep/hibernate mode.
-        //
-        private static int TickCount
-        {
-            get
-            {
-                ulong time100ns;
-
-                bool result = Interop.mincore.QueryUnbiasedInterruptTime(out time100ns);
-                Debug.Assert(result);
-
-                // convert to 100ns to milliseconds, and truncate to 32 bits.
-                return (int)(uint)(time100ns / 10000);
-            }
-        }
-
         int m_currentNativeTimerStartTicks;
         uint m_currentNativeTimerDuration = UInt32.MaxValue;
 
