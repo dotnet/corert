@@ -345,9 +345,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatGenericParameter.cs">
       <Link>NativeFormat\NativeFormatGenericParameter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatGenericParameter.Canon.cs">
-      <Link>NativeFormat\NativeFormatGenericParameter.Canon.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatMetadataUnit.cs">
       <Link>NativeFormat\NativeFormatMetadataUnit.cs</Link>
     </Compile>

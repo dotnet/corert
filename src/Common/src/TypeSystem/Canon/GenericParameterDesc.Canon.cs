@@ -9,15 +9,13 @@ namespace Internal.TypeSystem
     // Implements canonicalization of generic parameters 
     public partial class GenericParameterDesc
     {
-        // TODO: seal the override
-        public override bool IsCanonicalSubtype(CanonicalFormKind policy)
+        public sealed override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {
             Debug.Assert(false, "IsCanonicalSubtype of an indefinite type");
             return false;
         }
 
-        // TODO: seal the override
-        protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
+        protected sealed override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
             Debug.Assert(false, "ConvertToCanonFormImpl for an indefinite type");
             return this;
