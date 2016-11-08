@@ -298,11 +298,7 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
 
     ASSIGN_REG(UNW_REG_IP, IP)
     ASSIGN_REG(UNW_REG_SP, SP)
-#if defined(__APPLE__)    
     ASSIGN_REG(UNW_X86_64_RBP, FP)
-#else    
-    ASSIGN_REG_PTR(UNW_X86_64_RBP, Rbp)
-#endif    
     ASSIGN_REG_PTR(UNW_X86_64_RBX, Rbx)
     ASSIGN_REG_PTR(UNW_X86_64_R12, R12)
     ASSIGN_REG_PTR(UNW_X86_64_R13, R13)
