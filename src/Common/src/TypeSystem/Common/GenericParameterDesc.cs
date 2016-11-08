@@ -156,8 +156,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        // TODO: seal this
-        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        protected sealed override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
 
@@ -170,8 +169,7 @@ namespace Internal.TypeSystem
             return flags;
         }
 
-        // TODO: seal this
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
             // TODO: Determine what a the right hash function should be. Use stable hashcode based on the type name?
             // For now, use the same hash as a SignatureVariable type.
