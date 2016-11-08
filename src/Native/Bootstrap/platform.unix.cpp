@@ -104,4 +104,9 @@ extern "C"
     {
         throw "GetCPInfo";
     }
+
+    void EventWriteTransfer()
+    {
+        throw "EventWriteTransfer";
+    }
 }
