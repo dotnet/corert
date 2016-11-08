@@ -11,10 +11,7 @@ class Program
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
-
-        // Missing support in RyuJIT: we can't just call Func..ctor and hope for the best
-        //TestDelegateFatFunctionPointers.Run();
-
+        TestDelegateFatFunctionPointers.Run();
         TestVirtualMethodUseTracking.Run();
 
         return 100;
