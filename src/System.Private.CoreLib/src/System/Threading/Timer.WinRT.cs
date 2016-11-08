@@ -52,6 +52,5 @@ namespace System.Threading
                 RuntimeAugments.ReportUnhandledException(ex);
             }
         }
-
     }
 }
