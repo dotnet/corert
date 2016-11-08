@@ -127,7 +127,7 @@ namespace ILCompiler
                 return false;
 
             for (int i = 0; i < signature.Length; i++)
-                if (signature[i].IsPointer)
+                if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
                     return false;
 
             // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
