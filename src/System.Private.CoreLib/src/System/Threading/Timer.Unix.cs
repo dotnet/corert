@@ -18,5 +18,14 @@ namespace System.Threading
         private void ReleaseTimer()
         {
         }
+
+        private static int TickCount
+        {
+            get
+            {
+                //TODO: Implement correctly for UNIX 
+                return Environment.TickCount;
+            }
+        }        
     }
 }
