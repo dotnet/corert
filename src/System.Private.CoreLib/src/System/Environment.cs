@@ -59,7 +59,18 @@ namespace System
             RuntimeExceptionHelpers.FailFast(message, exception);
         }
 
-        public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
+#if !PLATFORM_UNIX
+        public static int ProcessorCount
+        {
+            get
+            {
+                // @TODO: can we finally fix this to return the actual number of processors when there are >64?
+                Interop.mincore.SYSTEM_INFO info;
+                Interop.mincore.GetNativeSystemInfo(out info);
+                return (int)info.dwNumberOfProcessors;
+            }
+        }
+#endif
 
         public static int CurrentManagedThreadId
         {
