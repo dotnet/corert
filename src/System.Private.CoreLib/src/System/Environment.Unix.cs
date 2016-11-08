@@ -51,6 +51,8 @@ namespace System
             return blob.ToString();
         }
 
+        public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
+
         public unsafe static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
