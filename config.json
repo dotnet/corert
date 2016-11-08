@@ -336,7 +336,7 @@
         "settings": {
           "OSGroup": "default",
           "TargetOS": "default",
-	  "Platform": "default",
+          "Platform": "default",
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
