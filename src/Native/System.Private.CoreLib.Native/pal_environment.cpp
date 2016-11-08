@@ -8,6 +8,8 @@
 #include <config.h>
 #include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
+#include <errno.h>
 
 #if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
@@ -98,4 +100,28 @@ extern "C" uint64_t CoreLibNative_GetTickCount64()
 extern "C" void CoreLibNative_ExitProcess(int32_t exitCode)
 {
     exit(exitCode);
+}
+
+enum SysConfName : int32_t
+{
+    PAL_SC_CLK_TCK = 1,  // Number of clock ticks per second
+    PAL_SC_PAGESIZE = 2, // Size of a page in bytes,
+    PAL_SC_NPROCESSORS_ONLN = 3, // Number of active processors
+};
+
+extern "C" int64_t CoreLibNative_SysConf(SysConfName name)
+{
+    switch (name)
+    {
+        case PAL_SC_CLK_TCK:
+            return sysconf(_SC_CLK_TCK);
+        case PAL_SC_PAGESIZE:
+            return sysconf(_SC_PAGESIZE);
+        case PAL_SC_NPROCESSORS_ONLN:
+            return sysconf(_SC_NPROCESSORS_ONLN);
+    }
+
+    assert(false && "Unknown SysConfName");
+    errno = EINVAL;
+    return -1;
 }
