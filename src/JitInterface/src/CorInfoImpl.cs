@@ -9,6 +9,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 using Internal.TypeSystem;
 
@@ -29,7 +30,7 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
-        private Exception _lastException;
+        private ExceptionDispatchInfo _lastException;
 
         [DllImport("clrjitilc")]
         private extern static IntPtr jitStartup(IntPtr host);
@@ -60,7 +61,7 @@ namespace Internal.JitInterface
 
         private IntPtr AllocException(Exception ex)
         {
-            _lastException = ex;
+            _lastException = ExceptionDispatchInfo.Capture(ex);
 
             string exString = ex.ToString();
             IntPtr nativeException = AllocException(exString, exString.Length);
@@ -182,7 +183,7 @@ namespace Internal.JitInterface
                         // If we captured a managed exception, rethrow that.
                         // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
                         // an inlining attempt with a type system problem in it...
-                        throw _lastException;
+                        _lastException.Throw();
                     }
 
                     // This is a failure we don't know much about.

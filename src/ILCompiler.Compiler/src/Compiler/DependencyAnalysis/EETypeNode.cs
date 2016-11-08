@@ -222,13 +222,8 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsArray)
             {
                 int elementSize = ((ArrayType)_type).ElementType.GetElementSize();
-                if (elementSize >= 64 * 1024)
-                {
-                    // TODO: Array of type 'X' cannot be created because base value type is too large.
-                    throw new TypeLoadException();
-                }
-
-                objData.EmitShort((short)elementSize);
+                // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                objData.EmitShort((short)checked((ushort)elementSize));
             }
             else if (_type.IsString)
             {
@@ -603,10 +598,20 @@ namespace ILCompiler.DependencyAnalysis
                 TypeDesc parameterType = parameterizedType.ParameterType;
                 CheckCanGenerateEEType(factory, parameterType);
 
-                if (parameterizedType.IsArray && (parameterType.IsPointer || parameterType.IsFunctionPointer))
+                if (parameterizedType.IsArray)
                 {
-                    // Arrays of pointers and function pointers are not currently supported
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    {
+                        // Arrays of pointers and function pointers are not currently supported
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
+
+                    int elementSize = parameterType.GetElementSize();
+                    if (elementSize >= ushort.MaxValue)
+                    {
+                        // Element size over 64k can't be encoded in the GCDesc
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                    }
                 }
 
                 // Validate we're not constructing a type over a ByRef

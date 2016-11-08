@@ -17,7 +17,7 @@
 #include "CommonMacros.inl"
 
 #define GCINFODECODER_NO_EE
-#include "coreclr\gcinfodecoder.cpp"
+#include "coreclr/gcinfodecoder.cpp"
 
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
@@ -306,7 +306,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
     size_t unwindDataBlobSize;
-    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
 
     PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
 
@@ -314,6 +314,12 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
+        // Reverse PInvoke transition should on the main function body only
+        assert(pNativeMethodInfo->mainRuntimeFunction == pNativeMethodInfo->runtimeFunction);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+            p += sizeof(int32_t);
+
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
 
         // @TODO: CORERT: Encode reverse PInvoke frame slot in GCInfo: https://github.com/dotnet/corert/issues/2115
@@ -321,11 +327,10 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         // assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
         *ppPreviousTransitionFrame = (PTR_VOID)-1;
+        return true;
     }
-    else
-    {
-        *ppPreviousTransitionFrame = NULL;
-    }
+
+    *ppPreviousTransitionFrame = NULL;
 
     CONTEXT context;
     KNONVOLATILE_CONTEXT_POINTERS contextPointers;
@@ -444,6 +449,7 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     }
 
     *pMethodStartAddress = dac_cast<PTR_VOID>(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress);
+
     pEnumState->pMethodStartAddress = dac_cast<PTR_UInt8>(*pMethodStartAddress);
     pEnumState->pEHInfo = dac_cast<PTR_UInt8>(m_moduleBase + *dac_cast<PTR_Int32>(p));
     pEnumState->uClause = 0;
