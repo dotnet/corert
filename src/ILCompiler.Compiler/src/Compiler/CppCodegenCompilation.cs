@@ -32,7 +32,7 @@ namespace ILCompiler
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
-            _cppWriter.OutputCode(nodes, NodeFactory.CompilationModuleGroup.StartupCodeMain, NodeFactory);
+            _cppWriter.OutputCode(nodes, NodeFactory);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
