@@ -29,10 +29,6 @@ struct REGDISPLAY
     PTR_PCODE    pIP;
     PCODE        IP;
 
-#if defined(__APPLE__)
-    PAL_LIMITED_CONTEXT    PalLimitedContext;
-#endif
-
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
     Fp128          Xmm[16-6]; // preserved xmm6..xmm15 regs for EH stackwalk
                               // these need to be unwound during a stack walk

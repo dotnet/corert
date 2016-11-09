@@ -70,11 +70,7 @@ PLAT_ASM_OFFSET(90, REGDISPLAY, Xmm)
 
 #else // !UNIX_AMD64_ABI
 
-#if defined(__APPLE__)
-PLAT_ASM_SIZEOF(1e8, ExInfo)
-#else
 PLAT_ASM_SIZEOF(198, ExInfo)
-#endif
 PLAT_ASM_OFFSET(0, ExInfo, m_pPrevExInfo)
 PLAT_ASM_OFFSET(8, ExInfo, m_pExContext)
 PLAT_ASM_OFFSET(10, ExInfo, m_exception)
@@ -82,11 +78,7 @@ PLAT_ASM_OFFSET(18, ExInfo, m_kind)
 PLAT_ASM_OFFSET(19, ExInfo, m_passNumber)
 PLAT_ASM_OFFSET(1c, ExInfo, m_idxCurClause)
 PLAT_ASM_OFFSET(20, ExInfo, m_frameIter)
-#if defined(__APPLE__)
-PLAT_ASM_OFFSET(1e0, ExInfo, m_notifyDebuggerSP)
-#else
 PLAT_ASM_OFFSET(190, ExInfo, m_notifyDebuggerSP)
-#endif
 
 PLAT_ASM_OFFSET(0, PInvokeTransitionFrame, m_RIP)
 PLAT_ASM_OFFSET(8, PInvokeTransitionFrame, m_FramePointer)
@@ -94,11 +86,7 @@ PLAT_ASM_OFFSET(10, PInvokeTransitionFrame, m_pThread)
 PLAT_ASM_OFFSET(18, PInvokeTransitionFrame, m_dwFlags)
 PLAT_ASM_OFFSET(20, PInvokeTransitionFrame, m_PreservedRegs)
 
-#if defined(__APPLE__)
-PLAT_ASM_SIZEOF(1c0, StackFrameIterator)
-#else
 PLAT_ASM_SIZEOF(170, StackFrameIterator)
-#endif
 PLAT_ASM_OFFSET(10, StackFrameIterator, m_FramePointer)
 PLAT_ASM_OFFSET(18, StackFrameIterator, m_ControlPC)
 PLAT_ASM_OFFSET(20, StackFrameIterator, m_RegDisplay)
@@ -117,11 +105,7 @@ PLAT_ASM_OFFSET(38, PAL_LIMITED_CONTEXT, R13)
 PLAT_ASM_OFFSET(40, PAL_LIMITED_CONTEXT, R14)
 PLAT_ASM_OFFSET(48, PAL_LIMITED_CONTEXT, R15)
 
-#if defined(__APPLE__)
-PLAT_ASM_SIZEOF(e0, REGDISPLAY)
-#else
 PLAT_ASM_SIZEOF(90, REGDISPLAY)
-#endif
 PLAT_ASM_OFFSET(78, REGDISPLAY, SP)
 
 PLAT_ASM_OFFSET(18, REGDISPLAY, pRbx)

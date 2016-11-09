@@ -410,29 +410,6 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
 #if defined(_ARM_) || defined(_ARM64_)
     regDisplay->IP |= 1;
 #endif
-
-#if defined(__APPLE__)
-    regDisplay->pRax = &regDisplay->PalLimitedContext.Rax;
-    regDisplay->pRdx = &regDisplay->PalLimitedContext.Rdx;
-    regDisplay->pRbx = &regDisplay->PalLimitedContext.Rbx;
-    regDisplay->pRbp = &regDisplay->PalLimitedContext.Rbp;
-
-    regDisplay->pR12 = &regDisplay->PalLimitedContext.R12;
-    regDisplay->pR13 = &regDisplay->PalLimitedContext.R13;
-    regDisplay->pR14 = &regDisplay->PalLimitedContext.R14;
-    regDisplay->pR15 = &regDisplay->PalLimitedContext.R15;
-
-    unw_get_reg(cursor, UNW_X86_64_RAX, (unw_word_t *) &regDisplay->pRax);
-    unw_get_reg(cursor, UNW_X86_64_RDX, (unw_word_t *) &regDisplay->pRdx);
-    unw_get_reg(cursor, UNW_X86_64_RBX, (unw_word_t *) &regDisplay->pRbx);
-    unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &regDisplay->pRbp);
-
-    unw_get_reg(cursor, UNW_X86_64_R12, (unw_word_t *) &regDisplay->pR12);
-    unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &regDisplay->pR13);
-    unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &regDisplay->pR14);
-    unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &regDisplay->pR15);
-#endif
-
 }
 
 #if defined(_AMD64_)
