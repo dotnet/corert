@@ -710,6 +710,7 @@
     </Compile>
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Threading\Timer.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Threading\Timer.Win32.cs" />
+    <Compile Include="System\Threading\Timer.Windows.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
       <Link>Interop\Windows\mincore\Interop.Timer.cs</Link>
     </Compile>
@@ -774,6 +775,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

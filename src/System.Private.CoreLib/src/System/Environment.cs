@@ -59,17 +59,6 @@ namespace System
             RuntimeExceptionHelpers.FailFast(message, exception);
         }
 
-        public static int ProcessorCount
-        {
-            get
-            {
-                // @TODO: can we finally fix this to return the actual number of processors when there are >64?
-                Interop.mincore.SYSTEM_INFO info;
-                Interop.mincore.GetNativeSystemInfo(out info);
-                return (int)info.dwNumberOfProcessors;
-            }
-        }
-
         public static int CurrentManagedThreadId
         {
             get

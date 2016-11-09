@@ -13,23 +13,6 @@ namespace Internal.IL
 {
     internal static class HelperExtensions
     {
-        /// <summary>
-        /// NEWOBJ operation on String type is actually a call to a static method that returns a String
-        /// instance (i.e. there's an explicit call to the runtime allocator from the static method body).
-        /// This method returns the alloc+init helper corresponding to a given string constructor.
-        /// </summary>
-        public static MethodDesc GetStringInitializer(this MethodDesc constructorMethod)
-        {
-            Debug.Assert(constructorMethod.IsConstructor);
-            Debug.Assert(constructorMethod.OwningType.IsString);
-
-            var signatureBuilder = new MethodSignatureBuilder(constructorMethod.Signature);
-            signatureBuilder.Flags = MethodSignatureFlags.Static;
-            signatureBuilder.ReturnType = constructorMethod.OwningType;
-
-            return constructorMethod.OwningType.GetKnownMethod("Ctor", signatureBuilder.ToSignature());
-        }
-
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {
             MetadataType helperType = context.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", name);

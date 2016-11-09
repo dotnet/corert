@@ -61,11 +61,6 @@ extern "C"
         throw "CreateEventExW";
     }
 
-    void GetNativeSystemInfo()
-    {
-        throw "GetNativeSystemInfo";
-    }
-
     void OutputDebugStringW()
     {
     }
@@ -103,5 +98,10 @@ extern "C"
     void GetCPInfo()
     {
         throw "GetCPInfo";
+    }
+
+    void EventWriteTransfer()
+    {
+        throw "EventWriteTransfer";
     }
 }
