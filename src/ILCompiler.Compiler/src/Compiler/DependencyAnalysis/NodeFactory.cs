@@ -282,6 +282,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new DictionaryLayoutNode(methodOrType);
             });
+
+            _stringAllocators = new NodeCache<MethodDesc, IMethodNode>(constructor =>
+            {
+                return new StringAllocatorMethodNode(constructor);
+            });
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
@@ -466,6 +471,12 @@ namespace ILCompiler.DependencyAnalysis
         internal DictionaryLayoutNode GenericDictionaryLayout(TypeSystemEntity methodOrType)
         {
             return _genericDictionaryLayouts.GetOrAdd(methodOrType);
+        }
+
+        private NodeCache<MethodDesc, IMethodNode> _stringAllocators;
+        internal IMethodNode StringAllocator(MethodDesc stringConstructor)
+        {
+            return _stringAllocators.GetOrAdd(stringConstructor);
         }
 
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;

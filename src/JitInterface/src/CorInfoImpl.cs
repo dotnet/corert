@@ -2536,18 +2536,16 @@ namespace Internal.JitInterface
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-                MethodDesc directMethod = targetMethod;
-                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
-                {
-                    // Calling a string constructor doesn't call the actual constructor.
-                    directMethod = targetMethod.GetStringInitializer();
-                    concreteMethod = directMethod;
-                }
-
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                if (pResult.exactContextNeedsRuntimeLookup)
+                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
+                {
+                    // Calling a string constructor doesn't call the actual constructor.
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.StringAllocator(targetMethod));
+                }
+                else if (pResult.exactContextNeedsRuntimeLookup)
                 {
                     // Nothing to do... The generic handle lookup gets embedded in to the codegen
                     // during the jitting of the call.
@@ -2560,7 +2558,7 @@ namespace Internal.JitInterface
                     // to abort the inlining attempt if the inlinee does any generic lookups.
                     bool inlining = contextMethod != MethodBeingCompiled;
 
-                    if (directMethod.IsSharedByGenericInstantiations && !inlining)
+                    if (targetMethod.IsSharedByGenericInstantiations && !inlining)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
@@ -2569,7 +2567,7 @@ namespace Internal.JitInterface
                     else
                     {
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.MethodEntrypoint(directMethod));
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod));
                     }
                 }
                 else
@@ -2602,7 +2600,7 @@ namespace Internal.JitInterface
                     else
                     {
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.MethodEntrypoint(directMethod));
+                            _compilation.NodeFactory.MethodEntrypoint(targetMethod));
                     }
                 }
 
