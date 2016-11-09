@@ -74,18 +74,7 @@ namespace ILCompiler
                 AddCompilationRootsForExports(module, rootProvider);
             }
 
-            AddWellKnownTypes(rootProvider);
             AddReflectionInitializationCode(rootProvider);
-        }
-
-        private void AddWellKnownTypes(IRootingServiceProvider rootProvider)
-        {
-            var stringType = _typeSystemContext.GetWellKnownType(WellKnownType.String);
-
-            if (ContainsType(stringType))
-            {
-                rootProvider.AddCompilationRoot(stringType, "String type is always generated");
-            }
         }
 
         private void AddReflectionInitializationCode(IRootingServiceProvider rootProvider)
