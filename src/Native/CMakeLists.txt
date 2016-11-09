@@ -105,6 +105,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fvisibility=hidden)
 
     if(CLR_CMAKE_PLATFORM_DARWIN)
+        add_definitions(-DUNWIND_WORKAROUND)
+    endif(CLR_CMAKE_PLATFORM_DARWIN)
+
+    if(CLR_CMAKE_PLATFORM_DARWIN)
         # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
         add_compile_options(-fstack-protector)
     else()
