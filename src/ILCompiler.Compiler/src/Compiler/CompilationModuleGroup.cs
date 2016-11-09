@@ -16,11 +16,16 @@ namespace ILCompiler
 {
     public abstract class CompilationModuleGroup
     {
+        /// <summary>
+        /// Symbolic name under which the managed entrypoint is exported.
+        /// </summary>
+        public const string ManagedEntryPointMethodName = "__managed__Main";
+
         protected CompilerTypeSystemContext _typeSystemContext;
 
-        public MethodDesc StartupCodeMain
+        private MethodDesc StartupCodeMain
         {
-            get; private set;
+            get; set;
         }
 
         protected CompilationModuleGroup(CompilerTypeSystemContext typeSystemContext)
@@ -151,7 +156,7 @@ namespace ILCompiler
             TypeDesc owningType = module.GetGlobalModuleType();
             StartupCodeMain = new StartupCodeMainMethod(_typeSystemContext, owningType, mainMethod);
 
-            rootProvider.AddCompilationRoot(StartupCodeMain, "Startup Code Main Method", "__managed__Main");
+            rootProvider.AddCompilationRoot(StartupCodeMain, "Startup Code Main Method", ManagedEntryPointMethodName);
         }
     }
 }

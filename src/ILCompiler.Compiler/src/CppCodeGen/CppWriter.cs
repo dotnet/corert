@@ -1267,7 +1267,7 @@ namespace ILCompiler.CppCodeGen
             Out.Write(sb.ToString());
         }
 
-        public void OutputCode(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory)
+        public void OutputCode(IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             BuildMethodLists(nodes);
 
@@ -1305,6 +1305,12 @@ namespace ILCompiler.CppCodeGen
                 if (node is CppMethodCodeNode)
                     OutputMethodNode(node as CppMethodCodeNode);
             }
+
+            // Try to locate the entrypoint method
+            MethodDesc entrypoint = null;
+            foreach (var alias in factory.NodeAliases)
+                if (alias.Value == CompilationModuleGroup.ManagedEntryPointMethodName)
+                    entrypoint = ((IMethodNode)alias.Key).Method;
 
             if (entrypoint != null)
             {
