@@ -30,7 +30,7 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            return new RyuJitCompilation(CreateDependencyGraph(), _nodeFactory, _compilationRootProvider, _logger, _jitConfig);
+            return new RyuJitCompilation(CreateDependencyGraph(), _nodeFactory, _compilationRoots, _logger, _jitConfig);
         }
     }
 }

@@ -179,18 +179,16 @@ namespace ILCompiler
             MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
             CompilationModuleGroup compilationGroup;
-            CompilationRootProvider compilationRoots;
+            List<CompilationRootProvider> compilationRoots = new List<CompilationRootProvider>();
             if (singleMethod != null)
             {
                 // Compiling just a single method
                 compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, singleMethod);
-                compilationRoots = new SingleMethodRootProvider(singleMethod);
+                compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
             }
             else
             {
                 // Either single file, or multifile library, or multifile consumption.
-                var roots = new List<CompilationRootProvider>();
-
                 EcmaModule entrypointModule = null;
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
@@ -203,12 +201,12 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    roots.Add(new ExportedMethodsRootProvider(module));
+                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
                 if (entrypointModule != null)
                 {
-                    roots.Add(new MainMethodRootProvider(entrypointModule));
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule));
                 }
 
                 if (_multiFile)
@@ -221,7 +219,7 @@ namespace ILCompiler
                         foreach (var inputFile in typeSystemContext.InputFilePaths)
                         {
                             EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                            roots.Add(new LibraryRootProvider(module));
+                            compilationRoots.Add(new LibraryRootProvider(module));
                         }
                     }
                 }
@@ -230,7 +228,7 @@ namespace ILCompiler
                     if (entrypointModule == null)
                         throw new Exception("No entrypoint module");
 
-                    roots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
 
                     // System.Private.Reflection.Execution needs to establish a communication channel with System.Private.CoreLib
                     // at process startup. This is done through an eager constructor that calls into CoreLib and passes it
@@ -243,13 +241,11 @@ namespace ILCompiler
                     if (refExec != null)
                     {
                         var exec = refExec.GetType("Internal.Reflection.Execution", "ReflectionExecution");
-                        roots.Add(new SingleMethodRootProvider(exec.GetStaticConstructor()));
+                        compilationRoots.Add(new SingleMethodRootProvider(exec.GetStaticConstructor()));
                     }
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }
-
-                compilationRoots = new CombinedCompilationRootProvider(roots);
             }
 
             //

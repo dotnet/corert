@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
-using Internal.IL;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {

@@ -29,7 +29,7 @@ namespace ILCompiler
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
-            CompilationRootProvider compilationRoots,
+            IEnumerable<CompilationRootProvider> compilationRoots,
             NameMangler nameMangler,
             Logger logger)
         {
@@ -40,7 +40,10 @@ namespace ILCompiler
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
-            compilationRoots.AddCompilationRoots(new RootingServiceProvider(dependencyGraph, nodeFactory));
+
+            var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
+            foreach (var rootProvider in compilationRoots)
+                rootProvider.AddCompilationRoots(rootingService);
         }
 
         private ILProvider _methodILCache = new ILProvider();

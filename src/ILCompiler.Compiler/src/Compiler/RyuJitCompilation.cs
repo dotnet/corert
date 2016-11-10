@@ -22,7 +22,7 @@ namespace ILCompiler
         internal RyuJitCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
-            CompilationRootProvider roots,
+            IEnumerable<CompilationRootProvider> roots,
             Logger logger,
             JitConfigProvider configProvider)
             : base(dependencyGraph, nodeFactory, roots, new NameMangler(false), logger)

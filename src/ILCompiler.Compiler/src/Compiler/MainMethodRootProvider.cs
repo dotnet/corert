@@ -15,6 +15,11 @@ namespace ILCompiler
     /// </summary>
     public class MainMethodRootProvider : CompilationRootProvider
     {
+        /// <summary>
+        /// Symbolic name under which the managed entrypoint is exported.
+        /// </summary>
+        public const string ManagedEntryPointMethodName = "__managed__Main";
+
         private EcmaModule _module;
 
         public MainMethodRootProvider(EcmaModule module)

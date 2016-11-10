@@ -74,7 +74,6 @@
     <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
-    <Compile Include="Compiler\CombinedCompilationRootProvider.cs" />
     <Compile Include="Compiler\CompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationBuilder.cs" />
