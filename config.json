@@ -263,7 +263,7 @@
           "settings": {
             "Project": "src/packages.proj",
             "FilterToOSGroup":"default",
-            "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log",
+            "MsBuildLogging":"/flp:v=diag;LogFile=build-packages.log",
 	    "NuPkgRid": "default",
           }
         },
