@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
+    <PackagePlatforms>x64;</PackagePlatforms>
+    <PackageTargetRuntime>win-aot</PackageTargetRuntime>
+    <PreventImplementationReference>true</PreventImplementationReference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ILCompiler\src\ILCompiler.csproj">
+      <OSGroup>AnyOS</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj">
+      <OSGroup>AnyOS</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj">
+      <OSGroup>AnyOS</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj">
+      <OSGroup>AnyOS</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
+      <OSGroup>AnyOS</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
+      <OSGroup>AnyOS</OSGroup>
+    </ProjectReference>
+    <!--
+-->
+    <Dependency Include="Microsoft.DotNet.ObjectWriter">
+      <Version>1.0.13-prerelease-00001</Version>
+    </Dependency>
+    <Dependency Include="Microsoft.NetCore.Jit">
+      <Version>1.1.0-preview1-24512-00</Version>
+    </Dependency>
+    <Dependency Include="System.Collections.Immutable">
+      <Version>1.2.0</Version>
+    </Dependency>
+
+
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
