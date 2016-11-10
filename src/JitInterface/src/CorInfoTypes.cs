@@ -1159,7 +1159,14 @@ namespace Internal.JitInterface
         public byte eightByteOffsets1;
     };
 
-    // DEBUGGER DATQA
+    // DEBUGGER DATA
+    public enum ICorDebugInfo
+    {
+        NO_MAPPING = -1, // -- The IL offset corresponds to no source code (such as EH step blocks).
+        PROLOG = -2,     // -- The IL offset indicates a prolog
+        EPILOG = -3      // -- The IL offset indicates an epilog
+    }
+
     public enum BoundaryTypes
     {
         NO_BOUNDARIES = 0x00,     // No implicit boundaries

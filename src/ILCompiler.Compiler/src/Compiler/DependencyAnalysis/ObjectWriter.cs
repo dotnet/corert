@@ -326,7 +326,15 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (var loc in locs)
                     {
-                        _offsetToDebugLoc.Add(loc.NativeOffset, loc);
+                        if (_offsetToDebugLoc.ContainsKey(loc.NativeOffset) == false)
+                        {
+                            _offsetToDebugLoc.Add(loc.NativeOffset, loc);
+                        }
+                        else
+                        {
+                            // Empty epilog has the same NativeOffset as the instruction with the biggest IL offset.
+                            Debug.Assert(_offsetToDebugLoc[loc.NativeOffset].Equals(loc));
+                        }
                     }
                 }
             }
