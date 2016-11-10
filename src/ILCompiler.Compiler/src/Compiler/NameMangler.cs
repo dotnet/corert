@@ -74,7 +74,15 @@ namespace ILCompiler
                 // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.
                 sb.Append("_");
             }
-            return (sb != null) ? sb.ToString() : s;
+
+            string santizedName = (sb != null) ? sb.ToString() : s;
+
+            // The character sequences denoting generic instantiations, arrays, byrefs, or pointers must be
+            // restricted to that use only. Replace them if they happened to be used in any identifiers in 
+            // the compilation input.
+            return _mangleForCplusPlus
+                ? santizedName.Replace(EnterNameScopeSequence, "_AA_").Replace(ExitNameScopeSequence, "_VV_")
+                : santizedName;
         }
 
         /// <summary>
@@ -107,6 +115,14 @@ namespace ILCompiler
                 return mangledName;
 
             return ComputeMangledTypeName(type);
+        }
+
+        private string EnterNameScopeSequence => _mangleForCplusPlus ? "_A_" : "<";
+        private string ExitNameScopeSequence => _mangleForCplusPlus ? "_V_" : ">";
+
+        private string NestMangledName(string name)
+        {
+            return EnterNameScopeSequence + name + ExitNameScopeSequence;
         }
 
         /// <summary>
@@ -165,41 +181,52 @@ namespace ILCompiler
                 return _mangledTypeNames[type];
             }
 
-
             string mangledName;
 
             switch (type.Category)
             {
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    // mangledName = "Array<" + GetSignatureCPPTypeName(((ArrayType)type).ElementType) + ">";
-                    mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__Array";
+                    mangledName = GetMangledTypeName(((ArrayType) type).ElementType) + "__";
+                    
                     if (type.IsMdArray)
-                        mangledName += "Rank" + ((ArrayType)type).Rank.ToStringInvariant();
+                    {
+                        mangledName += NestMangledName("ArrayRank" + ((ArrayType) type).Rank.ToStringInvariant());
+                    }
+                    else
+                    {
+                        mangledName += NestMangledName("Array");
+                    }
                     break;
                 case TypeFlags.ByRef:
-                    mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + "__ByRef";
+                    mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + NestMangledName("ByRef");
                     break;
                 case TypeFlags.Pointer:
-                    mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + "__Pointer";
+                    mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
                     break;
                 default:
                     // Case of a generic type. If `type' is a type definition we use the type name
                     // for mangling, otherwise we use the mangling of the type and its generic type
-                    // parameters, e.g. A <B> becomes A__B.
+                    // parameters, e.g. A <B> becomes A_<___B_>_ in RyuJIT compilation, or A_A___B_V_
+                    // in C++ compilation.
                     var typeDefinition = type.GetTypeDefinition();
                     if (typeDefinition != type)
                     {
                         mangledName = GetMangledTypeName(typeDefinition);
 
                         var inst = type.Instantiation;
+                        string mangledInstantiation = "";
                         for (int i = 0; i < inst.Length; i++)
                         {
                             string instArgName = GetMangledTypeName(inst[i]);
                             if (_mangleForCplusPlus)
                                 instArgName = instArgName.Replace("::", "_");
-                            mangledName += "__" + instArgName;
+                            if (i > 0)
+                                mangledInstantiation += "__";
+                                        
+                            mangledInstantiation += instArgName;
                         }
+                        mangledName += NestMangledName(mangledInstantiation);
                     }
                     else
                     {
@@ -268,13 +295,17 @@ namespace ILCompiler
                 mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition());
 
                 var inst = method.Instantiation;
+                string mangledInstantiation = "";
                 for (int i = 0; i < inst.Length; i++)
                 {
                     string instArgName = GetMangledTypeName(inst[i]);
                     if (_mangleForCplusPlus)
                         instArgName = instArgName.Replace("::", "_");
-                    mangledName += "__" + instArgName;
+                    if (i > 0)
+                        mangledInstantiation += "__";
+                    mangledInstantiation += instArgName;
                 }
+                mangledName += NestMangledName(mangledInstantiation);
             }
             else
             {
