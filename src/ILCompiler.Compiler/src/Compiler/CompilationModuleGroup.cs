@@ -8,13 +8,6 @@ namespace ILCompiler
 {
     public abstract class CompilationModuleGroup
     {
-        protected CompilerTypeSystemContext _typeSystemContext;
-
-        protected CompilationModuleGroup(CompilerTypeSystemContext typeSystemContext)
-        {
-            _typeSystemContext = typeSystemContext;
-        }
-
         /// <summary>
         /// If true, "type" is in the set of input assemblies being compiled
         /// </summary>

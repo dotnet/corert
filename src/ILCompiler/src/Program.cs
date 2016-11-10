@@ -183,7 +183,7 @@ namespace ILCompiler
             if (singleMethod != null)
             {
                 // Compiling just a single method
-                compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, singleMethod);
+                compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
             }
             else
@@ -211,17 +211,21 @@ namespace ILCompiler
 
                 if (_multiFile)
                 {
-                    compilationGroup = new MultiFileCompilationModuleGroup(typeSystemContext);
+                    List<EcmaModule> inputModules = new List<EcmaModule>();
 
-                    if (entrypointModule == null)
+                    foreach (var inputFile in typeSystemContext.InputFilePaths)
                     {
-                        // This is a multifile production build
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+
+                        if (entrypointModule == null)
                         {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                            // This is a multifile production build - we need to root all methods
                             compilationRoots.Add(new LibraryRootProvider(module));
                         }
+                        inputModules.Add(module);
                     }
+
+                    compilationGroup = new MultiFileCompilationModuleGroup(inputModules);
                 }
                 else
                 {
@@ -244,7 +248,7 @@ namespace ILCompiler
                         compilationRoots.Add(new SingleMethodRootProvider(exec.GetStaticConstructor()));
                     }
 
-                    compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
+                    compilationGroup = new SingleFileCompilationModuleGroup();
                 }
             }
 
