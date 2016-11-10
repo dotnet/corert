@@ -14,8 +14,7 @@ namespace ILCompiler
     {
         private MethodDesc _method;
 
-        public SingleMethodCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext, MethodDesc method)
-            : base(typeSystemContext)
+        public SingleMethodCompilationModuleGroup(MethodDesc method)
         {
             _method = method;
         }

@@ -13,8 +13,10 @@ namespace ILCompiler
     {
         private HashSet<EcmaModule> _compilationModuleSet;
 
-        public MultiFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext) : base(typeSystemContext)
-        { }
+        public MultiFileCompilationModuleGroup(IEnumerable<EcmaModule> compilationModuleSet)
+        {
+            _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
+        }
 
         public override bool ContainsType(TypeDesc type)
         {
@@ -46,7 +48,7 @@ namespace ILCompiler
         {
             get
             {
-                foreach (var module in InputModules)
+                foreach (var module in _compilationModuleSet)
                 {
                     if (module.PEReader.PEHeaders.IsExe)
                     {
@@ -59,7 +61,7 @@ namespace ILCompiler
 
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
-            return InputModules.Contains(module);
+            return _compilationModuleSet.Contains(module);
         }
 
         public override bool IsSingleFileCompilation
@@ -114,32 +116,6 @@ namespace ILCompiler
         public override bool ShouldReferenceThroughImportTable(TypeDesc type)
         {
             return false;
-        }
-
-        private HashSet<EcmaModule> InputModules
-        {
-            get
-            {
-                if (_compilationModuleSet == null)
-                {
-                    HashSet<EcmaModule> newCompilationModuleSet = new HashSet<EcmaModule>();
-
-                    foreach (var path in _typeSystemContext.InputFilePaths)
-                    {
-                        newCompilationModuleSet.Add(_typeSystemContext.GetModuleFromPath(path.Value));
-                    }
-
-                    lock (this)
-                    {
-                        if (_compilationModuleSet == null)
-                        {
-                            _compilationModuleSet = newCompilationModuleSet;
-                        }
-                    }
-                }
-
-                return _compilationModuleSet;
-            }
         }
     }
 }
