@@ -29,6 +29,7 @@ namespace ILCompiler
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
+            CompilationRootProvider compilationRoots,
             NameMangler nameMangler,
             Logger logger)
         {
@@ -39,6 +40,7 @@ namespace ILCompiler
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
+            compilationRoots.AddCompilationRoots(new RootingServiceProvider(dependencyGraph, nodeFactory));
         }
 
         private ILProvider _methodILCache = new ILProvider();
@@ -118,6 +120,33 @@ namespace ILCompiler
             {
                 DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
                 dgmlOutput.Flush();
+            }
+        }
+
+        private class RootingServiceProvider : IRootingServiceProvider
+        {
+            private DependencyAnalyzerBase<NodeFactory> _graph;
+            private NodeFactory _factory;
+
+            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+            {
+                _graph = graph;
+                _factory = factory;
+            }
+
+            public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
+            {
+                var methodEntryPoint = _factory.MethodEntrypoint(method);
+
+                _graph.AddRoot(methodEntryPoint, reason);
+
+                if (exportName != null)
+                    _factory.NodeAliases.Add(methodEntryPoint, exportName);
+            }
+
+            public void AddCompilationRoot(TypeDesc type, string reason)
+            {
+                _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
             }
         }
     }

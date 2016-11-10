@@ -676,7 +676,7 @@ namespace ILCompiler.DependencyAnalysis
         public static NameMangler NameMangler;
         public static string CompilationUnitPrefix;
 
-        public virtual void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
+        public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
 
@@ -699,35 +699,6 @@ namespace ILCompiler.DependencyAnalysis
 
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
             MetadataManager.AttachToDependencyGraph(graph);
-
-            _compilationModuleGroup.AddCompilationRoots(new RootingServiceProvider(graph, this));
-        }
-
-        private class RootingServiceProvider : IRootingServiceProvider
-        {
-            private DependencyAnalyzerBase<NodeFactory> _graph;
-            private NodeFactory _factory;
-
-            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
-            {
-                _graph = graph;
-                _factory = factory;
-            }
-
-            public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
-            {
-                var methodEntryPoint = _factory.MethodEntrypoint(method);
-
-                _graph.AddRoot(methodEntryPoint, reason);
-
-                if (exportName != null)
-                    _factory.NodeAliases.Add(methodEntryPoint, exportName);
-            }
-
-            public void AddCompilationRoot(TypeDesc type, string reason)
-            {
-                _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
-            }
         }
     }
 

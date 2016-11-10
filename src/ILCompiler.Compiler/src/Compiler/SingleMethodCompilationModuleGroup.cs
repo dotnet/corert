@@ -53,11 +53,6 @@ namespace ILCompiler
             return true;
         }
 
-        public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
-        {
-            rootProvider.AddCompilationRoot(_method, "Single method mode");
-        }
-
         public override bool ShouldReferenceThroughImportTable(TypeDesc type)
         {
             return false;
