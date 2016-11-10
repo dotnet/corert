@@ -1309,7 +1309,7 @@ namespace ILCompiler.CppCodeGen
             // Try to locate the entrypoint method
             MethodDesc entrypoint = null;
             foreach (var alias in factory.NodeAliases)
-                if (alias.Value == CompilationModuleGroup.ManagedEntryPointMethodName)
+                if (alias.Value == MainMethodRootProvider.ManagedEntryPointMethodName)
                     entrypoint = ((IMethodNode)alias.Key).Method;
 
             if (entrypoint != null)

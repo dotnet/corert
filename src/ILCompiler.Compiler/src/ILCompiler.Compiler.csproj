@@ -74,6 +74,7 @@
     <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
+    <Compile Include="Compiler\CompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationBuilder.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
@@ -154,8 +155,11 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
+    <Compile Include="Compiler\ExportedMethodsRootProvider.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
+    <Compile Include="Compiler\LibraryRootProvider.cs" />
+    <Compile Include="Compiler\MainMethodRootProvider.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MetadataGeneration.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
@@ -166,6 +170,7 @@
     <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
+    <Compile Include="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />

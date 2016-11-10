@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
+        public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             AddWellKnownTypes(graph);
             base.AttachToDependencyGraph(graph);

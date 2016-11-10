@@ -19,9 +19,10 @@ namespace ILCompiler
         internal CppCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
+            IEnumerable<CompilationRootProvider> roots,
             Logger logger,
             CppCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, new NameMangler(true), logger)
+            : base(dependencyGraph, nodeFactory, roots, new NameMangler(true), logger)
         {
             Options = options;
         }

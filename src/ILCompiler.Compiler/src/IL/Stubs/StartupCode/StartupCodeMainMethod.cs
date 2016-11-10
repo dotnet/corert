@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
-using System;
 
-using ILCompiler;
+using AssemblyName = System.Reflection.AssemblyName;
 
 namespace Internal.IL.Stubs.StartupCode
 {
@@ -17,14 +18,12 @@ namespace Internal.IL.Stubs.StartupCode
     /// </summary>
     public sealed class StartupCodeMainMethod : ILStubMethod
     {
-        private CompilerTypeSystemContext _typeSystemContext;
         private TypeDesc _owningType;
         private MethodDesc _mainMethod;
         private MethodSignature _signature;
 
-        public StartupCodeMainMethod(CompilerTypeSystemContext typeSystemContext, TypeDesc owningType, MethodDesc mainMethod)
+        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod)
         {
-            _typeSystemContext = typeSystemContext;
             _owningType = owningType;
             _mainMethod = mainMethod;
         }
@@ -33,7 +32,7 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                return _typeSystemContext;
+                return _owningType.Context;
             }
         }
 
@@ -58,7 +57,7 @@ namespace Internal.IL.Stubs.StartupCode
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
-            ModuleDesc developerExperience = _typeSystemContext.GetModuleForSimpleName("System.Private.DeveloperExperience.Console", false);
+            ModuleDesc developerExperience = Context.ResolveAssembly(new AssemblyName("System.Private.DeveloperExperience.Console"), false);
             if (developerExperience != null)
             {
                 TypeDesc connectorType = developerExperience.GetKnownType("Internal.DeveloperExperience", "DeveloperExperienceConnectorConsole");

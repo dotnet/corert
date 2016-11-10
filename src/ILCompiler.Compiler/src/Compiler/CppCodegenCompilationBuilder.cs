@@ -28,7 +28,7 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            return new CppCodegenCompilation(CreateDependencyGraph(), _nodeFactory, _logger, _config);
+            return new CppCodegenCompilation(CreateDependencyGraph(), _nodeFactory, _compilationRoots, _logger, _config);
         }
     }
 
