@@ -51,34 +51,5 @@ namespace ILCompiler
         /// accessed through the target platform's import mechanism (ie, Import Address Table on Windows)
         /// </summary>
         public abstract bool ShouldReferenceThroughImportTable(TypeDesc type);
-
-        private void AddReflectionInitializationCode(IRootingServiceProvider rootProvider)
-        {
-            // System.Private.Reflection.Execution needs to establish a communication channel with System.Private.CoreLib
-            // at process startup. This is done through an eager constructor that calls into CoreLib and passes it
-            // a callback object.
-            //
-            // Since CoreLib cannot reference anything, the type and it's eager constructor won't be added to the compilation
-            // unless we explictly add it.
-
-            var refExec = _typeSystemContext.GetModuleForSimpleName("System.Private.Reflection.Execution", false);
-            if (refExec != null)
-            {
-                var exec = refExec.GetKnownType("Internal.Reflection.Execution", "ReflectionExecution");
-                if (ContainsType(exec))
-                {
-                    rootProvider.AddCompilationRoot(exec.GetStaticConstructor(), "Reflection execution");
-                }
-            }
-            else
-            {
-                // If we can't find Reflection.Execution, we better be compiling a nonstandard thing (managed
-                // portion of the runtime maybe?).
-                Debug.Assert(_typeSystemContext.GetModuleForSimpleName("System.Private.CoreLib", false) == null);
-            }
-        }
-
-        
-        
     }
 }
