@@ -1,1 +1,1 @@
-https://ci.dot.net/job/dotnet_coreclr/job/master/job/debug_windows_nt_prtest/842/artifact/bin/tests/tests.zip
+https://ci.dot.net/job/dotnet_coreclr/job/master/job/debug_windows_nt_prtest/4/artifact/bin/tests/tests.zip
