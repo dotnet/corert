@@ -1762,11 +1762,13 @@ namespace Internal.JitInterface
             }
 
             int largestILOffset = 0; // All epiloges point to the largest IL offset.
-            foreach(var s in _sequencePoints)
+            for (int i = 0; i < cMap; i++)
             {
-                if (s.Key > largestILOffset)
+                OffsetMapping nativeToILInfo = pMap[i];
+                int currectILOffset = (int)nativeToILInfo.ilOffset;
+                if (currectILOffset > largestILOffset) // Special offsets are negative.
                 {
-                    largestILOffset = s.Key;
+                    largestILOffset = currectILOffset;
                 }
             }
 
