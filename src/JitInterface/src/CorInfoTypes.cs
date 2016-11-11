@@ -1160,7 +1160,7 @@ namespace Internal.JitInterface
     };
 
     // DEBUGGER DATA
-    public enum ICorDebugInfo
+    public enum MappingTypes
     {
         NO_MAPPING = -1, // -- The IL offset corresponds to no source code (such as EH step blocks).
         PROLOG = -2,     // -- The IL offset indicates a prolog

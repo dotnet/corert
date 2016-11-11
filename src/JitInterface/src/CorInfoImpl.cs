@@ -1779,13 +1779,13 @@ namespace Internal.JitInterface
                 int ilOffset = (int)nativeToILInfo.ilOffset;
                 switch (ilOffset)
                 {
-                    case (int)ICorDebugInfo.PROLOG:
+                    case (int)MappingTypes.PROLOG:
                         ilOffset = 0;
                         break;
-                    case (int)ICorDebugInfo.EPILOG:
+                    case (int)MappingTypes.EPILOG:
                         ilOffset = largestILOffset;
                         break;
-                    case (int)ICorDebugInfo.NO_MAPPING:
+                    case (int)MappingTypes.NO_MAPPING:
                         continue;
                 }
                 SequencePoint s;
