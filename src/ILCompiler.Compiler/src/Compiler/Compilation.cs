@@ -29,7 +29,7 @@ namespace ILCompiler
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
-            IEnumerable<CompilationRootProvider> compilationRoots,
+            IEnumerable<ICompilationRootProvider> compilationRoots,
             NameMangler nameMangler,
             Logger logger)
         {

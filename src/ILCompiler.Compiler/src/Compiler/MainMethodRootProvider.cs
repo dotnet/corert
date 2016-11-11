@@ -13,7 +13,7 @@ namespace ILCompiler
     /// <summary>
     /// Computes a compilation root based on the entrypoint of the assembly.
     /// </summary>
-    public class MainMethodRootProvider : CompilationRootProvider
+    public class MainMethodRootProvider : ICompilationRootProvider
     {
         /// <summary>
         /// Symbolic name under which the managed entrypoint is exported.
@@ -27,7 +27,7 @@ namespace ILCompiler
             _module = module;
         }
 
-        internal override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+        public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             MethodDesc mainMethod = _module.EntryPoint;
             if (mainMethod == null)

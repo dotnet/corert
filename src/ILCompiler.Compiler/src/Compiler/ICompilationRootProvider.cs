@@ -7,8 +7,12 @@ namespace ILCompiler
     /// <summary>
     /// Provides a set of seeds from which compilation will start.
     /// </summary>
-    public abstract class CompilationRootProvider
+    public interface ICompilationRootProvider
     {
-        internal abstract void AddCompilationRoots(IRootingServiceProvider rootProvider);
+        /// <summary>
+        /// When implemented in a class, uses <paramref name="rootProvider"/> to add compilation
+        /// roots to the compilation.
+        /// </summary>
+        void AddCompilationRoots(IRootingServiceProvider rootProvider);
     }
 }

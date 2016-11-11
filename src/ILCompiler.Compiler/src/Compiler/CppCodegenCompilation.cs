@@ -21,7 +21,7 @@ namespace ILCompiler
         internal CppCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
-            IEnumerable<CompilationRootProvider> roots,
+            IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
             CppCodegenConfigProvider options)
             : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), new NameMangler(true), logger)
@@ -29,7 +29,7 @@ namespace ILCompiler
             Options = options;
         }
 
-        private static IEnumerable<CompilationRootProvider> GetCompilationRoots(IEnumerable<CompilationRootProvider> existingRoots, NodeFactory factory)
+        private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
         {
             yield return new CppCodegenCompilationRootProvider(factory.TypeSystemContext);
 
@@ -54,7 +54,7 @@ namespace ILCompiler
             }
         }
 
-        private class CppCodegenCompilationRootProvider : CompilationRootProvider
+        private class CppCodegenCompilationRootProvider : ICompilationRootProvider
         {
             private TypeSystemContext _context;
 
@@ -69,7 +69,7 @@ namespace ILCompiler
                 rootProvider.AddCompilationRoot(type, "Enables CPP codegen");
             }
 
-            internal override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+            public void AddCompilationRoots(IRootingServiceProvider rootProvider)
             {
                 RootWellKnownType(WellKnownType.Void, rootProvider);
                 RootWellKnownType(WellKnownType.Boolean, rootProvider);
