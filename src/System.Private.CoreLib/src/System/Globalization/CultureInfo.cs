@@ -1327,7 +1327,7 @@ namespace System.Globalization
                 if (lcid == -1 || lcid == 0)
                 {
                     bool ret;
-                    lock (s_lock)
+                    using (LockHolder.Hold(s_lock))
                     {
                         ret = tempNameHT.TryGetValue(lcid == 0 ? name : name + '\xfffd' + altName, out retval);
                     }
@@ -1353,7 +1353,7 @@ namespace System.Globalization
                 if (lcid > 0)
                 {
                     bool ret;
-                    lock (s_lock)
+                    using (LockHolder.Hold(s_lock))
                     {
                         ret = tempLcidHT.TryGetValue(lcid, out retval);
                     }
@@ -1394,7 +1394,7 @@ namespace System.Globalization
 
             if (lcid == -1)
             {
-                lock (s_lock)
+                using (LockHolder.Hold(s_lock))
                 {
                     // This new culture will be added only to the name hash table.
                     tempNameHT[name + '\xfffd' + altName] = retval;
@@ -1409,14 +1409,14 @@ namespace System.Globalization
                 string newName = CultureData.AnsiToLower(retval.m_name);
                 
                 // We add this new culture info object to both tables.
-                lock (s_lock)
+                using (LockHolder.Hold(s_lock))
                 {
                     tempNameHT[newName] = retval;
                 }
             } 
             else
             {
-                lock (s_lock)
+                using (LockHolder.Hold(s_lock))
                 {
                     tempLcidHT[lcid] = retval;
                 }
