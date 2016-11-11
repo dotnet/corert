@@ -135,6 +135,9 @@
   <data name="Arg_ArrayTypeMismatchException" xml:space="preserve">
     <value>Attempted to access an element as a type incompatible with the array.</value>
   </data>
+  <data name="Arg_ArrayZeroError" xml:space="preserve">
+    <value>Array must not be of length zero.</value>
+  </data>
   <data name="Arg_BadImageFormatException" xml:space="preserve">
     <value>Format of the executable (.exe) or library (.dll) is invalid.</value>
   </data>
@@ -441,8 +444,17 @@
   <data name="Argument_CultureInvalidIdentifier" xml:space="preserve">
     <value>{0} is an invalid culture identifier.</value>
   </data>
+  <data name="Argument_CultureIetfNotSupported" xml:space="preserve">
+    <value>Culture IETF Name {0} is not a recognized IETF name.</value>
+  </data>
+  <data name="Argument_CultureIsNeutral" xml:space="preserve">
+    <value>Culture ID {0} (0x{0:X4}) is a neutral culture; a region cannot be created from it.</value>
+  </data>
   <data name="Argument_CultureNotSupported" xml:space="preserve">
     <value>Culture is not supported.</value>
+  </data>
+  <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
+    <value>Customized cultures cannot be passed by LCID, only by name.</value>
   </data>
   <data name="Argument_DateTimeBadBinaryData" xml:space="preserve">
     <value>The binary data must result in a DateTime with ticks between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
@@ -528,6 +540,9 @@
   <data name="Argument_InvalidDateTimeStyles" xml:space="preserve">
     <value>An undefined DateTimeStyles value is being used.</value>
   </data>
+  <data name="Argument_InvalidDigitSubstitution" xml:space="preserve">
+    <value>The DigitSubstitution property must be of a valid member of the DigitShapes enumeration. Valid entries include Context, NativeNational or None.</value>
+  </data>
   <data name="Argument_InvalidEnumValue" xml:space="preserve">
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
@@ -545,6 +560,12 @@
   </data>
   <data name="Argument_InvalidLowSurrogate" xml:space="preserve">
     <value>Found a low surrogate char without a preceding high surrogate at index: {0}. The input may not be in this encoding, or may not contain valid Unicode (UTF-16) characters.</value>
+  </data>
+  <data name="Argument_InvalidNativeDigitCount" xml:space="preserve">
+    <value>The NativeDigits array must contain exactly ten members.</value>
+  </data>
+  <data name="Argument_InvalidNativeDigitValue" xml:space="preserve">
+    <value>Each member of the NativeDigits array must be a single text element (one or more UTF16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
   </data>
   <data name="Argument_InvalidNeutralRegionName" xml:space="preserve">
     <value>The region name {0} should not correspond to neutral culture; a specific culture name is required.</value>
@@ -584,6 +605,12 @@
   </data>
   <data name="Argument_OffsetUtcMismatch" xml:space="preserve">
     <value>The UTC Offset for Utc DateTime instances must be 0.</value>
+  </data>
+  <data name="Argument_OneOfCulturesNotSupported" xml:space="preserve">
+    <value>Culture name {0} or {1} is not supported.</value>
+  </data>
+  <data name="Argument_OnlyMscorlib" xml:space="preserve">
+    <value>Only mscorlib's assembly is valid.</value>
   </data>
   <data name="Argument_OutOfOrderDateTimes" xml:space="preserve">
     <value>The DateStart property must come before the DateEnd property.</value>
