@@ -18,7 +18,7 @@ namespace ILCompiler
         // calling the Use/Configure methods and still get something reasonable back.
         protected Logger _logger = Logger.Null;
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
-        protected IEnumerable<CompilationRootProvider> _compilationRoots = Array.Empty<CompilationRootProvider>();
+        protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
 
         public CompilationBuilder(NodeFactory nodeFactory)
         {
@@ -37,7 +37,7 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder UseCompilationRoots(IEnumerable<CompilationRootProvider> compilationRoots)
+        public CompilationBuilder UseCompilationRoots(IEnumerable<ICompilationRootProvider> compilationRoots)
         {
             _compilationRoots = compilationRoots;
             return this;

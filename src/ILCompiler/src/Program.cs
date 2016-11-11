@@ -179,7 +179,7 @@ namespace ILCompiler
             MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
             CompilationModuleGroup compilationGroup;
-            List<CompilationRootProvider> compilationRoots = new List<CompilationRootProvider>();
+            List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
             if (singleMethod != null)
             {
                 // Compiling just a single method

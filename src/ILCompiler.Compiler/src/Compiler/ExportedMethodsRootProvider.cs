@@ -9,7 +9,7 @@ namespace ILCompiler
     /// <summary>
     /// Computes a set of roots based on managed and unmanaged methods exported from a module.
     /// </summary>
-    public class ExportedMethodsRootProvider : CompilationRootProvider
+    public class ExportedMethodsRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
 
@@ -18,7 +18,7 @@ namespace ILCompiler
             _module = module;
         }
 
-        internal override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+        public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             foreach (var type in _module.GetAllTypes())
             {

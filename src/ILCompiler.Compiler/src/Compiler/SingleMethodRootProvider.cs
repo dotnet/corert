@@ -9,7 +9,7 @@ namespace ILCompiler
     /// <summary>
     /// Compilation root that is a single method.
     /// </summary>
-    public class SingleMethodRootProvider : CompilationRootProvider
+    public class SingleMethodRootProvider : ICompilationRootProvider
     {
         private MethodDesc _method;
 
@@ -18,7 +18,7 @@ namespace ILCompiler
             _method = method;
         }
 
-        internal override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+        public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             rootProvider.AddCompilationRoot(_method, "Single method root");
         }

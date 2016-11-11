@@ -10,7 +10,7 @@ namespace ILCompiler
     /// <summary>
     /// Provides compilation group for a library that compiles everything in the input IL module.
     /// </summary>
-    public class LibraryRootProvider : CompilationRootProvider
+    public class LibraryRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
 
@@ -19,7 +19,7 @@ namespace ILCompiler
             _module = module;
         }
 
-        internal override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+        public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             foreach (TypeDesc type in _module.GetAllTypes())
             {
