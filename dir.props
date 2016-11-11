@@ -84,9 +84,6 @@
     <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
   </PropertyGroup>
 
-  <!-- Import the packaging props -->
-  <Import Project="$(MSBuildThisFileDirectory)Packaging.props" Condition="'$(NewBuildScripts)'=='true'"/>
-
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)</OSPlatformConfig>
@@ -106,6 +103,12 @@
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
+
+  <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />  
+
+  <!-- Import the packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)Packaging.props" Condition="'$(NewBuildScripts)'=='true'"/>
+
 
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">

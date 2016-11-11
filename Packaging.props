@@ -1,6 +1,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <PreReleaseLabel>beta</PreReleaseLabel>
+    <PreReleaseLabel>alpha</PreReleaseLabel>
     <PackageDescriptionFile>$(ProjectDir)src/packaging/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(ProjectDir)src/packaging/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)src/packaging/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
