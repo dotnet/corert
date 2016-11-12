@@ -42,7 +42,7 @@ namespace Internal.TypeSystem
 
         private class UnificationGroup
         {
-            private MethodDesc[] _members = Array.Empty<MethodDesc>();
+            private MethodDesc[] _members = MethodDesc.EmptyMethods;
             private int _memberCount = 0;
 
             /// <summary>
