@@ -177,7 +177,7 @@ goto :eof
     if /i "%__Mode%" == "cpp" (
         set extraArgs=!extraArgs! /p:NativeCodeGen=cpp
         if /i "%CoreRT_BuildType%" == "debug" (
-            set extraArgs=!extraArgs! /p:AdditionalCppCompilerFlags=/MTd
+            set extraArgs=!extraArgs! /p:UseDebugCrt=true
         )
     )
 
