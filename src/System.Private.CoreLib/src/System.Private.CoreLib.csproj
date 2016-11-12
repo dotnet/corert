@@ -545,6 +545,7 @@
     <Compile Include="System\Threading\Mutex.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
+    <Compile Include="System\Threading\RuntimeThread.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreFullException.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
