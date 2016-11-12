@@ -13,6 +13,7 @@ class Program
         TestInitThisClass.Run();
         TestDelegateFatFunctionPointers.Run();
         TestVirtualMethodUseTracking.Run();
+        TestNameManglingCollisionRegression.Run();
 
         return 100;
     }
@@ -224,5 +225,23 @@ class Program
                 throw new Exception();
         }
     }
-}
 
+    //
+    // Regression test for issue https://github.com/dotnet/corert/issues/1964
+    //
+    class TestNameManglingCollisionRegression
+    {
+        class Gen1<T>
+        {
+            public Gen1(T t) {}
+        }
+
+        public static void Run()
+        {
+            Gen1<object[]>[] g1 = new Gen1<object[]>[1];
+            g1[0] = new Gen1<object[]>(new object[] {new object[1]});
+
+            Gen1<object[][]> g2 = new Gen1<object[][]>(new object[1][]);
+        }
+    }
+}
