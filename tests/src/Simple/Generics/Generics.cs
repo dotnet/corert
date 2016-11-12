@@ -13,6 +13,7 @@ class Program
         TestInitThisClass.Run();
         TestDelegateFatFunctionPointers.Run();
         TestVirtualMethodUseTracking.Run();
+        TestSlotsInHierarchy.Run();
         TestNameManglingCollisionRegression.Run();
 
         return 100;
@@ -222,6 +223,42 @@ class Program
 
             C2 c2 = new C2();
             if (new Derived<C2>().AsToo(c2) != c2)
+                throw new Exception();
+        }
+    }
+
+    /// <summary>
+    /// Makes sure that during the base slot computation for types such as
+    /// Derived&lt;__Canon&gt; (where the base type ends up being Base&lt;__Canon, string&gt;),
+    /// the lazy vtable slot computation works.
+    /// </summary>
+    class TestSlotsInHierarchy
+    {
+        class Base<T, U>
+        {
+            public virtual int Do()
+            {
+                return 42;
+            }
+        }
+
+        class Derived<T> : Base<T, string> where T : class
+        {
+            public T Cast(object v)
+            {
+                return v as T;
+            }
+        }
+
+        public static void Run()
+        {
+            var derived = new Derived<string>();
+            var derivedAsBase = (Base<string, string>)derived;
+
+            if (derivedAsBase.Do() != 42)
+                throw new Exception();
+
+            if (derived.Cast("Hello") != "Hello")
                 throw new Exception();
         }
     }
