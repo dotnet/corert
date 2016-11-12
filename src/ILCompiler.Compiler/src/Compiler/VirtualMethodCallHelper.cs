@@ -44,10 +44,16 @@ namespace ILCompiler
         private static int GetNumberOfBaseSlots(NodeFactory factory, TypeDesc owningType)
         {
             int baseSlots = 0;
-            var baseType = owningType.BaseType;
+            TypeDesc baseType = owningType.BaseType;
 
             while (baseType != null)
             {
+                // Normalize the base type. Necessary to make this work with the lazy vtable slot
+                // concept - if we start with a canonical type, the base type could end up being
+                // something like Base<__Canon, string>. We would get "0 slots used" for weird
+                // base types like this.
+                baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+
                 // For types that have a generic dictionary, the introduced virtual method slots are
                 // prefixed with a pointer to the generic dictionary.
                 if (baseType.HasGenericDictionarySlot())
