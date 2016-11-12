@@ -840,7 +840,7 @@ namespace System
                         if (inBaseContext)
                             McgMarshal.ComRelease(ptr);
                         else
-                            baseContext.EnqueueDelayedRelease(ptr);
+                            baseContext.EnqueueDelayedComRelease(ptr);
                     }
                 }
 
@@ -865,7 +865,7 @@ namespace System
                             if (isCacheContextCurrent)
                                 McgMarshal.ComRelease(cacheEntry.ptr);
                             else
-                                cache.context.EnqueueDelayedRelease(cacheEntry.ptr);
+                                cache.context.EnqueueDelayedComRelease(cacheEntry.ptr);
                         }
                     }
                 }
@@ -893,7 +893,7 @@ namespace System
                 if (inBaseContext)
                     McgMarshal.ComRelease(m_cachedInterfaces[0].GetPtr());
                 else
-                    baseContext.EnqueueDelayedRelease(m_cachedInterfaces[0].GetPtr());
+                    baseContext.EnqueueDelayedComRelease(m_cachedInterfaces[0].GetPtr());
             }
 
             if (IsAggregated)
@@ -2863,12 +2863,18 @@ namespace System.Runtime.InteropServices
             if (inCurrentContext)
                 McgMarshal.ComRelease(m_pComPtr);
             else
-                m_context.EnqueueDelayedRelease(m_pComPtr);
+                m_context.EnqueueDelayedComRelease(m_pComPtr);
 
             m_pComPtr = default(IntPtr);
 
+            // Use ContextEntry.EnqueueDelayedStreamRelease to make sure the cached streeam is released in the correct context(apartment)
+            // According to MSDN: CoReleaseMarshalData function
+            // You must call the CoReleaseMarshalData function in the same apartment that called CoMarshalInterface to marshal the object into the stream
             if (m_pCachedStream != default(IntPtr))
-                McgComHelpers.SafeReleaseStream(m_pCachedStream);
+            {
+                m_context.EnqueueDelayedStreamRelease(m_pCachedStream);
+                m_pCachedStream = default(IntPtr);
+            }
         }
     }
 
@@ -3136,23 +3142,46 @@ namespace System.Runtime.InteropServices
             return ContextEntryManager.GetContextEntry(currentCookie);
         }
 
+        private Lock m_delayedReleaseListLock = new Lock();
+        
         //
         // Per-context list of interfaces that need to be released, next time we get a chance to do
         // so in this context.
         //
-        private Lock m_delayedReleaseListLock = new Lock();
         private System.Collections.Generic.Internal.List<IntPtr> m_delayedReleaseList;
+        
+        //
+        // Per-context list of Stream that need to be released, next time we get a chance to do
+        // so in this context.
+        //
+        private System.Collections.Generic.Internal.List<IntPtr> m_delayedReleaseStreamList;
 
-        internal void EnqueueDelayedRelease(IntPtr pComPtr)
+        internal void EnqueueDelayedComRelease(IntPtr pComPtr)
         {
             try
             {
                 m_delayedReleaseListLock.Acquire();
 
                 if (m_delayedReleaseList == null)
-                    m_delayedReleaseList = new System.Collections.Generic.Internal.List<IntPtr>(1);
-
+                    m_delayedReleaseList = new System.Collections.Generic.Internal.List<IntPtr>(25);
                 m_delayedReleaseList.Add(pComPtr);
+            }
+            finally
+            {
+                m_delayedReleaseListLock.Release();
+            }
+        }
+
+        internal void EnqueueDelayedStreamRelease(IntPtr pStream)
+        {
+            try
+            {
+                m_delayedReleaseListLock.Acquire();
+
+                if (m_delayedReleaseStreamList == null)
+                    m_delayedReleaseStreamList = new System.Collections.Generic.Internal.List<IntPtr>(25);
+
+                m_delayedReleaseStreamList.Add(pStream);
             }
             finally
             {
@@ -3172,6 +3201,7 @@ namespace System.Runtime.InteropServices
             Debug.Assert(this.IsCurrent);
 
             System.Collections.Generic.Internal.List<IntPtr> list = null;
+            System.Collections.Generic.Internal.List<IntPtr> streamlist = null;
 
             try
             {
@@ -3181,6 +3211,12 @@ namespace System.Runtime.InteropServices
                 {
                     list = m_delayedReleaseList;
                     m_delayedReleaseList = null;
+                }
+
+                if (m_delayedReleaseStreamList != null)
+                {
+                    streamlist = m_delayedReleaseStreamList;
+                    m_delayedReleaseStreamList = null;
                 }
             }
             finally
@@ -3192,7 +3228,15 @@ namespace System.Runtime.InteropServices
             {
                 for (int i = 0; i < list.Count; i++)
                 {
-                    McgMarshal.ComRelease(list[i]);
+                    McgMarshal.ComSafeRelease(list[i]);
+                }
+            }
+
+            if (streamlist != null)
+            {
+                for (int i = 0; i < streamlist.Count; i++)
+                {
+                    McgComHelpers.SafeReleaseStream(streamlist[i]);
                 }
             }
         }
