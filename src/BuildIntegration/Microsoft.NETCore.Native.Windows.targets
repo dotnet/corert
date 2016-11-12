@@ -27,7 +27,9 @@ See the LICENSE file in the project root for more information.
       <CppCompilerAndLinkerArg Include="/Fo$(NativeObject)" />
       <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />
       <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/O2" />
-      <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /MT /Zi" />
+      <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /Zi" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' == 'true'" Include="/MTd" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' != 'true'" Include="/MT" />
       <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
     </ItemGroup>
 
