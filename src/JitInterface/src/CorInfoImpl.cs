@@ -388,17 +388,8 @@ namespace Internal.JitInterface
             return handle;
         }
 
-        // We don't have System.TypedReference but RyuJIT can ask for a classhandle for it anyway.
-        // This is the classhandle we give out. RyuJIT will only use it for comparisons and those
-        // will always be false as expected. It's not valid to pass it back to us.
-        // https://github.com/dotnet/corert/issues/2092
-        private const int FakeTypedReferenceTypeHandle = 0xBEF;
-
         private Object HandleToObject(IntPtr handle)
         {
-            if (handle == (IntPtr)FakeTypedReferenceTypeHandle)
-                throw new InvalidOperationException();
-
             int index = ((int)handle - handleBase) / handleMultipler;
             return _handleToObject[index];
         }
@@ -1409,8 +1400,8 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
-                    // PREFER: return null: https://github.com/dotnet/corert/issues/2092
-                    return (CORINFO_CLASS_STRUCT_*)FakeTypedReferenceTypeHandle;
+                    // TODO: better exception type: invalid input IL
+                    throw new NotSupportedException("TypedReference not supported in .NET Core");
 
                 case CorInfoClassId.CLASSID_TYPE_HANDLE:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeTypeHandle));
