@@ -20,9 +20,6 @@ namespace ILCompiler
 
         public override bool ContainsType(TypeDesc type)
         {
-            if (type.ContainsGenericVariables)
-                return true;
-
             EcmaType ecmaType = type as EcmaType;
 
             if (ecmaType == null)
@@ -38,7 +35,7 @@ namespace ILCompiler
 
         public override bool ContainsMethod(MethodDesc method)
         {
-            if (method.GetTypicalMethodDefinition().ContainsGenericVariables)
+            if (method.HasInstantiation)
                 return true;
 
             return ContainsType(method.OwningType);
