@@ -198,8 +198,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
-                return new RuntimeDeterminedMethodNode<MethodCodeNode>(method,
-                    (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                return new RuntimeDeterminedMethodNode(method,
+                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
