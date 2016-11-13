@@ -120,7 +120,7 @@ namespace Internal.TypeSystem.Ecma
                 GenericParameterConstraintHandleCollection constraintHandles = parameter.GetConstraints();
 
                 if (constraintHandles.Count == 0)
-                    return Array.Empty<TypeDesc>();
+                    return TypeDesc.EmptyTypes;
 
                 TypeDesc[] constraintTypes = new TypeDesc[constraintHandles.Count];
 

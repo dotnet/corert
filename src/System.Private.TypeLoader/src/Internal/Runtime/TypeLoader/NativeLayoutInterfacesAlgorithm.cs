@@ -45,7 +45,7 @@ namespace Internal.Runtime.TypeLoader
             if (!interfaceParser.IsNull)
                 implementedInterfaces = state.NativeLayoutInfo.LoadContext.GetTypeSequence(ref interfaceParser);
             else
-                implementedInterfaces = Array.Empty<TypeDesc>();
+                implementedInterfaces = TypeDesc.EmptyTypes;
 
             // Note that the order in which the interfaces are added to the list is same as the order in which the MDIL binder adds them.
             // It is required for correctness
