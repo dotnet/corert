@@ -1741,7 +1741,7 @@ namespace Internal.JitInterface
             *implicitBoundaries = BoundaryTypes.DEFAULT_BOUNDARIES;
         }
 
-        // Create a DebugLocInfo which is a table from native offset to sourece line.
+        // Create a DebugLocInfo which is a table from native offset to source line.
         // using native to il offset (pMap) and il to source line (_sequencePoints).
         private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
@@ -1752,27 +1752,39 @@ namespace Internal.JitInterface
                 return;
             }
 
+            int largestILOffset = 0; // All epiloges point to the largest IL offset.
+            for (int i = 0; i < cMap; i++)
+            {
+                OffsetMapping nativeToILInfo = pMap[i];
+                int currectILOffset = (int)nativeToILInfo.ilOffset;
+                if (currectILOffset > largestILOffset) // Special offsets are negative.
+                {
+                    largestILOffset = currectILOffset;
+                }
+            }
+
             List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
             for (int i = 0; i < cMap; i++)
             {
+                OffsetMapping nativeToILInfo = pMap[i];
+                int ilOffset = (int)nativeToILInfo.ilOffset;
+                switch (ilOffset)
+                {
+                    case (int)MappingTypes.PROLOG:
+                        ilOffset = 0;
+                        break;
+                    case (int)MappingTypes.EPILOG:
+                        ilOffset = largestILOffset;
+                        break;
+                    case (int)MappingTypes.NO_MAPPING:
+                        continue;
+                }
                 SequencePoint s;
-                if (_sequencePoints.TryGetValue((int)pMap[i].ilOffset, out s))
+                if (_sequencePoints.TryGetValue((int)ilOffset, out s))
                 {
                     Debug.Assert(!string.IsNullOrEmpty(s.Document));
                     int nativeOffset = (int)pMap[i].nativeOffset;
                     DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
-
-                    // https://github.com/dotnet/corert/issues/270
-                    // We often miss line number at 0 offset, which prevents debugger from
-                    // stepping into callee.
-                    // Synthesize a location info at 0 offset assuming line number is minus one
-                    // from the first entry.
-                    if (debugLocInfos.Count == 0 && nativeOffset != 0)
-                    {
-                        DebugLocInfo firstLoc = new DebugLocInfo(0, loc.FileName, loc.LineNumber - 1, loc.ColNumber);
-                        debugLocInfos.Add(firstLoc);
-                    }
-
                     debugLocInfos.Add(loc);
                 }
             }

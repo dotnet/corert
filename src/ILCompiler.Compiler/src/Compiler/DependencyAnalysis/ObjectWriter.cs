@@ -326,7 +326,9 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (var loc in locs)
                     {
-                        _offsetToDebugLoc.Add(loc.NativeOffset, loc);
+                        // TODO #2206: process the case with 
+                        // several debug nodes with the same native offset.
+                        _offsetToDebugLoc[loc.NativeOffset] = loc;
                     }
                 }
             }
