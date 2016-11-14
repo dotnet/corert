@@ -39,6 +39,8 @@ namespace ILCompiler
 
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
+        private IReadOnlyList<string> _rdXmlFilePaths = Array.Empty<string>();
+
         private bool _help;
 
         private Program()
@@ -120,6 +122,7 @@ namespace ILCompiler
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
+                syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -249,6 +252,11 @@ namespace ILCompiler
                     }
 
                     compilationGroup = new SingleFileCompilationModuleGroup();
+                }
+
+                foreach (var rdXmlFilePath in _rdXmlFilePaths)
+                {
+                    compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
                 }
             }
 
