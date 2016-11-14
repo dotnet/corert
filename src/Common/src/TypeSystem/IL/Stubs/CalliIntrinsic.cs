@@ -173,9 +173,6 @@ namespace Internal.IL.Stubs
             codestream.Emit(ILOpcode.calli, emitter.NewToken(targetSignature));
 
             codestream.EmitLabel(done);
-
-            // Workaround for https://github.com/dotnet/corert/issues/2073
-            codestream.Emit(ILOpcode.nop);
         }
     }
 }
