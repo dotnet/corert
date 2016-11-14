@@ -261,7 +261,7 @@
         "packages": {
           "description": "Builds the NuGet packages.",
           "settings": {
-            "Project": "src/packages.proj",
+            "Project": "src/pkg/packages.proj",
             "FilterToOSGroup":"default",
             "MsBuildLogging":"/flp:v=diag;LogFile=build-packages.log",
 	    "NuPkgRid": "default",

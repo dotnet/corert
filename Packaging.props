@@ -1,9 +1,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PreReleaseLabel>alpha</PreReleaseLabel>
-    <PackageDescriptionFile>$(ProjectDir)src/packaging/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(ProjectDir)src/packaging/dotnet_library_license.txt</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(ProjectDir)src/packaging/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <PackageDescriptionFile>$(ProjectDir)src/pkg/descriptions.json</PackageDescriptionFile>
+    <PackageLicenseFile>$(ProjectDir)src/pkg/dotnet_library_license.txt</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)src/pkg/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
     <ReleaseNotes>TODO</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
     <!-- Add a condition for this when we are able to run on .NET Core -->
@@ -25,7 +25,7 @@
   <Import Condition="Exists('pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="pkg/baseline/baseline.props" />
 
   <ItemGroup>
-    <PackageIndex Include="$(MSBuildThisFileDirectory)src/packaging/packageIndex.json" />
+    <PackageIndex Include="$(MSBuildThisFileDirectory)src/pkg/packageIndex.json" />
   </ItemGroup>
 
     <!--
