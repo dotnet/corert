@@ -338,7 +338,7 @@
           "TargetOS": "default",
           "Platform": "default",
           "ConfigurationGroup": "default",
-          "MsBuildLogging":"default",
+          "MsBuildLogging":"/flp:v=diag;LogFile=build-managed.log",
           "MsBuildWarning":"default",
           "MsBuildError":"default",
           "NewBuildScripts": "default",
