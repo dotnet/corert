@@ -124,12 +124,13 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static void SafeReleaseStream(IntPtr pStream)
         {
-            Debug.Assert(pStream != default(IntPtr));
 #if ENABLE_WINRT
-            // Release marshalled data and ignore any error
-            ExternalInterop.CoReleaseMarshalData(pStream);
-
-            McgMarshal.ComRelease(pStream);
+            if (pStream != default(IntPtr))
+            {
+                // Release marshalled data and ignore any error
+                ExternalInterop.CoReleaseMarshalData(pStream);
+                McgMarshal.ComRelease(pStream);
+            }
 #else
             throw new PlatformNotSupportedException("SafeReleaseStream");
 #endif
