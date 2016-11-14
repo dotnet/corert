@@ -6,8 +6,10 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
     <PackagePlatforms>x64;</PackagePlatforms>
-    <PackageTargetRuntime>win-aot</PackageTargetRuntime>
+    <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
     <PreventImplementationReference>true</PreventImplementationReference>
+    <SkipValidatePackage>true</SkipValidatePackage>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,4 +47,5 @@
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="GetPackageDependencies"/>
 </Project>
