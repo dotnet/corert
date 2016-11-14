@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.IL;
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
-using System;
-using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
@@ -71,10 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             CheckCanGenerateEEType(factory, type);
         }
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
@@ -82,11 +81,8 @@ namespace ILCompiler.DependencyAnalysis
             return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
         }
 
-        public TypeDesc Type
-        {
-            get { return _type; }
-        }
-        
+        public TypeDesc Type => _type;
+
         public override ObjectNodeSection Section
         {
             get
@@ -113,39 +109,18 @@ namespace ILCompiler.DependencyAnalysis
             return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public void SetDispatchMapIndex(int index)
         {
             _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)index));
         }
 
-        int ISymbolNode.Offset
+        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return GCDescSize;
-            }
+            sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
-
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return GetMangledName(_type);
-            }
-        }
-
-        public static string GetMangledName(TypeDesc type)
-        {
-            return "__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type);
-        }
+        public int Offset => GCDescSize;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

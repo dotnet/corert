@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using ILCompiler.DependencyAnalysisFramework;
-using Internal.TypeSystem;
 
-using Debug = System.Diagnostics.Debug;
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -67,63 +65,59 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public ReadyToRunHelperId Id
-        {
-            get
-            {
-                return _id;
-            }
-        }
+        public ReadyToRunHelperId Id => _id;
+        public Object Target =>  _target;
 
-        public Object Target
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
+            switch (_id)
             {
-                return _target;
-            }
-        }
-
-        public override string MangledName
-        {
-            get
-            {
-                switch (_id)
-                {
-                    case ReadyToRunHelperId.NewHelper:
-                        return "__NewHelper_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                    case ReadyToRunHelperId.NewArr1:
-                        return "__NewArr1_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                    case ReadyToRunHelperId.VirtualCall:
-                        return "__VirtualCall_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
-                    case ReadyToRunHelperId.IsInstanceOf:
-                        return "__IsInstanceOf_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                    case ReadyToRunHelperId.CastClass:
-                        return "__CastClass_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                    case ReadyToRunHelperId.GetNonGCStaticBase:
-                        return "__GetNonGCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                    case ReadyToRunHelperId.GetGCStaticBase:
-                        return "__GetGCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                    case ReadyToRunHelperId.GetThreadStaticBase:
-                        return "__GetThreadStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                    case ReadyToRunHelperId.DelegateCtor:
+                case ReadyToRunHelperId.NewHelper:
+                    sb.Append("__NewHelper_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    break;
+                case ReadyToRunHelperId.NewArr1:
+                    sb.Append("__NewArr1_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    break;
+                case ReadyToRunHelperId.VirtualCall:
+                    sb.Append("__VirtualCall_").Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
+                    break;
+                case ReadyToRunHelperId.IsInstanceOf:
+                    sb.Append("__IsInstanceOf_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    break;
+                case ReadyToRunHelperId.CastClass:
+                    sb.Append("__CastClass_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    break;
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                    sb.Append("__GetNonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    break;
+                case ReadyToRunHelperId.GetGCStaticBase:
+                    sb.Append("__GetGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    break;
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    sb.Append("__GetThreadStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    break;
+                case ReadyToRunHelperId.DelegateCtor:
+                    {
+                        var createInfo = (DelegateCreationInfo)_target;
+                        sb.Append("__DelegateCtor_");
+                        createInfo.Constructor.AppendMangledName(nameMangler, sb);
+                        sb.Append("__");
+                        createInfo.Target.AppendMangledName(nameMangler, sb);
+                        if (createInfo.Thunk != null)
                         {
-                            var createInfo = (DelegateCreationInfo)_target;
-                            string mangledName = String.Concat("__DelegateCtor_",
-                                createInfo.Constructor.MangledName, "__", createInfo.Target.MangledName);
-                            if (createInfo.Thunk != null)
-                                mangledName += String.Concat("__", createInfo.Thunk.MangledName);
-                            return mangledName;
+                            sb.Append("__");
+                            createInfo.Thunk.AppendMangledName(nameMangler, sb);
                         }
-                    case ReadyToRunHelperId.ResolveVirtualFunction:
-                        return "__ResolveVirtualFunction_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
-                    default:
-                        throw new NotImplementedException();
-                }
+                    }
+                    break;
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    sb.Append("__ResolveVirtualFunction_");
+                    sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
         }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -46,10 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected sealed override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected sealed override string GetName() => this.GetMangledName();
 
         public sealed override bool ShouldShareNodeAcrossModules(NodeFactory factory)
         {
@@ -110,18 +108,16 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override string MangledName
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                string mangledContextName;
-                if (_dictionaryOwner is MethodDesc)
-                    mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
-                else
-                    mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
+            Utf8String mangledContextName;
+            if (_dictionaryOwner is MethodDesc)
+                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
+            else
+                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
-                return string.Concat("__GenericLookupFromDict_", mangledContextName, "_", _lookupSignature.GetMangledName(NodeFactory.NameMangler));
-            }
+            sb.Append("__GenericLookupFromDict_").Append(mangledContextName).Append("_");
+            _lookupSignature.AppendMangledName(nameMangler, sb);
         }
     }
 
@@ -132,18 +128,16 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override string MangledName
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                string mangledContextName;
-                if (_dictionaryOwner is MethodDesc)
-                    mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
-                else
-                    mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
+            Utf8String mangledContextName;
+            if (_dictionaryOwner is MethodDesc)
+                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
+            else
+                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
-                return string.Concat("__GenericLookupFromType_", mangledContextName, "_", _lookupSignature.GetMangledName(NodeFactory.NameMangler));
-            }
+            sb.Append("__GenericLookupFromType_").Append(mangledContextName).Append("_");
+            _lookupSignature.AppendMangledName(nameMangler, sb);
         }
     }
 }

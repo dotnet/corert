@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,40 +23,22 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
             _dispatchMapTableIndex = IndexNotSet;
         }
-        
-        protected override string GetName()
+
+        protected override string GetName() => this.GetMangledName();
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return ((ISymbolNode)this).MangledName;
-        }
-        
-        string ISymbolNode.MangledName
-        {
-            get
+            if (_dispatchMapTableIndex == IndexNotSet)
             {
-                if (_dispatchMapTableIndex == IndexNotSet)
-                {
-                    throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
-                }
-                    
-                return NodeFactory.CompilationUnitPrefix + "__InterfaceDispatchMap_" + _dispatchMapTableIndex;
+                throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
             }
-        }
-        
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
+
+            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(_dispatchMapTableIndex.ToStringInvariant());
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public int Offset => 0;
+
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectNodeSection Section
         {

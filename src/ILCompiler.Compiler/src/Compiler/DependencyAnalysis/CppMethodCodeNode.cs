@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysisFramework;
-using System.Collections.Generic;
+
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -45,58 +47,20 @@ namespace ILCompiler.DependencyAnalysis
                 return _method;
             }
         }
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return _methodCode != null;
-            }
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return NodeFactory.NameMangler.GetMangledMethodName(_method);
-            }
-        }
+        public override bool StaticDependenciesAreComputed => _methodCode != null;
 
-        int ISymbolNode.Offset
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return 0;
-            }
+            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
         }
+        public int Offset => 0;
 
-        public override bool InterestingForDynamicDependencyAnalysis
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool HasDynamicDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool HasConditionalStaticDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool HasConditionalStaticDependencies => false;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -108,14 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
-        {
-            return null;
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
-        {
-            return null;
-        }
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

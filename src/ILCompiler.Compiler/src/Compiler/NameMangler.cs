@@ -5,10 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -244,18 +244,18 @@ namespace ILCompiler
             return mangledName;
         }
 
-        private ImmutableDictionary<MethodDesc, string> _mangledMethodNames = ImmutableDictionary<MethodDesc, string>.Empty;
+        private ImmutableDictionary<MethodDesc, Utf8String> _mangledMethodNames = ImmutableDictionary<MethodDesc, Utf8String>.Empty;
 
-        public string GetMangledMethodName(MethodDesc method)
+        public Utf8String GetMangledMethodName(MethodDesc method)
         {
-            string mangledName;
+            Utf8String mangledName;
             if (_mangledMethodNames.TryGetValue(method, out mangledName))
                 return mangledName;
 
             return ComputeMangledMethodName(method);
         }
 
-        private string ComputeMangledMethodName(MethodDesc method)
+        private Utf8String ComputeMangledMethodName(MethodDesc method)
         {
             string prependTypeName = null;
             if (!_mangleForCplusPlus)
@@ -292,7 +292,7 @@ namespace ILCompiler
             var methodDefinition = method.GetTypicalMethodDefinition();
             if (methodDefinition != method)
             {
-                mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition());
+                mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition()).ToString();
 
                 var inst = method.Instantiation;
                 string mangledInstantiation = "";
@@ -316,26 +316,28 @@ namespace ILCompiler
             if (prependTypeName != null)
                 mangledName = prependTypeName + "__" + mangledName;
 
+            Utf8String utf8MangledName = new Utf8String(mangledName);
+
             lock (this)
             {
-                _mangledMethodNames = _mangledMethodNames.Add(method, mangledName);
+                _mangledMethodNames = _mangledMethodNames.Add(method, utf8MangledName);
             }
 
-            return mangledName;
+            return utf8MangledName;
         }
 
-        private ImmutableDictionary<FieldDesc, string> _mangledFieldNames = ImmutableDictionary<FieldDesc, string>.Empty;
+        private ImmutableDictionary<FieldDesc, Utf8String> _mangledFieldNames = ImmutableDictionary<FieldDesc, Utf8String>.Empty;
 
-        public string GetMangledFieldName(FieldDesc field)
+        public Utf8String GetMangledFieldName(FieldDesc field)
         {
-            string mangledName;
+            Utf8String mangledName;
             if (_mangledFieldNames.TryGetValue(field, out mangledName))
                 return mangledName;
 
             return ComputeMangledFieldName(field);
         }
 
-        private string ComputeMangledFieldName(FieldDesc field)
+        private Utf8String ComputeMangledFieldName(FieldDesc field)
         {
             string prependTypeName = null;
             if (!_mangleForCplusPlus)
@@ -372,12 +374,14 @@ namespace ILCompiler
             if (prependTypeName != null)
                 mangledName = prependTypeName + "__" + mangledName;
 
+            Utf8String utf8MangledName = new Utf8String(mangledName);
+
             lock (this)
             {
-                _mangledFieldNames = _mangledFieldNames.Add(field, mangledName);
+                _mangledFieldNames = _mangledFieldNames.Add(field, utf8MangledName);
             }
 
-            return mangledName;
+            return utf8MangledName;
         }
 
         private ImmutableDictionary<string, string> _mangledStringLiterals = ImmutableDictionary<string, string>.Empty;

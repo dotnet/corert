@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -16,14 +18,18 @@ namespace ILCompiler.DependencyAnalysis
             _indirectedNode = indirectedNode;
         }
 
-        string ISymbolNode.MangledName => "__indirection" + _indirectedNode.MangledName;
-        int ISymbolNode.Offset => 0;
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("__indirection");
+            _indirectedNode.AppendMangledName(nameMangler, sb);
+        }
+        public int Offset => 0;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => ((ISymbolNode)this).MangledName;
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

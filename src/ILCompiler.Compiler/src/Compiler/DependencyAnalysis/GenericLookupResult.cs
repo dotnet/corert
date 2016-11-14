@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
@@ -20,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
     public abstract class GenericLookupResult
     {
         public abstract ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation);
-        public abstract string GetMangledName(NameMangler nameMangler);
+        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract override string ToString();
 
         /// <summary>
@@ -50,9 +51,10 @@ namespace ILCompiler.DependencyAnalysis
             return factory.ConstructedTypeSymbol(instantiatedType);
         }
 
-        public override string GetMangledName(NameMangler nameMangler)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return $"TypeHandle_{nameMangler.GetMangledTypeName(_type)}";
+            sb.Append("TypeHandle_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
         public override string ToString() => $"TypeHandle: {_type}";
@@ -77,9 +79,10 @@ namespace ILCompiler.DependencyAnalysis
             return factory.MethodGenericDictionary(instantiatedMethod);
         }
 
-        public override string GetMangledName(NameMangler nameMangler)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return $"MethodHandle_{nameMangler.GetMangledMethodName(_method)}";
+            sb.Append("MethodHandle_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
         public override string ToString() => $"MethodHandle: {_method}";
@@ -106,9 +109,10 @@ namespace ILCompiler.DependencyAnalysis
             return factory.FatFunctionPointer(instantiatedMethod);
         }
 
-        public override string GetMangledName(NameMangler nameMangler)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return $"MethodEntry_{nameMangler.GetMangledMethodName(_method)}";
+            sb.Append("MethodEntry_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
         public override string ToString() => $"MethodEntry: {_method}";
@@ -133,9 +137,10 @@ namespace ILCompiler.DependencyAnalysis
             return factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, instantiatedMethod);
         }
 
-        public override string GetMangledName(NameMangler nameMangler)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return $"VirtualCall_{nameMangler.GetMangledMethodName(_method)}";
+            sb.Append("VirtualCall_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
         public override string ToString() => $"VirtualCall: {_method}";
@@ -161,9 +166,10 @@ namespace ILCompiler.DependencyAnalysis
             return factory.TypeNonGCStaticsSymbol(instantiatedType);
         }
 
-        public override string GetMangledName(NameMangler nameMangler)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return $"NonGCStaticBase_{nameMangler.GetMangledTypeName(_type)}";
+            sb.Append("NonGCStaticBase_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
         public override string ToString() => $"NonGCStaticBase: {_type}";
@@ -189,9 +195,10 @@ namespace ILCompiler.DependencyAnalysis
             return factory.TypeGCStaticsSymbol(instantiatedType);
         }
 
-        public override string GetMangledName(NameMangler nameMangler)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return $"GCStaticBase_{nameMangler.GetMangledTypeName(_type)}";
+            sb.Append("GCStaticBase_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
         public override string ToString() => $"GCStaticBase: {_type}";

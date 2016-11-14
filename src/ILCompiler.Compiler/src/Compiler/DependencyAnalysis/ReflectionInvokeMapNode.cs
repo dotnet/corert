@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 
@@ -23,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReflectionInvokeMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
             _externalReferences = externalReferences;
         }
 
@@ -35,42 +36,17 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__method_to_entrypoint_map";
-            }
+            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
         }
+        public int Offset => 0;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

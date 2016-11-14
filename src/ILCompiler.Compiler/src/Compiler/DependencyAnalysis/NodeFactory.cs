@@ -8,6 +8,7 @@ using System.Diagnostics;
 
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
@@ -155,7 +156,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new GCStaticEETypeNode(Target, gcMap);
             });
 
-            _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
+            _readOnlyDataBlobs = new NodeCache<Tuple<Utf8String, byte[], int>, BlobNode>((Tuple<Utf8String, byte[], int> key) =>
             {
                 return new BlobNode(key.Item1, ObjectNodeSection.ReadOnlyDataSection, key.Item2, key.Item3);
             }, new BlobTupleEqualityComparer());
@@ -174,12 +175,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PInvokeMethodFixupNode(key.Item1, key.Item2);
             });
-
-            _internalSymbols = new NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode>(
-                (Tuple<ObjectNode, int, string> key) =>
-                {
-                    return new ObjectAndOffsetSymbolNode(key.Item1, key.Item2, key.Item3);
-                });
 
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
 
@@ -372,14 +367,14 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchCells.GetOrAdd(method);
         }
 
-        private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<string, byte[], int>>
+        private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<Utf8String, byte[], int>>
         {
-            bool IEqualityComparer<Tuple<string, byte[], int>>.Equals(Tuple<string, byte[], int> x, Tuple<string, byte[], int> y)
+            bool IEqualityComparer<Tuple<Utf8String, byte[], int>>.Equals(Tuple<Utf8String, byte[], int> x, Tuple<Utf8String, byte[], int> y)
             {
                 return x.Item1.Equals(y.Item1);
             }
 
-            int IEqualityComparer<Tuple<string, byte[], int>>.GetHashCode(Tuple<string, byte[], int> obj)
+            int IEqualityComparer<Tuple<Utf8String, byte[], int>>.GetHashCode(Tuple<Utf8String, byte[], int> obj)
             {
                 return obj.Item1.GetHashCode();
             }
@@ -392,11 +387,11 @@ namespace ILCompiler.DependencyAnalysis
             return _GCStaticEETypes.GetOrAdd(gcMap);
         }
 
-        private NodeCache<Tuple<string, byte[], int>, BlobNode> _readOnlyDataBlobs;
+        private NodeCache<Tuple<Utf8String, byte[], int>, BlobNode> _readOnlyDataBlobs;
 
-        public BlobNode ReadOnlyDataBlob(string name, byte[] blobData, int alignment)
+        public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment)
         {
-            return _readOnlyDataBlobs.GetOrAdd(new Tuple<string, byte[], int>(name, blobData, alignment));
+            return _readOnlyDataBlobs.GetOrAdd(new Tuple<Utf8String, byte[], int>(name, blobData, alignment));
         }
 
         private NodeCache<TypeDesc, InterfaceDispatchMapNode> _interfaceDispatchMaps;
@@ -439,13 +434,6 @@ namespace ILCompiler.DependencyAnalysis
         public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName)
         {
             return _pInvokeMethodFixups.GetOrAdd(new Tuple<string, string>(moduleName, entryPointName));
-        }
-
-        private NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode> _internalSymbols;
-
-        public ISymbolNode ObjectAndOffset(ObjectNode obj, int offset, string name)
-        {
-            return _internalSymbols.GetOrAdd(new Tuple<ObjectNode, int, string>(obj, offset, name));
         }
 
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
@@ -674,7 +662,7 @@ namespace ILCompiler.DependencyAnalysis
         internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
         public static NameMangler NameMangler;
-        public static string CompilationUnitPrefix;
+        public static string CompilationUnitPrefix = "";
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

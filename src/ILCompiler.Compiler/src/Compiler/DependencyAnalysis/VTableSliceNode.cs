@@ -23,58 +23,22 @@ namespace ILCompiler.DependencyAnalysis
         {
             _type = type;
         }
-        
+
         public abstract IReadOnlyList<MethodDesc> Slots
         {
             get;
         }
-        
-        protected override string GetName()
-        {
-            return "__vtable_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-        }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected override string GetName() => $"__vtable_{NodeFactory.NameMangler.GetMangledTypeName(_type).ToString()}";
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
-        {
-            return null;
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
-        {
-            return null;
-        }
-        
-        public override bool InterestingForDynamicDependencyAnalysis
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
 
-        public override bool HasDynamicDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool HasConditionalStaticDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool HasConditionalStaticDependencies => false;
     }
 
     /// <summary>

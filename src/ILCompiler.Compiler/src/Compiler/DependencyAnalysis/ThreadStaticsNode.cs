@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
 using System.Collections.Generic;
+
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,22 +22,16 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         protected override void OnMarked(NodeFactory factory)
         {
             factory.ThreadStaticsRegion.AddEmbeddedObject(this);
         }
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return "__ThreadStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-            }
+            sb.Append("__ThreadStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
@@ -60,21 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return Offset;
-            }
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
