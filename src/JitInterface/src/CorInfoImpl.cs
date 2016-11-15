@@ -119,11 +119,15 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
+        private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
+
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             try
             {
                 _methodCodeNode = methodCodeNodeNeedingCode;
+
+                _isFallbackBodyCompilation = methodIL != null;
 
                 CORINFO_METHOD_INFO methodInfo;
                 methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, out methodInfo);
@@ -1339,7 +1343,7 @@ namespace Internal.JitInterface
             MethodDesc md = HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (!_compilation.HasLazyStaticConstructor(type))
+            if (!_compilation.HasLazyStaticConstructor(type) || _isFallbackBodyCompilation)
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
