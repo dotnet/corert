@@ -1400,8 +1400,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
-                    // TODO: better exception type: invalid input IL
-                    throw new NotSupportedException("TypedReference not supported in .NET Core");
+                    throw new TypeSystemException.TypeLoadException("System", "TypedReference", _compilation.TypeSystemContext.SystemModule);
 
                 case CorInfoClassId.CLASSID_TYPE_HANDLE:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeTypeHandle));
@@ -1413,8 +1412,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeMethodHandle));
 
                 case CorInfoClassId.CLASSID_ARGUMENT_HANDLE:
-                    // TODO: better exception type: invalid input IL
-                    throw new NotSupportedException("Vararg methods not supported in .NET Core");
+                    throw new TypeSystemException.TypeLoadException("System", "RuntimeArgumentHandle", _compilation.TypeSystemContext.SystemModule);
 
                 case CorInfoClassId.CLASSID_STRING:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
