@@ -528,9 +528,7 @@ namespace System.Runtime.InteropServices
                     exception = new SafeArrayTypeMismatchException();
                     break;
                 case __HResults.COR_E_SERIALIZATION:
-                    exception = ConstructExceptionUsingReflection(
-                        "System.Runtime.Serialization.SerializationException, System.Runtime.Serialization.Primitives, Version=4.0.0.0",
-                        message);
+                    exception = new System.Runtime.Serialization.SerializationException(message);
                     break;
                 case __HResults.COR_E_SYNCHRONIZATIONLOCK:
                     exception = new System.Threading.SynchronizationLockException();
