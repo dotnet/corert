@@ -37,6 +37,7 @@ namespace ILCompiler
 
         private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
         private HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
+        private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
@@ -76,6 +77,9 @@ namespace ILCompiler
 
             var invokeMapNode = new ReflectionInvokeMapNode(externalReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
+
+            var arrayMapNode = new ArrayMapNode(externalReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
 
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
@@ -238,7 +242,7 @@ namespace ILCompiler
         {
             Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
 
-            if (type.IsTypeDefinition)
+            if (type.IsDefType && type.IsTypeDefinition)
             {
                 var mdType = type as MetadataType;
                 if (mdType != null)
@@ -253,8 +257,13 @@ namespace ILCompiler
                 foreach (var argument in type.Instantiation)
                     AddGeneratedType(argument);
             }
+            else if (type.IsArray)
+            {
+                var arrayType = (ArrayType)type;
+                _arrayTypesGenerated.Add(arrayType);
+            }
 
-            // TODO: track generic types, array types, etc.
+            // TODO: track generic types, etc.
         }
 
         private void EnsureMetadataGenerated()
@@ -319,6 +328,11 @@ namespace ILCompiler
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
         {
             return _cctorContextsGenerated;
+        }
+
+        internal IEnumerable<ArrayType> GetArrayTypeMapping()
+        {
+            return _arrayTypesGenerated;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)
