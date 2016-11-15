@@ -1763,11 +1763,18 @@ namespace Internal.JitInterface
                 }
             }
 
+            int previousNativeOffset = -1; 
             List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
             for (int i = 0; i < cMap; i++)
             {
                 OffsetMapping nativeToILInfo = pMap[i];
                 int ilOffset = (int)nativeToILInfo.ilOffset;
+                int nativeOffset = (int)pMap[i].nativeOffset;
+                if (nativeOffset == previousNativeOffset)
+                {
+                    // Save the first one, skip others.
+                    continue;
+                }
                 switch (ilOffset)
                 {
                     case (int)MappingTypes.PROLOG:
@@ -1783,9 +1790,9 @@ namespace Internal.JitInterface
                 if (_sequencePoints.TryGetValue((int)ilOffset, out s))
                 {
                     Debug.Assert(!string.IsNullOrEmpty(s.Document));
-                    int nativeOffset = (int)pMap[i].nativeOffset;
                     DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
                     debugLocInfos.Add(loc);
+                    previousNativeOffset = nativeOffset;
                 }
             }
 
