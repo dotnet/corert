@@ -125,7 +125,7 @@ namespace Internal.TypeSystem
             }
 
             public MissingMethodException(TypeDesc owningType, string methodName, MethodSignature signature)
-                : this(ExceptionStringID.MissingField, Format.Method(owningType, methodName, signature))
+                : this(ExceptionStringID.MissingMethod, Format.Method(owningType, methodName, signature))
             {
             }
         }
