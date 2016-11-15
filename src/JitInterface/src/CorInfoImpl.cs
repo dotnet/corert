@@ -2250,7 +2250,7 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    // TODO: LDTOKEN <method>?
+                    throw new NotImplementedException("LDTOKEN Method");
                 }
                 else
                 {
