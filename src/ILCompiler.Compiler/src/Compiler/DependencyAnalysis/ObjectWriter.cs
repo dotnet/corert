@@ -326,8 +326,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (var loc in locs)
                     {
-                        // TODO #2206: process the case with 
-                        // several debug nodes with the same native offset.
+                        Debug.Assert(!_offsetToDebugLoc.ContainsKey(loc.NativeOffset));
                         _offsetToDebugLoc[loc.NativeOffset] = loc;
                     }
                 }
