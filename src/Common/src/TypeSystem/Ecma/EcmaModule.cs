@@ -408,7 +408,7 @@ namespace Internal.TypeSystem.Ecma
             }
             else if (parent is MethodDesc)
             {
-                throw new NotSupportedException("Vararg methods not supported in .NET Core.");
+                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramVararg, (MethodDesc)parent);
             }
             else if (parent is ModuleDesc)
             {

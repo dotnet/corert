@@ -1011,6 +1011,9 @@
   <data name="InvalidProgram_Specific" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program. The body of method '{0}' is invalid.</value>
   </data>
+  <data name="InvalidProgram_Vararg" xml:space="preserve">
+    <value>Method '{0}' has a variable argument list. Variable argument lists are not supported in .NET Core.</value>
+  </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>
   </data>
