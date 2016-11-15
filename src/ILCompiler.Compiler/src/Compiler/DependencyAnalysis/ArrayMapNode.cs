@@ -85,6 +85,9 @@ namespace ILCompiler.DependencyAnalysis
                 if (!arrayType.IsSzArray)
                     continue;
 
+                if (!factory.MetadataManager.TypeGeneratesEEType(arrayType))
+                    continue;
+
                 // TODO: This should only be emitted for arrays of value types. The type loader builds everything else.
 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
