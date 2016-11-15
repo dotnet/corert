@@ -78,7 +78,10 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             // If there is a constructed version of this node in the graph, emit that instead
-            return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
+            if (ConstructedEETypeNode.CreationAllowed(_type))
+                return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
+
+            return false;
         }
 
         public TypeDesc Type => _type;
@@ -508,9 +511,6 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public static void CheckCanGenerateEEType(NodeFactory factory, TypeDesc type)
         {
-            // TODO: a set of rules for "constructed" types: e.g. ban creating a constructed EEType for '<Module>' type,
-            //       pointer types, function pointer types, byrefs, generic definitions, etc.
-
             // Don't validate generic definitons
             if (type.IsGenericDefinition)
             {

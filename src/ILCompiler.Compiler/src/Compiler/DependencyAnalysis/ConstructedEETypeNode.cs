@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public ConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
-            Debug.Assert(!_type.IsGenericDefinition);
+            CheckCanGenerateConstructedEEType(factory, type);
         }
 
         protected override string GetName() => this.GetMangledName() + " constructed";
@@ -230,6 +230,36 @@ namespace ILCompiler.DependencyAnalysis
 
             objData.EmitShort(checked((short)virtualSlotCount));
             objData.EmitShort(checked((short)_type.RuntimeInterfaces.Length));
+        }
+
+        public static bool CreationAllowed(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                case TypeFlags.ByRef:
+                    // Pointers and byrefs are not boxable
+                    return false;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    // TODO: any validation for arrays?
+                    break;
+
+                default:
+                    // Generic definition EETypes can't be allocated
+                    if (type.IsGenericDefinition)
+                        return false;
+                    break;
+            }
+
+            return true;
+        }
+
+        public static void CheckCanGenerateConstructedEEType(NodeFactory factory, TypeDesc type)
+        {
+            if (!CreationAllowed(type))
+                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
         }
     }
 }
