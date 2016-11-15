@@ -431,7 +431,12 @@ namespace Internal.TypeSystem.Ecma
             else
             if (resolutionScope is MetadataType)
             {
-                return ((MetadataType)(resolutionScope)).GetNestedType(_metadataReader.GetString(typeReference.Name));
+                string typeName = _metadataReader.GetString(typeReference.Name);
+                MetadataType result = ((MetadataType)(resolutionScope)).GetNestedType(typeName);
+                if (result != null)
+                    return result;
+
+                throw new TypeSystemException.TypeLoadException(typeName, ((MetadataType)resolutionScope).Module);
             }
 
             // TODO
