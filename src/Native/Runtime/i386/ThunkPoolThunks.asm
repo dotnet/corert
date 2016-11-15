@@ -9,6 +9,8 @@
 option  casemap:none
 .code
 
+include AsmMacros.inc
+
 ;; -----------------------------------------------------------------------------------------------------------
 ;; standard macros
 ;; -----------------------------------------------------------------------------------------------------------
@@ -236,40 +238,74 @@ NAMED_READWRITE_DATA_SECTION ThunkData7, ".tkd7"
 
 
 ;;
-;; IntPtr _RhpGetThunksBase()
+;; IntPtr RhpGetThunksBase()
 ;;
-LEAF_ENTRY _RhpGetThunksBase, _TEXT
+FASTCALL_FUNC RhpGetThunksBase, 0
         ;; Return the address of the first thunk pool to the caller (this is really the base address)
         lea     eax, [ThunkPool]
         ret
-LEAF_END _RhpGetThunksBase, _TEXT
+FASTCALL_ENDFUNC
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; General Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
-;; int _RhpGetNumThunksPerBlock()
+;; int RhpGetNumThunksPerBlock()
 ;;
-LEAF_ENTRY _RhpGetNumThunksPerBlock, _TEXT
+FASTCALL_FUNC RhpGetNumThunksPerBlock, 0
         mov     eax, THUNK_POOL_NUM_THUNKS_PER_PAGE
         ret   
-LEAF_END _RhpGetNumThunksPerBlock, _TEXT
+FASTCALL_ENDFUNC
 
 ;;
-;; int _RhpGetThunkSize()
+;; int RhpGetThunkSize()
 ;;
-LEAF_ENTRY _RhpGetThunkSize, _TEXT
+FASTCALL_FUNC RhpGetThunkSize, 0
         mov     eax, THUNK_CODESIZE
         ret   
-LEAF_END _RhpGetThunkSize, _TEXT
+FASTCALL_ENDFUNC
 
 ;;
-;; int _RhpGetNumThunkBlocksPerMapping()
+;; int RhpGetNumThunkBlocksPerMapping()
 ;;
-LEAF_ENTRY _RhpGetNumThunkBlocksPerMapping, _TEXT
+FASTCALL_FUNC RhpGetNumThunkBlocksPerMapping, 0
         mov     eax, 8
         ret   
-LEAF_END _RhpGetNumThunkBlocksPerMapping, _TEXT
+FASTCALL_ENDFUNC
+
+;;
+;; IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress)
+;;
+FASTCALL_FUNC RhpGetNextThunkStubsBlockAddress, 4
+        mov     eax, PAGE_SIZE * 2
+        add     eax, ecx
+        ret
+FASTCALL_ENDFUNC
+
+;; 
+;; IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
+;; 
+FASTCALL_FUNC RhpGetThunkDataBlockAddress, 4
+        mov     eax, ecx
+        mov     ecx, PAGE_SIZE - 1
+        not     ecx
+        and     eax, ecx
+        add     eax, PAGE_SIZE
+        ret
+FASTCALL_ENDFUNC
+
+;; 
+;; IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress)
+;; 
+FASTCALL_FUNC RhpGetThunkStubsBlockAddress, 4
+        mov     eax, ecx
+        mov     ecx, PAGE_SIZE - 1
+        not     ecx
+        and     eax, ecx
+        sub     eax, PAGE_SIZE
+        ret
+FASTCALL_ENDFUNC
+
 
 end

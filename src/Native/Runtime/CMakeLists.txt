@@ -55,6 +55,7 @@ set(COMMON_RUNTIME_SOURCES
 
 set(FULL_RUNTIME_SOURCES
     AsmOffsetsVerify.cpp
+    ThunksMapping.cpp
 )
 
 set(RUNTIME_SOURCES_ARCH_ASM
