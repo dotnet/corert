@@ -99,29 +99,18 @@ namespace ILCompiler
 
             string typeName = typeNameAttribute.Value;
 
-            string name;
-            string ns;
-            int namespaceEndIndex = typeName.LastIndexOf('.');
-            if (namespaceEndIndex > 0)
-            {
-                ns = typeName.Substring(0, namespaceEndIndex);
-                name = typeName.Substring(namespaceEndIndex + 1);
-            }
-            else
-            {
-                ns = string.Empty;
-                name = typeName;
-            }
-
-            MetadataType type = containingModule.GetType(ns, name);
+            TypeDesc type = containingModule.GetTypeByCustomAttributeTypeName(typeName);
             rootProvider.AddCompilationRoot(type, "RD.XML root");
 
-            foreach (var method in type.GetMethods())
+            if (type.IsDefType)
             {
-                if (method.IsAbstract || method.HasInstantiation)
-                    continue;
+                foreach (var method in type.GetMethods())
+                {
+                    if (method.IsAbstract || method.HasInstantiation)
+                        continue;
 
-                rootProvider.AddCompilationRoot(method, "RD.XML root");
+                    rootProvider.AddCompilationRoot(method, "RD.XML root");
+                }
             }
         }
     }
