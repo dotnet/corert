@@ -23,8 +23,8 @@ namespace ILCompiler
         {
             foreach (TypeDesc type in _module.GetAllTypes())
             {
-                // Skip delegates (since their Invoke methods have no IL) and uninstantiated generic types
-                if (type.IsDelegate || type.ContainsGenericVariables)
+                // Skip delegates (since their Invoke methods have no IL)
+                if (type.IsDelegate)
                     continue;
 
                 try
@@ -41,7 +41,9 @@ namespace ILCompiler
                     // TODO: Log as a warning
                 }
 
-                RootMethods(type, "Library module method", rootProvider);
+                // If this is not a generic definition, root all methods
+                if (!type.HasInstantiation)
+                    RootMethods(type, "Library module method", rootProvider);
             }
         }
 
@@ -50,7 +52,7 @@ namespace ILCompiler
             foreach (MethodDesc method in type.GetMethods())
             {
                 // Skip methods with no IL and uninstantiated generic methods
-                if (method.IsIntrinsic || method.IsAbstract || method.ContainsGenericVariables)
+                if (method.IsIntrinsic || method.IsAbstract || method.HasInstantiation)
                     continue;
 
                 if (method.IsInternalCall)

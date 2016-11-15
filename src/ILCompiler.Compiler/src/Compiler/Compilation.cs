@@ -150,7 +150,10 @@ namespace ILCompiler
 
             public void AddCompilationRoot(TypeDesc type, string reason)
             {
-                _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
+                if (type.IsGenericDefinition)
+                    _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
+                else
+                    _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
             }
         }
     }
