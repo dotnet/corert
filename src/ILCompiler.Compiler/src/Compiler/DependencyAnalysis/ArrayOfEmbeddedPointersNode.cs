@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -77,10 +79,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode = futureParent;
             }
 
-            protected override string GetName()
-            {
-                return "Embedded pointer to " + Target.MangledName;
-            }
+            protected override string GetName() => $"Embedded pointer to {Target.GetMangledName()}";
 
             protected override void OnMarked(NodeFactory factory)
             {
@@ -109,12 +108,9 @@ namespace ILCompiler.DependencyAnalysis
                 _id = id;
             }
 
-            public string MangledName
+            public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             {
-                get
-                {
-                    return String.Concat(_parentNode._startSymbolMangledName, "_", _id.ToStringInvariant());
-                }
+                sb.Append(_parentNode._startSymbolMangledName).Append("_").Append(_id.ToStringInvariant());
             }
         }
         

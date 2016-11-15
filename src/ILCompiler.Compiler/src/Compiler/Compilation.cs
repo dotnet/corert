@@ -104,6 +104,7 @@ namespace ILCompiler
 
             string systemModuleName = ((IAssemblyDesc)NodeFactory.TypeSystemContext.SystemModule).GetName().Name;
 
+            // TODO: CompilationUnitPrefix is used even before this point!!!
             // TODO: just something to get Runtime.Base compiled
             if (systemModuleName != "System.Private.CoreLib")
             {

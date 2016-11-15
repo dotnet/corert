@@ -6,6 +6,7 @@ using System;
 using System.IO;
 
 using Internal.NativeFormat;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -19,24 +20,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public ClassConstructorContextMap(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
             _externalReferences = externalReferences;
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
 
-        string ISymbolNode.MangledName => NodeFactory.CompilationUnitPrefix + "__type_to_cctorContext_map";
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__type_to_cctorContext_map");
+        }
+        public int Offset => 0;
 
-        int ISymbolNode.Offset => 0;
-        
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
-            
+
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

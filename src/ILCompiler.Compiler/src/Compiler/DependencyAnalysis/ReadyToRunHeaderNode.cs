@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -41,26 +41,16 @@ namespace ILCompiler.DependencyAnalysis
             _items.Add(new HeaderItem(id, node, startSymbol, endSymbol));
         }
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__ReadyToRunHeader";
-            }
+            sb.Append(NodeFactory.CompilationUnitPrefix);
+            sb.Append("__ReadyToRunHeader");
         }
+        public int Offset => 0;
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectNodeSection Section
         {
@@ -70,14 +60,6 @@ namespace ILCompiler.DependencyAnalysis
                     return ObjectNodeSection.ReadOnlyDataSection;
                 else
                     return ObjectNodeSection.DataSection;
-            }
-        }
-
-        public int Offset
-        {
-            get
-            {
-                return 0;
             }
         }
 

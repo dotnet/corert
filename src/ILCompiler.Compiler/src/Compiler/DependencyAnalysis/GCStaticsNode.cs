@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -18,18 +19,13 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName()
+        protected override string GetName() => this.GetMangledName();
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return ((ISymbolNode)this).MangledName;
+            sb.Append("__GCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }
-        
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return "__GCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-            }
-        }
+        public int Offset => 0;
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
@@ -57,29 +53,9 @@ namespace ILCompiler.DependencyAnalysis
             return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
         }
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

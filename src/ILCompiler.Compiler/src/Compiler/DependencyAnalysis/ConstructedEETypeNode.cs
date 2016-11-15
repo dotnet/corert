@@ -6,23 +6,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class ConstructedEETypeNode : EETypeNode, ISymbolNode
+    internal class ConstructedEETypeNode : EETypeNode
     {
         public ConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
             Debug.Assert(!_type.IsGenericDefinition);
         }
-        
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName + " constructed";
-        }
+
+        protected override string GetName() => this.GetMangledName() + " constructed";
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {

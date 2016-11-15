@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.IL;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -25,9 +26,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method => _allocationMethod;
 
-        int ISymbolNode.Offset => 0;
-
-        string ISymbolNode.MangledName => NodeFactory.NameMangler.GetMangledMethodName(_allocationMethod);
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_allocationMethod));
+        }
+        public int Offset => 0;
 
         public StringAllocatorMethodNode(MethodDesc constructorMethod)
         {
@@ -59,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
-        protected override string GetName() => ((ISymbolNode)this).MangledName;
+
+        protected override string GetName() => this.GetMangledName();
     }
 }

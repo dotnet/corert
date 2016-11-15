@@ -22,12 +22,6 @@ namespace ILCompiler.DependencyAnalysis
             EETypeNode.CheckCanGenerateEEType(factory, type);
         }
 
-        public TypeDesc Type
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public TypeDesc Type => _type;
     }
 }

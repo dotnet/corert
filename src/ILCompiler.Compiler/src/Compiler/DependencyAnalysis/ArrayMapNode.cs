@@ -6,6 +6,7 @@ using System;
 using System.IO;
 
 using Internal.NativeFormat;
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,54 +20,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public ArrayMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
             _externalReferences = externalReferences;
         }
 
-        public ISymbolNode EndSymbol
-        {
-            get
-            {
-                return _endSymbol;
-            }
-        }
+        public ISymbolNode EndSymbol => _endSymbol;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__array_type_map";
-            }
+            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__array_type_map");
         }
+        public int Offset => 0;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

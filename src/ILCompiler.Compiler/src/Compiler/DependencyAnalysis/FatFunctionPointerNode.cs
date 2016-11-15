@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -23,11 +24,13 @@ namespace ILCompiler.DependencyAnalysis
             Method = methodRepresented;
         }
 
-        public string MangledName => "__fatpointer_" + NodeFactory.NameMangler.GetMangledMethodName(Method);
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("__fatpointer_").Append(NodeFactory.NameMangler.GetMangledMethodName(Method));
+        }
+        public int Offset => 0;
 
         public MethodDesc Method { get; }
-
-        public int Offset => 0;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
@@ -35,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory) => true;
 
-        protected override string GetName() => MangledName;
+        protected override string GetName() => this.GetMangledName();
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

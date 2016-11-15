@@ -4,8 +4,10 @@
 
 using System.Collections.Generic;
 
-using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
+
+using Internal.Text;
+using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -24,8 +26,11 @@ namespace ILCompiler.DependencyAnalysis
         public MethodDesc Method { get; }
 
         // Implementation of ISymbolNode that makes this node act as a symbol for the canonical body
-        int ISymbolNode.Offset => _canonicalMethodNode.Offset;
-        string ISymbolNode.MangledName => _canonicalMethodNode.MangledName;
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            _canonicalMethodNode.AppendMangledName(nameMangler, sb);
+        }
+        public int Offset => _canonicalMethodNode.Offset;
 
         public RuntimeDeterminedMethodNode(MethodDesc method, IMethodNode canonicalMethod)
         {
@@ -41,10 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             yield return new DependencyListEntry(_canonicalMethodNode, "Canonical body");
         }
 
-        protected override string GetName()
-        {
-            return $"{Method.ToString()} backed by {_canonicalMethodNode.MangledName}";
-        }
+        protected override string GetName() => $"{Method.ToString()} backed by {_canonicalMethodNode.GetMangledName()}";
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
@@ -56,9 +58,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
-            List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(
-            NodeFactory factory) => null;
+
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
     }
 }

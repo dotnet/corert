@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -19,32 +21,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public ExternalReferencesTableNode()
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
         }
 
-        public ISymbolNode EndSymbol
-        {
-            get
-            {
-                return _endSymbol;
-            }
-        }
+        public ISymbolNode EndSymbol => _endSymbol;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__external_references";
-            }
+            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__external_references");
         }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public int Offset => 0;
 
         /// <summary>
         /// Adds a new entry to the table. Thread safety: not thread safe. Expected to be called at the final
@@ -65,26 +51,11 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

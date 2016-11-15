@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -36,17 +37,9 @@ namespace ILCompiler.DependencyAnalysis
             _methodCode = data;
         }
 
-        public MethodDesc Method
-        {
-            get
-            {
-                return _method;
-            }
-        }
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        public MethodDesc Method =>  _method;
+
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectNodeSection Section
         {
@@ -61,29 +54,13 @@ namespace ILCompiler.DependencyAnalysis
             return factory.CompilationModuleGroup.ShouldShareAcrossModules(_method);
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return _methodCode != null;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => _methodCode != null;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.NameMangler.GetMangledMethodName(_method);
-            }
+            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
         }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public int Offset => 0;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -134,29 +111,9 @@ namespace ILCompiler.DependencyAnalysis
             return _methodCode;
         }
 
-        public FrameInfo[] FrameInfos
-        {
-            get
-            {
-                return _frameInfos;
-            }
-        }
-
-        public byte[] GCInfo
-        {
-            get
-            {
-                return _gcInfo;
-            }
-        }
-
-        public ObjectData EHInfo
-        {
-            get
-            {
-                return _ehInfo;
-            }
-        }
+        public FrameInfo[] FrameInfos => _frameInfos;
+        public byte[] GCInfo => _gcInfo;
+        public ObjectData EHInfo => _ehInfo;
 
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {
@@ -176,21 +133,8 @@ namespace ILCompiler.DependencyAnalysis
             _ehInfo = ehInfo;
         }
 
-        public DebugLocInfo[] DebugLocInfos
-        {
-            get
-            {
-                return _debugLocInfos;
-            }
-        }
-
-        public DebugVarInfo[] DebugVarInfos
-        {
-            get
-            {
-                return _debugVarInfos;
-            }
-        }
+        public DebugLocInfo[] DebugLocInfos => _debugLocInfos;
+        public DebugVarInfo[] DebugVarInfos => _debugVarInfos;
 
         public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
         {

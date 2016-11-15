@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -12,21 +13,15 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName + " cloned";
-        }
+        protected override string GetName() => this.GetMangledName() + " cloned";
 
         //
         // A cloned type must be named differently than the type it is a clone of so the linker
         // will have an unambiguous symbol to resolve
         //
-        string ISymbolNode.MangledName
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return GetMangledName(_type) + "_Clone";
-            }
+            sb.Append("__Cloned_EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)

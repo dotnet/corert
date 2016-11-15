@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime;
-using Internal.TypeSystem;
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -32,34 +31,16 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        int ISymbolNode.Offset
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return 0;
-            }
+            sb.Append("__optionalfields_");
+            _owner.AppendMangledName(nameMangler, sb);
         }
+        public int Offset => 0;
 
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return "__optionalfields_" + ((ISymbolNode)_owner).MangledName;
-            }
-        }
-
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {

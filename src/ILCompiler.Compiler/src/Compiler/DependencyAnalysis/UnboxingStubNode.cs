@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -29,17 +30,11 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        public override string MangledName
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return "unbox_" + NodeFactory.NameMangler.GetMangledMethodName(_target);
-            }
+            sb.Append("unbox_").Append(NodeFactory.NameMangler.GetMangledMethodName(_target));
         }
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
     }
 }
