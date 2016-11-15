@@ -342,9 +342,9 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
     PalMemoryBarrier();
 }
 
+#ifdef USE_PORTABLE_HELPERS
 COOP_PINVOKE_HELPER(void *, RhpGetThunksBase, ())
 {
-    ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
 
@@ -365,6 +365,25 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ())
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
+
+COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* pThunkStubAddress))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddress))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(void*, RhpGetNextThunkStubsBlockAddress, (void* pCurrentThunkStubsBlockAddress))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+#endif
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
 {

@@ -258,5 +258,38 @@ LEAF_ENTRY RhpGetNumThunkBlocksPerMapping, _TEXT
         ret   
 LEAF_END RhpGetNumThunkBlocksPerMapping, _TEXT
 
+;;
+;; IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress)
+;;
+LEAF_ENTRY RhpGetNextThunkStubsBlockAddress, _TEXT
+        mov     rax, PAGE_SIZE * 2
+        add     rax, rcx
+        ret   
+LEAF_END RhpGetNextThunkStubsBlockAddress, _TEXT
+
+;; 
+;; IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
+;; 
+LEAF_ENTRY RhpGetThunkDataBlockAddress, _TEXT
+        mov     rax, rcx
+        mov     rcx, PAGE_SIZE - 1
+        not     rcx
+        and     rax, rcx
+        add     rax, PAGE_SIZE
+        ret   
+LEAF_END RhpGetThunkDataBlockAddress, _TEXT
+
+;; 
+;; IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress)
+;; 
+LEAF_ENTRY RhpGetThunkStubsBlockAddress, _TEXT
+        mov     rax, rcx
+        mov     rcx, PAGE_SIZE - 1
+        not     rcx
+        and     rax, rcx
+        sub     rax, PAGE_SIZE
+        ret   
+LEAF_END RhpGetThunkStubsBlockAddress, _TEXT
+
 
 end

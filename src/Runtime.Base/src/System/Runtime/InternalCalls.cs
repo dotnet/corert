@@ -350,11 +350,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static void RhpSetTLSDispatchCell(IntPtr pCell);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunksBase")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static IntPtr RhpGetThunksBase();
-
         [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
@@ -370,10 +365,20 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static int RhpGetThunkSize();
 
-        [RuntimeImport(Redhawk.BaseName, "RhAllocateThunksFromTemplate")]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkDataBlockAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern IntPtr RhAllocateThunksFromTemplate(IntPtr moduleHandle, int templateRva, int templateSize);
+        internal extern static IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkStubsBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNextThunkStubsBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress);
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
@@ -406,5 +411,9 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void RhpReleaseThunkPoolLock();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr RhAllocateThunksMapping();
+
     }
 }
