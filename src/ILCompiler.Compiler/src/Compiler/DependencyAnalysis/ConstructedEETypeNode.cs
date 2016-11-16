@@ -122,6 +122,9 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType == defType && !impl.IsAbstract)
                 {
+                    if (decl.HasInstantiation)
+                        continue;
+
                     MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                 }
