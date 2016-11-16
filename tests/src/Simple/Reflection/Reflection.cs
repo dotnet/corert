@@ -28,6 +28,9 @@ public class ReflectionTest
         if (TestReflectionInvoke() == Fail)
             return Fail;
 
+        if (TestReflectionFieldAccess() == Fail)
+            return Fail;
+
         return Pass;
     }
 
@@ -181,6 +184,46 @@ public class ReflectionTest
         //}
 
         return Pass;
+    }
+
+    public class FieldInvokeSample
+    {
+        public String InstanceField;
+    }
+
+    private static int TestReflectionFieldAccess()
+    {
+        Console.WriteLine("Testing reflection field access");
+
+        if (string.Empty.Length > 0)
+        {
+            new FieldInvokeSample().ToString();
+        }
+
+        TypeInfo ti = typeof(FieldInvokeSample).GetTypeInfo();
+        {
+            FieldInfo instanceField = ti.GetDeclaredField("InstanceField");
+            FieldInvokeSample obj = new FieldInvokeSample();
+
+            String value = (String)(instanceField.GetValue(obj));
+            if (value != null)
+                return Fail;
+
+            obj.InstanceField = "Hi!";
+            value = (String)(instanceField.GetValue(obj));
+            if (value != "Hi!")
+                return Fail;
+
+            instanceField.SetValue(obj, "Bye!");
+            if (obj.InstanceField != "Bye!")
+                return Fail;
+
+            value = (String)(instanceField.GetValue(obj));
+            if (value != "Bye!")
+                return Fail;
+
+            return Pass;
+        }
     }
 }
 
