@@ -1,0 +1,92 @@
+{
+  "Repository": "corert",
+  "Definitions": {
+    "Path": "DotNet\\CoreRT",
+    "Type": "VSTS",
+    "BaseUrl":  "https://devdiv.visualstudio.com/DefaultCollection"
+  },
+  "Pipelines": [
+    {
+      "Name": "All-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "ConfigurationGroup": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreRT-Linux",
+          "Parameters": {
+            "DockerTag": "debian82_prereqs_2"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Mac",
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Windows",
+          "ReportingParameters": {
+            "SubType": "managed",
+            "OperatingSystem": "All (Managed)",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Trusted-All-Debug",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "ConfigurationGroup": "Debug"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreRT-Linux",
+          "Parameters": {
+            "DockerTag": "debian82_prereqs_2"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Mac",
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Windows",
+          "ReportingParameters": {
+            "SubType": "managed",
+            "OperatingSystem": "All (Managed)",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        }
+      ]
+    }
+  ]
+}
