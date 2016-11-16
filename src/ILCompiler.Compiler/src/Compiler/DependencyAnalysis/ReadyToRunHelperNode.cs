@@ -22,11 +22,11 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
-
         TypeHandle,
         FieldHandle,
         MethodDictionary,
         MethodEntry,
+        ResolveGenericVirtualMethod
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
@@ -114,6 +114,10 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     sb.Append("__ResolveVirtualFunction_");
+                    sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
+                    break;
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                    sb.Append("__ResolveGenericVirtualMethod_");
                     sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
                 default:
