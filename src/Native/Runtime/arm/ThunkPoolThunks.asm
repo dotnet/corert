@@ -243,4 +243,32 @@ RW$name % 4
         bx      lr
     LEAF_END RhpGetNumThunkBlocksPerMapping
 
+    ;;
+    ;; IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress)
+    ;;
+    LEAF_ENTRY RhpGetNextThunkStubsBlockAddress
+        add     r0, PAGE_SIZE * 2
+        bx      lr
+    LEAF_END RhpGetNextThunkStubsBlockAddress
+
+    ;; 
+    ;; IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
+    ;; 
+    LEAF_ENTRY RhpGetThunkDataBlockAddress
+        mov     r12, PAGE_SIZE - 1
+        bic     r0, r0, r12
+        add     r0, PAGE_SIZE
+        bx      lr
+    LEAF_END RhpGetThunkDataBlockAddress
+
+    ;; 
+    ;; IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress)
+    ;; 
+    LEAF_ENTRY RhpGetThunkStubsBlockAddress
+        mov     r12, PAGE_SIZE - 1
+        bic     r0, r0, r12
+        sub     r0, PAGE_SIZE
+        bx      lr
+    LEAF_END RhpGetThunkStubsBlockAddress
+
     END
