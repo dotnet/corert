@@ -164,7 +164,8 @@ namespace Internal.TypeSystem.Ecma
             var type = _module.GetType(baseTypeHandle) as MetadataType;
             if (type == null)
             {
-                throw new BadImageFormatException();
+                // PREFER: "new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, this)" but the metadata is too broken
+                throw new TypeSystemException.TypeLoadException(Namespace, Name, Module);
             }
             _baseType = type;
             return type;

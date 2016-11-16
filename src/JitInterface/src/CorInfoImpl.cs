@@ -119,11 +119,15 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
+        private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
+
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             try
             {
                 _methodCodeNode = methodCodeNodeNeedingCode;
+
+                _isFallbackBodyCompilation = methodIL != null;
 
                 CORINFO_METHOD_INFO methodInfo;
                 methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, out methodInfo);
@@ -1339,7 +1343,7 @@ namespace Internal.JitInterface
             MethodDesc md = HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (!_compilation.HasLazyStaticConstructor(type))
+            if (!_compilation.HasLazyStaticConstructor(type) || _isFallbackBodyCompilation)
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
@@ -1400,8 +1404,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
-                    // TODO: better exception type: invalid input IL
-                    throw new NotSupportedException("TypedReference not supported in .NET Core");
+                    throw new TypeSystemException.TypeLoadException("System", "TypedReference", _compilation.TypeSystemContext.SystemModule);
 
                 case CorInfoClassId.CLASSID_TYPE_HANDLE:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeTypeHandle));
@@ -1413,8 +1416,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeMethodHandle));
 
                 case CorInfoClassId.CLASSID_ARGUMENT_HANDLE:
-                    // TODO: better exception type: invalid input IL
-                    throw new NotSupportedException("Vararg methods not supported in .NET Core");
+                    throw new TypeSystemException.TypeLoadException("System", "RuntimeArgumentHandle", _compilation.TypeSystemContext.SystemModule);
 
                 case CorInfoClassId.CLASSID_STRING:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
@@ -2252,7 +2254,7 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    // TODO: LDTOKEN <method>?
+                    throw new NotImplementedException("LDTOKEN Method");
                 }
                 else
                 {

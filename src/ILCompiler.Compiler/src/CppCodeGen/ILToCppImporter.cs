@@ -2569,6 +2569,10 @@ namespace Internal.IL
 
         private void AddTypeReference(TypeDesc type, bool constructed)
         {
+            // CppImporter will rather arbitrarily try to generate types as constructed.
+            // Stomp over the choice and only allow this if it remotely makes sense.
+            constructed = constructed & ConstructedEETypeNode.CreationAllowed(type);
+
             AddTypeDependency(type, constructed);
 
             foreach (var field in type.GetFields())

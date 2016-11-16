@@ -65,6 +65,8 @@ namespace Internal.Runtime
                     return SR.ClassLoad_ExplicitLayout;
                 case ExceptionStringID.InvalidProgramSpecific:
                     return SR.InvalidProgram_Specific;
+                case ExceptionStringID.InvalidProgramVararg:
+                    return SR.InvalidProgram_Vararg;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:

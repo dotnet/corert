@@ -121,6 +121,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
                     break;
+                case ReadyToRunHelper.Dbl2UIntOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2UIntOvf");
+                    break;
                 case ReadyToRunHelper.Dbl2LngOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
                     break;

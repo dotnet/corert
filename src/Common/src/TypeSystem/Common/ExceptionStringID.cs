@@ -27,5 +27,6 @@ namespace Internal.TypeSystem
 
         // InvalidProgramException
         InvalidProgramSpecific,
+        InvalidProgramVararg,
     }
 }

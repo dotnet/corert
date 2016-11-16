@@ -22,10 +22,14 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsInternalCall)
             {
                 // The only way to locate the entrypoint for an internal call is through the RuntimeImportAttribute.
-                // If this is a method that doesn't have it (e.g. a string constructor), the method should never
-                // have reached this code path.
-                Debug.Assert(method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"));
-                return new RuntimeImportMethodNode(method);
+                if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
+                {
+                    return new RuntimeImportMethodNode(method);
+                }
+
+                // On CLR this would throw a SecurityException with "ECall methods must be packaged into a system module."
+                // This is a corner case that nobody is likely to care about.
+                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
             if (CompilationModuleGroup.ContainsMethod(method))

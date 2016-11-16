@@ -43,6 +43,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 case ReadyToRunHelperId.NewHelper:
                 case ReadyToRunHelperId.NewArr1:
+                    {
+                        // Make sure that if the EEType can't be generated, we throw the exception now.
+                        // This way we can fail generating code for the method that references the EEType
+                        // and (depending on the policy), we could avoid scraping the entire compilation.
+                        TypeDesc type = (TypeDesc)target;
+                        factory.ConstructedTypeSymbol(type);
+                    }
+                    break;
                 case ReadyToRunHelperId.IsInstanceOf:
                 case ReadyToRunHelperId.CastClass:
                     {
