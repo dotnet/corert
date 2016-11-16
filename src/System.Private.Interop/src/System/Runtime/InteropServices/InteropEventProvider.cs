@@ -18,12 +18,19 @@ using System.Diagnostics.Tracing;
 
 namespace System.Runtime.InteropServices
 {
+//#define ENABLE_WINRT
     /// <summary>Provides an event source for tracing Interop information.</summary>
+#if ENABLE_WINRT
     [EventSource(Guid = "C4AC552A-E1EB-4FA2-A651-B200EFD7AA91", Name = "System.Runtime.InteropServices.InteropEventProvider")]
-    internal sealed class InteropEventProvider : EventSource
+#endif // ENABLE_WINRT
+    internal sealed class InteropEventProvider
+#if ENABLE_WINRT
+        : EventSource
+#endif // ENABLE_WINRT
     {
         // Defines the singleton instance for the Interop Event ETW provider
         public static readonly InteropEventProvider Log = new InteropEventProvider();
+#if ENABLE_WINRT
 
         internal new static bool IsEnabled()
         {
@@ -34,7 +41,25 @@ namespace System.Runtime.InteropServices
             // constructor has completed so we must check that Log is not null.
             return Log != null && ((EventSource)Log).IsEnabled();
         }
+#else
+        internal static bool IsEnabled()
+        {
+            return false;
+        }
 
+        private static bool IsEnabled(EventLevel level, EventKeywords keywords)
+        {
+            return false;
+        }
+
+        private struct EventData
+        {
+            public IntPtr DataPointer { get; set; }
+            public int Size { get; set; }
+        }
+
+        private unsafe void WriteEventCore(int eventId, int eventDataCount, EventData* data) { }
+#endif // ENABLE_WINRT
         // The InteropEventSource GUID is {C4AC552A-E1EB-4FA2-A651-B200EFD7AA91}
         private InteropEventProvider() { }
 
@@ -650,6 +675,5 @@ namespace System.Runtime.InteropServices
         }
         #endregion TaskJupiterCreateManagedReference
         #endregion JupiterProvider
-
     }   //Class InteropEventProvider
 }
