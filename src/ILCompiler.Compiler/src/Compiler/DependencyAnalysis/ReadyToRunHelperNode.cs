@@ -22,11 +22,13 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
+        ResolveGenericVirtualMethod,
+
+        // The following helpers are used for generic lookups only
         TypeHandle,
         FieldHandle,
         MethodDictionary,
-        MethodEntry,
-        ResolveGenericVirtualMethod
+        MethodEntry
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode

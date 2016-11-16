@@ -119,12 +119,12 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
             {
+                if (decl.HasInstantiation)
+                    continue;
+
                 MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType == defType && !impl.IsAbstract)
                 {
-                    if (decl.HasInstantiation)
-                        continue;
-
                     MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                 }
@@ -189,7 +189,6 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = 0; i < virtualSlots.Count; i++)
             {
                 MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 if (declMethod.HasInstantiation)
                 {
@@ -197,6 +196,8 @@ namespace ILCompiler.DependencyAnalysis
                     throw new NotImplementedException("VTable for " + _type + " has generic virtual methods.");
                 }
 
+                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                
                 if (!implMethod.IsAbstract)
                 {
                     MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
