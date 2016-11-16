@@ -22,9 +22,10 @@ namespace ILCompiler
         internal RyuJitCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
+            IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
             JitConfigProvider configProvider)
-            : base(dependencyGraph, nodeFactory, new NameMangler(false), logger)
+            : base(dependencyGraph, nodeFactory, roots, new NameMangler(false), logger)
         {
             _jitConfigProvider = configProvider;
         }

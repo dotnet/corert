@@ -486,6 +486,58 @@ namespace Internal.NativeFormat
 #else
     internal
 #endif
+    class VertexSequence : Vertex
+    {
+        private List<Vertex> _elements;
+
+        public VertexSequence()
+        {
+            _elements = new List<Vertex>();
+        }
+
+        public void Append(Vertex vertex)
+        {
+            _elements.Add(vertex);
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.WriteUnsigned((uint)_elements.Count);
+            foreach (var elem in _elements)
+                elem.Save(writer);
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as VertexSequence;
+            if (other == null || other._elements.Count != _elements.Count)
+                return false;
+
+            for (int i = 0; i < _elements.Count; i++)
+                if (!Object.Equals(_elements[i], other._elements[i]))
+                    return false;
+
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = 13;
+            foreach (var element in _elements)
+            {
+                int value = (element != null ? element.GetHashCode() : 0) * 0x5498341 + 0x832424;
+                hashCode = hashCode * 31 + value;
+            }
+
+            return hashCode;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     class VertexHashtable : Vertex
     {
         struct Entry
@@ -672,6 +724,16 @@ namespace Internal.NativeFormat
                     _entryIndexSize = newEntryIndexSize;
                 }
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -19,26 +19,14 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Target symbol this node points to.
         /// </summary>
-        public TTarget Target
-        {
-            get
-            {
-                return _targetNode;
-            }
-        }
+        public TTarget Target => _targetNode;
 
         internal EmbeddedPointerIndirectionNode(TTarget target)
         {
             _targetNode = target;
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {

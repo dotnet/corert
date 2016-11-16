@@ -8,6 +8,7 @@ using System.Diagnostics;
 
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
@@ -96,16 +97,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (type.IsGenericDefinition)
                     {
-                        return new GenericDefinitionEETypeNode(type);
+                        return new GenericDefinitionEETypeNode(this, type);
                     }
                     else
                     {
-                        return new EETypeNode(type);
+                        return new EETypeNode(this, type);
                     }
                 }
                 else
                 {
-                    return new ExternEETypeSymbolNode(type);
+                    return new ExternEETypeSymbolNode(this, type);
                 }
             });
 
@@ -113,11 +114,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    return new ConstructedEETypeNode(type);
+                    return new ConstructedEETypeNode(this, type);
                 }
                 else
                 {
-                    return new ExternEETypeSymbolNode(type);
+                    return new ExternEETypeSymbolNode(this, type);
                 }
             });
 
@@ -125,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Only types that reside in other binaries should be cloned
                 Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
-                return new ClonedConstructedEETypeNode(type);
+                return new ClonedConstructedEETypeNode(this, type);
             });
 
             _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>
@@ -155,7 +156,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new GCStaticEETypeNode(Target, gcMap);
             });
 
-            _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
+            _readOnlyDataBlobs = new NodeCache<Tuple<Utf8String, byte[], int>, BlobNode>((Tuple<Utf8String, byte[], int> key) =>
             {
                 return new BlobNode(key.Item1, ObjectNodeSection.ReadOnlyDataSection, key.Item2, key.Item3);
             }, new BlobTupleEqualityComparer());
@@ -175,12 +176,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new PInvokeMethodFixupNode(key.Item1, key.Item2);
             });
 
-            _internalSymbols = new NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode>(
-                (Tuple<ObjectNode, int, string> key) =>
-                {
-                    return new ObjectAndOffsetSymbolNode(key.Item1, key.Item2, key.Item3);
-                });
-
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
@@ -198,8 +193,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
-                return new RuntimeDeterminedMethodNode<MethodCodeNode>(method,
-                    (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                return new RuntimeDeterminedMethodNode(method,
+                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
@@ -281,6 +276,11 @@ namespace ILCompiler.DependencyAnalysis
             _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(methodOrType =>
             {
                 return new DictionaryLayoutNode(methodOrType);
+            });
+
+            _stringAllocators = new NodeCache<MethodDesc, IMethodNode>(constructor =>
+            {
+                return new StringAllocatorMethodNode(constructor);
             });
         }
 
@@ -367,14 +367,14 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchCells.GetOrAdd(method);
         }
 
-        private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<string, byte[], int>>
+        private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<Utf8String, byte[], int>>
         {
-            bool IEqualityComparer<Tuple<string, byte[], int>>.Equals(Tuple<string, byte[], int> x, Tuple<string, byte[], int> y)
+            bool IEqualityComparer<Tuple<Utf8String, byte[], int>>.Equals(Tuple<Utf8String, byte[], int> x, Tuple<Utf8String, byte[], int> y)
             {
                 return x.Item1.Equals(y.Item1);
             }
 
-            int IEqualityComparer<Tuple<string, byte[], int>>.GetHashCode(Tuple<string, byte[], int> obj)
+            int IEqualityComparer<Tuple<Utf8String, byte[], int>>.GetHashCode(Tuple<Utf8String, byte[], int> obj)
             {
                 return obj.Item1.GetHashCode();
             }
@@ -387,11 +387,11 @@ namespace ILCompiler.DependencyAnalysis
             return _GCStaticEETypes.GetOrAdd(gcMap);
         }
 
-        private NodeCache<Tuple<string, byte[], int>, BlobNode> _readOnlyDataBlobs;
+        private NodeCache<Tuple<Utf8String, byte[], int>, BlobNode> _readOnlyDataBlobs;
 
-        public BlobNode ReadOnlyDataBlob(string name, byte[] blobData, int alignment)
+        public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment)
         {
-            return _readOnlyDataBlobs.GetOrAdd(new Tuple<string, byte[], int>(name, blobData, alignment));
+            return _readOnlyDataBlobs.GetOrAdd(new Tuple<Utf8String, byte[], int>(name, blobData, alignment));
         }
 
         private NodeCache<TypeDesc, InterfaceDispatchMapNode> _interfaceDispatchMaps;
@@ -436,13 +436,6 @@ namespace ILCompiler.DependencyAnalysis
             return _pInvokeMethodFixups.GetOrAdd(new Tuple<string, string>(moduleName, entryPointName));
         }
 
-        private NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode> _internalSymbols;
-
-        public ISymbolNode ObjectAndOffset(ObjectNode obj, int offset, string name)
-        {
-            return _internalSymbols.GetOrAdd(new Tuple<ObjectNode, int, string>(obj, offset, name));
-        }
-
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
 
         internal VTableSliceNode VTable(TypeDesc type)
@@ -466,6 +459,12 @@ namespace ILCompiler.DependencyAnalysis
         internal DictionaryLayoutNode GenericDictionaryLayout(TypeSystemEntity methodOrType)
         {
             return _genericDictionaryLayouts.GetOrAdd(methodOrType);
+        }
+
+        private NodeCache<MethodDesc, IMethodNode> _stringAllocators;
+        internal IMethodNode StringAllocator(MethodDesc stringConstructor)
+        {
+            return _stringAllocators.GetOrAdd(stringConstructor);
         }
 
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
@@ -663,9 +662,9 @@ namespace ILCompiler.DependencyAnalysis
         internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
         public static NameMangler NameMangler;
-        public static string CompilationUnitPrefix;
+        public static string CompilationUnitPrefix = "";
 
-        public virtual void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
+        public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
 
@@ -688,35 +687,6 @@ namespace ILCompiler.DependencyAnalysis
 
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
             MetadataManager.AttachToDependencyGraph(graph);
-
-            _compilationModuleGroup.AddCompilationRoots(new RootingServiceProvider(graph, this));
-        }
-
-        private class RootingServiceProvider : IRootingServiceProvider
-        {
-            private DependencyAnalyzerBase<NodeFactory> _graph;
-            private NodeFactory _factory;
-
-            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
-            {
-                _graph = graph;
-                _factory = factory;
-            }
-
-            public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
-            {
-                var methodEntryPoint = _factory.MethodEntrypoint(method);
-
-                _graph.AddRoot(methodEntryPoint, reason);
-
-                if (exportName != null)
-                    _factory.NodeAliases.Add(methodEntryPoint, exportName);
-            }
-
-            public void AddCompilationRoot(TypeDesc type, string reason)
-            {
-                _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
-            }
         }
     }
 

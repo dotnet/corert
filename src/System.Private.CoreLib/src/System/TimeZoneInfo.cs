@@ -371,7 +371,7 @@ namespace System
             AdjustmentRule rule = GetAdjustmentRuleForTime(adjustedTime);
             if (rule != null && rule.HasDaylightSaving)
             {
-                DaylightTime daylightTime = GetDaylightTime(adjustedTime.Year, rule);
+                DaylightTimeStruct daylightTime = GetDaylightTime(adjustedTime.Year, rule);
                 isAmbiguous = GetIsAmbiguousTime(adjustedTime, rule, daylightTime);
             }
 
@@ -427,7 +427,7 @@ namespace System
             AdjustmentRule rule = GetAdjustmentRuleForTime(adjustedTime);
             if (rule != null && rule.HasDaylightSaving)
             {
-                DaylightTime daylightTime = GetDaylightTime(adjustedTime.Year, rule);
+                DaylightTimeStruct daylightTime = GetDaylightTime(adjustedTime.Year, rule);
                 isAmbiguous = GetIsAmbiguousTime(adjustedTime, rule, daylightTime);
             }
 
@@ -579,7 +579,7 @@ namespace System
             AdjustmentRule rule = GetAdjustmentRuleForTime(adjustedTime);
             if (rule != null && rule.HasDaylightSaving)
             {
-                DaylightTime daylightTime = GetDaylightTime(adjustedTime.Year, rule);
+                DaylightTimeStruct daylightTime = GetDaylightTime(adjustedTime.Year, rule);
                 return GetIsAmbiguousTime(adjustedTime, rule, daylightTime);
             }
             return false;
@@ -668,7 +668,7 @@ namespace System
             AdjustmentRule rule = GetAdjustmentRuleForTime(adjustedTime);
             if (rule != null && rule.HasDaylightSaving)
             {
-                DaylightTime daylightTime = GetDaylightTime(adjustedTime.Year, rule);
+                DaylightTimeStruct daylightTime = GetDaylightTime(adjustedTime.Year, rule);
                 return GetIsDaylightSavings(adjustedTime, rule, daylightTime, flags);
             }
             else
@@ -696,7 +696,7 @@ namespace System
 
                 if (rule != null && rule.HasDaylightSaving)
                 {
-                    DaylightTime daylightTime = GetDaylightTime(dateTime.Year, rule);
+                    DaylightTimeStruct daylightTime = GetDaylightTime(dateTime.Year, rule);
                     isInvalid = GetIsInvalidTime(dateTime, rule, daylightTime);
                 }
                 else
@@ -825,7 +825,7 @@ namespace System
                 if (sourceRule.HasDaylightSaving)
                 {
                     Boolean sourceIsDaylightSavings = false;
-                    DaylightTime sourceDaylightTime = GetDaylightTime(dateTime.Year, sourceRule);
+                    DaylightTimeStruct sourceDaylightTime = GetDaylightTime(dateTime.Year, sourceRule);
 
                     // 'dateTime' might be in an invalid time range since it is in an AdjustmentRule
                     // period that supports DST 
@@ -1336,14 +1336,14 @@ namespace System
         //
         // GetDaylightTime -
         //
-        // Helper function that returns a DaylightTime from a year and AdjustmentRule
+        // Helper function that returns a DaylightTimeStruct from a year and AdjustmentRule
         //
-        static private DaylightTime GetDaylightTime(Int32 year, AdjustmentRule rule)
+        static private DaylightTimeStruct GetDaylightTime(Int32 year, AdjustmentRule rule)
         {
             TimeSpan delta = rule.DaylightDelta;
             DateTime startTime = TransitionTimeToDateTime(year, rule.DaylightTransitionStart);
             DateTime endTime = TransitionTimeToDateTime(year, rule.DaylightTransitionEnd);
-            return new DaylightTime(startTime, endTime, delta);
+            return new DaylightTimeStruct(startTime, endTime, delta);
         }
 
 
@@ -1354,7 +1354,7 @@ namespace System
         // Helper function that checks if a given dateTime is in Daylight Saving Time (DST)
         // This function assumes the dateTime and AdjustmentRule are both in the same time zone
         //
-        static private Boolean GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTime daylightTime, TimeZoneInfoOptions flags)
+        static private Boolean GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime, TimeZoneInfoOptions flags)
         {
             if (rule == null)
             {
@@ -1431,7 +1431,7 @@ namespace System
 
             // Get the daylight changes for the year of the specified time.
             TimeSpan offset = utc + rule.BaseUtcOffsetDelta; /* FUTURE: + rule.StandardDelta; */
-            DaylightTime daylightTime = GetDaylightTime(Year, rule);
+            DaylightTimeStruct daylightTime = GetDaylightTime(Year, rule);
 
             // The start and end times represent the range of universal times that are in DST for that year.                
             // Within that there is an ambiguous hour, usually right at the end, but at the beginning in
@@ -1451,7 +1451,7 @@ namespace System
                 AdjustmentRule previousYearRule = zone.GetAdjustmentRuleForTime(new DateTime(daylightTime.Start.Year - 1, 12, 31));
                 if (previousYearRule != null && previousYearRule.IsEndDateMarkerForEndOfYear())
                 {
-                    DaylightTime previousDaylightTime = GetDaylightTime(daylightTime.Start.Year - 1, previousYearRule);
+                    DaylightTimeStruct previousDaylightTime = GetDaylightTime(daylightTime.Start.Year - 1, previousYearRule);
                     startTime = previousDaylightTime.Start - utc - previousYearRule.BaseUtcOffsetDelta;
                     ignoreYearAdjustment = true;
                 }
@@ -1477,7 +1477,7 @@ namespace System
                     }
                     else
                     {
-                        DaylightTime nextdaylightTime = GetDaylightTime(daylightTime.End.Year + 1, nextYearRule);
+                        DaylightTimeStruct nextdaylightTime = GetDaylightTime(daylightTime.End.Year + 1, nextYearRule);
                         endTime = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
                     }
                     ignoreYearAdjustment = true;
@@ -1583,7 +1583,7 @@ namespace System
 
 
         //
-        // GetIsAmbiguousTime(DateTime dateTime, AdjustmentRule rule, DaylightTime daylightTime) -
+        // GetIsAmbiguousTime(DateTime dateTime, AdjustmentRule rule, DaylightTimeStruct daylightTime) -
         //
         // returns true when the dateTime falls into an ambiguous time range.
         // For example, in Pacific Standard Time on Sunday, October 29, 2006 time jumps from
@@ -1593,7 +1593,7 @@ namespace System
         // In this example, any DateTime values that fall into the [1AM - 1:59:59AM] range
         // are ambiguous; as it is unclear if these times are in Daylight Saving Time.
         //
-        static private Boolean GetIsAmbiguousTime(DateTime time, AdjustmentRule rule, DaylightTime daylightTime)
+        static private Boolean GetIsAmbiguousTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
         {
             Boolean isAmbiguous = false;
             if (rule == null || rule.DaylightDelta == TimeSpan.Zero)
@@ -1669,7 +1669,7 @@ namespace System
         // A "time hole" is not limited to only occurring at the start of DST, and may occur at
         // the end of DST as well.
         //
-        static private Boolean GetIsInvalidTime(DateTime time, AdjustmentRule rule, DaylightTime daylightTime)
+        static private Boolean GetIsInvalidTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
         {
             Boolean isInvalid = false;
             if (rule == null || rule.DaylightDelta == TimeSpan.Zero)
@@ -1893,7 +1893,7 @@ namespace System
                 baseOffset = baseOffset + rule.BaseUtcOffsetDelta;
                 if (rule.HasDaylightSaving)
                 {
-                    DaylightTime daylightTime = GetDaylightTime(time.Year, rule);
+                    DaylightTimeStruct daylightTime = GetDaylightTime(time.Year, rule);
                     Boolean isDaylightSavings = GetIsDaylightSavings(time, rule, daylightTime, flags);
                     baseOffset += (isDaylightSavings ? rule.DaylightDelta : TimeSpan.Zero /* FUTURE: rule.StandardDelta */);
                 }

@@ -29,6 +29,7 @@ namespace ILCompiler
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
+            IEnumerable<ICompilationRootProvider> compilationRoots,
             NameMangler nameMangler,
             Logger logger)
         {
@@ -39,6 +40,10 @@ namespace ILCompiler
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
+
+            var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
+            foreach (var rootProvider in compilationRoots)
+                rootProvider.AddCompilationRoots(rootingService);
         }
 
         private ILProvider _methodILCache = new ILProvider();
@@ -99,6 +104,7 @@ namespace ILCompiler
 
             string systemModuleName = ((IAssemblyDesc)NodeFactory.TypeSystemContext.SystemModule).GetName().Name;
 
+            // TODO: CompilationUnitPrefix is used even before this point!!!
             // TODO: just something to get Runtime.Base compiled
             if (systemModuleName != "System.Private.CoreLib")
             {
@@ -118,6 +124,36 @@ namespace ILCompiler
             {
                 DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
                 dgmlOutput.Flush();
+            }
+        }
+
+        private class RootingServiceProvider : IRootingServiceProvider
+        {
+            private DependencyAnalyzerBase<NodeFactory> _graph;
+            private NodeFactory _factory;
+
+            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+            {
+                _graph = graph;
+                _factory = factory;
+            }
+
+            public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
+            {
+                var methodEntryPoint = _factory.MethodEntrypoint(method);
+
+                _graph.AddRoot(methodEntryPoint, reason);
+
+                if (exportName != null)
+                    _factory.NodeAliases.Add(methodEntryPoint, exportName);
+            }
+
+            public void AddCompilationRoot(TypeDesc type, string reason)
+            {
+                if (type.IsGenericDefinition)
+                    _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
+                else
+                    _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
             }
         }
     }

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -40,9 +41,8 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
+        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract int Offset { get; }
-
-        public abstract string MangledName { get; }
 
         public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override string GetName()
         {
-            return MangledName;
+            return this.GetMangledName();
         }
     }
 
@@ -87,8 +87,11 @@ namespace ILCompiler.DependencyAnalysis
     {
         private TypeDesc _owningType;
 
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledTypeName(_owningType));
+        }
         public override int Offset => 0;
-        public override string MangledName => MangledNamePrefix + NodeFactory.NameMangler.GetMangledTypeName(_owningType);
 
         protected override Instantiation TypeInstantiation => _owningType.Instantiation;
         protected override Instantiation MethodInstantiation => new Instantiation();
@@ -139,8 +142,11 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _owningMethod;
 
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledMethodName(_owningMethod));
+        }
         public override int Offset => _owningMethod.Context.Target.PointerSize;
-        public override string MangledName => MangledNamePrefix + NodeFactory.NameMangler.GetMangledMethodName(_owningMethod);
 
         protected override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         protected override Instantiation MethodInstantiation => _owningMethod.Instantiation;

@@ -28,10 +28,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public abstract ObjectData GetData(NodeFactory factory, bool relocsOnly = false);
 
-        public abstract ObjectNodeSection Section
-        {
-            get;
-        }
+        public abstract ObjectNodeSection Section { get; }
 
         /// <summary>
         /// Override this function for node types that can be shared amongst object files
@@ -56,34 +53,9 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        public override bool HasConditionalStaticDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool HasDynamicDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool InterestingForDynamicDependencyAnalysis
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
-        {
-            return null;
-        }
+        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool InterestingForDynamicDependencyAnalysis => false;
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -112,9 +84,7 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
-        {
-            return null;
-        }
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

@@ -155,6 +155,16 @@ namespace Internal.Runtime.CompilerHelpers
             return ThrowIntOvf();
         }
 
+        [RuntimeExport("Dbl2UIntOvf")]
+        public static uint Dbl2UIntOvf(double val)
+        {
+            // Note that this expression also works properly for val = NaN case
+            if (val > -1.0 && val < 4294967296.0)
+                return unchecked((uint)val);
+
+            return ThrowUIntOvf();
+        }
+
         [RuntimeExport("Dbl2LngOvf")]
         public static long Dbl2LngOvf(double val)
         {
@@ -212,6 +222,12 @@ namespace Internal.Runtime.CompilerHelpers
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int ThrowIntOvf()
+        {
+            throw new OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint ThrowUIntOvf()
         {
             throw new OverflowException();
         }

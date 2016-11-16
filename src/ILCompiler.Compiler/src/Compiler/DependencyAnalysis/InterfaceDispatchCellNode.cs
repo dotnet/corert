@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
 using System;
 using System.Diagnostics;
+
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,47 +21,23 @@ namespace ILCompiler.DependencyAnalysis
             _targetMethod = targetMethod;
         }
 
-        public string MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return "__InterfaceDispatchCell_" + NodeFactory.NameMangler.GetMangledMethodName(_targetMethod);
-            }
+            sb.Append("__InterfaceDispatchCell_");
+            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_targetMethod));
         }
+        public int Offset => 0;
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public int Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
         {
             return true;
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

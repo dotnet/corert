@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -27,10 +25,7 @@ namespace ILCompiler.DependencyAnalysis
             _decl = decl;
         }
 
-        protected override string GetName()
-        {
-            return "VirtualMethodUse" + _decl.ToString();
-        }
+        protected override string GetName() => $"VirtualMethodUse {_decl.ToString()}";
 
         protected override void OnMarked(NodeFactory factory)
         {
@@ -41,42 +36,11 @@ namespace ILCompiler.DependencyAnalysis
                 lazyVTableSlice.AddEntry(factory, _decl);
         }
 
-        public override bool HasConditionalStaticDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool InterestingForDynamicDependencyAnalysis => false;
 
-        public override bool HasDynamicDependencies
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool InterestingForDynamicDependencyAnalysis
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
-        {
-            return null;
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -87,9 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
-        {
-            return null;
-        }
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

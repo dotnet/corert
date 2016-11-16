@@ -32,7 +32,7 @@ namespace Internal.TypeSystem
                     NativeLayoutFieldAlgorithm.EnsureFieldLayoutLoadedForGenericType(this);
                     return NativeLayoutFields;
                 }
-                return Array.Empty<FieldDesc>();
+                return FieldDesc.EmptyFields;
             }
             else
             {

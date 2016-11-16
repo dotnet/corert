@@ -926,7 +926,9 @@ namespace Internal.IL
                     if (owningType.IsString)
                     {
                         // String constructors actually look like regular method calls
-                        method = method.GetStringInitializer();
+                        IMethodNode node = _compilation.NodeFactory.StringAllocator(method);
+                        _dependencies.Add(node);
+                        method = node.Method;
                         opcode = ILOpcode.call;
                     }
                     else if (owningType.IsArray)
@@ -2567,6 +2569,10 @@ namespace Internal.IL
 
         private void AddTypeReference(TypeDesc type, bool constructed)
         {
+            // CppImporter will rather arbitrarily try to generate types as constructed.
+            // Stomp over the choice and only allow this if it remotely makes sense.
+            constructed = constructed & ConstructedEETypeNode.CreationAllowed(type);
+
             AddTypeDependency(type, constructed);
 
             foreach (var field in type.GetFields())

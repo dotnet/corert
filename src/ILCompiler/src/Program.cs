@@ -9,6 +9,7 @@ using System.CommandLine;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Internal.CommandLine;
 
@@ -37,6 +38,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _singleMethodGenericArgs;
 
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
+
+        private IReadOnlyList<string> _rdXmlFilePaths = Array.Empty<string>();
 
         private bool _help;
 
@@ -119,6 +122,7 @@ namespace ILCompiler
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
+                syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -171,24 +175,89 @@ namespace ILCompiler
             typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
 
             //
-            // Initialize compilation group
+            // Initialize compilation group and compilation roots
             //
 
             // Single method mode?
             MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
             CompilationModuleGroup compilationGroup;
+            List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
             if (singleMethod != null)
             {
-                compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, singleMethod);
-            }
-            else if (_multiFile)
-            {
-                compilationGroup = new MultiFileCompilationModuleGroup(typeSystemContext);
+                // Compiling just a single method
+                compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
+                compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
             }
             else
             {
-                compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
+                // Either single file, or multifile library, or multifile consumption.
+                EcmaModule entrypointModule = null;
+                foreach (var inputFile in typeSystemContext.InputFilePaths)
+                {
+                    EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+
+                    if (module.PEReader.PEHeaders.IsExe)
+                    {
+                        if (entrypointModule != null)
+                            throw new Exception("Multiple EXE modules");
+                        entrypointModule = module;
+                    }
+
+                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                }
+
+                if (entrypointModule != null)
+                {
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule));
+                }
+
+                if (_multiFile)
+                {
+                    List<EcmaModule> inputModules = new List<EcmaModule>();
+
+                    foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+
+                        if (entrypointModule == null)
+                        {
+                            // This is a multifile production build - we need to root all methods
+                            compilationRoots.Add(new LibraryRootProvider(module));
+                        }
+                        inputModules.Add(module);
+                    }
+
+                    compilationGroup = new MultiFileCompilationModuleGroup(inputModules);
+                }
+                else
+                {
+                    if (entrypointModule == null)
+                        throw new Exception("No entrypoint module");
+
+                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+
+                    // System.Private.Reflection.Execution needs to establish a communication channel with System.Private.CoreLib
+                    // at process startup. This is done through an eager constructor that calls into CoreLib and passes it
+                    // a callback object.
+                    //
+                    // Since CoreLib cannot reference anything, the type and it's eager constructor won't be added to the compilation
+                    // unless we explictly add it.
+
+                    var refExec = typeSystemContext.GetModuleForSimpleName("System.Private.Reflection.Execution", false);
+                    if (refExec != null)
+                    {
+                        var exec = refExec.GetType("Internal.Reflection.Execution", "ReflectionExecution");
+                        compilationRoots.Add(new SingleMethodRootProvider(exec.GetStaticConstructor()));
+                    }
+
+                    compilationGroup = new SingleFileCompilationModuleGroup();
+                }
+
+                foreach (var rdXmlFilePath in _rdXmlFilePaths)
+                {
+                    compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
+                }
             }
 
             //
@@ -210,6 +279,7 @@ namespace ILCompiler
                 .UseBackendOptions(_codegenOptions)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
+                .UseCompilationRoots(compilationRoots)
                 .ToCompilation();
 
             compilation.Compile(_outputFilePath);

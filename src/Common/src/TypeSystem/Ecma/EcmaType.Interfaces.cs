@@ -41,7 +41,11 @@ namespace Internal.TypeSystem.Ecma
             foreach (var interfaceHandle in interfaceHandles)
             {
                 var interfaceImplementation = this.MetadataReader.GetInterfaceImplementation(interfaceHandle);
-                implementedInterfaces[i++] = (DefType)_module.GetType(interfaceImplementation.Interface);
+                DefType interfaceType = _module.GetType(interfaceImplementation.Interface) as DefType;
+                if (interfaceType == null)
+                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, this);
+
+                implementedInterfaces[i++] = interfaceType;
             }
 
             return (_implementedInterfaces = implementedInterfaces);

@@ -22,7 +22,7 @@
             <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
-            <JitPackageVersion>1.2.0-beta-24627-05</JitPackageVersion>
+            <JitPackageVersion>1.2.0-beta-24709-03</JitPackageVersion>
           
             <ObjectWriterPackageVersion>1.0.13-prerelease-00001</ObjectWriterPackageVersion>
             <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
@@ -162,7 +162,7 @@
             <ILCompilerFrameworkFiles Include="System.Security.Principal/4.0.1/lib/netcore50/System.Security.Principal.dll" />
             <ILCompilerFrameworkFiles Include="System.Threading/4.0.11/lib/netstandard1.3/System.Threading.dll" />
 
-            <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).runtime.native.System/1.0.1/runtimes/$(NuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).runtime.native.System/4.4.0-beta-24614-04/runtimes/$(NuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerFrameworkFiles)">
                 <Text><![CDATA[        <file src="packages/%(Identity)" target="runtimes/$(NuPkgRid)/native/framework/%(Filename)%(Extension)" /> ]]></Text>

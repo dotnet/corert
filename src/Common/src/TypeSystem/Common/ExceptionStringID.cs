@@ -14,6 +14,7 @@ namespace Internal.TypeSystem
         ClassLoadExplicitGeneric,
         ClassLoadBadFormat,
         ClassLoadExplicitLayout,
+        ClassLoadValueClassTooLarge,
 
         // MissingMethodException
         MissingMethod,
@@ -26,5 +27,6 @@ namespace Internal.TypeSystem
 
         // InvalidProgramException
         InvalidProgramSpecific,
+        InvalidProgramVararg,
     }
 }

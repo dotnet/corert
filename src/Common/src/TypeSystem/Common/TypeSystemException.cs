@@ -62,8 +62,15 @@ namespace Internal.TypeSystem
 
             public string AssemblyName { get; }
 
-            private TypeLoadException(ExceptionStringID id, string typeName, string assemblyName, string messageArg = null)
+            private TypeLoadException(ExceptionStringID id, string typeName, string assemblyName, string messageArg)
                 : base(id, new string[] { typeName, assemblyName, messageArg })
+            {
+                TypeName = typeName;
+                AssemblyName = assemblyName;
+            }
+
+            private TypeLoadException(ExceptionStringID id, string typeName, string assemblyName)
+                : base(id, new string[] { typeName, assemblyName })
             {
                 TypeName = typeName;
                 AssemblyName = assemblyName;
@@ -84,8 +91,13 @@ namespace Internal.TypeSystem
             {
             }
 
-            public TypeLoadException(ExceptionStringID id, TypeDesc type, string messageArg = null)
+            public TypeLoadException(ExceptionStringID id, TypeDesc type, string messageArg)
                 : this(id, Format.Type(type), Format.OwningModule(type), messageArg)
+            {
+            }
+
+            public TypeLoadException(ExceptionStringID id, TypeDesc type)
+                : this(id, Format.Type(type), Format.OwningModule(type))
             {
             }
         }
@@ -113,7 +125,7 @@ namespace Internal.TypeSystem
             }
 
             public MissingMethodException(TypeDesc owningType, string methodName, MethodSignature signature)
-                : this(ExceptionStringID.MissingField, Format.Method(owningType, methodName, signature))
+                : this(ExceptionStringID.MissingMethod, Format.Method(owningType, methodName, signature))
             {
             }
         }

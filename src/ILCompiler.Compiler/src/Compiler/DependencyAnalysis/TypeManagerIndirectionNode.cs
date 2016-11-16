@@ -2,50 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
-using System;
-using System.Diagnostics;
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
     class TypeManagerIndirectionNode : ObjectNode, ISymbolNode
     {
-        public string MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__typemanager_indirection";
-            }
+            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__typemanager_indirection");
         }
+        public int Offset => 0;
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public int Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

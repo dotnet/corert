@@ -11,11 +11,10 @@ class Program
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
-
-        // Missing support in RyuJIT: we can't just call Func..ctor and hope for the best
-        //TestDelegateFatFunctionPointers.Run();
-
+        TestDelegateFatFunctionPointers.Run();
         TestVirtualMethodUseTracking.Run();
+        TestSlotsInHierarchy.Run();
+        TestNameManglingCollisionRegression.Run();
 
         return 100;
     }
@@ -227,5 +226,59 @@ class Program
                 throw new Exception();
         }
     }
-}
 
+    /// <summary>
+    /// Makes sure that during the base slot computation for types such as
+    /// Derived&lt;__Canon&gt; (where the base type ends up being Base&lt;__Canon, string&gt;),
+    /// the lazy vtable slot computation works.
+    /// </summary>
+    class TestSlotsInHierarchy
+    {
+        class Base<T, U>
+        {
+            public virtual int Do()
+            {
+                return 42;
+            }
+        }
+
+        class Derived<T> : Base<T, string> where T : class
+        {
+            public T Cast(object v)
+            {
+                return v as T;
+            }
+        }
+
+        public static void Run()
+        {
+            var derived = new Derived<string>();
+            var derivedAsBase = (Base<string, string>)derived;
+
+            if (derivedAsBase.Do() != 42)
+                throw new Exception();
+
+            if (derived.Cast("Hello") != "Hello")
+                throw new Exception();
+        }
+    }
+
+    //
+    // Regression test for issue https://github.com/dotnet/corert/issues/1964
+    //
+    class TestNameManglingCollisionRegression
+    {
+        class Gen1<T>
+        {
+            public Gen1(T t) {}
+        }
+
+        public static void Run()
+        {
+            Gen1<object[]>[] g1 = new Gen1<object[]>[1];
+            g1[0] = new Gen1<object[]>(new object[] {new object[1]});
+
+            Gen1<object[][]> g2 = new Gen1<object[][]>(new object[1][]);
+        }
+    }
+}

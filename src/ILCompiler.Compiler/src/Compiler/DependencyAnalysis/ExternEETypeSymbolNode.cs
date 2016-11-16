@@ -14,18 +14,14 @@ namespace ILCompiler.DependencyAnalysis
     {
         private TypeDesc _type;
 
-        public ExternEETypeSymbolNode(TypeDesc type)
+        public ExternEETypeSymbolNode(NodeFactory factory, TypeDesc type)
             : base("__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type))
         {
             _type = type;
+
+            EETypeNode.CheckCanGenerateEEType(factory, type);
         }
 
-        public TypeDesc Type
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public TypeDesc Type => _type;
     }
 }

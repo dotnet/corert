@@ -75,7 +75,7 @@ namespace Internal.TypeSystem
         static public MethodDesc GetDefaultConstructor(this TypeDesc type)
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
-            var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), Array.Empty<TypeDesc>());
+            var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes);
             return type.GetMethod(".ctor", sig);
         }
 

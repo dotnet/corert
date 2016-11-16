@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.Metadata.NativeFormat.Writer;
 
@@ -26,15 +27,23 @@ namespace ILCompiler
     /// </summary>
     public class MetadataGeneration
     {
+        internal const int MetadataOffsetMask = 0xFFFFFF;
+
         private byte[] _metadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings = new List<MetadataMapping<MetadataType>>();
+        private List<MetadataMapping<MethodDesc>> _methodMappings = new List<MetadataMapping<MethodDesc>>();
 
         private NodeFactory _nodeFactory;
 
         private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
         private HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
+        private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
+        private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
+        private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
+
+        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
         public MetadataGeneration(NodeFactory factory)
         {
@@ -66,6 +75,12 @@ namespace ILCompiler
             var cctorContextMapNode = new ClassConstructorContextMap(externalReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
 
+            var invokeMapNode = new ReflectionInvokeMapNode(externalReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
+
+            var arrayMapNode = new ArrayMapNode(externalReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
+
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
                 externalReferencesTableNode, externalReferencesTableNode, externalReferencesTableNode.EndSymbol);
@@ -81,10 +96,22 @@ namespace ILCompiler
                 return;
             }
 
-            var methodNode = obj as MethodCodeNode;
+            IMethodNode methodNode = obj as MethodCodeNode;
+            if (methodNode == null)
+                methodNode = obj as ShadowConcreteMethodNode<MethodCodeNode>;
+
             if (methodNode != null)
             {
-                AddGeneratedType(methodNode.Method.OwningType);
+                MethodDesc method = methodNode.Method;
+                if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
+                {
+                    // Canonical methods are not interesting.
+                    return;
+                }
+
+                AddGeneratedType(method.OwningType);
+                _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
+                _methodsGenerated.Add(method);
                 return;
             }
 
@@ -95,11 +122,127 @@ namespace ILCompiler
             }
         }
 
+        public bool HasReflectionInvokeStub(MethodDesc method)
+        {
+            var signature = method.Signature;
+
+            // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
+            if (signature.ReturnType.IsPointer)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+                if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
+                    return false;
+
+            // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
+            if (signature.ReturnType.IsFunctionPointer)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+                if (signature[i].IsFunctionPointer)
+                    return false;
+
+            // Methods with ByRef returns can't be reflection invoked
+            if (signature.ReturnType.IsByRef)
+                return false;
+
+            // Delegate construction is only allowed through specific IL sequences
+            if (method.OwningType.IsDelegate && method.IsConstructor)
+                return false;
+
+            // Everything else should get a stub.
+            return true;
+        }
+
+        /// <summary>
+        /// Gets a stub that can be used to reflection-invoke a method with a given signature.
+        /// </summary>
+        public MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        {
+            // Methods we see here shouldn't be canonicalized, or we'll end up creating bastardized instantiations
+            // (e.g. we instantiate over System.Object below.)
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any));
+
+            TypeSystemContext context = method.Context;
+            var sig = method.Signature;
+
+            // Get a generic method that can be used to invoke method with this shape.
+            MethodDesc thunk;
+            var lookupSig = new DynamicInvokeMethodSignature(sig);
+            if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
+            {
+                // TODO: figure out a better owning type (for multifile)
+                thunk = new DynamicInvokeMethodThunk(context.SystemModule.GetGlobalModuleType(), lookupSig);
+                _dynamicInvokeThunks.Add(lookupSig, thunk);
+            }
+
+            // If the method has no parameters and returns void, we don't need to specialize
+            if (sig.ReturnType.IsVoid && sig.Length == 0)
+            {
+                Debug.Assert(!thunk.HasInstantiation);
+                return thunk;
+            }
+
+            //
+            // Instantiate the generic thunk over the parameters and the return type of the target method
+            //
+
+            TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
+            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
+            for (int i = 0; i < sig.Length; i++)
+            {
+                TypeDesc parameterType = sig[i];
+                if (parameterType.IsByRef)
+                {
+                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
+                    parameterType = ((ByRefType)parameterType).ParameterType;
+                }
+
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                {
+                    // For pointer typed parameters, instantiate the method over IntPtr
+                    parameterType = context.GetWellKnownType(WellKnownType.IntPtr);
+                }
+                else if (parameterType.IsDefType)
+                {
+                    // TODO: optimize enum types with no default value
+                    // DefType* paramDefType = parameterType->as<DefType> ();
+                    // // If the invoke method takes an enum as an input paramter and there is no default value for
+                    // // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // // on the underlying integral type of the enum.)
+                    // if (paramDefType && (!IsPdHasDefault(methodToInvoke->Parameters()[index].Attributes())) && paramDefType->IsEnum())
+                    // {
+                    //     CorElementType underlyingElemType = paramDefType->InternalElementType();
+                    //     parameterType = paramDefType->GetLoaderContext()->GetElementType(underlyingElemType);
+                    // }
+                }
+
+                instantiation[i] = parameterType;
+            }
+
+            if (!sig.ReturnType.IsVoid)
+            {
+                TypeDesc returnType = sig.ReturnType;
+                Debug.Assert(!returnType.IsByRef);
+
+                // If the invoke method return an object reference, we don't need to specialize on the
+                // exact type of the object reference, as the behavior is not different.
+                if ((returnType.IsDefType && !returnType.IsValueType) || returnType.IsArray)
+                {
+                    returnType = context.GetWellKnownType(WellKnownType.Object);
+                }
+
+                instantiation[sig.Length] = returnType;
+            }
+
+            return context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
+        }
+
         private void AddGeneratedType(TypeDesc type)
         {
             Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
 
-            if (type.IsTypeDefinition)
+            if (type.IsDefType && type.IsTypeDefinition)
             {
                 var mdType = type as MetadataType;
                 if (mdType != null)
@@ -114,8 +257,13 @@ namespace ILCompiler
                 foreach (var argument in type.Instantiation)
                     AddGeneratedType(argument);
             }
+            else if (type.IsArray)
+            {
+                var arrayType = (ArrayType)type;
+                _arrayTypesGenerated.Add(arrayType);
+            }
 
-            // TODO: track generic types, array types, etc.
+            // TODO: track generic types, etc.
         }
 
         private void EnsureMetadataGenerated()
@@ -149,6 +297,14 @@ namespace ILCompiler
                 if (record != null)
                     _typeMappings.Add(new MetadataMapping<MetadataType>(definition, writer.GetRecordHandle(record)));
             }
+
+            foreach (var method in _methodsGenerated)
+            {
+                MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
+
+                if (record != null)
+                    _methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
+            }
         }
 
         public byte[] GetMetadataBlob()
@@ -163,9 +319,20 @@ namespace ILCompiler
             return _typeMappings;
         }
 
+        public IEnumerable<MetadataMapping<MethodDesc>> GetMethodMapping()
+        {
+            EnsureMetadataGenerated();
+            return _methodMappings;
+        }
+
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
         {
             return _cctorContextsGenerated;
+        }
+
+        internal IEnumerable<ArrayType> GetArrayTypeMapping()
+        {
+            return _arrayTypesGenerated;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)
@@ -197,7 +364,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MethodDesc methodDef)
             {
-                return false;
+                return _parent._methodDefinitionsGenerated.Contains(methodDef);
             }
 
             public bool GeneratesMetadata(MetadataType typeDef)

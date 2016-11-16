@@ -1,0 +1,9 @@
+<Project ToolsVersion="14.0" DefaultTargets="IlcCompile" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <NativeIntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\native\</NativeIntermediateOutputPath>
+  </PropertyGroup>
+
+  <Import Project="..\..\..\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj" />
+
+</Project>

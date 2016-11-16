@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -26,42 +28,17 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return "__NonGCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-            }
+            sb.Append("__NonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }
+        public int Offset => 0;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public MetadataType Type
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public MetadataType Type => _type;
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
         {
@@ -88,13 +65,7 @@ namespace ILCompiler.DependencyAnalysis
             return target.PointerSize;
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

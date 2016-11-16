@@ -18,5 +18,13 @@ namespace System.Threading
         private void ReleaseTimer()
         {
         }
+
+        private static int TickCount
+        {
+            get
+            {
+                return Environment.TickCount;
+            }
+        }        
     }
 }

@@ -4,14 +4,15 @@
 
 using System.Collections.Generic;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     public class FrozenStringNode : EmbeddedObjectNode, ISymbolNode
     {
-        string _data;
-        int _syncBlockSize;
+        private string _data;
+        private int _syncBlockSize;
 
         public FrozenStringNode(string data, TargetDetails target)
         {
@@ -19,21 +20,12 @@ namespace ILCompiler.DependencyAnalysis
             _syncBlockSize = target.PointerSize;
         }
 
-        public string MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__Str_" + NodeFactory.NameMangler.GetMangledStringName(_data);
-            }
+            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__Str_").Append(NodeFactory.NameMangler.GetMangledStringName(_data));
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override int Offset
         {
@@ -75,10 +67,7 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        protected override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {

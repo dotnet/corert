@@ -16,11 +16,11 @@ typedef struct _GUID {
     unsigned char Data4[8];
 } GUID;
 
-static const GUID JITEEVersionIdentifier = { /* 8d588c98-4cef-4e6d-9792-08e1f5ab88c5 */
-    0x8d588c98,
-    0x4cef,
-    0x4e6d,
-    {0x97, 0x92, 0x08, 0xe1, 0xf5, 0xab, 0x88, 0xc5}
+static const GUID JITEEVersionIdentifier = { /* 4bd06266-8ef7-4172-bec6-d3149fde7859 */
+    0x4bd06266,
+    0x8ef7,
+    0x4172,
+    {0xbe, 0xc6, 0xd3, 0x14, 0x9f, 0xde, 0x78, 0x59}
 };
 
 class Jit

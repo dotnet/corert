@@ -5,6 +5,8 @@
 using System;
 using System.Text;
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -26,42 +28,20 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
-        public int Offset
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return 0;
-            }
+            sb.Append("__pinvoke_");
+            sb.Append(_moduleName);
+            sb.Append("__");
+            sb.Append(_entryPointName);
         }
+        public int Offset => 0;
 
-        public string MangledName
-        {
-            get
-            {
-                return String.Concat("__pinvoke_", _moduleName, "__", _entryPointName);
-            }
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        protected override string GetName()
-        {
-            return MangledName;
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

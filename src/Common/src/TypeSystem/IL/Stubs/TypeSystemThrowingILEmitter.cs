@@ -26,7 +26,16 @@ namespace Internal.IL.Stubs
             Type exceptionType = exception.GetType();
             if (exceptionType == typeof(TypeSystemException.TypeLoadException))
             {
+                //
+                // There are two ThrowTypeLoadException helpers. Find the one which matches the number of
+                // arguments "exception" was initialized with.
+                //
                 helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadException");
+
+                if (helper.Signature.Length != exception.Arguments.Count + 1)
+                {
+                    helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadExceptionWithArgument");
+                }
             }
             else if (exceptionType == typeof(TypeSystemException.MissingFieldException))
             {

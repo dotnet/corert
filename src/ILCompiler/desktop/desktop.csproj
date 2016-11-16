@@ -32,6 +32,9 @@
     <Compile Include="..\src\Program.cs">
       <Link>src\Program.cs</Link>
     </Compile>
+    <Compile Include="..\src\RdXmlRootProvider.cs">
+      <Link>src\RdXmlRootProvider.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">
@@ -58,6 +61,8 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\packaging\publish1\jitinterface.dll">

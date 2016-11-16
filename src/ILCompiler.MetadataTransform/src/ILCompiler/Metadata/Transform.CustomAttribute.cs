@@ -30,13 +30,20 @@ namespace ILCompiler.Metadata
 
                 // TODO-NICE: We can intern the attributes based on the CA constructor and blob bytes
 
-                Cts.MethodDesc constructor = module.GetMethod(attribute.Constructor);
-                var decodedValue = attribute.DecodeValue(attributeTypeProvider);
+                try
+                {
+                    Cts.MethodDesc constructor = module.GetMethod(attribute.Constructor);
+                    var decodedValue = attribute.DecodeValue(attributeTypeProvider);
 
-                if (IsBlockedCustomAttribute(constructor, decodedValue))
-                    continue;
+                    if (IsBlockedCustomAttribute(constructor, decodedValue))
+                        continue;
 
-                customAttributes.Add(HandleCustomAttribute(constructor, decodedValue));
+                    customAttributes.Add(HandleCustomAttribute(constructor, decodedValue));
+                }
+                catch (Cts.TypeSystemException)
+                {
+                    // TODO: We should emit unresolvable custom attributes instead of skipping these
+                }
             }
 
             return customAttributes;

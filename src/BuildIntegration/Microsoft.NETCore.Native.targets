@@ -29,13 +29,16 @@ See the LICENSE file in the project root for more information.
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
 
+    <IlcOutputFileExt>$(NativeObjectExt)</IlcOutputFileExt>
+    <IlcOutputFileExt Condition="$(NativeCodeGen) == 'cpp'">.cpp</IlcOutputFileExt>
+
+
     <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' != 'Windows_NT'"></NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT'">.dll</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'OSX'">.dylib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(TargetOS)' !=  'OSX'">.so</NativeBinaryExt>
 
-    <ManagedBinary>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ManagedBinary>
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
 
@@ -48,21 +51,37 @@ See the LICENSE file in the project root for more information.
     <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.5</CppCompilerAndLinker>
   </PropertyGroup>
 
-  <Target Name="IlcCompile" 
-      Inputs="$(ManagedBinary)"
-      Outputs="$(IlcCompileOutput)"
-      DependsOnTargets="Compile">
+  <ItemGroup>
+    <ManagedBinary Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <IlcReference Include="$(IlcPath)\sdk\*.dll" />
+    <IlcReference Include="$(IlcPath)\framework\*.dll" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <IlcCompileDependsOn Condition="'$(IlcCompileDependsOn)'==''">Compile</IlcCompileDependsOn>
+  </PropertyGroup>
+
+  <Target Name="IlcFramework">
     <ItemGroup>
-      <IlcReference Include="$(IlcPath)\sdk\*.dll" />
-      <IlcReference Include="$(IlcPath)\framework\*.dll" />
+      <ManagedBinary Include="@(IlcReference)" />
     </ItemGroup>
 
+  </Target>
+
+  <Target Name="IlcCompile" 
+      Inputs="@(ManagedBinary)"
+      Outputs="$(NativeIntermediateOutputPath)%(Filename)$(IlcOutputFileExt)"
+      DependsOnTargets="$(IlcCompileDependsOn)">
+
     <ItemGroup>
-      <IlcArg Include="$(ManagedBinary)" />
-      <IlcArg Include="-o:$(IlcCompileOutput)" />
+      <IlcArg Include="@(ManagedBinary)" />
+      <IlcArg Include="-o:$(NativeIntermediateOutputPath)%(Filename)$(IlcOutputFileExt)" />
       <IlcArg Include="@(IlcReference->'-r:%(Identity)')" />
       <IlcArg Condition="$(NativeCodeGen) != ''" Include="--$(NativeCodeGen)" />
+      <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

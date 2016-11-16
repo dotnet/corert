@@ -2,28 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using GenericVariance = Internal.Runtime.GenericVariance;
 
 namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class GenericDefinitionEETypeNode : EETypeNode, ISymbolNode
     {
-        public GenericDefinitionEETypeNode(TypeDesc type) : base(type)
+        public GenericDefinitionEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
             Debug.Assert(type.IsGenericDefinition);
-        }
-        
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return "__GenericDefinitionEEType_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-            }
         }
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)

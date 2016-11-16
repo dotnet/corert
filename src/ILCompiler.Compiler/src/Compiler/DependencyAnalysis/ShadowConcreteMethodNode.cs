@@ -4,8 +4,10 @@
 
 using System.Collections.Generic;
 
-using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
+
+using Internal.Text;
+using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -32,8 +34,11 @@ namespace ILCompiler.DependencyAnalysis
         public MethodDesc Method { get; }
 
         // Implementation of ISymbolNode that makes this node act as a symbol for the canonical body
-        int ISymbolNode.Offset => CanonicalMethodNode.Offset;
-        string ISymbolNode.MangledName => CanonicalMethodNode.MangledName;
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            CanonicalMethodNode.AppendMangledName(nameMangler, sb);
+        }
+        public int Offset => CanonicalMethodNode.Offset;
 
         public override bool StaticDependenciesAreComputed
             => CanonicalMethodNode.StaticDependenciesAreComputed;
@@ -69,19 +74,29 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+
+            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
+            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
+            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
+            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
+            if (factory.MetadataManager.HasReflectionInvokeStub(Method))
+            {
+                MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
+                MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (invokeStub != canonInvokeStub)
+                    yield return new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke");
+                else
+                    yield return new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
+            }
         }
 
-        protected override string GetName()
-        {
-            return $"{Method.ToString()} backed by {CanonicalMethodNode.MangledName}";
-        }
+        protected override string GetName() => $"{Method.ToString()} backed by {CanonicalMethodNode.GetMangledName()}";
 
         public sealed override bool HasConditionalStaticDependencies => false;
         public sealed override bool HasDynamicDependencies => false;
         public sealed override bool InterestingForDynamicDependencyAnalysis => false;
-        public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
-            List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
-        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(
-            NodeFactory factory) => null;
+
+        public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
     }
 }

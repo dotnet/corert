@@ -18,6 +18,11 @@ namespace Internal.Runtime
     /// </summary>
     internal static class TypeLoaderExceptionHelper
     {
+        public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName)
+        {
+            return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName), typeName);
+        }
+
         public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName, string messageArg)
         {
             return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName, messageArg), typeName);
@@ -54,10 +59,14 @@ namespace Internal.Runtime
                     return SR.ClassLoad_ExplicitGeneric;
                 case ExceptionStringID.ClassLoadBadFormat:
                     return SR.ClassLoad_BadFormat;
+                case ExceptionStringID.ClassLoadValueClassTooLarge:
+                    return SR.ClassLoad_ValueClassTooLarge;
                 case ExceptionStringID.ClassLoadExplicitLayout:
                     return SR.ClassLoad_ExplicitLayout;
                 case ExceptionStringID.InvalidProgramSpecific:
                     return SR.InvalidProgram_Specific;
+                case ExceptionStringID.InvalidProgramVararg:
+                    return SR.InvalidProgram_Vararg;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:
