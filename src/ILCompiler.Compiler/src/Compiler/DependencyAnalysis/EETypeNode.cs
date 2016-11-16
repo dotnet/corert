@@ -486,7 +486,7 @@ namespace ILCompiler.DependencyAnalysis
             // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
 
             // Interfaces, sealed types, and non-DefTypes cannot be derived from
-            if (_type.IsInterface || !_type.IsDefType || _type.IsSealed())
+            if (_type.IsInterface || !_type.IsDefType || (_type.IsSealed() && !_type.IsValueType))
                 return;
 
             DefType defType = _type as DefType;
