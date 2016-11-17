@@ -1,380 +1,359 @@
 {
-    "build": [
-        {
-            "enabled": false,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "Delete files from $(build.SourcesDirectory)/corert",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "SourceFolder": "$(build.SourcesDirectory)/corert",
-                "Contents": "**\n.gitignore"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "git clone",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "git",
-                "arguments": "clone $(VsoCorertGitUrl) corert",
-                "workingFolder": "",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "git checkout",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "git",
-                "arguments": "checkout $(SourceVersion)",
-                "workingFolder": "corert",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "Run $(Build.SourcesDirectory)/corert/clean.sh",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "$(Build.SourcesDirectory)/corert/clean.sh",
-                "arguments": "-all",
-                "workingFolder": "corert",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "Build native",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "$(Build.SourcesDirectory)/corert/build-native.sh",
-                "arguments": "",
-                "workingFolder": "corert",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "Build managed",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "$(Build.SourcesDirectory)/corert/build-managed.sh",
-                "arguments": "",
-                "workingFolder": "corert",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "Build packages",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "$(Build.SourcesDirectory)/corert/build-packages.sh",
-                "arguments": "",
-                "workingFolder": "corert",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": false,
-            "continueOnError": false,
-            "alwaysRun": false,
-            "displayName": "Publish packages",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "$(Build.SourcesDirectory)/corert/publish-packages.sh",
-                "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -- /p:OverwriteOnPublish=true",
-                "workingFolder": "corert",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": false,
-            "alwaysRun": true,
-            "displayName": "Copy Publish Artifact: BuildLogs",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "CopyRoot": "",
-                "Contents": "corert/*.log\ncorert/bin/Logs/*.*\n**/*.log",
-                "ArtifactName": "BuildLogs",
-                "ArtifactType": "Container",
-                "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": true,
-            "alwaysRun": false,
-            "displayName": "Compress the bin directory",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "filename": "tar",
-                "arguments": "-zcvf bin.tar.gz bin",
-                "workingFolder": "corert",
-                "failOnStandardError": "false"
-            }
-        },
-        {
-            "enabled": true,
-            "continueOnError": true,
-            "alwaysRun": false,
-            "displayName": "Copy Publish Artifact: bin",
-            "timeoutInMinutes": 0,
-            "task": {
-                "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-                "versionSpec": "*",
-                "definitionType": "task"
-            },
-            "inputs": {
-                "CopyRoot": "",
-                "Contents": "corert/bin.tar.gz",
-                "ArtifactName": "bin",
-                "ArtifactType": "Container",
-                "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-            }
-        }
-    ],
-    "options": [
-        {
-            "enabled": false,
-            "definition": {
-                "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
-            },
-            "inputs": {
-                "multipliers": "[]",
-                "parallel": "false",
-                "continueOnError": "true",
-                "additionalFields": "{}"
-            }
-        },
-        {
-            "enabled": false,
-            "definition": {
-                "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
-            },
-            "inputs": {
-                "workItemType": "234347",
-                "assignToRequestor": "true",
-                "additionalFields": "{}"
-            }
-        },
-        {
-            "enabled": false,
-            "definition": {
-                "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
-            },
-            "inputs": {
-                "additionalFields": "{}"
-            }
-        }
-    ],
-    "variables": {
-        "system.debug": {
-            "value": "false",
-            "allowOverride": true
-        },
-        "ConfigurationGroup": {
-            "value": "Release",
-            "allowOverride": true
-        },
-        "Platform": {
-            "value": "AnyCPU",
-            "allowOverride": true
-        },
-        "TeamName": {
-            "value": "DotNetCore"
-        },
-        "SignType": {
-            "value": "test",
-            "allowOverride": true
-        },
-        "CloudDropAccessName": {
-            "value": "dotnetbuildoutput"
-        },
-        "CloudDropAccessToken": {
-            "value": ""
-        },
-        "OfficialBuildId": {
-            "value": "$(Build.BuildNumber)",
-            "allowOverride": true
-        },
-        "Label": {
-            "value": "$(Build.BuildNumber)",
-            "allowOverride": true
-        },
-        "SourceVersion": {
-            "value": "HEAD",
-            "allowOverride": true
-        },
-        "Build.Clean": {
-            "value": "all"
-        },
-        "VsoAccountName": {
-            "value": "dn-bot"
-        },
-        "VsoPassword": {
-            "value": ""
-        },
-        "VsoRepositoryName": {
-            "value": ""
-        },
-        "VsoCorertGitUrl": {
-            "value": "https://github.com/crummel/dotnet_corert"
-        },
-        "SourceBranch": {
-            "value": "master",
-            "allowOverride": true
-        },
-        "Git": {
-            "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
-        }
+  "build": [
+    {
+      "enabled": false,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Delete files from $(build.SourcesDirectory)/corert",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "b7e8b412-0437-4065-9371-edc5881de25b",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(build.SourcesDirectory)/corert",
+        "Contents": "**\n.gitignore"
+      }
     },
-    "demands": [
-        "Agent.OS -equals darwin"
-    ],
-    "retentionRules": [
-        {
-            "branches": [
-                "+refs/heads/*"
-            ],
-            "artifacts": [],
-            "artifactTypesToDelete": [
-                "FilePath",
-                "SymbolStore"
-            ],
-            "daysToKeep": 10,
-            "minimumToKeep": 1,
-            "deleteBuildRecord": true,
-            "deleteTestResults": true
-        }
-    ],
-    "_links": {
-        "self": {
-            "href": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/4511"
-        },
-        "web": {
-            "href": "https://devdiv.visualstudio.com/DefaultCollection/_permalink/_build/index?collectionId=011b8bdf-6d56-4f87-be0d-0092136884d9&projectId=0bdbc590-a062-4c3f-b0f6-9383f67865ee&definitionId=4511"
-        },
-        "editor": {
-            "href": "https://devdiv.visualstudio.com/DefaultCollection/_permalink/_build/definitionEditor?collectionId=011b8bdf-6d56-4f87-be0d-0092136884d9&projectId=0bdbc590-a062-4c3f-b0f6-9383f67865ee&definitionId=4511"
-        }
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "git clone",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "clone $(VsoCorertGitUrl) corert",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
     },
-    "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
-    "jobAuthorizationScope": "projectCollection",
-    "jobTimeoutInMinutes": 60,
-    "repository": {
-        "properties": {
-            "labelSources": "0",
-            "reportBuildStatus": "true",
-            "fetchDepth": "0",
-            "gitLfsSupport": "false",
-            "skipSyncSource": "false",
-            "cleanOptions": "0"
-        },
-        "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
-        "type": "TfsGit",
-        "name": "DotNet-BuildPipeline",
-        "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-BuildPipeline",
-        "defaultBranch": "refs/heads/master",
-        "clean": "true",
-        "checkoutSubmodules": false
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "git checkout",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "checkout $(SourceVersion)",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
     },
-    "quality": "definition",
-    "defaultBranch": "refs/heads/master",
-    "authoredBy": {
-        "id": "89387ac7-a5ee-45a8-844b-db22c6dca93d",
-        "displayName": "Chris Rummel",
-        "uniqueName": "crummel@microsoft.com",
-        "url": "https://app.vssps.visualstudio.com/Aa44b2c06-f247-425c-8464-4a0676af910a/_apis/Identities/89387ac7-a5ee-45a8-844b-db22c6dca93d",
-        "imageUrl": "https://devdiv.visualstudio.com/_api/_common/identityImage?id=89387ac7-a5ee-45a8-844b-db22c6dca93d"
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run $(Build.SourcesDirectory)/corert/clean.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/corert/clean.sh",
+        "arguments": "-all",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
     },
-    "queue": {
-        "pool": {
-            "id": 39,
-            "name": "DotNet-Build"
-        },
-        "id": 36,
-        "name": "DotNet-Build"
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build native",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/corert/build-native.sh",
+        "arguments": "",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
     },
-    "uri": "vstfs:///Build/Definition/4511",
-    "path": "\\DotNet\\CoreRT",
-    "type": "build",
-    "revision": 9,
-    "createdDate": "2016-11-10T21:32:35.027Z",
-    "id": 4511,
-    "name": "DotNet-CoreRT-Mac",
-    "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/4511",
-    "project": {
-        "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
-        "name": "DevDiv",
-        "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
-        "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
-        "state": "wellFormed",
-        "revision": 418097423
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build managed",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/corert/build-managed.sh",
+        "arguments": "",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/corert/build-packages.sh",
+        "arguments": "",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": false,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/corert/publish-packages.sh",
+        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -- /p:OverwriteOnPublish=true",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": true,
+      "displayName": "Copy Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "",
+        "Contents": "corert/*.log\ncorert/bin/Logs/*.*\n**/*.log",
+        "ArtifactName": "BuildLogs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Compress the bin directory",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "tar",
+        "arguments": "-zcvf bin.tar.gz bin",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Copy Publish Artifact: bin",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "",
+        "Contents": "corert/bin.tar.gz",
+        "ArtifactName": "bin",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
     }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "234347",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "system.debug": {
+      "value": "false",
+      "allowOverride": true
+    },
+    "ConfigurationGroup": {
+      "value": "Release",
+      "allowOverride": true
+    },
+    "Platform": {
+      "value": "AnyCPU",
+      "allowOverride": true
+    },
+    "TeamName": {
+      "value": "DotNetCore"
+    },
+    "SignType": {
+      "value": "test",
+      "allowOverride": true
+    },
+    "CloudDropAccessName": {
+      "value": "dotnetbuildoutput"
+    },
+    "CloudDropAccessToken": {
+      "value": ""
+    },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "Label": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "SourceVersion": {
+      "value": "HEAD",
+      "allowOverride": true
+    },
+    "Build.Clean": {
+      "value": "all"
+    },
+    "VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "VsoPassword": {
+      "value": ""
+    },
+    "VsoRepositoryName": {
+      "value": ""
+    },
+    "VsoCorertGitUrl": {
+      "value": "https://github.com/crummel/dotnet_corert"
+    },
+    "SourceBranch": {
+      "value": "master",
+      "allowOverride": true
+    },
+    "Git": {
+      "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
+    }
+  },
+  "demands": [
+    "Agent.OS -equals darwin"
+  ],
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 10,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 60,
+  "repository": {
+    "properties": {
+      "labelSources": "0",
+      "reportBuildStatus": "true",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false",
+      "skipSyncSource": "false",
+      "cleanOptions": "0"
+    },
+    "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
+    "type": "TfsGit",
+    "name": "DotNet-BuildPipeline",
+    "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-BuildPipeline",
+    "defaultBranch": "refs/heads/master",
+    "clean": "true",
+    "checkoutSubmodules": false
+  },
+  "quality": "definition",
+  "defaultBranch": "refs/heads/master",
+  "queue": {
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    },
+    "id": 36,
+    "name": "DotNet-Build"
+  },
+  "path": "\\DotNet\\CoreRT",
+  "type": "build",
+  "id": 4511,
+  "name": "DotNet-CoreRT-Mac",
+  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/4511",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097423
+  }
 }
