@@ -86,8 +86,14 @@ namespace System.Globalization
             }
         }
 
-
-
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public virtual CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.Unknown;
+            }
+        }
 
         protected Calendar()
         {
@@ -151,7 +157,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
         [System.Runtime.InteropServices.ComVisible(false)]
-        internal static Calendar ReadOnly(Calendar calendar)
+        public static Calendar ReadOnly(Calendar calendar)
         {
             if (calendar == null) { throw new ArgumentNullException(nameof(calendar)); }
             Contract.EndContractBlock();
@@ -686,6 +692,16 @@ namespace System.Globalization
         //
 
         public abstract bool IsLeapMonth(int year, int month, int era);
+
+        // Returns  the leap month in a calendar year of the current era. This method returns 0
+        // if this calendar does not have leap month, or this year is not a leap year.
+        //
+
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public virtual int GetLeapMonth(int year)
+        {
+            return (GetLeapMonth(year, CurrentEra));
+        }
 
         // Returns  the leap month in a calendar year of the specified era. This method returns 0
         // if this calendar does not have leap month, or this year is not a leap year.

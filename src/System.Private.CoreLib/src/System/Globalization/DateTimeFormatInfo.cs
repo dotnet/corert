@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -48,7 +49,6 @@ namespace System.Globalization
 
 
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
         // cache for the invariant culture.
@@ -735,19 +735,31 @@ namespace System.Globalization
 
         // Note that cultureData derives this from the short date format (unless someone's set this previously)
         // Note that this property is quite undesirable.
-        internal String DateSeparator
+        public String DateSeparator
         {
             get
             {
-                if (this.dateSeparator == null)
+                if (dateSeparator == null)
                 {
-                    this.dateSeparator = _cultureData.DateSeparator(Calendar.ID);
+                    dateSeparator = _cultureData.DateSeparator(Calendar.ID);
                 }
                 Debug.Assert(this.dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
-                return (this.dateSeparator);
+                return dateSeparator;
+            }
+            set
+            {
+                if (IsReadOnly)
+                    throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
+                }
+                Contract.EndContractBlock();
+                ClearTokenHashTable();
+                dateSeparator = value;
             }
         }
-
 
         public DayOfWeek FirstDayOfWeek
         {
@@ -1191,7 +1203,7 @@ namespace System.Globalization
 
         // Note that cultureData derives this from the long time format (unless someone's set this previously)
         // Note that this property is quite undesirable.
-        internal String TimeSeparator
+        public String TimeSeparator
         {
             get
             {
@@ -1202,8 +1214,23 @@ namespace System.Globalization
                 Debug.Assert(this.timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
                 return (timeSeparator);
             }
-        }
 
+            set
+            {
+                if (IsReadOnly)
+                    throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
+                }
+
+                Contract.EndContractBlock();
+                ClearTokenHashTable();
+
+                timeSeparator = value;
+            }
+        }
 
         public String UniversalSortableDateTimePattern
         {
@@ -1297,7 +1324,6 @@ namespace System.Globalization
         }
 
         // Returns the string array of the one-letter day of week names.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String[] ShortestDayNames
         {
             get
@@ -1538,6 +1564,23 @@ namespace System.Globalization
             return (internalGetAbbreviatedDayOfWeekNames()[(int)dayofweek]);
         }
 
+        // Returns the super short day of week names for the specified day of week.
+        public string GetShortestDayName(DayOfWeek dayOfWeek)
+        {
+            if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(dayOfWeek), SR.Format(SR.ArgumentOutOfRange_Range,
+                    DayOfWeek.Sunday, DayOfWeek.Saturday));
+            }
+            Contract.EndContractBlock();
+            //
+            // Don't call the public property SuperShortDayNames here since a clone is needed in that
+            // property, so it will be slower.  Instead, use internalGetSuperShortDayNames() directly.
+            //
+            return (internalGetSuperShortDayNames()[(int)dayOfWeek]);
+        }
+
         // Get all possible combination of inputs
         private static String[] GetCombinedPatterns(String[] patterns1, String[] patterns2, String connectString)
         {
@@ -1562,9 +1605,22 @@ namespace System.Globalization
             return (result);
         }
 
+        public string[] GetAllDateTimePatterns()
+        {
+            List<String> results = new List<String>(DEFAULT_ALL_DATETIMES_SIZE);
 
-        // auto-generated
-        internal String[] GetAllDateTimePatterns(char format)
+            for (int i = 0; i < FormatProvider.DateTimeFormat.allStandardFormats.Length; i++)
+            {
+                String[] strings = GetAllDateTimePatterns(FormatProvider.DateTimeFormat.allStandardFormats[i]);
+                for (int j = 0; j < strings.Length; j++)
+                {
+                    results.Add(strings[j]);
+                }
+            }
+            return results.ToArray();
+        }
+
+        public String[] GetAllDateTimePatterns(char format)
         {
             Contract.Ensures(Contract.Result<String[]>() != null);
             String[] result = null;
@@ -1889,7 +1945,99 @@ namespace System.Globalization
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
+        // Return the native name for the calendar in DTFI.Calendar.  The native name is referred to
+        // the culture used to create the DTFI.  E.g. in the following example, the native language is Japanese.
+        // DateTimeFormatInfo dtfi = new CultureInfo("ja-JP", false).DateTimeFormat.Calendar = new JapaneseCalendar();
+        // String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Japanese calendar.
+        // DateTimeFormatInfo dtfi = new CultureInfo("ja-JP", false).DateTimeFormat.Calendar = new GregorianCalendar(GregorianCalendarTypes.Localized);
+        // String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Gregorian calendar.
+        public string NativeCalendarName
+        {
+            get
+            {
+                return _cultureData.CalendarName(Calendar.ID);
+            }
+        }
+
+        //
+        // Used by custom cultures and others to set the list of available formats. Note that none of them are
+        // explicitly used unless someone calls GetAllDateTimePatterns and subsequently uses one of the items
+        // from the list.
+        //
+        // Most of the format characters that can be used in GetAllDateTimePatterns are
+        // not really needed since they are one of the following:
+        //
+        //  r/R/s/u     locale-independent constants -- cannot be changed!
+        //  m/M/y/Y     fields with a single string in them -- that can be set through props directly
+        //  f/F/g/G/U   derived fields based on combinations of various of the below formats
+        //
+        // NOTE: No special validation is done here beyond what is done when the actual respective fields
+        // are used (what would be the point of disallowing here what we allow in the appropriate property?)
+        //
+        // WARNING: If more validation is ever done in one place, it should be done in the other.
+        //
+        public void SetAllDateTimePatterns(String[] patterns, char format)
+        {
+            if (IsReadOnly)
+                throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+
+            if (patterns == null)
+            {
+                throw new ArgumentNullException(nameof(patterns), SR.ArgumentNull_Array);
+            }
+
+            if (patterns.Length == 0)
+            {
+                throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(patterns));
+            }
+
+            Contract.EndContractBlock();
+
+            for (int i=0; i<patterns.Length; i++)
+            {
+                if (patterns[i] == null)
+                {
+                    throw new ArgumentNullException("patterns[" + i + "]", SR.ArgumentNull_ArrayValue);
+                }
+            }
+
+            // Remember the patterns, and use the 1st as default
+            switch (format)
+            {
+                case 'd':
+                    allShortDatePatterns = patterns;
+                    shortDatePattern = allShortDatePatterns[0];
+                    break;
+
+                case 'D':
+                    allLongDatePatterns = patterns;
+                    longDatePattern = allLongDatePatterns[0];
+                    break;
+
+                case 't':
+                    allShortTimePatterns = patterns;
+                    shortTimePattern = allShortTimePatterns[0];
+                    break;
+
+                case 'T':
+                    allLongTimePatterns = patterns;
+                    longTimePattern = allLongTimePatterns[0];
+                    break;
+
+                case 'y':
+                case 'Y':
+                    allYearMonthPatterns = patterns;
+                    yearMonthPattern = allYearMonthPatterns[0];
+                    break;
+
+                default:
+                    throw new ArgumentException(SR.Format_BadFormatSpecifier, nameof(format));
+            }
+
+            // Clear the token hash table, note that even short dates could require this
+            ClearTokenHashTable();
+        }
+
         public String[] AbbreviatedMonthGenitiveNames
         {
             get
@@ -1917,7 +2065,6 @@ namespace System.Globalization
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String[] MonthGenitiveNames
         {
             get

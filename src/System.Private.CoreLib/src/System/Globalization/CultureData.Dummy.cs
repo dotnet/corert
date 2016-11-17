@@ -82,5 +82,75 @@ namespace System.Globalization
             return 0;
         }
 
+        private int LocaleNameToLCID(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+        
+        private static string LCIDToLocaleName(int culture)
+        {
+            throw new NotImplementedException();
+        }
+
+        private int GetAnsiCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private int GetOemCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private int GetMacCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private int GetEbcdicCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private int GetGeoId(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private int GetDigitSubstitution(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private string GetThreeLetterWindowsLanguageName(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static CultureInfo[] EnumCultures(CultureTypes types)
+        {
+            throw new NotImplementedException();
+        }
+
+        private string GetConsoleFallbackName(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal bool IsFramework
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        internal bool IsWin32Installed
+        {
+            get { throw new NotImplementedException(); }
+        }
+        
+        internal bool IsReplacementCulture
+        {
+            get { throw new NotImplementedException(); }
+        }
+
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -339,6 +340,26 @@ namespace System.Globalization
             return retValue;
         }
 
+        private unsafe SortKey CreateSortKey(String source, CompareOptions options)
+        {
+            if (source==null) { throw new ArgumentNullException(nameof(source)); }
+            Contract.EndContractBlock();
+
+            if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
+            }
+
+            throw new NotImplementedException();
+        }
+
+        private unsafe static bool IsSortable(char *text, int length)
+        {
+            // CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            // return (InternalIsSortable(c.m_dataHandle, c.m_handleOrigin, c.m_sortName, text, text.Length));
+            throw new NotImplementedException();
+        }
+
         private const int COMPARE_OPTIONS_ORDINAL = 0x40000000;       // Ordinal
         private const int NORM_IGNORECASE = 0x00000001;       // Ignores case.  (use LINGUISTIC_IGNORECASE instead)
         private const int NORM_IGNOREKANATYPE = 0x00010000;       // Does not differentiate between Hiragana and Katakana characters. Corresponding Hiragana and Katakana will compare as equal.
@@ -375,6 +396,11 @@ namespace System.Globalization
                              (options == CompareOptions.Ordinal), "[CompareInfo.GetNativeCompareFlags]Expected all flags to be handled");
 
             return nativeCompareFlags;
+        }
+
+        private SortVersion GetSortVersion()
+        {
+            throw new NotImplementedException();
         }
     }
 }

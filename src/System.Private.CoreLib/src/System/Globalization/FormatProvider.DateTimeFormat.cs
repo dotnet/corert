@@ -125,7 +125,7 @@ namespace System.Globalization
         */
 
         //This class contains only static members and does not require the serializable attribute.    
-        private static
+        internal static
         class DateTimeFormat
         {
             internal const int MaxSecondsFractionDigits = 7;
