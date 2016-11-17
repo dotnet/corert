@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Internal.Text
@@ -44,14 +43,74 @@ namespace Internal.Text
             return (obj is Utf8String) && Equals((Utf8String)obj);
         }
 
-        public override int GetHashCode()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int _rotl(int value, int shift)
         {
-            return ((IStructuralEquatable)_value).GetHashCode(EqualityComparer<byte>.Default);
+            // This is expected to be optimized into a single rotl instruction
+            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
+        }
+
+        public unsafe override int GetHashCode()
+        {
+            int length = _value.Length;
+            int hash = length;
+            fixed (byte* ap = _value)
+            {
+                byte* a = ap;
+
+                while (length >= 4)
+                {
+                    hash = (hash + _rotl(hash, 5)) ^ *(int*)a;
+                    a += 4; length -= 4;
+                }
+                if (length >= 2)
+                {
+                    hash = (hash + _rotl(hash, 5)) ^ *(short*)a;
+                    a += 2; length -= 2;
+                }
+                if (length > 0)
+                {
+                    hash = (hash + _rotl(hash, 5)) ^ *a;
+                }
+                hash += _rotl(hash, 7);
+                hash += _rotl(hash, 15);
+                return hash;
+            }
         }
 
         public bool Equals(Utf8String other)
         {
-            return ((IStructuralEquatable)_value).Equals(other._value, EqualityComparer<byte>.Default);
+            int length = _value.Length;
+            if (length != other.Length)
+                return false;
+
+            if (_value == other._value)
+                return true;
+
+            unsafe
+            {
+                fixed (byte* ap = _value) fixed (byte* bp = other._value)
+                {
+                    byte* a = ap;
+                    byte* b = bp;
+
+                    while (length >= 4)
+                    {
+                        if (*(int*)a != *(int*)b) return false;
+                        a += 4; b += 4; length -= 4;
+                    }
+                    if (length >= 2)
+                    {
+                        if (*(short*)a != *(short*)b) return false;
+                        a += 2; b += 2; length -= 2;
+                    }
+                    if (length > 0)
+                    {
+                        if (*a != *b) return false;
+                    }
+                    return true;
+                }
+            }
         }
     }
 }
