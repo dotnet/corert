@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-
 using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
@@ -53,12 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             //
 
             builder.EmitZeroPointer();
-
-            int entryPointBytesCount = Encoding.UTF8.GetByteCount(_entryPointName);
-            byte[] entryPointNameBytes = new byte[entryPointBytesCount + 1];
-            Encoding.UTF8.GetBytes(_entryPointName, 0, _entryPointName.Length, entryPointNameBytes, 0);
-
-            builder.EmitPointerReloc(factory.ReadOnlyDataBlob("__pinvokename_" + _entryPointName, entryPointNameBytes, 1));
+            builder.EmitPointerReloc(factory.ConstantUtf8String(_entryPointName));
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleName));
 
             return builder.ToObjectData();

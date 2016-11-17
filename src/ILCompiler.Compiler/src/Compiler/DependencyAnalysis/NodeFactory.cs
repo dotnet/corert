@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -617,6 +618,28 @@ namespace ILCompiler.DependencyAnalysis
         public EmbeddedObjectNode EagerCctorIndirection(MethodDesc cctorMethod)
         {
             return _eagerCctorIndirectionNodes.GetOrAdd(cctorMethod);
+        }
+
+        public ISymbolNode ConstantUtf8String(string str)
+        {
+            int stringBytesCount = Encoding.UTF8.GetByteCount(str);
+            byte[] stringBytes = new byte[stringBytesCount + 1];
+            Encoding.UTF8.GetBytes(str, 0, str.Length, stringBytes, 0);
+
+            string symbolName = "__utf8str_" + NameMangler.GetMangledStringName(str);
+
+            return ReadOnlyDataBlob(symbolName, stringBytes, 1);
+        }
+
+        public ISymbolNode ConstantUtf16String(string str)
+        {
+            int stringBytesCount = Encoding.Unicode.GetByteCount(str);
+            byte[] stringBytes = new byte[stringBytesCount + 2];
+            Encoding.Unicode.GetBytes(str, 0, str.Length, stringBytes, 0);
+
+            string symbolName = "__utf16str_" + NameMangler.GetMangledStringName(str);
+
+            return ReadOnlyDataBlob(symbolName, stringBytes, 2);
         }
 
         /// <summary>
