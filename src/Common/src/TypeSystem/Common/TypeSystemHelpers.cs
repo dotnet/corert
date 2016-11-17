@@ -217,7 +217,7 @@ namespace Internal.TypeSystem
             // If the method is a generic method then go and get the instantiated descriptor
             if (interfaceMethod.HasInstantiation)
             {
-                method = method.InstantiateSignature(interfaceType.Instantiation, interfaceMethod.Instantiation);
+                method = method.MakeInstantiatedMethod(interfaceMethod.Instantiation);
             }
 
             Debug.Assert(method != null);
