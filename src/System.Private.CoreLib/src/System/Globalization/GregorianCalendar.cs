@@ -72,6 +72,15 @@ namespace System.Globalization
             }
         }
 
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
+
         /*=================================GetDefaultInstance==========================
         **Action: Internal method to provide a default intance of GregorianCalendar.  Used by NLS+ implementation
         **       and other calendars.
@@ -193,7 +202,7 @@ namespace System.Globalization
             int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
-            int m = n >> 5 + 1;
+            int m = (n >> 5) + 1;
             // m = 1-based month number
             while (n >= days[m]) m++;
             // If month was requested, return it

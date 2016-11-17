@@ -596,5 +596,76 @@ namespace System.Globalization
 
             return null;
         }
+
+        private int LocaleNameToLCID(string cultureName)
+        {
+            return GetLocaleInfo(LocaleNumberData.LanguageId);
+        }
+        
+        private static string LCIDToLocaleName(int culture)
+        {
+            throw new NotImplementedException();
+        }
+
+        private int GetAnsiCodePage(string cultureName)
+        {
+            return GetLocaleInfo(LocaleNumberData.AnsiCodePage);
+        }
+
+        private int GetOemCodePage(string cultureName)
+        {
+            return GetLocaleInfo(LocaleNumberData.OemCodePage);
+        }
+
+        private int GetMacCodePage(string cultureName)
+        {
+            return GetLocaleInfo(LocaleNumberData.MacCodePage);
+        }
+
+        private int GetEbcdicCodePage(string cultureName)
+        {
+            return GetLocaleInfo(LocaleNumberData.EbcdicCodePage);
+        }
+
+        private int GetGeoId(string cultureName)
+        {
+            return GetLocaleInfo(LocaleNumberData.GeoId);
+        }
+
+        private int GetDigitSubstitution(string cultureName)
+        {
+            return GetLocaleInfo(LocaleNumberData.DigitSubstitution);
+        }
+
+        private string GetThreeLetterWindowsLanguageName(string cultureName)
+        {
+            return GetLocaleInfo(cultureName, LocaleStringData.AbbreviatedWindowsLanguageName);
+        }
+
+        private static CultureInfo[] EnumCultures(CultureTypes types)
+        {
+            throw new NotImplementedException();
+        }
+
+        private string GetConsoleFallbackName(string cultureName)
+        {
+            return GetLocaleInfo(cultureName, LocaleStringData.ConsoleFallbackName);
+        }
+
+        internal bool IsFramework
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        internal bool IsWin32Installed
+        {
+            get { throw new NotImplementedException(); }
+        }
+        
+        internal bool IsReplacementCulture
+        {
+            get { throw new NotImplementedException(); }
+        }
+        
     }
 }
