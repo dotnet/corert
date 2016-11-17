@@ -79,6 +79,8 @@ namespace ILCompiler
             }
             else
             {
+                // Use the typical field definition in case this is an instantiated generic type
+                field = field.GetTypicalFieldDefinition();
                 return NodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
                     ((EcmaField)field).GetFieldRvaData(), NodeFactory.Target.PointerSize);
             }
