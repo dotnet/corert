@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Internal.Text
 {
-    public struct Utf8String
+    public struct Utf8String : IEquatable<Utf8String>
     {
         private byte[] _value;
 
@@ -34,6 +37,21 @@ namespace Internal.Text
         public override string ToString()
         {
             return Encoding.UTF8.GetString(_value);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is Utf8String) && Equals((Utf8String)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return ((IStructuralEquatable)_value).GetHashCode(EqualityComparer<byte>.Default);
+        }
+
+        public bool Equals(Utf8String other)
+        {
+            return ((IStructuralEquatable)_value).Equals(other._value, EqualityComparer<byte>.Default);
         }
     }
 }
