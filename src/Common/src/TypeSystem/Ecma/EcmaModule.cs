@@ -141,7 +141,12 @@ namespace Internal.TypeSystem.Ecma
                         item = _module.ResolveStandaloneSignature((StandaloneSignatureHandle)handle);
                         break;
 
-                    // TODO: Resolve other tokens
+                    case HandleKind.ModuleDefinition:
+                        // ECMA-335 Partition 2 II.22.38 1d: This should not occur in a CLI ("compressed metadata") module,
+                        // but resolves to "current module".
+                        item = _module;
+                        break;
+
                     default:
                         throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
                 }
