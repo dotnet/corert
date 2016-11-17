@@ -195,7 +195,11 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
+#if CORERT
+                        fieldOffset = cookieOrOffsetOrOrdinal;
+#else
                         fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
+#endif
                     }
 
                     if ((entryFlags & FieldTableFlags.StorageClass) == FieldTableFlags.ThreadStatic)
