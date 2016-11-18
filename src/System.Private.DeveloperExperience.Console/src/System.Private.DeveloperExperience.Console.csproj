@@ -37,6 +37,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Console.cs" >
       <Link>Interop\Windows\mincore\Interop.Console.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.WriteFile_IntPtr.cs" >
+      <Link>Interop\Windows\mincore\Interop.WriteFile_IntPtr.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.HandleTypes.cs" >
       <Link>Interop\Windows\mincore\Interop.HandleTypes.cs</Link>
     </Compile>

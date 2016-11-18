@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    private static class Libraries
+    private static partial class Libraries
     {
         internal const string Process = "api-ms-win-core-processenvironment-l1-1-0.dll";
         internal const string Console = "api-ms-win-core-console-l1-1-0.dll";
@@ -19,7 +19,7 @@ internal static partial class Interop
         [DllImport(Libraries.Process)]
         internal static extern IntPtr GetStdHandle(int nStdHandle);
 
-        [DllImport(Libraries.Console, EntryPoint = "WriteConsoleW")]
-        internal static unsafe extern bool WriteConsole(IntPtr hConsoleOutput, byte* lpBuffer, int nNumberOfCharsToWrite, out int lpNumberOfCharsWritten, IntPtr lpReservedMustBeNull);
+        [DllImport(Libraries.Console)]
+        internal extern static uint GetConsoleOutputCP();
     }
 }
