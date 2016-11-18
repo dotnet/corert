@@ -48,7 +48,17 @@ if errorlevel 1 (
 shift
 shift
 
-%TestFolder%\native\%TestExecutable% %*
+set TestParameters=
+set Delimiter=
+:GetNextParameter
+if "%1"=="" goto :RunTest
+set "TestParameters=%TestParameters%%Delimiter%%1"
+set "Delimiter= "
+shift
+goto :GetNextParameter
+
+:RunTest
+%TestFolder%\native\%TestExecutable% %TestParameters%
 
 set TestExitCode=!ERRORLEVEL!
 
