@@ -101,7 +101,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --name $(DockerContainerName) $(DockerContainerName) git clone $(VsoCorertGitUrl) $(GitDirectory)",
+        "arguments": "run --name $(DockerContainerName) $(DockerImageName) git clone $(VsoCorertGitUrl) $(GitDirectory)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
       }
