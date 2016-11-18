@@ -528,7 +528,8 @@
     },
     "MyGetApiKey": {
       "value": null,
-      "isSecret": true
+      "isSecret": true,
+      "allowOverride": true
     }
   },
   "demands": [
