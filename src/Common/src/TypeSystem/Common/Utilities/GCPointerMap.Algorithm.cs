@@ -31,7 +31,7 @@ namespace Internal.TypeSystem
             foreach (FieldDesc field in type.GetFields())
             {
                 if (!field.IsStatic || field.HasRva || field.IsLiteral
-                    || !field.HasGCStaticBase || field.IsThreadStatic)
+                    || field.IsThreadStatic || !field.HasGCStaticBase)
                     continue;
 
                 TypeDesc fieldType = field.FieldType;

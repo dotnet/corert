@@ -40,6 +40,8 @@ namespace Internal.TypeSystem
         {
             get
             {
+                // If this assert fires then make sure the caller checks the IsThreadStatic attribute
+                // of FieldDesc before checking its HasGCStaticBase property.
                 Debug.Assert(IsStatic && !IsThreadStatic);
                 return Context.ComputeHasGCStaticBase(this);
             }
