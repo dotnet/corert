@@ -580,7 +580,7 @@
     "id": 36,
     "name": "DotNet-Build"
   },
-  "path": "\\DotNet\\CoreRT",
+  "path": "\\",
   "type": "build",
   "id": 4508,
   "name": "DotNet-CoreRT-Windows",

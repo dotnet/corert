@@ -740,7 +740,7 @@
     "id": 36,
     "name": "DotNet-Build"
   },
-  "path": "\\DotNet\\CoreRT",
+  "path": "\\",
   "type": "build",
   "id": 4510,
   "name": "DotNet-CoreRT-Linux",
