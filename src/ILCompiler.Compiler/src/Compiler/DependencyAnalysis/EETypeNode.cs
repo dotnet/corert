@@ -69,7 +69,10 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            
+
+            // Note: The fact that you can't create invalid EETypeNode is used from many places that grab
+            // an EETypeNode from the factory with the sole purpose of making sure the validation has run
+            // and that the result of the positive validation is "cached" (by the presence of an EETypeNode).
             CheckCanGenerateEEType(factory, type);
         }
 
@@ -521,12 +524,14 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc baseType = type.BaseType;
             if (baseType != null)
             {
+                // Make sure EEType can be created for this.
                 factory.NecessaryTypeSymbol(baseType);
             }
             
             // We need EETypes for interfaces
             foreach (var intf in type.RuntimeInterfaces)
             {
+                // Make sure EEType can be created for this.
                 factory.NecessaryTypeSymbol(intf);
             }
 
@@ -571,6 +576,8 @@ namespace ILCompiler.DependencyAnalysis
             if (parameterizedType != null)
             {
                 TypeDesc parameterType = parameterizedType.ParameterType;
+
+                // Make sure EEType can be created for this.
                 factory.NecessaryTypeSymbol(parameterType);
 
                 if (parameterizedType.IsArray)
