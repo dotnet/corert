@@ -521,13 +521,13 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc baseType = type.BaseType;
             if (baseType != null)
             {
-                CheckCanGenerateEEType(factory, baseType);
+                factory.NecessaryTypeSymbol(baseType);
             }
             
             // We need EETypes for interfaces
             foreach (var intf in type.RuntimeInterfaces)
             {
-                CheckCanGenerateEEType(factory, intf);
+                factory.NecessaryTypeSymbol(intf);
             }
 
             // Validate classes, structs, enums, interfaces, and delegates
@@ -571,7 +571,7 @@ namespace ILCompiler.DependencyAnalysis
             if (parameterizedType != null)
             {
                 TypeDesc parameterType = parameterizedType.ParameterType;
-                CheckCanGenerateEEType(factory, parameterType);
+                factory.NecessaryTypeSymbol(parameterType);
 
                 if (parameterizedType.IsArray)
                 {
