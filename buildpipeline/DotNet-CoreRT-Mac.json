@@ -268,7 +268,7 @@
       "allowOverride": true
     },
     "SourceVersion": {
-      "value": "HEAD",
+      "value": "BuildScripts",
       "allowOverride": true
     },
     "Build.Clean": {
@@ -287,7 +287,7 @@
       "value": "https://github.com/crummel/dotnet_corert"
     },
     "SourceBranch": {
-      "value": "master",
+      "value": "BuildScripts",
       "allowOverride": true
     },
     "Git": {

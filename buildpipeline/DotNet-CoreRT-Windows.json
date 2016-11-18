@@ -491,7 +491,7 @@
       "allowOverride": true
     },
     "SourceVersion": {
-      "value": "HEAD",
+      "value": "BuildScripts",
       "allowOverride": true
     },
     "Build.Clean": {
@@ -511,7 +511,7 @@
       "allowOverride": true
     },
     "SourceBranch": {
-      "value": "master",
+      "value": "BuildScripts",
       "allowOverride": true
     },
     "Git": {
