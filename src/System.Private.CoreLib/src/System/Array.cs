@@ -897,20 +897,26 @@ namespace System
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
             Debug.Assert(rank == eeType.ArrayRank);
 
+            ulong totalLength = 1;
+            bool maxArrayDimensionLengthOverflow = false;
+
             for (int i = 0; i < rank; i++)
             {
-                if (pLengths[i] < 0)
+                int length = pLengths[i];
+                if (length < 0)
                     throw new OverflowException();
+                if (length > MaxArrayLength)
+                    maxArrayDimensionLengthOverflow = true;
+                totalLength = totalLength * (ulong)length;
+                if (totalLength > UInt32.MaxValue)
+                    throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
             }
 
-            int totalLength = 1;
+            // Throw this exception only after everything else was validated for backward compatibility.
+            if (maxArrayDimensionLengthOverflow)
+                throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
 
-            for (int i = 0; i < rank; i++)
-            {
-                totalLength = checked(totalLength * pLengths[i]);
-            }
-
-            Array ret = RuntimeImports.RhNewArray(eeType, totalLength);
+            Array ret = RuntimeImports.RhNewArray(eeType, (int)totalLength);
 
             fixed (int* pNumComponents = &ret._numComponents)
             {
