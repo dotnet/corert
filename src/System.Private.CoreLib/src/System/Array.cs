@@ -908,7 +908,7 @@ namespace System
                 if (length > MaxArrayLength)
                     maxArrayDimensionLengthOverflow = true;
                 totalLength = totalLength * (ulong)length;
-                if (totalLength > UInt32.MaxValue)
+                if (totalLength > Int32.MaxValue)
                     throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
             }
 
