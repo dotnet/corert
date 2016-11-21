@@ -89,5 +89,7 @@ public:
 
     bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause);
 
+    PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
+
     void * GetClasslibFunction(ClasslibFunctionId functionId);
 };

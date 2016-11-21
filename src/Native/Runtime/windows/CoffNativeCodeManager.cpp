@@ -510,6 +510,12 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     return true;
 }
 
+PTR_VOID CoffNativeCodeManager::GetMethodStartAddress(MethodInfo * pMethodInfo)
+{
+    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+    return dac_cast<PTR_VOID>(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress);
+}
+
 void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 {
     uint32_t id = (uint32_t)functionId;

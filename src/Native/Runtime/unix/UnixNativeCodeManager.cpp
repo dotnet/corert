@@ -289,6 +289,12 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     return true;
 }
 
+PTR_VOID UnixNativeCodeManager::GetMethodStartAddress(MethodInfo * pMethodInfo)
+{
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    return pNativeMethodInfo->pMethodStartAddress;
+}
+
 void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 {
     uint32_t id = (uint32_t)functionId;

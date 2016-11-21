@@ -278,7 +278,7 @@ static const pfn c_classlibFunctions[] = {
     &GetRuntimeException,
     &FailFast,
     nullptr, // &UnhandledExceptionHandler,
-    nullptr, // &AppendExceptionStackFrame,
+    &AppendExceptionStackFrame,
 };
 
 #if defined(_WIN32)

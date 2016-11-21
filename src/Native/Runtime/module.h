@@ -94,6 +94,8 @@ public:
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddressOut, EHEnumState * pEHEnumStateOut);
     bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut);
 
+    PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
+
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 
     DispatchMap ** GetDispatchMapLookupTable();

@@ -410,6 +410,8 @@ namespace System
                 if (!outOfMemory)
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
+                // CORERT-TODO: RhpEtwExceptionThrown
+#if !CORERT
                 if (isFirstFrame)
                 {
                     string typeName = !outOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
@@ -422,6 +424,7 @@ namespace System
                             RuntimeImports.RhpEtwExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
                     }
                 }
+#endif
             }
             catch
             {
