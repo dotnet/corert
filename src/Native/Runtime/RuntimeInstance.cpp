@@ -147,14 +147,12 @@ COOP_PINVOKE_HELPER(UInt8 *, RhFindMethodStartAddress, (void * codeAddr))
 
 PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 {
-    FOREACH_MODULE(pModule)
-    {
-        if (pModule->ContainsCodeAddress(ControlPC))
-        {
-            return pModule->FindMethodStartAddress(ControlPC);
-        }
-    }
-    END_FOREACH_MODULE;
+	ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+	MethodInfo methodInfo;
+	if (pCodeManager != NULL && pCodeManager->FindMethodInfo(ControlPC, &methodInfo))
+	{
+		return (PTR_UInt8)pCodeManager->GetMethodStartAddress(&methodInfo);
+	}
 
     return NULL;
 }

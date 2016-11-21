@@ -21,6 +21,12 @@ public class BringUpTest
 
     public static int Main()
     {
+        if (string.Empty.Length > 0)
+        {
+            // Just something to make sure we generate reflection metadata for the type
+            new BringUpTest().ToString();
+        }
+
         int counter = 0;
 
         try
@@ -42,6 +48,13 @@ public class BringUpTest
             {
                  Console.WriteLine("Unexpected exception message!");
                  return Fail;
+            }
+
+            string stackTrace = e.StackTrace;
+            if (!stackTrace.Contains("BringUpTest.Main"))
+            {
+                Console.WriteLine("Unexpected stack trace: " + stackTrace);
+                return Fail;
             }
             counter++;
         }
