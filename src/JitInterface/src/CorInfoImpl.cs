@@ -1386,6 +1386,13 @@ namespace Internal.JitInterface
                 }
             }
 
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // Shared generic code has to use helper. Moreover, tell JIT not to inline since
+                // inlining of generic dictionary lookups is not supported.
+                return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER | CorInfoInitClassResult.CORINFO_INITCLASS_DONT_INLINE;
+            }
+
             // TODO: before giving up and asking to generate a helper call, check to see if this is some pattern we can
             //       prove doesn't need initclass anymore because we initialized it earlier.
 
