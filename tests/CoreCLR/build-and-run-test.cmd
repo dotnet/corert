@@ -43,6 +43,9 @@ if errorlevel 1 (
     exit /b !ERRORLEVEL!
 )
 
+:: Some tests (interop) have native artifacts they depend on. Copy all DLLs to be sure we have them.
+copy %TestFolder%\*.dll %TestFolder%\native\
+
 :: Remove the first two parameters passed by the test cmd file which are added to communicate test
 :: information to custom test runners
 shift
