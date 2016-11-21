@@ -47,5 +47,18 @@ namespace Internal.Runtime.CompilerHelpers
 
             return mainArgs;
         }
+
+        private static void SetLatchedExitCode(int exitCode)
+        {
+            EnvironmentAugments.ExitCode = exitCode;
+        }
+
+        // Shuts down the class library and returns the process exit code.
+        private static int Shutdown()
+        {
+            // Here we'll handle AppDomain.ProcessExit, shut down threading etc.
+
+            return EnvironmentAugments.ExitCode;
+        }
     }
 }

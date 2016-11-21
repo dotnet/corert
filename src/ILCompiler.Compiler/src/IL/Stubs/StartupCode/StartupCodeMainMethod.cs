@@ -5,10 +5,9 @@
 using System;
 
 using Internal.TypeSystem;
-using Internal.IL;
-using Internal.IL.Stubs;
 
 using AssemblyName = System.Reflection.AssemblyName;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs.StartupCode
 {
@@ -89,9 +88,32 @@ namespace Internal.IL.Stubs.StartupCode
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetKnownMethod("GetMainMethodArguments", null)));
             }
             codeStream.Emit(ILOpcode.call, emitter.NewToken(_mainMethod));
-            if (_mainMethod.Signature.ReturnType.IsVoid)
+
+            MethodDesc setLatchedExitCode = startup.GetMethod("SetLatchedExitCode", null);
+            MethodDesc shutdown = startup.GetMethod("Shutdown", null);
+
+            // The class library either supports "advanced shutdown", or doesn't. No half-implementations allowed.
+            Debug.Assert((setLatchedExitCode != null) == (shutdown != null));
+
+            if (setLatchedExitCode != null)
             {
-                codeStream.EmitLdc(0);
+                // If the main method has a return value, save it
+                if (!_mainMethod.Signature.ReturnType.IsVoid)
+                {
+                    codeStream.Emit(ILOpcode.call, emitter.NewToken(setLatchedExitCode));
+                }
+
+                // Ask the class library to shut down and return exit code.
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(shutdown));
+            }
+            else
+            {
+                // This is a class library that doesn't have SetLatchedExitCode/Shutdown.
+                // If the main method returns void, we simply use 0 exit code.
+                if (_mainMethod.Signature.ReturnType.IsVoid)
+                {
+                    codeStream.EmitLdc(0);
+                }
             }
 
             codeStream.Emit(ILOpcode.ret);
