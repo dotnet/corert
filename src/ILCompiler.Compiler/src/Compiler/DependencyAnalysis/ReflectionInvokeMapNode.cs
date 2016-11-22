@@ -41,6 +41,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 

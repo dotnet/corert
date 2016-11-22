@@ -35,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public virtual bool IsShareable => false;
+
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;

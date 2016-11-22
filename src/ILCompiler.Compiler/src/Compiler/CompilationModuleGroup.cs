@@ -17,16 +17,6 @@ namespace ILCompiler
         /// </summary>
         public abstract bool ContainsMethod(MethodDesc method);
         /// <summary>
-        /// If true, it's possible for "type" to be generated in multiple modules independently and should be shared
-        /// TODO: This API is in flux. Please do not add a dependency on it.
-        /// </summary>
-        public abstract bool ShouldShareAcrossModules(TypeDesc type);
-        /// <summary>
-        /// If true, it's possible for "method" to be generated in multiple modules independently and should be shared
-        /// TODO: This API is in flux. Please do not add a dependency on it.
-        /// </summary>
-        public abstract bool ShouldShareAcrossModules(MethodDesc method);
-        /// <summary>
         /// If true, all code is compiled into a single module
         /// </summary>
         public abstract bool IsSingleFileCompilation { get; }

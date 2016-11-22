@@ -23,11 +23,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__Cloned_EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
         protected override void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
         {

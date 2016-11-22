@@ -31,6 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.CompilationUnitPrefix).Append("__type_to_metadata_map");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 

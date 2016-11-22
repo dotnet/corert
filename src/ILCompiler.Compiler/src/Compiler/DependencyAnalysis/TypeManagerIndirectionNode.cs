@@ -13,6 +13,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.CompilationUnitPrefix).Append("__typemanager_indirection");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         protected override string GetName() => this.GetMangledName();
 

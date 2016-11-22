@@ -29,14 +29,13 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__fatpointer_").Append(NodeFactory.NameMangler.GetMangledMethodName(Method));
         }
         public int Offset => 0;
+        public override bool IsShareable => true;
 
         public MethodDesc Method { get; }
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory) => true;
 
         protected override string GetName() => this.GetMangledName();
 

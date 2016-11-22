@@ -378,7 +378,7 @@ namespace ILCompiler.DependencyAnalysis
                     _sb.Clear().Append("_unwind").Append(i.ToStringInvariant());
 
                     ObjectNodeSection section = ObjectNodeSection.XDataSection;
-                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
+                    if (ShouldShareSymbol(node))
                     {
                         section = section.GetSharedSection(_sb.ToString());
                         CreateCustomSection(section);
@@ -420,14 +420,9 @@ namespace ILCompiler.DependencyAnalysis
                         EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                         ehInfo = null;
                     }
-
-                    // TODO: Currently we get linker errors if we emit frame info for shared types.
-                    //       This needs follow-up investigation.
-                    if (!node.ShouldShareNodeAcrossModules(factory))
-                    {
-                        // For window, just emit the frame blob (UNWIND_INFO) as a whole.
-                        EmitWinFrameInfo(start, end, len, blobSymbolName);
-                    }
+                    
+                    // For window, just emit the frame blob (UNWIND_INFO) as a whole.
+                    EmitWinFrameInfo(start, end, len, blobSymbolName);
                 }
                 else
                 {
@@ -705,6 +700,17 @@ namespace ILCompiler.DependencyAnalysis
             Dispose(false);
         }
 
+        private bool ShouldShareSymbol(ObjectNode node)
+        {
+            if (_nodeFactory.CompilationModuleGroup.IsSingleFileCompilation)
+                return false;
+
+            if (!_targetPlatform.IsWindows)
+                return false;
+
+            return node.IsShareable;
+        }
+
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
@@ -758,9 +764,8 @@ namespace ILCompiler.DependencyAnalysis
 
 
                     ObjectNodeSection section = node.Section;
-                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
+                    if (objectWriter.ShouldShareSymbol(node))
                     {
-                        Debug.Assert(node is ISymbolNode);
                         section = section.GetSharedSection(((ISymbolNode)node).GetMangledName());
                     }
 

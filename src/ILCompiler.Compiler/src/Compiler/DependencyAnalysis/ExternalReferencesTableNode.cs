@@ -31,6 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.CompilationUnitPrefix).Append("__external_references");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         /// <summary>
         /// Adds a new entry to the table. Thread safety: not thread safe. Expected to be called at the final

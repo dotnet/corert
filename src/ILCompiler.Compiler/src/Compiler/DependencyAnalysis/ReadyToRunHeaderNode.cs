@@ -47,6 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__ReadyToRunHeader");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         protected override string GetName() => this.GetMangledName();
 

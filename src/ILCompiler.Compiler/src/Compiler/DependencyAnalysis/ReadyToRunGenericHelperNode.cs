@@ -48,11 +48,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected sealed override string GetName() => this.GetMangledName();
-
-        public sealed override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
         protected sealed override void OnMarked(NodeFactory factory)
         {

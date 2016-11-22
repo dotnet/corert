@@ -41,6 +41,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.CompilationUnitPrefix).Append("__Module");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

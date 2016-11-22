@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {

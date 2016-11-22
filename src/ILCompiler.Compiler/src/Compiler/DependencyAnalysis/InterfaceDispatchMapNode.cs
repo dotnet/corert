@@ -37,6 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override bool StaticDependenciesAreComputed => true;
 
