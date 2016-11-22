@@ -620,7 +620,7 @@ namespace System.Runtime.InteropServices
         internal static __ComGenericInterfaceDispatcher CreateGenericComDispatcher(RuntimeTypeHandle genericDispatcherDef, RuntimeTypeHandle[] genericArguments, __ComObject comThisPointer)
         {
 #if !RHTESTCL && !CORECLR && !CORERT
-            Debug.Assert(Internal.Runtime.Augments.RuntimeAugments.IsGenericTypeDefinition(genericDispatcherDef));
+            Debug.Assert(genericDispatcherDef.IsGenericTypeDefinition());
             Debug.Assert(genericArguments != null && genericArguments.Length > 0);
 
             RuntimeTypeHandle instantiatedDispatcherType;
