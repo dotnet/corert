@@ -15,7 +15,24 @@ namespace Internal.Runtime.Augments
         public static void FailFast(string message, Exception error) => RuntimeExceptionHelpers.FailFast(message, error);
 
         public static void Exit(int exitCode) => Environment.Exit(exitCode);
-        public static int ExitCode { get { return 0; } set { throw new PlatformNotSupportedException(); } }
+
+        private static int s_latchedExitCode;
+        public static int ExitCode
+        {
+            get
+            {
+                return s_latchedExitCode;
+            }
+            set
+            {
+#if CORERT
+                s_latchedExitCode = value;
+#else
+                // This needs to be hooked up into the compiler to do anything. Project N is not hooked up.
+                throw new PlatformNotSupportedException();
+#endif
+            }
+        }
 
         private static string[] s_commandLineArgs;
 

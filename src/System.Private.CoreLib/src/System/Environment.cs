@@ -109,5 +109,17 @@ namespace System
                 return EnvironmentAugments.StackTrace;
             }
         }
+
+        public static int ExitCode
+        {
+            get
+            {
+                return EnvironmentAugments.ExitCode;
+            }
+            set
+            {
+                EnvironmentAugments.ExitCode = value;
+            }
+        }
     }
 }

@@ -261,7 +261,7 @@ namespace Internal.TypeSystem
 
                 public override void AppendName(StringBuilder sb, PointerType type)
                 {
-                    FormatName(type.ParameterType);
+                    AppendName(sb, type.ParameterType);
                     sb.Append('*');
                 }
 
@@ -305,7 +305,7 @@ namespace Internal.TypeSystem
 
                 public override void AppendName(StringBuilder sb, ByRefType type)
                 {
-                    FormatName(type.ParameterType);
+                    AppendName(sb, type.ParameterType);
                     sb.Append(" ByRef");
                 }
 
