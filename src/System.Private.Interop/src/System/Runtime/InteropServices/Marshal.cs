@@ -169,7 +169,7 @@ namespace System.Runtime.InteropServices
         {
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
-            if (t.TypeHandle.IsGenericType())
+            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             Contract.EndContractBlock();
 
@@ -207,7 +207,7 @@ namespace System.Runtime.InteropServices
             if (String.IsNullOrEmpty(fieldName))
                 throw new ArgumentNullException(nameof(fieldName));
 
-            if (t.TypeHandle.IsGenericType())
+            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             Contract.EndContractBlock();
@@ -1208,7 +1208,7 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
-            if (structureTypeHandle.IsGenericType())
+            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
             {
                 throw new ArgumentException(nameof(structure), SR.Argument_NeedNonGenericObject);
             }
@@ -1276,7 +1276,7 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
-            if (structureTypeHandle.IsGenericType())
+            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, "t");
 
             if (structureTypeHandle.IsEnum() ||
@@ -1357,7 +1357,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(t));
             Contract.EndContractBlock();
 
-            if (t.TypeHandle.IsGenericType())
+            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             bool isDelegateType = InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(MulticastDelegate).TypeHandle) ||
@@ -1384,7 +1384,7 @@ namespace System.Runtime.InteropServices
             if (pDstNativeVariant == IntPtr.Zero)
                 throw new ArgumentNullException("pSrcNativeVariant");
 
-            if (obj != null && obj.GetType().TypeHandle.IsGenericType())
+            if (obj != null && (obj.GetType().TypeHandle.IsGenericType() || obj.GetType().TypeHandle.IsGenericTypeDefinition()))
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(obj));
 
             Contract.EndContractBlock();

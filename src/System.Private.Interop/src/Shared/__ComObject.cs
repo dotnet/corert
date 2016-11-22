@@ -63,9 +63,11 @@ namespace System
         }
     }
 
-    internal abstract class __ComGenericInterfaceDispatcher
+    [CLSCompliant(false)]
+    public abstract class __ComGenericInterfaceDispatcher
     {
-        internal __ComObject m_comObject;
+        public __ComObject m_comObject;
+        public __ComGenericInterfaceDispatcher() { }
     }
 
     /// <summary>
@@ -74,7 +76,7 @@ namespace System
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [CLSCompliant(false)]
-#if !RHTESTCL && !CORECLR && !CORERT
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
     public unsafe class __ComObject : CastableObject, ICastable
 #else
     public unsafe class __ComObject : ICastable
@@ -317,7 +319,7 @@ namespace System
 
         static __ComObject()
         {
-#if !CORECLR && ENABLE_WINRT
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
             // Projected types
             s_DynamicRCWAdapters[typeof(IEnumerable<>).TypeHandle]                                                  = typeof(IEnumerable_RCWAdapter<>).TypeHandle;
             s_DynamicRCWAdapters[typeof(IList<>).TypeHandle]                                                        = typeof(IList_RCWAdapter<>).TypeHandle;
@@ -328,13 +330,14 @@ namespace System
             
             // Non-projected types
             s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IIterator<>).TypeHandle]             = typeof(IIterator_RCWAdapter<>).TypeHandle;
-            //s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IObservableVector<>).TypeHandle]     = typeof(IObservableVector_RCWAdapter<>).TypeHandle;
             s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IMapChangedEventArgs<>).TypeHandle]  = typeof(IMapChangedEventArgs_RCWAdapter<>).TypeHandle;
-            //s_DynamicRCWAdapters[typeof(global::Windows.Foundation.Collections.IObservableMap<,>).TypeHandle]       = typeof(IObservableMap_RCWAdapter<,>).TypeHandle;
             s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IAsyncOperationWithProgress<,>).TypeHandle]      = typeof(IAsyncOperationWithProgress_RCWAdapter<,>).TypeHandle;
             s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IAsyncOperation<>).TypeHandle]                   = typeof(IAsyncOperation_RCWAdapter<>).TypeHandle;
             s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IAsyncActionWithProgress<>).TypeHandle]          = typeof(IAsyncActionWithProgress_RCWAdapter<>).TypeHandle;
-            //s_DynamicRCWAdapters[typeof(global::Windows.Foundation.IReferenceArray<>).TypeHandle]                   = typeof(IReferenceArray_RCWAdapter<>).TypeHandle;
+
+            // Root constructors of RCW adapters that are base classes of other RCW adapters
+            new IList_RCWAdapter<object>();                 // Base class of the IObservableVector RCW adapter
+            new IDictionary_RCWAdapter<object, object>();   // Base class of the IObservableMap RCW adapter
 #endif
         }
 
@@ -1329,7 +1332,7 @@ namespace System
                     RuntimeTypeHandle castableInterface;
                     if (m_cachedInterfaces[i].IsCastableEntry(interfaceType, out pComPtr, out castableInterface))
                     {
-                        if (RuntimeAugments.IsGenericType(castableInterface))
+                        if (castableInterface.IsGenericType())
                             return castableInterface;
                     }
                 }
@@ -1350,7 +1353,7 @@ namespace System
                     {
                         foreach (var item in cache.items)
                         {
-                            if (!RuntimeAugments.IsGenericType(item.typeHandle))
+                            if (!item.typeHandle.IsGenericType())
                                 continue;
 
                             if (!InteropExtensions.AreTypesAssignable(item.typeHandle, interfaceType))
@@ -1544,8 +1547,7 @@ namespace System
         #endregion
 
         #region CastableObject implementation for weakly typed RCWs
-#if !RHTESTCL && !CORECLR && !CORERT
-#if ENABLE_WINRT
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
         object CastToICollectionHelper(RuntimeTypeHandle genericTypeDef, RuntimeTypeHandle[] genericArguments, bool testForIDictionary)
         {
             Debug.Assert(genericTypeDef.Equals(typeof(ICollection<>).TypeHandle) || genericTypeDef.Equals(typeof(IReadOnlyCollection<>).TypeHandle));
@@ -1555,7 +1557,7 @@ namespace System
             bool isICollectionOfKvp = false;
             RuntimeTypeHandle[] ikvpArgs = null;
 
-            if (RuntimeAugments.IsGenericType(genericArguments[0]))
+            if (genericArguments[0].IsGenericType())
             {
                 RuntimeTypeHandle kvpTypeDef = RuntimeAugments.GetGenericInstantiation(genericArguments[0], out ikvpArgs);
                 isICollectionOfKvp = kvpTypeDef.Equals(typeof(KeyValuePair<,>).TypeHandle);
@@ -1605,7 +1607,6 @@ namespace System
             // Cannot cast...
             return null;
         }
-#endif // ENABLE_WINRT
 
         /// <summary>
         /// ================================================================================================
@@ -1681,13 +1682,13 @@ namespace System
 
             // CastableObject support used for generics *only* for now
 
-            if (!RuntimeAugments.IsGenericType(interfaceType))
+            if (!interfaceType.IsGenericType())
             {
                 RuntimeTypeHandle genericInterfaceType = FindCastableGenericInterfaceInCache(interfaceType, out pComPtr);
                 if (genericInterfaceType.IsInvalid())
                     return null;
             
-                Debug.Assert(RuntimeAugments.IsGenericType(genericInterfaceType));
+                Debug.Assert(genericInterfaceType.IsGenericType());
 
                 InsertIntoCache(interfaceType, ContextCookie.Current, ref pComPtr, true);
 
@@ -1699,7 +1700,6 @@ namespace System
                 RuntimeTypeHandle[] genericArguments;
                 RuntimeTypeHandle genericTypeDef = RuntimeAugments.GetGenericInstantiation(interfaceType, out genericArguments);
 
-#if ENABLE_WINRT
                 //
                 // ICollection<T> is a very special interface, which could map to either IDictionary<,> or IList<>
                 //
@@ -1722,7 +1722,6 @@ namespace System
                     // Cannot cast...
                     return null;
                 }
-#endif // ENABLE_WINRT
 
                 //
                 // Check if we can cast the COM object to the requested interface type
@@ -1755,6 +1754,19 @@ namespace System
                 {
                     return McgComHelpers.CreateGenericComDispatcher(rcwAdapterType, genericArguments, this);
                 }
+
+                //
+                // There are some special-case adapters generated by MCG today (IObservableMap, and IObservableVector).
+                //
+                rcwAdapterType = genericTypeDef.GetDynamicAdapterClassType();
+                if (!rcwAdapterType.IsInvalid())
+                {
+                    Debug.Assert(
+                        genericTypeDef.Equals(typeof(global::Windows.Foundation.Collections.IObservableVector<>).TypeHandle) ||
+                        genericTypeDef.Equals(typeof(global::Windows.Foundation.Collections.IObservableMap<,>).TypeHandle));
+
+                    return McgComHelpers.CreateGenericComDispatcher(rcwAdapterType, genericArguments, this);
+                }
             }
             catch (Exception ex)
             {
@@ -1766,48 +1778,48 @@ namespace System
             return null;
         }
 #endif
-#endregion
+        #endregion
 
-                #region ICastable implementation for weakly typed RCWs
-                /// <summary>
-                /// ================================================================================================
-                /// COMMENTS from ICastable.IsInstanceOfInterface
-                ///
-                /// This is called if casting this object to the given interface type would otherwise fail. Casting
-                /// here means the IL isinst and castclass instructions in the case where they are given an interface
-                /// type as the target type.
-                ///
-                /// A return value of true indicates the cast is valid.
-                ///
-                /// If false is returned when this is called as part of a castclass then the usual InvalidCastException
-                /// will be thrown unless an alternate exception is assigned to the castError output parameter. This
-                /// parameter is ignored on successful casts or during the evaluation of an isinst (which returns null
-                /// rather than throwing on error).
-                ///
-                /// No exception should be thrown from this method (it will cause unpredictable effects, including the
-                /// possibility of an immediate failfast).
-                ///
-                /// The results of this call are not cached, so it is advisable to provide a performant implementation.
-                ///
-                /// The results of this call should be invariant for the same class, interface type pair. That is
-                /// because this is the only guard placed before an interface invocation at runtime. If a type decides
-                /// it no longer wants to implement a given interface it has no way to synchronize with callers that
-                /// have already cached this relationship and can invoke directly via the interface pointer.
-                /// ================================================================================================
-                ///
-                /// If this function is called, this means we are being casted with a non-supported interface.
-                /// This means:
-                /// 1. The object is a weakly-typed RCW __ComObject
-                /// 2. The object is a strongly-typed RCW __ComObject derived type, but might support more interface
-                /// than what its metadata has specified
-                ///
-                /// In this case, we perform a QueryInterface to see if we really support that interface
-                /// </summary>
-                /// <param name="interfaceType">The interface being casted to</param>
-                /// <param name="castError">More specific cast failure other than the default InvalidCastException
-                /// prepared by the runtime</param>
-                /// <returns>True means it is supported. False no. </returns>
-                bool ICastable.IsInstanceOfInterface(RuntimeTypeHandle interfaceType, out Exception castError)
+        #region ICastable implementation for weakly typed RCWs
+        /// <summary>
+        /// ================================================================================================
+        /// COMMENTS from ICastable.IsInstanceOfInterface
+        ///
+        /// This is called if casting this object to the given interface type would otherwise fail. Casting
+        /// here means the IL isinst and castclass instructions in the case where they are given an interface
+        /// type as the target type.
+        ///
+        /// A return value of true indicates the cast is valid.
+        ///
+        /// If false is returned when this is called as part of a castclass then the usual InvalidCastException
+        /// will be thrown unless an alternate exception is assigned to the castError output parameter. This
+        /// parameter is ignored on successful casts or during the evaluation of an isinst (which returns null
+        /// rather than throwing on error).
+        ///
+        /// No exception should be thrown from this method (it will cause unpredictable effects, including the
+        /// possibility of an immediate failfast).
+        ///
+        /// The results of this call are not cached, so it is advisable to provide a performant implementation.
+        ///
+        /// The results of this call should be invariant for the same class, interface type pair. That is
+        /// because this is the only guard placed before an interface invocation at runtime. If a type decides
+        /// it no longer wants to implement a given interface it has no way to synchronize with callers that
+        /// have already cached this relationship and can invoke directly via the interface pointer.
+        /// ================================================================================================
+        ///
+        /// If this function is called, this means we are being casted with a non-supported interface.
+        /// This means:
+        /// 1. The object is a weakly-typed RCW __ComObject
+        /// 2. The object is a strongly-typed RCW __ComObject derived type, but might support more interface
+        /// than what its metadata has specified
+        ///
+        /// In this case, we perform a QueryInterface to see if we really support that interface
+        /// </summary>
+        /// <param name="interfaceType">The interface being casted to</param>
+        /// <param name="castError">More specific cast failure other than the default InvalidCastException
+        /// prepared by the runtime</param>
+        /// <returns>True means it is supported. False no. </returns>
+        bool ICastable.IsInstanceOfInterface(RuntimeTypeHandle interfaceType, out Exception castError)
         {
             castError = null;
             IntPtr pComPtr;
@@ -1823,8 +1835,8 @@ namespace System
             //
             bool hasValidDispatcher = true;
 
-#if !RHTESTCL && !CORECLR && !CORERT
-            hasValidDispatcher = McgModuleManager.UseDynamicInterop && RuntimeAugments.IsGenericType(interfaceType) ? 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            hasValidDispatcher = McgModuleManager.UseDynamicInterop && interfaceType.IsGenericType() ? 
                 !interfaceType.GetDispatchClassType().IsInvalid() : 
                 true;
 #endif
