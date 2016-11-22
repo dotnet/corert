@@ -34,6 +34,7 @@ namespace System
         NonBlocking = 0x00000001,
         Blocking = 0x00000002,
         Optimized = 0x00000004,
+        Compacting = 0x00000008,
     }
 
     public static class GC
@@ -68,6 +69,11 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking)
         {
+            Collect(generation, mode, blocking, false);
+        }
+
+        public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
+        {
             if (generation < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
@@ -85,11 +91,16 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.Optimized;
             }
 
+            if (compacting)
+            {
+                iInternalModes |= (int)InternalGCCollectionMode.Compacting;
+            }
+
             if (blocking)
             {
                 iInternalModes |= (int)InternalGCCollectionMode.Blocking;
             }
-            else
+            else if (!compacting)
             {
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }

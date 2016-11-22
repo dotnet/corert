@@ -315,6 +315,12 @@
   <data name="Arg_NeedAtLeast1Rank" xml:space="preserve">
     <value>Must provide at least one rank.</value>
   </data>
+  <data name="Arg_Need2DArray" xml:space="preserve">
+    <value>Array was not a two-dimensional array.</value>
+  </data>
+  <data name="Arg_Need3DArray" xml:space="preserve">
+    <value>Array was not a three-dimensional array.</value>
+  </data>
   <data name="Arg_NegativeArgCount" xml:space="preserve">
     <value>Argument count must not be negative.</value>
   </data>
