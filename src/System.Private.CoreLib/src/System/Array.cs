@@ -83,6 +83,52 @@ namespace System
             return CreateSzArray(elementType, length);
         }
 
+        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
+        {
+            if ((object)elementType == null)
+                throw new ArgumentNullException(nameof(elementType));
+            if (length1 < 0)
+                throw new ArgumentOutOfRangeException(nameof(length1));
+            if (length2 < 0)
+                throw new ArgumentOutOfRangeException(nameof(length2));
+
+            Contract.Ensures(Contract.Result<Array>() != null);
+            Contract.Ensures(Contract.Result<Array>().Rank == 2);
+            Contract.Ensures(Contract.Result<Array>().GetLength(0) == length1);
+            Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
+
+            Type arrayType = GetArrayTypeFromElementType(elementType, true, 2);
+            int* pLengths = stackalloc int[2];
+            pLengths[0] = length1;
+            pLengths[1] = length2;
+            return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pLengths, 2);
+        }
+
+        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
+        {
+            if ((object)elementType == null)
+                throw new ArgumentNullException(nameof(elementType));
+            if (length1 < 0)
+                throw new ArgumentOutOfRangeException(nameof(length1));
+            if (length2 < 0)
+                throw new ArgumentOutOfRangeException(nameof(length2));
+            if (length3 < 0)
+                throw new ArgumentOutOfRangeException(nameof(length3));
+
+            Contract.Ensures(Contract.Result<Array>() != null);
+            Contract.Ensures(Contract.Result<Array>().Rank == 3);
+            Contract.Ensures(Contract.Result<Array>().GetLength(0) == length1);
+            Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
+            Contract.Ensures(Contract.Result<Array>().GetLength(2) == length3);
+
+            Type arrayType = GetArrayTypeFromElementType(elementType, true, 3);
+            int* pLengths = stackalloc int[3];
+            pLengths[0] = length1;
+            pLengths[1] = length2;
+            pLengths[2] = length3;
+            return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pLengths, 3);
+        }
+
         public static Array CreateInstance(Type elementType, params int[] lengths)
         {
             if ((object)elementType == null)
