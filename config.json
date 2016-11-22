@@ -1,5 +1,11 @@
 ﻿{
   "settings": {
+    "BuildInParallel": {
+      "description" : "Build in parallel",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": "True",
+    },
     "NewBuildScripts": {
       "description": "This is a temporary setting to separate the code paths in common paths in context of the new build scripts",
       "valueType": "property",
@@ -342,6 +348,7 @@
           "MsBuildWarning":"default",
           "MsBuildError":"default",
           "NewBuildScripts": "default",
+          "BuildInParallel": "default",
         }
       }
     },

@@ -5,7 +5,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
     <PackagePlatforms>x64;</PackagePlatforms>
-    <PackageTargetRuntime>linux-aot</PackageTargetRuntime>
+    <PackageTargetRuntime>linux-corert</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
     <PackagePlatforms>x64;</PackagePlatforms>
-    <PackageTargetRuntime>win-aot</PackageTargetRuntime>
+    <PackageTargetRuntime>win-corert</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
   <ItemGroup>

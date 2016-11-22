@@ -8,10 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    
-    <Project Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.CoreRT.Targets\Microsoft.DotNet.CoreRT.Targets.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true'"/>
+    <Project Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.CoreRT.Targets\Microsoft.DotNet.CoreRT.Targets.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+      <OSGroup>AnyOS</OSGroup>
+    </Project>
+    <Project Include="$(MSBuildThisFileDirectory)Microsoft.TargetingPack.Private.CoreRT\Microsoft.TargetingPack.Private.CoreRT.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+      <OSGroup>AnyOS</OSGroup>
+    </Project>
     <Project Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.ILCompiler\Microsoft.DotNet.ILCompiler.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true'"/>
-    <Project Include="$(MSBuildThisFileDirectory)Microsoft.TargetingPack.Private.CoreRT\Microsoft.TargetingPack.Private.CoreRT.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'"/>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

@@ -1,2 +1,2 @@
-@call %~dp0run.cmd build-managed -packages -buildArch
+@call %~dp0run.cmd build-managed -packages -buildArch %*
 @exit /b %ERRORLEVEL%
