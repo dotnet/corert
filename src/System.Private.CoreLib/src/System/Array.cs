@@ -2346,6 +2346,31 @@ namespace System
             return GetValueWithFlattenedIndex_NoErrorCheck(index);
         }
 
+        public unsafe Object GetValue(int index1, int index2)
+        {
+            if (Rank != 2)
+                throw new ArgumentException(SR.Arg_Need2DArray);
+            Contract.EndContractBlock();
+
+            int* pIndices = stackalloc int[2];
+            pIndices[0] = index1;
+            pIndices[1] = index2;
+            return GetValue(pIndices, 2);
+        }
+
+        public unsafe Object GetValue(int index1, int index2, int index3)
+        {
+            if (Rank != 3)
+                throw new ArgumentException(SR.Arg_Need3DArray);
+            Contract.EndContractBlock();
+
+            int* pIndices = stackalloc int[3];
+            pIndices[0] = index1;
+            pIndices[1] = index2;
+            pIndices[2] = index3;
+            return GetValue(pIndices, 3);
+        }
+
         public unsafe Object GetValue(params int[] indices)
         {
             if (indices == null)
@@ -2449,6 +2474,31 @@ namespace System
                     throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
                 }
             }
+        }
+
+        public unsafe void SetValue(Object value, int index1, int index2)
+        {
+            if (Rank != 2)
+                throw new ArgumentException(SR.Arg_Need2DArray);
+            Contract.EndContractBlock();
+
+            int* pIndices = stackalloc int[2];
+            pIndices[0] = index1;
+            pIndices[1] = index2;
+            SetValue(value, pIndices, 2);
+        }
+
+        public unsafe void SetValue(Object value, int index1, int index2, int index3)
+        {
+            if (Rank != 3)
+                throw new ArgumentException(SR.Arg_Need3DArray);
+            Contract.EndContractBlock();
+
+            int* pIndices = stackalloc int[3];
+            pIndices[0] = index1;
+            pIndices[1] = index2;
+            pIndices[2] = index3;
+            SetValue(value, pIndices, 3);
         }
 
         public unsafe void SetValue(Object value, params int[] indices)
