@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -9,8 +10,12 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
+using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
@@ -25,6 +30,8 @@ namespace ILCompiler
         internal NodeFactory NodeFactory => _nodeFactory;
         internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         internal Logger Logger => _logger;
+
+        private readonly CompilerTypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
 
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -47,6 +54,8 @@ namespace ILCompiler
             var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
+
+            _typeGetTypeMethodThunks = new CompilerTypeGetTypeMethodThunkCache(TypeSystemContext);
         }
 
         private ILProvider _methodILCache = new ILProvider();
@@ -99,6 +108,40 @@ namespace ILCompiler
             // This method looks odd right now, but it's an extensibility point that lets us generate
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
+        }
+
+        /// <summary>
+        /// Resolves a reference to an intrinsic method to a new method that takes it's place in the compilation.
+        /// This is used for intrinsics where the intrinsic expansion depends on the callsite.
+        /// </summary>
+        /// <param name="intrinsicMethod">The intrinsic method called.</param>
+        /// <param name="callsiteMethod">The callsite that calls the intrinsic.</param>
+        /// <returns>The intrinsic implementation to be called for this specific callsite.</returns>
+        public MethodDesc ResolveIntrinsicMethodForCallsite(MethodDesc intrinsicMethod, MethodDesc callsiteMethod)
+        {
+            Debug.Assert(intrinsicMethod.IsIntrinsic);
+
+            var intrinsicOwningType = intrinsicMethod.OwningType as MetadataType;
+            if (intrinsicOwningType == null)
+                return intrinsicMethod;
+
+            if (intrinsicOwningType.Module != TypeSystemContext.SystemModule)
+                return intrinsicMethod;
+
+            if (intrinsicOwningType.Name == "Type" && intrinsicOwningType.Namespace == "System")
+            {
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetType")
+                {
+                    ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
+                    if (callsiteModule != null)
+                    {
+                        Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
+                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().FullName);
+                    }
+                }
+            }
+
+            return intrinsicMethod;
         }
 
         void ICompilation.Compile(string outputFile)
@@ -157,6 +200,36 @@ namespace ILCompiler
                     _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
                 else
                     _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
+            }
+        }
+
+        private class CompilerTypeGetTypeMethodThunkCache : TypeGetTypeMethodThunkCache
+        {
+            public CompilerTypeGetTypeMethodThunkCache(TypeSystemContext context)
+                : base(context.SystemModule.GetGlobalModuleType()) // TODO: better OwningType for multifile
+            {
+            }
+
+            protected override MethodDesc GetHelperForOverload(MethodDesc typeGetTypeOverload)
+            {
+                Debug.Assert(typeGetTypeOverload.Signature[0].IsString);
+
+                // This will be one of the 6 possible overloads:
+                // (String), (String, bool), (String, bool, bool)
+                // (String, Func<...>, Func<...>), (String, Func<...>, Func<...>, bool), (String, Func<...>, Func<...>, bool, bool)
+                
+                // We only need 2 helpers to support this. Use the second parameter to pick the right one.
+
+                string helperName;
+                if (typeGetTypeOverload.Signature.Length > 1 && typeGetTypeOverload.Signature[1].HasInstantiation)
+                    helperName = "ExtensibleGetType";
+                else
+                    helperName = "GetType";
+
+                TypeSystemContext context = typeGetTypeOverload.Context;
+                return context.ResolveAssembly(new AssemblyName("System.Private.Reflection.Execution"))
+                    .GetKnownType("Internal.Reflection.Execution", "ReflectionExecution")
+                    .GetKnownMethod(helperName, null);
             }
         }
     }

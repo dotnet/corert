@@ -74,6 +74,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CreateInstanceIntrinsic.cs">
       <Link>IL\Stubs\CreateInstanceIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.cs">
+      <Link>IL\Stubs\TypeGetTypeMethodThunk.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
     </Compile>
