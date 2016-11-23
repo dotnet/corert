@@ -451,7 +451,7 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(t != null, nameof(t));
 
-            if (t.TypeHandle.IsGenericType())
+            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             RuntimeTypeHandle typeHandle = t.TypeHandle;

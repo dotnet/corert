@@ -790,8 +790,8 @@ namespace System.Runtime.InteropServices
                 return interfaceInfo.HasDynamicAdapterClass;
             }
 
-#if !CORECLR
-            if (McgModuleManager.UseDynamicInterop && Internal.Runtime.Augments.RuntimeAugments.IsGenericType(interfaceType))
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+            if (McgModuleManager.UseDynamicInterop && interfaceType.IsGenericType())
                 return false;
 #endif
 

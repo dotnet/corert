@@ -99,7 +99,13 @@ namespace System.Runtime.InteropServices
         public static bool IsGenericType(this RuntimeTypeHandle handle)
         {
             EETypePtr eeType = handle.ToEETypePtr();
-            return eeType.IsGeneric || eeType.IsGenericTypeDefinition;
+            return eeType.IsGeneric;
+        }
+
+        public static bool IsGenericTypeDefinition(this RuntimeTypeHandle handle)
+        {
+            EETypePtr eeType = handle.ToEETypePtr();
+            return eeType.IsGenericTypeDefinition;
         }
 
         public static TKey FindEquivalentKeyUnsafe<TKey, TValue>(
