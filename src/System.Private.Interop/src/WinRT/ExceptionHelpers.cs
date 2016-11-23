@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 namespace System.Runtime.InteropServices
