@@ -844,17 +844,6 @@ namespace Internal.JitInterface
             if (result is MethodDesc)
             {
                 MethodDesc method = result as MethodDesc;
-
-                // If this is an intrinsic method with a callsite-specific expansion, this will replace
-                // the method we just resolved with a method the intrinsic expands into. If it's not the
-                // special intrinsic, method stays unchanged.
-                // TODO: We should only do this if this is a call (we specifically don't want to do this kind of
-                // expansion if this is LDTOKEN/LDFTN/LDVIRTFTN).
-                if (method.IsIntrinsic)
-                {
-                    method = _compilation.ResolveIntrinsicMethodForCallsite(method, methodIL.OwningMethod);
-                }
-
                 pResolvedToken.hMethod = ObjectToHandle(method);
                 pResolvedToken.hClass = ObjectToHandle(method.OwningType);
             }
@@ -2556,6 +2545,15 @@ namespace Internal.JitInterface
             }
             else if (directCall)
             {
+                // If this is an intrinsic method with a callsite-specific expansion, this will replace
+                // the method with a method the intrinsic expands into. If it's not the special intrinsic,
+                // method stays unchanged.
+                if (targetMethod.IsIntrinsic)
+                {
+                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
+                }
+
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 

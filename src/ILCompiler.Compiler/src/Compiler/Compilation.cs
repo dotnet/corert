@@ -118,7 +118,7 @@ namespace ILCompiler
         /// <param name="intrinsicMethod">The intrinsic method called.</param>
         /// <param name="callsiteMethod">The callsite that calls the intrinsic.</param>
         /// <returns>The intrinsic implementation to be called for this specific callsite.</returns>
-        public MethodDesc ResolveIntrinsicMethodForCallsite(MethodDesc intrinsicMethod, MethodDesc callsiteMethod)
+        public MethodDesc ExpandIntrinsicForCallsite(MethodDesc intrinsicMethod, MethodDesc callsiteMethod)
         {
             Debug.Assert(intrinsicMethod.IsIntrinsic);
 
