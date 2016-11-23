@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append("unbox_").Append(NodeFactory.NameMangler.GetMangledMethodName(_target));
         }

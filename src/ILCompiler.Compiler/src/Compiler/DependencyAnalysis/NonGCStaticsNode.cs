@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append("__NonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }

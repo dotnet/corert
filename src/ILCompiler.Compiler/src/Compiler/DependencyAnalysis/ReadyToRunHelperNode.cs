@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
         public ReadyToRunHelperId Id => _id;
         public Object Target =>  _target;
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             switch (_id)
             {
@@ -112,13 +112,13 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         var createInfo = (DelegateCreationInfo)_target;
                         sb.Append("__DelegateCtor_");
-                        createInfo.Constructor.AppendMangledName(nameMangler, sb);
+                        createInfo.Constructor.AppendMangledName(nameMangler, sb, compilationUnitPrefix);
                         sb.Append("__");
-                        createInfo.Target.AppendMangledName(nameMangler, sb);
+                        createInfo.Target.AppendMangledName(nameMangler, sb, compilationUnitPrefix);
                         if (createInfo.Thunk != null)
                         {
                             sb.Append("__");
-                            createInfo.Thunk.AppendMangledName(nameMangler, sb);
+                            createInfo.Thunk.AppendMangledName(nameMangler, sb, compilationUnitPrefix);
                         }
                     }
                     break;

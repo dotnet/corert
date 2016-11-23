@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
                 _id = id;
             }
 
-            public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+            public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
             {
                 sb.Append(_parentNode._startSymbolMangledName).Append("_").Append(_id.ToStringInvariant());
             }

@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => _section;
         public override bool StaticDependenciesAreComputed => true;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append(_name);
         }

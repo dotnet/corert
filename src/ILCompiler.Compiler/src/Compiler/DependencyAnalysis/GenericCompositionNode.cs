@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             _details = details;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append("__GenericInstance");
 

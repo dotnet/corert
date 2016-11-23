@@ -20,15 +20,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeMetadataMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End", true);
             _externalReferences = externalReferences;
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__type_to_metadata_map");
+            sb.Append(compilationUnitPrefix).Append("__type_to_metadata_map");
         }
         public int Offset => 0;
         public override bool IsShareable => false;

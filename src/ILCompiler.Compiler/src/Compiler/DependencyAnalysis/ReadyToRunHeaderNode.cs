@@ -41,9 +41,9 @@ namespace ILCompiler.DependencyAnalysis
             _items.Add(new HeaderItem(id, node, startSymbol, endSymbol));
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix);
+            sb.Append(compilationUnitPrefix);
             sb.Append("__ReadyToRunHeader");
         }
         public int Offset => 0;

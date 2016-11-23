@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
             _targetMethod = targetMethod;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append("__InterfaceDispatchCell_");
             sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_targetMethod));

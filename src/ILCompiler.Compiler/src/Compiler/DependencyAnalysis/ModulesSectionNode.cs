@@ -36,9 +36,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__Module");
+            sb.Append(compilationUnitPrefix).Append("__Module");
         }
         public int Offset => 0;
         public override bool IsShareable => false;

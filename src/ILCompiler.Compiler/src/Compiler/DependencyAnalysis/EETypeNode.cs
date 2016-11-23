@@ -117,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis
             _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)index));
         }
 
-        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }

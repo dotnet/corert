@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method => _allocationMethod;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_allocationMethod));
         }

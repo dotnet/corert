@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public interface ISymbolNode
     {
-        void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
+        void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix);
         int Offset { get; }
     }
 
@@ -19,13 +19,13 @@ namespace ILCompiler.DependencyAnalysis
         [ThreadStatic]
         static Utf8StringBuilder s_cachedUtf8StringBuilder;
 
-        static public string GetMangledName(this ISymbolNode symbolNode)
+        static public string GetMangledName(this ISymbolNode symbolNode, string compilationUnitPrefix = "")
         {
             Utf8StringBuilder sb = s_cachedUtf8StringBuilder;
             if (sb == null)
                 sb = new Utf8StringBuilder();
 
-            symbolNode.AppendMangledName(NodeFactory.NameMangler, sb);
+            symbolNode.AppendMangledName(NodeFactory.NameMangler, sb, compilationUnitPrefix);
             string ret = sb.ToString();
 
             sb.Clear();

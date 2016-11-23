@@ -26,8 +26,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter)
         {
-            _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName);
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName);
+            _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName, true);
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName, true);
             _sorter = nodeSorter;
         }
 

@@ -20,9 +20,9 @@ namespace ILCompiler.DependencyAnalysis
             _syncBlockSize = target.PointerSize;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__Str_").Append(NodeFactory.NameMangler.GetMangledStringName(_data));
+            sb.Append(compilationUnitPrefix).Append("__Str_").Append(NodeFactory.NameMangler.GetMangledStringName(_data));
         }
 
         public override bool StaticDependenciesAreComputed => true;

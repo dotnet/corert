@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
             Method = methodRepresented;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
         {
             sb.Append("__fatpointer_").Append(NodeFactory.NameMangler.GetMangledMethodName(Method));
         }
