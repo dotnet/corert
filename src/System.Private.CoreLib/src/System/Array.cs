@@ -2076,6 +2076,42 @@ namespace System
             return Array.FindIndex(array, match) != -1;
         }
 
+        public static void Fill<T>(T[] array, T value)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = value;
+            }
+        }
+
+        public static void Fill<T>(T[] array, T value, int startIndex, int count)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (startIndex < 0 || startIndex > array.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+            }
+
+            if (count < 0 || startIndex > array.Length - count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+            }
+
+            for (int i = startIndex; i < startIndex + count; i++)
+            {
+                array[i] = value;
+            }
+        }
+
         public static T Find<T>(T[] array, Predicate<T> match)
         {
             if (array == null)
