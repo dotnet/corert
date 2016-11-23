@@ -699,7 +699,7 @@ namespace System.Runtime.InteropServices
                 //
 
                 // TODO: Add Symbolic Name into Messaage, convert 0x80020006 to DISP_E_UNKNOWNNAME
-                string hrMessage = String.Format("{0} 0x{1:X}", SR.Excep_FromHResult, errorCode);
+                string hrMessage = String.Format("{0} 0x{1}", SR.Excep_FromHResult, errorCode.LowLevelToString());
 
                 message = ExternalInterop.GetMessage(errorCode);
 
