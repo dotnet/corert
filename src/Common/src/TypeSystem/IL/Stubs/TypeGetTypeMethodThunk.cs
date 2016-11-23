@@ -22,6 +22,7 @@ namespace Internal.IL.Stubs
             OwningType = owningType;
             Signature = signature;
             DefaultAssemblyName = defaultAssemblyName;
+
             _helperMethod = helperMethod;
         }
 
@@ -96,7 +97,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    internal abstract class TypeGetTypeMethodThunkCache
+    internal class TypeGetTypeMethodThunkCache
     {
         private TypeDesc _owningTypeForThunks;
         private Unifier _cache;
@@ -111,8 +112,6 @@ namespace Internal.IL.Stubs
         {
             return _cache.GetOrCreateValue(new Key(defaultAssemblyName, getTypeOverload));
         }
-
-        protected abstract MethodDesc GetHelperForOverload(MethodDesc typeGetTypeOverload);
 
         private struct Key
         {
@@ -155,8 +154,24 @@ namespace Internal.IL.Stubs
             }
             protected override TypeGetTypeMethodThunk CreateValueFromKey(Key key)
             {
-                MethodDesc helper = _parent.GetHelperForOverload(key.GetTypeOverload);
-                return new TypeGetTypeMethodThunk(_parent._owningTypeForThunks, key.GetTypeOverload.Signature, helper, key.DefaultAssemblyName);
+                TypeSystemContext contex = key.GetTypeOverload.Context;
+
+                // This will be one of the 6 possible overloads:
+                // (String), (String, bool), (String, bool, bool)
+                // (String, Func<...>, Func<...>), (String, Func<...>, Func<...>, bool), (String, Func<...>, Func<...>, bool, bool)
+
+                // We only need 2 helpers to support this. Use the second parameter to pick the right one.
+
+                string helperName;
+                MethodSignature signature = key.GetTypeOverload.Signature;
+                if (signature.Length > 1 && signature[1].HasInstantiation)
+                    helperName = "ExtensibleGetType";
+                else
+                    helperName = "GetType";
+
+                MethodDesc helper = contex.GetHelperEntryPoint("ReflectionHelpers", helperName);
+
+                return new TypeGetTypeMethodThunk(_parent._owningTypeForThunks, signature, helper, key.DefaultAssemblyName);
             }
         }
     }

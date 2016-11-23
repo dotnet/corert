@@ -31,7 +31,7 @@ namespace ILCompiler
         internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         internal Logger Logger => _logger;
 
-        private readonly CompilerTypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
+        private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
 
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -55,7 +55,8 @@ namespace ILCompiler
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
 
-            _typeGetTypeMethodThunks = new CompilerTypeGetTypeMethodThunkCache(TypeSystemContext);
+            // TODO: use a better owning type for multi-file friendlyness
+            _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(TypeSystemContext.SystemModule.GetGlobalModuleType());
         }
 
         private ILProvider _methodILCache = new ILProvider();
@@ -200,36 +201,6 @@ namespace ILCompiler
                     _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
                 else
                     _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
-            }
-        }
-
-        private class CompilerTypeGetTypeMethodThunkCache : TypeGetTypeMethodThunkCache
-        {
-            public CompilerTypeGetTypeMethodThunkCache(TypeSystemContext context)
-                : base(context.SystemModule.GetGlobalModuleType()) // TODO: better OwningType for multifile
-            {
-            }
-
-            protected override MethodDesc GetHelperForOverload(MethodDesc typeGetTypeOverload)
-            {
-                Debug.Assert(typeGetTypeOverload.Signature[0].IsString);
-
-                // This will be one of the 6 possible overloads:
-                // (String), (String, bool), (String, bool, bool)
-                // (String, Func<...>, Func<...>), (String, Func<...>, Func<...>, bool), (String, Func<...>, Func<...>, bool, bool)
-                
-                // We only need 2 helpers to support this. Use the second parameter to pick the right one.
-
-                string helperName;
-                if (typeGetTypeOverload.Signature.Length > 1 && typeGetTypeOverload.Signature[1].HasInstantiation)
-                    helperName = "ExtensibleGetType";
-                else
-                    helperName = "GetType";
-
-                TypeSystemContext context = typeGetTypeOverload.Context;
-                return context.ResolveAssembly(new AssemblyName("System.Private.Reflection.Execution"))
-                    .GetKnownType("Internal.Reflection.Execution", "ReflectionExecution")
-                    .GetKnownMethod(helperName, null);
             }
         }
     }
