@@ -348,8 +348,7 @@ namespace Internal.Runtime.TypeLoader
                 if (ptrToTlsOffset == IntPtr.Zero)
                     return IntPtr.Zero;
 
-                IntPtr tlsOffsetAsIntPtr = *(IntPtr*)ptrToTlsOffset.ToPointer();
-                uint tlsOffset = (uint)tlsOffsetAsIntPtr.ToInt32();
+                uint tlsOffset = *(uint*)ptrToTlsOffset;
                 cookieData.StartingOffsetInTlsBlock = tlsOffset;
                 cookieData.FieldOffset = fieldOffset;
             }
