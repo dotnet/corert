@@ -1217,56 +1217,6 @@ namespace ILCompiler.CppCodeGen
             Out.Write(sb.ToString());
         }
 
-        private void OutputMainMethodStub(MethodDesc entrypoint)
-        {
-            var sb = new CppGenerationBuffer();
-
-            sb.AppendLine();
-            if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
-            {
-                sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
-            }
-            else
-            {
-                sb.Append("int main(int argc, char * argv[]) {");
-            }
-            sb.Indent();
-
-            sb.AppendLine();
-            sb.Append("if (__initialize_runtime() != 0)");
-            sb.Indent();
-            sb.AppendLine();
-            sb.Append("return -1;");
-            sb.Exdent();
-            sb.AppendEmptyLine();
-            sb.AppendLine();
-            sb.Append("ReversePInvokeFrame frame;");
-            sb.AppendLine();
-            sb.Append("__reverse_pinvoke(&frame);");
-
-            sb.AppendEmptyLine();
-            sb.AppendLine();
-            sb.Append("::System_Private_CoreLib::Internal::Runtime::CompilerHelpers::StartupCodeHelpers::InitializeModules((intptr_t)RtRHeaderWrapper(), 2);");
-            sb.AppendLine();
-            sb.Append("int ret = ");
-            sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
-            sb.Append("(argc, (intptr_t)argv);");
-
-            sb.AppendEmptyLine();
-            sb.AppendLine();
-            sb.Append("__reverse_pinvoke_return(&frame);");
-            sb.AppendLine();
-            sb.Append("__shutdown_runtime();");
-
-            sb.AppendLine();
-            sb.Append("return ret;");
-            sb.Exdent();
-            sb.AppendLine();
-            sb.Append("}");
-
-            Out.Write(sb.ToString());
-        }
-
         public void OutputCode(IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             BuildMethodLists(nodes);
@@ -1304,17 +1254,6 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is CppMethodCodeNode)
                     OutputMethodNode(node as CppMethodCodeNode);
-            }
-
-            // Try to locate the entrypoint method
-            MethodDesc entrypoint = null;
-            foreach (var alias in factory.NodeAliases)
-                if (alias.Value == MainMethodRootProvider.ManagedEntryPointMethodName)
-                    entrypoint = ((IMethodNode)alias.Key).Method;
-
-            if (entrypoint != null)
-            {
-                OutputMainMethodStub(entrypoint);
             }
 
             Out.Dispose();

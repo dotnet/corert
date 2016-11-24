@@ -17,4 +17,9 @@ internal static partial class Interop
         [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
         internal static extern void ExitProcess(int exitCode);
     }
+
+    internal static void ExitProcess(int exitCode)
+    {
+        mincore.ExitProcess(exitCode);
+    }
 }

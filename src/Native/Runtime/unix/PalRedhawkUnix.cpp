@@ -1031,11 +1031,6 @@ extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-extern "C" void ExitProcess(UInt32 exitCode)
-{
-    exit(exitCode);
-}
-
 extern "C" UInt32_BOOL SetEvent(HANDLE event)
 {
     EventUnixHandle* unixHandle = (EventUnixHandle*)event;

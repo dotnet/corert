@@ -118,6 +118,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
         internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpShutdown")]
+        internal static extern void RhpShutdown();
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)

@@ -56,7 +56,7 @@ namespace Internal.Runtime.CompilerHelpers
         // Shuts down the class library and returns the process exit code.
         private static int Shutdown()
         {
-            // Here we'll handle AppDomain.ProcessExit, shut down threading etc.
+            EnvironmentAugments.ShutdownCore();
 
             return EnvironmentAugments.ExitCode;
         }
