@@ -1820,7 +1820,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle boxingWrapperType;
             IntPtr boxingStub;
             int boxingPropertyType;
-            if (McgModuleManager.TryGetBoxingWrapperType(expectedTypeHandle, target is Type, out boxingWrapperType, out boxingPropertyType,out boxingStub))
+            if (McgModuleManager.TryGetBoxingWrapperType(expectedTypeHandle, target, out boxingWrapperType, out boxingPropertyType, out boxingStub))
             {
                 if(!boxingWrapperType.IsInvalid())
                 {

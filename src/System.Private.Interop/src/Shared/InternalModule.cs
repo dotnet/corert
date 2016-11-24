@@ -59,12 +59,7 @@ namespace System.Runtime.InteropServices
                 null,                               // structMarshalData
                 null,                               // unsafeStructFieldOffsetData
                 null,                               // interfaceMarshalData
-                null,                               // hashcodeVerify
-                null,                               // interfaceTypeInfo_Hashtable
-                null,                               // ccwTemplateData_Hashtable
-                null,                               // classData_Hashtable
-                null,                               // collectionData_Hashtable
-                null                                // boxingData_Hashtable
+                null                               // hashcodeVerify
                 )
         {
             // Following code is disabled due to lazy static constructor dependency from McgModule which is
