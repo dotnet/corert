@@ -3889,10 +3889,8 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal class FactoryCache
     {
-        const int DefaultSize = 11; // Small prime number to avoid resizing dictionary resizing in start up code
-
         private Lock m_factoryLock = new Lock();
-        private System.Collections.Generic.Internal.Dictionary<string, FactoryCacheItem> m_cachedFactories = new System.Collections.Generic.Internal.Dictionary<string, FactoryCacheItem>(DefaultSize);
+        private System.Collections.Concurrent.ConcurrentDictionary<string, FactoryCacheItem> m_cachedFactories = new System.Collections.Concurrent.ConcurrentDictionary<string, FactoryCacheItem>();
 
         private static volatile FactoryCache s_factoryCache;
 
@@ -3947,29 +3945,21 @@ namespace System.Runtime.InteropServices
 
             FactoryCacheItem cacheItem;
 
-            int hashCode = className.GetHashCode();
 
             if (!skipCache)
             {
-                try
-                {
-                    m_factoryLock.Acquire();
 
-                    if (m_cachedFactories.TryGetValue(className, hashCode, out cacheItem))
+                 if (m_cachedFactories.TryGetValue(className, out cacheItem))
+                 {
+                    if (cacheItem.contextEntry == currentContext)
                     {
-                        if (cacheItem.contextEntry == currentContext)
-                        {
-                            //
-                            // We've found a matching entry
-                            //
-                            return cacheItem.factoryObject;
-                        }
+                        //
+                        // We've found a matching entry
+                        //
+                        return cacheItem.factoryObject;
                     }
-                }
-                finally
-                {
-                    m_factoryLock.Release();
-                }
+                 }
+                
             }
 
             //
@@ -3986,16 +3976,7 @@ namespace System.Runtime.InteropServices
                 //
                 // Insert into or update cache
                 //
-                try
-                {
-                    m_factoryLock.Acquire();
-
-                    m_cachedFactories[className] = cacheItem;
-                }
-                finally
-                {
-                    m_factoryLock.Release();
-                }
+                m_cachedFactories.AddOrUpdate(className, cacheItem,  (key, oldValue) => cacheItem);
             }
 
             return cacheItem.factoryObject;
