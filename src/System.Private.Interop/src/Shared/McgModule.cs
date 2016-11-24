@@ -108,6 +108,10 @@ namespace System.Runtime.InteropServices
 
             // Following code is disabled due to lazy static constructor dependency from McgModule which is
             // static eager constructor. Undo this when McgCurrentModule is using ModuleConstructorAttribute
+            // -- Today McgCurrentModule cannot use ModuleConstructor attribute. Module constructors are called
+            // after ReflectionExecution has been initialized but ReflectionExecution.Initialize requires
+            // McgCurrentModule to have already been initialized because the assembly binder needs MCG support
+            // for assembly (scope) name enumeration while registering the new module for reflection.
 #if EAGER_CTOR_WORKAROUND
             Debug.Assert(m_interfaceTypeInfo != null);
 #endif
@@ -163,8 +167,6 @@ namespace System.Runtime.InteropServices
             }
 
             Debug.Assert(this.VerifyHashCodes());
-
-            VerifyWinRTGenericInterfaceGuids();
 
 #endif
         }

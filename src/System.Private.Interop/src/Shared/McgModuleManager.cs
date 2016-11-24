@@ -201,6 +201,13 @@ namespace System.Runtime.InteropServices
                     }
                 }
             }
+
+#if DEBUG
+            for (int moduleIndex = 0; moduleIndex < s_moduleCount; moduleIndex++)
+            {
+                s_modules[moduleIndex].VerifyWinRTGenericInterfaceGuids();
+            }
+#endif
         }
 
         /// <summary>
