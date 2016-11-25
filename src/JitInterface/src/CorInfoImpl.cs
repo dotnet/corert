@@ -2954,6 +2954,9 @@ namespace Internal.JitInterface
 
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
+            // slotNum is not unused
+            Debug.Assert(slotNum == 0);
+
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
@@ -2996,9 +2999,12 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+            // relocDelta is stored as the value
+            Relocation.WriteValue((RelocType)fRelocType, location, relocDelta);
+
             if (_relocs.Count == 0)
                 _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget, relocDelta));
+            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget));
         }
 
         private ushort getRelocTypeHint(void* target)

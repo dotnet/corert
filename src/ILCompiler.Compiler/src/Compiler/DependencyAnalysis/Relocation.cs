@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -22,14 +18,46 @@ namespace ILCompiler.DependencyAnalysis
         public readonly RelocType RelocType;
         public readonly int Offset;
         public readonly ISymbolNode Target;
-        public readonly int Delta;
 
-        public Relocation(RelocType relocType, int offset, ISymbolNode target, int delta)
+        public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
             RelocType = relocType;
             Offset = offset;
             Target = target;
-            Delta = delta;
+        }
+
+        public unsafe static void WriteValue(RelocType relocType, void* location, long value)
+        {
+            switch (relocType)
+            {
+                case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_BASED_REL32:
+                    *(int*)location = (int)value;
+                    break;
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                    *(long*)location = value;
+                    break;
+                default:
+                    Debug.Fail("Invalid RelocType: " + relocType);
+                    break;
+            }
+        }
+
+        public unsafe static long ReadValue(RelocType relocType, void* location)
+        {
+            switch (relocType)
+            {
+                case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_BASED_REL32:
+                    return *(int*)location;
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                    return *(long*)location;
+                default:
+                    Debug.Fail("Invalid RelocType: " + relocType);
+                    return 0;
+            }
         }
     }
 }
