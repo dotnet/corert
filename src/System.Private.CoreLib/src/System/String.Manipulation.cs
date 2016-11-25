@@ -512,7 +512,7 @@ namespace System
         public unsafe static string Join(string separator, params object[] values)
         {
             separator = separator ?? string.Empty;
-            fixed (char* pSeparator = &separator.m_firstChar)
+            fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
                 return JoinCore(pSeparator, separator.Length, values);
@@ -522,7 +522,7 @@ namespace System
         public unsafe static string Join<T>(string separator, IEnumerable<T> values)
         {
             separator = separator ?? string.Empty;
-            fixed (char* pSeparator = &separator.m_firstChar)
+            fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
                 return JoinCore(pSeparator, separator.Length, values);
@@ -571,7 +571,7 @@ namespace System
         public unsafe static string Join(string separator, string[] value, int startIndex, int count)
         {
             separator = separator ?? string.Empty;
-            fixed (char* pSeparator = &separator.m_firstChar)
+            fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
                 return JoinCore(pSeparator, separator.Length, value, startIndex, count);
@@ -669,8 +669,8 @@ namespace System
         {
             // If the separator is null, it is converted to an empty string before entering this function.
             // Even for empty strings, fixed should never return null (it should return a pointer to a null char).
-            Contract.Assert(separator != null);
-            Contract.Assert(separatorLength >= 0);
+            Debug.Assert(separator != null);
+            Debug.Assert(separatorLength >= 0);
 
             if (value == null)
             {
@@ -678,15 +678,15 @@ namespace System
             }
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             }
             if (startIndex > value.Length - count)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
             
             if (count <= 1)
@@ -747,7 +747,7 @@ namespace System
                 if (i < end - 1)
                 {
                     // Fill in the separator.
-                    fixed (char* pResult = &result.m_firstChar)
+                    fixed (char* pResult = &result._firstChar)
                     {
                         // If we are called from the char-based overload, we will not
                         // want to call MemoryCopy each time we fill in the separator. So
