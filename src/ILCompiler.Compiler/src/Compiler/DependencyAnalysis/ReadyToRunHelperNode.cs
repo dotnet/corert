@@ -22,11 +22,13 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
+        ResolveGenericVirtualMethod,
 
+        // The following helpers are used for generic lookups only
         TypeHandle,
         FieldHandle,
         MethodDictionary,
-        MethodEntry,
+        MethodEntry
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
@@ -122,6 +124,10 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     sb.Append("__ResolveVirtualFunction_");
+                    sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
+                    break;
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                    sb.Append("__ResolveGenericVirtualMethod_");
                     sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
                 default:

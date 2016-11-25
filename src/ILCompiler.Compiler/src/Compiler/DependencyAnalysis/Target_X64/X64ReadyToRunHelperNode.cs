@@ -185,6 +185,10 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                    encoder.EmitINT3();
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }

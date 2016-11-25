@@ -3,7 +3,6 @@ project(System.Private.CoreLib.Native)
 set(NATIVE_SOURCES
     pal_environment.cpp
     pal_memory.cpp
-    pal_io.cpp
     pal_cruntime.cpp
     pal_datetime.cpp
     pal_dynamicload.cpp

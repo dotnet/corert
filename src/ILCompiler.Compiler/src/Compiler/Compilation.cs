@@ -41,6 +41,9 @@ namespace ILCompiler
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
+            // TODO: hacky static field
+            NodeFactory.NameMangler = nameMangler;
+
             var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
@@ -79,6 +82,8 @@ namespace ILCompiler
             }
             else
             {
+                // Use the typical field definition in case this is an instantiated generic type
+                field = field.GetTypicalFieldDefinition();
                 return NodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
                     ((EcmaField)field).GetFieldRvaData(), NodeFactory.Target.PointerSize);
             }
@@ -98,9 +103,7 @@ namespace ILCompiler
 
         void ICompilation.Compile(string outputFile)
         {
-            // TODO: Hacky static fields
-
-            NodeFactory.NameMangler = NameMangler;
+            // TODO: Hacky static field
 
             string systemModuleName = ((IAssemblyDesc)NodeFactory.TypeSystemContext.SystemModule).GetName().Name;
 

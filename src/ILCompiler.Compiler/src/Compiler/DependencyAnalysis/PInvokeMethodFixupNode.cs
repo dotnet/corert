@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 
 using Internal.Text;
 
@@ -52,13 +51,28 @@ namespace ILCompiler.DependencyAnalysis
             // Emit a MethodFixupCell struct
             //
 
+            // Address (to be fixed up at runtime)
             builder.EmitZeroPointer();
 
-            int entryPointBytesCount = Encoding.UTF8.GetByteCount(_entryPointName);
-            byte[] entryPointNameBytes = new byte[entryPointBytesCount + 1];
-            Encoding.UTF8.GetBytes(_entryPointName, 0, _entryPointName.Length, entryPointNameBytes, 0);
+            // Entry point name
+            if (factory.Target.IsWindows && _entryPointName.StartsWith("#", StringComparison.OrdinalIgnoreCase))
+            {
+                // Windows-specific ordinal import
+                // CLR-compatible behavior: Strings that can't be parsed as a signed integer are treated as zero.
+                int entrypointOrdinal;
+                if (!int.TryParse(_entryPointName.Substring(1), out entrypointOrdinal))
+                    entrypointOrdinal = 0;
 
-            builder.EmitPointerReloc(factory.ReadOnlyDataBlob("__pinvokename_" + _entryPointName, entryPointNameBytes, 1));
+                // CLR-compatible behavior: Ordinal imports are 16-bit on Windows. Discard rest of the bits.
+                builder.EmitNaturalInt((ushort)entrypointOrdinal);
+            }
+            else
+            {
+                // Import by name
+                builder.EmitPointerReloc(factory.ConstantUtf8String(_entryPointName));
+            }
+
+            // Module fixup cell
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleName));
 
             return builder.ToObjectData();

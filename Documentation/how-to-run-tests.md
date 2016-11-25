@@ -14,14 +14,14 @@ On Windows:
 ```
 cd {corert}
 build.cmd
-tests\runtests.cmd
+tests\runtest.cmd
 ```
 
 On Linux / macOS:
 ```
 cd {corert}
 ./build.sh
-tests\runtests.sh
+tests\runtest.sh
 ```
 
 ### Verifying tests pass
@@ -50,7 +50,7 @@ Choose the set of tests you want to run. Currently the options are:
 
 On Windows:
 ```
-tests\runtests.cmd /coreclr Top200|All|KnownGood
+tests\runtest.cmd /coreclr Top200|All|KnownGood
 ```
 
 On Linux / macOS:

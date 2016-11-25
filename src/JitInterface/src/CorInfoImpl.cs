@@ -1386,6 +1386,13 @@ namespace Internal.JitInterface
                 }
             }
 
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // Shared generic code has to use helper. Moreover, tell JIT not to inline since
+                // inlining of generic dictionary lookups is not supported.
+                return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER | CorInfoInitClassResult.CORINFO_INITCLASS_DONT_INLINE;
+            }
+
             // TODO: before giving up and asking to generate a helper call, check to see if this is some pattern we can
             //       prove doesn't need initclass anymore because we initialized it earlier.
 
@@ -2617,6 +2624,15 @@ namespace Internal.JitInterface
                 }
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
+            }
+            else if (method.HasInstantiation)
+            {
+                // GVM Call Support
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
+                pResult.nullInstanceCheck = false;
             }
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {

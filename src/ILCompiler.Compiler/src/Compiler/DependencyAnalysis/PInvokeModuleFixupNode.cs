@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-
 using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
@@ -45,18 +42,16 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
             builder.DefinedSymbols.Add(this);
 
+            ISymbolNode nameSymbol = factory.Target.IsWindows ?
+                factory.ConstantUtf16String(_moduleName) :
+                factory.ConstantUtf8String(_moduleName);
+
             //
             // Emit a ModuleFixupCell struct
             //
 
             builder.EmitZeroPointer();
-
-            Encoding encoding = factory.Target.IsWindows ? Encoding.Unicode : Encoding.UTF8;
-
-            int moduleNameBytesCount = encoding.GetByteCount(_moduleName);
-            byte[] moduleNameBytes = new byte[moduleNameBytesCount + 2];
-            encoding.GetBytes(_moduleName, 0, _moduleName.Length, moduleNameBytes, 0);
-            builder.EmitPointerReloc(factory.ReadOnlyDataBlob("__modulename_" + _moduleName, moduleNameBytes, 2));
+            builder.EmitPointerReloc(nameSymbol);
 
             return builder.ToObjectData();
         }

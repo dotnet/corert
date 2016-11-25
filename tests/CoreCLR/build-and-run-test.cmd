@@ -43,12 +43,25 @@ if errorlevel 1 (
     exit /b !ERRORLEVEL!
 )
 
+:: Some tests (interop) have native artifacts they depend on. Copy all DLLs to be sure we have them.
+copy %TestFolder%\*.dll %TestFolder%\native\
+
 :: Remove the first two parameters passed by the test cmd file which are added to communicate test
 :: information to custom test runners
 shift
 shift
 
-%TestFolder%\native\%TestExecutable% %*
+set TestParameters=
+set Delimiter=
+:GetNextParameter
+if "%1"=="" goto :RunTest
+set "TestParameters=%TestParameters%%Delimiter%%1"
+set "Delimiter= "
+shift
+goto :GetNextParameter
+
+:RunTest
+%TestFolder%\native\%TestExecutable% %TestParameters%
 
 set TestExitCode=!ERRORLEVEL!
 

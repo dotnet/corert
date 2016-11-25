@@ -391,6 +391,7 @@ namespace System.Runtime
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
             STATUS_INTEGER_DIVIDE_BY_ZERO = 0xC0000094u,
+            STATUS_INTEGER_OVERFLOW = 0xC0000095u,
         }
 
         [StructLayout(LayoutKind.Explicit, Size = AsmOffsets.SIZEOF__PAL_LIMITED_CONTEXT)]
@@ -515,6 +516,10 @@ namespace System.Runtime
 
                 case (uint)HwExceptionCode.STATUS_INTEGER_DIVIDE_BY_ZERO:
                     exceptionId = ExceptionIDs.DivideByZero;
+                    break;
+
+                case (uint)HwExceptionCode.STATUS_INTEGER_OVERFLOW:
+                    exceptionId = ExceptionIDs.Overflow;
                     break;
 
                 default:

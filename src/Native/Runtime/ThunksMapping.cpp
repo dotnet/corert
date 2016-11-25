@@ -92,7 +92,7 @@ COOP_PINVOKE_HELPER(void*, RhpGetNextThunkStubsBlockAddress, (void* pCurrentThun
     return (UInt8*)pCurrentThunkStubsBlockAddress + OS_PAGE_SIZE;
 }
 
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMappingUsingRxPages()
+EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
 {
 #ifdef WIN32
 
@@ -213,11 +213,5 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMappingUsingRxPages()
 
     return pThunksSection;
 }
-
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
-{
-    return RhAllocateThunksMappingUsingRxPages();
-}
-
 
 #endif      // FEATURE_RX_THUNKS

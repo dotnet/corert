@@ -31,6 +31,7 @@ namespace ILCompiler
 
         private byte[] _metadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings = new List<MetadataMapping<MetadataType>>();
+        private List<MetadataMapping<FieldDesc>> _fieldMappings = new List<MetadataMapping<FieldDesc>>();
         private List<MetadataMapping<MethodDesc>> _methodMappings = new List<MetadataMapping<MethodDesc>>();
 
         private NodeFactory _nodeFactory;
@@ -80,6 +81,9 @@ namespace ILCompiler
 
             var arrayMapNode = new ArrayMapNode(externalReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
+
+            var fieldMapNode = new ReflectionFieldMapNode(externalReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FieldAccessMap), fieldMapNode, fieldMapNode, fieldMapNode.EndSymbol);
 
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
@@ -305,6 +309,19 @@ namespace ILCompiler
                 if (record != null)
                     _methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
             }
+
+            foreach (var eetypeGenerated in _typesWithEETypesGenerated)
+            {
+                if (eetypeGenerated.IsGenericDefinition)
+                    continue;
+
+                foreach (FieldDesc field in eetypeGenerated.GetFields())
+                {
+                    Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
+                    if (record != null)
+                        _fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
+                }
+            }
         }
 
         public byte[] GetMetadataBlob()
@@ -323,6 +340,12 @@ namespace ILCompiler
         {
             EnsureMetadataGenerated();
             return _methodMappings;
+        }
+
+        public IEnumerable<MetadataMapping<FieldDesc>> GetFieldMapping()
+        {
+            EnsureMetadataGenerated();
+            return _fieldMappings;
         }
 
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
@@ -353,13 +376,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
             {
-                // Literal fields are fine even for this very dummy policy. Maybe Enum.Parse/ToString will work.
-                if (fieldDef.IsLiteral)
-                {
-                    MetadataType owningType = (MetadataType)fieldDef.OwningType as MetadataType;
-                    return _parent._typeDefinitionsGenerated.Contains(owningType);
-                }
-                return false;
+                return _parent._typeDefinitionsGenerated.Contains((MetadataType)fieldDef.OwningType);
             }
 
             public bool GeneratesMetadata(MethodDesc methodDef)

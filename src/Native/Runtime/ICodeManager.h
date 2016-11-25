@@ -113,5 +113,7 @@ public:
 
     virtual bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause) = 0;
 
+    virtual PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo) = 0;
+
     virtual void * GetClasslibFunction(ClasslibFunctionId functionId) = 0;
 };

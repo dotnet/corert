@@ -12,7 +12,7 @@ namespace Internal.DeveloperExperience
     {
         public sealed override void WriteLine(String s)
         {
-            ConsolePal.WriteError(s);
+            Console.Error.WriteLine(s);
         }
 
         public sealed override String CreateStackTraceString(IntPtr ip, bool includeFileInfo)

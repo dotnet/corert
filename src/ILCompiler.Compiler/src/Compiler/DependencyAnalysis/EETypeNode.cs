@@ -69,7 +69,10 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            
+
+            // Note: The fact that you can't create invalid EETypeNode is used from many places that grab
+            // an EETypeNode from the factory with the sole purpose of making sure the validation has run
+            // and that the result of the positive validation is "cached" (by the presence of an EETypeNode).
             CheckCanGenerateEEType(factory, type);
         }
 
@@ -486,7 +489,7 @@ namespace ILCompiler.DependencyAnalysis
             // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
 
             // Interfaces, sealed types, and non-DefTypes cannot be derived from
-            if (_type.IsInterface || !_type.IsDefType || _type.IsSealed())
+            if (_type.IsInterface || !_type.IsDefType || (_type.IsSealed() && !_type.IsValueType))
                 return;
 
             DefType defType = _type as DefType;
@@ -521,13 +524,15 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc baseType = type.BaseType;
             if (baseType != null)
             {
-                CheckCanGenerateEEType(factory, baseType);
+                // Make sure EEType can be created for this.
+                factory.NecessaryTypeSymbol(baseType);
             }
             
             // We need EETypes for interfaces
             foreach (var intf in type.RuntimeInterfaces)
             {
-                CheckCanGenerateEEType(factory, intf);
+                // Make sure EEType can be created for this.
+                factory.NecessaryTypeSymbol(intf);
             }
 
             // Validate classes, structs, enums, interfaces, and delegates
@@ -571,7 +576,9 @@ namespace ILCompiler.DependencyAnalysis
             if (parameterizedType != null)
             {
                 TypeDesc parameterType = parameterizedType.ParameterType;
-                CheckCanGenerateEEType(factory, parameterType);
+
+                // Make sure EEType can be created for this.
+                factory.NecessaryTypeSymbol(parameterType);
 
                 if (parameterizedType.IsArray)
                 {
