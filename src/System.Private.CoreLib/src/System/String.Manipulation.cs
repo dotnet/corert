@@ -470,34 +470,139 @@ namespace System
             return result;
         }
 
-        // Joins an array of strings together as one string with a separator between each original string.
-        //
-        public static String Join(String separator, params String[] value)
+        public static string Join(char separator, params string[] value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Join(separator, value, 0, value.Length);
         }
 
-        public static string Join(string separator, params object[] values)
+        public unsafe static string Join(char separator, params object[] values)
+        {
+            // Defer argument validation to the internal function
+            return JoinCore(&separator, 1, values);
+        }
+
+        public unsafe static string Join<T>(char separator, IEnumerable<T> values)
+        {
+            // Defer argument validation to the internal function
+            return JoinCore(&separator, 1, values);
+        }
+
+        public unsafe static string Join(char separator, string[] value, int startIndex, int count)
+        {
+            // Defer argument validation to the internal function
+            return JoinCore(&separator, 1, value, startIndex, count);
+        }
+    
+        // Joins an array of strings together as one string with a separator between each original string.
+        //
+        public static string Join(string separator, params string[] value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            return Join(separator, value, 0, value.Length);
+        }
+
+        public unsafe static string Join(string separator, params object[] values)
+        {
+            separator = separator ?? string.Empty;
+            fixed (char* pSeparator = &separator.m_firstChar)
+            {
+                // Defer argument validation to the internal function
+                return JoinCore(pSeparator, separator.Length, values);
+            }
+        }
+
+        public unsafe static string Join<T>(string separator, IEnumerable<T> values)
+        {
+            separator = separator ?? string.Empty;
+            fixed (char* pSeparator = &separator.m_firstChar)
+            {
+                // Defer argument validation to the internal function
+                return JoinCore(pSeparator, separator.Length, values);
+            }
+        }
+
+        public static string Join(string separator, IEnumerable<string> values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
+
+            using (IEnumerator<string> en = values.GetEnumerator())
+            {
+                if (!en.MoveNext())
+                {
+                    return string.Empty;
+                }
+
+                string firstValue = en.Current;
+
+                if (!en.MoveNext())
+                {
+                    // Only one value available
+                    return firstValue ?? string.Empty;
+                }
+
+                // Null separator and values are handled by the StringBuilder
+                StringBuilder result = StringBuilderCache.Acquire();
+                result.Append(firstValue);
+
+                do
+                {
+                    result.Append(separator);
+                    result.Append(en.Current);
+                }
+                while (en.MoveNext());
+
+                return StringBuilderCache.GetStringAndRelease(result);
+            }
+        }
+
+        // Joins an array of strings together as one string with a separator between each original string.
+        //
+        public unsafe static string Join(string separator, string[] value, int startIndex, int count)
+        {
+            separator = separator ?? string.Empty;
+            fixed (char* pSeparator = &separator.m_firstChar)
+            {
+                // Defer argument validation to the internal function
+                return JoinCore(pSeparator, separator.Length, value, startIndex, count);
+            }
+        }
+
+        private unsafe static string JoinCore(char* separator, int separatorLength, object[] values)
+        {
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
 
             if (values.Length == 0)
+            {
                 return string.Empty;
+            }
 
             string firstString = values[0]?.ToString();
 
             if (values.Length == 1)
+            {
                 return firstString ?? string.Empty;
+            }
 
             StringBuilder result = StringBuilderCache.Acquire();
             result.Append(firstString);
 
             for (int i = 1; i < values.Length; i++)
             {
-                result.Append(separator);
+                result.Append(separator, separatorLength);
                 object value = values[i];
                 if (value != null)
                 {
@@ -508,16 +613,20 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
-        public static String Join<T>(String separator, IEnumerable<T> values)
+        private unsafe static string JoinCore<T>(char* separator, int separatorLength, IEnumerable<T> values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
 
             using (IEnumerator<T> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
+                {
                     return string.Empty;
-
+                }
+                
                 // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
@@ -544,7 +653,7 @@ namespace System
                 {
                     currentValue = en.Current;
 
-                    result.Append(separator);
+                    result.Append(separator, separatorLength);
                     if (currentValue != null)
                     {
                         result.Append(currentValue.ToString());
@@ -556,81 +665,113 @@ namespace System
             }
         }
 
-        public static String Join(String separator, IEnumerable<String> values)
+        private unsafe static string JoinCore(char* separator, int separatorLength, string[] value, int startIndex, int count)
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
+            // If the separator is null, it is converted to an empty string before entering this function.
+            // Even for empty strings, fixed should never return null (it should return a pointer to a null char).
+            Contract.Assert(separator != null);
+            Contract.Assert(separatorLength >= 0);
 
-            using (IEnumerator<String> en = values.GetEnumerator())
-            {
-                if (!en.MoveNext())
-                    return String.Empty;
-
-                String firstValue = en.Current;
-
-                if (!en.MoveNext())
-                {
-                    // Only one value available
-                    return firstValue ?? String.Empty;
-                }
-
-                // Null separator and values are handled by the StringBuilder
-                StringBuilder result = StringBuilderCache.Acquire();
-                result.Append(firstValue);
-
-                do
-                {
-                    result.Append(separator);
-                    result.Append(en.Current);
-                } while (en.MoveNext());
-                return StringBuilderCache.GetStringAndRelease(result);
-            }
-        }
-
-        // Joins an array of strings together as one string with a separator between each original string.
-        //
-        public unsafe static String Join(String separator, String[] value, int startIndex, int count)
-        {
-            //Range check the array
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
-
+            }
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+            }
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+            }
             if (startIndex > value.Length - count)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
-
-            //Treat null as empty string.
-            if (separator == null)
             {
-                separator = String.Empty;
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+            }
+            
+            if (count <= 1)
+            {
+                return count == 0 ?
+                    string.Empty :
+                    value[startIndex] ?? string.Empty;
             }
 
-            //If count is 0, that skews a whole bunch of the calculations below, so just special case that.
-            if (count == 0)
+            long totalSeparatorsLength = (long)(count - 1) * separatorLength;
+            if (totalSeparatorsLength > int.MaxValue)
             {
-                return String.Empty;
+                throw new OutOfMemoryException();
+            }
+            int totalLength = (int)totalSeparatorsLength;
+
+            // Calculate the length of the resultant string so we know how much space to allocate.
+            for (int i = startIndex, end = startIndex + count; i < end; i++)
+            {
+                string currentValue = value[i];
+                if (currentValue != null)
+                {
+                    totalLength += currentValue.Length;
+                    if (totalLength < 0) // Check for overflow
+                    {
+                        throw new OutOfMemoryException();
+                    }
+                }
             }
 
-            if (count == 1)
+            // Copy each of the strings into the resultant buffer, interleaving with the separator.
+            string result = FastAllocateString(totalLength);
+            int copiedLength = 0;
+
+            for (int i = startIndex, end = startIndex + count; i < end; i++)
             {
-                return value[startIndex] ?? String.Empty;
+                // It's possible that another thread may have mutated the input array
+                // such that our second read of an index will not be the same string
+                // we got during the first read.
+
+                // We range check again to avoid buffer overflows if this happens.
+
+                string currentValue = value[i];
+                if (currentValue != null)
+                {
+                    int valueLen = currentValue.Length;
+                    if (valueLen > totalLength - copiedLength)
+                    {
+                        copiedLength = -1;
+                        break;
+                    }
+
+                    // Fill in the value.
+                    FillStringChecked(result, copiedLength, currentValue);
+                    copiedLength += valueLen;
+                }
+                    
+                if (i < end - 1)
+                {
+                    // Fill in the separator.
+                    fixed (char* pResult = &result.m_firstChar)
+                    {
+                        // If we are called from the char-based overload, we will not
+                        // want to call MemoryCopy each time we fill in the separator. So
+                        // specialize for 1-length separators.
+                        if (separatorLength == 1)
+                        {
+                            pResult[copiedLength] = *separator;
+                        }
+                        else
+                        {
+                            wstrcpy(pResult + copiedLength, separator, separatorLength);
+                        }
+                    }
+                    copiedLength += separatorLength;
+                }
             }
 
-            int endIndex = startIndex + count - 1;
-            StringBuilder result = StringBuilderCache.Acquire();
-            // Append the first string first and then append each following string prefixed by the separator.
-            result.Append(value[startIndex]);
-            for (int stringToJoinIndex = startIndex + 1; stringToJoinIndex <= endIndex; stringToJoinIndex++)
-            {
-                result.Append(separator);
-                result.Append(value[stringToJoinIndex]);
-            }
-
-            return StringBuilderCache.GetStringAndRelease(result);
+            // If we copied exactly the right amount, return the new string.  Otherwise,
+            // something changed concurrently to mutate the input array: fall back to
+            // doing the concatenation again, but this time with a defensive copy. This
+            // fall back should be extremely rare.
+            return copiedLength == totalLength ?
+                result :
+                JoinCore(separator, separatorLength, (string[])value.Clone(), startIndex, count);
         }
 
         public String PadLeft(int totalWidth)
