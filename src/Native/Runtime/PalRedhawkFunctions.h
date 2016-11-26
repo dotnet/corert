@@ -56,12 +56,6 @@ inline UInt32 PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, UInt3
     return EventWrite(arg1, arg2, arg3, arg4);
 }
 
-extern "C" void __stdcall ExitProcess(UInt32);
-inline void PalExitProcess(UInt32 arg1)
-{
-    ExitProcess(arg1);
-}
-
 extern "C" void __stdcall FlushProcessWriteBuffers();
 inline void PalFlushProcessWriteBuffers()
 {

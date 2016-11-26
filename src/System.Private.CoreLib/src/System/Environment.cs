@@ -121,5 +121,7 @@ namespace System
                 EnvironmentAugments.ExitCode = value;
             }
         }
+
+        public static void Exit(int exitCode) => EnvironmentAugments.Exit(exitCode);
     }
 }
