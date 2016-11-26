@@ -396,9 +396,12 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
 // Update REGDISPLAY from the unw_cursor_t and unw_context_t
 void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, REGDISPLAY *regDisplay)
 {
-#define GET_CONTEXT_POINTER(unwReg, rdReg) GetContextPointer(cursor, unwContext, unwReg, &regDisplay->p##rdReg);
-    GET_CONTEXT_POINTERS
-#undef GET_CONTEXT_POINTER
+    //TODO: Workaround for unwind on OSX: See https://github.com/dotnet/corert/pull/2166
+#if !defined(__APPLE__)
+    #define GET_CONTEXT_POINTER(unwReg, rdReg) GetContextPointer(cursor, unwContext, unwReg, &regDisplay->p##rdReg);
+        GET_CONTEXT_POINTERS
+    #undef GET_CONTEXT_POINTER
+#endif
 
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &regDisplay->IP);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &regDisplay->SP);
