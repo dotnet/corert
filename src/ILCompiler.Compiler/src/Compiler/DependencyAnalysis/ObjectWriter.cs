@@ -613,7 +613,15 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     Relocation reloc = relocs[nextRelocIndex];
 
-                    int size = EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
+                    long delta;
+                    unsafe
+                    {
+                        fixed (void* location = &blob[i])
+                        {
+                            delta = Relocation.ReadValue(reloc.RelocType, location);
+                        }
+                    }
+                    int size = EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
                     // Update nextRelocIndex/Offset
                     if (++nextRelocIndex < relocs.Length)
@@ -791,7 +799,15 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             Relocation reloc = relocs[nextRelocIndex];
 
-                            int size = objectWriter.EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
+                            long delta;
+                            unsafe
+                            {
+                                fixed (void* location = &nodeContents.Data[i])
+                                {
+                                    delta = Relocation.ReadValue(reloc.RelocType, location);
+                                }
+                            }
+                            int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)

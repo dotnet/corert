@@ -172,7 +172,7 @@
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\excepobj\excepobj\excepobj.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\fault\fault\fault.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\mixed\mixed\mixed.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\mixed3\mixed3\mixed3.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\FaultHandlers\Nesting\Nesting\Nesting.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_d\isinst_d.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_do\isinst_do.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_142976\DevDiv_142976\DevDiv_142976.cmd" />
