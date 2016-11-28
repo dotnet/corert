@@ -237,7 +237,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
@@ -249,7 +249,7 @@
       },
       "inputs": {
         "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
-        "SearchPattern": "corert\\bin\\*$(Platform).$(ConfigurationGroup)\\**\\*.pdb",
+        "SearchPattern": "corert\\bin\\**\\*.pdb",
         "SymbolsFolder": "",
         "SkipIndexing": "false",
         "TreatNotIndexedAsWarning": "false",
@@ -404,9 +404,9 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Final clean to remove any lingering process",
       "timeoutInMinutes": 0,
       "task": {
