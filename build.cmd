@@ -148,7 +148,7 @@ call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 
 :: Regenerate the VS solution
 pushd "%__IntermediatesDir%"
-call "%__SourceDir%\Native\gen-buildsys-win.bat" "%__ProjectDir%\src\Native" %__VSVersion% %__BuildArch% 
+REM call "%__SourceDir%\Native\gen-buildsys.cmd" "%__ProjectDir%\src\Native" %__VSVersion% %__BuildArch% 
 popd
 
 :BuildComponents

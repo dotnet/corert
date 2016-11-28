@@ -16,7 +16,7 @@
       "description": "Enables/Disables running tests.",
       "valueType": "property",
       "values": ["True", "False"],
-      "defaultValue": true
+      "defaultValue": false
     },
     "OSGroup": {
       "description": "OS Group for result binaries.",
@@ -184,7 +184,7 @@
       "description": "Sets the value of the build architecture.",
       "valueType": "passThrough",
       "values": ["x86", "arm", "arm-softfp", "x64", "arm64"],
-      "defaultValue": "${CPUArch}"
+      "defaultValue": "x64"
     },
     "CmakeBuildType": {
       "description": "Sets the value of the build configuration.",
@@ -251,7 +251,13 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }    
+    },
+    "BuildSysConfig": {
+      "description": "Configuration to use for generating INSTALL.vcxproj.",
+      "valueType": "passThrough",
+      "values": ["Release", "Debug"],
+      "defaultValue": "Debug"
+    }
   },
   "commands": {
     "build-managed": {
@@ -347,12 +353,23 @@
           "MsBuildLogging":"/flp:v=diag;LogFile=build-managed.log",
           "MsBuildWarning":"default",
           "MsBuildError":"default",
-          "NewBuildScripts": "default",
           "BuildInParallel": "default",
         }
       }
     },
-    "build-native-unix": {
+    "gen-buildsys": {
+      "alias": {
+      },
+      "defaultValues": {
+        "toolName": "terminal",
+        "Project": "src/Native/gen-buildsys",
+        "settings": {
+           "BuildArchitecture": "default",
+           "BuildSysConfig": "default",
+         }
+      }
+    },
+    "build-native": {
       "alias": {
         "debug": {
           "description": "Passes Debug to respective build-native script.",

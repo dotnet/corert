@@ -69,7 +69,7 @@ build_native_corert()
 
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__BuildType"
-    "$__ProjectRoot/src/Native/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType
+    "$__ProjectRoot/src/Native/gen-buildsys.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType
 
     # Check that the makefiles were created.
 

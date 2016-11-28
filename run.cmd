@@ -19,7 +19,6 @@ set TOOLRUNTIME_DIR=%~dp0Tools
 set BOOTSTRAP_URL=https://raw.githubusercontent.com/dotnet/buildtools/master/bootstrap/bootstrap.ps1
 set BOOTSTRAP_DEST=%TOOLRUNTIME_DIR%\bootstrap.ps1
 set /p DOTNET_VERSION=< "%~dp0.cliversion"
-set SHARED_FRAMEWORK_VERSION=1.0.0-rc3-002733
 
 
 REM Disable first run since we want to control all package sources
