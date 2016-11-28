@@ -699,7 +699,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
-            using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
+            ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
+            bool succeeded = false;
+
+            try
             {
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
@@ -823,6 +826,25 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 objectWriter.EmitDebugModuleInfo();
+
+                succeeded = true;
+            }
+            finally
+            {
+                objectWriter.Dispose();
+
+                if (!succeeded)
+                {
+                    // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
+                    // object file around.
+                    try
+                    {
+                        File.Delete(objectFilePath);
+                    }
+                    catch
+                    {
+                    }
+                }
             }
         }
     }
