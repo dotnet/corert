@@ -866,17 +866,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\throwbox\rethrow\rethrow.*" />
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\RuntimeWrappedException\RuntimeWrappedException\RuntimeWrappedException.*" />
 
-    <!-- FailFast: (InternalError): Runtime internal error -->
-    <!-- https://github.com/dotnet/corert/issues/2254 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\FaultHandlers\Nesting\Nesting\Nesting.*" />
-    
-    <!-- Timed out -->
-    <!-- https://github.com/dotnet/corert/issues/2222 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\arrays\_dbglcs_long\_dbglcs_long.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\arrays\_dbglcs_ulong\_dbglcs_ulong.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\arrays\_il_dbglcs_ulong\_il_dbglcs_ulong.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\int64\arrays\_rellcs_long\_rellcs_long.*" />
-    
     <!-- PInvoke Ansi/Widechar entrypoint probing -->
     <!-- https://github.com/dotnet/corert/issues/730 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\tail\tail.*" />
@@ -903,10 +892,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind05_large\unwind05_large.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind06_dynamic\unwind06_dynamic.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind06_large\unwind06_large.*" />
-
-    <!-- AV in nested try/catch/try/throw exception handling  -->
-    <!-- https://github.com/dotnet/corert/issues/2257 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b11490\b11490\b11490.*" />
 
     <!-- Overlapping reference and value type fields -->
     <!-- https://github.com/dotnet/corert/issues/2258 -->
