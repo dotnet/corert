@@ -55,7 +55,7 @@ namespace ILCompiler
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
 
-            // TODO: use a better owning type for multi-file friendlyness
+            // TODO: use a better owning type for multi-file friendliness
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(TypeSystemContext.SystemModule.GetGlobalModuleType());
         }
 
