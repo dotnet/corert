@@ -31,9 +31,19 @@ namespace Internal.Reflection.Execution
             _executionEnvironment = executionEnvironment;
         }
 
-        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
+        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, string defaultAssemblyName)
         {
-            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
+            if (defaultAssemblyName == null)
+            {
+                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
+            }
+            else
+            {
+                LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
+                defaultAssemblies.Add(defaultAssemblyName);
+                defaultAssemblies.AddRange(ReflectionExecution.DefaultAssemblyNamesForGetType);
+                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
+            }
         }
 
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)

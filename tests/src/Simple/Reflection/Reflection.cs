@@ -54,7 +54,7 @@ public class ReflectionTest
         Console.WriteLine("Testing unification");
 
         // ReflectionTest type doesn't have an EEType and is metadata only.
-        Type programType = Type.GetType("ReflectionTest, Reflection");
+        Type programType = Type.GetType("ReflectionTest");
         TypeInfo programTypeInfo = programType.GetTypeInfo();
 
         Type programBaseType = programTypeInfo.BaseType;

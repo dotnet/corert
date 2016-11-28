@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -9,8 +10,12 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
+using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
@@ -25,6 +30,8 @@ namespace ILCompiler
         internal NodeFactory NodeFactory => _nodeFactory;
         internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         internal Logger Logger => _logger;
+
+        private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
 
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -47,6 +54,9 @@ namespace ILCompiler
             var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
+
+            // TODO: use a better owning type for multi-file friendliness
+            _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(TypeSystemContext.SystemModule.GetGlobalModuleType());
         }
 
         private ILProvider _methodILCache = new ILProvider();
@@ -99,6 +109,40 @@ namespace ILCompiler
             // This method looks odd right now, but it's an extensibility point that lets us generate
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
+        }
+
+        /// <summary>
+        /// Resolves a reference to an intrinsic method to a new method that takes it's place in the compilation.
+        /// This is used for intrinsics where the intrinsic expansion depends on the callsite.
+        /// </summary>
+        /// <param name="intrinsicMethod">The intrinsic method called.</param>
+        /// <param name="callsiteMethod">The callsite that calls the intrinsic.</param>
+        /// <returns>The intrinsic implementation to be called for this specific callsite.</returns>
+        public MethodDesc ExpandIntrinsicForCallsite(MethodDesc intrinsicMethod, MethodDesc callsiteMethod)
+        {
+            Debug.Assert(intrinsicMethod.IsIntrinsic);
+
+            var intrinsicOwningType = intrinsicMethod.OwningType as MetadataType;
+            if (intrinsicOwningType == null)
+                return intrinsicMethod;
+
+            if (intrinsicOwningType.Module != TypeSystemContext.SystemModule)
+                return intrinsicMethod;
+
+            if (intrinsicOwningType.Name == "Type" && intrinsicOwningType.Namespace == "System")
+            {
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetType")
+                {
+                    ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
+                    if (callsiteModule != null)
+                    {
+                        Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
+                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().FullName);
+                    }
+                }
+            }
+
+            return intrinsicMethod;
         }
 
         void ICompilation.Compile(string outputFile)

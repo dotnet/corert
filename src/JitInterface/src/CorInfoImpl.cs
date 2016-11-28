@@ -2552,6 +2552,15 @@ namespace Internal.JitInterface
             }
             else if (directCall)
             {
+                // If this is an intrinsic method with a callsite-specific expansion, this will replace
+                // the method with a method the intrinsic expands into. If it's not the special intrinsic,
+                // method stays unchanged.
+                if (targetMethod.IsIntrinsic)
+                {
+                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
+                }
+
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
