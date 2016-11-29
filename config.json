@@ -72,6 +72,12 @@
       "values": ["Release", "Debug"],
       "defaultValue": "Debug"
     },
+    "Configuration": {
+      "description": "Sets the configuration as Release or Debug",
+      "valueType": "property",
+      "values": ["Release", "Debug"],
+      "defaultValue": "Debug"
+    },
     "BuildPackages": {
       "description": "Enables/Disables building packages.",
       "valueType": "property",
@@ -252,107 +258,61 @@
       "values": [],
       "defaultValue": ""
     },
-    "BuildSysConfig": {
-      "description": "Configuration to use for generating INSTALL.vcxproj.",
-      "valueType": "passThrough",
-      "values": ["Release", "Debug"],
-      "defaultValue": "Debug"
+    "Rebuild": {
+      "description": "MsBuild target that cleans and rebuilds the project.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CleanedTheBuild": {
+      "description": "Flag that tells MsBuild that the build has been cleaned.",
+      "valueType": "property",
+      "values": [0, 1],
+      "defaultValue": 0
+    },
+    "RelativeProductBinDir": {
+      "description": "Relative location to place the product binaries.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
+    "ToolchainMilestone": {
+      "description": "Toolchain to use.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": "testing"
+    },
+    "RepoLocalBuild": {
+      "description": "Whether this is a local build.",
+      "valueType": "property",
+      "values": [true, false],
+      "defaultValue": true
+    },
+    "RepoPath": {
+      "description": "Path to the local repo.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
     }
   },
   "commands": {
     "build-managed": {
       "alias":{
-        "binaries": {
-          "description": "Only builds binaries. It doesn't restore packages.",
+        "clean": {
+          "description": "Cleans and rebuilds before building.",
           "settings": {
-            "RestoreDuringBuild": false,
-            "BuildTests": false,
-            "BuildPackages": false
-          }
-        },
-        "packages": {
-          "description": "Builds the NuGet packages.",
-          "settings": {
-            "Project": "src/pkg/packages.proj",
-            "FilterToOSGroup":"default",
-            "MsBuildLogging":"/flp:v=diag;LogFile=build-packages.log",
-	    "NuPkgRid": "default",
-          }
-        },
-        "tests": {
-          "description": "Builds the tests that are in the repository, doesn't restore packages.",
-          "settings": {
-            "RestoreDuringBuild": "false",
-            "Project": "src/tests.builds",
-            "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
-          }
-        },
-        "debug": {
-          "description": "Sets ConfigurationGroup=Debug or the value passed by the user.",
-          "settings": {
-            "ConfigurationGroup": "Debug"
-          }
-        },
-        "release": {
-          "description": "Sets ConfigurationGroup=Release or the value passed by the user.",
-          "settings": {
-            "ConfigurationGroup": "Release"
-          }
-        },
-        "os": {
-          "description": "Sets OSGroup to the OS name where the build is going to run or it is set to the value passed by the user.",
-          "settings": {
-            "OSGroup": "default"
-          }
-        },
-        "target-os": {
-          "description": "Sets TargetOS to the OS name where the build is going to run or it is set to the value passed by the user.",
-          "settings": {
-            "TargetOS": "default"
-          }
-        },
-        "distroRid": {
-          "description": "Sets the OS version to the TestNugetRuntimeId property.",
-          "settings": {
-            "TestNugetRuntimeId": "default"
-          }
-        },
-        "GenerateVersion": {
-          "description": "Generates the version header for native binaries.",
-          "settings": {
-            "GenerateNativeVersionInfo": true,
-            "GenerateVersionHeader": "default"
-          }
-        },
-        "DisableManagedPackage": {
-          "description": "Generates the version header for native binaries.",
-          "settings": {
-            "SkipManagedPackageBuild": true
-          }
-        },
-        "buildArch": {
-          "description": "Passes the value of the build architecture to the respective build-native script.",
-          "settings": {
-            "Platform": "default"
-          }
-        },
-        "verbose": {
-          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
-          "settings": {
-            "MsBuildLogging": "/flp:v=diag;LogFile=build-managed.log"
+            "Rebuild": true,
+            "CleanedTheBuild": 1
           }
         }
       },
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
-          "OSGroup": "default",
-          "TargetOS": "default",
+          "Project": "%__ProjectDir%\\build.proj",
           "Platform": "default",
-          "ConfigurationGroup": "default",
-          "MsBuildLogging":"/flp:v=diag;LogFile=build-managed.log",
-          "MsBuildWarning":"default",
-          "MsBuildError":"default",
+          "ToolchainMilestone": "default",
+          "MsBuildLogging":"/verbosity:minimal /fileloggerparameters:Verbosity=normal;LogFile=\"%__LogsDir%\\msbuild_%__BuildOS%__%__BuildArch%__%__BuildType%.log\"",
           "BuildInParallel": "default",
         }
       }
@@ -364,44 +324,26 @@
         "toolName": "terminal",
         "Project": "src/Native/gen-buildsys",
         "settings": {
-           "BuildArchitecture": "default",
-           "BuildSysConfig": "default",
          }
       }
     },
     "build-native": {
       "alias": {
-        "debug": {
-          "description": "Passes Debug to respective build-native script.",
+        "clean": {
+          "description": "Cleans and rebuilds before building.",
           "settings": {
-            "CmakeBuildType": "Debug"
-          }
-        },
-        "release": {
-          "description": "Passes Release to respective build-native script.",
-          "settings": {
-            "CmakeBuildType": "Release"
-          }
-        },
-        "buildArch": {
-          "description": "Passes the value of the build architecture to the respective build-native script.",
-          "settings": {
-            "BuildArchitecture": "default"
-          }
-        },
-        "os":{
-          "description": "Passes the value of the OS to the respective build-native script.",
-          "settings": {
-            "HostOs": "default"
+            "Rebuild": true,
+            "CleanedTheBuild": 1
           }
         }
       },
       "defaultValues": {
-        "toolName": "terminal",
-        "Project": "src/Native/build-native",
-        "settings": {
-           "BuildArchitecture": "default", 
-           "CmakeBuildType": "default",           
+        "toolName": "msbuild",
+        "settings": {       
+          "Project": "%__IntermediatesDir%\\install.vcxproj",
+          "Platform": "default",
+          "Configuration": "default",
+          "MsBuildLogging": "/fileloggerparameters:Verbosity=normal;LogFile=\"%__LogsDir%\\Native_%__BuildOS%__%__BuildArch%__%__BuildType%.log\""
          }
       }
     },
@@ -431,18 +373,6 @@
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
-        }
-      }
-    },
-    "produces": {
-      "alias": {},
-      "defaultValues": {
-        "toolName": "msbuild",
-        "settings": {
-          "Project": "src/packages.proj",
-          "FilterToOSGroup":"default",
-          "MsBuildLogging":"/flp:v=diag;LogFile=build-packages.log",
-          "ProducesTarget":"default"
         }
       }
     },
@@ -555,7 +485,7 @@
     "msbuild": {
       "osSpecific": {
         "windows": {
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false /l:BinClashLogger,Tools\\net45\\Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
+          "defaultParameters": "/ConsoleLoggerParameters:ForceNoAlign /nologo /maxcpucount /nodeReuse:false /nologo /maxcpucount /nodeReuse:false",
           "path": "Tools/msbuild.cmd"
         },
         "unix": {

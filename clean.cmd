@@ -4,6 +4,14 @@ setlocal EnableDelayedExpansion
 echo Stop VBCSCompiler.exe execution.
 for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F
 
+call buildvars-setup.cmd
+:: Cleanup the previous output for the selected configuration
+if exist "%__BinDir%" rd /s /q "%__BinDir%"
+if exist "%__ObjDir%" rd /s /q "%__ObjDir%"
+if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
+
+if exist "%__LogsDir%" del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__BuildType%.*"
+
 :: Strip all dashes off the argument and use invariant
 :: compare to match as many versions of "all" that we can
 :: All other argument validation happens inside Run.exe
