@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName() => $"ExternSymbol {_name.ToString()}";
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(_name);
         }

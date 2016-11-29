@@ -18,10 +18,10 @@ namespace ILCompiler.DependencyAnalysis
             _indirectedNode = indirectedNode;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__indirection");
-            _indirectedNode.AppendMangledName(nameMangler, sb, compilationUnitPrefix);
+            _indirectedNode.AppendMangledName(nameMangler, sb);
         }
         public int Offset => 0;
 

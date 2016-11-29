@@ -26,14 +26,14 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName() => this.GetMangledName();
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             if (_dispatchMapTableIndex == IndexNotSet)
             {
                 throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
             }
 
-            sb.Append(compilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(_dispatchMapTableIndex.ToStringInvariant());
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(_dispatchMapTableIndex.ToStringInvariant());
         }
 
         public int Offset => 0;

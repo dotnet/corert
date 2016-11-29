@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
-        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix);
+        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract int Offset { get; }
 
         public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private TypeDesc _owningType;
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledTypeName(_owningType));
         }
@@ -143,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _owningMethod;
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledMethodName(_owningMethod));
         }

@@ -34,9 +34,9 @@ namespace ILCompiler.DependencyAnalysis
         public MethodDesc Method { get; }
 
         // Implementation of ISymbolNode that makes this node act as a symbol for the canonical body
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            CanonicalMethodNode.AppendMangledName(nameMangler, sb, compilationUnitPrefix);
+            CanonicalMethodNode.AppendMangledName(nameMangler, sb);
         }
         public int Offset => CanonicalMethodNode.Offset;
 

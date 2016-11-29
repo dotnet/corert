@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             _entryPointName = entryPointName;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__pinvoke_");
             sb.Append(_moduleName);

@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
         
         public override bool StaticDependenciesAreComputed => _methodCode != null;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
         }

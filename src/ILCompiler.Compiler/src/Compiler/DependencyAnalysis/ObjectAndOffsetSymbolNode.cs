@@ -32,10 +32,10 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             if (_includeCompilationUnitPrefix)
-                sb.Append(compilationUnitPrefix);
+                sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append(_name);
         }
         public int Offset => _offset;

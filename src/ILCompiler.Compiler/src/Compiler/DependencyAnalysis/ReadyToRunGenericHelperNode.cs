@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             Utf8String mangledContextName;
             if (_dictionaryOwner is MethodDesc)
@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             Utf8String mangledContextName;
             if (_dictionaryOwner is MethodDesc)

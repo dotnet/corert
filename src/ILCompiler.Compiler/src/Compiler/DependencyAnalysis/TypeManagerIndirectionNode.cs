@@ -8,9 +8,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     class TypeManagerIndirectionNode : ObjectNode, ISymbolNode
     {
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(compilationUnitPrefix).Append("__typemanager_indirection");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__typemanager_indirection");
         }
         public int Offset => 0;
         public override bool IsShareable => false;

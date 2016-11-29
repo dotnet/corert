@@ -23,15 +23,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReflectionFieldMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End", true);
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__field_to_offset_map_End", true);
             _externalReferences = externalReferences;
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
         
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(compilationUnitPrefix).Append("__field_to_offset_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map");
         }
 
         public int Offset => 0;

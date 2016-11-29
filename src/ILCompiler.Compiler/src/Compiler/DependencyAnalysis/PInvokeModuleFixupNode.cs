@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
             _moduleName = moduleName;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__nativemodule_");
             sb.Append(_moduleName);

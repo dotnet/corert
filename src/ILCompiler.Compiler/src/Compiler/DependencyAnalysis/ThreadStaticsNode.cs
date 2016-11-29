@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             factory.ThreadStaticsRegion.AddEmbeddedObject(this);
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb, string compilationUnitPrefix)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__ThreadStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }

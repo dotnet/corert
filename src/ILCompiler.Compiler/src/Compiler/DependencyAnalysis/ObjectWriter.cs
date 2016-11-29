@@ -63,9 +63,6 @@ namespace ILCompiler.DependencyAnalysis
         // Target platform ObjectWriter is instantiated for.
         private TargetDetails _targetPlatform;
 
-        // Optional string to prepend to symbol names for ensuring uniqueness across linked object files.
-        private string _compilationUnitPrefix;
-
         // Nodefactory for which ObjectWriter is instantiated for.
         private NodeFactory _nodeFactory;
 
@@ -378,7 +375,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_targetPlatform.OperatingSystem == TargetOS.Windows)
                 {
-                    _sb.Clear().Append(_compilationUnitPrefix).Append("_unwind").Append(i.ToStringInvariant());
+                    _sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_unwind").Append(i.ToStringInvariant());
 
                     ObjectNodeSection section = ObjectNodeSection.XDataSection;
                     SwitchSection(_nativeObjectWriter, section.Name);
@@ -400,7 +397,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (ehInfo != null)
                     {
-                        EmitSymbolRef(_sb.Clear().Append(_compilationUnitPrefix).Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                        EmitSymbolRef(_sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_ABSOLUTE);
                     }
 
                     if (gcInfo != null)
@@ -560,7 +557,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _sb.Clear();
                 AppendExternCPrefix(_sb);
-                symbolNode.AppendMangledName(NodeFactory.NameMangler, _sb, _compilationUnitPrefix);
+                symbolNode.AppendMangledName(NodeFactory.NameMangler, _sb);
                 _currentNodeZeroTerminatedName = _sb.Append('\0').ToUtf8String();
             }
             else
@@ -584,7 +581,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _sb.Clear();
             AppendExternCPrefix(_sb);
-            target.AppendMangledName(NodeFactory.NameMangler, _sb, _compilationUnitPrefix);
+            target.AppendMangledName(NodeFactory.NameMangler, _sb);
 
             return EmitSymbolRef(_sb, relocType, delta);
         }
@@ -640,7 +637,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     _sb.Clear();
                     AppendExternCPrefix(_sb);
-                    name.AppendMangledName(NodeFactory.NameMangler, _sb, _compilationUnitPrefix);
+                    name.AppendMangledName(NodeFactory.NameMangler, _sb);
 
                     EmitSymbolDef(_sb);
 
@@ -669,9 +666,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
-
-            // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
-            _compilationUnitPrefix = factory.CompilationModuleGroup.IsSingleFileCompilation ? "" : NodeFactory.NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(objectFilePath));
         }
 
         public void Dispose()
