@@ -174,7 +174,9 @@ namespace Internal.Runtime.TypeLoader
 
                 if (pTemplateEEType != null)
                 {
-                    valueTypeFieldPaddingEncoded = pTemplateEEType->ValueTypeFieldPadding;
+                    valueTypeFieldPaddingEncoded = EEType.ComputeValueTypeFieldPaddingFieldValue(
+                        pTemplateEEType->ValueTypeFieldPadding, 
+                        (uint)pTemplateEEType->FieldAlignmentRequirement);
                     baseSize = (int)pTemplateEEType->BaseSize;
                     isValueType = pTemplateEEType->IsValueType;
                     hasFinalizer = pTemplateEEType->IsFinalizable;
