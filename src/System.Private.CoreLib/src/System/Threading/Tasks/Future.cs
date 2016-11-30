@@ -392,7 +392,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Delegate d = (Delegate)m_action;
+                Delegate d = m_action;
                 if (d == null)
                     return "{null}";
                 IntPtr fptr = d.GetNativeFunctionPointer();

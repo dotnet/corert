@@ -373,7 +373,7 @@ namespace System.Threading.Tasks
                 return m_task.GetDelegateContinuationsForDebugger();
             }
 
-            return new Delegate[] { m_task.m_action as Delegate };
+            return new Delegate[] { m_task.m_action };
         }
     }
 
