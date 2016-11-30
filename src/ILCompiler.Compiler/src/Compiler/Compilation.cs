@@ -147,21 +147,8 @@ namespace ILCompiler
 
         void ICompilation.Compile(string outputFile)
         {
-            // TODO: Hacky static field
-
-            string systemModuleName = ((IAssemblyDesc)NodeFactory.TypeSystemContext.SystemModule).GetName().Name;
-
-            // TODO: CompilationUnitPrefix is used even before this point!!!
-            // TODO: just something to get Runtime.Base compiled
-            if (systemModuleName != "System.Private.CoreLib")
-            {
-                NodeFactory.CompilationUnitPrefix = systemModuleName.Replace(".", "_");
-            }
-            else
-            {
-                NodeFactory.CompilationUnitPrefix = NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(outputFile));
-            }
-
+            // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
+            _nameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : NodeFactory.NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(outputFile));
             CompileInternal(outputFile);
         }
 

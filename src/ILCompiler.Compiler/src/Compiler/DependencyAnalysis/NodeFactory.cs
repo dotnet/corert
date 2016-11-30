@@ -655,22 +655,22 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
-            CompilationUnitPrefix + "__GCStaticRegionStart", 
-            CompilationUnitPrefix + "__GCStaticRegionEnd", 
+            "__GCStaticRegionStart", 
+            "__GCStaticRegionEnd", 
             null);
         public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
-            CompilationUnitPrefix + "__ThreadStaticRegionStart",
-            CompilationUnitPrefix + "__ThreadStaticRegionEnd", 
+            "__ThreadStaticRegionStart",
+            "__ThreadStaticRegionEnd", 
             null);
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
-            CompilationUnitPrefix + "__EagerCctorStart",
-            CompilationUnitPrefix + "__EagerCctorEnd",
+            "__EagerCctorStart",
+            "__EagerCctorEnd",
             new EagerConstructorComparer());
 
         public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
-            CompilationUnitPrefix + "__DispatchMapTableStart",
-            CompilationUnitPrefix + "__DispatchMapTableEnd",
+            "__DispatchMapTableStart",
+            "__DispatchMapTableEnd",
             null);
 
         public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<FrozenStringNode>(
@@ -685,7 +685,6 @@ namespace ILCompiler.DependencyAnalysis
         internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
         public static NameMangler NameMangler;
-        public static string CompilationUnitPrefix = "";
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

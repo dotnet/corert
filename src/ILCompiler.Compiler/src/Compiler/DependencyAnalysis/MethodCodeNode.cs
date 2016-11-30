@@ -48,12 +48,7 @@ namespace ILCompiler.DependencyAnalysis
                 return _method.Context.Target.IsWindows ? WindowsContentSection : UnixContentSection;
             }
         }
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_method);
-        }
-
+        
         public override bool StaticDependenciesAreComputed => _methodCode != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -61,6 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
         }
         public int Offset => 0;
+        public override bool IsShareable => _method is InstantiatedMethod || EETypeNode.IsTypeNodeShareable(_method.OwningType);
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

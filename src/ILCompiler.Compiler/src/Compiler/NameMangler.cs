@@ -29,6 +29,18 @@ namespace ILCompiler
             _mangleForCplusPlus = mangleForCplusPlus;
         }
 
+        private string _compilationUnitPrefix;
+
+        public string CompilationUnitPrefix
+        {
+            set { _compilationUnitPrefix = value; }
+            get
+            {
+                System.Diagnostics.Debug.Assert(_compilationUnitPrefix != null);
+                return _compilationUnitPrefix;
+            }
+        }
+
         //
         // Turn a name into a valid C/C++ identifier
         //

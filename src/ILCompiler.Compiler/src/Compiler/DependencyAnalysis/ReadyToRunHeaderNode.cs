@@ -43,10 +43,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix);
+            sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__ReadyToRunHeader");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         protected override string GetName() => this.GetMangledName();
 

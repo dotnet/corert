@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReflectionFieldMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__field_to_offset_map_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -31,10 +31,11 @@ namespace ILCompiler.DependencyAnalysis
         
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__field_to_offset_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map");
         }
 
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 

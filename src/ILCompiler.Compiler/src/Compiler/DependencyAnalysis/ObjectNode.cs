@@ -31,15 +31,9 @@ namespace ILCompiler.DependencyAnalysis
         public abstract ObjectNodeSection Section { get; }
 
         /// <summary>
-        /// Override this function for node types that can be shared amongst object files
-        /// when linked together (using a COMDAT section for each node or equivalent on
-        /// each platform). For instance, generic type and method instantiations
-        /// should be shared to prevent duplicate symbol linker errors.
+        /// Should identical symbols emitted into separate object files be Comdat folded when linked together?
         /// </summary>
-        public virtual bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return false;
-        }
+        public abstract bool IsShareable { get; }
 
         /// <summary>
         /// Override this function to have a node which should be skipped when emitting

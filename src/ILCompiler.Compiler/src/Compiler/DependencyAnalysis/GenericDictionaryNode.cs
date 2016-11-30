@@ -92,6 +92,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledTypeName(_owningType));
         }
         public override int Offset => 0;
+        public override bool IsShareable => false;
 
         protected override Instantiation TypeInstantiation => _owningType.Instantiation;
         protected override Instantiation MethodInstantiation => new Instantiation();
@@ -147,6 +148,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledMethodName(_owningMethod));
         }
         public override int Offset => _owningMethod.Context.Target.PointerSize;
+        public override bool IsShareable => false;
 
         protected override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         protected override Instantiation MethodInstantiation => _owningMethod.Instantiation;

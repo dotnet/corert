@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ClassConstructorContextMap(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__type_to_cctorContext_map_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -28,11 +28,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__type_to_cctorContext_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__type_to_cctorContext_map");
         }
         public int Offset => 0;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override bool IsShareable => false;
 
         public override bool StaticDependenciesAreComputed => true;
 

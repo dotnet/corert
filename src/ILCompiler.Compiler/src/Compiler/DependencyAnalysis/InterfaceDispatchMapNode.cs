@@ -33,10 +33,11 @@ namespace ILCompiler.DependencyAnalysis
                 throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
             }
 
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(_dispatchMapTableIndex.ToStringInvariant());
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(_dispatchMapTableIndex.ToStringInvariant());
         }
 
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override bool StaticDependenciesAreComputed => true;
 

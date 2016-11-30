@@ -22,11 +22,6 @@ namespace ILCompiler.DependencyAnalysis
             _entryPointName = entryPointName;
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
-
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__pinvoke_");
@@ -35,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(_entryPointName);
         }
         public int Offset => 0;
+        public override bool IsShareable => true;
 
         protected override string GetName() => this.GetMangledName();
 

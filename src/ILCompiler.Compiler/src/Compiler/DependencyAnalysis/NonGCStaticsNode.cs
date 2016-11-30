@@ -37,14 +37,10 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__NonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }
         public int Offset => 0;
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
         public MetadataType Type => _type;
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
-        }
-        
         private static int GetClassConstructorContextSize(TargetDetails target)
         {
             // TODO: Assert that StaticClassConstructionContext type has the expected size
