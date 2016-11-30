@@ -1643,10 +1643,11 @@ namespace System.Runtime.InteropServices
             //
             // First try to see if this is one of the thunks we've allocated when we marshal a managed
             // delegate to native code
+            // s_thunkPoolHeap will be null if there isn't any managed delegate to native
             //
             IntPtr pContext;
             IntPtr pTarget;
-            if (RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, pStub, out pContext, out pTarget))
+            if (s_thunkPoolHeap != null && RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, pStub, out pContext, out pTarget))
             {
                 GCHandle handle;
                 unsafe
