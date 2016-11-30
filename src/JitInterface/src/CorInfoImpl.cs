@@ -224,13 +224,45 @@ namespace Internal.JitInterface
             var builder = new ObjectDataBuilder();
             builder.Alignment = 1;
 
-            // TODO: Filter out duplicate clauses
+            int totalClauses = _ehClauses.Length;
 
-            builder.EmitCompressedUInt((uint)_ehClauses.Length);
+            // Count the number of special markers that will be needed
+            for (int i = 1; i < _ehClauses.Length; i++)
+            {
+                ref CORINFO_EH_CLAUSE clause = ref _ehClauses[i];
+                ref CORINFO_EH_CLAUSE previousClause = ref _ehClauses[i-1];
+
+                if ((previousClause.TryOffset == clause.TryOffset) && 
+                    (previousClause.TryLength == clause.TryLength) && 
+                    ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
+                {
+                    totalClauses++;
+                }
+            }
+
+            builder.EmitCompressedUInt((uint)totalClauses);
 
             for (int i = 0; i < _ehClauses.Length; i++)
             {
-                var clause = _ehClauses[i];
+                ref CORINFO_EH_CLAUSE clause = ref _ehClauses[i];
+
+                if (i > 0)
+                {
+                    ref CORINFO_EH_CLAUSE previousClause = ref _ehClauses[i-1];
+
+                    // If the previous clause has same try offset and length as the current clause,
+                    // but belongs to a different try block (CORINFO_EH_CLAUSE_SAMETRY is not set),
+                    // emit a special marker to allow runtime distinguish this case.
+                    if ((previousClause.TryOffset == clause.TryOffset) &&
+                        (previousClause.TryLength == clause.TryLength) && 
+                        ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
+                    {
+                        builder.EmitCompressedUInt(0);
+                        builder.EmitCompressedUInt((uint)RhEHClauseKind.RH_EH_CLAUSE_FAULT);
+                        builder.EmitCompressedUInt(0);
+                    }
+                }
+
                 RhEHClauseKind clauseKind;
 
                 if (((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT) != 0) ||
