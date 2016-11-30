@@ -138,7 +138,7 @@ namespace System.Threading.Tasks
         // Get in touch with the diagnostics team if you have questions.
         private volatile int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
-        internal object m_action;    // The body of the task.  Might be Action<object>, Action<TState> or Action.  Or possibly a Func.
+        internal Delegate m_action;    // The body of the task.  Might be Action<object>, Action<TState> or Action.  Or possibly a Func.
         // If m_action is set to null it will indicate that we operate in the
         // "externally triggered completion" mode, which is exclusively meant 
         // for the signalling Task<TResult> (aka. promise). In this mode,
@@ -528,7 +528,7 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">A CancellationToken for the Task.</param>
         /// <param name="creationOptions">Options to customize behavior of Task.</param>
         /// <param name="internalOptions">Internal options to customize behavior of Task.</param>
-        internal void TaskConstructorCore(object action, object state, CancellationToken cancellationToken,
+        internal void TaskConstructorCore(Delegate action, object state, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler)
         {
             m_action = action;
@@ -775,7 +775,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Delegate d = (Delegate)m_action;
+                Delegate d = m_action;
                 if (d == null)
                     return "{null}";
                 IntPtr fptr = d.GetNativeFunctionPointer();
