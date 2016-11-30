@@ -1268,6 +1268,10 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
+                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+                        if (type.IsNullable)
+                            type = type.Instantiation[0];
+
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
                     }
                     break;
@@ -1276,6 +1280,10 @@ namespace Internal.JitInterface
                         var type = HandleToObject(pResolvedToken.hClass);
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
+
+                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+                        if (type.IsNullable)
+                            type = type.Instantiation[0];
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
