@@ -915,29 +915,6 @@
     <!-- https://github.com/dotnet/corert/issues/730 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\tail\tail.*" />
 
-    <!-- AV in a catch block with localloc -->
-    <!-- https://github.com/dotnet/corert/issues/2255 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh01_dynamic\eh01_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh01_large\eh01_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh02_dynamic\eh02_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh02_large\eh02_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh03_dynamic\eh03_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh03_large\eh03_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh04_dynamic\eh04_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh04_large\eh04_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\ehverify\eh12_dynamic\eh12_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\ehverify\eh13_dynamic\eh13_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind02_dynamic\unwind02_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind02_large\unwind02_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind03_dynamic\unwind03_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind03_large\unwind03_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind04_dynamic\unwind04_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind04_large\unwind04_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind05_dynamic\unwind05_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind05_large\unwind05_large.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind06_dynamic\unwind06_dynamic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\unwind\unwind06_large\unwind06_large.*" />
-
     <!-- Overlapping reference and value type fields -->
     <!-- https://github.com/dotnet/corert/issues/2258 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case2\case2.*" />
