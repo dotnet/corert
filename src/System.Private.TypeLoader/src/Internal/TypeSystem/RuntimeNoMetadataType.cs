@@ -295,8 +295,13 @@ namespace Internal.TypeSystem.NoMetadata
         }
 
 #if DEBUG
+        private string _cachedToString = null;
+
         public override string ToString()
         {
+            if (_cachedToString != null)
+                return _cachedToString;
+
             StringBuilder sb = new StringBuilder();
 
             if (!_genericTypeDefinition.IsNull())
@@ -313,7 +318,10 @@ namespace Internal.TypeSystem.NoMetadata
                 }
                 if (Instantiation.Length > 0) sb.Append("]");
             }
-            return sb.ToString();
+
+            _cachedToString = sb.ToString();
+
+            return _cachedToString;
         }
 #endif
     }
