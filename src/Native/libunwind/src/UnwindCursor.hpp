@@ -384,8 +384,11 @@ public:
   virtual ~AbstractUnwindCursor() {}
   virtual bool validReg(int) { _LIBUNWIND_ABORT("validReg not implemented"); }
   virtual unw_word_t getReg(int) { _LIBUNWIND_ABORT("getReg not implemented"); }
-  virtual void setReg(int, unw_word_t) {
+  virtual void setReg(int, unw_word_t, unw_word_t) {
     _LIBUNWIND_ABORT("setReg not implemented");
+  }
+  virtual unw_word_t getRegLocation(int) { 
+    _LIBUNWIND_ABORT("getRegLocation not implemented");
   }
   virtual bool validFloatReg(int) {
     _LIBUNWIND_ABORT("validFloatReg not implemented");
@@ -429,7 +432,8 @@ public:
   virtual             ~UnwindCursor() {}
   virtual bool        validReg(int);
   virtual unw_word_t  getReg(int);
-  virtual void        setReg(int, unw_word_t);
+  virtual void        setReg(int, unw_word_t, unw_word_t);
+  virtual unw_word_t  getRegLocation(int);
   virtual bool        validFloatReg(int);
   virtual unw_fpreg_t getFloatReg(int);
   virtual void        setFloatReg(int, unw_fpreg_t);
@@ -634,8 +638,13 @@ unw_word_t UnwindCursor<A, R>::getReg(int regNum) {
 }
 
 template <typename A, typename R>
-void UnwindCursor<A, R>::setReg(int regNum, unw_word_t value) {
-  _registers.setRegister(regNum, (typename A::pint_t)value);
+void UnwindCursor<A, R>::setReg(int regNum, unw_word_t value, unw_word_t location) {
+  _registers.setRegister(regNum, (typename A::pint_t)value, (typename A::pint_t)location);
+}
+
+template <typename A, typename R>
+unw_word_t UnwindCursor<A, R>::getRegLocation(int regNum) {
+  return _registers.getRegisterLocation(regNum);
 }
 
 template <typename A, typename R>
@@ -1349,7 +1358,7 @@ int UnwindCursor<A, R>::step() {
     if (_unwindInfoMissing)
       return UNW_STEP_END;
     if (_info.gp)
-      setReg(UNW_REG_SP, getReg(UNW_REG_SP) + _info.gp);
+      setReg(UNW_REG_SP, getReg(UNW_REG_SP) + _info.gp, 0);
   }
 
   return result;

@@ -177,7 +177,7 @@ _LIBUNWIND_EXPORT int unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
   typedef LocalAddressSpace::pint_t pint_t;
   AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
   if (co->validReg(regNum)) {
-    co->setReg(regNum, (pint_t)value);
+    co->setReg(regNum, (pint_t)value, 0);
     // specical case altering IP to re-find info (being called by personality
     // function)
     if (regNum == UNW_REG_IP)
@@ -221,6 +221,19 @@ _LIBUNWIND_EXPORT int unw_set_fpreg(unw_cursor_t *cursor, unw_regnum_t regNum,
   return UNW_EBADREG;
 }
 
+/// Get location of specified register at cursor position in stack frame.
+_LIBUNWIND_EXPORT int unw_get_save_loc(unw_cursor_t* cursor, int regNum, 
+                                       unw_save_loc_t* location)
+{
+  AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
+  if (co->validReg(regNum)) {
+    // We only support memory locations, not register locations
+    location->u.addr = co->getRegLocation(regNum);
+    location->type = (location->u.addr == 0) ? UNW_SLT_NONE : UNW_SLT_MEMORY;
+    return UNW_ESUCCESS;
+  }
+  return UNW_EBADREG;
+}
 
 /// Move cursor to next frame.
 _LIBUNWIND_EXPORT int unw_step(unw_cursor_t *cursor) {

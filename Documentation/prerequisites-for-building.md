@@ -13,7 +13,7 @@ PowerShell also needs to be available from the PATH environment variable (it's t
 Install basic dependency packages:
 
 ```
-sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev liblttng-ust liblttng-ust-dev uuid uuid-dev
+sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev liblttng-ust liblttng-ust-dev uuid uuid-dev
 ```
 
 # Mac OSX (10.10+)

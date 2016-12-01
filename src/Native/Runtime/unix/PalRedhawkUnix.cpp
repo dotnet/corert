@@ -443,12 +443,12 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     {
         return false;
     }
-
+#ifndef USE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
-
+#endif // !USE_PORTABLE_HELPERS
     int status = pthread_key_create(&g_threadKey, TlsObjectDestructor);
     if (status != 0)
     {
