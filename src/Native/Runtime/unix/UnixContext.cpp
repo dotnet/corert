@@ -11,10 +11,6 @@
 #include "regdisplay.h"
 #include "config.h"
 
-#if !HAVE_LIBUNWIND_H
-#error Don't know how to unwind on this platform
-#endif
-
 #include <libunwind.h>
 
 #if HAVE_UCONTEXT_T
@@ -201,56 +197,6 @@
 
 #endif // __APPLE__
 
-#if UNWIND_CONTEXT_IS_UCONTEXT_T
-
-#if defined(_AMD64_)
-#define ASSIGN_UNWIND_REGS     \
-    ASSIGN_REG(Rip, IP)        \
-    ASSIGN_REG(Rsp, SP)        \
-    ASSIGN_REG_PTR(Rbp, Rbp)   \
-    ASSIGN_REG_PTR(Rbx, Rbx)   \
-    ASSIGN_REG_PTR(R12, R12)   \
-    ASSIGN_REG_PTR(R13, R13)   \
-    ASSIGN_REG_PTR(R14, R14)   \
-    ASSIGN_REG_PTR(R15, R15)
-#elif defined(_ARM64_)
-#define ASSIGN_UNWIND_REGS     \
-    ASSIGN_REG(Pc, IP)
-    // ASSIGN_REG(Sp, SP)         \
-    // ASSIGN_REG_PTR(Fp, FP)     \
-    // ASSIGN_REG_PTR(Lr, LR)     \
-    // ASSIGN_REG_PTR(X19, X19)   \
-    // ASSIGN_REG_PTR(X20, X20)   \
-    // ASSIGN_REG_PTR(X21, X21)   \
-    // ASSIGN_REG_PTR(X22, X22)   \
-    // ASSIGN_REG_PTR(X23, X23)   \
-    // ASSIGN_REG_PTR(X24, X24)   \
-    // ASSIGN_REG_PTR(X25, X25)   \
-    // ASSIGN_REG_PTR(X26, X26)   \
-    // ASSIGN_REG_PTR(X27, X27)   \
-    // ASSIGN_REG_PTR(X28, X28)
-#else
-#error unsupported architecture
-#endif
-
-// Convert REGDISPLAY to unw_context_t
-static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unwContext)
-{
-#define ASSIGN_REG(regName1, regName2) \
-    MCREG_##regName1(unwContext->uc_mcontext) = regDisplay->regName2;
-
-#define ASSIGN_REG_PTR(regName1, regName2) \
-    if (regDisplay->p##regName2 != NULL) \
-        MCREG_##regName1(unwContext->uc_mcontext) = *(regDisplay->p##regName2);
-
-    ASSIGN_UNWIND_REGS
-
-#undef ASSIGN_REG
-#undef ASSIGN_REG_PTR
-}
-
-#else // UNWIND_CONTEXT_IS_UCONTEXT_T
-
 // Update unw_context_t from REGDISPLAY
 static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unwContext)
 {
@@ -309,20 +255,17 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
 #undef ASSIGN_REG_PTR
 #endif // _AMD64_
 }
-#endif // UNWIND_CONTEXT_IS_UCONTEXT_T
 
 // Initialize unw_cursor_t and unw_context_t from REGDISPLAY
 bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* cursor, unw_context_t* unwContext)
 {
     int st;
 
-#if !UNWIND_CONTEXT_IS_UCONTEXT_T
     st = unw_getcontext(unwContext);
     if (st < 0)
     {
         return false;
     }
-#endif
 
     RegDisplayToUnwindContext(regDisplay, unwContext);
 
@@ -332,10 +275,8 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
         return false;
     }
 
-#if !UNWIND_CONTEXT_IS_UCONTEXT_T
     // Set the unwind context to the specified windows context
     RegDisplayToUnwindCursor(regDisplay, cursor);
-#endif
 
     return true;
 }
@@ -343,7 +284,6 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
 // Update context pointer for a register from the unw_cursor_t.
 static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, PTR_UIntNative *contextPointer)
 {
-#if defined(HAVE_UNW_GET_SAVE_LOC)
     unw_save_loc_t saveLoc;
     unw_get_save_loc(cursor, reg, &saveLoc);
     if (saveLoc.type == UNW_SLT_MEMORY)
@@ -353,10 +293,6 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
         if (unwContext == NULL || (pLoc < (PTR_UIntNative)unwContext) || ((PTR_UIntNative)(unwContext + 1) <= pLoc))
             *contextPointer = (PTR_UIntNative)saveLoc.u.addr;
     }
-#else
-    // Returning NULL indicates that we don't have context pointers available
-    *contextPointer = NULL;
-#endif
 }
 
 #if defined(_AMD64_)
@@ -603,7 +539,6 @@ bool VirtualUnwind(REGDISPLAY* pRegisterSet)
         return false;
     }
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
     // FreeBSD, NetBSD and OSX appear to do two different things when unwinding
     // 1: If it reaches where it cannot unwind anymore, say a
     // managed frame.  It wil return 0, but also update the $pc
@@ -613,7 +548,6 @@ bool VirtualUnwind(REGDISPLAY* pRegisterSet)
     // So we bank the original PC here, so we can compare it after
     // the step
     uintptr_t curPc = pRegisterSet->GetIP();
-#endif
 
     int st = unw_step(&cursor);
     if (st < 0)
@@ -624,13 +558,11 @@ bool VirtualUnwind(REGDISPLAY* pRegisterSet)
     // Update the REGDISPLAY to reflect the unwind
     UnwindCursorToRegDisplay(&cursor, &unwContext, pRegisterSet);
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
     if (st == 0 && pRegisterSet->GetIP() == curPc)
     {
         // TODO: is this correct for CoreRT? Should we return false instead?
         pRegisterSet->SetIP(0);
     }
-#endif
 
     return true;
 }

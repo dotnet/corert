@@ -59,7 +59,6 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-ldl" />
       <LinkerArg Include="-lm" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-lunwind-x86_64" Condition="'$(TargetOS)' != 'OSX'" />
     </ItemGroup>
  
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeBinary)))" />
