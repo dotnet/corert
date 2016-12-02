@@ -104,6 +104,12 @@
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
 
+  <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />  
+
+  <!-- Import the packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)Packaging.props" Condition="'$(NewBuildScripts)'=='true'"/>
+
+
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
@@ -201,24 +207,72 @@
     <CommonTestPath>$(SourceDir)Common\tests</CommonTestPath>
   </PropertyGroup>
 
-  <!-- Set up common target properties that we use to conditionally include sources -->
+  <!-- initialize all the targets variables to false as they should only be set below -->
   <PropertyGroup>
-    <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
-    <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
-    <TargetsFreeBSD Condition="'$(OSGroup)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsWindows>false</TargetsWindows>
+    <TargetsUnix>false</TargetsUnix>
+    <TargetsLinux>false</TargetsLinux>
+    <TargetsOSX>false</TargetsOSX>
+    <TargetsFreeBSD>false</TargetsFreeBSD>
+    <TargetsNetBSD>false</TargetsNetBSD>
+  </PropertyGroup>
 
-    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsUnix>
+  <!-- Setup properties per OSGroup -->
+  <Choose>
+    <When Condition="'$(OSGroup)'=='AnyOS'">
+      <PropertyGroup>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Windows_NT'">
+      <PropertyGroup>
+        <TargetsWindows>true</TargetsWindows>
+        <PackageTargetRuntime>win-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Unix'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <PackageTargetRuntime>unix-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Linux'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+        <PackageTargetRuntime>linux-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='OSX'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsOSX>true</TargetsOSX>
+        <PackageTargetRuntime>osx-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='FreeBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='NetBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsNetBSD>true</TargetsNetBSD>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown OSGroup [$(OSGroup)] specificed in your project.</ConfigurationErrorMsg>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  
+  <PropertyGroup>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netcoreapp1.2</PackageTargetFramework>
+    <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
   </PropertyGroup>
-  <!-- Make some assumptions based on TargetsPlatform -->
-  <PropertyGroup Condition="'$(UseUnixPackageTargetRuntimeDefaults)' == 'true' OR '$(UsePackageTargetRuntimeDefaults)' == 'true'">
-    <PackageTargetRuntime Condition=" '$(TargetsLinux)' == 'true'  AND '$(PackageTargetRuntime)' == ''">linux</PackageTargetRuntime>
-    <PackageTargetRuntime Condition=" '$(TargetsOSX)' == 'true'  AND '$(PackageTargetRuntime)' == ''">osx</PackageTargetRuntime>
-    <PackageTargetRuntime Condition=" '$(TargetsUnix)' == 'true' AND '$(PackageTargetRuntime)' == ''">unix</PackageTargetRuntime>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(UseWindowsPackageTargetRuntimeDefault)' == 'true' OR '$(UsePackageTargetRuntimeDefaults)' == 'true'">
-    <PackageTargetRuntime Condition=" '$(TargetsWindows)' == 'true' AND '$(PackageTargetRuntime)' == ''">win7</PackageTargetRuntime>
-  </PropertyGroup>
+
 
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->

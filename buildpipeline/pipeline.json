@@ -1,0 +1,51 @@
+{
+  "Repository": "corert",
+  "Definitions": {
+    "Path": ".",
+    "Type": "VSTS",
+    "BaseUrl":  "https://devdiv.visualstudio.com/DefaultCollection"
+  },
+  "Pipelines": [
+    {
+      "Name": "All-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "ConfigurationGroup": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreRT-Linux",
+          "Parameters": {
+            "DockerTag": "latest"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Mac",
+          "ReportingParameters": {
+            "SubType": "native",
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Windows",
+          "ReportingParameters": {
+            "SubType": "managed",
+            "OperatingSystem": "All (Managed)",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
+        }
+      ]
+    }
+  ]
+}

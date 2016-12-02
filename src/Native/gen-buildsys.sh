@@ -6,7 +6,7 @@
 if [ $# -lt 3 -o $# -gt 5 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor]"
+  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor]"
   echo "Specify the path to the top level CMake file - <corert>/src/Native"
   echo "Specify the clang version to use, split into major and minor version"
   echo "Specify the target architecture." 
