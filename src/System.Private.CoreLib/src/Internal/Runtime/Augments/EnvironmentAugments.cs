@@ -44,12 +44,7 @@ namespace Internal.Runtime.Augments
             }
             set
             {
-#if CORERT
                 s_latchedExitCode = value;
-#else
-                // This needs to be hooked up into the compiler to do anything. Project N is not hooked up.
-                throw new PlatformNotSupportedException();
-#endif
             }
         }
 
