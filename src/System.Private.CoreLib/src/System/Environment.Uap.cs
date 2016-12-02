@@ -37,11 +37,5 @@ namespace System
             // Behave as if the variable was not found in this case.
             return null;
         }
-
-        public static void Exit(int exitCode)
-        {
-            // Store apps have their lifetime managed by the PLM
-            throw new PlatformNotSupportedException();
-        }
     }
 }
