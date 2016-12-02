@@ -172,10 +172,12 @@
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\excepobj\excepobj\excepobj.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\fault\fault\fault.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\mixed\mixed\mixed.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\ExcepFilters\mixed3\mixed3\mixed3.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\FaultHandlers\Nesting\Nesting\Nesting.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_d\isinst_d.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\isinst_do\isinst_do.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_142976\DevDiv_142976\DevDiv_142976.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\eh\eh01_dynamic\eh01_dynamic.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowStaticField\CctorThrowStaticField.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01a_auto\Base01a_auto.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01a_auto_ser\Base01a_auto_ser.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01a_seq\Base01a_seq.cmd" />

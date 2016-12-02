@@ -443,12 +443,12 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     {
         return false;
     }
-
+#ifndef USE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
-
+#endif // !USE_PORTABLE_HELPERS
     int status = pthread_key_create(&g_threadKey, TlsObjectDestructor);
     if (status != 0)
     {
@@ -1029,11 +1029,6 @@ extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)
     // Then if we modified the signature of the DuplicateHandle too, we can
     // get rid of the PalGetCurrentProcess.
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-extern "C" void ExitProcess(UInt32 exitCode)
-{
-    exit(exitCode);
 }
 
 extern "C" UInt32_BOOL SetEvent(HANDLE event)

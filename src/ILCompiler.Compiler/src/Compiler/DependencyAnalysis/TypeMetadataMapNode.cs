@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeMetadataMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__type_to_metadata_map_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -28,9 +28,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__type_to_metadata_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__type_to_metadata_map");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 

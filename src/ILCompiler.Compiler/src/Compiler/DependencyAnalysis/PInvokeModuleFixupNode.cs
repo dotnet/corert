@@ -18,18 +18,13 @@ namespace ILCompiler.DependencyAnalysis
             _moduleName = moduleName;
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
-
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__nativemodule_");
             sb.Append(_moduleName);
         }
         public int Offset => 0;
-
+        public override bool IsShareable => true;
 
         protected override string GetName() => this.GetMangledName();
 

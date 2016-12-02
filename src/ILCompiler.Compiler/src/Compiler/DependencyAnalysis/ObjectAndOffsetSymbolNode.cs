@@ -15,12 +15,14 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectNode _object;
         private int _offset;
         private Utf8String _name;
+        private bool _includeCompilationUnitPrefix;
 
-        public ObjectAndOffsetSymbolNode(ObjectNode obj, int offset, Utf8String name)
+        public ObjectAndOffsetSymbolNode(ObjectNode obj, int offset, Utf8String name, bool includeCompilationUnitPrefix)
         {
             _object = obj;
             _offset = offset;
             _name = name;
+            _includeCompilationUnitPrefix = includeCompilationUnitPrefix;
         }
 
         protected override string GetName() => $"Symbol {_name.ToString()} at offset {_offset.ToStringInvariant()}";
@@ -32,6 +34,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
+            if (_includeCompilationUnitPrefix)
+                sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append(_name);
         }
         public int Offset => _offset;

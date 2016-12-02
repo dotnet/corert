@@ -27,15 +27,11 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_targetMethod));
         }
         public int Offset => 0;
+        public override bool IsShareable => true;
 
         protected override string GetName() => this.GetMangledName();
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
 
         public override bool StaticDependenciesAreComputed => true;
 

@@ -26,11 +26,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
-
         public override bool StaticDependenciesAreComputed => true;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -39,6 +34,7 @@ namespace ILCompiler.DependencyAnalysis
             _owner.AppendMangledName(nameMangler, sb);
         }
         public int Offset => 0;
+        public override bool IsShareable => true;
 
         protected override string GetName() => this.GetMangledName();
 

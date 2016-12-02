@@ -4,7 +4,6 @@
 #cmakedefine01 HAVE_SYS_VMPARAM_H
 #cmakedefine01 HAVE_MACH_VM_TYPES_H
 #cmakedefine01 HAVE_MACH_VM_PARAM_H
-#cmakedefine01 HAVE_LIBUNWIND_H
 
 #cmakedefine01 HAVE_PTHREAD_ATTR_GET_NP
 #cmakedefine01 HAVE_PTHREAD_GETATTR_NP
@@ -15,14 +14,11 @@
 #cmakedefine01 HAVE_SYSCTL
 #cmakedefine01 HAVE_SYSCONF
 
-#cmakedefine HAVE_UNW_GET_SAVE_LOC
-
 #cmakedefine01 HAVE_GREGSET_T
 #cmakedefine01 HAVE___GREGSET_T
 
 #cmakedefine01 HAVE_SIGINFO_T
 #cmakedefine01 HAVE_UCONTEXT_T
-#cmakedefine01 UNWIND_CONTEXT_IS_UCONTEXT_T
 
 #cmakedefine01 HAVE__SC_PHYS_PAGES
 #cmakedefine01 HAVE__SC_AVPHYS_PAGES

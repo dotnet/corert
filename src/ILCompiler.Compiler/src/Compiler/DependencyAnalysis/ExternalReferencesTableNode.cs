@@ -21,16 +21,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public ExternalReferencesTableNode()
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__external_references_End", true);
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__external_references");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_references");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         /// <summary>
         /// Adds a new entry to the table. Thread safety: not thread safe. Expected to be called at the final

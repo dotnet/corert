@@ -69,10 +69,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
         public override bool StaticDependenciesAreComputed => true;
 

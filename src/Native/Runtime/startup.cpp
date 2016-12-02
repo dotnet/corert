@@ -70,13 +70,13 @@ bool InitDLL(HANDLE hPalInstance)
     if (!RestrictedCallouts::Initialize())
         return false;
 
-#ifndef APP_LOCAL_RUNTIME
+#if !defined(APP_LOCAL_RUNTIME) && !defined(USE_PORTABLE_HELPERS)
 #ifndef PLATFORM_UNIX
     PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif
-#endif
+#endif // !APP_LOCAL_RUNTIME && !USE_PORTABLE_HELPERS
 
     //
     // init per-instance state

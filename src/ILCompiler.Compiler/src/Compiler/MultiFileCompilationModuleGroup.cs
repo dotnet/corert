@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -81,31 +82,13 @@ namespace ILCompiler
                 return true;
 
             // Fully build all shareable types so they will be identical in each module
-            if (ShouldShareAcrossModules(type))
+            if (EETypeNode.IsTypeNodeShareable(type))
                 return true;
 
             // If referring to a type from another module, VTables, interface maps, etc should assume the
             // type is fully build.
             if (!ContainsType(type))
                 return true;
-
-            return false;
-        }
-
-        public override bool ShouldShareAcrossModules(MethodDesc method)
-        {
-            if (method is InstantiatedMethod)
-                return true;
-
-            return ShouldShareAcrossModules(method.OwningType);
-        }
-
-        public override bool ShouldShareAcrossModules(TypeDesc type)
-        {
-            if (type.IsParameterizedType || type.IsFunctionPointer || type is InstantiatedType)
-            {
-                return true;
-            }
 
             return false;
         }

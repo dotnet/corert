@@ -57,11 +57,7 @@ namespace ILCompiler.DependencyAnalysis
                 return numSeries > 0 ? ((numSeries * 2) + 1) * _target.PointerSize : 0;
             }
         }
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {

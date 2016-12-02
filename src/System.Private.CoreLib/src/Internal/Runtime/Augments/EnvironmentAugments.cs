@@ -14,7 +14,26 @@ namespace Internal.Runtime.Augments
         public static int CurrentManagedThreadId => System.Threading.ManagedThreadId.Current;
         public static void FailFast(string message, Exception error) => RuntimeExceptionHelpers.FailFast(message, error);
 
-        public static void Exit(int exitCode) => Environment.Exit(exitCode);
+        public static void Exit(int exitCode)
+        {
+#if CORERT
+            s_latchedExitCode = exitCode;
+
+            ShutdownCore();
+
+            RuntimeImports.RhpShutdown();
+
+            Interop.ExitProcess(s_latchedExitCode);
+#else
+            // This needs to be implemented for ProjectN.
+            throw new PlatformNotSupportedException();
+#endif
+        }
+
+        internal static void ShutdownCore()
+        {
+            // Here we'll handle AppDomain.ProcessExit, shut down threading etc.
+        }
 
         private static int s_latchedExitCode;
         public static int ExitCode
@@ -25,12 +44,7 @@ namespace Internal.Runtime.Augments
             }
             set
             {
-#if CORERT
                 s_latchedExitCode = value;
-#else
-                // This needs to be hooked up into the compiler to do anything. Project N is not hooked up.
-                throw new PlatformNotSupportedException();
-#endif
             }
         }
 

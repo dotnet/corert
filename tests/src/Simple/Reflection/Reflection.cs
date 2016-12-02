@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -13,6 +14,8 @@ public class ReflectionTest
 
     public static int Main()
     {
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
         if (TestNames() == Fail)
             return Fail;
 
@@ -54,7 +57,7 @@ public class ReflectionTest
         Console.WriteLine("Testing unification");
 
         // ReflectionTest type doesn't have an EEType and is metadata only.
-        Type programType = Type.GetType("ReflectionTest, Reflection");
+        Type programType = Type.GetType("ReflectionTest");
         TypeInfo programTypeInfo = programType.GetTypeInfo();
 
         Type programBaseType = programTypeInfo.BaseType;

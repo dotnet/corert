@@ -16,4 +16,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_ExitProcess")]
         internal static extern void ExitProcess(int exitCode);
     }
+
+    internal static void ExitProcess(int exitCode)
+    {
+        Sys.ExitProcess(exitCode);
+    }
 }

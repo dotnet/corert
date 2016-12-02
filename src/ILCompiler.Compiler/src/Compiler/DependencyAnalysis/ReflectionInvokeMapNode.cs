@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReflectionInvokeMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__method_to_entrypoint_map_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -38,9 +38,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 

@@ -42,16 +42,6 @@ namespace ILCompiler
             return false;
         }
 
-        public override bool ShouldShareAcrossModules(MethodDesc method)
-        {
-            return true;
-        }
-
-        public override bool ShouldShareAcrossModules(TypeDesc type)
-        {
-            return true;
-        }
-
         public override bool ShouldReferenceThroughImportTable(TypeDesc type)
         {
             return false;

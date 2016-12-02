@@ -48,14 +48,10 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
-        }
-
         public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

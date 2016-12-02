@@ -58,11 +58,5 @@ namespace System
 
             return new string(newblob);
         }
-
-        public static void Exit(int exitCode)
-        {
-            // CORERT-TODO: Shut down the runtime
-            Interop.mincore.ExitProcess(exitCode);
-        }
     }
 }

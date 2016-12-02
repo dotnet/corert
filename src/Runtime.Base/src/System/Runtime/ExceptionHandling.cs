@@ -760,6 +760,10 @@ namespace System.Runtime
                     // previous dispatch.
                     if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == lastTryEnd))
                         continue;
+
+                    // We are done skipping. This is required to handle empty finally block markers that are used
+                    // to separate runs of different try blocks with same native code offsets.
+                    idxStart = MaxTryRegionIdx;
                 }
 
                 RhEHClauseKind clauseKind = ehClause._clauseKind;
@@ -861,6 +865,10 @@ namespace System.Runtime
                     // previous dispatch.
                     if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == lastTryEnd))
                         continue;
+
+                    // We are done skipping. This is required to handle empty finally block markers that are used
+                    // to separate runs of different try blocks with same native code offsets.
+                    idxStart = MaxTryRegionIdx;
                 }
 
                 RhEHClauseKind clauseKind = ehClause._clauseKind;

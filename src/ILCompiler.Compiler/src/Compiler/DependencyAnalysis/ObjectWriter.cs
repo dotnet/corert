@@ -375,14 +375,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_targetPlatform.OperatingSystem == TargetOS.Windows)
                 {
-                    _sb.Clear().Append("_unwind").Append(i.ToStringInvariant());
+                    _sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_unwind").Append(i.ToStringInvariant());
 
                     ObjectNodeSection section = ObjectNodeSection.XDataSection;
-                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
-                    {
-                        section = section.GetSharedSection(_sb.ToString());
-                        CreateCustomSection(section);
-                    }
                     SwitchSection(_nativeObjectWriter, section.Name);
 
                     byte[] blobSymbolName = _sb.Append(_currentNodeZeroTerminatedName).ToUtf8String().UnderlyingArray;
@@ -402,7 +397,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (ehInfo != null)
                     {
-                        EmitSymbolRef(_sb.Clear().Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                        EmitSymbolRef(_sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_ABSOLUTE);
                     }
 
                     if (gcInfo != null)
@@ -420,14 +415,9 @@ namespace ILCompiler.DependencyAnalysis
                         EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                         ehInfo = null;
                     }
-
-                    // TODO: Currently we get linker errors if we emit frame info for shared types.
-                    //       This needs follow-up investigation.
-                    if (!node.ShouldShareNodeAcrossModules(factory))
-                    {
-                        // For window, just emit the frame blob (UNWIND_INFO) as a whole.
-                        EmitWinFrameInfo(start, end, len, blobSymbolName);
-                    }
+                    
+                    // For window, just emit the frame blob (UNWIND_INFO) as a whole.
+                    EmitWinFrameInfo(start, end, len, blobSymbolName);
                 }
                 else
                 {
@@ -613,7 +603,15 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     Relocation reloc = relocs[nextRelocIndex];
 
-                    int size = EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
+                    long delta;
+                    unsafe
+                    {
+                        fixed (void* location = &blob[i])
+                        {
+                            delta = Relocation.ReadValue(reloc.RelocType, location);
+                        }
+                    }
+                    int size = EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
                     // Update nextRelocIndex/Offset
                     if (++nextRelocIndex < relocs.Length)
@@ -697,9 +695,23 @@ namespace ILCompiler.DependencyAnalysis
             Dispose(false);
         }
 
+        private bool ShouldShareSymbol(ObjectNode node)
+        {
+            if (_nodeFactory.CompilationModuleGroup.IsSingleFileCompilation)
+                return false;
+
+            if (!_targetPlatform.IsWindows)
+                return false;
+
+            return node.IsShareable;
+        }
+
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
-            using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
+            ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
+            bool succeeded = false;
+
+            try
             {
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
@@ -747,9 +759,8 @@ namespace ILCompiler.DependencyAnalysis
 
 
                     ObjectNodeSection section = node.Section;
-                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
+                    if (objectWriter.ShouldShareSymbol(node))
                     {
-                        Debug.Assert(node is ISymbolNode);
                         section = section.GetSharedSection(((ISymbolNode)node).GetMangledName());
                     }
 
@@ -791,7 +802,15 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             Relocation reloc = relocs[nextRelocIndex];
 
-                            int size = objectWriter.EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
+                            long delta;
+                            unsafe
+                            {
+                                fixed (void* location = &nodeContents.Data[i])
+                                {
+                                    delta = Relocation.ReadValue(reloc.RelocType, location);
+                                }
+                            }
+                            int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)
@@ -823,6 +842,25 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 objectWriter.EmitDebugModuleInfo();
+
+                succeeded = true;
+            }
+            finally
+            {
+                objectWriter.Dispose();
+
+                if (!succeeded)
+                {
+                    // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
+                    // object file around.
+                    try
+                    {
+                        File.Delete(objectFilePath);
+                    }
+                    catch
+                    {
+                    }
+                }
             }
         }
     }

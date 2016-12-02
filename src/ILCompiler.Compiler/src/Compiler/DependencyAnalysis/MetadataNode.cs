@@ -18,16 +18,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataNode()
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_metadata_End", true);
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__embedded_metadata");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__embedded_metadata");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 

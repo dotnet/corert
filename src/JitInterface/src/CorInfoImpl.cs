@@ -224,13 +224,45 @@ namespace Internal.JitInterface
             var builder = new ObjectDataBuilder();
             builder.Alignment = 1;
 
-            // TODO: Filter out duplicate clauses
+            int totalClauses = _ehClauses.Length;
 
-            builder.EmitCompressedUInt((uint)_ehClauses.Length);
+            // Count the number of special markers that will be needed
+            for (int i = 1; i < _ehClauses.Length; i++)
+            {
+                ref CORINFO_EH_CLAUSE clause = ref _ehClauses[i];
+                ref CORINFO_EH_CLAUSE previousClause = ref _ehClauses[i-1];
+
+                if ((previousClause.TryOffset == clause.TryOffset) && 
+                    (previousClause.TryLength == clause.TryLength) && 
+                    ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
+                {
+                    totalClauses++;
+                }
+            }
+
+            builder.EmitCompressedUInt((uint)totalClauses);
 
             for (int i = 0; i < _ehClauses.Length; i++)
             {
-                var clause = _ehClauses[i];
+                ref CORINFO_EH_CLAUSE clause = ref _ehClauses[i];
+
+                if (i > 0)
+                {
+                    ref CORINFO_EH_CLAUSE previousClause = ref _ehClauses[i-1];
+
+                    // If the previous clause has same try offset and length as the current clause,
+                    // but belongs to a different try block (CORINFO_EH_CLAUSE_SAMETRY is not set),
+                    // emit a special marker to allow runtime distinguish this case.
+                    if ((previousClause.TryOffset == clause.TryOffset) &&
+                        (previousClause.TryLength == clause.TryLength) && 
+                        ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
+                    {
+                        builder.EmitCompressedUInt(0);
+                        builder.EmitCompressedUInt((uint)RhEHClauseKind.RH_EH_CLAUSE_FAULT);
+                        builder.EmitCompressedUInt(0);
+                    }
+                }
+
                 RhEHClauseKind clauseKind;
 
                 if (((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT) != 0) ||
@@ -1268,6 +1300,10 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
+                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+                        if (type.IsNullable)
+                            type = type.Instantiation[0];
+
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
                     }
                     break;
@@ -1276,6 +1312,10 @@ namespace Internal.JitInterface
                         var type = HandleToObject(pResolvedToken.hClass);
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
+
+                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+                        if (type.IsNullable)
+                            type = type.Instantiation[0];
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
@@ -2552,6 +2592,15 @@ namespace Internal.JitInterface
             }
             else if (directCall)
             {
+                // If this is an intrinsic method with a callsite-specific expansion, this will replace
+                // the method with a method the intrinsic expands into. If it's not the special intrinsic,
+                // method stays unchanged.
+                if (targetMethod.IsIntrinsic)
+                {
+                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
+                }
+
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -2954,6 +3003,9 @@ namespace Internal.JitInterface
 
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
+            // slotNum is not unused
+            Debug.Assert(slotNum == 0);
+
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
@@ -2996,9 +3048,12 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+            // relocDelta is stored as the value
+            Relocation.WriteValue((RelocType)fRelocType, location, relocDelta);
+
             if (_relocs.Count == 0)
                 _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget, relocDelta));
+            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget));
         }
 
         private ushort getRelocTypeHint(void* target)
