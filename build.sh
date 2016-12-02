@@ -13,6 +13,7 @@ usage()
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
+    echo "Don't merge me"
 
     exit 1
 }
