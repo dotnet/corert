@@ -55,7 +55,7 @@ run_test_dir()
     return $?
 }
 
-CoreRT_TestRoot=$(cd "$(dirname "$0")"; pwd -P)
+CoreRT_TestRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CoreRT_CliBinDir=${CoreRT_TestRoot}/../Tools/dotnetcli
 CoreRT_BuildArch=x64
 CoreRT_BuildType=Debug
