@@ -8,6 +8,11 @@ namespace ILCompiler
 {
     public class SingleFileCompilationModuleGroup : CompilationModuleGroup
     {
+        public SingleFileCompilationModuleGroup(TypeSystemContext context)
+            : base(context)
+        {
+        }
+
         public override bool ContainsType(TypeDesc type)
         {
             return true;
