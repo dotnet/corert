@@ -159,35 +159,38 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (MetadataType t in ((EcmaType)type).EcmaModule.GetAllTypes())
+                    if (!_mangledTypeNames.ContainsKey(type))
                     {
-                        string name = t.GetFullName();
-
-                        // Include encapsulating type
-                        DefType containingType = t.ContainingType;
-                        while (containingType != null)
+                        foreach (MetadataType t in ((EcmaType)type).EcmaModule.GetAllTypes())
                         {
-                            name = containingType.GetFullName() + "_" + name;
-                            containingType = containingType.ContainingType;
-                        }
+                            string name = t.GetFullName();
 
-                        name = SanitizeName(name, true);
+                            // Include encapsulating type
+                            DefType containingType = t.ContainingType;
+                            while (containingType != null)
+                            {
+                                name = containingType.GetFullName() + "_" + name;
+                                containingType = containingType.ContainingType;
+                            }
 
-                        if (_mangleForCplusPlus)
-                        {
-                            // Always generate a fully qualified name
-                            name = "::" + prependAssemblyName + "::" + name;
-                        }
-                        else
-                        {
-                            name = prependAssemblyName + "_" + name;
-                        }
+                            name = SanitizeName(name, true);
 
-                        // Ensure that name is unique and update our tables accordingly.
-                        name = DisambiguateName(name, deduplicator);
-                        deduplicator.Add(name);
-                        _mangledTypeNames = _mangledTypeNames.Add(t, name);
-                    }
+                            if (_mangleForCplusPlus)
+                            {
+                                // Always generate a fully qualified name
+                                name = "::" + prependAssemblyName + "::" + name;
+                            }
+                            else
+                            {
+                                name = prependAssemblyName + "_" + name;
+                            }
+
+                            // Ensure that name is unique and update our tables accordingly.
+                            name = DisambiguateName(name, deduplicator);
+                            deduplicator.Add(name);
+                            _mangledTypeNames = _mangledTypeNames.Add(t, name);
+                        }
+                    }                    
                 }
 
                 return _mangledTypeNames[type];
@@ -250,7 +253,8 @@ namespace ILCompiler
             lock (this)
             {
                 // Ensure that name is unique and update our tables accordingly.
-                _mangledTypeNames = _mangledTypeNames.Add(type, mangledName);
+                if (!_mangledTypeNames.ContainsKey(type))
+                    _mangledTypeNames = _mangledTypeNames.Add(type, mangledName);
             }
 
             return mangledName;
@@ -281,17 +285,20 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (var m in method.OwningType.GetMethods())
+                    if (!_mangledMethodNames.ContainsKey(method))
                     {
-                        string name = SanitizeName(m.Name);
+                        foreach (var m in method.OwningType.GetMethods())
+                        {
+                            string name = SanitizeName(m.Name);
 
-                        name = DisambiguateName(name, deduplicator);
-                        deduplicator.Add(name);
+                            name = DisambiguateName(name, deduplicator);
+                            deduplicator.Add(name);
 
-                        if (prependTypeName != null)
-                            name = prependTypeName + "__" + name;
+                            if (prependTypeName != null)
+                                name = prependTypeName + "__" + name;
 
-                        _mangledMethodNames = _mangledMethodNames.Add(m, name);
+                            _mangledMethodNames = _mangledMethodNames.Add(m, name);
+                        }
                     }
                 }
 
@@ -332,7 +339,8 @@ namespace ILCompiler
 
             lock (this)
             {
-                _mangledMethodNames = _mangledMethodNames.Add(method, utf8MangledName);
+                if (!_mangledMethodNames.ContainsKey(method))
+                    _mangledMethodNames = _mangledMethodNames.Add(method, utf8MangledName);
             }
 
             return utf8MangledName;
@@ -363,17 +371,20 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (var f in field.OwningType.GetFields())
+                    if (!_mangledFieldNames.ContainsKey(field))
                     {
-                        string name = SanitizeName(f.Name);
+                        foreach (var f in field.OwningType.GetFields())
+                        {
+                            string name = SanitizeName(f.Name);
 
-                        name = DisambiguateName(name, deduplicator);
-                        deduplicator.Add(name);
+                            name = DisambiguateName(name, deduplicator);
+                            deduplicator.Add(name);
 
-                        if (prependTypeName != null)
-                            name = prependTypeName + "__" + name;
+                            if (prependTypeName != null)
+                                name = prependTypeName + "__" + name;
 
-                        _mangledFieldNames = _mangledFieldNames.Add(f, name);
+                            _mangledFieldNames = _mangledFieldNames.Add(f, name);
+                        }
                     }
                 }
 
@@ -390,7 +401,8 @@ namespace ILCompiler
 
             lock (this)
             {
-                _mangledFieldNames = _mangledFieldNames.Add(field, utf8MangledName);
+                if (!_mangledFieldNames.ContainsKey(field))
+                    _mangledFieldNames = _mangledFieldNames.Add(field, utf8MangledName);
             }
 
             return utf8MangledName;
@@ -425,7 +437,8 @@ namespace ILCompiler
 
             lock (this)
             {
-                _mangledStringLiterals = _mangledStringLiterals.Add(literal, mangledName);
+                if (!_mangledStringLiterals.ContainsKey(literal))
+                    _mangledStringLiterals = _mangledStringLiterals.Add(literal, mangledName);
             }
 
             return mangledName;
