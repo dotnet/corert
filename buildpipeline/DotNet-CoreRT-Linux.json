@@ -119,7 +119,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
       }
@@ -155,7 +155,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w $(GitDirectory) --name $(DockerContainerName) $(DockerContainerName) git checkout $(SourceVersion)",
+        "arguments": "run -w $(GitDirectory) --name $(DockerContainerName) $(DockerModifiedImageName) git checkout $(SourceVersion)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -173,7 +173,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
       }
@@ -209,7 +209,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/cibuild/clean.sh",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/cibuild/clean.sh",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -227,7 +227,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -263,7 +263,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build.sh $(Platform) $(Configuration)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/build.sh $(Platform) $(Configuration)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -281,7 +281,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -317,7 +317,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/publish-packages.sh",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/publish-packages.sh",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -514,9 +514,6 @@
       "value": "Release",
       "allowOverride": true
     },
-    "TeamName": {
-      "value": "DotNetCore"
-    },
     "SignType": {
       "value": "test",
       "allowOverride": true
@@ -550,6 +547,9 @@
       "value": "/root/corert"
     },
     "DockerContainerName": {
+      "value": "$(Build.BuildId)"
+    },
+    "DockerModifiedImageName": {
       "value": "$(Build.BuildId)"
     },
     "DockerImageName": {
