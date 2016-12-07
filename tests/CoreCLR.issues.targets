@@ -928,42 +928,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_simpleoddpower_il_d\_simpleoddpower_il_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_simpleoddpower_il_r\_simpleoddpower_il_r.*" />
 
-    <!-- Object synchronization method was called from an unsynchronized block of code -->
-    <!-- https://github.com/dotnet/corert/issues/2262 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxenum_d\boxunboxenum_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxenum_do\boxunboxenum_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxenum_r\boxunboxenum_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxenum_ro\boxunboxenum_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxinterface_d\boxunboxinterface_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxinterface_do\boxunboxinterface_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxinterface_r\boxunboxinterface_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\boxunboxinterface_ro\boxunboxinterface_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassenum_d\castclassenum_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassenum_do\castclassenum_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassenum_r\castclassenum_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassenum_ro\castclassenum_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassinterface_d\castclassinterface_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassinterface_do\castclassinterface_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassinterface_r\castclassinterface_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassinterface_ro\castclassinterface_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassvaluetype_d\castclassvaluetype_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassvaluetype_do\castclassvaluetype_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassvaluetype_r\castclassvaluetype_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\castclassvaluetype_ro\castclassvaluetype_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\Desktop\boxunboxvaluetype_do\boxunboxvaluetype_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\Desktop\boxunboxvaluetype_r\boxunboxvaluetype_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\nullabletypes\Desktop\boxunboxvaluetype_ro\boxunboxvaluetype_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b10828\b10828\b10828.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\529206\vsw529206StaticCctor\vsw529206StaticCctor.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowInlinedStatic\CctorThrowInlinedStatic.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowLDFTNStaticMethod\CctorThrowLDFTNStaticMethod.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowMethodAccess\CctorThrowMethodAccess.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowStaticField\CctorThrowStaticField.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowStaticFieldBFI\CctorThrowStaticFieldBFI.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\TypeLoadInitExcep\TypeLoadInitExcep.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\TypeLoadInitExcepBFI\TypeLoadInitExcepBFI.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CoreCLR\CctorThrowStaticFieldBFI\CctorThrowStaticFieldBFI.*" />
-
     <!-- LNK2001: unresolved external symbol CCWAddRef -->
     <!--  https://github.com/dotnet/corert/issues/1497 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\AddMemoryPressureTest\AddMemoryPressureTest.*" />
