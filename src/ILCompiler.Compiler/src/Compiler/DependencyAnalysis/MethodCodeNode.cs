@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -18,6 +19,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
+        private byte[] _gcInfo;
         private ObjectData _ehInfo;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -25,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         public MethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
+            Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             _method = method;
         }
 
@@ -34,17 +37,9 @@ namespace ILCompiler.DependencyAnalysis
             _methodCode = data;
         }
 
-        public MethodDesc Method
-        {
-            get
-            {
-                return _method;
-            }
-        }
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        public MethodDesc Method =>  _method;
+
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectNodeSection Section
         {
@@ -53,35 +48,15 @@ namespace ILCompiler.DependencyAnalysis
                 return _method.Context.Target.IsWindows ? WindowsContentSection : UnixContentSection;
             }
         }
+        
+        public override bool StaticDependenciesAreComputed => _methodCode != null;
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_method);
+            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
         }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return _methodCode != null;
-            }
-        }
-
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return NodeFactory.NameMangler.GetMangledMethodName(_method);
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public int Offset => 0;
+        public override bool IsShareable => _method is InstantiatedMethod || EETypeNode.IsTypeNodeShareable(_method.OwningType);
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -106,6 +81,24 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
+            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
+            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
+            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
+            if (factory.MetadataManager.HasReflectionInvokeStub(_method)
+                && !_method.IsCanonicalMethod(CanonicalFormKind.Any) /* Shared generics handled in the shadow concrete method node */)
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
+                MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
+                MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (invokeStub != canonInvokeStub)
+                    dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                else
+                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+            }
+
             return dependencies;
         }
 
@@ -114,26 +107,20 @@ namespace ILCompiler.DependencyAnalysis
             return _methodCode;
         }
 
-        public FrameInfo[] FrameInfos
-        {
-            get
-            {
-                return _frameInfos;
-            }
-        }
-
-        public ObjectData EHInfo
-        {
-            get
-            {
-                return _ehInfo;
-            }
-        }
+        public FrameInfo[] FrameInfos => _frameInfos;
+        public byte[] GCInfo => _gcInfo;
+        public ObjectData EHInfo => _ehInfo;
 
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {
             Debug.Assert(_frameInfos == null);
             _frameInfos = frameInfos;
+        }
+
+        public void InitializeGCInfo(byte[] gcInfo)
+        {
+            Debug.Assert(_gcInfo == null);
+            _gcInfo = gcInfo;
         }
 
         public void InitializeEHInfo(ObjectData ehInfo)
@@ -142,21 +129,8 @@ namespace ILCompiler.DependencyAnalysis
             _ehInfo = ehInfo;
         }
 
-        public DebugLocInfo[] DebugLocInfos
-        {
-            get
-            {
-                return _debugLocInfos;
-            }
-        }
-
-        public DebugVarInfo[] DebugVarInfos
-        {
-            get
-            {
-                return _debugVarInfos;
-            }
-        }
+        public DebugLocInfo[] DebugLocInfos => _debugLocInfos;
+        public DebugVarInfo[] DebugVarInfos => _debugVarInfos;
 
         public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
         {

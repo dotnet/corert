@@ -10,7 +10,7 @@ using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
-    internal class VirtualMethodSlotHelper
+    internal static class VirtualMethodSlotHelper
     {
         /// <summary>
         /// Given a virtual method decl, return its VTable slot if the method is used on its containing type.
@@ -20,15 +20,12 @@ namespace ILCompiler
         {
             // TODO: More efficient lookup of the slot
             TypeDesc owningType = method.OwningType;
-            int baseSlots = 0;
-            var baseType = owningType.BaseType;
+            int baseSlots = GetNumberOfBaseSlots(factory, owningType);
 
-            while (baseType != null)
-            {
-                IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
-                baseSlots += baseVirtualSlots.Count;
-                baseType = baseType.BaseType;
-            }
+            // For types that have a generic dictionary, the introduced virtual method slots are
+            // prefixed with a pointer to the generic dictionary.
+            if (owningType.HasGenericDictionarySlot())
+                baseSlots++;
 
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(owningType).Slots;
             int methodSlot = -1;
@@ -42,6 +39,52 @@ namespace ILCompiler
             }
 
             return methodSlot == -1 ? -1 : baseSlots + methodSlot;
+        }
+
+        private static int GetNumberOfBaseSlots(NodeFactory factory, TypeDesc owningType)
+        {
+            int baseSlots = 0;
+            TypeDesc baseType = owningType.BaseType;
+
+            while (baseType != null)
+            {
+                // Normalize the base type. Necessary to make this work with the lazy vtable slot
+                // concept - if we start with a canonical type, the base type could end up being
+                // something like Base<__Canon, string>. We would get "0 slots used" for weird
+                // base types like this.
+                baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                // For types that have a generic dictionary, the introduced virtual method slots are
+                // prefixed with a pointer to the generic dictionary.
+                if (baseType.HasGenericDictionarySlot())
+                    baseSlots++;
+
+                IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
+                baseSlots += baseVirtualSlots.Count;
+
+                baseType = baseType.BaseType;
+            }
+
+            return baseSlots;
+        }
+
+        /// <summary>
+        /// Gets the vtable slot that holds the generic dictionary of this type.
+        /// </summary>
+        public static int GetGenericDictionarySlot(NodeFactory factory, TypeDesc type)
+        {
+            Debug.Assert(type.HasGenericDictionarySlot());
+            return GetNumberOfBaseSlots(factory, type);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the virtual method slots introduced by this type are prefixed
+        /// by a pointer to the generic dictionary of the type.
+        /// </summary>
+        public static bool HasGenericDictionarySlot(this TypeDesc type)
+        {
+            return !type.IsInterface &&
+                (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type || type.IsCanonicalSubtype(CanonicalFormKind.Any));
         }
     }
 }

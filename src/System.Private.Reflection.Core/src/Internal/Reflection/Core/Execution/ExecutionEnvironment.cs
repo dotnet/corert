@@ -67,27 +67,27 @@ namespace Internal.Reflection.Core.Execution
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
         public abstract bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle);
 
-        public abstract bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles);
-        public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
+        public abstract bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle);
+        public abstract bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle);
 
-        public abstract bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name);
+        public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
 
         //==============================================================================================
         // Invoke and field access support.
         //==============================================================================================
         public abstract MethodInvoker TryGetMethodInvoker(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
-        public abstract FieldAccessor TryGetFieldAccessor(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle);
+        public abstract FieldAccessor TryGetFieldAccessor(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle);
 
         //==============================================================================================
         // Pseudo Custom Attributes
         //==============================================================================================
-        public abstract IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, MethodHandle methodHandle, TypeDefinitionHandle declaringTypeHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, ParameterHandle parameterHandle, MethodHandle declaringMethodHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, FieldHandle fieldHandle, TypeDefinitionHandle declaringTypeHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, PropertyHandle propertyHandle, TypeDefinitionHandle declaringTypeHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPsuedoCustomAttributes(MetadataReader reader, EventHandle eventHandle, TypeDefinitionHandle declaringTypeHandle);
+        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle);
+        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle);
+        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, MethodHandle methodHandle, TypeDefinitionHandle declaringTypeHandle);
+        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, ParameterHandle parameterHandle, MethodHandle declaringMethodHandle);
+        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, FieldHandle fieldHandle, TypeDefinitionHandle declaringTypeHandle);
+        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, PropertyHandle propertyHandle, TypeDefinitionHandle declaringTypeHandle);
+        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, EventHandle eventHandle, TypeDefinitionHandle declaringTypeHandle);
 
         //==============================================================================================
         // RuntimeMethodHandle and RuntimeFieldHandle support.
@@ -110,11 +110,6 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         public abstract MethodInvoker GetSyntheticMethodInvoker(RuntimeTypeHandle thisType, RuntimeTypeHandle[] parameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker);
         public abstract bool IsCOMObject(Type type);
-
-        //==============================================================================================
-        // Generic Virtual Method Support
-        //==============================================================================================
-        public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref IntPtr methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
 
         //==============================================================================================
         // Non-public methods

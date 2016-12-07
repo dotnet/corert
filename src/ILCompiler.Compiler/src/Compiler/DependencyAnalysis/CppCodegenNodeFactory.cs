@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
         {
             // TODO: this is wrong: this returns an assembly stub node
-            return new ReadyToRunHelperNode(helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
     }
 }

@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -41,26 +41,17 @@ namespace ILCompiler.DependencyAnalysis
             _items.Add(new HeaderItem(id, node, startSymbol, endSymbol));
         }
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__ReadyToRunHeader";
-            }
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            sb.Append("__ReadyToRunHeader");
         }
+        public int Offset => 0;
+        public override bool IsShareable => false;
 
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectNodeSection Section
         {
@@ -73,21 +64,15 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public int Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
             builder.Alignment = factory.Target.PointerSize;
             builder.DefinedSymbols.Add(this);
 
-            _items.Sort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
+            // Don't bother sorting if we're not emitting the contents
+            if (!relocsOnly)
+                _items.Sort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
 
             // ReadyToRunHeader.Magic
             builder.EmitInt((int)(ReadyToRunHeaderConstants.Signature));

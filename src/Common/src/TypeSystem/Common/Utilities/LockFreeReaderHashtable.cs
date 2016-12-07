@@ -78,8 +78,6 @@ namespace Internal.TypeSystem
         /// Used to ensure that the hashtable can function with
         /// fairly poor initial hash codes.
         /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
         public static int HashInt1(int key)
         {
             unchecked
@@ -238,9 +236,7 @@ namespace Internal.TypeSystem
             if (value == null)
                 throw new ArgumentNullException();
 
-#if !TYPE_SYSTEM_SINGLE_THREADED
             lock (this)
-#endif
             {
                 // Check to see if adding this value may require a resize. If so, expand
                 // the table now.

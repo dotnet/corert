@@ -51,7 +51,7 @@ namespace System.Text
         internal char[] m_ChunkChars;                // The characters in this block
         internal StringBuilder m_ChunkPrevious;      // Link to the block logically before this block
         internal int m_ChunkLength;                  // The index in m_ChunkChars that represent the end of the block
-        internal int m_ChunkOffset;                  // The logial offset (sum of all characters in previous blocks)
+        internal int m_ChunkOffset;                  // The logical offset (sum of all characters in previous blocks)
         internal int m_MaxCapacity = 0;
 
         //
@@ -119,17 +119,17 @@ namespace System.Text
         {
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException("capacity",
-                                                      SR.Format(SR.ArgumentOutOfRange_MustBePositive, "capacity"));
+                throw new ArgumentOutOfRangeException(nameof(capacity),
+                                                      SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(capacity)));
             }
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length",
-                                                      SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, "length"));
+                throw new ArgumentOutOfRangeException(nameof(length),
+                                                      SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(length)));
             }
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
 
             if (value == null)
@@ -138,7 +138,7 @@ namespace System.Text
             }
             if (startIndex > value.Length - length)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_IndexLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
             }
             m_MaxCapacity = Int32.MaxValue;
             if (capacity == 0)
@@ -164,16 +164,16 @@ namespace System.Text
         {
             if (capacity > maxCapacity)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_Capacity);
             }
             if (maxCapacity < 1)
             {
-                throw new ArgumentOutOfRangeException("maxCapacity", SR.ArgumentOutOfRange_SmallMaxCapacity);
+                throw new ArgumentOutOfRangeException(nameof(maxCapacity), SR.ArgumentOutOfRange_SmallMaxCapacity);
             }
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException("capacity",
-                                                      SR.Format(SR.ArgumentOutOfRange_MustBePositive, "capacity"));
+                throw new ArgumentOutOfRangeException(nameof(capacity),
+                                                      SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(capacity)));
             }
 
             if (capacity == 0)
@@ -192,15 +192,15 @@ namespace System.Text
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NegativeCapacity);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NegativeCapacity);
                 }
                 if (value > MaxCapacity)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Capacity);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Capacity);
                 }
                 if (value < Length)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_SmallCapacity);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 }
 
                 if (Capacity != value)
@@ -226,7 +226,7 @@ namespace System.Text
         {
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NegativeCapacity);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
             }
 
             if (Capacity < capacity)
@@ -280,19 +280,19 @@ namespace System.Text
             int currentLength = this.Length;
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
             if (startIndex > currentLength)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndexLargerThanLength);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
             }
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
             if (startIndex > (currentLength - length))
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_IndexLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
             }
 
             StringBuilder chunk = this;
@@ -369,12 +369,12 @@ namespace System.Text
                 //If the new length is less than 0 or greater than our Maximum capacity, bail.
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NegativeLength);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NegativeLength);
                 }
 
                 if (value > MaxCapacity)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_SmallCapacity);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 }
 
                 int originalCapacity = Capacity;
@@ -444,13 +444,13 @@ namespace System.Text
                     if (indexInBlock >= 0)
                     {
                         if (indexInBlock >= chunk.m_ChunkLength)
-                            throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                            throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                         chunk.m_ChunkChars[indexInBlock] = value;
                         return;
                     }
                     chunk = chunk.m_ChunkPrevious;
                     if (chunk == null)
-                        throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                        throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                 }
             }
         }
@@ -460,13 +460,22 @@ namespace System.Text
         {
             if (repeatCount < 0)
             {
-                throw new ArgumentOutOfRangeException("repeatCount", SR.ArgumentOutOfRange_NegativeCount);
+                throw new ArgumentOutOfRangeException(nameof(repeatCount), SR.ArgumentOutOfRange_NegativeCount);
             }
 
             if (repeatCount == 0)
             {
                 return this;
             }
+
+            // this is where we can check if the repeatCount will put us over m_MaxCapacity
+            // We are doing the check here to prevent the corruption of the StringBuilder.
+            int newLength = Length + repeatCount;
+            if (newLength > m_MaxCapacity || newLength < repeatCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(repeatCount), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
+            }
+
             int idx = m_ChunkLength;
             while (repeatCount > 0)
             {
@@ -491,7 +500,7 @@ namespace System.Text
         {
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_GenericPositive);
             }
             if (charCount < 0)
             {
@@ -504,7 +513,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (charCount > value.Length - startIndex)
             {
@@ -582,11 +591,11 @@ namespace System.Text
         {
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GenericPositive);
             }
 
             //If the value being added is null, eat the null
@@ -597,7 +606,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (count == 0)
@@ -607,7 +616,7 @@ namespace System.Text
 
             if (startIndex > value.Length - count)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
             unsafe
@@ -733,7 +742,7 @@ namespace System.Text
         {
             if (destination == null)
             {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
 
             int count = Length;
@@ -773,18 +782,18 @@ namespace System.Text
         {
             if (destination == null)
             {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Arg_NegativeArgCount);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Arg_NegativeArgCount);
             }
 
             if (destinationIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("destinationIndex",
-                    SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, "destinationIndex"));
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex),
+                    SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
             }
 
             if (destinationIndex > destination.Length - count)
@@ -794,7 +803,7 @@ namespace System.Text
 
             if ((uint)sourceIndex > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException("sourceIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
             }
 
             if (sourceIndex > Length - count)
@@ -840,14 +849,14 @@ namespace System.Text
         {
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             //Range check the index.
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             //If value is null, empty or count is 0, do nothing. This is ECMA standard.
@@ -890,12 +899,12 @@ namespace System.Text
         {
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
 
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
 
             if (length > Length - startIndex)
@@ -1054,7 +1063,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             if (value != null)
@@ -1131,7 +1140,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             if (value != null)
@@ -1148,7 +1157,7 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             //If they passed in a null char array, just jump out quickly.
@@ -1158,13 +1167,13 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException("value", SR.ArgumentNull_String);
+                throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
             }
 
             //Range check the array.
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
 
             if (charCount < 0)
@@ -1174,7 +1183,7 @@ namespace System.Text
 
             if (startIndex > value.Length - charCount)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
             if (charCount > 0)
@@ -1299,7 +1308,7 @@ namespace System.Text
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(null, format, new ParamsArray(args));
@@ -1326,7 +1335,7 @@ namespace System.Text
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(provider, format, new ParamsArray(args));
@@ -1340,7 +1349,7 @@ namespace System.Text
         internal StringBuilder AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args)
         {
             if (format == null)
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
 
             int pos = 0;
             int len = format.Length;
@@ -1453,16 +1462,16 @@ namespace System.Text
                                     break; 
                                 } 
                             }
-                        }
 
-                        // Reaching here means the brace has been escaped 
-                        // so we need to build up the format string in segments 
-                        if (unescapedItemFormat == null)
-                        {
-                            unescapedItemFormat = new StringBuilder();
+                            // Reaching here means the brace has been escaped 
+                            // so we need to build up the format string in segments 
+                            if (unescapedItemFormat == null)
+                            {
+                                unescapedItemFormat = new StringBuilder();
+                            }
+                            unescapedItemFormat.Append(format, startPos, pos - startPos - 1);
+                            startPos = pos;
                         }
-                        unescapedItemFormat.Append(format, startPos, pos - startPos - 1);
-                        startPos = pos;
                     }
 
                     if (unescapedItemFormat == null || unescapedItemFormat.Length == 0) 
@@ -1571,19 +1580,19 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
             if (count < 0 || startIndex > currentLength - count)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Index);
             }
             if (oldValue == null)
             {
-                throw new ArgumentNullException("oldValue");
+                throw new ArgumentNullException(nameof(oldValue));
             }
             if (oldValue.Length == 0)
             {
-                throw new ArgumentException(SR.Argument_EmptyName, "oldValue");
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(oldValue));
             }
 
             if (newValue == null)
@@ -1656,12 +1665,12 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
             if (count < 0 || startIndex > currentLength - count)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Index);
             }
 
             int endIndex = startIndex + count;
@@ -1697,7 +1706,15 @@ namespace System.Text
             // We don't check null value as this case will throw null reference exception anyway
             if (valueCount < 0)
             {
-                throw new ArgumentOutOfRangeException("valueCount", SR.ArgumentOutOfRange_NegativeCount);
+                throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_NegativeCount);
+            }
+
+            // this is where we can check if the valueCount will put us over m_MaxCapacity
+            // We are doing the check here to prevent the corruption of the StringBuilder.
+            int newLength = Length + valueCount;
+            if (newLength > m_MaxCapacity || newLength < valueCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             }
 
             // This case is so common we want to optimize for it heavily. 
@@ -1736,7 +1753,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             if (valueCount > 0)
@@ -1881,7 +1898,7 @@ namespace System.Text
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("destinationIndex", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_Index);
                 }
             }
         }
@@ -1900,7 +1917,7 @@ namespace System.Text
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("sourceIndex", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
                 }
             }
         }
@@ -1919,7 +1936,7 @@ namespace System.Text
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("sourceIndex", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
                 }
             }
         }

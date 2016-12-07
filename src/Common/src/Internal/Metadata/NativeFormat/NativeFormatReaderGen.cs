@@ -4037,6 +4037,113 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // FixedArgumentHandle
 
+    public partial struct FunctionPointerSignature
+    {
+        internal MetadataReader _reader;
+        internal FunctionPointerSignatureHandle _handle;
+
+        public FunctionPointerSignatureHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        } // Handle
+
+        public MethodSignatureHandle Signature
+        {
+            get
+            {
+                return _signature;
+            }
+        } // Signature
+
+        internal MethodSignatureHandle _signature;
+    } // FunctionPointerSignature
+
+    public partial struct FunctionPointerSignatureHandle
+    {
+        public override bool Equals(object obj)
+        {
+            if (obj is FunctionPointerSignatureHandle)
+                return _value == ((FunctionPointerSignatureHandle)obj)._value;
+            else if (obj is Handle)
+                return _value == ((Handle)obj)._value;
+            else
+                return false;
+        } // Equals
+
+        public bool Equals(FunctionPointerSignatureHandle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public bool Equals(Handle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public override int GetHashCode()
+        {
+            return (int)_value;
+        } // GetHashCode
+
+        internal int _value;
+
+        internal FunctionPointerSignatureHandle(Handle handle) : this(handle._value)
+        {
+        }
+
+        internal FunctionPointerSignatureHandle(int value)
+        {
+            HandleType hType = (HandleType)(value >> 24);
+            if (!(hType == 0 || hType == HandleType.FunctionPointerSignature || hType == HandleType.Null))
+                throw new ArgumentException();
+            _value = (value & 0x00FFFFFF) | (((int)HandleType.FunctionPointerSignature) << 24);
+            _Validate();
+        }
+
+        public static implicit operator  Handle(FunctionPointerSignatureHandle handle)
+        {
+            return new Handle(handle._value);
+        } // Handle
+
+        internal int Offset
+        {
+            get
+            {
+                return (this._value & 0x00FFFFFF);
+            }
+        } // Offset
+
+        public FunctionPointerSignature GetFunctionPointerSignature(MetadataReader reader)
+        {
+            return reader.GetFunctionPointerSignature(this);
+        } // GetFunctionPointerSignature
+
+        public bool IsNull(MetadataReader reader)
+        {
+            return reader.IsNull(this);
+        } // IsNull
+
+        public Handle ToHandle(MetadataReader reader)
+        {
+            return reader.ToHandle(this);
+        } // ToHandle
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal void _Validate()
+        {
+            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.FunctionPointerSignature)
+                throw new ArgumentException();
+        } // _Validate
+
+        public override String ToString()
+        {
+            return String.Format("{0:X8}", _value);
+        } // ToString
+    } // FunctionPointerSignatureHandle
+
     public partial struct GenericParameter
     {
         internal MetadataReader _reader;
@@ -6643,6 +6750,26 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamespaceDefinitionHandle _rootNamespaceDefinition;
 
+        public QualifiedMethodHandle EntryPoint
+        {
+            get
+            {
+                return _entryPoint;
+            }
+        } // EntryPoint
+
+        internal QualifiedMethodHandle _entryPoint;
+
+        public TypeDefinitionHandle GlobalModuleType
+        {
+            get
+            {
+                return _globalModuleType;
+            }
+        } // GlobalModuleType
+
+        internal TypeDefinitionHandle _globalModuleType;
+
         public CustomAttributeHandleCollection CustomAttributes
         {
             get
@@ -7579,7 +7706,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeInstantiationSignature, SZArraySignature, ArraySignature, PointerSignature, ByReferenceSignature, TypeVariableSignature, MethodTypeVariableSignature
+        /// One of: TypeDefinition, TypeReference, TypeInstantiationSignature, SZArraySignature, ArraySignature, PointerSignature, FunctionPointerSignature, ByReferenceSignature, TypeVariableSignature, MethodTypeVariableSignature
 
         public Handle Signature
         {
@@ -10382,6 +10509,11 @@ namespace Internal.Metadata.NativeFormat
             return new FixedArgumentHandle(this);
         } // ToFixedArgumentHandle
 
+        public FunctionPointerSignatureHandle ToFunctionPointerSignatureHandle(MetadataReader reader)
+        {
+            return new FunctionPointerSignatureHandle(this);
+        } // ToFunctionPointerSignatureHandle
+
         public GenericParameterHandle ToGenericParameterHandle(MetadataReader reader)
         {
             return new GenericParameterHandle(this);
@@ -10984,6 +11116,16 @@ namespace Internal.Metadata.NativeFormat
             return record;
         } // GetFixedArgument
 
+        public FunctionPointerSignature GetFunctionPointerSignature(FunctionPointerSignatureHandle handle)
+        {
+            FunctionPointerSignature record;
+            record._reader = this;
+            record._handle = handle;
+            var offset = (uint)handle.Offset;
+            offset = _streamReader.Read(offset, out record._signature);
+            return record;
+        } // GetFunctionPointerSignature
+
         public GenericParameter GetGenericParameter(GenericParameterHandle handle)
         {
             GenericParameter record;
@@ -11234,6 +11376,8 @@ namespace Internal.Metadata.NativeFormat
             offset = _streamReader.Read(offset, out record._publicKey);
             offset = _streamReader.Read(offset, out record._culture);
             offset = _streamReader.Read(offset, out record._rootNamespaceDefinition);
+            offset = _streamReader.Read(offset, out record._entryPoint);
+            offset = _streamReader.Read(offset, out record._globalModuleType);
             offset = _streamReader.Read(offset, out record._customAttributes);
             return record;
         } // GetScopeDefinition
@@ -11514,6 +11658,11 @@ namespace Internal.Metadata.NativeFormat
         } // ToHandle
 
         internal Handle ToHandle(FixedArgumentHandle handle)
+        {
+            return new Handle(handle._value);
+        } // ToHandle
+
+        internal Handle ToHandle(FunctionPointerSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // ToHandle
@@ -11833,6 +11982,11 @@ namespace Internal.Metadata.NativeFormat
             return new FixedArgumentHandle(handle._value);
         } // ToFixedArgumentHandle
 
+        internal FunctionPointerSignatureHandle ToFunctionPointerSignatureHandle(Handle handle)
+        {
+            return new FunctionPointerSignatureHandle(handle._value);
+        } // ToFunctionPointerSignatureHandle
+
         internal GenericParameterHandle ToGenericParameterHandle(Handle handle)
         {
             return new GenericParameterHandle(handle._value);
@@ -12144,6 +12298,11 @@ namespace Internal.Metadata.NativeFormat
         } // IsNull
 
         internal bool IsNull(FixedArgumentHandle handle)
+        {
+            return (handle._value & 0x00FFFFFF) == 0;
+        } // IsNull
+
+        internal bool IsNull(FunctionPointerSignatureHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull

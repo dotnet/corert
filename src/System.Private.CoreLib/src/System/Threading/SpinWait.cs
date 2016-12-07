@@ -8,10 +8,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime;
-using System.Threading;
 
 namespace System.Threading
 {
@@ -189,7 +187,7 @@ namespace System.Threading
 #endif
             SpinUntil(condition, Timeout.Infinite);
 #if DEBUG
-            Contract.Assert(result);
+            Debug.Assert(result);
 #endif
         }
 
@@ -212,7 +210,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -234,11 +232,11 @@ namespace System.Threading
             if (millisecondsTimeout < Timeout.Infinite)
             {
                 throw new ArgumentOutOfRangeException(
-                   "millisecondsTimeout", millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
+                   nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
             if (condition == null)
             {
-                throw new ArgumentNullException("condition", SR.SpinWait_SpinUntil_ArgumentNull);
+                throw new ArgumentNullException(nameof(condition), SR.SpinWait_SpinUntil_ArgumentNull);
             }
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)
@@ -303,7 +301,7 @@ namespace System.Threading
                     s_lastProcessorCountRefreshTicks = now;
                 }
 
-                Contract.Assert(procCount > 0 && procCount <= 64,
+                Debug.Assert(procCount > 0 && procCount <= 64,
                     "Processor count not within the expected range (1 - 64).");
 
                 return procCount;

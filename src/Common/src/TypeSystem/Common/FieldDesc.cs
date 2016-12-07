@@ -9,7 +9,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class FieldDesc
+    public abstract partial class FieldDesc : TypeSystemEntity
     {
         public readonly static FieldDesc[] EmptyFields = new FieldDesc[0];
 
@@ -32,11 +32,6 @@ namespace Internal.TypeSystem
             {
                 return null;
             }
-        }
-
-        public abstract TypeSystemContext Context
-        {
-            get;
         }
 
         public abstract DefType OwningType

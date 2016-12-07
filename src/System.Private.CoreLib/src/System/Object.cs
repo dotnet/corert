@@ -15,6 +15,7 @@
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 using Internal.Reflection.Core.NonPortable;
@@ -67,15 +68,6 @@ namespace System
             {
                 return (EEType*)m_pEEType;
             }
-        }
-
-        internal unsafe int GetArrayLength()
-        {
-            Debug.Assert(EEType->IsArray, "this is only supported on arrays");
-
-            // m_numComponents is an int field that is directly after _pEEType
-            fixed (IntPtr* ptr = &m_pEEType)
-                return *(int*)(ptr + 1);
         }
 #endif
 
@@ -144,25 +136,15 @@ namespace System
             }
         }
 
-        // If you use C#'s 'fixed' statement to get the address of m_pEEType, you want to pass it into this
-        // function to get the address of the first field.  NOTE: If you use GetAddrOfPinnedObject instead,
-        // C# may optimize away the pinned local, producing incorrect results.
-        static internal unsafe IntPtr GetAddrOfPinnedObjectFromEETypeField(IntPtr* ppEEType)
-        {
-            return (IntPtr)((byte*)ppEEType + sizeof(void*));
-        }
-
         protected object MemberwiseClone()
         {
             return RuntimeImports.RhMemberwiseClone(this);
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         private class RawData
         {
-// Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
-#pragma warning disable 649
             public byte Data;
-#pragma warning restore
         }
 
         internal ref byte GetRawData()

@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using Internal.Reflection.Augments;
+using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -47,6 +48,7 @@ namespace System.Reflection
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
         public virtual bool ContainsGenericParameters => false;
 
+        [DebuggerStepThrough]
         public object Invoke(object obj, object[] parameters) => Invoke(obj, BindingFlags.Default, binder: null, parameters: parameters, culture: null);
         public abstract object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
@@ -55,6 +57,10 @@ namespace System.Reflection
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle, declaringType);
 
         public static MethodBase GetCurrentMethod() { throw new NotImplementedException(); }
+
+        public virtual bool IsSecurityCritical { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecuritySafeCritical { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
 
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => GetHashCode();
@@ -79,5 +85,8 @@ namespace System.Reflection
         }
 
         public static bool operator !=(MethodBase left, MethodBase right) => !(left == right);
+
+        // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
+        public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
     }
 }

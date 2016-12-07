@@ -11,10 +11,6 @@
 #include "regdisplay.h"
 #include "config.h"
 
-#if !HAVE_LIBUNWIND_H
-#error Don't know how to unwind on this platform
-#endif
-
 #include <libunwind.h>
 
 #if HAVE_UCONTEXT_T
@@ -22,12 +18,6 @@
 #endif  // HAVE_UCONTEXT_T
 
 #include "UnixContext.h"
-
-#ifdef __APPLE__
-// TODO: remove this define and all related #ifdefs after we can link shared libunwind
-// during the build.
-#define CAN_LINK_SHARED_LIBUNWIND
-#endif // __APPLE__
 
 #ifdef __APPLE__
 
@@ -207,60 +197,10 @@
 
 #endif // __APPLE__
 
-#if UNWIND_CONTEXT_IS_UCONTEXT_T
-
-#if defined(_AMD64_)
-#define ASSIGN_UNWIND_REGS     \
-    ASSIGN_REG(Rip, IP)        \
-    ASSIGN_REG(Rsp, SP)        \
-    ASSIGN_REG_PTR(Rbp, Rbp)   \
-    ASSIGN_REG_PTR(Rbx, Rbx)   \
-    ASSIGN_REG_PTR(R12, R12)   \
-    ASSIGN_REG_PTR(R13, R13)   \
-    ASSIGN_REG_PTR(R14, R14)   \
-    ASSIGN_REG_PTR(R15, R15)
-#elif defined(_ARM64_)
-#define ASSIGN_UNWIND_REGS     \
-    ASSIGN_REG(Pc, IP)     
-    // ASSIGN_REG(Sp, SP)         \
-    // ASSIGN_REG_PTR(Fp, FP)     \
-    // ASSIGN_REG_PTR(Lr, LR)     \
-    // ASSIGN_REG_PTR(X19, X19)   \
-    // ASSIGN_REG_PTR(X20, X20)   \
-    // ASSIGN_REG_PTR(X21, X21)   \
-    // ASSIGN_REG_PTR(X22, X22)   \
-    // ASSIGN_REG_PTR(X23, X23)   \
-    // ASSIGN_REG_PTR(X24, X24)   \
-    // ASSIGN_REG_PTR(X25, X25)   \
-    // ASSIGN_REG_PTR(X26, X26)   \
-    // ASSIGN_REG_PTR(X27, X27)   \
-    // ASSIGN_REG_PTR(X28, X28)
-#else
-#error unsupported architecture
-#endif
-
-// Convert REGDISPLAY to unw_context_t
-static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unwContext)
-{
-#define ASSIGN_REG(regName1, regName2) \
-    MCREG_##regName1(unwContext->uc_mcontext) = regDisplay->regName2;
-
-#define ASSIGN_REG_PTR(regName1, regName2) \
-    if (regDisplay->p##regName2 != NULL) \
-        MCREG_##regName1(unwContext->uc_mcontext) = *(regDisplay->p##regName2);
-
-    ASSIGN_UNWIND_REGS
-
-#undef ASSIGN_REG
-#undef ASSIGN_REG_PTR
-}
-
-#else // UNWIND_CONTEXT_IS_UCONTEXT_T
-
 // Update unw_context_t from REGDISPLAY
 static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unwContext)
 {
-#if defined(_ARM_)    
+#if defined(_ARM_)
     // Assuming that unw_set_reg() on cursor will point the cursor to the
     // supposed stack frame is dangerous for libunwind-arm in Linux.
     // It is because libunwind's unw_cursor_t has other data structure
@@ -289,12 +229,11 @@ static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unw
 #undef ASSIGN_REG
 #undef ASSIGN_REG_PTR
 #endif // _ARM_
-} 
+}
 
 // Update unw_cursor_t from REGDISPLAY
 static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor)
 {
-#ifdef CAN_LINK_SHARED_LIBUNWIND
 #if defined(_AMD64_)
 #define ASSIGN_REG(regName1, regName2) \
     unw_set_reg(cursor, regName1, regDisplay->regName2);
@@ -315,25 +254,18 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
 #undef ASSIGN_REG
 #undef ASSIGN_REG_PTR
 #endif // _AMD64_
-#endif // CAN_LINK_SHARED_LIBUNWIND
 }
-#endif // UNWIND_CONTEXT_IS_UCONTEXT_T
 
 // Initialize unw_cursor_t and unw_context_t from REGDISPLAY
 bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* cursor, unw_context_t* unwContext)
 {
-#ifndef CAN_LINK_SHARED_LIBUNWIND
-    return false;
-#else // CAN_LINK_SHARED_LIBUNWIND
-	int st;
+    int st;
 
-#if !UNWIND_CONTEXT_IS_UCONTEXT_T
     st = unw_getcontext(unwContext);
     if (st < 0)
     {
         return false;
     }
-#endif
 
     RegDisplayToUnwindContext(regDisplay, unwContext);
 
@@ -343,64 +275,56 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
         return false;
     }
 
-#if !UNWIND_CONTEXT_IS_UCONTEXT_T
     // Set the unwind context to the specified windows context
     RegDisplayToUnwindCursor(regDisplay, cursor);
-#endif
 
     return true;
-#endif // CAN_LINK_SHARED_LIBUNWIND
 }
 
-// Update context pointer for a register from the unw_cursor_t. 
+// Update context pointer for a register from the unw_cursor_t.
 static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, PTR_UIntNative *contextPointer)
 {
-#if defined(HAVE_UNW_GET_SAVE_LOC) && defined(CAN_LINK_SHARED_LIBUNWIND)
     unw_save_loc_t saveLoc;
     unw_get_save_loc(cursor, reg, &saveLoc);
     if (saveLoc.type == UNW_SLT_MEMORY)
     {
         PTR_UIntNative pLoc = (PTR_UIntNative)saveLoc.u.addr;
-        // Filter out fake save locations that point to unwContext 
+        // Filter out fake save locations that point to unwContext
         if (unwContext == NULL || (pLoc < (PTR_UIntNative)unwContext) || ((PTR_UIntNative)(unwContext + 1) <= pLoc))
             *contextPointer = (PTR_UIntNative)saveLoc.u.addr;
     }
-#else
-    // Returning NULL indicates that we don't have context pointers available
-    *contextPointer = NULL;
-#endif
 }
 
 #if defined(_AMD64_)
 #define GET_CONTEXT_POINTERS                    \
-	GET_CONTEXT_POINTER(UNW_X86_64_RBP, Rbp)	\
-	GET_CONTEXT_POINTER(UNW_X86_64_RBX, Rbx)    \
-	GET_CONTEXT_POINTER(UNW_X86_64_R12, R12)    \
-	GET_CONTEXT_POINTER(UNW_X86_64_R13, R13)    \
-	GET_CONTEXT_POINTER(UNW_X86_64_R14, R14)    \
-	GET_CONTEXT_POINTER(UNW_X86_64_R15, R15)    
+    GET_CONTEXT_POINTER(UNW_X86_64_RBP, Rbp)	\
+    GET_CONTEXT_POINTER(UNW_X86_64_RBX, Rbx)    \
+    GET_CONTEXT_POINTER(UNW_X86_64_R12, R12)    \
+    GET_CONTEXT_POINTER(UNW_X86_64_R13, R13)    \
+    GET_CONTEXT_POINTER(UNW_X86_64_R14, R14)    \
+    GET_CONTEXT_POINTER(UNW_X86_64_R15, R15)
 #elif defined(_ARM_)
 #define GET_CONTEXT_POINTERS                    \
-	GET_CONTEXT_POINTER(UNW_ARM_R4, R4)	        \
-	GET_CONTEXT_POINTER(UNW_ARM_R5, R5)	        \
-	GET_CONTEXT_POINTER(UNW_ARM_R6, R6)	        \
-	GET_CONTEXT_POINTER(UNW_ARM_R7, R7)	        \
-	GET_CONTEXT_POINTER(UNW_ARM_R8, R8)	        \
-	GET_CONTEXT_POINTER(UNW_ARM_R9, R9)	        \
-	GET_CONTEXT_POINTER(UNW_ARM_R10, R10)       \
-	GET_CONTEXT_POINTER(UNW_ARM_R11, R11)
+    GET_CONTEXT_POINTER(UNW_ARM_R4, R4)	        \
+    GET_CONTEXT_POINTER(UNW_ARM_R5, R5)	        \
+    GET_CONTEXT_POINTER(UNW_ARM_R6, R6)	        \
+    GET_CONTEXT_POINTER(UNW_ARM_R7, R7)	        \
+    GET_CONTEXT_POINTER(UNW_ARM_R8, R8)	        \
+    GET_CONTEXT_POINTER(UNW_ARM_R9, R9)	        \
+    GET_CONTEXT_POINTER(UNW_ARM_R10, R10)       \
+    GET_CONTEXT_POINTER(UNW_ARM_R11, R11)
 #elif defined(_ARM64_)
 #define GET_CONTEXT_POINTERS                    \
-	GET_CONTEXT_POINTER(UNW_AARCH64_X19, 19)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X20, 20)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X21, 21)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X22, 22)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X23, 23)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X24, 24)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X25, 25)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X26, 26)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X27, 27)	\
-	GET_CONTEXT_POINTER(UNW_AARCH64_X28, 28)
+    GET_CONTEXT_POINTER(UNW_AARCH64_X19, 19)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X20, 20)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X21, 21)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X22, 22)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X23, 23)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X24, 24)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X25, 25)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X26, 26)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X27, 27)	\
+    GET_CONTEXT_POINTER(UNW_AARCH64_X28, 28)
 #else
 #error unsupported architecture
 #endif
@@ -409,13 +333,15 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
 void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, REGDISPLAY *regDisplay)
 {
 #define GET_CONTEXT_POINTER(unwReg, rdReg) GetContextPointer(cursor, unwContext, unwReg, &regDisplay->p##rdReg);
-	GET_CONTEXT_POINTERS
+    GET_CONTEXT_POINTERS
 #undef GET_CONTEXT_POINTER
 
-#ifdef CAN_LINK_SHARED_LIBUNWIND
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &regDisplay->IP);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &regDisplay->SP);
-#endif // CAN_LINK_SHARED_LIBUNWIND
+
+#if defined(_AMD64_)
+    regDisplay->pIP = PTR_PCODE(regDisplay->SP - sizeof(TADDR));
+#endif
 
 #if defined(_ARM_) || defined(_ARM64_)
     regDisplay->IP |= 1;
@@ -424,45 +350,45 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
 
 #if defined(_AMD64_)
 #define ASSIGN_CONTROL_REGS \
-	ASSIGN_REG(Rip, IP)     \
-	ASSIGN_REG(Rsp, Rsp)
+    ASSIGN_REG(Rip, IP)     \
+    ASSIGN_REG(Rsp, Rsp)
 
 #define ASSIGN_INTEGER_REGS  \
-	ASSIGN_REG(Rbx, Rbx)     \
-	ASSIGN_REG(Rbp, Rbp)     \
-	ASSIGN_REG(R12, R12)     \
-	ASSIGN_REG(R13, R13)     \
-	ASSIGN_REG(R14, R14)     \
-	ASSIGN_REG(R15, R15)
+    ASSIGN_REG(Rbx, Rbx)     \
+    ASSIGN_REG(Rbp, Rbp)     \
+    ASSIGN_REG(R12, R12)     \
+    ASSIGN_REG(R13, R13)     \
+    ASSIGN_REG(R14, R14)     \
+    ASSIGN_REG(R15, R15)
 
 #define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg) \
-	MCREG_Rdi(nativeContext->uc_mcontext) = arg0Reg;      \
-	MCREG_Rsi(nativeContext->uc_mcontext) = arg1Reg;
+    MCREG_Rdi(nativeContext->uc_mcontext) = arg0Reg;      \
+    MCREG_Rsi(nativeContext->uc_mcontext) = arg1Reg;
 
 #elif defined(_ARM_)
 
 #define ASSIGN_CONTROL_REGS  \
-	ASSIGN_REG(Pc, IP)       \
-	ASSIGN_REG(Sp, SP)       \
-	ASSIGN_REG(Lr, LR)
+    ASSIGN_REG(Pc, IP)       \
+    ASSIGN_REG(Sp, SP)       \
+    ASSIGN_REG(Lr, LR)
 
 #define ASSIGN_INTEGER_REGS  \
-	ASSIGN_REG(R4, R4)       \
-	ASSIGN_REG(R5, R5)       \
-	ASSIGN_REG(R6, R6)       \
-	ASSIGN_REG(R7, R7)       \
-	ASSIGN_REG(R8, R8)       \
-	ASSIGN_REG(R9, R9)       \
-	ASSIGN_REG(R10, R10)     \
-	ASSIGN_REG(R11, R11)
+    ASSIGN_REG(R4, R4)       \
+    ASSIGN_REG(R5, R5)       \
+    ASSIGN_REG(R6, R6)       \
+    ASSIGN_REG(R7, R7)       \
+    ASSIGN_REG(R8, R8)       \
+    ASSIGN_REG(R9, R9)       \
+    ASSIGN_REG(R10, R10)     \
+    ASSIGN_REG(R11, R11)
 
 #define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg) \
-	MCREG_R0(nativeContext->uc_mcontext) = arg0Reg;       \
-	MCREG_R1(nativeContext->uc_mcontext) = arg1Reg;
+    MCREG_R0(nativeContext->uc_mcontext) = arg0Reg;       \
+    MCREG_R1(nativeContext->uc_mcontext) = arg1Reg;
 
 #elif defined(_ARM64_)
 #define ASSIGN_CONTROL_REGS  \
-	ASSIGN_REG(Pc, IP)
+    ASSIGN_REG(Pc, IP)
     // ASSIGN_REG(Sp, SP)    \
     // ASSIGN_REG(Fp, FP)    \
     // ASSIGN_REG(Lr, LR)    \
@@ -480,8 +406,8 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
     // ASSIGN_REG(X28, X28)
 
 #define ASSIGN_TWO_ARGUMENT_REGS
-	// MCREG_X0(nativeContext->uc_mcontext) = arg0Reg;       \
-	// MCREG_X1(nativeContext->uc_mcontext) = arg1Reg;
+    // MCREG_X0(nativeContext->uc_mcontext) = arg0Reg;       \
+    // MCREG_X1(nativeContext->uc_mcontext) = arg1Reg;
 
 #else
 #error unsupported architecture
@@ -490,7 +416,7 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
 // Convert Unix native context to PAL_LIMITED_CONTEXT
 void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palContext)
 {
-	ucontext_t *nativeContext = (ucontext_t*)context;
+    ucontext_t *nativeContext = (ucontext_t*)context;
 #define ASSIGN_REG(regNative, regPal) palContext->regPal = MCREG_##regNative(nativeContext->uc_mcontext);
     ASSIGN_CONTROL_REGS
     ASSIGN_INTEGER_REGS
@@ -500,7 +426,7 @@ void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palCont
 // Redirect Unix native context to the PAL_LIMITED_CONTEXT and also set the first two argument registers
 void RedirectNativeContext(void* context, const PAL_LIMITED_CONTEXT* palContext, UIntNative arg0Reg, UIntNative arg1Reg)
 {
-	ucontext_t *nativeContext = (ucontext_t*)context;
+    ucontext_t *nativeContext = (ucontext_t*)context;
 
 #define ASSIGN_REG(regNative, regPal) MCREG_##regNative(nativeContext->uc_mcontext) = palContext->regPal;
     ASSIGN_CONTROL_REGS
@@ -572,9 +498,6 @@ uint64_t GetPC(void* context)
 // Find LSDA and start address for a function at address controlPC
 bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* lsda)
 {
-#ifndef CAN_LINK_SHARED_LIBUNWIND
-    return false;
-#else // CAN_LINK_SHARED_LIBUNWIND
     unw_context_t unwContext;
     unw_cursor_t cursor;
     REGDISPLAY regDisplay;
@@ -600,15 +523,11 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
     *startAddress = procInfo.start_ip;
 
     return true;
-#endif // CAN_LINK_SHARED_LIBUNWIND
 }
 
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
 bool VirtualUnwind(REGDISPLAY* pRegisterSet)
 {
-#ifndef CAN_LINK_SHARED_LIBUNWIND
-    return false;
-#else // CAN_LINK_SHARED_LIBUNWIND
     unw_context_t unwContext;
     unw_cursor_t cursor;
 
@@ -617,7 +536,6 @@ bool VirtualUnwind(REGDISPLAY* pRegisterSet)
         return false;
     }
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
     // FreeBSD, NetBSD and OSX appear to do two different things when unwinding
     // 1: If it reaches where it cannot unwind anymore, say a
     // managed frame.  It wil return 0, but also update the $pc
@@ -627,7 +545,6 @@ bool VirtualUnwind(REGDISPLAY* pRegisterSet)
     // So we bank the original PC here, so we can compare it after
     // the step
     uintptr_t curPc = pRegisterSet->GetIP();
-#endif
 
     int st = unw_step(&cursor);
     if (st < 0)
@@ -638,14 +555,11 @@ bool VirtualUnwind(REGDISPLAY* pRegisterSet)
     // Update the REGDISPLAY to reflect the unwind
     UnwindCursorToRegDisplay(&cursor, &unwContext, pRegisterSet);
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
     if (st == 0 && pRegisterSet->GetIP() == curPc)
     {
         // TODO: is this correct for CoreRT? Should we return false instead?
         pRegisterSet->SetIP(0);
     }
-#endif
 
     return true;
-#endif // CAN_LINK_SHARED_LIBUNWIND    
 }

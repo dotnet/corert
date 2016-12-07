@@ -75,7 +75,7 @@ namespace Internal.TypeSystem
         static public MethodDesc GetDefaultConstructor(this TypeDesc type)
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
-            var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), Array.Empty<TypeDesc>());
+            var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes);
             return type.GetMethod(".ctor", sig);
         }
 
@@ -217,7 +217,7 @@ namespace Internal.TypeSystem
             // If the method is a generic method then go and get the instantiated descriptor
             if (interfaceMethod.HasInstantiation)
             {
-                method = method.InstantiateSignature(interfaceType.Instantiation, interfaceMethod.Instantiation);
+                method = method.MakeInstantiatedMethod(interfaceMethod.Instantiation);
             }
 
             Debug.Assert(method != null);
@@ -236,13 +236,11 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Enumerates all virtual methods introduced or overriden by '<paramref name="type"/>'.
-        /// Note that this is not just a convenience method. This method is capable of enumerating
-        /// virtual method injected by the type system host.
+        /// Retrieves all methods on a type, including the ones injected by the type system context.
         /// </summary>
-        public static IEnumerable<MethodDesc> GetAllVirtualMethods(this TypeDesc type)
+        public static IEnumerable<MethodDesc> GetAllMethods(this TypeDesc type)
         {
-            return type.Context.GetVirtualMethodEnumerationAlgorithmForType(type).ComputeAllVirtualMethods(type);
+            return type.Context.GetAllMethods(type);
         }
 
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)

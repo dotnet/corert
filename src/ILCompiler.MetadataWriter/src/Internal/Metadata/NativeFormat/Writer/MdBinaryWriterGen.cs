@@ -1086,6 +1086,28 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
+        public static void Write(this NativeWriter writer, FunctionPointerSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, List<FunctionPointerSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count);
+            foreach (FunctionPointerSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
         public static void Write(this NativeWriter writer, GenericParameter record)
         {
             if (record != null)

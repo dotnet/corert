@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the fundamental base type of all types within the type system.
     /// </summary>
-    public abstract partial class TypeDesc
+    public abstract partial class TypeDesc : TypeSystemEntity
     {
         public static readonly TypeDesc[] EmptyTypes = new TypeDesc[0];
 
@@ -45,14 +45,6 @@ namespace Internal.TypeSystem
 
         // The most frequently used type properties are cached here to avoid excesive virtual calls
         private TypeFlags _typeFlags;
-
-        /// <summary>
-        /// Gets the type system context this type belongs to.
-        /// </summary>
-        public abstract TypeSystemContext Context
-        {
-            get;
-        }
 
         /// <summary>
         /// Gets the generic instantiation information of this type.
@@ -139,6 +131,9 @@ namespace Internal.TypeSystem
         private TypeFlags InitializeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = ComputeTypeFlags(mask);
+
+            if ((flags & mask) == 0)
+                flags = Context.ComputeTypeFlags(this, flags, mask);
 
             Debug.Assert((flags & mask) != 0);
             _typeFlags |= flags;
@@ -296,6 +291,18 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a non-vector array type.
+        /// To check for arrays in general, use <see cref="IsArray"/>.
+        /// </summary>
+        public bool IsMdArray
+        {
+            get
+            {
+                return this.IsArray && ((ArrayType)this).IsMdArray;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a managed pointer type (<see cref="ByRefType"/>).
         /// </summary>
         public bool IsByRef
@@ -314,6 +321,17 @@ namespace Internal.TypeSystem
             get
             {
                 return this.GetType() == typeof(PointerType);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is an unmanaged function pointer type (<see cref="FunctionPointerType"/>).
+        /// </summary>
+        public bool IsFunctionPointer
+        {
+            get
+            {
+                return this.GetType() == typeof(FunctionPointerType);
             }
         }
 
@@ -429,7 +447,7 @@ namespace Internal.TypeSystem
                         return field.FieldType;
                 }
 
-                throw new BadImageFormatException();
+                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, this);
             }
         }
 
@@ -437,11 +455,11 @@ namespace Internal.TypeSystem
         /// Gets a value indicating whether this type has a class constructor method.
         /// Use <see cref="GetStaticConstructor"/> to retrieve it.
         /// </summary>
-        public virtual bool HasStaticConstructor
+        public bool HasStaticConstructor
         {
             get
             {
-                return false;
+                return (GetTypeFlags(TypeFlags.HasStaticConstructor | TypeFlags.HasStaticConstructorComputed) & TypeFlags.HasStaticConstructor) != 0;
             }
         }
 

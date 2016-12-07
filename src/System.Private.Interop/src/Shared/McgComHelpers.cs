@@ -124,12 +124,13 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static void SafeReleaseStream(IntPtr pStream)
         {
-            Debug.Assert(pStream != default(IntPtr));
 #if ENABLE_WINRT
-            // Release marshalled data and ignore any error
-            ExternalInterop.CoReleaseMarshalData(pStream);
-
-            McgMarshal.ComRelease(pStream);
+            if (pStream != default(IntPtr))
+            {
+                // Release marshalled data and ignore any error
+                ExternalInterop.CoReleaseMarshalData(pStream);
+                McgMarshal.ComRelease(pStream);
+            }
 #else
             throw new PlatformNotSupportedException("SafeReleaseStream");
 #endif
@@ -513,7 +514,7 @@ namespace System.Runtime.InteropServices
 
                 bool needRelease = false;
 
-                if (interfaceType.IsWinRTInterface())
+                if (interfaceType.IsSupportIInspectable())
                 {
                     //
                     // Use the interface pointer as IInspectable as we know it is indeed a WinRT interface that
@@ -614,6 +615,25 @@ namespace System.Runtime.InteropServices
             }
 
             return comObject;
+        }
+
+        internal static __ComGenericInterfaceDispatcher CreateGenericComDispatcher(RuntimeTypeHandle genericDispatcherDef, RuntimeTypeHandle[] genericArguments, __ComObject comThisPointer)
+        {
+#if !RHTESTCL && !CORECLR && !CORERT
+            Debug.Assert(genericDispatcherDef.IsGenericTypeDefinition());
+            Debug.Assert(genericArguments != null && genericArguments.Length > 0);
+
+            RuntimeTypeHandle instantiatedDispatcherType;
+            if (!Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericDispatcherDef, genericArguments, out instantiatedDispatcherType))
+                return null;    // ERROR
+
+            __ComGenericInterfaceDispatcher dispatcher = (__ComGenericInterfaceDispatcher)InteropExtensions.RuntimeNewObject(instantiatedDispatcherType);
+            dispatcher.m_comObject = comThisPointer;
+
+            return dispatcher;
+#else
+            return null;
+#endif
         }
 
         private static __ComObject CreateComObjectInternal(RuntimeTypeHandle classType, IntPtr pComItf)

@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
+
 using ILCompiler.DependencyAnalysis.X64;
 using Internal.TypeSystem;
-using ILCompiler;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -30,16 +29,29 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.VirtualCall:
                     {
-                        if (relocsOnly)
-                            break;
+                        MethodDesc targetMethod = (MethodDesc)Target;
 
-                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-                    
-                        int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, (MethodDesc)Target);
-                        Debug.Assert(slot != -1);
-                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
-                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                        if (targetMethod.OwningType.IsInterface)
+                        {
+                            encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
+                            AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                        }
+                        else
+                        {
+                            if (relocsOnly)
+                                break;
+
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                            int pointerSize = factory.Target.PointerSize;
+
+                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
+                            Debug.Assert(slot != -1);
+                            AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
+                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                        }
                     }
                     break;
 
@@ -148,14 +160,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
-                case ReadyToRunHelperId.InterfaceDispatch:
-                    {
-                        encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
-                        AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                    }
-                    break;
-
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
                         MethodDesc targetMethod = (MethodDesc)Target;
@@ -179,6 +183,10 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitRET();
                         }
                     }
+                    break;
+
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                    encoder.EmitINT3();
                     break;
 
                 default:

@@ -49,6 +49,9 @@ namespace System
         public virtual bool IsGenericType => false;
         public virtual bool IsGenericTypeDefinition => false;
 
+        // Not an api but can't be declared "internal" because of Corelib/Reflection.Core divide. Returns true if and only if type is a vector (not a multidim array of rank 1.)
+        public virtual bool IsSzArray {  get { throw NotImplemented.ByDesign; } }
+
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();
         public abstract Type GetElementType();
@@ -226,13 +229,19 @@ namespace System
 
         public virtual MemberInfo[] GetDefaultMembers() { throw NotImplemented.ByDesign; }
 
+        [Intrinsic]
         public static Type GetType(string typeName) => GetType(typeName, throwOnError: false, ignoreCase: false);
+        [Intrinsic]
         public static Type GetType(string typeName, bool throwOnError) => GetType(typeName, throwOnError: throwOnError, ignoreCase: false);
-        public static Type GetType(string typeName, bool throwOnError, bool ignoreCase) => RuntimeAugments.Callbacks.GetType(typeName, throwOnError, ignoreCase);
+        [Intrinsic]
+        public static Type GetType(string typeName, bool throwOnError, bool ignoreCase) => GetType(typeName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
 
+        [Intrinsic]
         public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver) => GetType(typeName, assemblyResolver, typeResolver, throwOnError: false, ignoreCase: false);
+        [Intrinsic]
         public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError) => GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: false);
-        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase) { throw new NotImplementedException(); }
+        [Intrinsic]
+        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase) => RuntimeAugments.Callbacks.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssembly: null);
 
         public virtual RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
         [Intrinsic]
@@ -357,7 +366,7 @@ namespace System
 
         public static bool operator !=(Type left, Type right) => !(left == right);
 
-        public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new NotImplementedException(); }
+        public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();
@@ -367,13 +376,8 @@ namespace System
         public static readonly MemberFilter FilterName = FilterNameImpl;
         public static readonly MemberFilter FilterNameIgnoreCase = FilterNameIgnoreCaseImpl;
 
-        public static Binder DefaultBinder => _GetDefaultBinder();
+        public static Binder DefaultBinder => s_defaultBinder ?? (s_defaultBinder = ReflectionAugments.ReflectionCoreCallbacks.CreateDefaultBinder());
         private static volatile Binder s_defaultBinder;
-
-        // @todo: https://github.com/dotnet/corert/issues/1688: Hack: For some reason, referencing a property that returns a Binder on System.Type confuses the toolchain.
-        // Until that's fixed, we'll workaround by using a method.
-        [CLSCompliant(false)]
-        public static Binder _GetDefaultBinder() => s_defaultBinder ?? (s_defaultBinder = ReflectionAugments.ReflectionCoreCallbacks.CreateDefaultBinder());
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
     }

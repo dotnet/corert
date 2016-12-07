@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -49,29 +52,6 @@ namespace System.Threading
         #endregion
 
         #region interface to native per-AppDomain timer
-
-        //
-        // We need to keep our notion of time synchronized with the calls to SleepEx that drive
-        // the underlying native timer.  In Win8, SleepEx does not count the time the machine spends
-        // sleeping/hibernating.  Environment.TickCount (GetTickCount) *does* count that time,
-        // so we will get out of sync with SleepEx if we use that method.
-        //
-        // So, on Win8, we use QueryUnbiasedInterruptTime instead; this does not count time spent
-        // in sleep/hibernate mode.
-        //
-        private static int TickCount
-        {
-            get
-            {
-                ulong time100ns;
-
-                bool result = Interop.mincore.QueryUnbiasedInterruptTime(out time100ns);
-                Contract.Assert(result);
-
-                // convert to 100ns to milliseconds, and truncate to 32 bits.
-                return (int)(uint)(time100ns / 10000);
-            }
-        }
 
         int m_currentNativeTimerStartTicks;
         uint m_currentNativeTimerDuration = UInt32.MaxValue;
@@ -148,7 +128,7 @@ namespace System.Threading
                 TimerQueueTimer timer = m_timers;
                 while (timer != null)
                 {
-                    Contract.Assert(timer.m_dueTime != Timer.UnsignedInfiniteTimeout);
+                    Debug.Assert(timer.m_dueTime != Timer.UnsignedInfiniteTimeout);
 
                     uint elapsed = (uint)(nowTicks - timer.m_startTicks);
                     if (elapsed >= timer.m_dueTime)
@@ -453,9 +433,9 @@ namespace System.Threading
                      int period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Contract.EndContractBlock();
 
             TimerSetup(callback, state, (UInt32)dueTime, (UInt32)period);
@@ -497,9 +477,9 @@ namespace System.Threading
         public bool Change(int dueTime, int period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Contract.EndContractBlock();
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
@@ -513,13 +493,13 @@ namespace System.Threading
         private bool Change(long dueTime, long period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (dueTime > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("dueTime", SR.ArgumentOutOfRange_TimeoutTooLarge);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
             if (period > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("period", SR.ArgumentOutOfRange_PeriodTooLarge);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
             Contract.EndContractBlock();
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);

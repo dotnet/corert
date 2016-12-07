@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.JitInterface;
 
@@ -20,6 +21,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class ObjectWriter : IDisposable
     {
+        // This is used to build mangled names
+        private Utf8StringBuilder _sb = new Utf8StringBuilder();
+
         // This is used to look up file id for the given file name.
         // This is a global table across nodes.
         private Dictionary<string, int> _debugFileToId = new Dictionary<string, int>();
@@ -29,12 +33,12 @@ namespace ILCompiler.DependencyAnalysis
         private Dictionary<int, DebugLocInfo> _offsetToDebugLoc = new Dictionary<int, DebugLocInfo>();
 
         // Code offset to defined names
-        private Dictionary<int, List<string>> _offsetToDefName = new Dictionary<int, List<string>>();
+        private Dictionary<int, List<ISymbolNode>> _offsetToDefName = new Dictionary<int, List<ISymbolNode>>();
 
         // Code offset to Cfi blobs
         private Dictionary<int, List<byte[]>> _offsetToCfis = new Dictionary<int, List<byte[]>>();
         // Code offset to Lsda label index
-        private Dictionary<int, string> _offsetToCfiLsdaBlobName = new Dictionary<int, string>();
+        private Dictionary<int, byte[]> _offsetToCfiLsdaBlobName = new Dictionary<int, byte[]>();
         // Code offsets that starts a frame
         private HashSet<int> _offsetToCfiStart = new HashSet<int>();
         // Code offsets that ends a frame
@@ -49,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
         private string _currentSectionName;
 
         // The first defined symbol name of the current node being processed.
-        private string _currentNodeName;
+        private Utf8String _currentNodeZeroTerminatedName;
 
         // The set of custom section names that have been created so far
         private HashSet<string> _customSectionNames = new HashSet<string>();
@@ -154,25 +158,29 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitSymbolDef(IntPtr objWriter, string symbolName);
-        public void EmitSymbolDef(string symbolName)
+        private static extern void EmitSymbolDef(IntPtr objWriter, byte[] symbolName);
+        public void EmitSymbolDef(byte[] symbolName)
         {
             EmitSymbolDef(_nativeObjectWriter, symbolName);
         }
-
-        [DllImport(NativeObjectWriterFileName)]
-        private static extern int EmitSymbolRef(IntPtr objWriter, string symbolName, RelocType relocType, int delta);
-        public int EmitSymbolRef(string symbolName, RelocType relocType, int delta = 0)
+        public void EmitSymbolDef(Utf8StringBuilder symbolName)
         {
-            return EmitSymbolRef(_nativeObjectWriter, symbolName, relocType, delta);
+            EmitSymbolDef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray);
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitWinFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, 
-                                                    string blobSymbolName);
-        public void EmitWinFrameInfo(int startOffset, int endOffset, int blobSize, string blobSymbolName)
+        private static extern int EmitSymbolRef(IntPtr objWriter, byte[] symbolName, RelocType relocType, int delta);
+        public int EmitSymbolRef(Utf8StringBuilder symbolName, RelocType relocType, int delta = 0)
         {
-            EmitWinFrameInfo(_nativeObjectWriter, _currentNodeName, startOffset, endOffset, blobSymbolName);
+            return EmitSymbolRef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, relocType, delta);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitWinFrameInfo(IntPtr objWriter, byte[] methodName, int startOffset, int endOffset, 
+                                                    byte[] blobSymbolName);
+        public void EmitWinFrameInfo(int startOffset, int endOffset, int blobSize, byte[] blobSymbolName)
+        {
+            EmitWinFrameInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, startOffset, endOffset, blobSymbolName);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -194,8 +202,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitCFILsda(IntPtr objWriter, string blobSymbolName);
-        public void EmitCFILsda(string blobSymbolName)
+        private static extern void EmitCFILsda(IntPtr objWriter, byte[] blobSymbolName);
+        public void EmitCFILsda(byte[] blobSymbolName)
         {
             Debug.Assert(_frameOpened);
             EmitCFILsda(_nativeObjectWriter, blobSymbolName);
@@ -250,10 +258,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitDebugFunctionInfo(IntPtr objWriter, string methodName, int methodSize);
+        private static extern void EmitDebugFunctionInfo(IntPtr objWriter, byte[] methodName, int methodSize);
         public void EmitDebugFunctionInfo(int methodSize)
         {
-            EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeName, methodSize);
+            EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, methodSize);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -326,7 +334,8 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (var loc in locs)
                     {
-                        _offsetToDebugLoc.Add(loc.NativeOffset, loc);
+                        Debug.Assert(!_offsetToDebugLoc.ContainsKey(loc.NativeOffset));
+                        _offsetToDebugLoc[loc.NativeOffset] = loc;
                     }
                 }
             }
@@ -352,12 +361,13 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
+            byte[] gcInfo = nodeWithCodeInfo.GCInfo;
             ObjectNode.ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
-            string mainEhInfoSymbolName = null;
 
-            int i = 0;
-            foreach (var frameInfo in frameInfos)
+            for (int i = 0; i < frameInfos.Length; i++)
             {
+                FrameInfo frameInfo = frameInfos[i];
+
                 int start = frameInfo.StartOffset;
                 int end = frameInfo.EndOffset;
                 int len = frameInfo.BlobData.Length;
@@ -365,76 +375,92 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_targetPlatform.OperatingSystem == TargetOS.Windows)
                 {
-                    string blobSymbolName = "_unwind" + (i++).ToStringInvariant() + _currentNodeName;
+                    _sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_unwind").Append(i.ToStringInvariant());
 
                     ObjectNodeSection section = ObjectNodeSection.XDataSection;
-                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
-                    {
-                        section = section.GetSharedSection(blobSymbolName);
-                        CreateCustomSection(section);
-                    }
                     SwitchSection(_nativeObjectWriter, section.Name);
-                    
+
+                    byte[] blobSymbolName = _sb.Append(_currentNodeZeroTerminatedName).ToUtf8String().UnderlyingArray;
+
                     EmitAlignment(4);
                     EmitSymbolDef(blobSymbolName);
 
+                    FrameInfoFlags flags = frameInfo.Flags;
                     if (ehInfo != null)
                     {
-                        blob[blob.Length - 1] |= 0x04; // Flag to indicate that EHClauses follows
+                        flags |= FrameInfoFlags.HasEHInfo;
                     }
 
                     EmitBlob(blob);
 
+                    EmitIntValue((byte)flags, 1);
+
                     if (ehInfo != null)
                     {
+                        EmitSymbolRef(_sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                    }
+
+                    if (gcInfo != null)
+                    {
+                        EmitBlob(gcInfo);
+                        gcInfo = null;
+                    }
+
+                    if (ehInfo != null)
+                    {
+                        // TODO: Place EHInfo into different section for better locality
                         Debug.Assert(ehInfo.Alignment == 1);
                         Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
+                        EmitSymbolDef(_sb /* ehInfo */);
                         EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                         ehInfo = null;
                     }
-
-                    // TODO: Currently we get linker errors if we emit frame info for shared types.
-                    //       This needs follow-up investigation.
-                    if (!node.ShouldShareNodeAcrossModules(factory))
-                    {
-                        // For window, just emit the frame blob (UNWIND_INFO) as a whole.
-                        EmitWinFrameInfo(start, end, len, blobSymbolName);
-                    }
+                    
+                    // For window, just emit the frame blob (UNWIND_INFO) as a whole.
+                    EmitWinFrameInfo(start, end, len, blobSymbolName);
                 }
                 else
                 {
-                    string blobSymbolName = "_lsda" + (i++).ToStringInvariant() + _currentNodeName;
-
                     SwitchSection(_nativeObjectWriter, LsdaSection.Name);
 
-                    EmitAlignment(4);
+                    _sb.Clear().Append("_lsda").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName);
+                    byte[] blobSymbolName = _sb.ToUtf8String().UnderlyingArray;
                     EmitSymbolDef(blobSymbolName);
 
-                    // emit relative offset from the main function
-                    EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
-
-                    // emit last byte from the blob - the function kind
-                    byte funcKind = blob[len - 1];
-                    if ((ehInfo != null) || (mainEhInfoSymbolName != null))
+                    FrameInfoFlags flags = frameInfo.Flags;
+                    if (ehInfo != null)
                     {
-                        funcKind |= 0x04;
+                        flags |= FrameInfoFlags.HasEHInfo;
                     }
-                    EmitIntValue(funcKind, 1);
+                    EmitIntValue((byte)flags, 1);
 
-                    --len;
+                    if (i != 0)
+                    {
+                        EmitSymbolRef(_sb.Clear().Append("_lsda0").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_REL32, 4);
+
+                        // emit relative offset from the main function
+                        EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
+                    }
 
                     if (ehInfo != null)
                     {
+                        EmitSymbolRef(_sb.Clear().Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_REL32, 4);
+                    }
+
+                    if (gcInfo != null)
+                    {
+                        EmitBlob(gcInfo);
+                        gcInfo = null;
+                    }
+
+                    if (ehInfo != null)
+                    {
+                        // TODO: Place EHInfo into different section for better locality
                         Debug.Assert(ehInfo.Alignment == 1);
                         Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
-                        mainEhInfoSymbolName = "_ehInfo" + _currentNodeName;
-                        EmitSymbolDef(mainEhInfoSymbolName);
+                        EmitSymbolDef(_sb /* ehInfo */);
                         EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                         ehInfo = null;
-                    }
-                    else if (mainEhInfoSymbolName != null)
-                    {
-                        EmitSymbolRef(mainEhInfoSymbolName, RelocType.IMAGE_REL_BASED_REL32);
                     }
 
                     // For Unix, we build CFI blob map for each offset.
@@ -477,7 +503,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 EmitCFIStart(offset);
 
-                string blobSymbolName = ""; 
+                byte[] blobSymbolName;
                 if (_offsetToCfiLsdaBlobName.TryGetValue(offset, out blobSymbolName))
                 {
                     EmitCFILsda(blobSymbolName);
@@ -520,52 +546,44 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!_offsetToDefName.ContainsKey(n.Offset))
                 {
-                    _offsetToDefName[n.Offset] = new List<string>();
+                    _offsetToDefName[n.Offset] = new List<ISymbolNode>();
                 }
 
-                string symbolToEmit = GetSymbolToEmitForTargetPlatform(n.MangledName);
-                _offsetToDefName[n.Offset].Add(symbolToEmit);
-
-                string alternateName = _nodeFactory.GetSymbolAlternateName(n);
-                if (alternateName != null)
-                {
-                    symbolToEmit = GetSymbolToEmitForTargetPlatform(alternateName);
-                    _offsetToDefName[n.Offset].Add(symbolToEmit);
-                }
+                _offsetToDefName[n.Offset].Add(n);
             }
 
             var symbolNode = node as ISymbolNode;
             if (symbolNode != null)
             {
-                _currentNodeName = GetSymbolToEmitForTargetPlatform(symbolNode.MangledName);
-                Debug.Assert(_offsetToDefName[symbolNode.Offset].Contains(_currentNodeName));
+                _sb.Clear();
+                AppendExternCPrefix(_sb);
+                symbolNode.AppendMangledName(NodeFactory.NameMangler, _sb);
+                _currentNodeZeroTerminatedName = _sb.Append('\0').ToUtf8String();
             }
             else
             {
-                _currentNodeName = null;
+                _currentNodeZeroTerminatedName = default(Utf8String);
             }
         }
 
-        private string GetSymbolToEmitForTargetPlatform(string symbol)
+        private void AppendExternCPrefix(Utf8StringBuilder sb)
         {
-            string symbolToEmit = symbol;
-
             if (_targetPlatform.OperatingSystem == TargetOS.OSX)
             {
                 // On OSX, we need to prefix an extra underscore to account for correct linkage of 
                 // extern "C" functions.
-                symbolToEmit = "_"+symbol;
+                sb.Append('_');
             }
-
-            return symbolToEmit;
         }
 
         // Returns size of the emitted symbol reference
         public int EmitSymbolReference(ISymbolNode target, int delta, RelocType relocType)
         {
-            string targetName = GetSymbolToEmitForTargetPlatform(target.MangledName);
+            _sb.Clear();
+            AppendExternCPrefix(_sb);
+            target.AppendMangledName(NodeFactory.NameMangler, _sb);
 
-            return EmitSymbolRef(targetName, relocType, delta);
+            return EmitSymbolRef(_sb, relocType, delta);
         }
 
         public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
@@ -585,7 +603,15 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     Relocation reloc = relocs[nextRelocIndex];
 
-                    int size = EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
+                    long delta;
+                    unsafe
+                    {
+                        fixed (void* location = &blob[i])
+                        {
+                            delta = Relocation.ReadValue(reloc.RelocType, location);
+                        }
+                    }
+                    int size = EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
                     // Update nextRelocIndex/Offset
                     if (++nextRelocIndex < relocs.Length)
@@ -604,12 +630,26 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitSymbolDefinition(int currentOffset)
         {
-            List<string> nodes;
+            List<ISymbolNode> nodes;
             if (_offsetToDefName.TryGetValue(currentOffset, out nodes))
             {
                 foreach (var name in nodes)
                 {
-                    EmitSymbolDef(name);
+                    _sb.Clear();
+                    AppendExternCPrefix(_sb);
+                    name.AppendMangledName(NodeFactory.NameMangler, _sb);
+
+                    EmitSymbolDef(_sb);
+
+                    string alternateName = _nodeFactory.GetSymbolAlternateName(name);
+                    if (alternateName != null)
+                    {
+                        _sb.Clear();
+                        AppendExternCPrefix(_sb);
+                        _sb.Append(alternateName);
+
+                        EmitSymbolDef(_sb);
+                    }
                 }
             }
         }
@@ -655,9 +695,23 @@ namespace ILCompiler.DependencyAnalysis
             Dispose(false);
         }
 
+        private bool ShouldShareSymbol(ObjectNode node)
+        {
+            if (_nodeFactory.CompilationModuleGroup.IsSingleFileCompilation)
+                return false;
+
+            if (!_targetPlatform.IsWindows)
+                return false;
+
+            return node.IsShareable;
+        }
+
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
-            using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
+            ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
+            bool succeeded = false;
+
+            try
             {
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
@@ -668,13 +722,13 @@ namespace ILCompiler.DependencyAnalysis
                                                             MethodCodeNode.StartSection :
                                                             MethodCodeNode.StartSection.GetSharedSection("__managedcode_a");
                     objectWriter.SetSection(codeStartSection);
-                    objectWriter.EmitSymbolDef("__managedcode_a");
+                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"));
                     objectWriter.EmitIntValue(0, 1);
                     ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
                                                             MethodCodeNode.EndSection :
                                                             MethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
-                    objectWriter.EmitSymbolDef("__managedcode_z");
+                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"));
                     objectWriter.EmitIntValue(0, 1);
                 }
                 else
@@ -695,16 +749,19 @@ namespace ILCompiler.DependencyAnalysis
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
-#if DEBUG
-                    Debug.Assert(_previouslyWrittenNodeNames.Add(node.GetName()), "Duplicate node name emitted to file", "Node {0} has already been written to the output object file {1}", node.GetName(), objectFilePath);
-#endif
                     ObjectNode.ObjectData nodeContents = node.GetData(factory);
 
+#if DEBUG
+                    foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
+                        Debug.Assert(_previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName()), "Duplicate node name emitted to file", 
+                            $"Symbol {definedSymbol.GetMangledName()} has already been written to the output object file {objectFilePath}");
+#endif
+
+
                     ObjectNodeSection section = node.Section;
-                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
+                    if (objectWriter.ShouldShareSymbol(node))
                     {
-                        Debug.Assert(node is ISymbolNode);
-                        section = section.GetSharedSection(((ISymbolNode)node).MangledName);
+                        section = section.GetSharedSection(((ISymbolNode)node).GetMangledName());
                     }
 
                     // Ensure section and alignment for the node.
@@ -745,7 +802,15 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             Relocation reloc = relocs[nextRelocIndex];
 
-                            int size = objectWriter.EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
+                            long delta;
+                            unsafe
+                            {
+                                fixed (void* location = &nodeContents.Data[i])
+                                {
+                                    delta = Relocation.ReadValue(reloc.RelocType, location);
+                                }
+                            }
+                            int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)
@@ -777,6 +842,25 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 objectWriter.EmitDebugModuleInfo();
+
+                succeeded = true;
+            }
+            finally
+            {
+                objectWriter.Dispose();
+
+                if (!succeeded)
+                {
+                    // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
+                    // object file around.
+                    try
+                    {
+                        File.Delete(objectFilePath);
+                    }
+                    catch
+                    {
+                    }
+                }
             }
         }
     }

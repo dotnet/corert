@@ -4,7 +4,7 @@
 
 using Internal.TypeSystem;
 
-using Interlocked = System.Threading.Interlocked;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -123,7 +123,10 @@ namespace Internal.IL.Stubs
             // Indirectly call the delegate target static method.
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(builder.ToSignature()));
+
+            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, builder.ToSignature());
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(builder.ToSignature()));
+
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(this);
@@ -181,7 +184,10 @@ namespace Internal.IL.Stubs
             // Indirectly call the delegate target static method.
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
+
+            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, targetMethodSignature);
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
+
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(this);
@@ -296,7 +302,8 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdLoc(delegateToCallLocal);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(FunctionPointerField));
 
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
+            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, Signature);
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
 
             if (returnValueLocal != 0)
                 codeStream.EmitStLoc(returnValueLocal);
@@ -336,6 +343,55 @@ namespace Internal.IL.Stubs
             get
             {
                 return "InvokeMulticastThunk";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Invoke thunk for delegates that point to closed instance generic methods.
+    /// These need a thunk because the function pointer to invoke might be a fat function
+    /// pointer and we need a calli to unwrap it, inject the hidden argument, shuffle the
+    /// rest of the arguments, and call the unwrapped function pointer.
+    /// </summary>
+    public sealed class DelegateInvokeInstanceClosedOverGenericMethodThunk : DelegateThunk
+    {
+        internal DelegateInvokeInstanceClosedOverGenericMethodThunk(DelegateInfo delegateInfo)
+            : base(delegateInfo)
+        {
+        }
+
+        public override MethodIL EmitIL()
+        {
+            var emitter = new ILEmitter();
+            ILCodeStream codeStream = emitter.NewCodeStream();
+
+            // Load the stored 'this'
+            codeStream.EmitLdArg(0);
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
+
+            // Load all arguments except 'this'
+            for (int i = 0; i < Signature.Length; i++)
+            {
+                codeStream.EmitLdArg(i + 1);
+            }
+
+            // Indirectly call the delegate target
+            codeStream.EmitLdArg(0);
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
+
+            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, Signature);
+            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
+
+            codeStream.Emit(ILOpcode.ret);
+
+            return emitter.Link(this);
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return "InvokeInstanceClosedOverGenericMethodThunk";
             }
         }
     }
@@ -538,7 +594,7 @@ namespace Internal.IL.Stubs
 
         private TypeDesc ConvertToBoxableType(TypeDesc type)
         {
-            if (type.IsPointer)
+            if (type.IsPointer || type.IsFunctionPointer)
             {
                 return type.Context.GetWellKnownType(WellKnownType.IntPtr);
             }

@@ -43,9 +43,9 @@ namespace Internal.Reflection.Extensions.NonPortable
         public static IEnumerable<CustomAttributeData> GetMatchingCustomAttributes(this MemberInfo element, Type optionalAttributeTypeFilter, bool inherit, bool skipTypeValidation = false)
         {
             {
-                TypeInfo typeInfo = element as TypeInfo;
-                if (typeInfo != null)
-                    return TypeCustomAttributeSearcher.Default.GetMatchingCustomAttributes(typeInfo, optionalAttributeTypeFilter, inherit, skipTypeValidation: skipTypeValidation);
+                Type type = element as Type;
+                if (type != null)
+                    return TypeCustomAttributeSearcher.Default.GetMatchingCustomAttributes(type, optionalAttributeTypeFilter, inherit, skipTypeValidation: skipTypeValidation);
             }
             {
                 ConstructorInfo constructorInfo = element as ConstructorInfo;
@@ -111,14 +111,14 @@ namespace Internal.Reflection.Extensions.NonPortable
         //==============================================================================================================================
         // Searcher class for TypeInfos.
         //==============================================================================================================================
-        private sealed class TypeCustomAttributeSearcher : CustomAttributeSearcher<TypeInfo>
+        private sealed class TypeCustomAttributeSearcher : CustomAttributeSearcher<Type>
         {
-            protected sealed override IEnumerable<CustomAttributeData> GetDeclaredCustomAttributes(TypeInfo element)
+            protected sealed override IEnumerable<CustomAttributeData> GetDeclaredCustomAttributes(Type element)
             {
                 return element.CustomAttributes;
             }
 
-            public sealed override TypeInfo GetParent(TypeInfo e)
+            public sealed override Type GetParent(Type e)
             {
                 Type baseType = e.BaseType;
                 if (baseType == null)
@@ -129,7 +129,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if (baseType.Equals(CommonRuntimeTypes.Object) || baseType.Equals(CommonRuntimeTypes.ValueType))
                     return null;
 
-                return baseType.GetTypeInfo();
+                return baseType;
             }
 
             public static readonly TypeCustomAttributeSearcher Default = new TypeCustomAttributeSearcher();
@@ -234,7 +234,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 MethodInfo methodParent = new MethodCustomAttributeSearcher().GetParent(method);
                 if (methodParent == null)
                     return null;
-                return methodParent.GetParameters()[e.Position];
+                return methodParent.GetParametersNoCopy()[e.Position];
             }
 
             public static readonly ParameterCustomAttributeSearcher Default = new ParameterCustomAttributeSearcher();

@@ -106,6 +106,14 @@ namespace System.Runtime.InteropServices
 
             IntPtr vt = typeHandle.GetCcwVtable();
 
+#if !CORECLR && ENABLE_WINRT
+            if (vt == default(IntPtr) && McgModuleManager.UseDynamicInterop)
+            {
+                // TODO Design an interface, such as IMcgCCWData and each McgModule implements this interface
+                // Dynamic has its own mcg module
+                vt = DynamicInteropHelpers.GetCCWVTable_NoThrow(managedCCW.TargetObject, typeHandle);
+            }
+#endif
             if (vt == default(IntPtr))
             {
 #if ENABLE_WINRT
@@ -508,7 +516,7 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        #region Ref Count Management
+#region Ref Count Management
 
         internal const long COM_REFCOUNT_MASK = 0x00000000FFFFFFFFL;                   // COM -> 32 bits
         internal const long JUPITER_REFCOUNT_MASK = unchecked((long)0xFFFFFFFF00000000L);  // Jupiter -> 32 bits
@@ -678,9 +686,9 @@ namespace System.Runtime.InteropServices
             return COMRefCountFrom(lNewRefCount);
         }
 
-        #endregion
+#endregion
 
-        #region Flags
+#region Flags
 
         /// <summary>
         /// Whether the NativeCCW is neutered
@@ -745,15 +753,15 @@ namespace System.Runtime.InteropServices
             return m_flags;
         }
 
-        #endregion
+#endregion
 
-        #region CCW lookup related
+#region CCW lookup related
 
         internal int GetHashCodeForLookup()
         {
             return m_hashCode;
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1037,7 +1045,7 @@ namespace System.Runtime.InteropServices
     [EditorBrowsable(EditorBrowsableState.Never)]
     unsafe internal class ComCallableObject
     {
-        #region Private variables
+#region Private variables
 
         __native_ccw* m_pNativeCCW;         // Native CCW
         LightweightList<CCWCacheEntry>.WithInlineStorage m_CCWs; // List of cached CCWs
@@ -1069,9 +1077,9 @@ namespace System.Runtime.InteropServices
 
 
         RuntimeTypeHandle m_type;
-        #endregion
+#endregion
 
-        #region RefCounted handle support
+#region RefCounted handle support
 
         static internal void InitRefCountedHandleCallback()
         {
@@ -1100,7 +1108,7 @@ namespace System.Runtime.InteropServices
             return ccw.NativeCCW->IsAlive();
         }
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Check whether the COM pointer is a CCW
@@ -1484,7 +1492,13 @@ namespace System.Runtime.InteropServices
             //
             foreach(RuntimeTypeHandle implementedInterface in ccwType.GetImplementedInterfaces())
             {
-                Debug.Assert(!implementedInterface.IsInvalid());
+                // DR may reduce a type away
+                // The root cause is that there are mismatch between DR's necessary Types and Mcg analysis Result's necessary Types
+                if (implementedInterface.IsInvalid())
+                {
+                    continue;
+                }
+
                 bool match = false;
                 if (interfaceType.IsNull())
                 {

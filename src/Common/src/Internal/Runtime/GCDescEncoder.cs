@@ -73,7 +73,7 @@ namespace Internal.Runtime
                 // 2 means m_pEEType and _numComponents. Syncblock is sort of appended at the end of the object layout in this case.
                 int baseSize = 2 * builder.TargetPointerSize;
 
-                if (!type.IsSzArray)
+                if (type.IsMdArray)
                 {
                     // Multi-dim arrays include upper and lower bounds for each rank
                     baseSize += 2 * type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)type).Rank;

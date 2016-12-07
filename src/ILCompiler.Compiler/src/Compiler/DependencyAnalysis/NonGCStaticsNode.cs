@@ -3,9 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,43 +24,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public NonGCStaticsNode(MetadataType type, NodeFactory factory)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
         }
 
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return "__NonGCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-            }
+            sb.Append("__NonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }
+        public int Offset => 0;
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public MetadataType Type => _type;
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
-        }
-        
         private static int GetClassConstructorContextSize(TargetDetails target)
         {
             // TODO: Assert that StaticClassConstructionContext type has the expected size
@@ -78,13 +61,7 @@ namespace ILCompiler.DependencyAnalysis
             return target.PointerSize;
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -116,8 +93,12 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitZeros(classConstructorContextStorageSize - GetClassConstructorContextSize(_type.Context.Target));
 
                 // Emit the actual StaticClassConstructionContext
-                var cctorMethod = _type.GetStaticConstructor();
-                builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
+                MethodDesc cctorMethod = _type.GetStaticConstructor();
+                MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (cctorMethod != canonCctorMethod)
+                    builder.EmitPointerReloc(factory.FatFunctionPointer(cctorMethod), FatFunctionPointerConstants.Offset);
+                else
+                    builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
                 builder.EmitZeroPointer();
             }
             else

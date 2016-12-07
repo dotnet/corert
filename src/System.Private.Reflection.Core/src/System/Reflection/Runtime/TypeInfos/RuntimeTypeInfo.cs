@@ -2,24 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.FieldInfos;
-using System.Reflection.Runtime.PropertyInfos;
-using System.Reflection.Runtime.EventInfos;
 
-using Internal.LowLevelLinq;
-using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Augments;
-
-using Internal.Metadata.NativeFormat;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 
@@ -96,9 +87,9 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     // Desktop quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
                     // unless that other generic parameter has a "class" constraint.
-                    GenericParameterAttributes genericParameterAttributes = baseType.GetTypeInfo().GenericParameterAttributes;
+                    GenericParameterAttributes genericParameterAttributes = baseType.GenericParameterAttributes;
                     if (0 == (genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint))
-                        baseType = ReflectionCoreExecution.ExecutionDomain.FoundationTypes.SystemObject;
+                        baseType = CommonRuntimeTypes.Object;
                 }
                 return baseType;
             }
@@ -122,108 +113,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 return Empty<CustomAttributeData>.Enumerable;
             }
         }
-
-        public sealed override IEnumerable<ConstructorInfo> DeclaredConstructors
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredConstructors(this);
-#endif
-
-                return GetDeclaredConstructorsInternal(this.AnchoringTypeDefinitionForDeclaredMembers);
-            }
-        }
-
-        public sealed override IEnumerable<EventInfo> DeclaredEvents
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredEvents(this);
-#endif
-
-                return GetDeclaredEventsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
-        public sealed override IEnumerable<FieldInfo> DeclaredFields
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredFields(this);
-#endif
-
-                return GetDeclaredFieldsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
-        public sealed override IEnumerable<MemberInfo> DeclaredMembers
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredMembers(this);
-#endif
-
-                return GetDeclaredMembersInternal(
-                    this.DeclaredMethods,
-                    this.DeclaredConstructors,
-                    this.DeclaredProperties,
-                    this.DeclaredEvents,
-                    this.DeclaredFields,
-                    this.DeclaredNestedTypes);
-            }
-        }
-
-        public sealed override IEnumerable<MethodInfo> DeclaredMethods
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredMethods(this);
-#endif
-
-                return GetDeclaredMethodsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
-        //
-        // Left unsealed as named types must override.
-        //
-        public override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredNestedTypes(this);
-#endif
-
-                Debug.Assert(!(this is RuntimeNamedTypeInfo));
-                return Empty<TypeInfo>.Enumerable;
-            }
-        }
-
-        public sealed override IEnumerable<PropertyInfo> DeclaredProperties
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredProperties(this);
-#endif
-
-                return GetDeclaredPropertiesInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
-            }
-        }
-
+ 
         //
         // Left unsealed as generic parameter types must override.
         //
@@ -290,112 +180,10 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override EventInfo GetDeclaredEvent(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredEvent(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredEvent(name);
-        }
-
-        public sealed override FieldInfo GetDeclaredField(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredField(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredField(name);
-        }
-
-        public sealed override MethodInfo GetDeclaredMethod(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredMethod(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredMethod(name);
-        }
-
-        public sealed override IEnumerable<MethodInfo> GetDeclaredMethods(string name)
-        {
-            foreach (MethodInfo method in DeclaredMethods)
-            {
-                if (method.Name == name)
-                    yield return method;
-            }
-        }
-
-        public sealed override TypeInfo GetDeclaredNestedType(string name)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfo match = null;
-            foreach (TypeInfo nestedType in DeclaredNestedTypes)
-            {
-                if (nestedType.Name == name)
-                {
-                    if (match != null)
-                        throw new AmbiguousMatchException();
-
-                    match = nestedType;
-                }
-            }
-            return match;
-        }
-
-        public sealed override PropertyInfo GetDeclaredProperty(String name)
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_GetDeclaredProperty(this, name);
-#endif
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            TypeInfoCachedData cachedData = this.TypeInfoCachedData;
-            return cachedData.GetDeclaredProperty(name);
-        }
-
         public sealed override MemberInfo[] GetDefaultMembers()
         {
-            Type defaultMemberAttributeType = typeof(DefaultMemberAttribute);
-            for (Type type = this; type != null; type = type.BaseType)
-            {
-                foreach (CustomAttributeData attribute in type.CustomAttributes)
-                {
-                    if (attribute.AttributeType == defaultMemberAttributeType)
-                    {
-                        // NOTE: Neither indexing nor cast can fail here. Any attempt to use fewer than 1 argument
-                        // or a non-string argument would correctly trigger MissingMethodException before
-                        // we reach here as that would be an attempt to reference a non-existent DefaultMemberAttribute
-                        // constructor.
-                        Debug.Assert(attribute.ConstructorArguments.Count == 1 && attribute.ConstructorArguments[0].Value is string);
-
-                        string memberName = (string)(attribute.ConstructorArguments[0].Value);
-                        return GetMember(memberName);
-                    }
-                }
-            }
-
-            return Array.Empty<MemberInfo>();
+            string defaultMemberName = GetDefaultMemberName();
+            return defaultMemberName != null ? GetMember(defaultMemberName) : Array.Empty<MemberInfo>();
         }
 
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType)
@@ -444,14 +232,14 @@ namespace System.Reflection.Runtime.TypeInfos
                     TypeContext typeContext = this.TypeContext;
                     Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
                     if (baseType != null)
-                        result.AddRange(baseType.GetTypeInfo().ImplementedInterfaces);
+                        result.AddRange(baseType.GetInterfaces());
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
-                        Type ifc = directlyImplementedInterface.Handle.Resolve(directlyImplementedInterface.Reader, typeContext);
+                        Type ifc = directlyImplementedInterface.Resolve(typeContext);
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);
-                        foreach (Type indirectIfc in ifc.GetTypeInfo().ImplementedInterfaces)
+                        foreach (Type indirectIfc in ifc.GetInterfaces())
                         {
                             if (result.Contains(indirectIfc))
                                 continue;
@@ -464,16 +252,14 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool IsAssignableFrom(TypeInfo typeInfo) => IsAssignableFrom((Type)typeInfo);
+
         public sealed override bool IsAssignableFrom(Type c)
         {
             if (c == null)
                 return false;
 
-            return IsAssignableFrom(c.GetTypeInfo());
-        }
-
-        public sealed override bool IsAssignableFrom(TypeInfo typeInfo)
-        {
+            Type typeInfo = c;
             RuntimeTypeInfo toTypeInfo = this;
 
             if (typeInfo == null || !typeInfo.IsRuntimeImplemented())
@@ -502,7 +288,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             // If we got here, the types are open, or reduced away, or otherwise lacking in type handles. Perform the IsAssignability check in managed code.
-            return Assignability.IsAssignableFrom(this, typeInfo, ReflectionCoreExecution.ExecutionDomain.FoundationTypes);
+            return Assignability.IsAssignableFrom(this, typeInfo);
         }
 
         //
@@ -535,6 +321,25 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return false;
+            }
+        }
+
+        public sealed override bool IsSzArray
+        {
+            get
+            {
+                return IsArrayImpl() && !InternalIsMultiDimArray;
+            }
+        }
+
+        public sealed override MemberTypes MemberType
+        {
+            get
+            {
+                if (IsPublic || IsNotPublic)
+                    return MemberTypes.TypeInfo;
+                else
+                    return MemberTypes.NestedType;
             }
         }
 
@@ -606,7 +411,7 @@ namespace System.Reflection.Runtime.TypeInfos
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
             // in the ECMA model and in CLR Reflection.
-            return this.GetArrayType().AsType();
+            return this.GetArrayType();
         }
 
         public sealed override Type MakeArrayType(int rank)
@@ -618,7 +423,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
-            return this.GetMultiDimArrayType(rank).AsType();
+            return this.GetMultiDimArrayType(rank);
         }
 
         public sealed override Type MakeByRefType()
@@ -627,7 +432,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_MakeByRefType(this);
 #endif
-            return this.GetByRefType().AsType();
+            return this.GetByRefType();
         }
 
         public sealed override Type MakeGenericType(params Type[] typeArguments)
@@ -655,7 +460,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!typeArguments[i].IsRuntimeImplemented())
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_MakeGenericType); // "PlatformNotSupported" because on desktop, passing in a foreign type is allowed and creates a RefEmit.TypeBuilder
             }
-            return this.GetConstructedGenericType(typeArguments.ToRuntimeTypeInfoArray()).AsType();
+            return this.GetConstructedGenericType(typeArguments.ToRuntimeTypeInfoArray());
         }
 
         public sealed override Type MakePointerType()
@@ -665,7 +470,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 ReflectionTrace.TypeInfo_MakePointerType(this);
 #endif
 
-            return this.GetPointerType().AsType();
+            return this.GetPointerType();
         }
 
         public sealed override Type DeclaringType
@@ -690,6 +495,16 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (name == null)
                     throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(rootCauseForFailure);
                 return name;
+            }
+        }
+
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                // Desktop compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as BindingFlags.DeclaredOnly was passed.
+                // For non-nested types, the concept of a ReflectedType doesn't even make sense.
+                return DeclaringType;
             }
         }
 
@@ -826,100 +641,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        //
-        // Return all declared events whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimeEventInfo> GetDeclaredEventsInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (EventHandle eventHandle in definingType.DeclaredEventHandles)
-                {
-                    if (optionalNameFilter == null || eventHandle.GetEvent(reader).Name.StringEquals(optionalNameFilter, reader))
-                        yield return RuntimeEventInfo.GetRuntimeEventInfo(eventHandle, definingType, this);
-                }
-            }
-        }
-
-        //
-        // Return all declared fields whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimeFieldInfo> GetDeclaredFieldsInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (FieldHandle fieldHandle in definingType.DeclaredFieldHandles)
-                {
-                    if (optionalNameFilter == null || fieldHandle.GetField(reader).Name.StringEquals(optionalNameFilter, reader))
-                        yield return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingType, this);
-                }
-            }
-        }
-
-        //
-        // Return all declared methods whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimeMethodInfo> GetDeclaredMethodsInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (MethodHandle methodHandle in definingType.DeclaredMethodAndConstructorHandles)
-                {
-                    Method method = methodHandle.GetMethod(reader);
-
-                    if ((optionalNameFilter != null) && !method.Name.StringEquals(optionalNameFilter, reader))
-                        continue;
-
-                    if (MetadataReaderExtensions.IsConstructor(ref method, reader))
-                        continue;
-                    yield return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingType, this);
-                }
-            }
-
-            foreach (RuntimeMethodInfo syntheticMethod in SyntheticMethods)
-            {
-                if (optionalNameFilter == null || optionalNameFilter == syntheticMethod.Name)
-                {
-                    yield return syntheticMethod;
-                }
-            }
-        }
-
-        //
-        // Return all declared properties whose name matches "optionalNameFilter". If optionalNameFilter is null, return them all.
-        //
-        internal IEnumerable<RuntimePropertyInfo> GetDeclaredPropertiesInternal(RuntimeNamedTypeInfo definingType, String optionalNameFilter)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                MetadataReader reader = definingType.Reader;
-                foreach (PropertyHandle propertyHandle in definingType.DeclaredPropertyHandles)
-                {
-                    if (optionalNameFilter == null || propertyHandle.GetProperty(reader).Name.StringEquals(optionalNameFilter, reader))
-                        yield return RuntimePropertyInfo.GetRuntimePropertyInfo(propertyHandle, definingType, this);
-                }
-            }
-        }
-
         internal abstract Type InternalDeclaringType { get; }
 
         //
@@ -972,6 +693,11 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         internal abstract RuntimeTypeHandle InternalTypeHandleIfAvailable { get; }
+
+        //
+        // Returns true if it's possible to ask for a list of members and the base type without triggering a MissingMetadataException.
+        //
+        internal abstract bool CanBrowseWithoutMissingMetadataExceptions { get; }
 
         //
         // The non-public version of TypeInfo.GenericTypeParameters (does not array-copy.)
@@ -1093,15 +819,37 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 QTypeDefRefOrSpec baseTypeDefRefOrSpec = TypeRefDefOrSpecForBaseType;
-                MetadataReader reader = baseTypeDefRefOrSpec.Reader;
                 RuntimeTypeInfo baseType = null;
-                if (reader != null)
+                if (!baseTypeDefRefOrSpec.IsNull)
                 {
-                    Handle typeDefRefOrSpec = baseTypeDefRefOrSpec.Handle;
-                    baseType = typeDefRefOrSpec.Resolve(reader, this.TypeContext);
+                    baseType = baseTypeDefRefOrSpec.Resolve(this.TypeContext);
                 }
                 return baseType;
             }
+        }
+
+        private string GetDefaultMemberName()
+        {
+            Type defaultMemberAttributeType = typeof(DefaultMemberAttribute);
+            for (Type type = this; type != null; type = type.BaseType)
+            {
+                foreach (CustomAttributeData attribute in type.CustomAttributes)
+                {
+                    if (attribute.AttributeType == defaultMemberAttributeType)
+                    {
+                        // NOTE: Neither indexing nor cast can fail here. Any attempt to use fewer than 1 argument
+                        // or a non-string argument would correctly trigger MissingMethodException before
+                        // we reach here as that would be an attempt to reference a non-existent DefaultMemberAttribute
+                        // constructor.
+                        Debug.Assert(attribute.ConstructorArguments.Count == 1 && attribute.ConstructorArguments[0].Value is string);
+
+                        string memberName = (string)(attribute.ConstructorArguments[0].Value);
+                        return memberName;
+                    }
+                }
+            }
+
+            return null;
         }
 
         //
@@ -1117,19 +865,17 @@ namespace System.Reflection.Runtime.TypeInfos
                     Type baseType = this.BaseType;
                     if (baseType != null)
                     {
-                        FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
-                        Type enumType = foundationTypes.SystemEnum;
-                        Type valueType = foundationTypes.SystemValueType;
+                        Type enumType = CommonRuntimeTypes.Enum;
+                        Type valueType = CommonRuntimeTypes.ValueType;
 
                         if (baseType.Equals(enumType))
                             classification |= TypeClassification.IsEnum | TypeClassification.IsValueType;
-                        if (baseType.Equals(valueType) && !(this.AsType().Equals(enumType)))
+                        if (baseType.Equals(valueType) && !(this.Equals(enumType)))
                         {
                             classification |= TypeClassification.IsValueType;
-                            Type thisType = this.AsType();
                             foreach (Type primitiveType in ReflectionCoreExecution.ExecutionDomain.PrimitiveTypes)
                             {
-                                if (thisType.Equals(primitiveType))
+                                if (this.Equals(primitiveType))
                                 {
                                     classification |= TypeClassification.IsPrimitive;
                                     break;
@@ -1157,73 +903,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return this;
         }
 
-        //
-        // Return all declared members. This may look like a silly code sequence to wrap inside a helper but we want to separate the iterator from
-        // the actual calls to get the sub-enumerations as we want any MissingMetadataException thrown by those
-        // calls to happen at the time DeclaredMembers is called.
-        //
-        private IEnumerable<MemberInfo> GetDeclaredMembersInternal(
-            IEnumerable<MethodInfo> methods,
-            IEnumerable<ConstructorInfo> constructors,
-            IEnumerable<PropertyInfo> properties,
-            IEnumerable<EventInfo> events,
-            IEnumerable<FieldInfo> fields,
-            IEnumerable<TypeInfo> nestedTypes
-            )
-        {
-            foreach (MemberInfo member in methods)
-                yield return member;
-            foreach (MemberInfo member in constructors)
-                yield return member;
-            foreach (MemberInfo member in properties)
-                yield return member;
-            foreach (MemberInfo member in events)
-                yield return member;
-            foreach (MemberInfo member in fields)
-                yield return member;
-            foreach (MemberInfo member in nestedTypes)
-                yield return member;
-        }
-
-        //
-        // Return all declared constructors.
-        //
-        private IEnumerable<RuntimeConstructorInfo> GetDeclaredConstructorsInternal(RuntimeNamedTypeInfo definingType)
-        {
-            if (definingType != null)
-            {
-                // We require the caller to pass a value that we could calculate ourselves because we're an iterator and we
-                // don't want any MissingMetadataException that AnchoringType throws to be deferred.
-                Debug.Assert(definingType.Equals(this.AnchoringTypeDefinitionForDeclaredMembers));
-
-                RuntimeTypeInfo contextType = this;
-                foreach (MethodHandle methodHandle in definingType.DeclaredConstructorHandles)
-                {
-                    yield return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, definingType, contextType);
-                }
-            }
-
-            foreach (RuntimeConstructorInfo syntheticConstructor in SyntheticConstructors)
-            {
-                yield return syntheticConstructor;
-            }
-        }
-
         private volatile TypeClassification _lazyClassification;
-
-        private TypeInfoCachedData TypeInfoCachedData
-        {
-            get
-            {
-                TypeInfoCachedData cachedData = _lazyTypeInfoCachedData;
-                if (cachedData != null)
-                    return cachedData;
-                _lazyTypeInfoCachedData = cachedData = new TypeInfoCachedData(this);
-                return cachedData;
-            }
-        }
-
-        private volatile TypeInfoCachedData _lazyTypeInfoCachedData;
 
         private String _debugName;
     }

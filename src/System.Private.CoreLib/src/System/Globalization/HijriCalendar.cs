@@ -48,7 +48,7 @@ namespace System.Globalization
     [System.Runtime.InteropServices.ComVisible(true)]
     public partial class HijriCalendar : Calendar
     {
-        internal static readonly int HijriEra = 1;
+        public static readonly int HijriEra = 1;
 
         internal const int DatePartYear = 0;
         internal const int DatePartDayOfYear = 1;
@@ -88,6 +88,15 @@ namespace System.Globalization
             get
             {
                 return (calendarMaxValue);
+            }
+        }
+
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.LunarCalendar;
             }
         }
 
@@ -221,7 +230,7 @@ namespace System.Globalization
         {
             if (era != CurrentEra && era != HijriEra)
             {
-                throw new ArgumentOutOfRangeException("era", SR.ArgumentOutOfRange_InvalidEraValue);
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
             }
         }
 
@@ -231,7 +240,7 @@ namespace System.Globalization
             if (year < 1 || year > MaxCalendarYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
@@ -248,7 +257,7 @@ namespace System.Globalization
                 if (month > MaxCalendarMonth)
                 {
                     throw new ArgumentOutOfRangeException(
-                                "month",
+                                nameof(month),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
@@ -259,7 +268,7 @@ namespace System.Globalization
 
             if (month < 1 || month > 12)
             {
-                throw new ArgumentOutOfRangeException("month", SR.ArgumentOutOfRange_Month);
+                throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
             }
         }
 
@@ -386,7 +395,7 @@ namespace System.Globalization
             if (months < -120000 || months > 120000)
             {
                 throw new ArgumentOutOfRangeException(
-                            "months",
+                            nameof(months),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
@@ -542,7 +551,7 @@ namespace System.Globalization
             if (day < 1 || day > daysInMonth)
             {
                 throw new ArgumentOutOfRangeException(
-                            "day",
+                            nameof(day),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Day,
@@ -593,7 +602,7 @@ namespace System.Globalization
             if (day < 1 || day > daysInMonth)
             {
                 throw new ArgumentOutOfRangeException(
-                            "day",
+                            nameof(day),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Day,
@@ -633,7 +642,7 @@ namespace System.Globalization
                 if (value < 99 || value > MaxCalendarYear)
                 {
                     throw new ArgumentOutOfRangeException(
-                                "value",
+                                nameof(value),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
@@ -649,7 +658,7 @@ namespace System.Globalization
         {
             if (year < 0)
             {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
@@ -662,7 +671,7 @@ namespace System.Globalization
             if (year > MaxCalendarYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,

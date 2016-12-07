@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
@@ -27,6 +26,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract IEnumerable<M> GetDeclaredMembers(TypeInfo typeInfo);
 
         //
+        // Returns all of the directly declared members on the given TypeInfo whose name matches optionalNameFilter. If optionalNameFilter is null,
+        // returns all directly declared members.
+        //
+        public abstract IEnumerable<M> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter optionalNameFilter, RuntimeTypeInfo reflectedType);
+
+        //
         // Policy to decide whether a member is considered "virtual", "virtual new" and what its member visibility is.
         // (For "visibility", we reuse the MethodAttributes enum since Reflection lacks an element-agnostic enum for this.
         //  Only the MemberAccessMask bits are set.)
@@ -34,9 +39,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public abstract void GetMemberAttributes(M member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot);
 
         //
-        // Policy to decide whether two virtual members are signature-compatible for the purpose of implicit overriding. 
+        // Policy to decide whether "derivedMember" is a virtual override of "baseMember." Used to implement MethodInfo.GetBaseDefinition(),
+        // parent chain traversal for discovering inherited custom attributes, and suppressing lookup results in the Type.Get*() api family.
+        // 
+        // Does not consider explicit overrides (methodimpls.) Does not consider "overrides" of interface methods.
         //
-        public abstract bool AreNamesAndSignatureEqual(M member1, M member2);
+        public abstract bool ImplicitlyOverrides(M baseMember, M derivedMember);
 
         //
         // Policy to decide how BindingFlags should be reinterpreted for a given member type.
@@ -49,290 +57,187 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         //
-        // Policy to create a wrapper MemberInfo (if appropriate). This is due to the fact that MemberInfo's actually have their identity
-        // tied to the type they were queried off of and this unfortunate fact shows up in certain api behaviors.
+        // Policy to decide if BindingFlags is always interpreted as having set DeclaredOnly.
         //
-        public virtual M GetInheritedMemberInfo(M underlyingMemberInfo, Type reflectedType)
-        {
-            return underlyingMemberInfo;
-        }
+        public abstract bool AlwaysTreatAsDeclaredOnly { get; }
 
         //
-        // Helper method for determining whether two methods are signature-compatible for the purpose of implicit overriding.
+        // Policy to decide how or if members in more derived types hide same-named members in base types.
+        // Due to desktop compat concerns, the definitions are a bit more arbitrary than we'd like.
+        //
+        public abstract bool IsSuppressedByMoreDerivedMember(M member, M[] priorMembers, int startIndex, int endIndex);
+
+        //
+        // Policy to decide whether to throw an AmbiguousMatchException on an ambiguous Type.Get*() call.
+        // Does not apply to GetConstructor/GetMethod/GetProperty calls that have a non-null Type[] array passed to it.
+        //
+        // If method returns true, the Get() api will pick the member that's in the most derived type.
+        // If method returns false, the Get() api throws AmbiguousMatchException.
+        //
+        public abstract bool OkToIgnoreAmbiguity(M m1, M m2);
+
+        //
+        // Helper method for determining whether two methods are signature-compatible.
         //
         protected static bool AreNamesAndSignaturesEqual(MethodInfo method1, MethodInfo method2)
         {
             if (method1.Name != method2.Name)
-            {
                 return false;
-            }
 
-            ParameterInfo[] p1 = method1.GetParameters();
-            ParameterInfo[] p2 = method2.GetParameters();
+            ParameterInfo[] p1 = method1.GetParametersNoCopy();
+            ParameterInfo[] p2 = method2.GetParametersNoCopy();
             if (p1.Length != p2.Length)
-            {
                 return false;
-            }
 
-            for (int i = 0; i < p1.Length; i++)
+            bool isGenericMethod1 = method1.IsGenericMethodDefinition;
+            bool isGenericMethod2 = method2.IsGenericMethodDefinition;
+            if (isGenericMethod1 != isGenericMethod2)
+                return false;
+            if (!isGenericMethod1)
             {
-                Type parameterType1 = p1[i].ParameterType;
-                Type parameterType2 = p2[i].ParameterType;
-                if (!(parameterType1.Equals(parameterType2)))
+                for (int i = 0; i < p1.Length; i++)
                 {
+                    Type parameterType1 = p1[i].ParameterType;
+                    Type parameterType2 = p2[i].ParameterType;
+                    if (!(parameterType1.Equals(parameterType2)))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                if (method1.GetGenericArguments().Length != method2.GetGenericArguments().Length)
                     return false;
+                for (int i = 0; i < p1.Length; i++)
+                {
+                    Type parameterType1 = p1[i].ParameterType;
+                    Type parameterType2 = p2[i].ParameterType;
+                    if (!GenericMethodAwareAreParameterTypesEqual(parameterType1, parameterType2))
+                    {
+                        return false;
+                    }
                 }
             }
             return true;
         }
 
         //
+        // This helper compares the types of the corresponding parameters of two methods to see if one method is signature equivalent to the other.
+        // This is needed when comparing the signatures of two generic methods as Type.Equals() is not up to that job.
+        //
+        private static bool GenericMethodAwareAreParameterTypesEqual(Type t1, Type t2)
+        {
+            // Fast-path - if Reflection has already deemed them equivalent, we can trust its result.
+            if (t1.Equals(t2))
+                return true;
+
+            // If we got here, Reflection determined the types not equivalent. Most of the time, that's the result we want. 
+            // There is however, one wrinkle. If the type is or embeds a generic method parameter type, Reflection will always report them 
+            // non-equivalent, since generic parameter type comparison always compares both the position and the declaring method. For our purposes, though,
+            // we only want to consider the position.
+
+            // Fast-path: if the types don't embed any generic parameters, we can go ahead and use Reflection's result.
+            if (!(t1.ContainsGenericParameters && t2.ContainsGenericParameters))
+                return false;
+
+            if ((t1.IsArray && t2.IsArray) || (t1.IsByRef && t2.IsByRef) || (t1.IsPointer && t2.IsPointer))
+            {
+                if (t1.IsSzArray != t2.IsSzArray)
+                    return false;
+
+                if (t1.IsArray && (t1.GetArrayRank() != t2.GetArrayRank()))
+                    return false;
+
+                return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType(), t2.GetElementType());
+            }
+
+            if (t1.IsConstructedGenericType)
+            {
+                // We can use regular old Equals() rather than recursing into GenericMethodAwareAreParameterTypesEqual() since the
+                // generic type definition will always be a plain old named type and won't embed any generic method parameters.
+                if (!(t1.GetGenericTypeDefinition().Equals(t2.GetGenericTypeDefinition())))
+                    return false;
+
+                Type[] ga1 = t1.GenericTypeArguments;
+                Type[] ga2 = t2.GenericTypeArguments;
+                if (ga1.Length != ga2.Length)
+                    return false;
+
+                for (int i = 0; i < ga1.Length; i++)
+                {
+                    if (!GenericMethodAwareAreParameterTypesEqual(ga1[i], ga2[i]))
+                        return false;
+                }
+                return true;
+            }
+
+            if (t1.IsGenericParameter && t2.IsGenericParameter)
+            {
+                if (t1.DeclaringMethod != null && t2.DeclaringMethod != null)
+                {
+                    // A generic method parameter. The DeclaringMethods will be different but we don't care about that - we can assume that
+                    // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to 
+                    // compare the positions.
+                    return t1.GenericParameterPosition == t2.GenericParameterPosition;
+                }
+                return false;
+            }
+
+            // If we got here, either t1 and t2 are different flavors of types or they are both simple named types.
+            // Either way, we can trust Reflection's result here.
+            return false;
+        }
+
+        static MemberPolicies()
+        {
+            Type t = typeof(M);
+            if (t.Equals(typeof(FieldInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Field;
+                Default = (MemberPolicies<M>)(Object)(new FieldPolicies());
+            }
+            else if (t.Equals(typeof(MethodInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Method;
+                Default = (MemberPolicies<M>)(Object)(new MethodPolicies());
+            }
+            else if (t.Equals(typeof(ConstructorInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Constructor;
+                Default = (MemberPolicies<M>)(Object)(new ConstructorPolicies());
+            }
+            else if (t.Equals(typeof(PropertyInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Property; ;
+                Default = (MemberPolicies<M>)(Object)(new PropertyPolicies());
+            }
+            else if (t.Equals(typeof(EventInfo)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Event;
+                Default = (MemberPolicies<M>)(Object)(new EventPolicies());
+            }
+            else if (t.Equals(typeof(Type)))
+            {
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.NestedType;
+                Default = (MemberPolicies<M>)(Object)(new NestedTypePolicies());
+            }
+            else
+            {
+                Debug.Assert(false, "Unknown MemberInfo type.");
+            }
+        }
+
+        //
         // This is a singleton class one for each MemberInfo category: Return the appropriate one. 
         //
-        public static MemberPolicies<M> Default
-        {
-            get
-            {
-                if (_default == null)
-                {
-                    Type t = typeof(M);
-                    if (t.Equals(typeof(FieldInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new FieldPolicies());
-                    }
-                    else if (t.Equals(typeof(MethodInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new MethodPolicies());
-                    }
-                    else if (t.Equals(typeof(ConstructorInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new ConstructorPolicies());
-                    }
-                    else if (t.Equals(typeof(PropertyInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new PropertyPolicies());
-                    }
-                    else if (t.Equals(typeof(EventInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new EventPolicies());
-                    }
-                    else if (t.Equals(typeof(TypeInfo)))
-                    {
-                        _default = (MemberPolicies<M>)(Object)(new NestedTypePolicies());
-                    }
-                    else
-                    {
-                        Debug.Assert(false, "Unknown MemberInfo type.");
-                    }
-                }
-                return _default;
-            }
-        }
+        public static readonly MemberPolicies<M> Default;
 
-        private static volatile MemberPolicies<M> _default;
-    }
-
-    //==========================================================================================================================
-    // Policies for fields.
-    //==========================================================================================================================
-    internal sealed class FieldPolicies : MemberPolicies<FieldInfo>
-    {
-        public sealed override IEnumerable<FieldInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredFields;
-        }
-
-        public sealed override void GetMemberAttributes(FieldInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            FieldAttributes fieldAttributes = member.Attributes;
-            visibility = (MethodAttributes)(fieldAttributes & FieldAttributes.FieldAccessMask);
-            isStatic = (0 != (fieldAttributes & FieldAttributes.Static));
-            isVirtual = false;
-            isNewSlot = false;
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(FieldInfo member1, FieldInfo member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as fields are never \"virtual\".");
-            throw new NotSupportedException();
-        }
-    }
-
-
-    //==========================================================================================================================
-    // Policies for constructors.
-    //==========================================================================================================================
-    internal sealed class ConstructorPolicies : MemberPolicies<ConstructorInfo>
-    {
-        public sealed override IEnumerable<ConstructorInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredConstructors;
-        }
-
-        public sealed override BindingFlags ModifyBindingFlags(BindingFlags bindingFlags)
-        {
-            // Constructors are not inherited.
-            return bindingFlags | BindingFlags.DeclaredOnly;
-        }
-
-        public sealed override void GetMemberAttributes(ConstructorInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodAttributes methodAttributes = member.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = false;
-            isNewSlot = false;
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(ConstructorInfo member1, ConstructorInfo member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as constructors are never \"virtual\".");
-            throw new NotSupportedException();
-        }
-    }
-
-
-    //==========================================================================================================================
-    // Policies for methods.
-    //==========================================================================================================================
-    internal sealed class MethodPolicies : MemberPolicies<MethodInfo>
-    {
-        public sealed override IEnumerable<MethodInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredMethods;
-        }
-
-        public sealed override void GetMemberAttributes(MethodInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodAttributes methodAttributes = member.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
-            isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(MethodInfo member1, MethodInfo member2)
-        {
-            return AreNamesAndSignaturesEqual(member1, member2);
-        }
-    }
-
-    //==========================================================================================================================
-    // Policies for properties.
-    //==========================================================================================================================
-    internal sealed class PropertyPolicies : MemberPolicies<PropertyInfo>
-    {
-        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredProperties;
-        }
-
-        public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodInfo accessorMethod = GetAccessorMethod(member);
-            MethodAttributes methodAttributes = accessorMethod.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
-            isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(PropertyInfo member1, PropertyInfo member2)
-        {
-            return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
-        }
-
-        public sealed override PropertyInfo GetInheritedMemberInfo(PropertyInfo underlyingMemberInfo, Type reflectedType)
-        {
-            return new InheritedPropertyInfo(underlyingMemberInfo, reflectedType);
-        }
-
-        private MethodInfo GetAccessorMethod(PropertyInfo property)
-        {
-            MethodInfo accessor = property.GetMethod;
-            if (accessor == null)
-            {
-                accessor = property.SetMethod;
-            }
-
-            return accessor;
-        }
-    }
-
-    //==========================================================================================================================
-    // Policies for events.
-    //==========================================================================================================================
-    internal sealed class EventPolicies : MemberPolicies<EventInfo>
-    {
-        public sealed override IEnumerable<EventInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredEvents;
-        }
-
-        public sealed override void GetMemberAttributes(EventInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            MethodInfo accessorMethod = GetAccessorMethod(member);
-            MethodAttributes methodAttributes = accessorMethod.Attributes;
-            visibility = methodAttributes & MethodAttributes.MemberAccessMask;
-            isStatic = (0 != (methodAttributes & MethodAttributes.Static));
-            isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
-            isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(EventInfo member1, EventInfo member2)
-        {
-            return AreNamesAndSignaturesEqual(GetAccessorMethod(member1), GetAccessorMethod(member2));
-        }
-
-        private MethodInfo GetAccessorMethod(EventInfo e)
-        {
-            MethodInfo accessor = e.AddMethod;
-            return accessor;
-        }
-    }
-
-    //==========================================================================================================================
-    // Policies for nested types.
-    //
-    // Nested types enumerate a little differently than other members:
-    //
-    //    Base classes are never searched, regardless of BindingFlags.DeclaredOnly value.
-    //
-    //    Public|NonPublic|IgnoreCase are the only relevant BindingFlags. The apis ignore any other bits.
-    //
-    //    There is no such thing as a "static" or "instanced" nested type. For enumeration purposes,
-    //    we'll arbitrarily denote all nested types as "static."
-    //
-    //==========================================================================================================================
-    internal sealed class NestedTypePolicies : MemberPolicies<TypeInfo>
-    {
-        public sealed override IEnumerable<TypeInfo> GetDeclaredMembers(TypeInfo typeInfo)
-        {
-            return typeInfo.DeclaredNestedTypes;
-        }
-
-        public sealed override void GetMemberAttributes(TypeInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
-        {
-            isStatic = true;
-            isVirtual = false;
-            isNewSlot = false;
-
-            // Since we never search base types for nested types, we don't need to map every visibility value one to one.
-            // We just need to distinguish between "public" and "everything else."
-            visibility = member.IsNestedPublic ? MethodAttributes.Public : MethodAttributes.Private;
-        }
-
-        public sealed override bool AreNamesAndSignatureEqual(TypeInfo member1, TypeInfo member2)
-        {
-            Debug.Assert(false, "This code path should be unreachable as nested types are never \"virtual\".");
-            throw new NotSupportedException();
-        }
-
-        public sealed override BindingFlags ModifyBindingFlags(BindingFlags bindingFlags)
-        {
-            bindingFlags &= BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase;
-            bindingFlags |= BindingFlags.Static | BindingFlags.DeclaredOnly;
-            return bindingFlags;
-        }
+        //
+        // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M 
+        // being assigned a unique index (see the MemberTypeIndex for possible values). This is useful
+        // for converting a type reference to M to an array index or switch case label.
+        //
+        public static readonly int MemberTypeIndex;
     }
 }

@@ -24,7 +24,7 @@ namespace ILCompiler
         /// </summary>
         public IMethodNode Constructor
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace ILCompiler
         /// </summary>
         public ISymbolNode Target
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace ILCompiler
         /// </summary>
         public IMethodNode Thunk
         {
-            get; private set;
+            get;
         }
 
         private DelegateCreationInfo(IMethodNode constructor, ISymbolNode target, IMethodNode thunk = null)
@@ -80,25 +80,27 @@ namespace ILCompiler
             if (targetMethod.Signature.IsStatic)
             {
                 MethodDesc invokeThunk;
+                MethodDesc initMethod;
+
                 if (!closed)
                 {
                     // Open delegate to a static method
                     invokeThunk = delegateInfo.Thunks[DelegateThunkKind.OpenStaticThunk];
+                    initMethod = systemDelegate.GetKnownMethod("InitializeOpenStaticThunk", null);
                 }
                 else
                 {
                     // Closed delegate to a static method (i.e. delegate to an extension method that locks the first parameter)
                     invokeThunk = delegateInfo.Thunks[DelegateThunkKind.ClosedStaticThunk];
+                    initMethod = systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null);
                 }
 
                 var instantiatedDelegateType = delegateType as InstantiatedType;
                 if (instantiatedDelegateType != null)
                     invokeThunk = context.GetMethodForInstantiatedType(invokeThunk, instantiatedDelegateType);
 
-                // We use InitializeClosedStaticThunk for both because RyuJIT generates same code for both,
-                // but passes null as the first parameter for the open one.
                 return new DelegateCreationInfo(
-                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null)),
+                    factory.MethodEntrypoint(initMethod),
                     factory.MethodEntrypoint(targetMethod),
                     factory.MethodEntrypoint(invokeThunk));
             }
@@ -109,8 +111,20 @@ namespace ILCompiler
 
                 bool useUnboxingStub = targetMethod.OwningType.IsValueType;
 
+                string initializeMethodName = "InitializeClosedInstance";
+                if (targetMethod.HasInstantiation)
+                {
+                    Debug.Assert(!targetMethod.IsVirtual, "TODO: delegate to generic virtual method");
+
+                    // Closed delegates to generic instance methods need to be constructed through a slow helper that
+                    // checks for the fat function pointer case (function pointer + instantiation argument in a single
+                    // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
+                    // the invocation if necessary.
+                    initializeMethodName = "InitializeClosedInstanceSlow";
+                }
+
                 return new DelegateCreationInfo(
-                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedInstance", null)),
+                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
                     factory.MethodEntrypoint(targetMethod, useUnboxingStub));
             }
         }

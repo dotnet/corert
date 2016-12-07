@@ -115,11 +115,14 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromPointer, (PTR_VOID pPointerVal))
 COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
 {
 #if CORERT
-    return (HANDLE)(pEEType->GetModuleManager());
+    return (HANDLE)(pEEType->GetTypeManager());
 #else
     // For dynamically created types, return the module handle that contains the template type
     if (pEEType->IsDynamicType())
         pEEType = pEEType->get_DynamicTemplateType();
+
+    if (pEEType->get_DynamicModule() != nullptr)
+        return nullptr;
 
     FOREACH_MODULE(pModule)
     {
@@ -141,7 +144,7 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (HANDLE hOsModule, UInt32 blobId, UInt8
         (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
     ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
 
-    ModuleManager* pModule = (ModuleManager*)hOsModule;
+    TypeManager* pModule = (TypeManager*)hOsModule;
 
     int length;
     void* pBlob;
@@ -608,6 +611,18 @@ EXTERN_C REDHAWK_API void __cdecl RhpReleaseCastCacheLock()
     g_CastCacheLock.Leave();
 }
 
+extern CrstStatic g_ThunkPoolLock;
+
+EXTERN_C REDHAWK_API void __cdecl RhpAcquireThunkPoolLock()
+{
+    g_ThunkPoolLock.Enter();
+}
+
+EXTERN_C REDHAWK_API void __cdecl RhpReleaseThunkPoolLock()
+{
+    g_ThunkPoolLock.Leave();
+}
+
 EXTERN_C Int32 __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, UInt32 outputBufferLength);
 
 EXTERN_C REDHAWK_API Int32 __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, UInt32 outputBufferLength)
@@ -619,14 +634,24 @@ EXTERN_C REDHAWK_API Int32 __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBu
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength);
 }
 
+COOP_PINVOKE_HELPER(Boolean, RhpRegisterFrozenSegment, (void* pSegmentStart, UInt32 length))
+{
+    return RedhawkGCInterface::RegisterFrozenSection(pSegmentStart, length) != NULL;
+}
+
 #ifdef CORERT
-COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (ModuleManager* pModule, Int32 headerId, Int32* length))
+COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManager* pModule, Int32 headerId, Int32* length))
 {
     return pModule->GetModuleSection((ReadyToRunSectionType)headerId, length);
 }
 
-COOP_PINVOKE_HELPER(void*, RhpCreateModuleManager, (void* pModuleHeader))
+COOP_PINVOKE_HELPER(void*, RhpCreateTypeManager, (void* pModuleHeader))
 {
-    return ModuleManager::Create(pModuleHeader);
+    return TypeManager::Create(pModuleHeader);
 }
 #endif
+
+COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, (PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh))
+{
+    ThreadStore::GetCurrentThread()->GetStackBounds(ppStackLow, ppStackHigh);
+}

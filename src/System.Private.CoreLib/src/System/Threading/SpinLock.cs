@@ -14,13 +14,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
 using System.Diagnostics;
-//using System.Security.Permissions;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-//using System.Runtime.ConstrainedExecution;
-using System.Diagnostics.Contracts;
+
 using Internal.Threading.Tracing;
 
 namespace System.Threading
@@ -132,7 +128,7 @@ namespace System.Threading
             if (!enableThreadOwnerTracking)
             {
                 m_owner |= LOCK_ID_DISABLE_MASK;
-                Contract.Assert(!IsThreadOwnerTrackingEnabled, "property should be false by now");
+                Debug.Assert(!IsThreadOwnerTrackingEnabled, "property should be false by now");
             }
         }
 
@@ -230,7 +226,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
+                    nameof(timeout), timeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
             // Call reliable enter with the int-based timeout milliseconds
@@ -288,7 +284,7 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "millisecondsTimeout", millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
 
@@ -328,26 +324,22 @@ namespace System.Threading
             observedOwner = m_owner;
             if ((observedOwner & LOCK_ANONYMOUS_OWNED) == LOCK_UNOWNED)
             {
-                if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner)
+                if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner
+                     || millisecondsTimeout == 0)
                 {
+                    // Aquired lock, or did not aquire lock as owned but timeout is 0 so fail fast
                     return;
                 }
+            }
+            else if (millisecondsTimeout == 0)
+            {
+                // Did not aquire lock as owned and timeout is 0 so fail fast
+                return;
             }
             else //failed to acquire the lock,then try to update the waiters. If the waiters count reached the maximum, jsut break the loop to avoid overflow
             {
                 if ((observedOwner & WAITERS_MASK) != MAXIMUM_WAITERS)
                     turn = (Interlocked.Add(ref m_owner, 2) & WAITERS_MASK) >> 1;
-            }
-
-
-
-            // Check the timeout.
-            if (millisecondsTimeout == 0 ||
-                (millisecondsTimeout != Timeout.Infinite &&
-                TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout) <= 0))
-            {
-                DecrementWaiters();
-                return;
             }
 
             //***Step 2. Spinning
@@ -367,7 +359,7 @@ namespace System.Threading
                         int newOwner = (observedOwner & WAITERS_MASK) == 0 ? // Gets the number of waiters, if zero
                             observedOwner | 1 // don't decrement it. just set the lock bit, it is zzero because a previous call of Exit(false) ehich corrupted the waiters
                             : (observedOwner - 2) | 1; // otherwise decrement the waiters and set the lock bit
-                        Contract.Assert((newOwner & WAITERS_MASK) >= 0);
+                        Debug.Assert((newOwner & WAITERS_MASK) >= 0);
 
                         if (CompareExchange(ref m_owner, newOwner, observedOwner, ref lockTaken) == observedOwner)
                         {
@@ -375,13 +367,13 @@ namespace System.Threading
                         }
                     }
                 }
-            }
 
-            // Check the timeout.
-            if (millisecondsTimeout != Timeout.Infinite && TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout) <= 0)
-            {
-                DecrementWaiters();
-                return;
+                // Check the timeout.
+                if (millisecondsTimeout != Timeout.Infinite && TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout) <= 0)
+                {
+                    DecrementWaiters();
+                    return;
+                }
             }
 
             //*** Step 3, Yielding
@@ -395,7 +387,7 @@ namespace System.Threading
                     int newOwner = (observedOwner & WAITERS_MASK) == 0 ? // Gets the number of waiters, if zero
                            observedOwner | 1 // don't decrement it. just set the lock bit, it is zzero because a previous call of Exit(false) ehich corrupted the waiters
                            : (observedOwner - 2) | 1; // otherwise decrement the waiters and set the lock bit
-                    Contract.Assert((newOwner & WAITERS_MASK) >= 0);
+                    Debug.Assert((newOwner & WAITERS_MASK) >= 0);
 
                     if (CompareExchange(ref m_owner, newOwner, observedOwner, ref lockTaken) == observedOwner)
                     {
@@ -405,11 +397,11 @@ namespace System.Threading
 
                 if (yieldsoFar % SLEEP_ONE_FREQUENCY == 0)
                 {
-                    Helpers.Sleep(1);
+                    Interop.mincore.Sleep(1);
                 }
                 else if (yieldsoFar % SLEEP_ZERO_FREQUENCY == 0)
                 {
-                    Helpers.Sleep(0);
+                    Interop.mincore.Sleep(0);
                 }
                 else
                 {
@@ -442,7 +434,7 @@ namespace System.Threading
                 if ((observedOwner & WAITERS_MASK) == 0) return; // don't decrement the waiters if it's corrupted by previous call of Exit(false)
                 if (Interlocked.CompareExchange(ref m_owner, observedOwner - 2, observedOwner) == observedOwner)
                 {
-                    Contract.Assert(!IsThreadOwnerTrackingEnabled); // Make sure the waiters never be negative which will cause the thread tracking bit to be flipped
+                    Debug.Assert(!IsThreadOwnerTrackingEnabled); // Make sure the waiters never be negative which will cause the thread tracking bit to be flipped
                     break;
                 }
                 spinner.SpinOnce();
@@ -454,7 +446,7 @@ namespace System.Threading
         /// </summary>
         private void ContinueTryEnterWithThreadTracking(int millisecondsTimeout, uint startTime, ref bool lockTaken)
         {
-            Contract.Assert(IsThreadOwnerTrackingEnabled);
+            Debug.Assert(IsThreadOwnerTrackingEnabled);
 
             int lockUnowned = 0;
             // We are using thread IDs to mark ownership. Snap the thread ID and check for recursion.

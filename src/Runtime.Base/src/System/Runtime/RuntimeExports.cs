@@ -266,7 +266,7 @@ namespace System.Runtime
             object objClone;
 
             if (src.EEType->IsArray)
-                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), src.GetArrayLength());
+                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), Unsafe.As<Array>(src).Length);
             else
                 objClone = RhNewObject(new EETypePtr((IntPtr)src.EEType));
 
@@ -392,6 +392,42 @@ namespace System.Runtime
         public static unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc)
         {
             regionDesc->_magic = default(UIntPtr);
+        }
+
+        [RuntimeExport("RhCreateThunksHeap")]
+        public static object RhCreateThunksHeap(IntPtr commonStubAddress)
+        {
+            return ThunksHeap.CreateThunksHeap(commonStubAddress);
+        }
+
+        [RuntimeExport("RhAllocateThunk")]
+        public static IntPtr RhAllocateThunk(object thunksHeap)
+        {
+            return ((ThunksHeap)thunksHeap).AllocateThunk();
+        }
+
+        [RuntimeExport("RhFreeThunk")]
+        public static void RhFreeThunk(object thunksHeap, IntPtr thunkAddress)
+        {
+            ((ThunksHeap)thunksHeap).FreeThunk(thunkAddress);
+        }
+
+        [RuntimeExport("RhSetThunkData")]
+        public static void RhSetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
+        {
+            ((ThunksHeap)thunksHeap).SetThunkData(thunkAddress, context, target);
+        }
+
+        [RuntimeExport("RhTryGetThunkData")]
+        public static bool RhTryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
+        {
+            return ((ThunksHeap)thunksHeap).TryGetThunkData(thunkAddress, out context, out target);
+        }
+
+        [RuntimeExport("RhGetThunkSize")]
+        public static int RhGetThunkSize()
+        {
+            return InternalCalls.RhpGetThunkSize();
         }
     }
 }

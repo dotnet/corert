@@ -29,7 +29,7 @@ using System.Collections.Generic;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
 #if DEBUG
         public sealed override Type GetType(string name) => base.GetType(name);
@@ -63,21 +63,26 @@ namespace System.Reflection.Runtime.CustomAttributes
 
 namespace System.Reflection.Runtime.EventInfos
 {
-    internal sealed partial class RuntimeEventInfo
+    internal abstract partial class RuntimeEventInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
         public sealed override bool IsMulticast => base.IsMulticast;
+        public sealed override void AddEventHandler(object target, Delegate handler) => base.AddEventHandler(target, handler);
+        public sealed override void RemoveEventHandler(object target, Delegate handler) => base.RemoveEventHandler(target, handler);
 #endif //DEBUG
     }
 }
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
+        public sealed override bool IsSecurityCritical => base.IsSecurityCritical;
+        public sealed override bool IsSecuritySafeCritical => base.IsSecuritySafeCritical;
+        public sealed override bool IsSecurityTransparent => base.IsSecurityTransparent;
 #endif //DEBUG
     }
 }
@@ -115,7 +120,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
@@ -136,10 +141,25 @@ namespace System.Reflection.Runtime.TypeInfos
         protected sealed override bool IsContextfulImpl() => base.IsContextfulImpl();
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
         protected sealed override bool IsMarshalByRefImpl() => base.IsMarshalByRefImpl();
-        public sealed override MemberTypes MemberType => base.MemberType;
         public sealed override bool IsInstanceOfType(object o) => base.IsInstanceOfType(o);
         public sealed override bool IsSerializable => base.IsSerializable;
         public sealed override bool IsEquivalentTo(Type other) => base.IsEquivalentTo(other); // Note: If we enable COM type equivalence, this is no longer the correct implementation.
+
+        public sealed override IEnumerable<ConstructorInfo> DeclaredConstructors => base.DeclaredConstructors;
+        public sealed override IEnumerable<EventInfo> DeclaredEvents => base.DeclaredEvents;
+        public sealed override IEnumerable<FieldInfo> DeclaredFields => base.DeclaredFields;
+        public sealed override IEnumerable<MemberInfo> DeclaredMembers => base.DeclaredMembers;
+        public sealed override IEnumerable<MethodInfo> DeclaredMethods => base.DeclaredMethods;
+        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes => base.DeclaredNestedTypes;
+        public sealed override IEnumerable<PropertyInfo> DeclaredProperties => base.DeclaredProperties;
+
+        public sealed override EventInfo GetDeclaredEvent(string name) => base.GetDeclaredEvent(name);
+        public sealed override FieldInfo GetDeclaredField(string name) => base.GetDeclaredField(name);
+        public sealed override MethodInfo GetDeclaredMethod(string name) => base.GetDeclaredMethod(name);
+        public sealed override TypeInfo GetDeclaredNestedType(string name) => base.GetDeclaredNestedType(name);
+        public sealed override PropertyInfo GetDeclaredProperty(string name) => base.GetDeclaredProperty(name);
+
+        public sealed override IEnumerable<MethodInfo> GetDeclaredMethods(string name) => base.GetDeclaredMethods(name);
 #endif //DEBUG
     }
 }

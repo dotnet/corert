@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace System
@@ -159,7 +158,7 @@ namespace System
         // both strings are non-null and that their lengths are equal. Ther caller should also have
         // done the Object.ReferenceEquals() fastpath check as we won't repeat it here.
         //
-        private unsafe static bool OrdinalCompareEqualLengthStrings(String strA, String strB)
+        private unsafe static bool EqualsHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
@@ -275,12 +274,12 @@ namespace System
 
         private unsafe static int CompareOrdinalHelper(String strA, String strB)
         {
-            Contract.Requires(strA != null);
-            Contract.Requires(strB != null);
+            Debug.Assert(strA != null);
+            Debug.Assert(strB != null);
 
             // NOTE: This may be subject to change if eliminating the check
             // in the callers makes them small enough to be inlined
-            Contract.Assert(strA._firstChar == strB._firstChar,
+            Debug.Assert(strA._firstChar == strB._firstChar,
                 "For performance reasons, callers of this method should " +
                 "check/short-circuit beforehand if the first char is the same.");
 
@@ -387,7 +386,7 @@ namespace System
                 if (*a != *b) return *a - *b;
 
                 DiffOffset1:
-                Contract.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
+                Debug.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
                 return *(a + 1) - *(b + 1);
             }
         }
@@ -395,11 +394,11 @@ namespace System
         internal unsafe static int CompareOrdinalHelper(string strA, int indexA, int countA, string strB, int indexB, int countB)
         {
             // Argument validation should be handled by callers.
-            Contract.Assert(strA != null && strB != null);
-            Contract.Assert(indexA >= 0 && indexB >= 0);
-            Contract.Assert(countA >= 0 && countB >= 0);
-            Contract.Assert(countA <= strA.Length - indexA);
-            Contract.Assert(countB <= strB.Length - indexB);
+            Debug.Assert(strA != null && strB != null);
+            Debug.Assert(indexA >= 0 && indexB >= 0);
+            Debug.Assert(countA >= 0 && countB >= 0);
+            Debug.Assert(countA <= strA.Length - indexA);
+            Debug.Assert(countB <= strB.Length - indexB);
 
             // Set up the loop variables.
             fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)
@@ -427,7 +426,7 @@ namespace System
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
             
             if (object.ReferenceEquals(strA, strB))
@@ -527,7 +526,7 @@ namespace System
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
 
             if (strA == null || strB == null)
@@ -544,18 +543,18 @@ namespace System
             // @TODO: Spec#: Figure out what to do here with the return statement above.
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
 
             if (indexA < 0 || indexB < 0)
             {
-                string paramName = indexA < 0 ? "indexA" : "indexB";
+                string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
 
             if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
             {
-                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                string paramName = strA.Length - indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
             
@@ -634,12 +633,12 @@ namespace System
 
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeCount);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeCount);
             }
 
             if (indexA < 0 || indexB < 0)
             {
-                string paramName = indexA < 0 ? "indexA" : "indexB";
+                string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
             
@@ -648,7 +647,7 @@ namespace System
 
             if (lengthA < 0 || lengthB < 0)
             {
-                string paramName = lengthA < 0 ? "indexA" : "indexB";
+                string paramName = lengthA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
 
@@ -705,12 +704,12 @@ namespace System
         {
             if ((Object)value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
 
             if ((Object)this == (Object)value)
@@ -738,7 +737,7 @@ namespace System
                     return this.Length < value.Length ? false : (FormatProvider.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -767,7 +766,7 @@ namespace System
             if (this.Length != str.Length)
                 return false;
 
-            return OrdinalCompareEqualLengthStrings(this, str);
+            return EqualsHelper(this, str);
         }
 
         // Determines whether two strings match.
@@ -788,14 +787,14 @@ namespace System
             if (this.Length != value.Length)
                 return false;
 
-            return OrdinalCompareEqualLengthStrings(this, value);
+            return EqualsHelper(this, value);
         }
 
 
         public bool Equals(String value, StringComparison comparisonType)
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
 
             if ((Object)this == (Object)value)
             {
@@ -818,7 +817,7 @@ namespace System
                 case StringComparison.Ordinal:
                     if (this.Length != value.Length)
                         return false;
-                    return OrdinalCompareEqualLengthStrings(this, value);
+                    return EqualsHelper(this, value);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if (this.Length != value.Length)
@@ -829,7 +828,7 @@ namespace System
                     }
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -847,13 +846,13 @@ namespace System
                 return false;
             }
 
-            return OrdinalCompareEqualLengthStrings(a, b);
+            return EqualsHelper(a, b);
         }
 
         public static bool Equals(String a, String b, StringComparison comparisonType)
         {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
 
             if ((Object)a == (Object)b)
             {
@@ -876,7 +875,7 @@ namespace System
                 case StringComparison.Ordinal:
                     if (a.Length != b.Length)
                         return false;
-                    return OrdinalCompareEqualLengthStrings(a, b);
+                    return EqualsHelper(a, b);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if (a.Length != b.Length)
@@ -886,7 +885,7 @@ namespace System
                         return FormatProvider.CompareOrdinalIgnoreCase(a, 0, a.Length, b, 0, b.Length) == 0;
                     }
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -896,7 +895,7 @@ namespace System
                 return true;
             if (a == null || b == null || a.Length != b.Length)
                 return false;
-            return OrdinalCompareEqualLengthStrings(a, b);
+            return EqualsHelper(a, b);
         }
 
         public static bool operator !=(String a, String b)
@@ -905,7 +904,7 @@ namespace System
                 return false;
             if (a == null || b == null || a.Length != b.Length)
                 return true;
-            return !OrdinalCompareEqualLengthStrings(a, b);
+            return !EqualsHelper(a, b);
         }
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
@@ -962,7 +961,7 @@ namespace System
         {
             if ((Object)value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             return StartsWith(value, StringComparison.CurrentCulture);
         }
@@ -971,12 +970,12 @@ namespace System
         {
             if ((Object)value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
             {
-                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
 
             if ((Object)this == (Object)value)
@@ -1014,7 +1013,7 @@ namespace System
                     return FormatProvider.CompareOrdinalIgnoreCase(this, 0, value.Length, value, 0, value.Length) == 0;
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
     }

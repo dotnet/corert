@@ -22,16 +22,16 @@ namespace System.Collections.ObjectModel
 
         public Collection()
         {
-            // Legacy compat: We must implement our backing list using List<T>() as we have store apps that call Collection<T>.Items and cast
+            // We must implement our backing list using List<T>() as we have store apps that call Collection<T>.Items and cast
             // the result to List<T>.
-            _items = WinRTInterop.Callbacks.CreateSystemCollectionsGenericList<T>();
+            _items = new List<T>();
         }
 
         public Collection(IList<T> list)
         {
             if (list == null)
             {
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             }
             _items = list;
         }
@@ -58,7 +58,7 @@ namespace System.Collections.ObjectModel
 
                 if (index < 0 || index >= _items.Count)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_ListItem);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ListItem);
                 }
 
                 SetItem(index, value);
@@ -115,7 +115,7 @@ namespace System.Collections.ObjectModel
 
             if (index < 0 || index > _items.Count)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_ListInsert);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ListInsert);
             }
 
             InsertItem(index, item);
@@ -143,7 +143,7 @@ namespace System.Collections.ObjectModel
 
             if (index < 0 || index >= _items.Count)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_ListRemoveAt);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ListRemoveAt);
             }
 
             RemoveItem(index);
@@ -211,7 +211,7 @@ namespace System.Collections.ObjectModel
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
@@ -226,7 +226,7 @@ namespace System.Collections.ObjectModel
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (array.Length - index < Count)
@@ -288,7 +288,7 @@ namespace System.Collections.ObjectModel
             {
                 if (value == null && !(default(T) == null))
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 try
@@ -297,7 +297,7 @@ namespace System.Collections.ObjectModel
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(T)), "value");
+                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(T)), nameof(value));
                 }
             }
         }
@@ -336,7 +336,7 @@ namespace System.Collections.ObjectModel
 
             if (value == null && !(default(T) == null))
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             try
@@ -345,7 +345,7 @@ namespace System.Collections.ObjectModel
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(T)), "value");
+                throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(T)), nameof(value));
             }
 
             return this.Count - 1;
@@ -377,7 +377,7 @@ namespace System.Collections.ObjectModel
             }
             if (value == null && !(default(T) == null))
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             try
@@ -386,7 +386,7 @@ namespace System.Collections.ObjectModel
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(T)), "value");
+                throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(T)), nameof(value));
             }
         }
 

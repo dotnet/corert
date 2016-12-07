@@ -15,8 +15,6 @@ using Internal.LowLevelLinq;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 using CharSet = System.Runtime.InteropServices.CharSet;
 using LayoutKind = System.Runtime.InteropServices.LayoutKind;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -44,7 +42,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return typeof(Object).GetTypeInfo().Assembly;
+                return CommonRuntimeTypes.Object.Assembly;
             }
         }
 
@@ -65,14 +63,6 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
 #endif
                 return Empty<CustomAttributeData>.Enumerable;
-            }
-        }
-
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-                return Empty<TypeInfo>.Enumerable;
             }
         }
 
@@ -165,6 +155,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return null;  // this causes the type to report having no members.
             }
         }
+
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {

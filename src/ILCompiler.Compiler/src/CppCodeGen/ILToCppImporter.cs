@@ -389,6 +389,15 @@ namespace Internal.IL
         }
 
         /// <summary>
+        /// Append the typedef of the method to assist in function pointer conversion
+        /// </summary>
+        /// <param name="method">Method typedef</param>
+        private void AppendInterfaceCallTypeDef(MethodDesc method, string name)
+        {
+            _writer.AppendSignatureTypeDef(_builder, name, method.Signature, method.Signature.ReturnType);
+        }
+
+        /// <summary>
         /// Increase level of indentation by one in <see cref="_builder"/>.
         /// </summary>
         public void Indent()
@@ -491,14 +500,9 @@ namespace Internal.IL
                 AddTypeReference(returnType, true);
             }
             var owningType = methodCodeNodeNeedingCode.Method.OwningType;
-            if (methodCodeNodeNeedingCode.Method.IsNativeCallable || methodCodeNodeNeedingCode.Method.IsRuntimeExport || methodCodeNodeNeedingCode.Method.IsRuntimeImplemented)
-            {
-                AddTypeReference(owningType, true);
-            }
-            if (methodCodeNodeNeedingCode.Method.Signature.IsStatic)
-            {
-                AddTypeReference(owningType, true);
-            }
+
+            AddTypeReference(owningType, true);
+
             ImportBasicBlocks();
 
             if (_sequencePoints != null && _sequencePoints[0].Document != null)
@@ -514,7 +518,7 @@ namespace Internal.IL
             }
 
             ForceAppendEmptyLine();
-            Append(_writer.GetCppMethodDeclaration(_method, true));
+            _writer.AppendCppMethodDeclaration(_builder, _method, true);
             AppendLine();
             Append("{");
             Indent();
@@ -860,6 +864,7 @@ namespace Internal.IL
         {
             bool callViaSlot = false;
             bool delegateInvoke = false;
+            bool callViaInterfaceDispatch = false;
             DelegateCreationInfo delegateInfo = null;
 
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
@@ -880,11 +885,32 @@ namespace Internal.IL
 
                     bool forceUseRuntimeLookup;
                     MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
-                    if (directMethod == null || forceUseRuntimeLookup)
+
+                    if (forceUseRuntimeLookup)
                         throw new NotImplementedException();
 
-                    method = directMethod;
-                    opcode = ILOpcode.call;
+                    if (directMethod != null)
+                    {
+                        method = directMethod;
+                        opcode = ILOpcode.call;
+                    }
+                    else
+                    {
+                        // Dereference "this"
+                        int thisPosition = _stack.Top - (method.Signature.Length + 1);
+                        string tempName = NewTempName();
+
+                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
+                        Append(" ");
+                        Append(tempName);
+                        Append(" = *(");
+                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
+                        Append("*)");
+                        Append(_stack[thisPosition]);
+                        AppendSemicolon();
+
+                        _stack[thisPosition] = new ExpressionEntry(StackValueKind.ObjRef, tempName);
+                    }
                 }
             }
 
@@ -894,14 +920,15 @@ namespace Internal.IL
 
             {
                 if (opcode == ILOpcode.newobj)
+                {
                     retType = owningType;
 
-                if (opcode == ILOpcode.newobj)
-                {
                     if (owningType.IsString)
                     {
                         // String constructors actually look like regular method calls
-                        method = method.GetStringInitializer();
+                        IMethodNode node = _compilation.NodeFactory.StringAllocator(method);
+                        _dependencies.Add(node);
+                        method = node.Method;
                         opcode = ILOpcode.call;
                     }
                     else if (owningType.IsArray)
@@ -936,17 +963,16 @@ namespace Internal.IL
                     if (!method.IsNewSlot)
                         throw new NotImplementedException();
 
-                    // TODO: Interface calls
                     if (method.OwningType.IsInterface)
-                        throw new NotImplementedException();
+                        callViaInterfaceDispatch = true;
+                    else
+                        callViaSlot = true;
 
                     _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
-
-                    callViaSlot = true;
                 }
             }
 
-            if (!callViaSlot && !delegateInvoke)
+            if (!callViaSlot && !delegateInvoke && !callViaInterfaceDispatch)
                 AddMethodReference(method);
 
             if (opcode == ILOpcode.newobj)
@@ -960,6 +986,54 @@ namespace Internal.IL
             string temp = null;
             StackValueKind retKind = StackValueKind.Unknown;
             var needNewLine = false;
+
+            if (callViaInterfaceDispatch)
+            {
+                _dependencies.Add(_nodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, method));
+                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
+
+                string typeDefName = _writer.GetCppMethodName(method);
+                _writer.AppendSignatureTypeDef(_builder,  typeDefName, method.Signature, method.OwningType);
+
+                string functionPtr = NewTempName();
+                AppendEmptyLine();
+
+                Append("void*");
+                Append(functionPtr);
+                Append(" = (void*) ((");
+                Append(typeDefName);
+                // Call method to find implementation address
+                Append(") System_Private_CoreLib::System::Runtime::DispatchResolve::FindInterfaceMethodImplementationTarget(");
+
+                // Get EEType of current object (interface implementation)
+                Append("::System_Private_CoreLib::System::Object::get_EEType((::System_Private_CoreLib::System::Object*)");
+                Append(v.Name);
+                Append(")");
+
+                Append(", ");
+
+                // Get EEType of interface
+                Append("((::System_Private_CoreLib::Internal::Runtime::EEType *)(");
+                Append(_writer.GetCppTypeName(method.OwningType));
+                Append("::__getMethodTable()))");
+
+                Append(", ");
+
+                // Get slot of implementation
+                Append("(uint16_t)");
+                Append("(");
+                Append(_writer.GetCppTypeName(method.OwningType));
+                Append("::");
+                Append("__getslot__");
+                Append(_writer.GetCppMethodName(method));
+                Append("(");
+                Append(v.Name);
+                Append("))");
+
+                Append("));");
+
+                PushExpression(StackValueKind.ByRef, functionPtr);
+            }
 
             if (!retType.IsVoid)
             {
@@ -1029,8 +1103,6 @@ namespace Internal.IL
 
             if (callViaSlot || delegateInvoke)
             {
-                // While waiting for C# return by ref, get this reference and insert it back
-                // if it is a delegate invoke.
                 ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
                 Append("(*");
                 Append(_writer.GetCppTypeName(method.OwningType));
@@ -1047,6 +1119,15 @@ namespace Internal.IL
                         "((" + _writer.GetCppSignatureTypeName(GetWellKnownType(WellKnownType.MulticastDelegate)) + ")" +
                             v.Name + ")->m_firstParameter";
                 }
+            }
+            else if (callViaInterfaceDispatch)
+            {
+                Append("((");
+                Append(_writer.GetCppMethodName(method));
+                Append(")");
+                ExpressionEntry v = (ExpressionEntry)_stack.Pop();
+                Append(v);
+                Append(")");
             }
             else
             {
@@ -1520,6 +1601,20 @@ namespace Internal.IL
                 default: Debug.Assert(false, "Unexpected opcode"); break;
             }
 
+            if (kind == StackValueKind.ByRef)
+            {
+                Append("(");
+                Append(GetStackValueKindCPPTypeName(kind, type));
+                Append(")(");
+            }
+
+            if (op2.Kind == StackValueKind.ByRef)
+            {
+                Append("(");
+                Append(GetStackValueKindCPPTypeName(StackValueKind.NativeInt));
+                Append(")");
+            }
+            else
             if (unsigned)
             {
                 Append("(u");
@@ -1530,6 +1625,13 @@ namespace Internal.IL
             Append(" ");
             Append(op);
             Append(" ");
+            if (op1.Kind == StackValueKind.ByRef)
+            {
+                Append("(");
+                Append(GetStackValueKindCPPTypeName(StackValueKind.NativeInt));
+                Append(")");
+            }
+            else
             if (unsigned)
             {
                 Append("(u");
@@ -1537,6 +1639,11 @@ namespace Internal.IL
                 Append(")");
             }
             Append(op1);
+
+            if (kind == StackValueKind.ByRef)
+            {
+                Append(")");
+            }
 
             AppendSemicolon();
         }
@@ -2217,12 +2324,10 @@ namespace Internal.IL
         {
             var argument = _stack.Pop();
 
-            if (argument.Kind == StackValueKind.Float)
-                throw new NotImplementedException();
-
             PushTemp(argument.Kind, argument.Type);
 
-            Append((opCode == ILOpcode.neg) ? "~" : "!");
+            Debug.Assert((opCode == ILOpcode.neg) || (opCode == ILOpcode.not));
+            Append((opCode == ILOpcode.neg) ? "-" : "~");
             Append(argument);
 
             AppendSemicolon();
@@ -2464,6 +2569,10 @@ namespace Internal.IL
 
         private void AddTypeReference(TypeDesc type, bool constructed)
         {
+            // CppImporter will rather arbitrarily try to generate types as constructed.
+            // Stomp over the choice and only allow this if it remotely makes sense.
+            constructed = constructed & ConstructedEETypeNode.CreationAllowed(type);
+
             AddTypeDependency(type, constructed);
 
             foreach (var field in type.GetFields())

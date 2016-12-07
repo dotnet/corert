@@ -214,7 +214,7 @@ namespace System.Collections.Generic.Internal
         private void Resize(int newSize)
         {
 #if !RHTESTCL
-            Contract.Assert(newSize >= entries.Length);
+            Debug.Assert(newSize >= entries.Length);
 #endif
 
             Entry[] newEntries = ResizeBase1(newSize);
@@ -267,7 +267,7 @@ namespace System.Collections.Generic.Internal
             {
                 if (hashSet == null)
                 {
-                    throw new ArgumentNullException("hashSet");
+                    throw new ArgumentNullException(nameof(hashSet));
                 }
 
                 this.m_hashSet = hashSet;
@@ -282,12 +282,12 @@ namespace System.Collections.Generic.Internal
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 }
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < m_hashSet.Count)
@@ -352,7 +352,7 @@ namespace System.Collections.Generic.Internal
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 }
 
                 if (array.Rank != 1)
@@ -367,7 +367,7 @@ namespace System.Collections.Generic.Internal
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < m_hashSet.Count)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -16,11 +17,6 @@ namespace System
 #pragma warning disable 649
         // This field should be the first field in Array as the runtime/compilers depend on it
         private int _numComponents;
-#if CORERT && BIT64
-        //  The field '{blah}' is never used
-#pragma warning disable 0169
-        private int _padding;
-#endif
 #pragma warning restore
 
         public int Length
@@ -33,20 +29,17 @@ namespace System
             }
         }
 
-#if CORERT
-        private class RawSzArrayData : Array
+        [StructLayout(LayoutKind.Sequential)]
+        private class RawData
         {
-// Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
-#pragma warning disable 649
+            public IntPtr Count; // Array._numComponents padded to IntPtr
             public byte Data;
-#pragma warning restore
         }
 
         internal ref byte GetRawSzArrayData()
         {
-            return ref Unsafe.As<RawSzArrayData>(this).Data;
+            return ref Unsafe.As<RawData>(this).Data;
         }
-#endif
     }
 
     // To accomodate class libraries that wish to implement generic interfaces on arrays, all class libraries

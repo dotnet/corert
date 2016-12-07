@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-//
-
+#if !CORECLR
+extern alias CoreFX_Collections;
+#endif
 using System;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     public sealed class EventRegistrationTokenTable<T> where T : class
     {
         // Note this dictionary is also used as the synchronization object for this table
-        private Dictionary<EventRegistrationToken, T> m_tokens = new Dictionary<EventRegistrationToken, T>();
+        private CoreFX_Collections::System.Collections.Generic.Dictionary<EventRegistrationToken, T> m_tokens = new CoreFX_Collections::System.Collections.Generic.Dictionary<EventRegistrationToken, T>();
 
         // Cached multicast delegate which will invoke all of the currently registered delegates.  This
         // will be accessed frequently in common coding paterns, so we don't want to calculate it repeatedly.
@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private EventRegistrationToken AddEventHandlerNoLock(T handler)
         {
-            Contract.Requires(handler != null);
+            Debug.Assert(handler != null);
 
             // Get a registration token, making sure that we haven't already used the value.  This should be quite
             // rare, but in the case it does happen, just keep trying until we find one that's unused.
@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         //  2. Use it as a guess to quickly see if the handler was really assigned this token value
         private static EventRegistrationToken GetPreferredToken(T handler)
         {
-            Contract.Requires(handler != null);
+            Debug.Assert(handler != null);
 
             // We want to generate a token value that has the following properties:
             //  1. is quickly obtained from the handler instance

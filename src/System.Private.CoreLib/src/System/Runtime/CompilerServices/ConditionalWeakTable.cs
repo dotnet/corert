@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             return _container.TryGetValueWorker(key, out value);
@@ -58,7 +58,7 @@ namespace System.Runtime.CompilerServices
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             using (LockHolder.Hold(_lock))
@@ -87,7 +87,7 @@ namespace System.Runtime.CompilerServices
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             using (LockHolder.Hold(_lock))
@@ -123,7 +123,7 @@ namespace System.Runtime.CompilerServices
 
             if (createValueCallback == null)
             {
-                throw new ArgumentNullException("createValueCallback");
+                throw new ArgumentNullException(nameof(createValueCallback));
             }
 
             TValue existingValue;
@@ -246,7 +246,7 @@ namespace System.Runtime.CompilerServices
         //----------------------------------------------------------------------------------------
         private void CreateEntry(TKey key, TValue value)
         {
-            Contract.Assert(_lock.IsAcquired);
+            Debug.Assert(_lock.IsAcquired);
 
             Container c = _container;
             if (!c.HasCapacity)
@@ -312,7 +312,7 @@ namespace System.Runtime.CompilerServices
         {
             internal Container()
             {
-                Contract.Assert(IsPowerOfTwo(InitialCapacity));
+                Debug.Assert(IsPowerOfTwo(InitialCapacity));
                 int size = InitialCapacity;
                 _buckets = new int[size];
                 for (int i = 0; i < _buckets.Length; i++)
@@ -344,7 +344,7 @@ namespace System.Runtime.CompilerServices
             //----------------------------------------------------------------------------------------
             internal void CreateEntryNoResize(TKey key, TValue value)
             {
-                Contract.Assert(HasCapacity);
+                Debug.Assert(HasCapacity);
 
                 VerifyIntegrity();
                 _invalid = true;
@@ -375,7 +375,7 @@ namespace System.Runtime.CompilerServices
             {
                 object secondary;
                 int entryIndex = FindEntry(key, out secondary);
-                value = RuntimeHelpers.UncheckedCast<TValue>(secondary);
+                value = Unsafe.As<TValue>(secondary);
                 return (entryIndex != -1);
             }
 
@@ -467,7 +467,7 @@ namespace System.Runtime.CompilerServices
             
             internal Container Resize(int newSize)
             {
-                Contract.Assert(IsPowerOfTwo(newSize));
+                Debug.Assert(IsPowerOfTwo(newSize));
 
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.
@@ -513,7 +513,7 @@ namespace System.Runtime.CompilerServices
                     {
                         for (int entriesIndex = _buckets[bucket]; entriesIndex != -1; entriesIndex = _entries[entriesIndex].next)
                         {
-                            TKey thisKey = RuntimeHelpers.UncheckedCast<TKey>(_entries[entriesIndex].depHnd.GetPrimary());
+                            TKey thisKey = Unsafe.As<TKey>(_entries[entriesIndex].depHnd.GetPrimary());
                             if (thisKey != null)
                             {
                                 list.Add(thisKey);
@@ -546,7 +546,7 @@ namespace System.Runtime.CompilerServices
                             // expired key as a live key with a null value.)
                             if (primary != null)
                             {
-                                list.Add(RuntimeHelpers.UncheckedCast<TValue>(secondary));
+                                list.Add(Unsafe.As<TValue>(secondary));
                             }
                         }
                     }
@@ -572,8 +572,8 @@ namespace System.Runtime.CompilerServices
                         if (Object.Equals(thisKey, key))
                         {
                             GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
-                            value = RuntimeHelpers.UncheckedCast<TValue>(thisValue);
-                            return RuntimeHelpers.UncheckedCast<TKey>(thisKey);
+                            value = Unsafe.As<TValue>(thisValue);
+                            return Unsafe.As<TKey>(thisKey);
                         }
                     }
                 }

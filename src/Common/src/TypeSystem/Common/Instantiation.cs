@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Internal.TypeSystem
 {
@@ -50,7 +52,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public int ComputeGenericInstanceHashCode(int genericDefinitionHashCode)
         {
-            return NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(genericDefinitionHashCode, _genericParameters);
+            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(genericDefinitionHashCode, _genericParameters);
         }
 
         public static readonly Instantiation Empty = new Instantiation(TypeDesc.EmptyTypes);
@@ -58,6 +60,21 @@ namespace Internal.TypeSystem
         public Enumerator GetEnumerator()
         {
             return new Enumerator(_genericParameters);
+        }
+
+        public override string ToString()
+        {
+            if (_genericParameters == null)
+                return String.Empty;
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < _genericParameters.Length; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+                sb.Append(_genericParameters[i]);
+            }
+            return sb.ToString();
         }
 
         /// <summary>

@@ -49,14 +49,20 @@ namespace System
         // Constructors
         //
 
+        /*=========================================================================================
+        **Action: Initializes a new instance of the Random class, using a default seed value
+        ===========================================================================================*/
         public Random()
-          : this(Environment.TickCount)
+          : this(GenerateSeed())
         {
         }
 
+        /*=========================================================================================
+        **Action: Initializes a new instance of the Random class, using a specified seed value
+        ===========================================================================================*/
         public Random(int Seed)
         {
-            int ii;
+            int ii = 0;
             int mj, mk;
 
             //Initialize our Seed array.
@@ -66,7 +72,7 @@ namespace System
             mk = 1;
             for (int i = 1; i < 55; i++)
             {  //Apparently the range [1..55] is special (Knuth) and so we're wasting the 0'th position.
-                ii = (21 * i) % 55;
+                if ((ii += 21) >= 55) ii -= 55; 
                 SeedArray[ii] = mk;
                 mk = mj - mk;
                 if (mk < 0) mk += MBIG;
@@ -76,7 +82,9 @@ namespace System
             {
                 for (int i = 1; i < 56; i++)
                 {
-                    SeedArray[i] -= SeedArray[1 + (i + 30) % 55];
+                    int n = i + 30; 
+                    if (n >= 55) n -= 55; 
+                    SeedArray[i] -= SeedArray[1 + n];
                     if (SeedArray[i] < 0) SeedArray[i] += MBIG;
                 }
             }
@@ -122,6 +130,37 @@ namespace System
             inextp = locINextp;
 
             return retVal;
+        }
+
+        [ThreadStatic]
+        private static Random t_threadRandom;
+        private static readonly Random s_globalRandom = new Random(GenerateGlobalSeed());
+
+        /*=====================================GenerateSeed=====================================
+        **Returns: An integer that can be used as seed values for consecutively
+                  creating lots of instances on the same thread within a short period of time.
+        ========================================================================================*/
+        private static int GenerateSeed()
+        {
+            Random rnd = t_threadRandom;
+            if (rnd == null) {
+                int seed;
+                lock (s_globalRandom) {
+                    seed = s_globalRandom.Next();
+                }
+                rnd = new Random(seed);
+                t_threadRandom = rnd;
+            }
+            return rnd.Next();
+        }
+
+        /*==================================GenerateGlobalSeed====================================
+        **Action:  Creates a number to use as global seed.
+        **Returns: An integer that is safe to use as seed values for thread-local seed generators.
+        ==========================================================================================*/
+        private static int GenerateGlobalSeed()
+        {
+            return Guid.NewGuid().GetHashCode();
         }
 
         //
@@ -170,7 +209,7 @@ namespace System
         {
             if (minValue > maxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));
+                throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, nameof(minValue), nameof(maxValue)));
             }
             Contract.EndContractBlock();
 
@@ -195,7 +234,7 @@ namespace System
         {
             if (maxValue < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, "maxValue"));
+                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(maxValue)));
             }
             Contract.EndContractBlock();
             return (int)(Sample() * maxValue);

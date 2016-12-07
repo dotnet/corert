@@ -638,7 +638,9 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_NONE = 0,
         CORINFO_EH_CLAUSE_FILTER = 0x0001, // If this bit is on, then this EH entry is for a filter
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
-        CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault   clause
+        CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
+        CORINFO_EH_CLAUSE_DUPLICATED = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by CoreRT ABI.)
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -883,6 +885,9 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
+        // Secure delegate offsets
+        public uint offsetOfSecureDelegateIndirectCell;
+
         // Remoting offsets
         public uint offsetOfTransparentProxyRP;
         public uint offsetOfRealProxyServer;
@@ -1037,11 +1042,13 @@ namespace Internal.JitInterface
         public CORINFO_THIS_TRANSFORM thisTransform;
 
         public CORINFO_CALL_KIND kind;
+
         public uint _nullInstanceCheck;
         public bool nullInstanceCheck { get { return _nullInstanceCheck != 0; } set { _nullInstanceCheck = value ? (byte)1 : (byte)0; } }
 
         // Context for inlining and hidden arg
         public CORINFO_CONTEXT_STRUCT* contextHandle;
+
         public uint _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
         public bool exactContextNeedsRuntimeLookup { get { return _exactContextNeedsRuntimeLookup != 0; } set { _exactContextNeedsRuntimeLookup = value ? (byte)1 : (byte)0; } }
 
@@ -1051,6 +1058,9 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
+
+        public uint _secureDelegateInvoke;
+        public bool secureDelegateInvoke { get { return _secureDelegateInvoke != 0; } set { _secureDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
 
@@ -1070,6 +1080,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
         CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
         CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+        CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
 
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
         CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
@@ -1150,7 +1161,14 @@ namespace Internal.JitInterface
         public byte eightByteOffsets1;
     };
 
-    // DEBUGGER DATQA
+    // DEBUGGER DATA
+    public enum MappingTypes
+    {
+        NO_MAPPING = -1, // -- The IL offset corresponds to no source code (such as EH step blocks).
+        PROLOG = -2,     // -- The IL offset indicates a prolog
+        EPILOG = -3      // -- The IL offset indicates an epilog
+    }
+
     public enum BoundaryTypes
     {
         NO_BOUNDARIES = 0x00,     // No implicit boundaries
@@ -1378,66 +1396,95 @@ namespace Internal.JitInterface
         // Note that I dont use FACILITY_NULL for the facility number,
         // we may want to get a 'real' facility number
         CORJIT_OK = 0 /*NO_ERROR*/,
-      /*CORJIT_BADCODE = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 1),
-        CORJIT_OUTOFMEM = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2),
-        CORJIT_INTERNALERROR = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3),
-        CORJIT_SKIPPED = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4),
-        CORJIT_RECOVERABLEERROR = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
+        CORJIT_BADCODE = unchecked((int)0x80000001)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 1)*/,
+        CORJIT_OUTOFMEM = unchecked((int)0x80000002)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2)*/,
+        CORJIT_INTERNALERROR = unchecked((int)0x80000003)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3)*/,
+        CORJIT_SKIPPED = unchecked((int)0x80000004)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4)*/,
+        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
     };
 
-    [Flags]
     public enum CorJitFlag : uint
     {
-        CORJIT_FLG_SPEED_OPT           = 0x00000001,
-        CORJIT_FLG_SIZE_OPT            = 0x00000002,
-        CORJIT_FLG_DEBUG_CODE          = 0x00000004, // generate "debuggable" code (no code-mangling optimizations)
-        CORJIT_FLG_DEBUG_EnC           = 0x00000008, // We are in Edit-n-Continue mode
-        CORJIT_FLG_DEBUG_INFO          = 0x00000010, // generate line and local-var info
-        CORJIT_FLG_MIN_OPT             = 0x00000020, // disable all jit optimizations (not necesarily debuggable code)
-        CORJIT_FLG_GCPOLL_CALLS        = 0x00000040, // Emit calls to JIT_POLLGC for thread suspension.
-        CORJIT_FLG_MCJIT_BACKGROUND    = 0x00000080, // Calling from multicore JIT background thread, do not call JitComplete
+        CORJIT_FLAG_CALL_GETJITFLAGS = 0xffffffff, // Indicates that the JIT should retrieve flags in the form of a
+                                                   // pointer to a CORJIT_FLAGS value via ICorJitInfo::getJitFlags().
+        CORJIT_FLAG_SPEED_OPT = 0,
+        CORJIT_FLAG_SIZE_OPT = 1,
+        CORJIT_FLAG_DEBUG_CODE = 2, // generate "debuggable" code (no code-mangling optimizations)
+        CORJIT_FLAG_DEBUG_EnC = 3, // We are in Edit-n-Continue mode
+        CORJIT_FLAG_DEBUG_INFO = 4, // generate line and local-var info
+        CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necesarily debuggable code)
+        CORJIT_FLAG_GCPOLL_CALLS = 6, // Emit calls to JIT_POLLGC for thread suspension.
+        CORJIT_FLAG_MCJIT_BACKGROUND = 7, // Calling from multicore JIT background thread, do not call JitComplete
+        CORJIT_FLAG_UNUSED1 = 8,
+        CORJIT_FLAG_UNUSED2 = 9,
+        CORJIT_FLAG_UNUSED3 = 10,
+        CORJIT_FLAG_UNUSED4 = 11,
+        CORJIT_FLAG_UNUSED5 = 12,
+        CORJIT_FLAG_USE_SSE3_4 = 13,
+        CORJIT_FLAG_USE_AVX = 14,
+        CORJIT_FLAG_USE_AVX2 = 15,
+        CORJIT_FLAG_USE_AVX_512 = 16,
+        CORJIT_FLAG_FEATURE_SIMD = 17,
+        CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
+        CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
+        CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues
+        CORJIT_FLAG_PROF_REJIT_NOPS = 21, // Insert NOPs to ensure code is re-jitable
+        CORJIT_FLAG_PROF_NO_PINVOKE_INLINE = 22, // Disables PInvoke inlining
+        CORJIT_FLAG_SKIP_VERIFICATION = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
+        CORJIT_FLAG_PREJIT = 24, // jit or prejit is the execution engine.
+        CORJIT_FLAG_RELOC = 25, // Generate relocatable code
+        CORJIT_FLAG_IMPORT_ONLY = 26, // Only import the function
+        CORJIT_FLAG_IL_STUB = 27, // method is an IL stub
+        CORJIT_FLAG_PROCSPLIT = 28, // JIT should separate code into hot and cold sections
+        CORJIT_FLAG_BBINSTR = 29, // Collect basic block profile information
+        CORJIT_FLAG_BBOPT = 30, // Optimize method based on profile information
+        CORJIT_FLAG_FRAMED = 31, // All methods have an EBP frame
+        CORJIT_FLAG_ALIGN_LOOPS = 32, // add NOPs before loops to align them at 16 byte boundaries
+        CORJIT_FLAG_PUBLISH_SECRET_PARAM = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
+        CORJIT_FLAG_GCPOLL_INLINE = 34, // JIT must inline calls to GCPoll when possible
+        CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
+        CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
+        CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
+        CORJIT_FLAG_DESKTOP_QUIRKS = 38, // The JIT should generate desktop-quirk-compatible code
+    }
 
-        CORJIT_FLG_USE_SSE3_4          = 0x00000200,
-        CORJIT_FLG_USE_AVX             = 0x00000400,
-        CORJIT_FLG_USE_AVX2            = 0x00000800,
-        CORJIT_FLG_USE_AVX_512         = 0x00001000,
-        CORJIT_FLG_FEATURE_SIMD        = 0x00002000,
-        CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
-        CORJIT_FLG_READYTORUN          = 0x00010000, // Use version-resilient code generation
-
-        CORJIT_FLG_PROF_ENTERLEAVE     = 0x00020000, // Instrument prologues/epilogues
-        CORJIT_FLG_PROF_REJIT_NOPS     = 0x00040000, // Insert NOPs to ensure code is re-jitable
-        CORJIT_FLG_PROF_NO_PINVOKE_INLINE
-                                       = 0x00080000, // Disables PInvoke inlining
-        CORJIT_FLG_SKIP_VERIFICATION   = 0x00100000, // (lazy) skip verification - determined without doing a full resolve. See comment below
-        CORJIT_FLG_PREJIT              = 0x00200000, // jit or prejit is the execution engine.
-        CORJIT_FLG_RELOC               = 0x00400000, // Generate relocatable code
-        CORJIT_FLG_IMPORT_ONLY         = 0x00800000, // Only import the function
-        CORJIT_FLG_IL_STUB             = 0x01000000, // method is an IL stub
-        CORJIT_FLG_PROCSPLIT           = 0x02000000, // JIT should separate code into hot and cold sections
-        CORJIT_FLG_BBINSTR             = 0x04000000, // Collect basic block profile information
-        CORJIT_FLG_BBOPT               = 0x08000000, // Optimize method based on profile information
-        CORJIT_FLG_FRAMED              = 0x10000000, // All methods have an EBP frame
-        CORJIT_FLG_ALIGN_LOOPS         = 0x20000000, // add NOPs before loops to align them at 16 byte boundaries
-        CORJIT_FLG_PUBLISH_SECRET_PARAM= 0x40000000, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        CORJIT_FLG_GCPOLL_INLINE       = 0x80000000, // JIT must inline calls to GCPoll when possible
-
-        CORJIT_FLG_CALL_GETJITFLAGS    = 0xffffffff, // Indicates that the JIT should retrieve flags in the form of a
-                                                     // pointer to a CORJIT_FLAGS value via ICorJitInfo::getJitFlags().
-    };
-
-    [Flags]
-    public enum CorJitFlag2 : uint
+    public struct CORJIT_FLAGS
     {
-        CORJIT_FLG2_SAMPLING_JIT_BACKGROUND = 0x00000001, // JIT is being invoked as a result of stack sampling for hot methods in the background
-        CORJIT_FLG2_USE_PINVOKE_HELPERS     = 0x00000002, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
-        CORJIT_FLG2_REVERSE_PINVOKE         = 0x00000004, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLG2_DESKTOP_QUIRKS          = 0x00000008, // The JIT should generate desktop-quirk-compatible code
-    };
+        private UInt64 _corJitFlags;
+        
+        public void Reset()
+        {
+            _corJitFlags = 0;
+        }
 
-    struct CORJIT_FLAGS
-    {
-        public CorJitFlag corJitFlags;     // Values are from CorJitFlag
-        public CorJitFlag2 corJitFlags2;   // Values are from CorJitFlag2
-    };
+        public void Set(CorJitFlag flag)
+        {
+            _corJitFlags |= 1UL << (int)flag;
+        }
+
+        public void Clear(CorJitFlag flag)
+        {
+            _corJitFlags &= ~(1UL << (int)flag);
+        }
+
+        public bool IsSet(CorJitFlag flag)
+        {
+            return (_corJitFlags & (1UL << (int)flag)) != 0;
+        }
+
+        public void Add(ref CORJIT_FLAGS other)
+        {
+            _corJitFlags |= other._corJitFlags;
+        }
+
+        public void Remove(ref CORJIT_FLAGS other)
+        {
+            _corJitFlags &= ~other._corJitFlags;
+        }
+
+        public bool IsEmpty()
+        {
+            return _corJitFlags == 0;
+        }
+    }
 }

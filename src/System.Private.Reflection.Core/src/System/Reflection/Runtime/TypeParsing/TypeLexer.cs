@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.Assemblies;
 
 namespace System.Reflection.Runtime.TypeParsing
@@ -92,7 +93,7 @@ namespace System.Reflection.Runtime.TypeParsing
                     c = _chars[src];
                     if (c != NUL)
                         src++;
-                    if (c == NUL || CharToToken(c) == TokenType.Other)
+                    if (!c.NeedsEscapingInTypeName())
                     {
                         // If we got here, a backslash was used to escape a character that is not legal to escape inside a type name.
                         //

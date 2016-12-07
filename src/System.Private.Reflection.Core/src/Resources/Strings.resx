@@ -144,11 +144,11 @@
   <data name="Reflection_CustomReflectionObjectsNotSupported" xml:space="preserve">
     <value>The object '{0}' was created by a custom ReflectionContext and cannot be used here.</value>
   </data>
-  <data name="TypeLoad_TypeNotFoundByGetType" xml:space="preserve">
+  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
     <value>The type '{0}' cannot be found.</value>
   </data>
-  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
-    <value>The type '{0}' cannot be found in the metadata for '{1}'.</value>
+  <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
+    <value>The type '{0}' cannot be found in assembly '{1}'.</value>
   </data>
   <data name="TypeLoad_BadEscape" xml:space="preserve">
     <value>An invalid escape sequence was found inside a type name.</value>
@@ -156,17 +156,11 @@
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
   </data>
-  <data name="Format_StringZeroLength" xml:space="preserve">
-    <value>String cannot have zero length.</value>
-  </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
   <data name="NotSupported_ByRefReturn" xml:space="preserve">
     <value>ByRef return value not supported in reflection invocation.</value>
-  </data>
-  <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
-    <value>Invalid assembly public key.</value>
   </data>
   <data name="Arg_DlgtTargMeth" xml:space="preserve">
     <value>Cannot bind to the target method because its signature is not compatible with that of the delegate type.</value>
@@ -257,5 +251,87 @@
   </data>
   <data name="ModuleVersionIdNotSupported" xml:space="preserve">
     <value>Module version IDs (MVIDs) cannot be retrieved on this platform.</value>
+  </data>
+  <data name="FileNotFound_ResolveAssembly" xml:space="preserve">
+    <value>Could not resolve assembly '{0}'.</value>
+  </data>
+  <data name="MissingField" xml:space="preserve">
+    <value>Field not found.</value>
+  </data>
+  <data name="Arg_MustBeType" xml:space="preserve">
+    <value>Type must be a type provided by the runtime.</value>
+  </data>
+  <data name="NotSupported_ChangeType" xml:space="preserve">
+    <value>ChangeType operation is not supported.</value>
+  </data>
+  <data name="PlatformNotSupported_CustomBinder" xml:space="preserve">
+    <value>Passing a binder object other than Type.DefaultBinder is not supported on this platform.</value>
+  </data>
+  <data name="Arg_NoDefCTor" xml:space="preserve">
+    <value>No parameterless constructor defined for this object.</value>
+  </data>
+  <data name="NotSupported_ActivAttr" xml:space="preserve">
+    <value>Activation Attributes are not supported.</value>
+  </data>
+  <data name="NotSupported_CallToVarArg" xml:space="preserve">
+    <value>Vararg calling convention not supported.</value>
+  </data>
+  <data name="Acc_CreateGenericEx" xml:space="preserve">
+    <value>Cannot create an instance of {0} because Type.ContainsGenericParameters is true.</value>
+  </data>
+  <data name="Acc_CreateVoid" xml:space="preserve">
+    <value>Cannot dynamically create an instance of System.Void.</value>
+  </data>
+
+  <data name="Arg_GenericParameter" xml:space="preserve">
+    <value>Method must be called on a Type for which Type.IsGenericParameter is false.</value>
+  </data>
+  <data name="Arg_NoAccessSpec" xml:space="preserve">
+    <value>Must specify binding flags describing the invoke operation required (BindingFlags.InvokeMethod CreateInstance GetField SetField GetProperty SetProperty).</value>
+  </data>
+  <data name="Arg_NamedParamTooBig" xml:space="preserve">
+    <value>Named parameter array cannot be bigger than argument array.</value>
+  </data>
+  <data name="Arg_COMAccess" xml:space="preserve">
+    <value>Must specify property Set or Get or method call for a COM Object.</value>
+  </data>
+  <data name="Arg_PropSetGet" xml:space="preserve">
+    <value>Cannot specify both Get and Set on a property.</value>
+  </data>
+  <data name="Arg_PropSetInvoke" xml:space="preserve">
+    <value>Cannot specify Set on a property and Invoke on a method.</value>
+  </data>
+  <data name="Arg_COMPropSetPut" xml:space="preserve">
+    <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
+  </data>
+  <data name="Arg_NamedParamNull" xml:space="preserve">
+    <value>Named parameter value must not be null.</value>
+  </data>
+  <data name="Arg_CreatInstAccess" xml:space="preserve">
+    <value>Cannot specify both CreateInstance and another access type.</value>
+  </data>
+  <data name="Arg_FldSetGet" xml:space="preserve">
+    <value>Cannot specify both Get and Set on a field.</value>
+  </data>
+  <data name="Arg_FldGetPropSet" xml:space="preserve">
+    <value>Cannot specify both GetField and SetProperty.</value>
+  </data>
+  <data name="Arg_FldSetPropGet" xml:space="preserve">
+    <value>Cannot specify both SetField and GetProperty.</value>
+  </data>
+  <data name="Arg_FldSetInvoke" xml:space="preserve">
+    <value>Cannot specify Set on a Field and Invoke on a method.</value>
+  </data>
+  <data name="Arg_IndexMustBeInt" xml:space="preserve">
+    <value>All indexes must be of type Int32.</value>
+  </data>
+  <data name="Arg_FldGetArgErr" xml:space="preserve">
+    <value>No arguments can be provided to Get a field value.</value>
+  </data>
+  <data name="Arg_FldSetArgErr" xml:space="preserve">
+    <value>Only the field value can be specified to set a field value.</value>
+  </data>
+  <data name="Arg_PlatformNotSupportedInvokeMemberCom" xml:space="preserve">
+    <value>InvokeMember on a COM object is not supported on this platform.</value>
   </data>
 </root>

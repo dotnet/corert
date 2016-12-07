@@ -219,25 +219,19 @@ namespace ILCompiler.DependencyAnalysis
             _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
         }
 
-        public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int delta = 0)
-        {
-            Relocation symbolReloc = new Relocation(relocType, offset, symbol, delta);
-            _relocs.Add(symbolReloc);
-        }
-
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
         {
-            AddRelocAtOffset(symbol, relocType, _data.Count, delta);
+            _relocs.Add(new Relocation(relocType, _data.Count, symbol));
 
             // And add space for the reloc
             switch (relocType)
             {
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
-                    EmitInt(0);
+                    EmitInt(delta);
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
-                    EmitLong(0);
+                    EmitLong(delta);
                     break;
                 default:
                     throw new NotImplementedException();

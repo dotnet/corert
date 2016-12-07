@@ -23,6 +23,9 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
 
         mov     rax, rsp        // save the faulting RSP
 
+        // Align the stack towards zero
+        and     rsp, -16
+
         add     rsi, 1  // 'faulting IP' += 1, we do this because everywhere else we treat the faulting IP as
                         // a return-address and optionally subtract one when doing EH-related things (but not
                         // subtracting 1 when doing GC-related things).  The fault IP here will be the start
@@ -32,7 +35,6 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
                         // don't need to be precise here because the fault location isn't a GC safe point 
 
         xor     rdx, rdx
-        push_register   rdx             // padding
 
 //  struct PAL_LIMITED_CONTEXT
 //  {
@@ -232,6 +234,38 @@ ALTERNATE_ENTRY RhpRethrow2
 
 NESTED_END RhpRethrow, _TEXT
 
+//
+// Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
+//
+.macro FUNCLET_CALL_PROLOGUE localsCount, alignStack
+
+    push_nonvol_reg r15     // save preserved regs for OS stackwalker
+    push_nonvol_reg r14     // ...
+    push_nonvol_reg r13     // ...
+    push_nonvol_reg r12     // ...
+    push_nonvol_reg rbx     // ...
+    push_nonvol_reg rbp     // ...
+
+    stack_alloc_size = \localsCount * 8 + \alignStack * 8
+
+    alloc_stack     stack_alloc_size
+
+    END_PROLOGUE
+.endm
+
+//
+// Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
+//
+.macro FUNCLET_CALL_EPILOGUE
+    free_stack      stack_alloc_size
+
+    pop_nonvol_reg rbp
+    pop_nonvol_reg rbx
+    pop_nonvol_reg r12
+    pop_nonvol_reg r13
+    pop_nonvol_reg r14
+    pop_nonvol_reg r15
+.endm
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -248,12 +282,7 @@ NESTED_END RhpRethrow, _TEXT
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
 
-        push_nonvol_reg r15     // save preserved regs for OS stackwalker
-        push_nonvol_reg r14     // ...
-        push_nonvol_reg r13     // ...
-        push_nonvol_reg r12     // ...
-        push_nonvol_reg rbx     // ...
-        push_nonvol_reg rbp     // ...
+        FUNCLET_CALL_PROLOGUE 6, 1
 
         locThread       = 0
         locResumeIp     = 8
@@ -261,10 +290,6 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
         locArg1         = 0x18
         locArg2         = 0x20
         locArg3         = 0x28
-
-        alloc_stack     0x38    // locals
-
-        END_PROLOGUE
 
         mov     [rsp + locArg0], rdi                                // save arguments for later
         mov     [rsp + locArg1], rsi
@@ -395,20 +420,11 @@ NESTED_END RhpCallCatchFunclet, _TEXT
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 
-        push_nonvol_reg r15     // save preserved regs 
-        push_nonvol_reg r14     // ...
-        push_nonvol_reg r13     // ...
-        push_nonvol_reg r12     // ...
-        push_nonvol_reg rbx     // ...
-        push_nonvol_reg rbp     // ...
+        FUNCLET_CALL_PROLOGUE 3, 0
 
         locThread       = 0
         locArg0         = 8
         locArg1         = 0x10
-
-        alloc_stack     0x18    // locals
-
-        END_PROLOGUE
 
         mov     [rsp + locArg0], rdi                                 // save arguments for later
         mov     [rsp + locArg1], rsi
@@ -480,13 +496,7 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         mov     rax, [rsp + locThread]                               // rax <- Thread*
    lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], ~TSF_DoNotTriggerGc
 
-        add     rsp, 0x18
-        pop     rbp
-        pop     rbx
-        pop     r12
-        pop     r13
-        pop     r14
-        pop     r15
+        FUNCLET_CALL_EPILOGUE
 
         ret
 
@@ -506,9 +516,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
 
-        push_nonvol_reg rbp     // we'll be setting rbp to the funclet's frame pointer
-
-        END_PROLOGUE
+        FUNCLET_CALL_PROLOGUE 0, 1
 
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
         mov     rbp, [rax]
@@ -521,7 +529,7 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         // RAX contains the result of the filter execution
 
-        pop     rbp
+        FUNCLET_CALL_EPILOGUE
 
         ret
 

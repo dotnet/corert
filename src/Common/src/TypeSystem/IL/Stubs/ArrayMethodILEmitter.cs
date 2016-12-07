@@ -68,7 +68,7 @@ namespace Internal.IL.Stubs
 
         private void EmitILForAccessor()
         {
-            Debug.Assert(!_method.OwningType.IsSzArray);
+            Debug.Assert(_method.OwningType.IsMdArray);
 
             var codeStream = _emitter.NewCodeStream();
             var context = _method.Context;

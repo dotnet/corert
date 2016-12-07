@@ -19,7 +19,7 @@ namespace System
         public unsafe static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
             {
@@ -51,10 +51,12 @@ namespace System
             return blob.ToString();
         }
 
+        public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
+
         public unsafe static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
 
             IntPtr result;
             int size = Interop.Sys.GetEnvironmentVariable(variable, out result);
@@ -67,28 +69,6 @@ namespace System
                 return null;
 
             return Encoding.UTF8.GetString((byte*)result, size);
-        }
-
-        private const int MAX_HOST_NAME = 256; // 255 max and null 
-        public static unsafe string MachineName
-        {
-            get
-            {
-                byte *hostName = stackalloc byte[MAX_HOST_NAME];
-                int hostNameLength = Interop.Sys.GetMachineName(hostName, MAX_HOST_NAME);
-                if (hostNameLength < 0)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
-                }
-
-                return Encoding.UTF8.GetString(hostName, hostNameLength);
-            }
-        }
-
-        public static void Exit(int exitCode)
-        {
-            // CORERT-TODO: Shut down the runtime
-            Interop.Sys.ExitProcess(exitCode);
         }
     }
 }

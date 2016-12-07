@@ -6,15 +6,11 @@ using System.Collections.Generic;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class ModuleDesc
+    public abstract partial class ModuleDesc : TypeSystemEntity
     {
-        /// <summary>
-        /// Gets the type system context the module belongs to.
-        /// </summary>
-        public TypeSystemContext Context
+        public override TypeSystemContext Context
         {
             get;
-            private set;
         }
 
         public ModuleDesc(TypeSystemContext context)
@@ -30,7 +26,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the global &lt;Module&gt; type.
         /// </summary>
-        public abstract TypeDesc GetGlobalModuleType();
+        public abstract MetadataType GetGlobalModuleType();
 
         /// <summary>
         /// Retrieves a collection of all types defined in the current module. This includes nested types.

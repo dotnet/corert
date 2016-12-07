@@ -40,22 +40,14 @@
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
 
-#if defined(FEATURE_SVR_GC)
-namespace SVR {
-    class GCHeap;
-}
-#endif // defined(FEATURE_SVR_GC)
-
-struct alloc_context
+struct gc_alloc_context
 {
     UInt8*         alloc_ptr;
     UInt8*         alloc_limit;
     __int64        alloc_bytes; //Number of bytes allocated on SOH by this context
     __int64        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
-#if defined(FEATURE_SVR_GC)
-    SVR::GCHeap*   alloc_heap;
-    SVR::GCHeap*   home_heap;
-#endif // defined(FEATURE_SVR_GC)
+    void*          gc_reserved_1;
+    void*          gc_reserved_2;
     int            alloc_count;
 };
 
@@ -68,7 +60,7 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (EEType* pEEType))
     ASSERT(!pEEType->HasFinalizer());
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
-    alloc_context * acontext = pCurThread->GetAllocContext();
+    gc_alloc_context * acontext = pCurThread->GetAllocContext();
     Object * pObject;
 
     size_t size = pEEType->get_BaseSize();
@@ -123,7 +115,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     ASSERT_MSG(!pArrayEEType->RequiresAlign8(), "NYI");
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
-    alloc_context * acontext = pCurThread->GetAllocContext();
+    gc_alloc_context * acontext = pCurThread->GetAllocContext();
     Array * pObject;
 
     if (numElements < 0)
@@ -232,6 +224,31 @@ COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
+COOP_PINVOKE_HELPER(void, RhpVTableOffsetDispatch, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpTailCallTLSDispatchCell, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpCastableObjectDispatchHelper, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpCastableObjectDispatchHelper_TailCalled, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpCastableObjectDispatch_CommonStub, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;
@@ -312,7 +329,7 @@ COOP_PINVOKE_HELPER(Int32, RhpLockCmpXchg32, (Int32 * location, Int32 value, Int
     return PalInterlockedCompareExchange(location, value, comparand);
 }
 
-COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int32 comparand))
+COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int64 comparand))
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     return PalInterlockedCompareExchange64(location, value, comparand);
@@ -325,20 +342,48 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
     PalMemoryBarrier();
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetThunksBase, ())
+#ifdef USE_PORTABLE_HELPERS
+COOP_PINVOKE_HELPER(void *, RhpGetThunksBase, ())
 {
-    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetNumThunksPerMapping, ())
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
 }
 
-COOP_PINVOKE_HELPER(void, Native_GetThunkSize, ())
+COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
 }
+
+COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+
+COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* pThunkStubAddress))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddress))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(void*, RhpGetNextThunkStubsBlockAddress, (void* pCurrentThunkStubsBlockAddress))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+#endif
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
 {

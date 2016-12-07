@@ -45,12 +45,13 @@ namespace Internal.Runtime
     //
     enum ReadyToRunSectionType
     {
-        StringTable                 = 200,
+        StringTable                 = 200, // Unused
         GCStaticRegion              = 201,
         ThreadStaticRegion          = 202,
         InterfaceDispatchTable      = 203,
-        ModuleManagerIndirection    = 204,
+        TypeManagerIndirection      = 204,
         EagerCctor                  = 205,
+        FrozenObjectRegion          = 206,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart     = 300,

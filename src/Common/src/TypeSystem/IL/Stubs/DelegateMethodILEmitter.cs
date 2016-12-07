@@ -27,24 +27,23 @@ namespace Internal.IL.Stubs
 
             if (method.Name == ".ctor")
             {
+                // TODO: this should be an assert that codegen never asks for this.
+                // This is just a workaround for https://github.com/dotnet/corert/issues/2102
+                // The code below is making a wild guess that we're creating a closed
+                // instance delegate. Without shared generics, this should only happen
+                // for virtual method (so we're fine there). With shared generics, this can
+                // happen for anything and might be pretty wrong.
                 TypeSystemContext context = method.Context;
 
                 ILEmitter emit = new ILEmitter();
-
                 TypeDesc delegateType = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
-                MethodDesc objectCtorMethod = context.GetWellKnownType(WellKnownType.Object).GetDefaultConstructor();
-                FieldDesc functionPointerField = delegateType.GetKnownField("m_functionPointer");
-                FieldDesc firstParameterField = delegateType.GetKnownField("m_firstParameter");
-
+                MethodDesc initializeMethod = delegateType.GetKnownMethod("InitializeClosedInstanceSlow", null);
                 ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.call, emit.NewToken(objectCtorMethod));
+
                 codeStream.EmitLdArg(0);
                 codeStream.EmitLdArg(1);
-                codeStream.Emit(ILOpcode.stfld, emit.NewToken(firstParameterField));
-                codeStream.EmitLdArg(0);
                 codeStream.EmitLdArg(2);
-                codeStream.Emit(ILOpcode.stfld, emit.NewToken(functionPointerField));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(initializeMethod));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(method);

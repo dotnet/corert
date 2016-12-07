@@ -8,8 +8,6 @@ using System.Diagnostics;
 using System.Reflection.Runtime.Assemblies;
 using System.Collections.Generic;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.Modules
 {
     //
@@ -102,6 +100,11 @@ namespace System.Reflection.Runtime.Modules
         {
             return "<Unknown>";
         }
+
+        public sealed override bool IsResource() { throw new PlatformNotSupportedException(); }
+        public sealed override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw new PlatformNotSupportedException(); }
+        public sealed override int MDStreamVersion { get { throw new PlatformNotSupportedException(); } }
+        public sealed override string ScopeName { get { throw new PlatformNotSupportedException(); } }
 
         private readonly Assembly _assembly;
     }

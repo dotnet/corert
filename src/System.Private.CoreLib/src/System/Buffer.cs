@@ -23,9 +23,9 @@ namespace System
                                             int count)
         {
             if (src == null)
-                throw new ArgumentNullException("src");
+                throw new ArgumentNullException(nameof(src));
             if (dst == null)
-                throw new ArgumentNullException("dst");
+                throw new ArgumentNullException(nameof(dst));
 
 
             RuntimeImports.RhCorElementTypeInfo srcCorElementTypeInfo = src.ElementEEType.CorElementTypeInfo;
@@ -34,22 +34,22 @@ namespace System
             nuint uDstLen = uSrcLen;
 
             if (!srcCorElementTypeInfo.IsPrimitive)
-                throw new ArgumentException(SR.Arg_MustBePrimArray, "src");
+                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(src));
 
             if (src != dst)
             {
                 RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
                 if (!dstCorElementTypeInfo.IsPrimitive)
-                    throw new ArgumentException(SR.Arg_MustBePrimArray, "dst");
+                    throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(dst));
                 uDstLen = ((nuint)dst.Length) << dstCorElementTypeInfo.Log2OfSize;
             }
 
             if (srcOffset < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, "srcOffset");
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, nameof(srcOffset));
             if (dstOffset < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, "dstOffset");
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, nameof(dstOffset));
             if (count < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, "count");
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, nameof(count));
 
             nuint uCount = (nuint)count;
             if (uSrcLen < ((nuint)srcOffset) + uCount)
@@ -60,12 +60,9 @@ namespace System
             if (uCount == 0)
                 return;
 
-            fixed (IntPtr* pSrcObj = &src.m_pEEType, pDstObj = &dst.m_pEEType)
+            fixed (byte* pSrc = &src.GetRawArrayData(), pDst = &dst.GetRawArrayData())
             {
-                byte* pSrc = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pSrcObj) + srcOffset;
-                byte* pDst = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pDstObj) + dstOffset;
-
-                Buffer.Memmove(pDst, pSrc, uCount);
+                Buffer.Memmove(pDst + dstOffset, pSrc + srcOffset, uCount);
             }
         }
 
@@ -153,11 +150,11 @@ namespace System
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!array.ElementEEType.IsPrimitive)
-                throw new ArgumentException(SR.Arg_MustBePrimArray, "array");
+                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             return _ByteLength(array);
         }
@@ -171,42 +168,34 @@ namespace System
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!array.ElementEEType.IsPrimitive)
-                throw new ArgumentException(SR.Arg_MustBePrimArray, "array");
+                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
-            fixed (IntPtr* pObj = &array.m_pEEType)
-            {
-                byte* pByte = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pObj) + index;
-                return *pByte;
-            }
+            return Unsafe.Add(ref array.GetRawArrayData(), index);
         }
 
         public static unsafe void SetByte(Array array, int index, byte value)
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!array.ElementEEType.IsPrimitive)
-                throw new ArgumentException(SR.Arg_MustBePrimArray, "array");
+                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
-            fixed (IntPtr* pObj = &array.m_pEEType)
-            {
-                byte* pByte = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pObj) + index;
-                *pByte = value;
-            }
+            Unsafe.Add(ref array.GetRawArrayData(), index) = value;
         }
 
         // The attributes on this method are chosen for best JIT performance. 
@@ -217,7 +206,7 @@ namespace System
         {
             if (sourceBytesToCopy > destinationSizeInBytes)
             {
-                throw new ArgumentOutOfRangeException("sourceBytesToCopy");
+                throw new ArgumentOutOfRangeException(nameof(sourceBytesToCopy));
             }
 
             Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
@@ -231,7 +220,7 @@ namespace System
         {
             if (sourceBytesToCopy > destinationSizeInBytes)
             {
-                throw new ArgumentOutOfRangeException("sourceBytesToCopy");
+                throw new ArgumentOutOfRangeException(nameof(sourceBytesToCopy));
             }
 
             Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));

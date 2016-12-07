@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -31,7 +31,7 @@ namespace System.Threading
         public static int UpdateTimeOut(uint startTime, int originalWaitMillisecondsTimeout)
         {
             // The function must be called in case the time out is not infinite
-            Contract.Assert(originalWaitMillisecondsTimeout != Timeout.Infinite);
+            Debug.Assert(originalWaitMillisecondsTimeout != Timeout.Infinite);
 
             uint elapsedMilliseconds = (GetTime() - startTime);
 

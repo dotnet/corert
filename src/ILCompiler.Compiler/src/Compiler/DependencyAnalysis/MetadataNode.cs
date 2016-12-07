@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 
-using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,53 +18,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataNode()
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_metadata_End", true);
         }
 
-        public ISymbolNode EndSymbol
-        {
-            get
-            {
-                return _endSymbol;
-            }
-        }
+        public ISymbolNode EndSymbol => _endSymbol;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.CompilationUnitPrefix + "__embedded_metadata";
-            }
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__embedded_metadata");
         }
+        public int Offset => 0;
+        public override bool IsShareable => false;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.ReadOnlyDataSection;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -88,4 +57,3 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 }
-

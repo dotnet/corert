@@ -135,6 +135,9 @@
   <data name="Arg_ArrayTypeMismatchException" xml:space="preserve">
     <value>Attempted to access an element as a type incompatible with the array.</value>
   </data>
+  <data name="Arg_ArrayZeroError" xml:space="preserve">
+    <value>Array must not be of length zero.</value>
+  </data>
   <data name="Arg_BadImageFormatException" xml:space="preserve">
     <value>Format of the executable (.exe) or library (.dll) is invalid.</value>
   </data>
@@ -312,6 +315,12 @@
   <data name="Arg_NeedAtLeast1Rank" xml:space="preserve">
     <value>Must provide at least one rank.</value>
   </data>
+  <data name="Arg_Need2DArray" xml:space="preserve">
+    <value>Array was not a two-dimensional array.</value>
+  </data>
+  <data name="Arg_Need3DArray" xml:space="preserve">
+    <value>Array was not a three-dimensional array.</value>
+  </data>
   <data name="Arg_NegativeArgCount" xml:space="preserve">
     <value>Argument count must not be negative.</value>
   </data>
@@ -365,6 +374,12 @@
   </data>
   <data name="Arg_RanksAndBounds" xml:space="preserve">
     <value>Number of lengths and lowerBounds must match.</value>
+  </data>
+  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
+    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
+  </data>
+  <data name="Arg_RegKeyNotFound" xml:space="preserve">
+    <value>The specified registry key does not exist.</value>
   </data>
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
@@ -435,8 +450,17 @@
   <data name="Argument_CultureInvalidIdentifier" xml:space="preserve">
     <value>{0} is an invalid culture identifier.</value>
   </data>
+  <data name="Argument_CultureIetfNotSupported" xml:space="preserve">
+    <value>Culture IETF Name {0} is not a recognized IETF name.</value>
+  </data>
+  <data name="Argument_CultureIsNeutral" xml:space="preserve">
+    <value>Culture ID {0} (0x{0:X4}) is a neutral culture; a region cannot be created from it.</value>
+  </data>
   <data name="Argument_CultureNotSupported" xml:space="preserve">
     <value>Culture is not supported.</value>
+  </data>
+  <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
+    <value>Customized cultures cannot be passed by LCID, only by name.</value>
   </data>
   <data name="Argument_DateTimeBadBinaryData" xml:space="preserve">
     <value>The binary data must result in a DateTime with ticks between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
@@ -522,6 +546,9 @@
   <data name="Argument_InvalidDateTimeStyles" xml:space="preserve">
     <value>An undefined DateTimeStyles value is being used.</value>
   </data>
+  <data name="Argument_InvalidDigitSubstitution" xml:space="preserve">
+    <value>The DigitSubstitution property must be of a valid member of the DigitShapes enumeration. Valid entries include Context, NativeNational or None.</value>
+  </data>
   <data name="Argument_InvalidEnumValue" xml:space="preserve">
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
@@ -539,6 +566,12 @@
   </data>
   <data name="Argument_InvalidLowSurrogate" xml:space="preserve">
     <value>Found a low surrogate char without a preceding high surrogate at index: {0}. The input may not be in this encoding, or may not contain valid Unicode (UTF-16) characters.</value>
+  </data>
+  <data name="Argument_InvalidNativeDigitCount" xml:space="preserve">
+    <value>The NativeDigits array must contain exactly ten members.</value>
+  </data>
+  <data name="Argument_InvalidNativeDigitValue" xml:space="preserve">
+    <value>Each member of the NativeDigits array must be a single text element (one or more UTF16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
   </data>
   <data name="Argument_InvalidNeutralRegionName" xml:space="preserve">
     <value>The region name {0} should not correspond to neutral culture; a specific culture name is required.</value>
@@ -578,6 +611,12 @@
   </data>
   <data name="Argument_OffsetUtcMismatch" xml:space="preserve">
     <value>The UTC Offset for Utc DateTime instances must be 0.</value>
+  </data>
+  <data name="Argument_OneOfCulturesNotSupported" xml:space="preserve">
+    <value>Culture name {0} or {1} is not supported.</value>
+  </data>
+  <data name="Argument_OnlyMscorlib" xml:space="preserve">
+    <value>Only mscorlib's assembly is valid.</value>
   </data>
   <data name="Argument_OutOfOrderDateTimes" xml:space="preserve">
     <value>The DateStart property must come before the DateEnd property.</value>
@@ -669,6 +708,9 @@
   <data name="ArgumentOutOfRange_BadHourMinuteSecond" xml:space="preserve">
     <value>Hour, Minute, and Second parameters describe an un-representable DateTime.</value>
   </data>
+  <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
+    <value>Must be less than or equal to the size of the collection.</value>
+  </data>  
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
   </data>
@@ -752,6 +794,9 @@
   </data>
   <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
     <value>The specified length exceeds the maximum value of {0}.</value>
+  </data>
+  <data name="ArgumentOutOfRange_LengthGreaterThanCapacity" xml:space="preserve">
+    <value>The length cannot be greater than the capacity.</value>
   </data>
   <data name="ArgumentOutOfRange_ListInsert" xml:space="preserve">
     <value>Index must be within the bounds of the List.</value>
@@ -995,6 +1040,12 @@
   </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
+  </data>
+  <data name="InvalidProgram_Specific" xml:space="preserve">
+    <value>Common Language Runtime detected an invalid program. The body of method '{0}' is invalid.</value>
+  </data>
+  <data name="InvalidProgram_Vararg" xml:space="preserve">
+    <value>Method '{0}' has a variable argument list. Variable argument lists are not supported in .NET Core.</value>
   </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>
@@ -1659,5 +1710,53 @@
   </data>
   <data name="InvalidFilterCriteriaException_CritInt" xml:space="preserve">
     <value>An Int32 must be provided for the filter criteria.</value>
+  </data>
+  <data name="InvalidOperation_NotSupportedOnWinRTEvent" xml:space="preserve">
+    <value>Adding or removing event handlers dynamically is not supported on WinRT events.</value>
+  </data>
+  <data name="PlatformNotSupported_ReflectionOnly" xml:space="preserve">
+    <value>ReflectionOnly loading is not supported on this platform.</value>
+  </data>
+  <data name="MissingMember_Name" xml:space="preserve">
+    <value>Member '{0}' not found.</value>
+  </data>
+  <data name="MissingMethod_Name" xml:space="preserve">
+    <value>Method '{0}' not found.</value>
+  </data>
+  <data name="MissingField_Name" xml:space="preserve">
+    <value>Field '{0}' not found.</value>
+  </data>
+  <data name="Format_StringZeroLength" xml:space="preserve">
+    <value>String cannot have zero length.</value>
+  </data>
+  <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
+    <value>Invalid assembly public key.</value>
+  </data>
+  <data name="Security_RegistryPermission" xml:space="preserve">
+    <value>Requested registry access is not allowed.</value>
+  </data>
+  <data name="ClassLoad_General" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}'.</value>
+  </data>
+  <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>
+  </data>
+  <data name="ClassLoad_BadFormat" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because the format is invalid.</value>
+  </data>
+  <data name="ClassLoad_ValueClassTooLarge" xml:space="preserve">
+    <value>Array of type '{0}' from assembly '{1}' cannot be created because base value type is too large.</value>
+  </data>
+  <data name="ClassLoad_ExplicitLayout" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because it contains an object field at offset '{2}' that is incorrectly aligned or overlapped by a non-object field.</value>
+  </data>
+  <data name="EE_MissingMethod" xml:space="preserve">
+    <value>Method not found: '{0}'.</value>
+  </data>
+  <data name="EE_MissingField" xml:space="preserve">
+    <value>Field not found: '{0}'.</value>
+  </data>
+  <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
+    <value>Access to the registry key '{0}' is denied.</value>
   </data>
 </root>

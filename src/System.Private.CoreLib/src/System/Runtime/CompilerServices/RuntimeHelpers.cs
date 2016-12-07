@@ -128,13 +128,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // unchecked cast, performs no dynamic type checking
-        internal static T UncheckedCast<T>(Object value) where T : class
-        {
-            // TODO: Replace all uses of RuntimeHelpers.UncheckedCast with Unsafe.As
-            return Unsafe.As<T>(value);
-        }
-
         [ThreadStatic]
         private static unsafe byte* t_sufficientStackLimit;
 
@@ -149,29 +142,26 @@ namespace System.Runtime.CompilerServices
                 throw new InsufficientExecutionStackException();
         }
 
+        public static unsafe bool TryEnsureSufficientExecutionStack()
+        {
+            byte* limit = t_sufficientStackLimit;
+            if (limit == null)
+                limit = GetSufficientStackLimit();
+
+            byte* currentStackPtr = (byte*)(&limit);
+            return (currentStackPtr >= limit);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)] // Only called once per thread, no point in inlining.
         private static unsafe byte* GetSufficientStackLimit()
         {
-            //
-            // We rely on the fact that Windows allocates a thread's stack in a single allocation.  Thus we can call VirtualQuery on any 
-            // address on the stack, and the returned info will give the extents of the entire stack.
-            //
-            // We need to first ensure that the current stack page has been written to, so that it has the same attributes all higher stack pages.
-            // This way info.RegionSize will include the whole stack written so far.
-            //
-            Interop.mincore.MEMORY_BASIC_INFORMATION info = new Interop.mincore.MEMORY_BASIC_INFORMATION();
-            Volatile.Write(ref info.BaseAddress, IntPtr.Zero); // Extra paranoid write, to avoid optimizations.
-
-            Interop.mincore.VirtualQuery((IntPtr)(&info), out info, (UIntPtr)(uint)sizeof(Interop.mincore.MEMORY_BASIC_INFORMATION));
-
-            byte* lower = (byte*)info.AllocationBase;
-            byte* upper = (byte*)info.BaseAddress + info.RegionSize.ToUInt64();
+            IntPtr lower, upper;
+            RuntimeImports.RhGetCurrentThreadStackBounds(out lower, out upper);
 
             //
             // We consider half of the stack to be "sufficient."
             //
-            t_sufficientStackLimit = lower + ((upper - lower) / 2);
-            return t_sufficientStackLimit;
+            return (t_sufficientStackLimit = (byte*)lower + (((byte*)upper - (byte*)lower) / 2));
         }
     }
 }

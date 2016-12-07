@@ -5,8 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Security.Cryptography;
 using System.Text;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -19,11 +21,24 @@ namespace ILCompiler
     //
     public class NameMangler
     {
+        private SHA256 _sha256;
         private readonly bool _mangleForCplusPlus;
 
         public NameMangler(bool mangleForCplusPlus)
         {
             _mangleForCplusPlus = mangleForCplusPlus;
+        }
+
+        private string _compilationUnitPrefix;
+
+        public string CompilationUnitPrefix
+        {
+            set { _compilationUnitPrefix = value; }
+            get
+            {
+                System.Diagnostics.Debug.Assert(_compilationUnitPrefix != null);
+                return _compilationUnitPrefix;
+            }
         }
 
         //
@@ -71,7 +86,15 @@ namespace ILCompiler
                 // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.
                 sb.Append("_");
             }
-            return (sb != null) ? sb.ToString() : s;
+
+            string santizedName = (sb != null) ? sb.ToString() : s;
+
+            // The character sequences denoting generic instantiations, arrays, byrefs, or pointers must be
+            // restricted to that use only. Replace them if they happened to be used in any identifiers in 
+            // the compilation input.
+            return _mangleForCplusPlus
+                ? santizedName.Replace(EnterNameScopeSequence, "_AA_").Replace(ExitNameScopeSequence, "_VV_")
+                : santizedName;
         }
 
         /// <summary>
@@ -106,6 +129,14 @@ namespace ILCompiler
             return ComputeMangledTypeName(type);
         }
 
+        private string EnterNameScopeSequence => _mangleForCplusPlus ? "_A_" : "<";
+        private string ExitNameScopeSequence => _mangleForCplusPlus ? "_V_" : ">";
+
+        private string NestMangledName(string name)
+        {
+            return EnterNameScopeSequence + name + ExitNameScopeSequence;
+        }
+
         /// <summary>
         /// If given <param name="type"/> is an <see cref="EcmaType"/> precompute its mangled type name
         /// along with all the other types from the same module as <param name="type"/>.
@@ -128,40 +159,42 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (MetadataType t in ((EcmaType)type).EcmaModule.GetAllTypes())
+                    if (!_mangledTypeNames.ContainsKey(type))
                     {
-                        string name = t.GetFullName();
-
-                        // Include encapsulating type
-                        DefType containingType = t.ContainingType;
-                        while (containingType != null)
+                        foreach (MetadataType t in ((EcmaType)type).EcmaModule.GetAllTypes())
                         {
-                            name = containingType.GetFullName() + "_" + name;
-                            containingType = containingType.ContainingType;
-                        }
+                            string name = t.GetFullName();
 
-                        name = SanitizeName(name, true);
+                            // Include encapsulating type
+                            DefType containingType = t.ContainingType;
+                            while (containingType != null)
+                            {
+                                name = containingType.GetFullName() + "_" + name;
+                                containingType = containingType.ContainingType;
+                            }
 
-                        if (_mangleForCplusPlus)
-                        {
-                            // Always generate a fully qualified name
-                            name = "::" + prependAssemblyName + "::" + name;
-                        }
-                        else
-                        {
-                            name = prependAssemblyName + "_" + name;
-                        }
+                            name = SanitizeName(name, true);
 
-                        // Ensure that name is unique and update our tables accordingly.
-                        name = DisambiguateName(name, deduplicator);
-                        deduplicator.Add(name);
-                        _mangledTypeNames = _mangledTypeNames.Add(t, name);
-                    }
+                            if (_mangleForCplusPlus)
+                            {
+                                // Always generate a fully qualified name
+                                name = "::" + prependAssemblyName + "::" + name;
+                            }
+                            else
+                            {
+                                name = prependAssemblyName + "_" + name;
+                            }
+
+                            // Ensure that name is unique and update our tables accordingly.
+                            name = DisambiguateName(name, deduplicator);
+                            deduplicator.Add(name);
+                            _mangledTypeNames = _mangledTypeNames.Add(t, name);
+                        }
+                    }                    
                 }
 
                 return _mangledTypeNames[type];
             }
-
 
             string mangledName;
 
@@ -169,34 +202,46 @@ namespace ILCompiler
             {
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    // mangledName = "Array<" + GetSignatureCPPTypeName(((ArrayType)type).ElementType) + ">";
-                    mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__Array";
-                    if (!type.IsSzArray)
-                        mangledName += "Rank" + ((ArrayType)type).Rank.ToStringInvariant();
+                    mangledName = GetMangledTypeName(((ArrayType) type).ElementType) + "__";
+                    
+                    if (type.IsMdArray)
+                    {
+                        mangledName += NestMangledName("ArrayRank" + ((ArrayType) type).Rank.ToStringInvariant());
+                    }
+                    else
+                    {
+                        mangledName += NestMangledName("Array");
+                    }
                     break;
                 case TypeFlags.ByRef:
-                    mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + "__ByRef";
+                    mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + NestMangledName("ByRef");
                     break;
                 case TypeFlags.Pointer:
-                    mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + "__Pointer";
+                    mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
                     break;
                 default:
                     // Case of a generic type. If `type' is a type definition we use the type name
                     // for mangling, otherwise we use the mangling of the type and its generic type
-                    // parameters, e.g. A <B> becomes A__B.
+                    // parameters, e.g. A <B> becomes A_<___B_>_ in RyuJIT compilation, or A_A___B_V_
+                    // in C++ compilation.
                     var typeDefinition = type.GetTypeDefinition();
                     if (typeDefinition != type)
                     {
                         mangledName = GetMangledTypeName(typeDefinition);
 
                         var inst = type.Instantiation;
+                        string mangledInstantiation = "";
                         for (int i = 0; i < inst.Length; i++)
                         {
                             string instArgName = GetMangledTypeName(inst[i]);
                             if (_mangleForCplusPlus)
                                 instArgName = instArgName.Replace("::", "_");
-                            mangledName += "__" + instArgName;
+                            if (i > 0)
+                                mangledInstantiation += "__";
+                                        
+                            mangledInstantiation += instArgName;
                         }
+                        mangledName += NestMangledName(mangledInstantiation);
                     }
                     else
                     {
@@ -208,24 +253,25 @@ namespace ILCompiler
             lock (this)
             {
                 // Ensure that name is unique and update our tables accordingly.
-                _mangledTypeNames = _mangledTypeNames.Add(type, mangledName);
+                if (!_mangledTypeNames.ContainsKey(type))
+                    _mangledTypeNames = _mangledTypeNames.Add(type, mangledName);
             }
 
             return mangledName;
         }
 
-        private ImmutableDictionary<MethodDesc, string> _mangledMethodNames = ImmutableDictionary<MethodDesc, string>.Empty;
+        private ImmutableDictionary<MethodDesc, Utf8String> _mangledMethodNames = ImmutableDictionary<MethodDesc, Utf8String>.Empty;
 
-        public string GetMangledMethodName(MethodDesc method)
+        public Utf8String GetMangledMethodName(MethodDesc method)
         {
-            string mangledName;
+            Utf8String mangledName;
             if (_mangledMethodNames.TryGetValue(method, out mangledName))
                 return mangledName;
 
             return ComputeMangledMethodName(method);
         }
 
-        private string ComputeMangledMethodName(MethodDesc method)
+        private Utf8String ComputeMangledMethodName(MethodDesc method)
         {
             string prependTypeName = null;
             if (!_mangleForCplusPlus)
@@ -239,17 +285,20 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (var m in method.OwningType.GetMethods())
+                    if (!_mangledMethodNames.ContainsKey(method))
                     {
-                        string name = SanitizeName(m.Name);
+                        foreach (var m in method.OwningType.GetMethods())
+                        {
+                            string name = SanitizeName(m.Name);
 
-                        name = DisambiguateName(name, deduplicator);
-                        deduplicator.Add(name);
+                            name = DisambiguateName(name, deduplicator);
+                            deduplicator.Add(name);
 
-                        if (prependTypeName != null)
-                            name = prependTypeName + "__" + name;
+                            if (prependTypeName != null)
+                                name = prependTypeName + "__" + name;
 
-                        _mangledMethodNames = _mangledMethodNames.Add(m, name);
+                            _mangledMethodNames = _mangledMethodNames.Add(m, name);
+                        }
                     }
                 }
 
@@ -262,16 +311,20 @@ namespace ILCompiler
             var methodDefinition = method.GetTypicalMethodDefinition();
             if (methodDefinition != method)
             {
-                mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition());
+                mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition()).ToString();
 
                 var inst = method.Instantiation;
+                string mangledInstantiation = "";
                 for (int i = 0; i < inst.Length; i++)
                 {
                     string instArgName = GetMangledTypeName(inst[i]);
                     if (_mangleForCplusPlus)
                         instArgName = instArgName.Replace("::", "_");
-                    mangledName += "__" + instArgName;
+                    if (i > 0)
+                        mangledInstantiation += "__";
+                    mangledInstantiation += instArgName;
                 }
+                mangledName += NestMangledName(mangledInstantiation);
             }
             else
             {
@@ -282,26 +335,29 @@ namespace ILCompiler
             if (prependTypeName != null)
                 mangledName = prependTypeName + "__" + mangledName;
 
+            Utf8String utf8MangledName = new Utf8String(mangledName);
+
             lock (this)
             {
-                _mangledMethodNames = _mangledMethodNames.Add(method, mangledName);
+                if (!_mangledMethodNames.ContainsKey(method))
+                    _mangledMethodNames = _mangledMethodNames.Add(method, utf8MangledName);
             }
 
-            return mangledName;
+            return utf8MangledName;
         }
 
-        private ImmutableDictionary<FieldDesc, string> _mangledFieldNames = ImmutableDictionary<FieldDesc, string>.Empty;
+        private ImmutableDictionary<FieldDesc, Utf8String> _mangledFieldNames = ImmutableDictionary<FieldDesc, Utf8String>.Empty;
 
-        public string GetMangledFieldName(FieldDesc field)
+        public Utf8String GetMangledFieldName(FieldDesc field)
         {
-            string mangledName;
+            Utf8String mangledName;
             if (_mangledFieldNames.TryGetValue(field, out mangledName))
                 return mangledName;
 
             return ComputeMangledFieldName(field);
         }
 
-        private string ComputeMangledFieldName(FieldDesc field)
+        private Utf8String ComputeMangledFieldName(FieldDesc field)
         {
             string prependTypeName = null;
             if (!_mangleForCplusPlus)
@@ -315,17 +371,20 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (var f in field.OwningType.GetFields())
+                    if (!_mangledFieldNames.ContainsKey(field))
                     {
-                        string name = SanitizeName(f.Name);
+                        foreach (var f in field.OwningType.GetFields())
+                        {
+                            string name = SanitizeName(f.Name);
 
-                        name = DisambiguateName(name, deduplicator);
-                        deduplicator.Add(name);
+                            name = DisambiguateName(name, deduplicator);
+                            deduplicator.Add(name);
 
-                        if (prependTypeName != null)
-                            name = prependTypeName + "__" + name;
+                            if (prependTypeName != null)
+                                name = prependTypeName + "__" + name;
 
-                        _mangledFieldNames = _mangledFieldNames.Add(f, name);
+                            _mangledFieldNames = _mangledFieldNames.Add(f, name);
+                        }
                     }
                 }
 
@@ -338,9 +397,48 @@ namespace ILCompiler
             if (prependTypeName != null)
                 mangledName = prependTypeName + "__" + mangledName;
 
+            Utf8String utf8MangledName = new Utf8String(mangledName);
+
             lock (this)
             {
-                _mangledFieldNames = _mangledFieldNames.Add(field, mangledName);
+                if (!_mangledFieldNames.ContainsKey(field))
+                    _mangledFieldNames = _mangledFieldNames.Add(field, utf8MangledName);
+            }
+
+            return utf8MangledName;
+        }
+
+        private ImmutableDictionary<string, string> _mangledStringLiterals = ImmutableDictionary<string, string>.Empty;
+
+        public string GetMangledStringName(string literal)
+        {
+            string mangledName;
+            if (_mangledStringLiterals.TryGetValue(literal, out mangledName))
+                return mangledName;
+
+            return ComputeMangledStringLiteralName(literal);
+        }
+
+        private string ComputeMangledStringLiteralName(string literal)
+        {
+            string mangledName = SanitizeName(literal);
+
+            if (mangledName.Length > 30)
+                mangledName = mangledName.Substring(0, 30);
+
+            if (mangledName != literal)
+            {
+                if (_sha256 == null)
+                    _sha256 = SHA256.Create();
+                
+                var hash = _sha256.ComputeHash(Encoding.UTF8.GetBytes(literal));
+                mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
+            }
+
+            lock (this)
+            {
+                if (!_mangledStringLiterals.ContainsKey(literal))
+                    _mangledStringLiterals = _mangledStringLiterals.Add(literal, mangledName);
             }
 
             return mangledName;

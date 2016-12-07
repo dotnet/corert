@@ -2547,9 +2547,9 @@ protected:
     PER_HEAP
     void descr_generations (BOOL begin_gc_p);
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP_ISOLATED
     void descr_generations_to_profiler (gen_walk_fn fn, void *context);
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP
     void record_survived_for_profiler(int condemned_gen_number, uint8_t * first_condemned_address);
     PER_HEAP
@@ -2978,7 +2978,7 @@ protected:
     PER_HEAP
     VOLATILE(int) alloc_context_count;
 #else //MULTIPLE_HEAPS
-#define vm_heap ((GCHeap*) g_pGCHeap)
+#define vm_heap ((GCHeap*) g_theGCHeap)
 #define heap_number (0)
 #endif //MULTIPLE_HEAPS
 
@@ -4073,8 +4073,6 @@ size_t generation_unusable_fragmentation (generation* inst)
 }
 
 #define plug_skew           sizeof(ObjHeader)
-#define min_obj_size        (sizeof(uint8_t*)+plug_skew+sizeof(size_t))//syncblock + vtable+ first field
-//Note that this encodes the fact that plug_skew is a multiple of uint8_t*.
 // We always use USE_PADDING_TAIL when fitting so items on the free list should be
 // twice the min_obj_size.
 #define min_free_list       (2*min_obj_size)

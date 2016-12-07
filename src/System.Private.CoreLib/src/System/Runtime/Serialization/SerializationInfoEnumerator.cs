@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
@@ -36,13 +36,13 @@ namespace System.Runtime.Serialization
 
         internal SerializationInfoEnumerator(string[] members, object[] info, Type[] types, int numItems)
         {
-            Contract.Assert(members != null, "[SerializationInfoEnumerator.ctor]members!=null");
-            Contract.Assert(info != null, "[SerializationInfoEnumerator.ctor]info!=null");
-            Contract.Assert(types != null, "[SerializationInfoEnumerator.ctor]types!=null");
-            Contract.Assert(numItems >= 0, "[SerializationInfoEnumerator.ctor]numItems>=0");
-            Contract.Assert(members.Length >= numItems, "[SerializationInfoEnumerator.ctor]members.Length>=numItems");
-            Contract.Assert(info.Length >= numItems, "[SerializationInfoEnumerator.ctor]info.Length>=numItems");
-            Contract.Assert(types.Length >= numItems, "[SerializationInfoEnumerator.ctor]types.Length>=numItems");
+            Debug.Assert(members != null, "[SerializationInfoEnumerator.ctor]members!=null");
+            Debug.Assert(info != null, "[SerializationInfoEnumerator.ctor]info!=null");
+            Debug.Assert(types != null, "[SerializationInfoEnumerator.ctor]types!=null");
+            Debug.Assert(numItems >= 0, "[SerializationInfoEnumerator.ctor]numItems>=0");
+            Debug.Assert(members.Length >= numItems, "[SerializationInfoEnumerator.ctor]members.Length>=numItems");
+            Debug.Assert(info.Length >= numItems, "[SerializationInfoEnumerator.ctor]info.Length>=numItems");
+            Debug.Assert(types.Length >= numItems, "[SerializationInfoEnumerator.ctor]types.Length>=numItems");
 
             _members = members;
             _data = info;

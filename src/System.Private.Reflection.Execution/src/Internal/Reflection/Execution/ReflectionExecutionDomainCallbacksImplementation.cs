@@ -31,98 +31,24 @@ namespace Internal.Reflection.Execution
             _executionEnvironment = executionEnvironment;
         }
 
-        /// <summary>
-        /// Register a module for reflection support - locate the reflection metadata blob in the module
-        /// and register its metadata reader in an internal map. Manipulation of the internal map
-        /// is not thread safe with respect to reflection runtime.
-        /// </summary>
-        /// <param name="moduleHandle">Module handle to register</param>
-        public sealed override void RegisterModule(IntPtr moduleHandle)
+        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, string defaultAssemblyName)
         {
-            ModuleList.Instance.RegisterModule(moduleHandle);
-        }
-
-        public sealed override Object ActivatorCreateInstance(Type type, Object[] args)
-        {
-            if (type == null)
-                throw new ArgumentNullException("type");
-
-            if (args == null)
-                args = new Object[] { };
-
-            TypeInfo typeInfo = type.GetTypeInfo();
-
-            // All value types have an implied default constructor that has no representation in metadata.
-            if (args.Length == 0 && typeInfo.IsValueType)
-                return RuntimeAugments.NewObject(type.TypeHandle);
-
-            LowLevelList<MethodBase> candidates = new LowLevelList<MethodBase>();
-            foreach (ConstructorInfo constructor in typeInfo.DeclaredConstructors)
+            if (defaultAssemblyName == null)
             {
-                if (constructor.IsStatic)
-                    continue;
-                if (!constructor.IsPublic)
-                    continue;
-
-                // Project N does not support varargs - if it ever does, we'll probably have port over more desktop policy for this code...
-                if (0 != (constructor.CallingConvention & CallingConventions.VarArgs))
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_VarArgs);
-
-                // The default binder rules allow omitting optional parameters but Activator.CreateInstance() doesn't. Thus, if the # of arguments doesn't match
-                // the # of parameters, do the pre-verification that the desktop does and ensure that the method has a "params" argument and that the argument count
-                // isn't shorter by more than one.
-                ParameterInfo[] parameters = constructor.GetParameters();
-                if (args.Length != parameters.Length)
-                {
-                    if (args.Length < parameters.Length - 1)
-                        continue;
-                    if (parameters.Length == 0)
-                        continue;
-                    ParameterInfo finalParameter = parameters[parameters.Length - 1];
-                    if (!finalParameter.ParameterType.IsArray)
-                        continue;
-
-                    bool hasParamArray = false;
-                    foreach (CustomAttributeData cad in finalParameter.CustomAttributes)
-                    {
-                        if (cad.AttributeType.Equals(typeof(ParamArrayAttribute)))
-                        {
-                            hasParamArray = true;
-                            break;
-                        }
-                    }
-                    if (!hasParamArray)
-                        continue;
-                }
-
-                candidates.Add(constructor);
+                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
             }
-
-            if (candidates.Count == 0)
-                throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, type));
-
-            MethodBase[] candidatesArray = candidates.ToArray();
-            Binder binder = Type._GetDefaultBinder();
-            object ignore;
-            BindingFlags bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
-            ConstructorInfo match = (ConstructorInfo)binder.BindToMethod(bindingAttr, candidatesArray, ref args, null, null, null, out ignore);
-            Object newObject = match.Invoke(args);
-            return newObject;
-        }
-
-        public sealed override Type GetType(String typeName, bool throwOnError, bool ignoreCase)
-        {
-            return _executionDomain.GetType(typeName, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
+            else
+            {
+                LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
+                defaultAssemblies.Add(defaultAssemblyName);
+                defaultAssemblies.AddRange(ReflectionExecution.DefaultAssemblyNamesForGetType);
+                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
+            }
         }
 
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)
         {
             return _executionEnvironment.IsReflectionBlocked(typeHandle);
-        }
-
-        public sealed override bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name)
-        {
-            return _executionEnvironment.TryGetMetadataNameForRuntimeTypeHandle(rtth, out name);
         }
 
         //=======================================================================================
@@ -147,6 +73,11 @@ namespace Internal.Reflection.Execution
         public sealed override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             return _executionDomain.GetPointerTypeForHandle(typeHandle);
+        }
+
+        public sealed override Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return _executionDomain.GetByRefTypeForHandle(typeHandle);
         }
 
         public sealed override Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -217,7 +148,7 @@ namespace Internal.Reflection.Execution
             fullMethodName.Append('(');
 
             // get parameter list
-            ParameterInfo[] paramArr = methodBase.GetParameters();
+            ParameterInfo[] paramArr = methodBase.GetParametersNoCopy();
             for (int i = 0; i < paramArr.Length; ++i)
             {
                 if (i != 0)
@@ -247,11 +178,6 @@ namespace Internal.Reflection.Execution
             }
             fullMethodName.Append(')');
             return fullMethodName.ToString();
-        }
-
-        public sealed override bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref IntPtr methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
-        {
-            return _executionEnvironment.TryGetGenericVirtualTargetForTypeAndSlot(targetHandle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out methodPointer, out dictionaryPointer, out slotUpdated);
         }
 
         private String GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader)
@@ -290,16 +216,6 @@ namespace Internal.Reflection.Execution
             }
 
             return s;
-        }
-
-        public override IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
-        }
-
-        public override IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForTypeUsingLocator(canonEquivalentEntryLocator);
         }
 
         public sealed override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle)
@@ -424,7 +340,7 @@ namespace Internal.Reflection.Execution
                 return false;
             }
 
-            ParameterInfo parameterInfo = methodInfo.GetParameters()[argIndex];
+            ParameterInfo parameterInfo = methodInfo.GetParametersNoCopy()[argIndex];
             if (!parameterInfo.HasDefaultValue)
             {
                 // If the parameter is optional, with no default value and we're asked for its default value,

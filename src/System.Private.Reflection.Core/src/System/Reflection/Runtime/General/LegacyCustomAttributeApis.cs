@@ -22,11 +22,10 @@ using System.Reflection.Runtime.General;
 
 using Internal.LowLevelLinq;
 
-using CustomAttributeExtensions = System.Reflection.CustomAttributeExtensionsSoonToBe;
 
 namespace System.Reflection.Runtime.Assemblies
 {
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
         public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this).ToArray();  // inherit is meaningless for Assemblies
@@ -48,18 +47,18 @@ namespace System.Reflection.Runtime.MethodInfos
 
 namespace System.Reflection.Runtime.EventInfos
 {
-    internal sealed partial class RuntimeEventInfo
+    internal abstract partial class RuntimeEventInfo
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
-        public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit).ToArray();
-        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, attributeType, inherit).ToArray();
-        public sealed override bool IsDefined(Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(this, attributeType, inherit);
+        public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit: false).ToArray();  // Desktop compat: for events, this form of the api ignores "inherit"
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, attributeType, inherit: false).ToArray();  // Desktop compat: for events, this form of the api ignores "inherit"
+        public sealed override bool IsDefined(Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(this, attributeType, inherit: false);  // Desktop compat: for events, this form of the api ignores "inherit"
     }
 }
 
 namespace System.Reflection.Runtime.FieldInfos
 {
-    internal sealed partial class RuntimeFieldInfo
+    internal abstract partial class RuntimeFieldInfo
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
         public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit).ToArray();
@@ -95,20 +94,20 @@ namespace System.Reflection.Runtime.ParameterInfos
     internal abstract partial class RuntimeParameterInfo
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
-        public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit).ToArray();
-        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, attributeType, inherit).ToArray();
-        public sealed override bool IsDefined(Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(this, attributeType, inherit);
+        public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit: false).ToArray(); // Desktop compat: for parameters, this form of the api ignores "inherit"
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, attributeType, inherit: false).ToArray(); // Desktop compat: for parameters, this form of the api ignores "inherit"
+        public sealed override bool IsDefined(Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(this, attributeType, inherit: false); // Desktop compat: for parameters, this form of the api ignores "inherit"
     }
 }
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
-    internal sealed partial class RuntimePropertyInfo
+    internal abstract partial class RuntimePropertyInfo
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
-        public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit).ToArray();
-        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, attributeType, inherit).ToArray();
-        public sealed override bool IsDefined(Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(this, attributeType, inherit);
+        public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit: false).ToArray(); // Desktop compat: for properties, this form of the api ignores "inherit"
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, attributeType, inherit: false).ToArray(); // Desktop compat: for properties, this form of the api ignores "inherit"
+        public sealed override bool IsDefined(Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(this, attributeType, inherit: false); // Desktop compat: for properties, this form of the api ignores "inherit"
     }
 }
 

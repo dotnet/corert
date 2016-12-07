@@ -12,7 +12,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Tracing;
-using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -105,7 +104,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type GetGenericTypeDefinition()
         {
-            return GenericTypeDefinitionTypeInfo.AsType();
+            return GenericTypeDefinitionTypeInfo;
         }
 
         public sealed override Guid GUID
@@ -134,14 +133,6 @@ namespace System.Reflection.Runtime.TypeInfos
                         return true;
                 }
                 return false;
-            }
-        }
-
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-                return GenericTypeDefinitionTypeInfo.DeclaredNestedTypes;
             }
         }
 
@@ -243,6 +234,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return genericTypeDefinitionNamedTypeInfo;
             }
         }
+
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => GenericTypeDefinitionTypeInfo.CanBrowseWithoutMissingMetadataExceptions;
 
         internal sealed override Type InternalDeclaringType
         {

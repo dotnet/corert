@@ -4,6 +4,8 @@
 
 using System;
 
+using Internal.TypeSystem;
+
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
@@ -43,9 +45,34 @@ namespace Internal.Runtime.CompilerHelpers
             throw new PlatformNotSupportedException();
         }
 
-        public static void ThrowTypeLoadException()
+        public static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName)
         {
-            throw new TypeLoadException();
+            throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName);
+        }
+
+        public static void ThrowTypeLoadExceptionWithArgument(ExceptionStringID id, string className, string typeName, string messageArg)
+        {
+            throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName, messageArg);
+        }
+
+        public static void ThrowMissingMethodException(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingMethodException(id, methodName);
+        }
+
+        public static void ThrowMissingFieldException(ExceptionStringID id, string fieldName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingFieldException(id, fieldName);
+        }
+
+        public static void ThrowFileNotFoundException(ExceptionStringID id, string fileName)
+        {
+            throw TypeLoaderExceptionHelper.CreateFileNotFoundException(id, fileName);
+        }
+
+        public static void ThrowInvalidProgramException(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id, methodName);
         }
 
         public static void ThrowArgumentException()

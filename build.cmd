@@ -1,4 +1,4 @@
-@if "%_echo%" neq "on" echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
 set __ThisScriptShort=%0
@@ -64,8 +64,8 @@ set "__IntermediatesDir=%__RootBinDir%\obj\Native\%__BuildOS%.%__BuildArch%.%__B
 set "__RelativeProductBinDir=bin\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
 set "__ReproProjectDir=%__ProjectDir%\src\ILCompiler\repro"
-set "__ReproProjectBinDir=%__ReproProjectDir%\bin"
-set "__ReproProjectObjDir=%__ReproProjectDir%\obj"
+set "__ReproProjectBinDir=%__BinDir%\repro"
+set "__ReproProjectObjDir=%__ObjDir%\repro"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -83,9 +83,6 @@ set __MSBCleanBuildArgs=/t:rebuild /p:CleanedTheBuild=1
 if exist "%__BinDir%" rd /s /q "%__BinDir%"
 if exist "%__ObjDir%" rd /s /q "%__ObjDir%"
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
-
-if exist "%__ReproProjectBinDir%" rd /s /q "%__ReproProjectBinDir%"
-if exist "%__ReproProjectObjDir%" rd /s /q "%__ReproProjectObjDir%"
 
 if exist "%__LogsDir%" del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__BuildType%.*"
 
@@ -161,7 +158,7 @@ exit /b 1
 
 :BuildNative
 set "__NativeBuildLog=%__LogsDir%\Native_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__NativeBuildLog%"
+%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__NativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto ManagedBuild
 echo Native component build failed. Refer !__NativeBuildLog! for details.
 exit /b 1
@@ -192,7 +189,7 @@ call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__BuildLog=%__LogsDir%\msbuild_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
+%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:NuPkgRid=win7-x64 /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
 IF NOT ERRORLEVEL 1 (
   findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__BuildLog%"
   goto AfterILCompilerBuild
@@ -202,15 +199,7 @@ exit /b 1
 
 
 :AfterILCompilerBuild
-setlocal
-rem Workaround for --appdepsdkpath command line switch being ignored.
-rem Copy the restored appdepsdk package to its default location.
-pushd "%__ProjectDir%\tests"
-call testenv.cmd %__BuildType% %__BuildArch%
-popd
-set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
-xcopy /S /Y "%CoreRT_AppDepSdkDir%" "%__DotNetCliPath%\sdk\%DOTNET_VERSION%\appdepsdk%\"
-endlocal
+
 
 :VsDevGenerateRespFiles
 if defined __SkipVsDev goto :AfterVsDevGenerateRespFiles
@@ -218,26 +207,21 @@ set __GenRespFiles=0
 if not exist "%__ObjDir%\ryujit.rsp" set __GenRespFiles=1
 if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
-    setlocal
-    pushd "%__ProjectDir%\tests"
-    call testenv.cmd %__BuildType% %__BuildArch%
-    popd
-    call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
+    if exist "%__ReproProjectBinDir%" rd /s /q "%__ReproProjectBinDir%"
+    if exist "%__ReproProjectObjDir%" rd /s /q "%__ReproProjectObjDir%"
 
-    "%__DotNetCliPath%\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType%
-    call :CopyResponseFile "%__ReproProjectObjDir%\%__BuildType%\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
+    %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ReproProjectDir%\repro.csproj"
+    call :CopyResponseFile "%__ReproProjectObjDir%\native\ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
-    rem Workaround for https://github.com/dotnet/cli/issues/1956
-    rmdir /s /q "%__ReproProjectBinDir%"
-    rmdir /s /q "%__ReproProjectObjDir%"
+    if exist "%__ReproProjectBinDir%" rd /s /q "%__ReproProjectBinDir%"
+    if exist "%__ReproProjectObjDir%" rd /s /q "%__ReproProjectObjDir%"
 
-    set __AdditionalCompilerFlags=
+    set __ExtraArgs=/p:NativeCodeGen=cpp
     if /i "%__BuildType%"=="debug" (
-        set __AdditionalCompilerFlags=--cppcompilerflags /MTd
+        set __ExtraArgs=!__ExtraArgs! "/p:AdditionalCppCompilerFlags=/MTd"
     )
-    "%__DotNetCliPath%\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
-    call :CopyResponseFile "%__ReproProjectObjDir%\%__BuildType%\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
-    endlocal
+    %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ReproProjectDir%\repro.csproj" !__ExtraArgs!
+    call :CopyResponseFile "%__ReproProjectObjDir%\native\ilc.rsp" "%__ObjDir%\cpp.rsp"
 )
 :AfterVsDevGenerateRespFiles
 

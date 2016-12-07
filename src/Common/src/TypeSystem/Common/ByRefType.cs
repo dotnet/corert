@@ -21,8 +21,12 @@ namespace Internal.TypeSystem
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            TypeDesc instantiatedParameterType = this.ParameterType.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return instantiatedParameterType.MakeByRefType();
+            TypeDesc parameterType = this.ParameterType;
+            TypeDesc instantiatedParameterType = parameterType.InstantiateSignature(typeInstantiation, methodInstantiation);
+            if (instantiatedParameterType != parameterType)
+                return Context.GetByRefType(instantiatedParameterType);
+
+            return this;
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)

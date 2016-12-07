@@ -99,7 +99,7 @@ namespace System.Reflection
             if (t == null)
                 return null;
 
-            throw new NotImplementedException(); //return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
+            return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
         }
 
         public virtual event ModuleResolveEventHandler ModuleResolve { add { throw NotImplemented.ByDesign; } remove { throw NotImplemented.ByDesign; } }
@@ -169,7 +169,7 @@ namespace System.Reflection
 
         public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef);
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
-        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw new NotImplementedException(); }
+        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw new PlatformNotSupportedException(); }
 
         public static Assembly Load(string assemblyString)
         {
@@ -180,8 +180,8 @@ namespace System.Reflection
             return Load(name);
         }
 
-        public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new NotImplementedException(); }
-        public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new NotImplementedException(); }
-        public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new NotImplementedException(); }
+        public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
     }
 }

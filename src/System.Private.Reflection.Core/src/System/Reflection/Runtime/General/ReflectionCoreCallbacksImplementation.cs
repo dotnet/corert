@@ -5,11 +5,13 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.FieldInfos;
+using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.BindingFlagSupport;
 
@@ -23,22 +25,6 @@ namespace System.Reflection.Runtime.General
     {
         internal ReflectionCoreCallbacksImplementation()
         {
-        }
-
-        public sealed override TypeInfo GetTypeInfo(Type type)
-        {
-            IReflectableType reflectableType = type as IReflectableType;
-            if (reflectableType != null)
-                return reflectableType.GetTypeInfo();
-
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            // This is bizarre but compatible with the desktop which casts "type" to IReflectableType without checking and
-            // thus, throws an InvalidCastException.
-            object ignore = (IReflectableType)type;
-            Debug.Fail("Did not expect to get here.");
-            throw new InvalidOperationException();
         }
 
         public sealed override Assembly Load(AssemblyName refName)
@@ -137,22 +123,6 @@ namespace System.Reflection.Runtime.General
             return fieldInfo;
         }
 
-        public sealed override void InitializeAssemblyName(AssemblyName blank, String fullName)
-        {
-            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(fullName);
-            runtimeAssemblyName.CopyToAssemblyName(blank);
-        }
-
-        public sealed override String ComputeAssemblyNameFullName(AssemblyName assemblyName)
-        {
-            return AssemblyNameHelpers.ComputeDisplayName(assemblyName.ToRuntimeAssemblyName());
-        }
-
-        public sealed override byte[] ComputePublicKeyToken(byte[] publicKey)
-        {
-            return AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
-        }
-
         public sealed override EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e)
         {
             return e.GetImplicitlyOverriddenBaseClassMember();
@@ -176,9 +146,22 @@ namespace System.Reflection.Runtime.General
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
-            RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
+            NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
             MetadataReader reader = definingTypeInfo.Reader;
-            return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo);
+
+            // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
+            RuntimeTypeInfo reflectedType = contextTypeInfo;
+            return NativeFormatRuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType);
+        }
+
+        public sealed override object ActivatorCreateInstance(Type type, bool nonPublic)
+        {
+            return ActivatorImplementation.CreateInstance(type, nonPublic);
+        }
+
+        public sealed override object ActivatorCreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
+        {
+            return ActivatorImplementation.CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
         }
     }
 }

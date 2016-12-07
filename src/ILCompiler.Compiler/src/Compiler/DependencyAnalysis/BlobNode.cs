@@ -4,16 +4,18 @@
 
 using System;
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public class BlobNode : ObjectNode, ISymbolNode
     {
-        private string _name;
+        private Utf8String _name;
         private ObjectNodeSection _section;
         private byte[] _data;
         private int _alignment;
 
-        public BlobNode(string name, ObjectNodeSection section, byte[] data, int alignment)
+        public BlobNode(Utf8String name, ObjectNodeSection section, byte[] data, int alignment)
         {
             _name = name;
             _section = section;
@@ -21,46 +23,21 @@ namespace ILCompiler.DependencyAnalysis
             _alignment = alignment;
         }
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return _section;
-            }
-        }
+        public override ObjectNodeSection Section => _section;
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return true;
-            }
+            sb.Append(_name);
         }
-
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return _name;
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolNode[] { this });
         }
 
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
     }
 }

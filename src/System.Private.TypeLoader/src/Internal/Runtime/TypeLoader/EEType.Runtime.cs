@@ -1,0 +1,30 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+using Internal.Runtime.TypeLoader;
+
+namespace Internal.Runtime
+{
+    // Supplies type loader specific extentions to EEType
+    internal partial struct EEType
+    {
+        private unsafe static EEType* GetArrayEEType()
+        {
+            return typeof(Array).TypeHandle.ToEETypePtr();
+        }
+
+        internal unsafe RuntimeTypeHandle ToRuntimeTypeHandle()
+        {
+            fixed (EEType* pThis = &this)
+            {
+                IntPtr result = (IntPtr)pThis;
+                return *(RuntimeTypeHandle*)&result;
+            }
+        }
+    }
+}

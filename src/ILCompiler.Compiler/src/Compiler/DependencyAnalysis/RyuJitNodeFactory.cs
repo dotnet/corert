@@ -6,6 +6,8 @@ using System;
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public sealed class RyuJitNodeFactory : NodeFactory
@@ -17,9 +19,17 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
-            if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
+            if (method.IsInternalCall)
             {
-                return new RuntimeImportMethodNode(method);
+                // The only way to locate the entrypoint for an internal call is through the RuntimeImportAttribute.
+                if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
+                {
+                    return new RuntimeImportMethodNode(method);
+                }
+
+                // On CLR this would throw a SecurityException with "ECall methods must be packaged into a system module."
+                // This is a corner case that nobody is likely to care about.
+                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
             if (CompilationModuleGroup.ContainsMethod(method))
@@ -39,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
         {
-            return new ReadyToRunHelperNode(helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
     }
 }

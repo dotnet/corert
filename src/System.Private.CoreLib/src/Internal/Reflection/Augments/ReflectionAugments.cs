@@ -20,6 +20,7 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 
 using RhCorElementType = System.Runtime.RuntimeImports.RhCorElementType;
 
@@ -112,7 +113,6 @@ namespace Internal.Reflection.Augments
     //
     public abstract class ReflectionCoreCallbacks
     {
-        public abstract TypeInfo GetTypeInfo(Type type);
         public abstract Assembly Load(AssemblyName refName);
 
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle);
@@ -120,14 +120,13 @@ namespace Internal.Reflection.Augments
         public abstract FieldInfo GetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle);
         public abstract FieldInfo GetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle);
 
-        public abstract void InitializeAssemblyName(AssemblyName blank, String fullName);
-        public abstract String ComputeAssemblyNameFullName(AssemblyName assemblyName);
-        public abstract byte[] ComputePublicKeyToken(byte[] publicKey);
-
         public abstract EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e);
         public abstract MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m);
         public abstract PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p);
 
         public abstract Binder CreateDefaultBinder();
+
+        public abstract object ActivatorCreateInstance(Type type, bool nonPublic);
+        public abstract object ActivatorCreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes);
     }
 }

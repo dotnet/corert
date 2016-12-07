@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,65 +18,35 @@ namespace ILCompiler.DependencyAnalysis
             _moduleName = moduleName;
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return true;
+            sb.Append("__nativemodule_");
+            sb.Append(_moduleName);
         }
+        public int Offset => 0;
+        public override bool IsShareable => true;
 
-        public int Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        protected override string GetName() => this.GetMangledName();
 
-        public string MangledName
-        {
-            get
-            {
-                return String.Concat("__nativemodule_", _moduleName);
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
-        public override string GetName()
-        {
-            return MangledName;
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
             builder.DefinedSymbols.Add(this);
 
+            ISymbolNode nameSymbol = factory.Target.IsWindows ?
+                factory.ConstantUtf16String(_moduleName) :
+                factory.ConstantUtf8String(_moduleName);
+
             //
             // Emit a ModuleFixupCell struct
             //
 
             builder.EmitZeroPointer();
-
-            Encoding encoding = factory.Target.IsWindows ? Encoding.Unicode : Encoding.UTF8;
-
-            int moduleNameBytesCount = encoding.GetByteCount(_moduleName);
-            byte[] moduleNameBytes = new byte[moduleNameBytesCount + 2];
-            encoding.GetBytes(_moduleName, 0, _moduleName.Length, moduleNameBytes, 0);
-            builder.EmitPointerReloc(factory.ReadOnlyDataBlob("__modulename_" + _moduleName, moduleNameBytes, 2));
+            builder.EmitPointerReloc(nameSymbol);
 
             return builder.ToObjectData();
         }

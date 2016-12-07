@@ -220,7 +220,7 @@ namespace System.Threading
             {
                 long ltm = (long)timeout.TotalMilliseconds;
                 if (ltm < -1 || ltm > (long)Int32.MaxValue)
-                    throw new ArgumentOutOfRangeException("timeout");
+                    throw new ArgumentOutOfRangeException(nameof(timeout));
                 _total = (int)ltm;
                 if (_total != -1 && _total != 0)
                     _start = Environment.TickCount;
@@ -231,7 +231,7 @@ namespace System.Threading
             public TimeoutTracker(int millisecondsTimeout)
             {
                 if (millisecondsTimeout < -1)
-                    throw new ArgumentOutOfRangeException("millisecondsTimeout");
+                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
                 _total = millisecondsTimeout;
                 if (_total != -1 && _total != 0)
                     _start = Environment.TickCount;
@@ -1056,15 +1056,15 @@ namespace System.Threading
             {
                 if (i < LockSpinCount && pc > 1)
                 {
-                    Helpers.Spin(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
+                    System.Threading.SpinWait.Spin(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
                 }
                 else if (i < (LockSpinCount + LockSleep0Count))
                 {
-                    Helpers.Sleep(0);   // Give up my quantum.  
+                    Interop.mincore.Sleep(0);   // Give up my quantum.  
                 }
                 else
                 {
-                    Helpers.Sleep(1);   // Give up my quantum.  
+                    Interop.mincore.Sleep(1);   // Give up my quantum.  
                 }
 
                 if (_myLock == 0 && Interlocked.CompareExchange(ref _myLock, 1, 0) == 0)
@@ -1087,15 +1087,15 @@ namespace System.Threading
             //Exponential backoff
             if ((SpinCount < 5) && (Environment.ProcessorCount > 1))
             {
-                Helpers.Spin(LockSpinCycles * SpinCount);
+                System.Threading.SpinWait.Spin(LockSpinCycles * SpinCount);
             }
             else if (SpinCount < MaxSpinCount - 3)
             {
-                Helpers.Sleep(0);
+                Interop.mincore.Sleep(0);
             }
             else
             {
-                Helpers.Sleep(1);
+                Interop.mincore.Sleep(1);
             }
         }
 

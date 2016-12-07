@@ -7,12 +7,11 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
-
-using Internal.Metadata.NativeFormat;
 
 using Internal.Reflection.Tracing;
 
@@ -31,7 +30,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return DeclaringType.GetTypeInfo().ContainsGenericParameters;
+                return DeclaringType.ContainsGenericParameters;
             }
         }
 
@@ -52,13 +51,18 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodBase_GetParameters(this);
 #endif
 
-            RuntimeParameterInfo[] runtimeParametersAndReturn = this.RuntimeParametersAndReturn;
-            if (runtimeParametersAndReturn.Length == 1)
+            RuntimeParameterInfo[] parameters = RuntimeParameters;
+            if (parameters.Length == 0)
                 return Array.Empty<ParameterInfo>();
-            ParameterInfo[] result = new ParameterInfo[runtimeParametersAndReturn.Length - 1];
+            ParameterInfo[] result = new ParameterInfo[parameters.Length];
             for (int i = 0; i < result.Length; i++)
-                result[i] = runtimeParametersAndReturn[i + 1];
+                result[i] = parameters[i];
             return result;
+        }
+
+        public sealed override ParameterInfo[] GetParametersNoCopy()
+        {
+            return RuntimeParameters;
         }
 
         public abstract override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
@@ -69,9 +73,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-
-            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();
@@ -115,7 +117,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return DeclaringType.GetTypeInfo().Module;
+                return DeclaringType.Module;
             }
         }
 
@@ -143,6 +145,15 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override int GetHashCode();
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                // Constructors are always looked up as if BindingFlags.DeclaredOnly were specified. Thus, the ReflectedType will always be the DeclaringType.
+                return DeclaringType;
+            }
+        }
+
         public abstract override String ToString();
 
         protected MethodInvoker MethodInvoker
@@ -157,7 +168,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected abstract RuntimeParameterInfo[] RuntimeParametersAndReturn { get; }
+        protected abstract RuntimeParameterInfo[] RuntimeParameters { get; }
 
         protected abstract MethodInvoker UncachedMethodInvoker { get; }
 

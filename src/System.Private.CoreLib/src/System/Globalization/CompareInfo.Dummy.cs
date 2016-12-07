@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -148,10 +149,10 @@ namespace System.Globalization
             char valueChar;     // Character for case lookup in value
             int lastSourceStart;
 
-            Contract.Assert(source != null);
-            Contract.Assert(value != null);
-            Contract.Assert(sourceCount>= 0);
-            Contract.Assert(valueCount >= 0);
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
+            Debug.Assert(sourceCount>= 0);
+            Debug.Assert(valueCount >= 0);
 
             if(valueCount == 0)
             {
@@ -389,6 +390,31 @@ namespace System.Globalization
             StartsWith,
             End,
             EndsWith,
+        }
+
+        private unsafe SortKey CreateSortKey(String source, CompareOptions options)
+        {
+            if (source==null) { throw new ArgumentNullException(nameof(source)); }
+            Contract.EndContractBlock();
+
+            if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
+            }
+
+            throw new NotImplementedException();
+        }
+
+        private unsafe static bool IsSortable(char *text, int length)
+        {
+            // CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+            // return (InternalIsSortable(c.m_dataHandle, c.m_handleOrigin, c.m_sortName, text, text.Length));
+            throw new NotImplementedException();
+        }
+
+        private SortVersion GetSortVersion()
+        {
+            throw new NotImplementedException();
         }
     }
 }

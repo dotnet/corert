@@ -31,7 +31,6 @@ namespace Internal.Reflection.Extensions.NonPortable
             if (cad == null)
                 return null;
             Type attributeType = cad.AttributeType;
-            TypeInfo attributeTypeInfo = attributeType.GetTypeInfo();
 
             //
             // Find the public constructor that matches the supplied arguments.
@@ -39,12 +38,9 @@ namespace Internal.Reflection.Extensions.NonPortable
             ConstructorInfo matchingCtor = null;
             ParameterInfo[] matchingParameters = null;
             IList<CustomAttributeTypedArgument> constructorArguments = cad.ConstructorArguments;
-            foreach (ConstructorInfo ctor in attributeTypeInfo.DeclaredConstructors)
+            foreach (ConstructorInfo ctor in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                if ((ctor.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != (MethodAttributes.Public))
-                    continue;
-
-                ParameterInfo[] parameters = ctor.GetParameters();
+                ParameterInfo[] parameters = ctor.GetParametersNoCopy();
                 if (parameters.Length != constructorArguments.Count)
                     continue;
                 int i;
@@ -63,7 +59,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 }
             }
             if (matchingCtor == null)
-                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeTypeInfo); // No matching ctor.
+                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeType); // No matching ctor.
 
             //
             // Found the right constructor. Instantiate the Attribute.
@@ -82,14 +78,14 @@ namespace Internal.Reflection.Extensions.NonPortable
             foreach (CustomAttributeNamedArgument namedArgument in cad.NamedArguments)
             {
                 Object argumentValue = namedArgument.TypedValue.Convert();
-                TypeInfo walk = attributeTypeInfo;
+                Type walk = attributeType;
                 String name = namedArgument.MemberName;
                 if (namedArgument.IsField)
                 {
                     // Field
                     for (;;)
                     {
-                        FieldInfo fieldInfo = walk.GetDeclaredField(name);
+                        FieldInfo fieldInfo = walk.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (fieldInfo != null)
                         {
                             fieldInfo.SetValue(newAttribute, argumentValue);
@@ -97,8 +93,8 @@ namespace Internal.Reflection.Extensions.NonPortable
                         }
                         Type baseType = walk.BaseType;
                         if (baseType == null)
-                            throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeTypeInfo); // No field matches named argument.
-                        walk = baseType.GetTypeInfo();
+                            throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeType); // No field matches named argument.
+                        walk = baseType;
                     }
                 }
                 else
@@ -106,7 +102,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     // Property
                     for (;;)
                     {
-                        PropertyInfo propertyInfo = walk.GetDeclaredProperty(name);
+                        PropertyInfo propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (propertyInfo != null)
                         {
                             propertyInfo.SetValue(newAttribute, argumentValue);
@@ -114,8 +110,8 @@ namespace Internal.Reflection.Extensions.NonPortable
                         }
                         Type baseType = walk.BaseType;
                         if (baseType == null)
-                            throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeTypeInfo); // No field matches named argument.
-                        walk = baseType.GetTypeInfo();
+                            throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeType); // No field matches named argument.
+                        walk = baseType;
                     }
                 }
             }
@@ -131,7 +127,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             Type argumentType = typedArgument.ArgumentType;
             if (!argumentType.IsArray)
             {
-                bool isEnum = argumentType.GetTypeInfo().IsEnum;
+                bool isEnum = argumentType.IsEnum;
                 Object argumentValue = typedArgument.Value;
                 if (isEnum)
                     argumentValue = Enum.ToObject(argumentType, argumentValue);

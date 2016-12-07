@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -42,13 +41,13 @@ namespace System.Text
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 Contract.EndContractBlock();
 
                 // Can't change fallback if buffer is wrong
                 if (m_fallbackBuffer != null && m_fallbackBuffer.Remaining > 0)
                     throw new ArgumentException(
-                      SR.Argument_FallbackBufferNotEmpty, "value");
+                      SR.Argument_FallbackBufferNotEmpty, nameof(value));
 
                 m_fallback = value;
                 m_fallbackBuffer = null;
@@ -122,11 +121,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                       SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
@@ -186,11 +185,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? "chars" : "bytes",
+                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
                     SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount < 0 ? "byteCount" : "charCount"),
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
@@ -208,7 +207,7 @@ namespace System.Text
             int result = GetChars(arrByte, 0, byteCount, arrChar, 0, flush);
 
             // The only way this could fail is a bug in GetChars
-            Contract.Assert(result <= charCount, "Returned more chars than we have space for");
+            Debug.Assert(result <= charCount, "Returned more chars than we have space for");
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't
@@ -246,23 +245,23 @@ namespace System.Text
         {
             // Validate parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException((bytes == null ? "bytes" : "chars"),
+                throw new ArgumentNullException((bytes == null ? nameof(bytes) : nameof(chars)),
                       SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"),
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"),
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes",
+                throw new ArgumentOutOfRangeException(nameof(bytes),
                       SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars",
+                throw new ArgumentOutOfRangeException(nameof(chars),
                       SR.ArgumentOutOfRange_IndexCountBuffer);
             Contract.EndContractBlock();
 

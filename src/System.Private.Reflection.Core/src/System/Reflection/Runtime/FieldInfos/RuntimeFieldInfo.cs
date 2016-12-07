@@ -14,8 +14,6 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.BindingFlagSupport;
 
-using Internal.Metadata.NativeFormat;
-
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
@@ -27,11 +25,9 @@ namespace System.Reflection.Runtime.FieldInfos
     // The Runtime's implementation of fields.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal sealed partial class RuntimeFieldInfo : FieldInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeFieldInfo : FieldInfo, ITraceableTypeMember
     {
         //
-        // fieldHandle    - the "tkFieldDef" that identifies the field.
-        // definingType   - the "tkTypeDef" that defined the field (this is where you get the metadata reader that created fieldHandle.)
         // contextType    - the type that supplies the type context (i.e. substitutions for generic parameters.) Though you
         //                  get your raw information from "definingType", you report "contextType" as your DeclaringType property.
         //
@@ -48,38 +44,10 @@ namespace System.Reflection.Runtime.FieldInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        protected RuntimeFieldInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            _fieldHandle = fieldHandle;
-            _definingTypeInfo = definingTypeInfo;
             _contextTypeInfo = contextTypeInfo;
-            _reader = definingTypeInfo.Reader;
-            _field = fieldHandle.GetField(_reader);
-        }
-
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.FieldInfo_CustomAttributes(this);
-#endif
-
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
-            }
-        }
-
-        public sealed override FieldAttributes Attributes
-        {
-            get
-            {
-                return _field.Flags;
-            }
+            _reflectedType = reflectedType;
         }
 
         public sealed override Type DeclaringType
@@ -91,7 +59,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     ReflectionTrace.FieldInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
 
@@ -114,32 +82,19 @@ namespace System.Reflection.Runtime.FieldInfos
             return fieldAccessor.GetField(obj);
         }
 
-        public sealed override int MetadataToken
-        {
-            get
-            {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-            }
-        }
-
         public sealed override Module Module
         {
             get
             {
-                return _definingTypeInfo.Module;
+                return DefiningType.Module;
             }
         }
 
-        public sealed override String Name
+        public sealed override Type ReflectedType
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.FieldInfo_Name(this);
-#endif
-
-                return _field.Name.GetString(_reader);
+                return _reflectedType;
             }
         }
 
@@ -150,54 +105,64 @@ namespace System.Reflection.Runtime.FieldInfos
                 ReflectionTrace.FieldInfo_SetValue(this, obj, value);
 #endif
 
-            if (invokeAttr != BindingFlags.Default || !(binder is DefaultBinder) || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             FieldAccessor fieldAccessor = this.FieldAccessor;
             fieldAccessor.SetField(obj, value);
-        }
-
-        public sealed override String ToString()
-        {
-            TypeContext typeContext = _contextTypeInfo.TypeContext;
-            Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-            return typeHandle.FormatTypeName(_reader, typeContext) + " " + this.Name;
-        }
-
-        public sealed override bool Equals(Object obj)
-        {
-            RuntimeFieldInfo other = obj as RuntimeFieldInfo;
-            if (other == null)
-                return false;
-            if (!(_reader == other._reader))
-                return false;
-            if (!(_fieldHandle.Equals(other._fieldHandle)))
-                return false;
-            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
-                return false;
-            return true;
-        }
-
-        public sealed override int GetHashCode()
-        {
-            return _fieldHandle.GetHashCode();
-        }
-
-        String ITraceableTypeMember.MemberName
-        {
-            get
-            {
-                return _field.Name.GetString(_reader);
-            }
         }
 
         Type ITraceableTypeMember.ContainingType
         {
             get
             {
-                return _contextTypeInfo.AsType();
+                return _contextTypeInfo;
             }
         }
+
+        /// <summary>
+        /// Override to provide the metadata based name of a field. (Different from the Name
+        /// property in that it does not go into the reflection trace logic.)
+        /// </summary>
+        protected abstract string MetadataName { get; }
+
+        public sealed override String Name
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.FieldInfo_Name(this);
+#endif
+
+                return MetadataName;
+            }
+        }
+
+        String ITraceableTypeMember.MemberName
+        {
+            get
+            {
+                return MetadataName;
+            }
+        }
+
+        // Types that derive from RuntimeFieldInfo must implement the following public surface area members
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract override FieldAttributes Attributes { get; }
+        public abstract override int MetadataToken { get; }
+        public abstract override String ToString();
+        public abstract override bool Equals(Object obj);
+        public abstract override int GetHashCode();
+
+        /// <summary>
+        /// Get the default value if exists for a field by parsing metadata. Return false if there is no default value.
+        /// </summary>
+        protected abstract bool TryGetDefaultValue(out object defaultValue);
+
+        /// <summary>
+        /// Return a FieldAccessor object for accessing the value of a non-literal field. May rely on metadata to create correct accessor.
+        /// </summary>
+        protected abstract FieldAccessor TryGetFieldAccessor();
 
         private FieldAccessor FieldAccessor
         {
@@ -212,12 +177,7 @@ namespace System.Reflection.Runtime.FieldInfos
                         // For desktop compat, we return the metadata literal as is and do not attempt to convert or validate against the Field type.
 
                         Object defaultValue;
-                        if (!ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
-                            _reader,
-                            _fieldHandle,
-                            this.FieldType,
-                            this.CustomAttributes,
-                            out defaultValue))
+                        if (!TryGetDefaultValue(out defaultValue))
                         {
                             throw new BadImageFormatException(); // Field marked literal but has no default value.
                         }
@@ -226,7 +186,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     }
                     else
                     {
-                        _lazyFieldAccessor = fieldAccessor = ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
+                        _lazyFieldAccessor = fieldAccessor = TryGetFieldAccessor();
                         if (fieldAccessor == null)
                             throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(this);
                     }
@@ -235,17 +195,12 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
-        private RuntimeTypeInfo FieldRuntimeType
-        {
-            get
-            {
-                TypeContext typeContext = _contextTypeInfo.TypeContext;
-                Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-                return typeHandle.Resolve(_reader, typeContext);
-            }
-        }
+        /// <summary>
+        /// Return the type of the field by parsing metadata.
+        /// </summary>
+        protected abstract RuntimeTypeInfo FieldRuntimeType { get; }
 
-        private RuntimeFieldInfo WithDebugName()
+        protected RuntimeFieldInfo WithDebugName()
         {
             bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
@@ -262,12 +217,13 @@ namespace System.Reflection.Runtime.FieldInfos
             return this;
         }
 
-        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
-        private readonly FieldHandle _fieldHandle;
-        private readonly RuntimeTypeInfo _contextTypeInfo;
+        /// <summary>
+        /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
+        /// </summary>
+        protected abstract RuntimeTypeInfo DefiningType { get; }
 
-        private readonly MetadataReader _reader;
-        private readonly Field _field;
+        protected readonly RuntimeTypeInfo _contextTypeInfo;
+        protected readonly RuntimeTypeInfo _reflectedType;
 
         private volatile FieldAccessor _lazyFieldAccessor = null;
 

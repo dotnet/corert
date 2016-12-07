@@ -141,7 +141,12 @@ namespace Internal.TypeSystem.Ecma
                         item = _module.ResolveStandaloneSignature((StandaloneSignatureHandle)handle);
                         break;
 
-                    // TODO: Resolve other tokens
+                    case HandleKind.ModuleDefinition:
+                        // ECMA-335 Partition 2 II.22.38 1d: This should not occur in a CLI ("compressed metadata") module,
+                        // but resolves to "current module".
+                        item = _module;
+                        break;
+
                     default:
                         throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
                 }
@@ -283,14 +288,9 @@ namespace Internal.TypeSystem.Ecma
             }
 
             if (throwIfNotFound)
-                throw CreateTypeLoadException(nameSpace + "." + name);
+                throw new TypeSystemException.TypeLoadException(nameSpace, name, this);
 
             return null;
-        }
-
-        public Exception CreateTypeLoadException(string fullTypeName)
-        {
-            return new TypeLoadException(String.Format("Could not load type '{0}' from assembly '{1}'.", fullTypeName, this.ToString()));
         }
 
         public TypeDesc GetType(EntityHandle handle)
@@ -384,8 +384,7 @@ namespace Internal.TypeSystem.Ecma
                     if (field != null)
                         return field;
 
-                    // TODO: Better error message
-                    throw new MissingMemberException("Field not found " + parent.ToString() + "." + name);
+                    throw new TypeSystemException.MissingFieldException(parentTypeDesc, name);
                 }
                 else
                 {
@@ -409,13 +408,12 @@ namespace Internal.TypeSystem.Ecma
                         typeDescToInspect = typeDescToInspect.BaseType;
                     } while (typeDescToInspect != null);
 
-                    // TODO: Better error message
-                    throw new MissingMemberException("Method not found " + parent.ToString() + "." + name);
+                    throw new TypeSystemException.MissingMethodException(parentTypeDesc, name, sig);
                 }
             }
             else if (parent is MethodDesc)
             {
-                throw new NotSupportedException("Vararg methods not supported in .NET Core.");
+                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramVararg, (MethodDesc)parent);
             }
             else if (parent is ModuleDesc)
             {
@@ -438,7 +436,12 @@ namespace Internal.TypeSystem.Ecma
             else
             if (resolutionScope is MetadataType)
             {
-                return ((MetadataType)(resolutionScope)).GetNestedType(_metadataReader.GetString(typeReference.Name));
+                string typeName = _metadataReader.GetString(typeReference.Name);
+                MetadataType result = ((MetadataType)(resolutionScope)).GetNestedType(typeName);
+                if (result != null)
+                    return result;
+
+                throw new TypeSystemException.TypeLoadException(typeName, ((MetadataType)resolutionScope).Module);
             }
 
             // TODO
@@ -454,7 +457,7 @@ namespace Internal.TypeSystem.Ecma
             an.Version = assemblyReference.Version;
 
             var publicKeyOrToken = _metadataReader.GetBlobBytes(assemblyReference.PublicKeyOrToken);
-            if ((an.Flags & AssemblyNameFlags.PublicKey) != 0)
+            if ((assemblyReference.Flags & AssemblyFlags.PublicKey) != 0)
             {
                 an.SetPublicKey(publicKeyOrToken);
             }
@@ -487,9 +490,8 @@ namespace Internal.TypeSystem.Ecma
                 var type = (MetadataType)implementation;
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
-                // TODO: Better error message
                 if (nestedType == null)
-                    throw new TypeLoadException("Nested type not found " + type.ToString() + "." + name);
+                    throw new TypeSystemException.TypeLoadException(name, this);
                 return nestedType;
             }
             else
@@ -506,13 +508,13 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public sealed override TypeDesc GetGlobalModuleType()
+        public sealed override MetadataType GetGlobalModuleType()
         {
             int typeDefinitionsCount = _metadataReader.TypeDefinitions.Count;
             if (typeDefinitionsCount == 0)
                 return null;
 
-            return GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
+            return (MetadataType)GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
         }
 
         protected static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)

@@ -90,6 +90,15 @@ namespace System.Runtime.InteropServices
         internal static int StdCall__int(
                     IntPtr pfn,
                     IntPtr pComThis,
+                    uint arg0)
+        {
+            // This method is implemented elsewhere in the toolchain
+            return default(int);
+        }
+
+        internal static int StdCall__int(
+                    IntPtr pfn,
+                    IntPtr pComThis,
                     void* arg0)
         {
             // This method is implemented elsewhere in the toolchain
@@ -132,6 +141,53 @@ namespace System.Runtime.InteropServices
 
             // This method is implemented elsewhere in the toolchain
             return default(int);
+        }
+
+        public static int StdCall__int(
+            IntPtr pfn,
+            void* pthis,
+            System.Runtime.InteropServices.HSTRING arg0,
+            void* arg1)
+        {
+            // This method is implemented elsewhere in the toolchain
+            return 0;
+        }
+
+        public static int StdCall__int(
+            global::System.IntPtr pfn,
+            void* pthis,
+            void* arg0)
+        {
+            // This method is implemented elsewhere in the toolchain
+            return 0;
+        }
+
+        public static int StdCall__int(
+            global::System.IntPtr pfn,
+            IntPtr pthis,
+            HSTRING arg0,
+            IntPtr arg1,
+            void * arg2,
+            void * arg3)
+        {
+            // This method is implemented elsewhere in the toolchain
+            return 0;
+        }
+
+        public static int StdCall__int(
+            global::System.IntPtr pfn,
+            IntPtr pthis,
+            int arg0,
+            IntPtr arg1,
+            IntPtr arg2,
+            int arg3,
+            int arg4,
+            IntPtr arg5,
+            void * arg6,
+            void * arg7)
+        {
+            // This method is implemented elsewhere in the toolchain
+            return 0;
         }
 
         internal static T StdCall<T>(
@@ -457,7 +513,7 @@ namespace System.Runtime.InteropServices
 #if !RHTESTCL && !CORECLR
 
         // For SharedCcw_AsyncOperationCompletedHandler
-        internal static T Call<T>(IntPtr pfn, object handler, object asyncInfo, Windows.Foundation.AsyncStatus status)
+        internal static T Call<T>(IntPtr pfn, object handler, object asyncInfo, global::Windows.Foundation.AsyncStatus status)
         {
             return default(T);
         }
@@ -504,13 +560,14 @@ namespace System.Runtime.InteropServices
         internal delegate int AddrOfTarget1(IntPtr p0);
         internal delegate int AddrOfTarget2(IntPtr p0, int p1);
         internal delegate int AddrOfTarget3(IntPtr p0, IntPtr p1);
+        internal delegate int AddrOfTarget4(IntPtr p0, IntPtr p1, IntPtr p2);
+        internal delegate int AddrOfTarget5(IntPtr p0, IntPtr p1, IntPtr p2, IntPtr p3);
 
         // specialized delegates
         internal delegate int AddrOfGetIID(IntPtr __IntPtr__pComThis, IntPtr __IntPtr__iidCount, IntPtr __IntPtr__iids);
         internal delegate int AddrOfCreateManagedReference(System.IntPtr pComThis, IntPtr __IntPtr__pJupiterObject, IntPtr __IntPtr__ppNewReference);
         internal delegate int AddrOfResolve(IntPtr __IntPtr__pComThis, IntPtr __IntPtr__piid, IntPtr __IntPtr__ppWeakReference);
         internal delegate int AddrOfIndexOf(IntPtr p0, IntPtr p1, IntPtr p2, IntPtr p3);
-        internal delegate int AddrOfUnmarshalInterface(IntPtr p0, IntPtr p1, IntPtr p2, IntPtr p3);
         internal delegate int AddrOfMarshalInterface(IntPtr p0, IntPtr p1, IntPtr p2, IntPtr p3, int p4, IntPtr p5, int p6);
 
         internal delegate int AddrOfGetMarshalUnMarshal(IntPtr pComThis,
@@ -564,6 +621,11 @@ namespace System.Runtime.InteropServices
         internal delegate int AddrOfIStreamStat(IntPtr pComThis, out System.Runtime.InteropServices.ComTypes.STATSTG pstatstg, int grfStatFlag);
         internal delegate int AddrOfIStreamUnlockRegion(IntPtr pComThis, long libOffset, long cb, int dwLockType);
         internal delegate int AddrOfIStreamWrite(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbWritten);
+
+#if !RHTESTCL && !CORECLR
+        // ICommand
+        internal delegate int AddrOfICommandremove_CanExecuteChanged(IntPtr pComThis, System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken unsafe_token);
+#endif        
     }
 
 #if !CORECLR && ENABLE_WINRT

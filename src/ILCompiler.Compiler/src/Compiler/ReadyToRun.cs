@@ -9,58 +9,6 @@
 namespace ILCompiler
 {
     //
-    // Constants for fixup signature encoding
-    //
-
-    enum ReadyToRunFixupKind
-    {
-        ThisObjDictionaryLookup    = 0x07,
-        TypeDictionaryLookup       = 0x08,
-        MethodDictionaryLookup     = 0x09,
-
-        TypeHandle                 = 0x10,
-        MethodHandle               = 0x11,
-        FieldHandle                = 0x12,
-
-        MethodEntry                = 0x13, /* For calling a method entry point */
-        MethodEntry_DefToken       = 0x14, /* Smaller version of MethodEntry - method is def token */
-        MethodEntry_RefToken       = 0x15, /* Smaller version of MethodEntry - method is ref token */
-
-        VirtualEntry               = 0x16, /* For invoking a virtual method */
-        VirtualEntry_DefToken      = 0x17, /* Smaller version of VirtualEntry - method is def token */
-        VirtualEntry_RefToken      = 0x18, /* Smaller version of VirtualEntry - method is ref token */
-        VirtualEntry_Slot          = 0x19, /* Smaller version of VirtualEntry - type & slot */
-
-        Helper                     = 0x1A, /* Helper */
-        StringHandle               = 0x1B, /* String handle */
-
-        NewObject                  = 0x1C, /* Dynamically created new helper */
-        NewArray                   = 0x1D,
-
-        IsInstanceOf               = 0x1E, /* Dynamically created casting helper */
-        ChkCast                    = 0x1F,
-
-        FieldAddress               = 0x20, /* For accessing a cross-module static fields */
-        CctorTrigger               = 0x21, /* Static constructor trigger */
-
-        StaticBaseNonGC            = 0x22, /* Dynamically created static base helpers */
-        StaticBaseGC               = 0x23,
-        ThreadStaticBaseNonGC      = 0x24,
-        ThreadStaticBaseGC         = 0x25,
-
-        FieldBaseOffset            = 0x26, /* Field base offset */
-        FieldOffset                = 0x27, /* Field offset */
-
-        TypeDictionary             = 0x28,
-        MethodDictionary           = 0x29,
-
-        Check_TypeLayout           = 0x2A, /* size, alignment, HFA, reference map */
-        Check_FieldOffset          = 0x2B,
-
-        DelegateCtor               = 0x2C, /* optimized delegate ctor */
-    }
-
-    //
     // Intrinsics and helpers
     //
 

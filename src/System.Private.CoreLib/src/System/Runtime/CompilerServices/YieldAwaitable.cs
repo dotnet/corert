@@ -76,7 +76,7 @@ namespace System.Runtime.CompilerServices
             private static void QueueContinuation(Action continuation)
             {
                 // Validate arguments
-                if (continuation == null) throw new ArgumentNullException("continuation");
+                if (continuation == null) throw new ArgumentNullException(nameof(continuation));
                 Contract.EndContractBlock();
 
                 // Get the current SynchronizationContext, and if there is one,

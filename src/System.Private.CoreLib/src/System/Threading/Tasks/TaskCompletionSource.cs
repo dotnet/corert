@@ -13,12 +13,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Diagnostics.Contracts;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
-using System.Threading;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -157,7 +154,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
 
             bool rval = m_task.TrySetException(exception);
             if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
@@ -186,18 +183,18 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetException(IEnumerable<Exception> exceptions)
         {
-            if (exceptions == null) throw new ArgumentNullException("exceptions");
+            if (exceptions == null) throw new ArgumentNullException(nameof(exceptions));
 
             LowLevelListWithIList<Exception> defensiveCopy = new LowLevelListWithIList<Exception>();
             foreach (Exception e in exceptions)
             {
                 if (e == null)
-                    throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NullException, "exceptions");
+                    throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NullException, nameof(exceptions));
                 defensiveCopy.Add(e);
             }
 
             if (defensiveCopy.Count == 0)
-                throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NoExceptions, "exceptions");
+                throw new ArgumentException(SR.TaskCompletionSourceT_TrySetException_NoExceptions, nameof(exceptions));
 
             bool rval = m_task.TrySetException(defensiveCopy);
             if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
@@ -210,9 +207,9 @@ namespace System.Threading.Tasks
         /// <remarks>Unlike the public methods, this method doesn't currently validate that its arguments are correct.</remarks>
         internal bool TrySetException(IEnumerable<ExceptionDispatchInfo> exceptions)
         {
-            Contract.Assert(exceptions != null);
+            Debug.Assert(exceptions != null);
 #if DEBUG
-            foreach (var edi in exceptions) Contract.Assert(edi != null, "Contents must be non-null");
+            foreach (var edi in exceptions) Debug.Assert(edi != null, "Contents must be non-null");
 #endif
 
             bool rval = m_task.TrySetException(exceptions);
@@ -239,7 +236,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
 
             if (!TrySetException(exception))
             {

@@ -15,8 +15,6 @@ using Internal.LowLevelLinq;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.Runtime.TypeInfos
@@ -50,14 +48,6 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
-            }
-        }
-
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
         {
             get
             {
@@ -150,6 +140,8 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => false;
+
         internal sealed override Type InternalDeclaringType
         {
             get
@@ -160,7 +152,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
-            rootCauseForFailure = this.AsType();
+            rootCauseForFailure = this;
             return null;
         }
 

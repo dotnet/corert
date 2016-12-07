@@ -27,13 +27,11 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />  
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />  
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <!-- TODO: Everything but Interop and TypeLoader should be out of the conditional block -->
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\System.Private.Reflection\src\System.Private.Reflection.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
 
@@ -52,27 +50,20 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
-    <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\IO\LowLevelStreamReader.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidator.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />
-    <Compile Include="Internal\Reflection\Execution\ReflectionExecutionLogger.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
-    <Compile Include="Internal\Reflection\Execution\FoundationTypesImplementation.cs" />
-    <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Interop.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Runtime.cs" />
-    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.GVMResolution.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MappingTables.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MetadataTable.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.ManifestResources.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionExecutionDomainCallbacksImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\MetadataReaderExtensions.cs" />
-    <Compile Include="Internal\Reflection\Execution\MetadataNameExtensions.cs" />
     <Compile Include="Internal\Reflection\Execution\EnumInfoImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\DefaultValueParser.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokeInfo.cs" />

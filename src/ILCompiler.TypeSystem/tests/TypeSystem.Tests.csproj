@@ -8,6 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>TypeSystem.Tests</AssemblyName>
     <RootNamespace>TypeSystem.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <TestTFM>netcoreapp1.0</TestTFM>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -51,7 +53,6 @@
     <Compile Include="InstanceFieldLayoutTests.cs" />
     <Compile Include="StaticFieldLayoutTests.cs" />
     <Compile Include="TestTypeSystemContext.cs" />
-    <Compile Include="VirtualMethodEnumerationAlgorithmTests.cs" />
     <Compile Include="WellKnownTypeTests.cs" />
   </ItemGroup>
   <ItemGroup>

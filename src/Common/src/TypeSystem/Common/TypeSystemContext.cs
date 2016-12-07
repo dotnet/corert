@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -28,6 +29,8 @@ namespace Internal.TypeSystem
 
             _pointerTypes = new PointerHashtable();
 
+            _functionPointerTypes = new FunctionPointerHashtable();
+
             _instantiatedMethods = new InstantiatedMethodKey.InstantiatedMethodKeyHashtable();
 
             _methodForInstantiatedTypes = new MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable();
@@ -39,7 +42,7 @@ namespace Internal.TypeSystem
 
         public TargetDetails Target
         {
-            get; private set;
+            get;
         }
 
         public ModuleDesc SystemModule
@@ -219,6 +222,44 @@ namespace Internal.TypeSystem
         public PointerType GetPointerType(TypeDesc parameterType)
         {
             return _pointerTypes.GetOrCreateValue(parameterType);
+        }
+
+        //
+        // Function pointer types
+        //
+        public class FunctionPointerHashtable : LockFreeReaderHashtable<MethodSignature, FunctionPointerType>
+        {
+            protected override int GetKeyHashCode(MethodSignature key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(FunctionPointerType value)
+            {
+                return value.Signature.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(MethodSignature key, FunctionPointerType value)
+            {
+                return key.Equals(value.Signature);
+            }
+
+            protected override bool CompareValueToValue(FunctionPointerType value1, FunctionPointerType value2)
+            {
+                return value1.Signature.Equals(value2.Signature);
+            }
+
+            protected override FunctionPointerType CreateValueFromKey(MethodSignature key)
+            {
+                return new FunctionPointerType(key);
+            }
+        }
+
+        private FunctionPointerHashtable _functionPointerTypes;
+
+        public FunctionPointerType GetFunctionPointerType(MethodSignature signature)
+        {
+            return _functionPointerTypes.GetOrCreateValue(signature);
         }
 
         //
@@ -620,6 +661,11 @@ namespace Internal.TypeSystem
             return _signatureVariables.GetOrCreateValue(combinedIndex);
         }
 
+        protected internal virtual IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+        {
+            return type.GetMethods();
+        }
+
         /// <summary>
         /// Abstraction to allow the type system context to affect the field layout
         /// algorithm used by types to lay themselves out.
@@ -643,7 +689,8 @@ namespace Internal.TypeSystem
             else if (type.IsArray)
             {
                 ArrayType arrType = (ArrayType)type;
-                if (arrType.IsSzArray && !arrType.ElementType.IsPointer)
+                TypeDesc elementType = arrType.ElementType;
+                if (arrType.IsSzArray && !elementType.IsPointer && !elementType.IsFunctionPointer)
                 {
                     return GetRuntimeInterfacesAlgorithmForNonPointerArrayType((ArrayType)type);
                 }
@@ -682,12 +729,6 @@ namespace Internal.TypeSystem
             throw new NotSupportedException();
         }
 
-        public virtual VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
-        {
-            // Type system contexts that support this need to override this.
-            throw new NotSupportedException();
-        }
-
         // Abstraction to allow different runtimes to have different policy about which fields are 
         // in the GC static region, and which are not
         protected internal virtual bool ComputeHasGCStaticBase(FieldDesc field)
@@ -695,5 +736,42 @@ namespace Internal.TypeSystem
             // Type system contexts that support this need to override this.
             throw new NotSupportedException();
         }
+
+        /// <summary>
+        /// TypeSystemContext controlled type flags computation. This allows computation of flags which depend
+        /// on the particular TypeSystemContext in use
+        /// </summary>
+        internal TypeFlags ComputeTypeFlags(TypeDesc type, TypeFlags flags, TypeFlags mask)
+        {
+            // If we are looking to compute HasStaticConstructor, and we haven't yet assigned a value
+            if ((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed)
+            {
+                TypeDesc typeDefinition = type.GetTypeDefinition();
+                
+                if (typeDefinition != type)
+                {
+                    // If the type definition is different, the code was working with an instantiated generic or some such.
+                    // In that case, just query the HasStaticConstructor property, as it can cache the answer
+                    if (typeDefinition.HasStaticConstructor)
+                        flags |= TypeFlags.HasStaticConstructor;
+                }
+                else
+                {
+                    if (ComputeHasStaticConstructor(typeDefinition))
+                    {
+                        flags |= TypeFlags.HasStaticConstructor;
+                    }
+                }
+
+                flags |= TypeFlags.HasStaticConstructorComputed;
+            }
+
+            return flags;
+        }
+
+        /// <summary>
+        /// Algorithm to control which types are considered to have static constructors
+        /// </summary>
+        protected internal abstract bool ComputeHasStaticConstructor(TypeDesc type);
     }
 }

@@ -265,14 +265,20 @@ namespace System.Runtime
 
             // If object type implements ICastable then there's one more way to check whether it implements
             // the interface.
-            if (pObjType->IsICastable && IsInstanceOfInterfaceViaICastable(obj, pTargetType))
+            if (pObjType->IsICastable && IsInstanceOfInterfaceViaCastableObject(obj, pTargetType))
                 return obj;
 
             return null;
         }
 
-        unsafe static bool IsInstanceOfInterfaceViaICastable(object obj, EEType* pTargetType)
+        unsafe static bool IsInstanceOfInterfaceViaCastableObject(object obj, EEType* pTargetType)
         {
+            // To avoid stack overflow, it is not possible to implement the ICastableObject interface
+            // itself via ICastableObject
+            if (pTargetType->IsICastable)
+                return false;
+
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
             // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
             // dispatch since we know the method address statically. We ignore any cast error exception
             // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
@@ -280,7 +286,42 @@ namespace System.Runtime
             Exception castError = null;
             if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
                 return true;
+
+            if (obj is CastableObjectSupport.ICastableObject)
+            {
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+
+            // We ignore any cast error exception
+            // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
+            CastableObjectSupport.ICastableObject castableObject = (CastableObjectSupport.ICastableObject)obj;
+            Exception castableObjectCastError = null;
+            if (CastableObjectSupport.GetCastableTargetIfPossible(castableObject, pTargetType, false, ref castableObjectCastError) != null)
+                return true;
+
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+            }
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
             return false;
+        }
+
+        unsafe static bool IsInstanceOfInterfaceViaCastableObjectWithException(object obj, EEType* pTargetType, ref Exception castError)
+        {
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+            // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
+            // dispatch since we know the method address statically.
+            IntPtr pfnIsInstanceOfInterface = obj.EEType->ICastableIsInstanceOfInterfaceMethod;
+            if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
+                return true;
+            if (obj is CastableObjectSupport.ICastableObject)
+            {
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+
+            CastableObjectSupport.ICastableObject castableObject = (CastableObjectSupport.ICastableObject)obj;
+            return CastableObjectSupport.GetCastableTargetIfPossible(castableObject, pTargetType, true, ref castError) != null;
+            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+            }
+            return false;
+            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
         }
 
         static internal unsafe bool ImplementsInterface(EEType* pObjType, EEType* pTargetType)
@@ -366,6 +407,18 @@ namespace System.Runtime
                                                         fArrayCovariance))
                             return true;
                     }
+                }
+            }
+
+            // Interface type equivalence check.
+            // Currently only implemented to allow ICastable to be defined in multiple type spaces
+            if (pTargetType->IsICastable)
+            {
+                for (int i = 0; i < numInterfaces; i++)
+                {
+                    EEType* pInterfaceType = interfaceMap[i].InterfaceType;
+                    if (pInterfaceType->IsICastable)
+                        return true;
                 }
             }
 
@@ -592,6 +645,13 @@ namespace System.Runtime
                         // int** is not compatible with uint**, nor is int*[] oompatible with uint*[].
                         return false;
                     }
+                    else if (pSourceType->RelatedParameterType->IsByRefType)
+                    {
+                        // Only allow exact matches for ByRef types - same as pointers above. This should
+                        // be unreachable and it's only a defense in depth. ByRefs can't be parameters
+                        // of any parameterized type.
+                        return false;
+                    }
                     else
                     {
                         // Note that using AreTypesAssignableInternal with AssignmentVariation.AllowSizeEquivalence 
@@ -685,10 +745,7 @@ namespace System.Runtime
             // the interface.
             if (pObjType->IsICastable)
             {
-                // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
-                // dispatch since we know the method address statically.
-                IntPtr pfnIsInstanceOfInterface = pObjType->ICastableIsInstanceOfInterfaceMethod;
-                if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
+                if (IsInstanceOfInterfaceViaCastableObjectWithException(obj, pTargetType, ref castError))
                     return obj;
             }
 
@@ -718,7 +775,7 @@ namespace System.Runtime
 
             // If object type implements ICastable then there's one more way to check whether it implements
             // the interface.
-            if (obj.EEType->IsICastable && IsInstanceOfInterfaceViaICastable(obj, arrayElemType))
+            if (obj.EEType->IsICastable && IsInstanceOfInterfaceViaCastableObject(obj, arrayElemType))
                 return;
 
             // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
@@ -758,11 +815,9 @@ namespace System.Runtime
             }
         }
 
-#if CORERT
-        [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        static private unsafe extern void RhpAssignRef(ref Object address, object obj);
-
+        //
+        // Array stelem/ldelema helpers with RyuJIT conventions
+        //
         [RuntimeExport("RhpStelemRef")]
         static public unsafe void StelemRef(Array array, int index, object obj)
         {
@@ -782,7 +837,7 @@ namespace System.Runtime
                 {
                     // If object type implements ICastable then there's one more way to check whether it implements
                     // the interface.
-                    if (!obj.EEType->IsICastable || !IsInstanceOfInterfaceViaICastable(obj, arrayElemType))
+                    if (!obj.EEType->IsICastable || !IsInstanceOfInterfaceViaCastableObject(obj, arrayElemType))
                     {
                         // Throw the array type mismatch exception defined by the classlib, using the input array's 
                         // EEType* to find the correct classlib.
@@ -795,7 +850,7 @@ namespace System.Runtime
 
                 // Call write barrier directly. Assigning object reference would call slower checked write barrier.
                 ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
-                RhpAssignRef(ref Unsafe.Add(ref rawData, index), obj);
+                InternalCalls.RhpAssignRef(ref Unsafe.Add(ref rawData, index), obj);
             }
             else
             {
@@ -824,7 +879,6 @@ namespace System.Runtime
             ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
             return ref Unsafe.Add(ref rawData, index);
         }
-#endif
 
         static internal unsafe bool IsDerived(EEType* pDerivedType, EEType* pBaseType)
         {
@@ -891,6 +945,12 @@ namespace System.Runtime
             return false;
         }
 
+        [RuntimeExport("RhTypeCast_IsInstanceOf2")]  // Helper with RyuJIT calling convention
+        static public unsafe object IsInstanceOf2(void* pvTargetType, object obj)
+        {
+            return IsInstanceOf(obj, pvTargetType);
+        }
+
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
@@ -904,6 +964,12 @@ namespace System.Runtime
                 return IsInstanceOfInterface(obj, pvTargetType);
             else
                 return IsInstanceOfClass(obj, pvTargetType);
+        }
+
+        [RuntimeExport("RhTypeCast_CheckCast2")] // Helper with RyuJIT calling convention
+        static public unsafe object CheckCast2(void* pvTargetType, Object obj)
+        {
+            return CheckCast(obj, pvTargetType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
@@ -960,9 +1026,7 @@ namespace System.Runtime
         }
 
         // source type + target type + assignment variation -> true/false
-#if INPLACE_RUNTIME
         [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-#endif
         private static class CastCache
         {
             //

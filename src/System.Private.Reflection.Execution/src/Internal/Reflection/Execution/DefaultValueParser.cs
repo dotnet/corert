@@ -25,7 +25,7 @@ namespace Internal.Reflection.Execution
             if (!(constantHandle.IsNull(reader)))
             {
                 defaultValue = ParseMetadataConstant(reader, constantHandle);
-                if (declaredType.GetTypeInfo().IsEnum)
+                if (declaredType.IsEnum)
                     defaultValue = Enum.ToObject(declaredType, defaultValue);
                 return true;
             }
@@ -36,8 +36,7 @@ namespace Internal.Reflection.Execution
                 foreach (CustomAttributeData cad in customAttributes)
                 {
                     Type attributeType = cad.AttributeType;
-                    TypeInfo attributeTypeInfo = attributeType.GetTypeInfo();
-                    if (attributeTypeInfo.IsSubclassOf(typeof(CustomConstantAttribute)))
+                    if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
                     {
                         CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(cad.Instantiate());
                         defaultValue = customConstantAttribute.Value;

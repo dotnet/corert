@@ -10,8 +10,6 @@ using System.Reflection.Runtime.General;
 
 using Internal.Reflection.Core;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.ParameterInfos
 {
     // 
@@ -20,11 +18,10 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal abstract class RuntimeMethodParameterInfo : RuntimeParameterInfo
     {
-        protected RuntimeMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+        protected RuntimeMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
             : base(member, position)
         {
-            Reader = reader;
-            _typeHandle = typeHandle;
+            QualifiedParameterTypeHandle = qualifiedParameterTypeHandle;
             _typeContext = typeContext;
         }
 
@@ -32,7 +29,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _typeHandle.Resolve(this.Reader, _typeContext);
+                return _lazyParameterType ?? (_lazyParameterType = QualifiedParameterTypeHandle.Resolve(_typeContext));
             }
         }
 
@@ -40,14 +37,12 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _typeHandle.FormatTypeName(this.Reader, _typeContext);
+                return QualifiedParameterTypeHandle.FormatTypeName(_typeContext);
             }
         }
 
-        protected MetadataReader Reader { get; }
-
-
-        private readonly Handle _typeHandle;
+        protected readonly QTypeDefRefOrSpec QualifiedParameterTypeHandle;
         private readonly TypeContext _typeContext;
+        private volatile Type _lazyParameterType;
     }
 }

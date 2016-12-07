@@ -22,6 +22,48 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public static class Unsafe
     {
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T Read<T>(void* source)
+        {
+            return Unsafe.As<byte, T>(ref *(byte*)source);
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void Write<T>(void* source, T value)
+        {
+            Unsafe.As<byte, T>(ref *(byte*)source) = value;
+        }
+
+        /// <summary>
+        /// Returns a pointer to the given by-ref parameter.
+        /// </summary>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void* AsPointer<T>(ref T source)
+        {
+            // This method is implemented by the toolchain
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // conv.u
+            // ret
+        }
+
+        /// <summary>
+        /// Returns the size of an object of the given type parameter.
+        /// </summary>
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,7 +109,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref T AddRaw<T>(ref T source, nint rawOffset)
+        public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
         {
             // This method is implemented by the toolchain
             throw new PlatformNotSupportedException();
@@ -85,7 +127,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
         {
-            return ref AddRaw(ref source, elementOffset * (nint)SizeOf<T>());
+            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
         }
 
         /// <summary>

@@ -25,7 +25,7 @@ extern "C" unsigned char *g_lowest_address;
 extern "C" unsigned char *g_highest_address;
 #endif
 
-struct alloc_context;
+struct gc_alloc_context;
 class MethodInfo;
 struct REGDISPLAY;
 class Thread;
@@ -121,8 +121,8 @@ public:
     // todo: figure out the final error reporting strategy
     static bool InitializeSubsystems(GCType gcType);
 
-    static void InitAllocContext(alloc_context * pAllocContext);
-    static void ReleaseAllocContext(alloc_context * pAllocContext);
+    static void InitAllocContext(gc_alloc_context * pAllocContext);
+    static void ReleaseAllocContext(gc_alloc_context * pAllocContext);
 
     static void WaitForGCCompletion();
 

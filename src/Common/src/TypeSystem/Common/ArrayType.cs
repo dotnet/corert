@@ -61,6 +61,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this type is an mdarray.
+        /// </summary>
+        public new bool IsMdArray
+        {
+            get
+            {
+                return _rank > 0;
+            }
+        }
+
+        /// <summary>
         /// Gets the rank of this array. Note this returns "1" for both vectors, and
         /// for general arrays of rank 1. Use <see cref="IsSzArray"/> to disambiguate.
         /// </summary>
@@ -118,8 +129,12 @@ namespace Internal.TypeSystem
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            TypeDesc instantiatedElementType = this.ElementType.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return instantiatedElementType.Context.GetArrayType(instantiatedElementType, _rank);
+            TypeDesc elementType = this.ElementType;
+            TypeDesc instantiatedElementType = elementType.InstantiateSignature(typeInstantiation, methodInstantiation);
+            if (instantiatedElementType != elementType)
+                return Context.GetArrayType(instantiatedElementType, _rank);
+
+            return this;
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)

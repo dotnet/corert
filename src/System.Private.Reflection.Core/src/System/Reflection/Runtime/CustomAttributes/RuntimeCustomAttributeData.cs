@@ -2,20 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 
-using Internal.LowLevelLinq;
-using Internal.Reflection.Core;
-using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
-using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.CustomAttributes
 {
@@ -96,12 +86,9 @@ namespace System.Reflection.Runtime.CustomAttributes
         protected static ConstructorInfo ResolveAttributeConstructor(Type attributeType, Type[] parameterTypes)
         {
             int parameterCount = parameterTypes.Length;
-            foreach (ConstructorInfo candidate in attributeType.GetTypeInfo().DeclaredConstructors)
+            foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                if (candidate.IsStatic)
-                    continue;
-
-                ParameterInfo[] candidateParameters = candidate.GetParameters();
+                ParameterInfo[] candidateParameters = candidate.GetParametersNoCopy();
                 if (parameterCount != candidateParameters.Length)
                     continue;
 
@@ -138,22 +125,20 @@ namespace System.Reflection.Runtime.CustomAttributes
             if (argumentType == null)
                 return cat.ToString();
 
-            FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
             Object value = cat.Value;
-            TypeInfo argumentTypeInfo = argumentType.GetTypeInfo();
-            if (argumentTypeInfo.IsEnum)
+            if (argumentType.IsEnum)
                 return String.Format(typed ? "{0}" : "({1}){0}", value, argumentType.FullName);
 
             if (value == null)
                 return String.Format(typed ? "null" : "({0})null", argumentType.Name);
 
-            if (argumentType.Equals(foundationTypes.SystemString))
+            if (argumentType.Equals(CommonRuntimeTypes.String))
                 return String.Format("\"{0}\"", value);
 
-            if (argumentType.Equals(foundationTypes.SystemChar))
+            if (argumentType.Equals(CommonRuntimeTypes.Char))
                 return String.Format("'{0}'", value);
 
-            if (argumentType.Equals(foundationTypes.SystemType))
+            if (argumentType.Equals(CommonRuntimeTypes.Type))
                 return String.Format("typeof({0})", ((Type)value).FullName);
 
             else if (argumentType.IsArray)
@@ -162,10 +147,10 @@ namespace System.Reflection.Runtime.CustomAttributes
                 IList<CustomAttributeTypedArgument> array = value as IList<CustomAttributeTypedArgument>;
 
                 Type elementType = argumentType.GetElementType();
-                result = String.Format(@"new {0}[{1}] {{ ", elementType.GetTypeInfo().IsEnum ? elementType.FullName : elementType.Name, array.Count);
+                result = String.Format(@"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
 
                 for (int i = 0; i < array.Count; i++)
-                    result += String.Format(i == 0 ? "{0}" : ", {0}", ComputeTypedArgumentString(array[i], elementType != foundationTypes.SystemObject));
+                    result += String.Format(i == 0 ? "{0}" : ", {0}", ComputeTypedArgumentString(array[i], elementType != CommonRuntimeTypes.Object));
 
                 return result += " }";
             }

@@ -13,7 +13,7 @@ namespace System.Reflection.Runtime.General
 {
     internal static class Assignability
     {
-        public static bool IsAssignableFrom(TypeInfo toTypeInfo, TypeInfo fromTypeInfo, FoundationTypes foundationTypes)
+        public static bool IsAssignableFrom(Type toTypeInfo, Type fromTypeInfo)
         {
             if (toTypeInfo == null)
                 throw new NullReferenceException();
@@ -38,26 +38,23 @@ namespace System.Reflection.Runtime.General
                 // generic type parameters. The .NET Native framework keeps the two separate. For the purpose of IsAssignableFrom(), 
                 // it makes sense to unify the two for the sake of backward compat. We'll just make the transform here so that the rest of code
                 // doesn't need to know about this quirk.
-                fromTypeInfo = fromTypeInfo.GetGenericTypeDefinition().MakeGenericType(fromTypeInfo.GenericTypeParameters).GetTypeInfo();
+                fromTypeInfo = fromTypeInfo.GetGenericTypeDefinition().MakeGenericType(fromTypeInfo.GetGenericTypeParameters());
             }
 
-            if (fromTypeInfo.CanCastTo(toTypeInfo, foundationTypes))
+            if (fromTypeInfo.CanCastTo(toTypeInfo))
                 return true;
 
-            Type toType = toTypeInfo.AsType();
-            Type fromType = fromTypeInfo.AsType();
-
             // Desktop compat: IsAssignableFrom() considers T as assignable to Nullable<T> (but does not check if T is a generic parameter.)
-            if (!fromType.IsGenericParameter)
+            if (!fromTypeInfo.IsGenericParameter)
             {
-                Type nullableUnderlyingType = Nullable.GetUnderlyingType(toType);
-                if (nullableUnderlyingType != null && nullableUnderlyingType.Equals(fromType))
+                Type nullableUnderlyingType = Nullable.GetUnderlyingType(toTypeInfo);
+                if (nullableUnderlyingType != null && nullableUnderlyingType.Equals(fromTypeInfo))
                     return true;
             }
             return false;
         }
 
-        private static bool CanCastTo(this TypeInfo fromTypeInfo, TypeInfo toTypeInfo, FoundationTypes foundationTypes)
+        private static bool CanCastTo(this Type fromTypeInfo, Type toTypeInfo)
         {
             if (fromTypeInfo.Equals(toTypeInfo))
                 return true;
@@ -65,10 +62,9 @@ namespace System.Reflection.Runtime.General
             if (fromTypeInfo.IsArray)
             {
                 if (toTypeInfo.IsInterface)
-                    return fromTypeInfo.CanCastArrayToInterface(toTypeInfo, foundationTypes);
+                    return fromTypeInfo.CanCastArrayToInterface(toTypeInfo);
 
-                Type toType = toTypeInfo.AsType();
-                if (fromTypeInfo.IsSubclassOf(toType))
+                if (fromTypeInfo.IsSubclassOf(toTypeInfo))
                     return true;  // T[] is castable to Array or Object.
 
                 if (!toTypeInfo.IsArray)
@@ -78,8 +74,8 @@ namespace System.Reflection.Runtime.General
                 if (rank != toTypeInfo.GetArrayRank())
                     return false;
 
-                bool fromTypeIsSzArray = fromTypeInfo.IsSzArray(foundationTypes);
-                bool toTypeIsSzArray = toTypeInfo.IsSzArray(foundationTypes);
+                bool fromTypeIsSzArray = fromTypeInfo.IsSzArray;
+                bool toTypeIsSzArray = toTypeInfo.IsSzArray;
                 if (fromTypeIsSzArray != toTypeIsSzArray)
                 {
                     // T[] is assignable to T[*] but not vice-versa.
@@ -89,9 +85,9 @@ namespace System.Reflection.Runtime.General
                     }
                 }
 
-                TypeInfo toElementTypeInfo = toTypeInfo.GetElementType().GetTypeInfo();
-                TypeInfo fromElementTypeInfo = fromTypeInfo.GetElementType().GetTypeInfo();
-                return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, foundationTypes);
+                Type toElementTypeInfo = toTypeInfo.GetElementType();
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo);
             }
 
             if (fromTypeInfo.IsByRef)
@@ -99,26 +95,25 @@ namespace System.Reflection.Runtime.General
                 if (!toTypeInfo.IsByRef)
                     return false;
 
-                TypeInfo toElementTypeInfo = toTypeInfo.GetElementType().GetTypeInfo();
-                TypeInfo fromElementTypeInfo = fromTypeInfo.GetElementType().GetTypeInfo();
-                return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, foundationTypes);
+                Type toElementTypeInfo = toTypeInfo.GetElementType();
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo);
             }
 
             if (fromTypeInfo.IsPointer)
             {
-                Type toType = toTypeInfo.AsType();
-                if (toType.Equals(foundationTypes.SystemObject))
+                if (toTypeInfo.Equals(CommonRuntimeTypes.Object))
                     return true;  // T* is castable to Object.
 
-                if (toType.Equals(foundationTypes.SystemUIntPtr))
+                if (toTypeInfo.Equals(CommonRuntimeTypes.UIntPtr))
                     return true;  // T* is castable to UIntPtr (but not IntPtr)
 
                 if (!toTypeInfo.IsPointer)
                     return false;
 
-                TypeInfo toElementTypeInfo = toTypeInfo.GetElementType().GetTypeInfo();
-                TypeInfo fromElementTypeInfo = fromTypeInfo.GetElementType().GetTypeInfo();
-                return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, foundationTypes);
+                Type toElementTypeInfo = toTypeInfo.GetElementType();
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo);
             }
 
             if (fromTypeInfo.IsGenericParameter)
@@ -129,11 +124,10 @@ namespace System.Reflection.Runtime.General
                 //
                 // This has to be coded as its own case as TypeInfo.BaseType on a generic parameter doesn't always return what you'd expect.
                 //
-                Type toType = toTypeInfo.AsType();
-                if (toType.Equals(foundationTypes.SystemObject))
+                if (toTypeInfo.Equals(CommonRuntimeTypes.Object))
                     return true;
 
-                if (toType.Equals(foundationTypes.SystemValueType))
+                if (toTypeInfo.Equals(CommonRuntimeTypes.ValueType))
                 {
                     GenericParameterAttributes attributes = fromTypeInfo.GenericParameterAttributes;
                     if ((attributes & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
@@ -142,7 +136,7 @@ namespace System.Reflection.Runtime.General
 
                 foreach (Type constraintType in fromTypeInfo.GetGenericParameterConstraints())
                 {
-                    if (constraintType.GetTypeInfo().CanCastTo(toTypeInfo, foundationTypes))
+                    if (constraintType.CanCastTo(toTypeInfo))
                         return true;
                 }
 
@@ -152,14 +146,14 @@ namespace System.Reflection.Runtime.General
             if (toTypeInfo.IsArray || toTypeInfo.IsByRef || toTypeInfo.IsPointer || toTypeInfo.IsGenericParameter)
                 return false;
 
-            if (fromTypeInfo.MatchesWithVariance(toTypeInfo, foundationTypes))
+            if (fromTypeInfo.MatchesWithVariance(toTypeInfo))
                 return true;
 
             if (toTypeInfo.IsInterface)
             {
-                foreach (Type ifc in fromTypeInfo.ImplementedInterfaces)
+                foreach (Type ifc in fromTypeInfo.GetInterfaces())
                 {
-                    if (ifc.GetTypeInfo().MatchesWithVariance(toTypeInfo, foundationTypes))
+                    if (ifc.MatchesWithVariance(toTypeInfo))
                         return true;
                 }
                 return false;
@@ -167,41 +161,27 @@ namespace System.Reflection.Runtime.General
             else
             {
                 // Interfaces are always castable to System.Object. The code below will not catch this as interfaces report their BaseType as null. 
-                if (toTypeInfo.AsType().Equals(foundationTypes.SystemObject) && fromTypeInfo.IsInterface)
+                if (toTypeInfo.Equals(CommonRuntimeTypes.Object) && fromTypeInfo.IsInterface)
                     return true;
 
-                TypeInfo walk = fromTypeInfo;
+                Type walk = fromTypeInfo;
                 for (;;)
                 {
                     Type baseType = walk.BaseType;
                     if (baseType == null)
                         return false;
-                    walk = baseType.GetTypeInfo();
-                    if (walk.MatchesWithVariance(toTypeInfo, foundationTypes))
+                    walk = baseType;
+                    if (walk.MatchesWithVariance(toTypeInfo))
                         return true;
                 }
             }
-        }
-
-        private static bool IsSzArray(this TypeInfo typeInfo, FoundationTypes foundationTypes)
-        {
-            if (!typeInfo.IsArray)
-                return false;
-
-            if (typeInfo.GetArrayRank() != 1)
-                return false;
-
-            if (((RuntimeTypeInfo)typeInfo).InternalIsMultiDimArray)
-                return false;
-
-            return true;
         }
 
         //
         // Check a base type or implemented interface type for equivalence (taking into account variance for generic instantiations.)
         // Does not check ancestors recursively.
         //
-        private static bool MatchesWithVariance(this TypeInfo fromTypeInfo, TypeInfo toTypeInfo, FoundationTypes foundationTypes)
+        private static bool MatchesWithVariance(this Type fromTypeInfo, Type toTypeInfo)
         {
             Debug.Assert(!(fromTypeInfo.IsArray || fromTypeInfo.IsByRef || fromTypeInfo.IsPointer || fromTypeInfo.IsGenericParameter));
             Debug.Assert(!(toTypeInfo.IsArray || toTypeInfo.IsByRef || toTypeInfo.IsPointer || toTypeInfo.IsGenericParameter));
@@ -209,31 +189,31 @@ namespace System.Reflection.Runtime.General
             if (fromTypeInfo.Equals(toTypeInfo))
                 return true;
 
-            if (!(fromTypeInfo.AsType().IsConstructedGenericType && toTypeInfo.AsType().IsConstructedGenericType))
+            if (!(fromTypeInfo.IsConstructedGenericType && toTypeInfo.IsConstructedGenericType))
                 return false;
 
-            TypeInfo genericTypeDefinition = fromTypeInfo.GetGenericTypeDefinition().GetTypeInfo();
-            if (!genericTypeDefinition.AsType().Equals(toTypeInfo.GetGenericTypeDefinition()))
+            Type genericTypeDefinition = fromTypeInfo.GetGenericTypeDefinition();
+            if (!genericTypeDefinition.Equals(toTypeInfo.GetGenericTypeDefinition()))
                 return false;
 
             Type[] fromTypeArguments = fromTypeInfo.GenericTypeArguments;
             Type[] toTypeArguments = toTypeInfo.GenericTypeArguments;
-            Type[] genericTypeParameters = genericTypeDefinition.GenericTypeParameters;
+            Type[] genericTypeParameters = genericTypeDefinition.GetGenericTypeParameters();
             for (int i = 0; i < genericTypeParameters.Length; i++)
             {
-                TypeInfo fromTypeArgumentInfo = fromTypeArguments[i].GetTypeInfo();
-                TypeInfo toTypeArgumentInfo = toTypeArguments[i].GetTypeInfo();
+                Type fromTypeArgumentInfo = fromTypeArguments[i];
+                Type toTypeArgumentInfo = toTypeArguments[i];
 
-                GenericParameterAttributes attributes = genericTypeParameters[i].GetTypeInfo().GenericParameterAttributes;
+                GenericParameterAttributes attributes = genericTypeParameters[i].GenericParameterAttributes;
                 switch (attributes & GenericParameterAttributes.VarianceMask)
                 {
                     case GenericParameterAttributes.Covariant:
-                        if (!(fromTypeArgumentInfo.IsGcReferenceTypeAndCastableTo(toTypeArgumentInfo, foundationTypes)))
+                        if (!(fromTypeArgumentInfo.IsGcReferenceTypeAndCastableTo(toTypeArgumentInfo)))
                             return false;
                         break;
 
                     case GenericParameterAttributes.Contravariant:
-                        if (!(toTypeArgumentInfo.IsGcReferenceTypeAndCastableTo(fromTypeArgumentInfo, foundationTypes)))
+                        if (!(toTypeArgumentInfo.IsGcReferenceTypeAndCastableTo(fromTypeArgumentInfo)))
                             return false;
                         break;
 
@@ -259,42 +239,42 @@ namespace System.Reflection.Runtime.General
         //
         // For desktop compat, A& and A* follow the same rules.
         //
-        private static bool IsElementTypeCompatibleWith(this TypeInfo fromTypeInfo, TypeInfo toTypeInfo, FoundationTypes foundationTypes)
+        private static bool IsElementTypeCompatibleWith(this Type fromTypeInfo, Type toTypeInfo)
         {
-            if (fromTypeInfo.IsGcReferenceTypeAndCastableTo(toTypeInfo, foundationTypes))
+            if (fromTypeInfo.IsGcReferenceTypeAndCastableTo(toTypeInfo))
                 return true;
 
-            Type reducedFromType = fromTypeInfo.AsType().ReducedType(foundationTypes);
-            Type reducedToType = toTypeInfo.AsType().ReducedType(foundationTypes);
+            Type reducedFromType = fromTypeInfo.ReducedType();
+            Type reducedToType = toTypeInfo.ReducedType();
             if (reducedFromType.Equals(reducedToType))
                 return true;
 
             return false;
         }
 
-        private static Type ReducedType(this Type t, FoundationTypes foundationTypes)
+        private static Type ReducedType(this Type t)
         {
-            if (t.GetTypeInfo().IsEnum)
+            if (t.IsEnum)
                 t = Enum.GetUnderlyingType(t);
 
-            if (t.Equals(foundationTypes.SystemByte))
-                return foundationTypes.SystemSByte;
+            if (t.Equals(CommonRuntimeTypes.Byte))
+                return CommonRuntimeTypes.SByte;
 
-            if (t.Equals(foundationTypes.SystemUInt16))
-                return foundationTypes.SystemInt16;
+            if (t.Equals(CommonRuntimeTypes.UInt16))
+                return CommonRuntimeTypes.Int16;
 
-            if (t.Equals(foundationTypes.SystemUInt32))
-                return foundationTypes.SystemInt32;
+            if (t.Equals(CommonRuntimeTypes.UInt32))
+                return CommonRuntimeTypes.Int32;
 
-            if (t.Equals(foundationTypes.SystemUInt64))
-                return foundationTypes.SystemInt64;
+            if (t.Equals(CommonRuntimeTypes.UInt64))
+                return CommonRuntimeTypes.Int64;
 
-            if (t.Equals(foundationTypes.SystemUIntPtr) || t.Equals(foundationTypes.SystemIntPtr))
+            if (t.Equals(CommonRuntimeTypes.UIntPtr) || t.Equals(CommonRuntimeTypes.IntPtr))
             {
 #if WIN64
-                return foundationTypes.SystemInt64;
+                return CommonRuntimeTypes.Int64;
 #else
-                return foundationTypes.SystemInt32;
+                return CommonRuntimeTypes.Int32;
 #endif
             }
 
@@ -306,13 +286,13 @@ namespace System.Reflection.Runtime.General
         //
         // IEnumerable<D> can cast to IEnumerable<B> if D can cast to B and if there's no possibility that D is a value type.
         //
-        private static bool IsGcReferenceTypeAndCastableTo(this TypeInfo fromTypeInfo, TypeInfo toTypeInfo, FoundationTypes foundationTypes)
+        private static bool IsGcReferenceTypeAndCastableTo(this Type fromTypeInfo, Type toTypeInfo)
         {
             if (fromTypeInfo.Equals(toTypeInfo))
                 return true;
 
-            if (fromTypeInfo.ProvablyAGcReferenceType(foundationTypes))
-                return fromTypeInfo.CanCastTo(toTypeInfo, foundationTypes);
+            if (fromTypeInfo.ProvablyAGcReferenceType())
+                return fromTypeInfo.CanCastTo(toTypeInfo);
 
             return false;
         }
@@ -320,7 +300,7 @@ namespace System.Reflection.Runtime.General
         //
         // A true result indicates that a type can never be a value type. This is important when testing variance-compatibility.
         //
-        private static bool ProvablyAGcReferenceType(this TypeInfo t, FoundationTypes foundationTypes)
+        private static bool ProvablyAGcReferenceType(this Type t)
         {
             if (t.IsGenericParameter)
             {
@@ -329,10 +309,10 @@ namespace System.Reflection.Runtime.General
                     return true;   // generic parameter with a "class" constraint.
             }
 
-            return t.ProvablyAGcReferenceTypeHelper(foundationTypes);
+            return t.ProvablyAGcReferenceTypeHelper();
         }
 
-        private static bool ProvablyAGcReferenceTypeHelper(this TypeInfo t, FoundationTypes foundationTypes)
+        private static bool ProvablyAGcReferenceTypeHelper(this Type t)
         {
             if (t.IsArray)
                 return true;
@@ -348,43 +328,41 @@ namespace System.Reflection.Runtime.General
 
                 foreach (Type constraintType in t.GetGenericParameterConstraints())
                 {
-                    if (constraintType.GetTypeInfo().ProvablyAGcReferenceTypeHelper(foundationTypes))
+                    if (constraintType.ProvablyAGcReferenceTypeHelper())
                         return true;
                 }
                 return false;
             }
 
-            return t.IsClass && !t.Equals(foundationTypes.SystemObject) && !t.Equals(foundationTypes.SystemValueType) && !t.Equals(foundationTypes.SystemEnum);
+            return t.IsClass && !t.Equals(CommonRuntimeTypes.Object) && !t.Equals(CommonRuntimeTypes.ValueType) && !t.Equals(CommonRuntimeTypes.Enum);
         }
 
         //
         // T[] casts to IList<T>. This could be handled by the normal ancestor-walking code
         // but for one complication: T[] also casts to IList<U> if T[] casts to U[].
         //
-        private static bool CanCastArrayToInterface(this TypeInfo fromTypeInfo, TypeInfo toTypeInfo, FoundationTypes foundationTypes)
+        private static bool CanCastArrayToInterface(this Type fromTypeInfo, Type toTypeInfo)
         {
             Debug.Assert(fromTypeInfo.IsArray);
             Debug.Assert(toTypeInfo.IsInterface);
 
-            Type toType = toTypeInfo.AsType();
-
-            if (toType.IsConstructedGenericType)
+            if (toTypeInfo.IsConstructedGenericType)
             {
                 Type[] toTypeGenericTypeArguments = toTypeInfo.GenericTypeArguments;
                 if (toTypeGenericTypeArguments.Length != 1)
                     return false;
-                TypeInfo toElementTypeInfo = toTypeGenericTypeArguments[0].GetTypeInfo();
+                Type toElementTypeInfo = toTypeGenericTypeArguments[0];
 
                 Type toTypeGenericTypeDefinition = toTypeInfo.GetGenericTypeDefinition();
-                TypeInfo fromElementTypeInfo = fromTypeInfo.GetElementType().GetTypeInfo();
-                foreach (Type ifc in fromTypeInfo.ImplementedInterfaces)
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                foreach (Type ifc in fromTypeInfo.GetInterfaces())
                 {
                     if (ifc.IsConstructedGenericType)
                     {
                         Type ifcGenericTypeDefinition = ifc.GetGenericTypeDefinition();
                         if (ifcGenericTypeDefinition.Equals(toTypeGenericTypeDefinition))
                         {
-                            if (fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, foundationTypes))
+                            if (fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo))
                                 return true;
                         }
                     }
@@ -393,9 +371,9 @@ namespace System.Reflection.Runtime.General
             }
             else
             {
-                foreach (Type ifc in fromTypeInfo.ImplementedInterfaces)
+                foreach (Type ifc in fromTypeInfo.GetInterfaces())
                 {
-                    if (ifc.Equals(toType))
+                    if (ifc.Equals(toTypeInfo))
                         return true;
                 }
                 return false;

@@ -134,6 +134,8 @@ namespace Internal.Runtime
 
             // Kinds.ClonedEEType
             [FieldOffset(0)]
+            public EEType* _pCanonicalType;
+            [FieldOffset(0)]
             public EEType** _ppCanonicalTypeViaIAT;
 
             // Kinds.ArrayEEType
@@ -177,7 +179,7 @@ namespace Internal.Runtime
         private UInt32 _uHashCode;
 
 #if CORERT
-        private IntPtr _ppModuleManager;
+        private IntPtr _ppTypeManager;
 #endif
 
         // vtable follows
@@ -355,7 +357,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && ParameterizedTypeShape != 0;
+                return IsParameterizedType && ParameterizedTypeShape >= SZARRAY_BASE_SIZE;
             }
         }
 
@@ -476,7 +478,17 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && ParameterizedTypeShape == 0;
+                return IsParameterizedType &&
+                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer;
+            }
+        }
+
+        internal bool IsByRefType
+        {
+            get
+            {
+                return IsParameterizedType &&
+                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.ByRef;
             }
         }
 
@@ -522,8 +534,8 @@ namespace Internal.Runtime
 
         // The parameterized type shape defines the particular form of parameterized type that
         // is being represented.
-        // Currently, the meaning is a shape of 0 indicates that this is a Pointer
-        // and non-zero indicates that this is an array.
+        // Currently, the meaning is a shape of 0 indicates that this is a Pointer,
+        // shape of 1 indicates a ByRef, and >=SZARRAY_BASE_SIZE indicates that this is an array.
         // Two types are not equivalent if their shapes do not exactly match.
         internal UInt32 ParameterizedTypeShape
         {
@@ -570,7 +582,7 @@ namespace Internal.Runtime
                 Debug.Assert(optionalFields != null);
 
                 const UInt16 NoSlot = 0xFFFF;
-                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_ICastableIsInstSlot, NoSlot);
+                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ICastableIsInstSlot, NoSlot);
                 if (uiSlot != NoSlot)
                 {
                     if (uiSlot < NumVtableSlots)
@@ -601,7 +613,7 @@ namespace Internal.Runtime
                 Debug.Assert(optionalFields != null);
 
                 const UInt16 NoSlot = 0xFFFF;
-                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_ICastableGetImplTypeSlot, NoSlot);
+                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ICastableGetImplTypeSlot, NoSlot);
                 if (uiSlot != NoSlot)
                 {
                     if (uiSlot < NumVtableSlots)
@@ -668,7 +680,7 @@ namespace Internal.Runtime
 
                 // Get the value from the optional fields. The default is zero if that particular field was not included.
                 // The low bits of this field is the ValueType field padding, the rest of the byte is the alignment if present
-                UInt32 ValueTypeFieldPaddingData = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_ValueTypeFieldPadding, 0);
+                UInt32 ValueTypeFieldPaddingData = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ValueTypeFieldPadding, 0);
                 UInt32 padding = ValueTypeFieldPaddingData & ValueTypePaddingLowMask;
                 // If there is additional padding, the other bits have that data
                 padding |= (ValueTypeFieldPaddingData & ValueTypePaddingHighMask) >> (ValueTypePaddingHighShift - ValueTypePaddingAlignmentShift);
@@ -685,6 +697,22 @@ namespace Internal.Runtime
                 // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
                 // elements or fields of another type.
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(EEType*) + ValueTypeFieldPadding);
+            }
+        }
+        
+        internal UInt32 FieldByteCountNonGCAligned
+        {
+            get
+            {
+                // This api is designed to return correct results for EETypes which can be derived from
+                // And results indistinguishable from correct for DefTypes which cannot be derived from (sealed classes)
+                // (For sealed classes, this should always return BaseSize-((uint)sizeof(ObjHeader));
+                Debug.Assert(!IsInterface && !IsParameterizedType);
+
+                // get_BaseSize returns the GC size including space for the sync block index field, the EEType* and
+                // padding for GC heap alignment. Must subtract all of these to get the size used for the fields of
+                // the type (where the fields of the type includes the EEType*)
+                return BaseSize - ((uint)sizeof(ObjHeader) + ValueTypeFieldPadding);
             }
         }
 
@@ -719,7 +747,7 @@ namespace Internal.Runtime
                 byte* optionalFields = OptionalFieldsPtr;
                 if (optionalFields == null)
                     return false;
-                UInt32 idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_DispatchMap, 0xffffffff);
+                UInt32 idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
                 if (idxDispatchMap == 0xffffffff)
                 {
                     if (HasDynamicallyAllocatedDispatchMap)
@@ -850,8 +878,10 @@ namespace Internal.Runtime
             {
                 // cloned EETypes must always refer to types in other modules
                 Debug.Assert(IsCloned);
-                Debug.Assert(IsRelatedTypeViaIAT);
-                return *_relatedType._ppCanonicalTypeViaIAT;
+                if (IsRelatedTypeViaIAT)
+                    return *_relatedType._ppCanonicalTypeViaIAT;
+                else
+                    return _relatedType._pCanonicalType;
             }
         }
 
@@ -898,7 +928,7 @@ namespace Internal.Runtime
                 // The offset is never zero (Nullable has a boolean there indicating whether the value is valid). So the
                 // offset is encoded - 1 to save space. The zero below is the default value if the field wasn't encoded at
                 // all.
-                return (byte)(OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_NullableValueOffset, 0) + 1);
+                return (byte)(OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.NullableValueOffset, 0) + 1);
             }
         }
 
@@ -1033,13 +1063,63 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal DynamicModule* DynamicModule
+        {
+            get
+            {
+                if ((RareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
+                {
+                    UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicModule);
+                    fixed (EEType* pThis = &this)
+                    {
+                        return *(DynamicModule**)((byte*)pThis + cbOffset);
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(RareFlags.HasFlag(EETypeRareFlags.HasDynamicModuleFlag));
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicModule);
+                fixed (EEType* pThis = &this)
+                {
+                    *(DynamicModule**)((byte*)pThis + cbOffset) = value;
+                }
+            }
+#endif
+        }
+
+#if CORERT
+        internal IntPtr TypeManager
+        {
+            get
+            {
+                // This is always a pointer to a pointer to a module manager
+                return *(IntPtr *)_ppTypeManager;
+            }
+        }
+#if TYPE_LOADER_IMPLEMENTATION
+        internal IntPtr PointerToTypeManager
+        {
+            set
+            {
+                _ppTypeManager = value;
+            }
+        }
+#endif
+#endif // CORERT
+
         internal unsafe EETypeRareFlags RareFlags
         {
             get
             {
                 // If there are no optional fields then none of the rare flags have been set.
                 // Get the flags from the optional fields. The default is zero if that particular field was not included.
-                return HasOptionalFields ? (EETypeRareFlags)OptionalFieldsReader.GetInlineField(OptionalFieldsPtr, EETypeOptionalFieldTag.OFT_RareFlags, 0) : 0;
+                return HasOptionalFields ? (EETypeRareFlags)OptionalFieldsReader.GetInlineField(OptionalFieldsPtr, EETypeOptionalFieldTag.RareFlags, 0) : 0;
             }
         }
 
@@ -1056,7 +1136,7 @@ namespace Internal.Runtime
 
                 // Get the value from the optional fields. The default is zero if that particular field was not included.
                 // The low bits of this field is the ValueType field padding, the rest of the value is the alignment if present
-                UInt32 alignmentValue = (OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_ValueTypeFieldPadding, 0) & ValueTypePaddingAlignmentMask) >> ValueTypePaddingAlignmentShift;
+                UInt32 alignmentValue = (OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ValueTypeFieldPadding, 0) & ValueTypePaddingAlignmentMask) >> ValueTypePaddingAlignmentShift;
 
                 // Alignment is stored as 1 + the log base 2 of the alignment, except a 0 indicates standard pointer alignment.
                 if (alignmentValue == 0)
@@ -1182,6 +1262,14 @@ namespace Internal.Runtime
             if (IsGeneric)
                 cbOffset += (UInt32)IntPtr.Size;
 
+            if (eField == EETypeField.ETF_DynamicModule)
+            {
+                return cbOffset;
+            }
+
+            if ((RareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
+                cbOffset += (UInt32)IntPtr.Size;
+
             if (eField == EETypeField.ETF_DynamicTemplateType)
             {
                 Debug.Assert(IsDynamicType);
@@ -1253,5 +1341,90 @@ namespace Internal.Runtime
             }
 #endif
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DynamicModule
+    {
+        // Size field used to indicate the number of bytes of this structure that are defined in Runtime Known ways
+        // This is used to drive versioning of this field
+        int _cbSize;
+
+        // Pointer to interface dispatch resolver that works off of a type/slot pair
+        // This is a function pointer with the following signature IntPtr()(IntPtr targetType, IntPtr interfaceType, ushort slot)
+        IntPtr _dynamicTypeSlotDispatchResolve;
+
+        // Starting address for the the binary module corresponding to this dynamic module.
+        IntPtr _getRuntimeException;
+
+#if TYPE_LOADER_IMPLEMENTATION
+        public int CbSize
+        {
+            get
+            {
+                return _cbSize;
+            }
+            set
+            {
+                _cbSize = value;
+            }
+        }
+#endif
+
+        public IntPtr DynamicTypeSlotDispatchResolve
+        {
+            get
+            {
+                unsafe
+                {
+                    if (_cbSize >= sizeof(IntPtr) * 2)
+                    {
+                        return _dynamicTypeSlotDispatchResolve;
+                    }
+                    else
+                    {
+                        return IntPtr.Zero;
+                    }
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _dynamicTypeSlotDispatchResolve = value;
+            }
+#endif
+        }
+
+        public IntPtr GetRuntimeException
+        {
+            get
+            {
+                unsafe
+                {
+                    if (_cbSize >= sizeof(IntPtr) * 3)
+                    {
+                        return _getRuntimeException;
+                    }
+                    else
+                    {
+                        return IntPtr.Zero;
+                    }
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _getRuntimeException = value;
+            }
+#endif
+        }
+
+        /////////////////////// END OF FIELDS KNOWN TO THE MRT RUNTIME ////////////////////////
+#if TYPE_LOADER_IMPLEMENTATION
+        public static readonly int DynamicModuleSize = IntPtr.Size * 3; // We have three fields here.
+
+        // We can put non-low level runtime fields that are module level, that need quick access from a type here
+        // For instance, we may choose to put a pointer to the metadata reader or the like here in the future.
+#endif
     }
 }

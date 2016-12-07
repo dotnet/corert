@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -22,7 +21,7 @@ namespace System.Text
         {
             // Must not be null
             if (replacement == null)
-                throw new ArgumentNullException("replacement");
+                throw new ArgumentNullException(nameof(replacement));
             Contract.EndContractBlock();
 
             // Make sure it doesn't have bad surrogate pairs
@@ -59,7 +58,7 @@ namespace System.Text
                     break;
             }
             if (bFoundHigh)
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "replacement");
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(replacement));
 
             _strDefault = replacement;
         }
@@ -146,7 +145,7 @@ namespace System.Text
         {
             // Double check input surrogate pair
             if (!Char.IsHighSurrogate(charUnknownHigh))
-                throw new ArgumentOutOfRangeException("charUnknownHigh",
+                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
                     SR.Format(SR.ArgumentOutOfRange_Range,
                     0xD800, 0xDBFF));
 
@@ -188,7 +187,7 @@ namespace System.Text
             }
 
             // Now make sure its in the expected range
-            Contract.Assert(_fallbackIndex < _strDefault.Length && _fallbackIndex >= 0,
+            Debug.Assert(_fallbackIndex < _strDefault.Length && _fallbackIndex >= 0,
                             "Index exceeds buffer range");
 
             return _strDefault[_fallbackIndex];

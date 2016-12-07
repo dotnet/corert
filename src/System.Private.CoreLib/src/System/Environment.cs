@@ -20,7 +20,8 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Internal.DeveloperExperience;
+
+using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -43,6 +44,11 @@ namespace System
             }
         }
 
+        public static string[] GetCommandLineArgs()
+        {
+            return EnvironmentAugments.GetCommandLineArgs();
+        }
+
         //// Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
         //// to assign blame for crashes.  Don't mess with this, such as by making it call 
         //// another managed helper method, unless you consult with some CLR Watson experts.
@@ -56,17 +62,6 @@ namespace System
         public static void FailFast(String message, Exception exception)
         {
             RuntimeExceptionHelpers.FailFast(message, exception);
-        }
-
-        public static int ProcessorCount
-        {
-            get
-            {
-                // @TODO: can we finally fix this to return the actual number of processors when there are >64?
-                Interop.mincore.SYSTEM_INFO info;
-                Interop.mincore.GetNativeSystemInfo(out info);
-                return (int)info.dwNumberOfProcessors;
-            }
         }
 
         public static int CurrentManagedThreadId
@@ -105,41 +100,28 @@ namespace System
             }
         }
 
-        private static string[] s_commandLineArgs;
-
-        internal static void SetCommandLineArgs(string[] args)
-        {
-            s_commandLineArgs = args;
-        }
-
-        public static string[] GetCommandLineArgs()
-        {
-            return (string[])s_commandLineArgs?.Clone();
-        }
-
         public static String StackTrace
+        {
+            // Disable inlining to have predictable stack frame that EnvironmentAugments can skip
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            get
+            {
+                return EnvironmentAugments.StackTrace;
+            }
+        }
+
+        public static int ExitCode
         {
             get
             {
-                // RhGetCurrentThreadStackTrace returns the number of frames(cFrames) added to input buffer.
-                // It returns a negative value, -cFrames which is the required array size, if the buffer is too small.
-                // Initial array length is deliberately chosen to be 0 so that we reallocate to exactly the right size
-                // for StackFrameHelper.FormatStackTrace call. If we want to do this optimistically with one call change
-                // FormatStackTrace to accept an explicit length.
-                IntPtr[] frameIPs = Array.Empty<IntPtr>();
-                int cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
-                if (cFrames < 0)
-                {
-                    frameIPs = new IntPtr[-cFrames];
-                    cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
-                    if (cFrames < 0)
-                    {
-                        return "";
-                    }
-                }
-
-                return Internal.Diagnostics.StackTraceHelper.FormatStackTrace(frameIPs, true);
+                return EnvironmentAugments.ExitCode;
+            }
+            set
+            {
+                EnvironmentAugments.ExitCode = value;
             }
         }
+
+        public static void Exit(int exitCode) => EnvironmentAugments.Exit(exitCode);
     }
 }

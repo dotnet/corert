@@ -14,13 +14,12 @@ internal static partial class Interop
         [DllImport(Libraries.ProcessEnvironment, EntryPoint = "GetEnvironmentVariableW")]
         internal static unsafe extern int GetEnvironmentVariable(char* lpName, char* lpValue, int size);
 
-        [DllImport(Libraries.ProcessEnvironment, EntryPoint = "ExpandEnvironmentStringsW")]
-        internal static unsafe extern int ExpandEnvironmentStrings(char* lpSrc, char* lpDst, int nSize);
-
-        [DllImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW")]
-        internal static unsafe extern int GetComputerName(char* nameBuffer, ref int bufferSize);
-
         [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
         internal static extern void ExitProcess(int exitCode);
+    }
+
+    internal static void ExitProcess(int exitCode)
+    {
+        mincore.ExitProcess(exitCode);
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Text;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -25,32 +26,27 @@ namespace ILCompiler.DependencyAnalysis
             _details = details;
         }
 
-        public string MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
+            sb.Append("__GenericInstance");
+
+            bool hasVariance = false;
+
+            for (int i = 0; i < _details.Instantiation.Length; i++)
             {
-                StringBuilder sb = new StringBuilder("__GenericInstance");
+                sb.Append('_');
+                sb.Append(NodeFactory.NameMangler.GetMangledTypeName(_details.Instantiation[i]));
 
-                bool hasVariance = false;
+                hasVariance |= _details.Variance[i] != 0;
+            }
 
-                for (int i = 0; i < _details.Instantiation.Length; i++)
+            if (hasVariance)
+            {
+                for (int i = 0; i < _details.Variance.Length; i++)
                 {
                     sb.Append('_');
-                    sb.Append(NodeFactory.NameMangler.GetMangledTypeName(_details.Instantiation[i]));
-
-                    hasVariance |= _details.Variance[i] != 0;
+                    sb.Append((checked((byte)_details.Variance[i])).ToStringInvariant());
                 }
-
-                if (hasVariance)
-                {
-                    for (int i = 0; i < _details.Variance.Length; i++)
-                    {
-                        sb.Append('_');
-                        sb.Append((checked((byte)_details.Variance[i])).ToStringInvariant());
-                    }
-                }
-
-                return sb.ToString();
             }
         }
 
@@ -73,18 +69,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -124,10 +111,7 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        public override string GetName()
-        {
-            return MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
     }
 
     internal struct GenericCompositionDetails : IEquatable<GenericCompositionDetails>

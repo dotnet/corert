@@ -7,6 +7,8 @@ include_directories(..)
 include_directories(../../gc)
 include_directories(../../gc/env)
 
+add_definitions(-DFEATURE_RX_THUNKS)
+
 add_library(Runtime STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM})
 
 # Get the current list of definitions

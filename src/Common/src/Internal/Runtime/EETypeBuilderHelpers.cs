@@ -78,7 +78,7 @@ namespace Internal.Runtime
                 return flags;
             }
 
-            if (type.IsArray || type.IsPointer)
+            if (type.IsArray || type.IsPointer || type.IsByRef)
             {
                 flags = (UInt16)EETypeKind.ParameterizedEEType;
             }

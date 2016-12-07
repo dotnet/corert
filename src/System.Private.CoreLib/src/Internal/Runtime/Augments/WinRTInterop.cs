@@ -115,19 +115,18 @@ namespace Internal.Runtime.Augments
         public abstract Object GetCurrentCoreDispatcher();
         public abstract void PostToCoreDispatcher(Object dispatcher, Action<object> action, object state);
         public abstract Object GetResourceMap(string subtreeName);
-        public abstract string GetResourceString(Object resourceMap, string resourceName, string languageName);
+        public abstract string GetResourceString(object resourceMap, string resourceName, string languageName);
+        public abstract string GetResourceString(object resourceMap, string resourceName, string languageName, string neutralResourcesCulture);
         public abstract bool IsAppxModel();
         public abstract bool ReportUnhandledError(Exception ex);
         public abstract void SetCOMWeakReferenceTarget(object weakReference, object target);
         public abstract object GetCOMWeakReferenceTarget(object weakReference);
         public abstract object ReadFileIntoStream(string name);
-        public abstract byte[] ComputeSHA1(byte[] plainText);
         public abstract void InitTracingStatusChanged(Action<bool> tracingStatusChanged);
         public abstract void TraceOperationCompletion(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, AsyncStatus status);
         public abstract void TraceOperationCreation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, string operationName, ulong relatedContext);
         public abstract void TraceOperationRelation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalityRelation relation);
         public abstract void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySource source, CausalitySynchronousWork work);
         public abstract void TraceSynchronousWorkStart(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalitySynchronousWork work);
-        public abstract IList<T> CreateSystemCollectionsGenericList<T>();
     }
 }

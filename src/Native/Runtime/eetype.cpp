@@ -81,8 +81,7 @@ bool EEType::Validate(bool assertOnFail /* default: true */)
         case 2:
         {
             // Cloned string.
-            if (!IsRelatedTypeViaIAT() ||
-                get_IsValueType() ||
+            if (get_IsValueType() ||
                 HasFinalizer() ||
                 HasReferenceFields() ||
                 HasGenericVariance())
@@ -150,9 +149,10 @@ EEType * EEType::get_CanonicalEEType()
 {
 	// cloned EETypes must always refer to types in other modules
 	ASSERT(IsCloned());
-	ASSERT(IsRelatedTypeViaIAT());
-
-	return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppCanonicalTypeViaIAT));
+    if (IsRelatedTypeViaIAT())
+        return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppCanonicalTypeViaIAT));
+    else
+        return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pCanonicalType)); // in the R2R case, the link is direct rather than indirect via the IAT
 }
 
 //-----------------------------------------------------------------------------------------------------------

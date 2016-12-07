@@ -51,7 +51,7 @@ namespace System.Collections.Generic
             get
             {
                 if (key == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
 
                 Entry entry = Find(key);
                 if (entry == null)
@@ -61,7 +61,7 @@ namespace System.Collections.Generic
             set
             {
                 if (key == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
 
                 _version++;
                 Entry entry = Find(key);
@@ -76,7 +76,7 @@ namespace System.Collections.Generic
         {
             value = default(TValue);
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             Entry entry = Find(key);
             if (entry != null)
             {
@@ -89,7 +89,7 @@ namespace System.Collections.Generic
         public void Add(TKey key, TValue value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             Entry entry = Find(key);
             if (entry != null)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
@@ -107,7 +107,7 @@ namespace System.Collections.Generic
         public bool Remove(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             int bucket = GetBucket(key);
             Entry prev = null;
             Entry entry = _buckets[bucket];

@@ -30,6 +30,15 @@ namespace System.Runtime
                                                                  EEType* pItfType,
                                                                  ushort itfSlotNumber)
         {
+            DynamicModule* dynamicModule = pTgtType->DynamicModule;
+
+            // Use the dynamic module resolver if it's present
+            if ((dynamicModule != null) && (dynamicModule->DynamicTypeSlotDispatchResolve != IntPtr.Zero))
+            {
+                return CalliIntrinsics.Call<IntPtr>(dynamicModule->DynamicTypeSlotDispatchResolve, 
+                                                    (IntPtr)pTgtType, (IntPtr)pItfType, itfSlotNumber);
+            }
+
             // Start at the current type and work up the inheritance chain
             EEType* pCur = pTgtType;
             UInt32 iCurInheritanceChainDelta = 0;
@@ -152,6 +161,12 @@ namespace System.Runtime
                 if (fArrayCovariance && pItfType->IsGeneric)
                     fCheckVariance = true;
 
+                // TypeEquivalent interface dispatch is handled at covariance time. At this time we don't have general
+                // type equivalent interface dispatch, but we do use the model for the interface underlying CastableObject
+                // which is done by checking the interface types involved for ICastable.
+                if (pItfType->IsICastable)
+                    fCheckVariance = true;
+
                 // If there is no variance checking, there is no operation to perform. (The non-variance check loop
                 // has already completed)
                 if (!fCheckVariance)
@@ -174,6 +189,11 @@ namespace System.Runtime
                         pCurEntryType = pCurEntryType->CanonicalEEType;
 
                     if (pCurEntryType == pItfType)
+                    {
+                        *pImplSlotNumber = i->_usImplMethodSlot;
+                        return true;
+                    }
+                    else if (fCheckVariance && pCurEntryType->IsICastable && pItfType->IsICastable)
                     {
                         *pImplSlotNumber = i->_usImplMethodSlot;
                         return true;

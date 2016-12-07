@@ -13,7 +13,7 @@
     Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
   -->
   <PropertyGroup>
-    <BuildToolsTargets45>true</BuildToolsTargets45>
+    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
   </PropertyGroup>
 
   <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
@@ -58,17 +58,6 @@
     <BinDirPlatform Condition="'$(BinDirPlatform)'=='AnyCPU' or '$(BinDirPlatform)'=='amd64'">x64</BinDirPlatform> 
   </PropertyGroup>
 
-  <!-- Initialize the NuPkg name specific RuntimeStr -->
-  <PropertyGroup>
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'==''">$(OSGroup)</NuPkgRuntimeOS>
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='Windows_NT'">win7</NuPkgRuntimeOS> 
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='Linux'">ubuntu.14.04</NuPkgRuntimeOS> 
-    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='OSX'">osx.10.10</NuPkgRuntimeOS> 
-
-    <NuPkgRuntimePlatform Condition="'$(NuPkgRuntimePlatform)'==''">$(Platform)</NuPkgRuntimePlatform>
-    <NuPkgRuntimePlatform Condition="'$(NuPkgRuntimePlatform)'=='AnyCPU' or '$(NuPkgRuntimePlatform)'=='amd64'">x64</NuPkgRuntimePlatform> 
-  </PropertyGroup>
-
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
@@ -89,7 +78,10 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
+    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
+    <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
@@ -115,6 +107,7 @@
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corert/api/v3/index.json" />
@@ -235,12 +228,4 @@
   <!-- Use the latest Roslyn compilers -->
   <Import Condition="'$(CompilerPropsAlreadyImported)'!='true' and '$(OsEnvironment)'=='Windows_NT'" Project="$(BuildToolsTaskDir)roslyn/build/Microsoft.Net.Compilers.props" />
 
-  <PropertyGroup>
-    <!--
-        These overrides are for $(PackagesDir)\Microsoft.DotNet.BuildTools\...\lib\tool-runtime\project.json and test-runtime\project.json
-        This is similar to how CoreFX handles these files.
-    -->
-    <TestRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.json</TestRuntimeProjectJson>
-    <TestRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
-  </PropertyGroup>
 </Project>

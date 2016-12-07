@@ -31,9 +31,10 @@ namespace System.Reflection
         public bool IsPrivate => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Private;
         public bool IsPublic => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
 
-        public virtual bool IsSecurityCritical { get { throw new NotImplementedException(); } }
-        public virtual bool IsSecuritySafeCritical { get { throw new NotImplementedException(); } }
-        public virtual bool IsSecurityTransparent { get { throw new NotImplementedException(); } }
+        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
+        public virtual bool IsSecurityCritical => true;
+        public virtual bool IsSecuritySafeCritical => false;
+        public virtual bool IsSecurityTransparent => false;
 
         public abstract RuntimeFieldHandle FieldHandle { get; }
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetFieldFromHandle(handle);
@@ -57,7 +58,7 @@ namespace System.Reflection
 
         public abstract object GetValue(object obj);
 
-        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type._GetDefaultBinder(), null);
+        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
         public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
 
         public virtual object GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }

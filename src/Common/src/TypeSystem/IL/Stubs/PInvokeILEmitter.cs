@@ -115,7 +115,7 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
-            if (type.IsPointer)
+            if (type.IsPointer || type.IsFunctionPointer)
                 return true;
 
             return false;

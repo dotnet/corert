@@ -12,6 +12,7 @@ namespace System
     {
         internal static Type Object { get { return s_object; } }
         internal static Type ValueType { get { return s_valuetype; } }
+        internal static Type Type { get { return s_type; } }
         internal static Type Attribute { get { return s_attribute; } }
         internal static Type String { get { return s_string; } }
         internal static Type Array { get { return s_array; } }
@@ -37,6 +38,7 @@ namespace System
 
         private static Type s_object = typeof(Object);
         private static Type s_valuetype = typeof(ValueType);
+        private static Type s_type = typeof(Type);
         private static Type s_attribute = typeof(Attribute);
         private static Type s_string = typeof(String);
         private static Type s_array = typeof(Array);

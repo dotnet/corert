@@ -75,6 +75,13 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
                     break;
 
+                case ReadyToRunHelper.NewArray:
+                    mangledName = "RhNewArray";
+                    break;
+                case ReadyToRunHelper.NewObject:
+                    mangledName = "RhNewObject";
+                    break;
+
                 case ReadyToRunHelper.Stelem_Ref:
                     mangledName = "RhpStelemRef";
                     break;
@@ -114,6 +121,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
                     break;
+                case ReadyToRunHelper.Dbl2UIntOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2UIntOvf");
+                    break;
                 case ReadyToRunHelper.Dbl2LngOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
                     break;
@@ -140,6 +150,13 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.ReversePInvokeExit:
                     mangledName = "RhpReversePInvokeReturn2";
+                    break;
+
+                case ReadyToRunHelper.CheckCastAny:
+                    mangledName = "RhTypeCast_CheckCast2";
+                    break;
+                case ReadyToRunHelper.CheckInstanceAny:
+                    mangledName = "RhTypeCast_IsInstanceOf2";
                     break;
 
                 default:

@@ -171,6 +171,9 @@
   <data name="Arg_SizeOfNonValueType" xml:space="preserve">
     <value>Marshal.SizeOf may only be used with value types.</value>
   </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added.</value>
+  </data>
   <data name="Argument_InvalidOffLength" xml:space="preserve">
     <value>The offset and length provided do not fit within the bounds of the array</value>
   </data>
@@ -362,6 +365,9 @@
   </data>
   <data name="Argument_OffsetOfFieldNotFound" xml:space="preserve">
     <value>Field passed in is not a marshaled member of the type '{0}'.</value>
+  </data>
+  <data name="Argument_StructMustNotBeValueClass" xml:space="preserve">
+    <value>The structure must not be a value class.</value>
   </data>
   <data name="Argument_NeedNonGenericObject" xml:space="preserve">
     <value>The specified object must not be an instance of a generic type.</value>

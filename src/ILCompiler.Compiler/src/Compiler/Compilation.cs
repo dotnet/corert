@@ -6,92 +6,61 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
-
-using Internal.IL;
-
-using Internal.JitInterface;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.IL;
+using Internal.IL.Stubs;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
+using AssemblyName = System.Reflection.AssemblyName;
+
 namespace ILCompiler
 {
-    public class CompilationOptions
+    public abstract class Compilation : ICompilation
     {
-        public string OutputFilePath;
+        protected readonly DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
+        protected readonly NameMangler _nameMangler;
+        protected readonly NodeFactory _nodeFactory;
+        protected readonly Logger _logger;
 
-        public bool IsCppCodeGen;
-        public bool NoLineNumbers;
-        public string DgmlLog;
-        public bool FullLog;
-        public bool Verbose;
-    }
+        internal NameMangler NameMangler => _nameMangler;
+        internal NodeFactory NodeFactory => _nodeFactory;
+        internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
+        internal Logger Logger => _logger;
 
-    public partial class Compilation
-    {
-        private readonly CompilerTypeSystemContext _typeSystemContext;
-        private readonly CompilationOptions _options;
+        private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
 
-        private NodeFactory _nodeFactory;
-        private DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
-
-        private NameMangler _nameMangler = null;
-
-        private ILCompiler.CppCodeGen.CppWriter _cppWriter = null;
-        private CompilationModuleGroup _compilationModuleGroup;
-
-        public Compilation(CompilationOptions options, CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup)
+        protected Compilation(
+            DependencyAnalyzerBase<NodeFactory> dependencyGraph,
+            NodeFactory nodeFactory,
+            IEnumerable<ICompilationRootProvider> compilationRoots,
+            NameMangler nameMangler,
+            Logger logger)
         {
-            _options = options;
+            _dependencyGraph = dependencyGraph;
+            _nodeFactory = nodeFactory;
+            _nameMangler = nameMangler;
+            _logger = logger;
 
-            _nameMangler = new NameMangler(options.IsCppCodeGen);
+            _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
+            NodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            _typeSystemContext = context;
-            _compilationModuleGroup = compilationGroup;
-        }
+            // TODO: hacky static field
+            NodeFactory.NameMangler = nameMangler;
 
-        public CompilerTypeSystemContext TypeSystemContext
-        {
-            get
-            {
-                return _typeSystemContext;
-            }
-        }
+            var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
+            foreach (var rootProvider in compilationRoots)
+                rootProvider.AddCompilationRoots(rootingService);
 
-        public NameMangler NameMangler
-        {
-            get
-            {
-                return _nameMangler;
-            }
-        }
-
-        public NodeFactory NodeFactory
-        {
-            get
-            {
-                return _nodeFactory;
-            }
-        }
-
-        public TextWriter Log
-        {
-            get;
-            set;
-        }
-
-        internal CompilationOptions Options
-        {
-            get
-            {
-                return _options;
-            }
+            _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType());
         }
 
         private ILProvider _methodILCache = new ILProvider();
 
-        public MethodIL GetMethodIL(MethodDesc method)
+        internal MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
@@ -100,145 +69,13 @@ namespace ILCompiler
             return _methodILCache.GetMethodIL(method);
         }
 
-        private CorInfoImpl _corInfo;
+        protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
 
-        public void Compile()
-        {
-            NodeFactory.NameMangler = NameMangler;
-
-            string systemModuleName = ((IAssemblyDesc)_typeSystemContext.SystemModule).GetName().Name;
-
-            // TODO: just something to get Runtime.Base compiled
-            if (systemModuleName != "System.Private.CoreLib")
-            {
-                NodeFactory.CompilationUnitPrefix = systemModuleName.Replace(".", "_");
-            }
-            else
-            {
-                NodeFactory.CompilationUnitPrefix = NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(Options.OutputFilePath));
-            }
-
-            if (_options.IsCppCodeGen)
-            {
-                _nodeFactory = new CppCodegenNodeFactory(_typeSystemContext, _compilationModuleGroup);
-            }
-            else
-            {
-                _nodeFactory = new RyuJitNodeFactory(_typeSystemContext, _compilationModuleGroup);
-            }
-
-            // Choose which dependency graph implementation to use based on the amount of logging requested.
-            if (_options.DgmlLog == null)
-            {
-                // No log uses the NoLogStrategy
-                _dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
-            }
-            else
-            {
-                if (_options.FullLog)
-                {
-                    // Full log uses the full log strategy
-                    _dependencyGraph = new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
-                }
-                else
-                {
-                    // Otherwise, use the first mark strategy
-                    _dependencyGraph = new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
-                }
-            }
-
-            _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
-
-            if (_options.IsCppCodeGen)
-            {
-                _cppWriter = new CppCodeGen.CppWriter(this);
-
-                _dependencyGraph.ComputeDependencyRoutine += CppCodeGenComputeDependencyNodeDependencies;
-
-                var nodes = _dependencyGraph.MarkedNodeList;
-
-                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain, _nodeFactory);
-            }
-            else
-            {
-                _corInfo = new CorInfoImpl(this);
-
-                _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
-
-                var nodes = _dependencyGraph.MarkedNodeList;
-
-                ObjectWriter.EmitObject(_options.OutputFilePath, nodes, _nodeFactory);
-            }
-
-            if (_options.DgmlLog != null)
-            {
-                using (FileStream dgmlOutput = new FileStream(_options.DgmlLog, FileMode.Create))
-                {
-                    DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
-                    dgmlOutput.Flush();
-                }
-            }
-        }
-
-        private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
-        {
-            foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
-            {
-                MethodDesc method = methodCodeNodeNeedingCode.Method;
-
-                if (_options.Verbose)
-                {
-                    string methodName = method.ToString();
-                    Log.WriteLine("Compiling " + methodName);
-                }
-
-                var methodIL = GetMethodIL(method);
-                if (methodIL == null)
-                    return;
-
-                try
-                {
-                    _corInfo.CompileMethod(methodCodeNodeNeedingCode);
-                }
-                catch (Exception e)
-                {
-                    Log.WriteLine("*** " + method + ": " + e.Message);
-
-                    // Call the __not_yet_implemented method
-                    DependencyAnalysis.X64.X64Emitter emit = new DependencyAnalysis.X64.X64Emitter(_nodeFactory);
-                    emit.Builder.RequireAlignment(_nodeFactory.Target.MinimumFunctionAlignment);
-                    emit.Builder.DefinedSymbols.Add(methodCodeNodeNeedingCode);
-
-                    emit.EmitLEAQ(emit.TargetRegister.Arg0, _nodeFactory.StringIndirection(method.ToString()));
-                    DependencyAnalysis.X64.AddrMode loadFromArg0 =
-                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg0, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
-                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
-                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
-
-                    emit.EmitLEAQ(emit.TargetRegister.Arg1, _nodeFactory.StringIndirection(e.Message));
-                    DependencyAnalysis.X64.AddrMode loadFromArg1 =
-                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg1, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
-                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
-                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
-
-                    emit.EmitJMP(_nodeFactory.ExternSymbol("__not_yet_implemented"));
-                    methodCodeNodeNeedingCode.SetCode(emit.Builder.ToObjectData());
-                    continue;
-                }
-            }
-        }
-
-        private void CppCodeGenComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
-        {
-            foreach (CppMethodCodeNode methodCodeNodeNeedingCode in obj)
-            {
-                _cppWriter.CompileMethod(methodCodeNodeNeedingCode);
-            }
-        }
+        protected abstract void CompileInternal(string outputFile);
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target)
         {
-            return DelegateCreationInfo.Create(delegateType, target, _nodeFactory);
+            return DelegateCreationInfo.Create(delegateType, target, NodeFactory);
         }
 
         /// <summary>
@@ -250,18 +87,20 @@ namespace ILCompiler
             {
                 var pInvokeFixup = (Internal.IL.Stubs.PInvokeLazyFixupField)field;
                 PInvokeMetadata metadata = pInvokeFixup.PInvokeMetadata;
-                return _nodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name);
+                return NodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name);
             }
             else
             {
-                return _nodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
-                    ((EcmaField)field).GetFieldRvaData(), _typeSystemContext.Target.PointerSize);
+                // Use the typical field definition in case this is an instantiated generic type
+                field = field.GetTypicalFieldDefinition();
+                return NodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
+                    ((EcmaField)field).GetFieldRvaData(), NodeFactory.Target.PointerSize);
             }
         }
 
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
-            return _typeSystemContext.HasLazyStaticConstructor(type);
+            return TypeSystemContext.HasLazyStaticConstructor(type);
         }
 
         public MethodDebugInformation GetDebugInfo(MethodIL methodIL)
@@ -270,5 +109,92 @@ namespace ILCompiler
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
         }
+
+        /// <summary>
+        /// Resolves a reference to an intrinsic method to a new method that takes it's place in the compilation.
+        /// This is used for intrinsics where the intrinsic expansion depends on the callsite.
+        /// </summary>
+        /// <param name="intrinsicMethod">The intrinsic method called.</param>
+        /// <param name="callsiteMethod">The callsite that calls the intrinsic.</param>
+        /// <returns>The intrinsic implementation to be called for this specific callsite.</returns>
+        public MethodDesc ExpandIntrinsicForCallsite(MethodDesc intrinsicMethod, MethodDesc callsiteMethod)
+        {
+            Debug.Assert(intrinsicMethod.IsIntrinsic);
+
+            var intrinsicOwningType = intrinsicMethod.OwningType as MetadataType;
+            if (intrinsicOwningType == null)
+                return intrinsicMethod;
+
+            if (intrinsicOwningType.Module != TypeSystemContext.SystemModule)
+                return intrinsicMethod;
+
+            if (intrinsicOwningType.Name == "Type" && intrinsicOwningType.Namespace == "System")
+            {
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetType")
+                {
+                    ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
+                    if (callsiteModule != null)
+                    {
+                        Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
+                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().FullName);
+                    }
+                }
+            }
+
+            return intrinsicMethod;
+        }
+
+        void ICompilation.Compile(string outputFile)
+        {
+            // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
+            _nameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : NodeFactory.NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(outputFile));
+            CompileInternal(outputFile);
+        }
+
+        void ICompilation.WriteDependencyLog(string fileName)
+        {
+            using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
+            {
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                dgmlOutput.Flush();
+            }
+        }
+
+        private class RootingServiceProvider : IRootingServiceProvider
+        {
+            private DependencyAnalyzerBase<NodeFactory> _graph;
+            private NodeFactory _factory;
+
+            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+            {
+                _graph = graph;
+                _factory = factory;
+            }
+
+            public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
+            {
+                var methodEntryPoint = _factory.MethodEntrypoint(method);
+
+                _graph.AddRoot(methodEntryPoint, reason);
+
+                if (exportName != null)
+                    _factory.NodeAliases.Add(methodEntryPoint, exportName);
+            }
+
+            public void AddCompilationRoot(TypeDesc type, string reason)
+            {
+                if (type.IsGenericDefinition)
+                    _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
+                else
+                    _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
+            }
+        }
+    }
+
+    // Interface under which Compilation is exposed externally.
+    public interface ICompilation
+    {
+        void Compile(string outputFileName);
+        void WriteDependencyLog(string outputFileName);
     }
 }

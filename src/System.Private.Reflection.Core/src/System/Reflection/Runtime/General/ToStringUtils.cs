@@ -2,21 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Collections.Generic;
-
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.TypeParsing;
-
-using Internal.LowLevelLinq;
-using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-
-using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General
 {
@@ -28,7 +15,7 @@ namespace System.Reflection.Runtime.General
         //
         // The Project N version takes a raw metadata handle rather than a completed type so that it remains robust in the face of missing metadata.
         //
-        public static String FormatTypeName(this Handle typeDefRefOrSpecHandle, MetadataReader reader, TypeContext typeContext)
+        public static String FormatTypeName(this QTypeDefRefOrSpec qualifiedTypeHandle, TypeContext typeContext)
         {
             try
             {
@@ -36,7 +23,7 @@ namespace System.Reflection.Runtime.General
                 // (non-error exceptions are very annoying when debugging.)
 
                 Exception exception = null;
-                RuntimeTypeInfo runtimeType = typeDefRefOrSpecHandle.TryResolve(reader, typeContext, ref exception);
+                RuntimeTypeInfo runtimeType = qualifiedTypeHandle.TryResolve(typeContext, ref exception);
                 if (runtimeType == null)
                     return UnavailableType;
 
@@ -76,13 +63,12 @@ namespace System.Reflection.Runtime.General
 
                 // Legacy: why removing "System"? Is it just because C# has keywords for these types?
                 // If so why don't we change it to lower case to match the C# keyword casing?
-                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
                 String typeName = runtimeType.ToString();
                 if (typeName.StartsWith("System."))
                 {
                     foreach (Type pt in ReflectionCoreExecution.ExecutionDomain.PrimitiveTypes)
                     {
-                        if (pt.Equals(rootElementType) || rootElementType.Equals(foundationTypes.SystemVoid))
+                        if (pt.Equals(rootElementType) || rootElementType.Equals(CommonRuntimeTypes.Void))
                         {
                             typeName = typeName.Substring("System.".Length);
                             break;

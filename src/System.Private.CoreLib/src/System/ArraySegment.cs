@@ -15,7 +15,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -35,7 +35,7 @@ namespace System
         public ArraySegment(T[] array)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             Contract.EndContractBlock();
 
             _array = array;
@@ -46,11 +46,11 @@ namespace System
         public ArraySegment(T[] array, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
@@ -64,7 +64,7 @@ namespace System
         {
             get
             {
-                Contract.Assert((null == _array && 0 == _offset && 0 == _count)
+                Debug.Assert((null == _array && 0 == _offset && 0 == _count)
                                  || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
                                 "ArraySegment is invalid");
 
@@ -83,7 +83,7 @@ namespace System
                 // after reading each field out of an ArraySegment into their stack.
                 Contract.Ensures(Contract.Result<int>() >= 0);
 
-                Contract.Assert((null == _array && 0 == _offset && 0 == _count)
+                Debug.Assert((null == _array && 0 == _offset && 0 == _count)
                                  || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
                                 "ArraySegment is invalid");
 
@@ -102,7 +102,7 @@ namespace System
                 // after reading each field out of an ArraySegment into their stack.
                 Contract.Ensures(Contract.Result<int>() >= 0);
 
-                Contract.Assert((null == _array && 0 == _offset && 0 == _count)
+                Debug.Assert((null == _array && 0 == _offset && 0 == _count)
                                   || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
                                 "ArraySegment is invalid");
 
@@ -112,9 +112,19 @@ namespace System
 
         public override int GetHashCode()
         {
-            return null == _array
-                        ? 0
-                        : _array.GetHashCode() ^ _offset ^ _count;
+            if (_array == null)
+            {
+                return 0;
+            }
+            
+            int hash = 5381;
+            hash = System.Numerics.Hashing.HashHelpers.Combine(hash, _offset);
+            hash = System.Numerics.Hashing.HashHelpers.Combine(hash, _count);
+            
+            // The array hash is expected to be an evenly-distributed mixture of bits,
+            // so rather than adding the cost of another rotation we just xor it.
+            hash ^= _array.GetHashCode();
+            return hash;
         }
 
         public override bool Equals(Object obj)
@@ -148,7 +158,7 @@ namespace System
                 if (_array == null)
                     throw new InvalidOperationException(SR.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
 
                 return _array[_offset + index];
@@ -159,7 +169,7 @@ namespace System
                 if (_array == null)
                     throw new InvalidOperationException(SR.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
 
                 _array[_offset + index] = value;
@@ -174,7 +184,7 @@ namespace System
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
 
-            Contract.Assert(index == -1 ||
+            Debug.Assert(index == -1 ||
                             (index >= _offset && index < _offset + _count));
 
             return index >= 0 ? index - _offset : -1;
@@ -199,7 +209,7 @@ namespace System
                 if (_array == null)
                     throw new InvalidOperationException(SR.InvalidOperation_NullArray);
                 if (index < 0 || index >= _count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
 
                 return _array[_offset + index];
@@ -236,7 +246,7 @@ namespace System
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
 
-            Contract.Assert(index == -1 ||
+            Debug.Assert(index == -1 ||
                             (index >= _offset && index < _offset + _count));
 
             return index >= 0;
@@ -286,10 +296,10 @@ namespace System
 
             internal ArraySegmentEnumerator(ArraySegment<T> arraySegment)
             {
-                Contract.Requires(arraySegment.Array != null);
-                Contract.Requires(arraySegment.Offset >= 0);
-                Contract.Requires(arraySegment.Count >= 0);
-                Contract.Requires(arraySegment.Offset + arraySegment.Count <= arraySegment.Array.Length);
+                Debug.Assert(arraySegment.Array != null);
+                Debug.Assert(arraySegment.Offset >= 0);
+                Debug.Assert(arraySegment.Count >= 0);
+                Debug.Assert(arraySegment.Offset + arraySegment.Count <= arraySegment.Array.Length);
 
                 _array = arraySegment._array;
                 _start = arraySegment._offset;

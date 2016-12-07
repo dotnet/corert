@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 #include "forward_declarations.h"
 
-struct alloc_context;
+struct gc_alloc_context;
 class RuntimeInstance;
 class ThreadStore;
 class CLREventStatic;
@@ -154,7 +154,7 @@ public:
 
     bool                IsInitialized();
 
-    alloc_context *     GetAllocContext();  // @TODO: I would prefer to not expose this in this way
+    gc_alloc_context *     GetAllocContext();  // @TODO: I would prefer to not expose this in this way
 
 #ifndef DACCESS_COMPILE
     UInt64              GetPalThreadIdForLogging();
@@ -180,6 +180,8 @@ public:
     void                SetSuppressGcStress();
     void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
+
+    void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
 
     PTR_UInt8           AllocateThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset, UInt32 tlsStorageSize, UInt32 numTlsCells);
     // mrt100 Debugger (dac) has dependencies on the GetThreadLocalStorageForDynamicType method.

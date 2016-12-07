@@ -179,44 +179,13 @@ namespace Internal.Runtime
         /// This dynamically created types has thread statics
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
+        
+        /// <summary>
+        /// This EEType contains a pointer to dynamic module information
+        /// </summary>
+        HasDynamicModuleFlag = 0x00002000,
     }
-
-    internal enum EETypeOptionalFieldsElement : byte
-    {
-        /// <summary>
-        /// Extra <c>EEType</c> flags not commonly used such as HasClassConstructor
-        /// </summary>
-        RareFlags,
-
-        /// <summary>
-        /// VTable slot of <see cref="ICastable.IsInstanceOfInterface"/> for direct invocation without interface dispatch overhead
-        /// </summary>
-        ICastableIsInstSlot,
-
-        /// <summary>
-        /// Index of the dispatch map pointer in the DispathMap table
-        /// </summary>
-        DispatchMap,
-
-        /// <summary>
-        /// Padding added to a value type when allocated on the GC heap
-        /// </summary>
-        ValueTypeFieldPadding,
-
-        /// <summary>
-        /// VTable slot of <see cref="ICastable.GetImplType"/> for direct invocation without interface dispatch overhead
-        /// </summary>
-        ICastableGetImplTypeSlot,
-
-        /// <summary>
-        /// Offset in Nullable&lt;T&gt; of the value field
-        /// </summary>
-        NullableValueOffset,
-
-        // Number of field types we support
-        Count
-    }
-
+    
     internal enum EETypeField
     {
         ETF_InterfaceMap,
@@ -226,6 +195,7 @@ namespace Internal.Runtime
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
         ETF_DynamicDispatchMap,
+        ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
     }
@@ -265,14 +235,38 @@ namespace Internal.Runtime
 
     internal enum EETypeOptionalFieldTag : byte
     {
-        OFT_RareFlags,
-        OFT_ICastableIsInstSlot,
-        OFT_DispatchMap,
-        OFT_ValueTypeFieldPadding,
-        OFT_ICastableGetImplTypeSlot,
-        OFT_NullableValueOffset,
+        /// <summary>
+        /// Extra <c>EEType</c> flags not commonly used such as HasClassConstructor
+        /// </summary>
+        RareFlags,
 
-        OFT_Count // Number of field types we support
+        /// <summary>
+        /// VTable slot of <see cref="ICastable.IsInstanceOfInterface"/> for direct invocation without interface dispatch overhead
+        /// </summary>
+        ICastableIsInstSlot,
+
+        /// <summary>
+        /// Index of the dispatch map pointer in the DispathMap table
+        /// </summary>
+        DispatchMap,
+
+        /// <summary>
+        /// Padding added to a value type when allocated on the GC heap
+        /// </summary>
+        ValueTypeFieldPadding,
+
+        /// <summary>
+        /// VTable slot of <see cref="ICastable.GetImplType"/> for direct invocation without interface dispatch overhead
+        /// </summary>
+        ICastableGetImplTypeSlot,
+
+        /// <summary>
+        /// Offset in Nullable&lt;T&gt; of the value field
+        /// </summary>
+        NullableValueOffset,
+
+        // Number of field types we support
+        Count
     }
 
     // Keep this synchronized with GenericVarianceType in rhbinder.h.
@@ -282,5 +276,16 @@ namespace Internal.Runtime
         Covariant = 1,
         Contravariant = 2,
         ArrayCovariant = 0x20,
+    }
+
+    internal static class ParameterizedTypeShapeConstants
+    {
+        // NOTE: Parameterized type kind is stored in the BaseSize field of the EEType.
+        // Array types use their actual base size. Pointer and ByRef types are never boxed,
+        // so we can reuse the EEType BaseSize field to indicate the kind.
+        // It's important that these values always stay lower than any valid value of a base
+        // size for an actual array.
+        public const int Pointer = 0;
+        public const int ByRef = 1;
     }
 }

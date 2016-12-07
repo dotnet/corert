@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -56,7 +56,7 @@ namespace System.Threading
                 if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
                 {
                     // Found the hash code in the header
-                    Contract.Assert(hashOrIndex != 0);
+                    Debug.Assert(hashOrIndex != 0);
                     return hashOrIndex;
                 }
                 if (hashOrIndex != 0)
@@ -114,7 +114,7 @@ namespace System.Threading
             }
 
             // Another thread set the hash code, use it
-            Contract.Assert((bitAndValue & ~BIT_SBLK_IS_HASHCODE) != 0);
+            Debug.Assert((bitAndValue & ~BIT_SBLK_IS_HASHCODE) != 0);
             return bitAndValue & ~BIT_SBLK_IS_HASHCODE;
         }
 
@@ -166,8 +166,8 @@ namespace System.Threading
         {
             // Holding this lock implies there is at most one thread setting the sync entry index at
             // any given time.  We also require that the sync entry index has not been already set.
-            Contract.Assert(SyncTable.s_freeEntriesLock.IsAcquired);
-            Contract.Assert((syncIndex & MASK_HASHCODE_INDEX) == syncIndex);
+            Debug.Assert(SyncTable.s_freeEntriesLock.IsAcquired);
+            Debug.Assert((syncIndex & MASK_HASHCODE_INDEX) == syncIndex);
             int oldBits, newBits, hashOrIndex;
 
             do
@@ -181,7 +181,7 @@ namespace System.Threading
                     throw new InvalidOperationException();
                 }
 
-                Contract.Assert(((oldBits & BIT_SBLK_IS_HASHCODE) == 0) || (hashOrIndex != 0));
+                Debug.Assert(((oldBits & BIT_SBLK_IS_HASHCODE) == 0) || (hashOrIndex != 0));
                 if (hashOrIndex != 0)
                 {
                     // Move the hash code to the sync entry

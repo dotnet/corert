@@ -42,7 +42,7 @@ namespace Internal.TypeSystem
 
         private class UnificationGroup
         {
-            private MethodDesc[] _members = Array.Empty<MethodDesc>();
+            private MethodDesc[] _members = MethodDesc.EmptyMethods;
             private int _memberCount = 0;
 
             /// <summary>
@@ -282,8 +282,11 @@ namespace Internal.TypeSystem
             // it to the uninstantiated version
             //MethodDesc implMethod = currentType.GetMethod(name, sig);
             MethodDesc implMethod = null;
-            foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
+            foreach (MethodDesc candidate in currentType.GetAllMethods())
             {
+                if (!candidate.IsVirtual)
+                    continue;
+
                 if (candidate.Name == name)
                 {
                     if (candidate.Signature.Equals(sig))
@@ -324,7 +327,7 @@ namespace Internal.TypeSystem
         // This function looks for the base type method that defines the slot for a method
         // This is either the newslot method most derived that is in the parent hierarchy of method
         // or the least derived method that isn't newslot that matches by name and sig.
-        private static MethodDesc FindSlotDefiningMethodForVirtualMethod(MethodDesc method)
+        public static MethodDesc FindSlotDefiningMethodForVirtualMethod(MethodDesc method)
         {
             if (method == null)
                 return method;
@@ -590,8 +593,11 @@ namespace Internal.TypeSystem
             {
                 do
                 {
-                    foreach (MethodDesc m in type.GetAllVirtualMethods())
+                    foreach (MethodDesc m in type.GetAllMethods())
                     {
+                        if (!m.IsVirtual)
+                            continue;
+
                         MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
                         if (!alreadyEnumerated.Contains(possibleVirtual))
                         {

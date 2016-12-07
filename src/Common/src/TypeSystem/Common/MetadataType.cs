@@ -12,14 +12,6 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
-        public override bool HasStaticConstructor
-        {
-            get
-            {
-                return GetStaticConstructor() != null;
-            }
-        }
-
         public override bool HasFinalizer
         {
             get

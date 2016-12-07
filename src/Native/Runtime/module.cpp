@@ -585,6 +585,12 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
     return true;
 }
 
+PTR_VOID Module::GetMethodStartAddress(MethodInfo * pMethodInfo)
+{
+    EEMethodInfo * pInfo = GetEEMethodInfo(pMethodInfo);
+    return pInfo->GetCode();
+}
+
 static PTR_VOID GetFuncletSafePointForIncomingLiveReferences(Module * pModule, EEMethodInfo * pInfo, UInt32 funcletStart)
 {
     // The binder will encode a GC safe point (as appropriate) at the first code offset after the 

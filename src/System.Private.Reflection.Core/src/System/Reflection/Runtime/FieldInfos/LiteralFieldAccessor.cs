@@ -14,8 +14,6 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 using FieldAccessException = System.MemberAccessException;
 
 namespace System.Reflection.Runtime.FieldInfos

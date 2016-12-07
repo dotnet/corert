@@ -254,5 +254,30 @@ namespace MetadataTransformTests
             Assert.Equal(iCloneableGenericImplementationMethod, methodImplGenericMethodBody.Method);
             Assert.Equal(implementsICloneableType, methodImplGenericMethodBody.EnclosingType);
         }
+
+        [Fact]
+        public void TestFunctionPointerSignatures()
+        {
+            var ilModule = _context.GetModuleForSimpleName("ILMetadataAssembly");
+            Cts.MetadataType typeWithFunctionPointers = ilModule.GetType("SampleMetadata", "TypeWithFunctionPointers");
+
+            var policy = new SingleFileMetadataPolicy();
+            var transformResult = MetadataTransform.Run(policy,
+                new[] { _systemModule, ilModule });
+
+            var typeWithFunctionPointersType = transformResult.GetTransformedTypeDefinition(typeWithFunctionPointers);
+            var objectType = transformResult.GetTransformedTypeDefinition((Cts.MetadataType)_context.GetWellKnownType(Cts.WellKnownType.Object));
+
+            Assert.Equal(1, typeWithFunctionPointersType.Fields.Count);
+
+            var theField = typeWithFunctionPointersType.Fields[0];
+            Assert.IsType<TypeSpecification>(theField.Signature.Type);
+            var theFieldSignature = (TypeSpecification)theField.Signature.Type;
+            Assert.IsType<FunctionPointerSignature>(theFieldSignature.Signature);
+            var theFieldPointerSignature = (FunctionPointerSignature)theFieldSignature.Signature;
+            Assert.Equal(objectType, theFieldPointerSignature.Signature.ReturnType);
+            Assert.Equal(1, theFieldPointerSignature.Signature.Parameters.Count);
+            Assert.Equal(objectType, theFieldPointerSignature.Signature.Parameters[0]);
+        }
     }
 }

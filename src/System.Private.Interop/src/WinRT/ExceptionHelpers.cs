@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
+
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 namespace System.Runtime.InteropServices
@@ -21,7 +23,7 @@ namespace System.Runtime.InteropServices
         {
             internal static bool GetErrorDetails(System.IntPtr pRestrictedErrorInfo, out string errMsg, out int hr, out string resErrMsg, out string errCapSid)
             {
-                Contract.Assert(pRestrictedErrorInfo != IntPtr.Zero);
+                Debug.Assert(pRestrictedErrorInfo != IntPtr.Zero);
                 IntPtr pErrDes, pResErrDes, pErrCapSid;
 
                 pErrDes = pResErrDes = pErrCapSid = IntPtr.Zero;
@@ -66,7 +68,7 @@ namespace System.Runtime.InteropServices
 
             internal static void GetReference(System.IntPtr pRestrictedErrorInfo, out string errReference)
             {
-                Contract.Assert(pRestrictedErrorInfo != IntPtr.Zero);
+                Debug.Assert(pRestrictedErrorInfo != IntPtr.Zero);
                 IntPtr pReference = IntPtr.Zero;
                 errReference = null;
 
@@ -527,9 +529,7 @@ namespace System.Runtime.InteropServices
                     exception = new SafeArrayTypeMismatchException();
                     break;
                 case __HResults.COR_E_SERIALIZATION:
-                    exception = ConstructExceptionUsingReflection(
-                        "System.Runtime.Serialization.SerializationException, System.Runtime.Serialization.Primitives, Version=4.0.0.0",
-                        message);
+                    exception = new System.Runtime.Serialization.SerializationException(message);
                     break;
                 case __HResults.COR_E_SYNCHRONIZATIONLOCK:
                     exception = new System.Threading.SynchronizationLockException();
@@ -700,7 +700,7 @@ namespace System.Runtime.InteropServices
                 //
 
                 // TODO: Add Symbolic Name into Messaage, convert 0x80020006 to DISP_E_UNKNOWNNAME
-                string hrMessage = String.Format("{0} 0x{1:X}", SR.Excep_FromHResult, errorCode);
+                string hrMessage = String.Format("{0} 0x{1}", SR.Excep_FromHResult, errorCode.LowLevelToString());
 
                 message = ExternalInterop.GetMessage(errorCode);
 

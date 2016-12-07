@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Text;
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -12,21 +15,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public GCStaticsNode(MetadataType type)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
         }
 
-        public override string GetName()
+        protected override string GetName() => this.GetMangledName();
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return ((ISymbolNode)this).MangledName;
+            sb.Append("__GCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }
-        
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return "__GCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-            }
-        }
+        public int Offset => 0;
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
@@ -49,34 +48,10 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

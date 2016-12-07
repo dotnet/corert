@@ -69,6 +69,15 @@ namespace System.Globalization
             }
         }
 
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
+
         public KoreanCalendar()
         {
             try
@@ -253,7 +262,7 @@ namespace System.Globalization
         {
             if (year < 0)
             {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();

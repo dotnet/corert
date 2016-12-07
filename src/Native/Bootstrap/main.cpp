@@ -11,21 +11,14 @@
 #include <stdlib.h> 
 
 #ifndef CPPCODEGEN
+
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
 // startup of the application.
 //
-// Sections are created in the output obj file to mark the beginning and end of merged global data. They 
-// are named .modules$A and .modules$Z. Each section defines a sentinel symbol that is used to
-// get the addresses of the start and end of global data at runtime.
-//
-// Each obj file compiled from managed code has a .modules$I section containing a pointer to its ReadyToRun
-// data (which points at eager class constructors, frozen strings, etc).
-//
-// On Windows, the #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
-// obj files into .rdata in alphabetical order.
-//
-// On Linux and OSX, we use linker magic to get the sections start addresses and sizes. 
+// ILC creates sections in the output obj file to mark the beginning and end of merged global data.
+// It defines sentinel symbols that are used to get the addresses of the start and end of global data 
+// at runtime. The section names are platform-specific to match platform-specific linker conventions.
 //
 #if defined(_MSC_VER)
 
@@ -36,10 +29,16 @@ extern "C" __declspec(allocate(".modules$Z")) void * __modules_z[];
 
 __declspec(allocate(".modules$A")) void * __modules_a[] = { nullptr };
 __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
+
+//
+// Each obj file compiled from managed code has a .modules$I section containing a pointer to its ReadyToRun
+// data (which points at eager class constructors, frozen strings, etc).
+//
+// The #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
+// obj files into .rdata in alphabetical order.
+//
 #pragma comment(linker, "/merge:.modules=.rdata")
 
-// Sentinels for managed code section are not implemented here because of the C++ compiler
-// wraps them with a jump stub in debug builds. They are emitted in ilc instead.
 extern "C" void __managedcode_a();
 extern "C" void __managedcode_z();
 
@@ -68,7 +67,10 @@ static char& __managedcode_z = __stop___managedcode;
 
 #endif // _MSC_VER
 
-#endif // CPPCODEGEN
+#endif // !CPPCODEGEN
+
+
+#ifdef CPPCODEGEN
 
 #pragma warning(disable:4297)
 
@@ -79,8 +81,6 @@ extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
 extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
 extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
 extern "C" __NORETURN void RhpThrowEx(void * pEx);
-
-#ifdef CPPCODEGEN
 
 extern "C" Object * __allocate_object(MethodTable * pMT)
 {
@@ -121,43 +121,9 @@ void __range_check_fail()
 {
     throw "ThrowRangeOverflowException";
 }
-#endif // CPPCODEGEN
-
 
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
 extern "C" void RhpReversePInvokeReturn2(ReversePInvokeFrame* pRevFrame);
-extern "C" int32_t RhpEnableConservativeStackReporting();
-
-extern "C" bool RhpRegisterCoffModule(void * pModule, 
-    void * pvStartRange, uint32_t cbRange,
-    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
-
-extern "C" bool RhpRegisterUnixModule(void * pModule, 
-    void * pvStartRange, uint32_t cbRange,
-    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
-
-#define DLL_PROCESS_ATTACH      1
-extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
-
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
-
-int __initialize_runtime()
-{
-    if (!PalInit())
-        return -1;
-
-    if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
-        return -1;
-
-    if (!RhpEnableConservativeStackReporting())
-        return -1;
-
-    return 0;
-}
-
-void __shutdown_runtime()
-{
-}
 
 void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame)
 {
@@ -200,46 +166,6 @@ namespace System_Private_CoreLib { namespace System {
 
 }; };
 
-using namespace System_Private_CoreLib;
-
-void PrintStringObject(System::String *pStringToPrint)
-{
-    // Get the number of characters in managed string (stored as UTF16)
-    int32_t length = *((int32_t*)((char*)(pStringToPrint)+sizeof(intptr_t)));
-
-    // Get the pointer to the start of the character array
-    uint16_t *pString = (uint16_t*)((char*)(pStringToPrint)+sizeof(intptr_t) + sizeof(int32_t));
-    
-    // Loop to display the string
-    int32_t index = 0;
-    while (index < length)
-    {
-        putwchar(*pString);
-        pString++;
-        index++;
-    }   
-}
-extern "C" void __not_yet_implemented(System::String * pMethodName, System::String * pMessage)
-{
-    printf("ILCompiler failed generating code for this method; execution cannot continue.\n");
-    printf("This is likely because of a feature that is not yet implemented in the compiler.\n");
-    printf("Method: ");
-    PrintStringObject(pMethodName);
-    printf("\n\n");
-    printf("Reason: ");
-    PrintStringObject(pMessage);
-    printf("\n");
-
-    exit(-1);
-}
-
-extern "C" void __fail_fast()
-{
-    // TODO: FailFast
-    throw "__fail_fast";
-}
-
-#ifdef CPPCODEGEN
 Object * __load_string_literal(const char * string)
 {
     // TODO: Cache/intern string literals
@@ -247,7 +173,7 @@ Object * __load_string_literal(const char * string)
 
     size_t len = strlen(string);
 
-    Object * pString = RhNewArray(System::String::__getMethodTable(), (int32_t)len);
+    Object * pString = RhNewArray(System_Private_CoreLib::System::String::__getMethodTable(), (int32_t)len);
 
     uint16_t * p = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     for (size_t i = 0; i < len; i++)
@@ -283,16 +209,40 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
+
+void* RtRHeaderWrapper();
+
 #endif // CPPCODEGEN
+
+extern "C" void __fail_fast()
+{
+    // TODO: FailFast
+    throw "__fail_fast";
+}
 
 extern "C" void RhpEtwExceptionThrown()
 {
     throw "RhpEtwExceptionThrown";
 }
 
+extern "C" bool REDHAWK_PALAPI PalInit();
+
+#define DLL_PROCESS_ATTACH      1
+extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
+
+extern "C" int32_t RhpEnableConservativeStackReporting();
+
+extern "C" void RhpShutdown();
+
 #ifndef CPPCODEGEN
 
-extern "C" void InitializeModules(void ** modules, int count);
+extern "C" bool RhpRegisterCoffModule(void * pModule,
+    void * pvStartRange, uint32_t cbRange,
+    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
+
+extern "C" bool RhpRegisterUnixModule(void * pModule,
+    void * pvStartRange, uint32_t cbRange,
+    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
 #ifdef _WIN32
 extern "C" void* WINAPI GetModuleHandleW(const wchar_t *);
@@ -310,8 +260,12 @@ static const pfn c_classlibFunctions[] = {
     &GetRuntimeException,
     &FailFast,
     nullptr, // &UnhandledExceptionHandler,
-    nullptr, // &AppendExceptionStackFrame,
+    &AppendExceptionStackFrame,
 };
+
+#endif // !CPPCODEGEN
+
+extern "C" void InitializeModules(void ** modules, int count);
 
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
@@ -321,22 +275,38 @@ extern "C" int __managed__Main(int argc, char* argv[]);
 int main(int argc, char* argv[])
 #endif
 {
-    if (__initialize_runtime() != 0) return -1;
+    if (!PalInit())
+        return -1;
 
-#if !defined(CPPCODEGEN)
+    if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
+        return -1;
+
+    if (!RhpEnableConservativeStackReporting())
+        return -1;
+
+#ifndef CPPCODEGEN
 #if defined(_WIN32)
-        if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
+    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
 #else // _WIN32
-        if (!RhpRegisterUnixModule(PalGetModuleHandleFromPointer((void*)&main),
+    if (!RhpRegisterUnixModule(PalGetModuleHandleFromPointer((void*)&main),
 #endif // _WIN32
-            (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
-            (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
-        {
-            return -1;
-        }
+        (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+        (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
+    {
+        return -1;
+    }
 #endif // !CPPCODEGEN
 
-    InitializeModules(__modules_a, (int)((__modules_z - __modules_a))); 
+#ifdef CPPCODEGEN
+    ReversePInvokeFrame frame;
+    __reverse_pinvoke(&frame);
+#endif
+
+#ifndef CPPCODEGEN
+    InitializeModules(__modules_a, (int)((__modules_z - __modules_a)));
+#else // !CPPCODEGEN
+    InitializeModules((void**)RtRHeaderWrapper(), 2);
+#endif // !CPPCODEGEN
 
     int retval;
     try
@@ -350,8 +320,11 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 
-    __shutdown_runtime();
+#ifdef CPPCODEGEN
+    __reverse_pinvoke_return(&frame);
+#endif
+
+    RhpShutdown();
+
     return retval;
 }
-
-#endif // !CPPCODEGEN

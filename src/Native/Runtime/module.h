@@ -4,7 +4,7 @@
 #include "ICodeManager.h"
 
 #include "SectionMethodList.h"
-#include "ModuleManager.h"
+#include "TypeManager.h"
 
 struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
@@ -93,6 +93,8 @@ public:
 
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddressOut, EHEnumState * pEHEnumStateOut);
     bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut);
+
+    PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
 
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 

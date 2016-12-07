@@ -3,21 +3,25 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
+using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core.NonPortable;
 
 namespace System.Reflection.Runtime.General
 {
-    internal static class Helpers
+    internal static partial class Helpers
     {
         // This helper helps reduce the temptation to write "h == default(RuntimeTypeHandle)" which causes boxing.
         public static bool IsNull(this RuntimeTypeHandle h)
@@ -43,6 +47,13 @@ namespace System.Reflection.Runtime.General
         public static bool IsRuntimeImplemented(this Type type)
         {
             return type is IRuntimeImplementedType;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type[] GetGenericTypeParameters(this Type type)
+        {
+            Debug.Assert(type.IsGenericTypeDefinition);
+            return type.GetGenericArguments();
         }
 
         public static RuntimeTypeInfo[] ToRuntimeTypeInfoArray(this Type[] types)
@@ -71,7 +82,7 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo CastToRuntimeTypeInfo(this Type type)
         {
-            Debug.Assert(type is RuntimeTypeInfo);
+            Debug.Assert(type == null || type is RuntimeTypeInfo);
             return (RuntimeTypeInfo)type;
         }
 
@@ -95,6 +106,72 @@ namespace System.Reflection.Runtime.General
             if (e != null)
                 return RuntimeAugments.GetEnumValue(e);
             return defaultValueOrLiteral;
+        }
+
+        public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
+        {
+            RuntimeAssembly runtimeAssembly = assembly as RuntimeAssembly;
+            if (runtimeAssembly != null)
+            {
+                // Not a recursion - this one goes to the actual instance method on RuntimeAssembly.
+                return runtimeAssembly.GetTypeCore(name, ignoreCase: ignoreCase);
+            }
+            else
+            {
+                // This is a third-party Assembly object. We can emulate GetTypeCore() by calling the public GetType()
+                // method. This is wasteful because it'll probably reparse a type string that we've already parsed
+                // but it can't be helped.
+                string escapedName = name.EscapeTypeNameIdentifier();
+                return assembly.GetType(escapedName, throwOnError: false, ignoreCase: ignoreCase);
+            }
+        }
+
+        public static TypeLoadException CreateTypeLoadException(string typeName, Assembly assemblyIfAny)
+        {
+            if (assemblyIfAny == null)
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, typeName));
+            else
+                throw Helpers.CreateTypeLoadException(typeName, assemblyIfAny.FullName);
+        }
+
+        public static TypeLoadException CreateTypeLoadException(string typeName, string assemblyName)
+        {
+            string message = SR.Format(SR.TypeLoad_TypeNotFoundInAssembly, typeName, assemblyName);
+            return ReflectionCoreNonPortable.CreateTypeLoadException(message, typeName);
+        }
+
+        // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.
+        // Current link is http://msdn.microsoft.com/en-us/library/yfsftwz6(v=vs.110).aspx
+        public static string EscapeTypeNameIdentifier(this string identifier)
+        {
+            // Some characters in a type name need to be escaped
+            if (identifier != null && identifier.IndexOfAny(s_charsToEscape) != -1)
+            {
+                StringBuilder sbEscapedName = new StringBuilder(identifier.Length);
+                foreach (char c in identifier)
+                {
+                    if (c.NeedsEscapingInTypeName())
+                        sbEscapedName.Append('\\');
+
+                    sbEscapedName.Append(c);
+                }
+                identifier = sbEscapedName.ToString();
+            }
+            return identifier;
+        }
+
+        public static bool NeedsEscapingInTypeName(this char c)
+        {
+            return Array.IndexOf(s_charsToEscape, c) >= 0;
+        }
+
+        private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureNotCustomBinder(this Binder binder)
+        {
+            if (!(binder == null || binder is DefaultBinder))
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CustomBinder);
         }
     }
 }

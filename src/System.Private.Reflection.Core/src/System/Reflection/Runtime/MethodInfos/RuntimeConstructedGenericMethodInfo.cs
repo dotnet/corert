@@ -12,8 +12,6 @@ using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
@@ -115,6 +113,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return _genericMethodDefinition.ReflectedType;
+            }
+        }
+
         public sealed override String ToString()
         {
             return _genericMethodDefinition.ComputeToString(this);
@@ -124,12 +130,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(
-                        _genericMethodDefinition.Reader,
-                        _genericMethodDefinition.RuntimeDeclaringType,
-                        _genericMethodDefinition.Handle,
-                        _genericTypeArguments,
-                        this);
+                return _genericMethodDefinition.GetUncachedMethodInvoker(_genericTypeArguments, this);
             }
         }
 
@@ -157,9 +158,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeParameterInfo[] GetRuntimeParametersAndReturn(RuntimeMethodInfo contextMethod)
+        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
         {
-            return _genericMethodDefinition.GetRuntimeParametersAndReturn(this);
+            return _genericMethodDefinition.GetRuntimeParameters(this, out returnParameter);
         }
 
         private readonly RuntimeNamedMethodInfo _genericMethodDefinition;

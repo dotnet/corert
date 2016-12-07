@@ -83,6 +83,15 @@ namespace System.Globalization
             }
         }
 
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
+
         // Return the type of the Taiwan calendar.
         //
 
@@ -260,7 +269,7 @@ namespace System.Globalization
         {
             if (year <= 0)
             {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     SR.ArgumentOutOfRange_NeedPosNum);
             }
             Contract.EndContractBlock();
@@ -268,7 +277,7 @@ namespace System.Globalization
             if (year > helper.MaxYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,

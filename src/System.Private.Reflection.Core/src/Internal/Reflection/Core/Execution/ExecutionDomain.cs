@@ -7,14 +7,14 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using Internal.Metadata.NativeFormat;
-
-using Internal.Reflection.Core;
-using Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Core.Execution
 {
@@ -32,7 +32,7 @@ namespace Internal.Reflection.Core.Execution
         //
         // Retrieves a type by name. Helper to implement Type.GetType();
         //
-        public Type GetType(String typeName, bool throwOnError, bool ignoreCase, IEnumerable<String> defaultAssemblyNames)
+        public Type GetType(String typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, IList<string> defaultAssemblyNames)
         {
             if (typeName == null)
                 throw new ArgumentNullException();
@@ -45,57 +45,71 @@ namespace Internal.Reflection.Core.Execution
                     return null;
             }
 
-            AssemblyQualifiedTypeName assemblyQualifiedTypeName;
-            try
-            {
-                assemblyQualifiedTypeName = TypeParser.ParseAssemblyQualifiedTypeName(typeName);
-            }
-            catch (ArgumentException)
-            {
-                // Input string was a syntactically invalid type name.
-                if (throwOnError)
-                    throw;
+            TypeName parsedName = TypeParser.ParseAssemblyQualifiedTypeName(typeName, throwOnError: throwOnError);
+            if (parsedName == null)
                 return null;
-            }
+            CoreAssemblyResolver coreAssemblyResolver = CreateCoreAssemblyResolver(assemblyResolver);
+            CoreTypeResolver coreTypeResolver = CreateCoreTypeResolver(typeResolver, defaultAssemblyNames, throwOnError: throwOnError, ignoreCase: ignoreCase);
+            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
 
-            if (assemblyQualifiedTypeName.AssemblyName != null)
+            return parsedName.ResolveType(null, getTypeOptions);
+        }
+
+        private static CoreAssemblyResolver CreateCoreAssemblyResolver(Func<AssemblyName, Assembly> assemblyResolver)
+        {
+            if (assemblyResolver == null)
             {
-                defaultAssemblyNames = new String[] { null };
-            }
-
-            Exception lastTypeLoadException = null;
-            foreach (String assemblyName in defaultAssemblyNames)
-            {
-                RuntimeAssembly defaultAssembly;
-                if (assemblyName == null)
-                {
-                    defaultAssembly = null;
-                }
-                else
-                {
-                    RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(assemblyName);
-                    Exception e = RuntimeAssembly.TryGetRuntimeAssembly(runtimeAssemblyName, out defaultAssembly);
-                    if (e != null)
-                        continue;   // A default assembly such as "System.Runtime" might not "exist" in an app that opts heavily out of pay-for-play metadata. Just go on to the next one.
-                }
-
-                RuntimeTypeInfo result;
-                Exception typeLoadException = assemblyQualifiedTypeName.TryResolve(defaultAssembly, ignoreCase, out result);
-                if (typeLoadException == null)
-                    return result;
-                lastTypeLoadException = typeLoadException;
-            }
-
-            if (throwOnError)
-            {
-                if (lastTypeLoadException == null)
-                    throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFoundByGetType, typeName));
-                else
-                    throw lastTypeLoadException;
+                return RuntimeAssembly.GetRuntimeAssemblyIfExists;
             }
             else
             {
-                return null;
+                return delegate (RuntimeAssemblyName runtimeAssemblyName)
+                {
+                    AssemblyName assemblyName = runtimeAssemblyName.ToAssemblyName();
+                    Assembly assembly = assemblyResolver(assemblyName);
+                    return assembly;
+                };
+            }
+        }
+
+        private static CoreTypeResolver CreateCoreTypeResolver(Func<Assembly, string, bool, Type> typeResolver, IList<string> defaultAssemblyNames, bool throwOnError, bool ignoreCase)
+        {
+            if (typeResolver == null)
+            {
+                return delegate (Assembly containingAssemblyIfAny, string coreTypeName)
+                {
+                    if (containingAssemblyIfAny != null)
+                    {
+                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                    }
+                    else
+                    {
+                        foreach (string defaultAssemblyName in defaultAssemblyNames)
+                        {
+                            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(defaultAssemblyName);
+                            RuntimeAssembly defaultAssembly = RuntimeAssembly.GetRuntimeAssembly(runtimeAssemblyName);
+                            Type resolvedType = defaultAssembly.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                            if (resolvedType != null)
+                                return resolvedType;
+                        }
+
+                        if (throwOnError && defaultAssemblyNames.Count > 0)
+                        {
+                            // Though we don't have to throw a TypeLoadException exception (that's our caller's job), we can throw a more specific exception than he would so just do it.
+                            throw Helpers.CreateTypeLoadException(coreTypeName, defaultAssemblyNames[0]);
+                        }
+                        return null;
+                    }
+                };
+            }
+            else
+            {
+                return delegate (Assembly containingAssemblyIfAny, string coreTypeName)
+                {
+                    string escapedName = coreTypeName.EscapeTypeNameIdentifier();
+                    Type type = typeResolver(containingAssemblyIfAny, escapedName, ignoreCase);
+                    return type;
+                };
             }
         }
 
@@ -105,15 +119,17 @@ namespace Internal.Reflection.Core.Execution
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
-            RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
+            NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
             MetadataReader reader = definingTypeInfo.Reader;
             if (methodHandle.IsConstructor(reader))
             {
-                return RuntimePlainConstructorInfo.GetRuntimePlainConstructorInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+                return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo));
             }
             else
             {
-                RuntimeNamedMethodInfo runtimeNamedMethodInfo = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+                // RuntimeMethodHandles always yield methods whose ReflectedType is the DeclaringType.
+                RuntimeTypeInfo reflectedType = contextTypeInfo;
+                RuntimeNamedMethodInfo<NativeFormatMethodCommon> runtimeNamedMethodInfo = RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo), reflectedType);
                 if (!runtimeNamedMethodInfo.IsGenericMethod)
                 {
                     return runtimeNamedMethodInfo;
@@ -151,17 +167,17 @@ namespace Internal.Reflection.Core.Execution
             TypeDefinitionHandle typeDefinitionHandle;
             if (ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out reader, out typeDefinitionHandle))
             {
-                return typeDefinitionHandle.GetNamedType(reader, typeHandle).AsType();
+                return typeDefinitionHandle.GetNamedType(reader, typeHandle);
             }
             else
             {
                 if (ExecutionEnvironment.IsReflectionBlocked(typeHandle))
                 {
-                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
                 }
                 else
                 {
-                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition);
                 }
             }
         }
@@ -172,7 +188,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle).AsType();
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
         }
 
         public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
@@ -181,7 +197,7 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle).AsType();
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
         }
 
         public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -190,15 +206,23 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetPointerTypeTargetType(typeHandle, out targetTypeHandle))
                 throw CreateMissingMetadataException((Type)null);
 
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle).AsType();
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
+        }
+
+        public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            RuntimeTypeHandle targetTypeHandle;
+            if (!ExecutionEnvironment.TryGetByRefTypeTargetType(typeHandle, out targetTypeHandle))
+                throw CreateMissingMetadataException((Type)null);
+
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle);
         }
 
         public Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle genericTypeDefinitionHandle;
             RuntimeTypeHandle[] genericTypeArgumentHandles;
-            if (!ExecutionEnvironment.TryGetConstructedGenericTypeComponents(typeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                throw CreateMissingMetadataException((Type)null);
+            genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(typeHandle, out genericTypeArgumentHandles);
 
             // Reflection blocked constructed generic types simply pretend to not be generic
             // This is reasonable, as the behavior of reflection blocked types is supposed
@@ -212,7 +236,7 @@ namespace Internal.Reflection.Core.Execution
             // generic type definitions.
             if (ExecutionEnvironment.IsReflectionBlocked(genericTypeDefinitionHandle))
             {
-                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false).AsType();
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false);
             }
 
             RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
@@ -222,7 +246,7 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericTypeArguments[i] = genericTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
             }
-            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle).AsType();
+            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle);
         }
 
         //=======================================================================================
@@ -301,37 +325,24 @@ namespace Internal.Reflection.Core.Execution
 
         internal ReflectionDomainSetup ReflectionDomainSetup { get; }
 
-        internal FoundationTypes FoundationTypes
-        {
-            get
-            {
-                return this.ReflectionDomainSetup.FoundationTypes;
-            }
-        }
+        internal IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
 
-        internal IEnumerable<Type> PrimitiveTypes
+        private static readonly Type[] s_primitiveTypes =
         {
-            get
-            {
-                FoundationTypes foundationTypes = this.FoundationTypes;
-                return new Type[]
-                {
-                    foundationTypes.SystemBoolean,
-                    foundationTypes.SystemChar,
-                    foundationTypes.SystemSByte,
-                    foundationTypes.SystemByte,
-                    foundationTypes.SystemInt16,
-                    foundationTypes.SystemUInt16,
-                    foundationTypes.SystemInt32,
-                    foundationTypes.SystemUInt32,
-                    foundationTypes.SystemInt64,
-                    foundationTypes.SystemUInt64,
-                    foundationTypes.SystemSingle,
-                    foundationTypes.SystemDouble,
-                    foundationTypes.SystemIntPtr,
-                    foundationTypes.SystemUIntPtr,
-                };
-            }
-        }
+                    CommonRuntimeTypes.Boolean,
+                    CommonRuntimeTypes.Char,
+                    CommonRuntimeTypes.SByte,
+                    CommonRuntimeTypes.Byte,
+                    CommonRuntimeTypes.Int16,
+                    CommonRuntimeTypes.UInt16,
+                    CommonRuntimeTypes.Int32,
+                    CommonRuntimeTypes.UInt32,
+                    CommonRuntimeTypes.Int64,
+                    CommonRuntimeTypes.UInt64,
+                    CommonRuntimeTypes.Single,
+                    CommonRuntimeTypes.Double,
+                    CommonRuntimeTypes.IntPtr,
+                    CommonRuntimeTypes.UIntPtr,
+        };
     }
 }

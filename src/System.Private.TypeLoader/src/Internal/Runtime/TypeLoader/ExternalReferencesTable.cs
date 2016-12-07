@@ -2,18 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Debug = System.Diagnostics.Debug;
 
+#if CORERT
+using TableElement = System.IntPtr;
+#else
+using TableElement = System.UInt32;
+#endif
+
 namespace Internal.Runtime.TypeLoader
 {
     public struct ExternalReferencesTable
     {
-        private IntPtr _RVAs;
-        private uint _RVAsCount;
+        private IntPtr _elements;
+        private uint _elementsCount;
         private IntPtr _moduleHandle;
 
         public bool IsInitialized() { return (_moduleHandle != IntPtr.Zero); }
@@ -26,13 +31,13 @@ namespace Internal.Runtime.TypeLoader
             uint cbBlob;
             if (!RuntimeAugments.FindBlob(moduleHandle, (int)blobId, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
             {
-                _RVAs = IntPtr.Zero;
-                _RVAsCount = 0;
+                _elements = IntPtr.Zero;
+                _elementsCount = 0;
                 return false;
             }
 
-            _RVAs = (IntPtr)pBlob;
-            _RVAsCount = cbBlob / sizeof(uint);
+            _elements = (IntPtr)pBlob;
+            _elementsCount = (uint)(cbBlob / sizeof(TableElement));
             return true;
         }
 
@@ -68,16 +73,30 @@ namespace Internal.Runtime.TypeLoader
 
         unsafe public uint GetRvaFromIndex(uint index)
         {
+#if CORERT
+            // The usage of this API will need to go away since this is not fully portable
+            // and we'll not be able to support this for CppCodegen.
+            throw new PlatformNotSupportedException();
+#else
             Debug.Assert(_moduleHandle != IntPtr.Zero);
 
-            if (index >= _RVAsCount)
+            if (index >= _elementsCount)
                 throw new BadImageFormatException();
 
-            return ((uint*)_RVAs)[index];
+            return ((TableElement*)_elements)[index];
+#endif
         }
 
         unsafe public IntPtr GetIntPtrFromIndex(uint index)
         {
+#if CORERT
+            if (index >= _elementsCount)
+                throw new BadImageFormatException();
+
+            // TODO: indirection through IAT
+
+            return ((TableElement*)_elements)[index];
+#else
             uint rva = GetRvaFromIndex(index);
             if ((rva & 0x80000000) != 0)
             {
@@ -88,6 +107,30 @@ namespace Internal.Runtime.TypeLoader
             {
                 return (IntPtr)((byte*)_moduleHandle + rva);
             }
+#endif
+        }
+
+        unsafe public IntPtr GetFunctionPointerFromIndex(uint index)
+        {
+#if CORERT
+            if (index >= _elementsCount)
+                throw new BadImageFormatException();
+
+            // TODO: indirection through IAT
+
+            return ((IntPtr*)_elements)[index];
+#else
+            uint rva = GetRvaFromIndex(index);
+
+            if ((rva & DynamicInvokeMapEntry.IsImportMethodFlag) == DynamicInvokeMapEntry.IsImportMethodFlag)
+            {
+                return *((IntPtr*)((byte*)_moduleHandle + (rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
+            }
+            else
+            {
+                return (IntPtr)((byte*)_moduleHandle + rva);
+            }
+#endif
         }
 
         public RuntimeTypeHandle GetRuntimeTypeHandleFromIndex(uint index)

@@ -3,13 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ILCompiler.DependencyAnalysisFramework;
-using System.Diagnostics;
+
 using Internal.TypeSystem;
+
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,42 +16,13 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public ISymbolNode Symbol
-        {
-            get
-            {
-                return this;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.TextSection;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public abstract string MangledName
-        {
-            get;
-        }
+        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
+        public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {

@@ -6,6 +6,7 @@ using System;
 using System.Text;
 
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -28,10 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override ObjectNodeSection Section
         {
@@ -44,27 +42,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool StaticDependenciesAreComputed
+        public override bool StaticDependenciesAreComputed => true;
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return true;
-            }
+            sb.Append("__GCStaticEEType_").Append(_gcMap.ToString());
         }
 
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                StringBuilder nameBuilder = new StringBuilder();
-                nameBuilder.Append("__GCStaticEEType_");
-                nameBuilder.Append(_gcMap.ToString());
-
-                return nameBuilder.ToString();
-            }
-        }
-
-        int ISymbolNode.Offset
+        public int Offset
         {
             get
             {
@@ -72,11 +57,7 @@ namespace ILCompiler.DependencyAnalysis
                 return numSeries > 0 ? ((numSeries * 2) + 1) * _target.PointerSize : 0;
             }
         }
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
@@ -97,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
                 GCDescEncoder.EncodeStandardGCDesc(ref dataBuilder, _gcMap, totalSize, 0);
             }
 
-            Debug.Assert(dataBuilder.CountBytes == ((ISymbolNode)this).Offset);
+            Debug.Assert(dataBuilder.CountBytes == Offset);
 
             dataBuilder.EmitShort(0); // ComponentSize is always 0
 

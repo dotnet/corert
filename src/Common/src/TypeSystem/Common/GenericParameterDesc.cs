@@ -86,17 +86,35 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a value indicating the variance of this generic parameter.
         /// </summary>
-        public abstract GenericVariance Variance { get; }
+        public virtual GenericVariance Variance
+        {
+            get
+            {
+                return GenericVariance.None;
+            }
+        }
 
         /// <summary>
         /// Gets a value indicating generic constraints of this generic parameter.
         /// </summary>
-        public abstract GenericConstraints Constraints { get; }
+        public virtual GenericConstraints Constraints
+        {
+            get
+            {
+                return GenericConstraints.None;
+            }
+        }
         
         /// <summary>
         /// Gets type constraints imposed on substitutions.
         /// </summary>
-        public abstract IEnumerable<TypeDesc> TypeConstraints { get; }
+        public virtual IEnumerable<TypeDesc> TypeConstraints
+        {
+            get
+            {
+                return TypeDesc.EmptyTypes;
+            }
+        }
 
         public bool HasNotNullableValueTypeConstraint
         {
@@ -136,6 +154,26 @@ namespace Internal.TypeSystem
             {
                 return (Variance & GenericVariance.Contravariant) != 0;
             }
+        }
+
+        protected sealed override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        {
+            TypeFlags flags = 0;
+
+            flags |= TypeFlags.ContainsGenericVariablesComputed | TypeFlags.ContainsGenericVariables;
+
+            flags |= TypeFlags.GenericParameter;
+
+            flags |= TypeFlags.HasGenericVarianceComputed;
+
+            return flags;
+        }
+
+        public sealed override int GetHashCode()
+        {
+            // TODO: Determine what a the right hash function should be. Use stable hashcode based on the type name?
+            // For now, use the same hash as a SignatureVariable type.
+            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeSignatureVariableHashCode(Index, Kind == GenericParameterKind.Method);
         }
     }
 }

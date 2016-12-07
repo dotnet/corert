@@ -60,9 +60,7 @@ namespace System.Reflection
     //
     //==============================================================================================================
 
-    // @todo: Take the "SoonToBe" off the name once we get CustomAttributeExtensions out of System.Reflection.Extensions.dll.
-    // We cannot do it before then as the reducer expects to see only one CustomAttributeExtensions.
-    public static class CustomAttributeExtensionsSoonToBe
+    public static class CustomAttributeExtensions
     {
         //==============================================================================================================
         // This group returns the single custom attribute whose type matches or is a subclass of "attributeType".

@@ -11,9 +11,9 @@
 **
 ===========================================================*/
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Security;
 
 namespace System
 {
@@ -121,7 +121,7 @@ namespace System
         {
             if (conversionType == null)
             {
-                throw new ArgumentNullException("conversionType");
+                throw new ArgumentNullException(nameof(conversionType));
             }
 
             Contract.EndContractBlock();
@@ -247,10 +247,10 @@ namespace System
 
         internal static Object DefaultToType(IConvertible value, Type targetType, IFormatProvider provider)
         {
-            Contract.Requires(value != null, "[Convert.DefaultToType]value!=null");
+            Debug.Assert(value != null, "[Convert.DefaultToType]value!=null");
             if (targetType == null)
             {
-                throw new ArgumentNullException("targetType");
+                throw new ArgumentNullException(nameof(targetType));
             }
             Contract.EndContractBlock();
 
@@ -492,7 +492,7 @@ namespace System
         public static char ToChar(String value, IFormatProvider provider)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             if (value.Length != 1)
@@ -2338,7 +2338,7 @@ namespace System
         {
             if (inArray == null)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2350,7 +2350,7 @@ namespace System
         {
             if (inArray == null)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2367,11 +2367,11 @@ namespace System
         {
             //Do data verfication
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options));
             Contract.Ensures(Contract.Result<string>() != null);
@@ -2382,7 +2382,7 @@ namespace System
 
             inArrayLength = inArray.Length;
             if (offset > (inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_OffsetLength);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
             if (inArrayLength == 0)
                 return String.Empty;
@@ -2417,15 +2417,15 @@ namespace System
         {
             //Do data verfication
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (outArray == null)
-                throw new ArgumentNullException("outArray");
+                throw new ArgumentNullException(nameof(outArray));
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offsetIn < 0)
-                throw new ArgumentOutOfRangeException("offsetIn", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_GenericPositive);
             if (offsetOut < 0)
-                throw new ArgumentOutOfRangeException("offsetOut", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_GenericPositive);
 
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
             {
@@ -2445,7 +2445,7 @@ namespace System
             inArrayLength = inArray.Length;
 
             if (offsetIn > (int)(inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offsetIn", SR.ArgumentOutOfRange_OffsetLength);
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_OffsetLength);
 
             if (inArrayLength == 0)
                 return 0;
@@ -2458,7 +2458,7 @@ namespace System
             numElementsToCopy = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
             if (offsetOut > (int)(outArrayLength - numElementsToCopy))
-                throw new ArgumentOutOfRangeException("offsetOut", SR.ArgumentOutOfRange_OffsetOut);
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_OffsetOut);
 
             fixed (char* outChars = &outArray[offsetOut])
             {
@@ -2570,7 +2570,7 @@ namespace System
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.
 
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
 
             Contract.EndContractBlock();
 
@@ -2594,16 +2594,16 @@ namespace System
         public static Byte[] FromBase64CharArray(Char[] inArray, Int32 offset, Int32 length)
         {
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
 
             if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_OffsetLength);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
             Contract.EndContractBlock();
 
@@ -2631,7 +2631,7 @@ namespace System
         {
             // The validity of parameters much be checked by callers, thus we are Critical here.
 
-            Contract.Assert(0 <= inputLength);
+            Debug.Assert(0 <= inputLength);
 
             // We need to get rid of any trailing white spaces.
             // Otherwise we would be rejecting input such as "abc= ":
@@ -2646,7 +2646,7 @@ namespace System
             // Compute the output length:
             Int32 resultLength = FromBase64_ComputeResultLength(inputPtr, inputLength);
 
-            Contract.Assert(0 <= resultLength);
+            Debug.Assert(0 <= resultLength);
 
             // resultLength can be zero. We will still enter FromBase64_Decode and process the input.
             // It may either simply write no bytes (e.g. input = " ") or throw (e.g. input = "ab").
@@ -2788,12 +2788,12 @@ namespace System
             }  // unchecked while
 
         // 'd be nice to have an assert that we never get here, but CS0162: Unreachable code detected.
-        // Contract.Assert(false, "We only leave the above loop by jumping; should never get here.");
+        // Debug.Assert(false, "We only leave the above loop by jumping; should never get here.");
 
         // We jump here out of the loop if we hit an '=':
         _EqualityCharEncountered:
 
-            Contract.Assert(currCode == intEq);
+            Debug.Assert(currCode == intEq);
 
             // Recall that inputPtr is now one position past where '=' was read.
             // '=' can only be at the last input pos:
@@ -2870,7 +2870,7 @@ namespace System
             const UInt32 intEq = (UInt32)'=';
             const UInt32 intSpace = (UInt32)' ';
 
-            Contract.Assert(0 <= inputLength);
+            Debug.Assert(0 <= inputLength);
 
             Char* inputEndPtr = inputPtr + inputLength;
             Int32 usefulInputLength = inputLength;
@@ -2894,11 +2894,11 @@ namespace System
                 }
             }
 
-            Contract.Assert(0 <= usefulInputLength);
+            Debug.Assert(0 <= usefulInputLength);
 
             // For legal input, we can assume that 0 <= padding < 3. But it may be more for illegal input.
             // We will notice it at decode when we see a '=' at the wrong place.
-            Contract.Assert(0 <= padding);
+            Debug.Assert(0 <= padding);
 
             // Perf: reuse the variable that stored the number of '=' to store the number of bytes encoded by the
             // last group that contains the '=':

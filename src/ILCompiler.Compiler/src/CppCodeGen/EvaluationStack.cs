@@ -110,6 +110,11 @@ namespace Internal.IL
                 Debug.Assert(index >= 0 && index < _top, "Index not in range");
                 return _stack[index];
             }
+            set
+            {
+                Debug.Assert(index >= 0 && index < _top, "Index not in range");
+                _stack[index] = value;
+            }
         }
 
         /// <summary>
@@ -159,12 +164,12 @@ namespace Internal.IL
         /// <summary>
         /// Evaluation stack kind of the entry. 
         /// </summary>
-        public StackValueKind Kind { get; private set; }
+        public StackValueKind Kind { get; }
 
         /// <summary>
         /// Managed type if any of the entry.
         /// </summary>
-        public TypeDesc Type { get; private set; }
+        public TypeDesc Type { get; }
 
         /// <summary>
         /// Initializes a new instance of StackEntry.
@@ -251,7 +256,7 @@ namespace Internal.IL
 
     internal abstract class ConstantEntry<T> : ConstantEntry where T : IConvertible
     {
-        public T Value { get; private set; }
+        public T Value { get; }
 
         protected ConstantEntry(StackValueKind kind, T value, TypeDesc type = null) : base(kind, type)
         {

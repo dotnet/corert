@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.IL;
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
-using System;
-using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
@@ -39,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// UInt32          | Hash code
     ///                 |
-    /// [Pointer Size]  | Pointer to containing Module indirection cell
+    /// [Pointer Size]  | Pointer to containing TypeManager indirection cell
     ///                 |
     /// X * [Ptr Size]  | VTable entries (optional)
     ///                 |
@@ -59,28 +61,34 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected TypeDesc _type;
         protected EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        protected EETypeOptionalFieldsNode _optionalFieldsNode;
 
-        public EETypeNode(TypeDesc type)
+        public EETypeNode(NodeFactory factory, TypeDesc type)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
+            _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
+
+            // Note: The fact that you can't create invalid EETypeNode is used from many places that grab
+            // an EETypeNode from the factory with the sole purpose of making sure the validation has run
+            // and that the result of the positive validation is "cached" (by the presence of an EETypeNode).
+            CheckCanGenerateEEType(factory, type);
         }
 
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName() => this.GetMangledName();
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             // If there is a constructed version of this node in the graph, emit that instead
-            return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
+            if (ConstructedEETypeNode.CreationAllowed(_type))
+                return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
+
+            return false;
         }
 
-        public TypeDesc Type
-        {
-            get { return _type; }
-        }
-        
+        public TypeDesc Type => _type;
+
         public override ObjectNodeSection Section
         {
             get
@@ -92,44 +100,54 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        internal bool HasOptionalFields
         {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
+            get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
         }
 
-        public override bool StaticDependenciesAreComputed
+        internal byte[] GetOptionalFieldsData()
         {
-            get
-            {
-                return true;
-            }
+            return _optionalFieldsBuilder.GetBytes();
         }
+        
+        public override bool StaticDependenciesAreComputed => true;
 
         public void SetDispatchMapIndex(int index)
         {
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.DispatchMap, checked((uint)index));
+            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)index));
         }
 
-        int ISymbolNode.Offset
+        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return GCDescSize;
-            }
+            sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
+        }
+        public int Offset => GCDescSize;
+        public override bool IsShareable => IsTypeNodeShareable(_type);
+
+        public static bool IsTypeNodeShareable(TypeDesc type)
+        {
+            return type.IsParameterizedType || type.IsFunctionPointer || type is InstantiatedType;
         }
 
-        string ISymbolNode.MangledName
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            get
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
             {
-                return "__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
+                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
+                // We need to make sure this is possible.
+                return new DependencyList
+                {
+                    new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor")
+                };
             }
+
+            return null;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.Alignment = 16;
+            objData.Alignment = objData.TargetPointerSize;
             objData.DefinedSymbols.Add(this);
 
             ComputeOptionalEETypeFields(factory);
@@ -147,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             objData.EmitInt(_type.GetHashCode());
-            objData.EmitPointerReloc(factory.ModuleManagerIndirection);
+            objData.EmitPointerReloc(factory.TypeManagerIndirection);
             
             // Avoid consulting VTable slots until they're guaranteed complete during final data emission
             if (!relocsOnly)
@@ -186,13 +204,8 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsArray)
             {
                 int elementSize = ((ArrayType)_type).ElementType.GetElementSize();
-                if (elementSize >= 64 * 1024)
-                {
-                    // TODO: Array of type 'X' cannot be created because base value type is too large.
-                    throw new TypeLoadException();
-                }
-
-                objData.EmitShort((short)elementSize);
+                // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                objData.EmitShort((short)checked((ushort)elementSize));
             }
             else if (_type.IsString)
             {
@@ -217,7 +230,7 @@ namespace ILCompiler.DependencyAnalysis
             // Todo: RelatedTypeViaIATFlag when we support cross-module EETypes
             // Todo: Generic Type Definition EETypes
 
-            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (HasOptionalFields)
             {
                 flags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
             }
@@ -242,14 +255,20 @@ namespace ILCompiler.DependencyAnalysis
             else if (_type.IsArray)
             {
                 objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
-                if (!_type.IsSzArray)
+                if (_type.IsMdArray)
                     objectSize +=
                         2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
             }
             else if (_type.IsPointer)
             {
-                // Object size 0 is a sentinel value in the runtime for parameterized types that means "Pointer Type"
-                objData.EmitInt(0);
+                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                objData.EmitInt(ParameterizedTypeShapeConstants.Pointer);
+                return;
+            }
+            else if (_type.IsByRef)
+            {
+                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                objData.EmitInt(ParameterizedTypeShapeConstants.ByRef);
                 return;
             }
             else
@@ -275,11 +294,11 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
-        private void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
+        protected virtual void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             ISymbolNode relatedTypeNode = null;
 
-            if (_type.IsArray || _type.IsPointer)
+            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
                 relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
@@ -325,15 +344,16 @@ namespace ILCompiler.DependencyAnalysis
 
             if (finalizerMethod != null)
             {
-                objData.EmitPointerReloc(factory.MethodEntrypoint(finalizerMethod));
+                MethodDesc canonFinalizerMethod = finalizerMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
             }
         }
 
         private void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if(_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (HasOptionalFields)
             {
-                objData.EmitPointerReloc(factory.EETypeOptionalFields(_optionalFieldsBuilder));
+                objData.EmitPointerReloc(_optionalFieldsNode);
             }
         }
 
@@ -401,7 +421,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (flags != 0)
             {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, flags);
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, flags);
             }
         }
 
@@ -421,7 +441,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
             // to get a small encoding size win.
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.NullableValueOffset, (uint)field.Offset - 1);
+            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset - 1);
         }
 
         /// <summary>
@@ -447,18 +467,18 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (isInstMethodSlot != -1 || getImplTypeMethodSlot != -1)
                     {
-                        var rareFlags = _optionalFieldsBuilder.GetFieldValue(EETypeOptionalFieldsElement.RareFlags, 0);
+                        var rareFlags = _optionalFieldsBuilder.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
                         rareFlags |= (uint)EETypeRareFlags.ICastableFlag;
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, rareFlags);
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
                     }
 
                     if (isInstMethodSlot != -1)
                     {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ICastableIsInstSlot, (uint)isInstMethodSlot);
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableIsInstSlot, (uint)isInstMethodSlot);
                     }
                     if (getImplTypeMethodSlot != -1)
                     {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
                     }
                 }
             }
@@ -466,7 +486,11 @@ namespace ILCompiler.DependencyAnalysis
 
         void ComputeValueTypeFieldPadding()
         {
-            if (!_type.IsValueType)
+            // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding. 
+            // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
+
+            // Interfaces, sealed types, and non-DefTypes cannot be derived from
+            if (_type.IsInterface || !_type.IsDefType || (_type.IsSealed() && !_type.IsValueType))
                 return;
 
             DefType defType = _type as DefType;
@@ -477,13 +501,119 @@ namespace ILCompiler.DependencyAnalysis
 
             if (valueTypeFieldPaddingEncoded != 0)
             {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
 
         protected override void OnMarked(NodeFactory context)
         {
             //Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
+        }
+
+        /// <summary>
+        /// Validates that it will be possible to create an EEType for '<paramref name="type"/>'.
+        /// </summary>
+        public static void CheckCanGenerateEEType(NodeFactory factory, TypeDesc type)
+        {
+            // Don't validate generic definitons
+            if (type.IsGenericDefinition)
+            {
+                return;
+            }
+
+            // It must be possible to create an EEType for the base type of this type
+            TypeDesc baseType = type.BaseType;
+            if (baseType != null)
+            {
+                // Make sure EEType can be created for this.
+                factory.NecessaryTypeSymbol(baseType);
+            }
+            
+            // We need EETypes for interfaces
+            foreach (var intf in type.RuntimeInterfaces)
+            {
+                // Make sure EEType can be created for this.
+                factory.NecessaryTypeSymbol(intf);
+            }
+
+            // Validate classes, structs, enums, interfaces, and delegates
+            DefType defType = type as DefType;
+            if (defType != null)
+            {
+                // Ensure we can compute the type layout
+                defType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
+
+                //
+                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
+                // We need to make sure this is possible.
+                //
+                if (factory.TypeSystemContext.HasLazyStaticConstructor(defType))
+                {
+                    defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
+                }
+
+                // Make sure instantiation length matches the expectation
+                // TODO: it might be more resonable for the type system to enforce this (also for methods)
+                if (defType.Instantiation.Length != defType.GetTypeDefinition().Instantiation.Length)
+                {
+                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
+                foreach (TypeDesc typeArg in defType.Instantiation)
+                {
+                    // ByRefs, pointers, function pointers, and System.Void are never valid instantiation arguments
+                    if (typeArg.IsByRef || typeArg.IsPointer || typeArg.IsFunctionPointer || typeArg.IsVoid)
+                    {
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
+
+                    // TODO: validate constraints
+                }
+
+            }
+
+            // Validate parameterized types
+            ParameterizedType parameterizedType = type as ParameterizedType;
+            if (parameterizedType != null)
+            {
+                TypeDesc parameterType = parameterizedType.ParameterType;
+
+                // Make sure EEType can be created for this.
+                factory.NecessaryTypeSymbol(parameterType);
+
+                if (parameterizedType.IsArray)
+                {
+                    if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    {
+                        // Arrays of pointers and function pointers are not currently supported
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
+
+                    int elementSize = parameterType.GetElementSize();
+                    if (elementSize >= ushort.MaxValue)
+                    {
+                        // Element size over 64k can't be encoded in the GCDesc
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                    }
+                }
+
+                // Validate we're not constructing a type over a ByRef
+                if (parameterType.IsByRef)
+                {
+                    // CLR compat note: "ldtoken int32&&" will actually fail with a message about int32&; "ldtoken int32&[]"
+                    // will fail with a message about being unable to create an array of int32&. This is a middle ground.
+                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
+                // It might seem reasonable to disallow array of void, but the CLR doesn't prevent that too hard.
+                // E.g. "newarr void" will fail, but "newarr void[]" or "ldtoken void[]" will succeed.
+            }
+
+            // Function pointer EETypes are not currently supported
+            if (type.IsFunctionPointer)
+            {
+                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
         }
     }
 }

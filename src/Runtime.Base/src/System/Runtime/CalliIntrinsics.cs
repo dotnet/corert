@@ -19,10 +19,16 @@ namespace System.Runtime
         internal static T Call<T>(IntPtr pfn) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, object arg0) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, IntPtr arg0, object arg1) { throw new NotImplementedException(); }
+        internal static T Call<T>(IntPtr pfn, IntPtr arg0, IntPtr arg1, IntPtr arg2) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, RhFailFastReason arg0, object arg1, IntPtr arg2, IntPtr arg3) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, object arg0, IntPtr arg1, int arg2) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, object arg0, IntPtr arg1) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, ExceptionIDs arg0) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, object arg0, void* arg1, out Exception arg2) { throw new NotImplementedException(); }
+        internal static T Call<T>(IntPtr pfn, IntPtr arg0, int arg1) { throw new NotImplementedException(); }
+        internal static T Call<T>(IntPtr pfn, IntPtr arg0, IntPtr arg1, ushort arg2) { throw new NotImplementedException(); }
+        internal static T Call<T>(IntPtr pfn, IntPtr arg0, DispatchCellInfo cellInfo) { throw new NotImplementedException(); }
+        internal static T Call<T>(IntPtr pfn, IntPtr arg0, int arg1, IntPtr arg2) { throw new NotImplementedException(); }
     }
 }
+

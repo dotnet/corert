@@ -25,6 +25,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
             // suffix _prtest will be appended.
             def newJobName = Utilities.getFullJobName(project, lowercaseConfiguration + '_' + os.toLowerCase(), isPR)
             def buildString = "";
+            def prJobDescription = "${os} ${configuration}";
 
             // Calculate the build commands
             if (os == 'Windows_NT') {
@@ -43,6 +44,11 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
                     if (os == 'Windows_NT') {
                         // Indicates that a batch script should be run with the build string (see above)
                         batchFile(buildString)
+
+                        if (configuration == 'Debug') {
+                            prJobDescription += " + CoreCLR tests"
+                            batchFile("tests\\runtest.cmd /coreclr Top200")
+                        }
                     }
                     else {
                         shell(buildString)
@@ -55,7 +61,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
             Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             if (isPR) {
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} ${configuration}")
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, prJobDescription)
             }
             else {
                 Utilities.addGithubPushTrigger(newJob)

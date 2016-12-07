@@ -9,13 +9,9 @@
 #pragma warning disable 0420 // turn off 'a reference to a volatile field will not be treated as volatile' during CAS.
 
 
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
-using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Security;
 
 namespace System.Threading
 {
@@ -167,7 +163,7 @@ namespace System.Threading
         private static void ActionToActionObjShunt(object obj)
         {
             Action action = obj as Action;
-            Contract.Assert(action != null, "Expected an Action here");
+            Debug.Assert(action != null, "Expected an Action here");
             action();
         }
 
@@ -190,7 +186,7 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action callback)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
 
             return Register(
                 s_ActionToActionObjShunt,
@@ -221,7 +217,7 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
 
             return Register(
                 s_ActionToActionObjShunt,
@@ -250,7 +246,7 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action<Object> callback, Object state)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
 
             return Register(
                 callback,
@@ -332,7 +328,7 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext, bool useExecutionContext)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
 
             if (CanBeCanceled == false)
             {

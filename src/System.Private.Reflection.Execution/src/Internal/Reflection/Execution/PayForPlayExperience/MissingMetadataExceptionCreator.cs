@@ -134,7 +134,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     // write out actual parameters
                     friendlyName.Append('(');
                     first = true;
-                    foreach (ParameterInfo parameter in method.GetParameters())
+                    foreach (ParameterInfo parameter in method.GetParametersNoCopy())
                     {
                         if (!first)
                             friendlyName.Append(',');
@@ -200,8 +200,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     RuntimeTypeHandle genericTypeDefinitionHandle;
                     RuntimeTypeHandle[] genericTypeArgumentHandles;
 
-                    if (!DiagnosticMappingTables.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                        return null;
+                    genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(runtimeTypeHandle, out genericTypeArgumentHandles);
                     genericTypeDefinition = Type.GetTypeFromHandle(genericTypeDefinitionHandle);
                     genericTypeArguments = new Type[genericTypeArgumentHandles.Length];
                     for (int i = 0; i < genericTypeArguments.Length; i++)

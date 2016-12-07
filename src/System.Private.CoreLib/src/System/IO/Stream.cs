@@ -135,7 +135,7 @@ namespace System.IO
 
         public virtual Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
@@ -148,9 +148,10 @@ namespace System.IO
             Debug.Assert(destination.CanWrite);
 
             byte[] buffer = new byte[bufferSize];
-            int bytesRead;
-            while ((bytesRead = await ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) != 0)
+            while (true)
             {
+                int bytesRead = await ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                if (bytesRead == 0) break;
                 await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -186,7 +187,7 @@ namespace System.IO
 
         public virtual void CopyTo(Stream destination, int bufferSize)
         {
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             byte[] buffer = new byte[bufferSize];
             int read;
@@ -363,34 +364,6 @@ namespace System.IO
             Write(oneByteArray, 0, 1);
         }
 
-        internal void ValidateCopyToArguments(Stream destination, int bufferSize)
-        {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            if (!CanRead && !CanWrite)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-            if (!destination.CanRead && !destination.CanWrite)
-            {
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-            if (!CanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-            if (!destination.CanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
-        }
-
         private sealed class NullStream : Stream
         {
             internal NullStream() { }
@@ -426,12 +399,19 @@ namespace System.IO
                 get { return 0; }
                 set { }
             }
+            
+            public override void CopyTo(Stream destination, int bufferSize)
+            {
+                StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                
+                // After we validate arguments this is a nop.
+            }
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 // Validate arguments for compat, since previously this
                 // method was inherited from Stream, which did check its arguments.
-                ValidateCopyToArguments(destination, bufferSize);
+                StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
                 return cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :

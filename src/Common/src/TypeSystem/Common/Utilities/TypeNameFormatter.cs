@@ -28,6 +28,9 @@ namespace Internal.TypeSystem
                 case TypeFlags.Pointer:
                     AppendName(sb, (PointerType)type);
                     return;
+                case TypeFlags.FunctionPointer:
+                    AppendName(sb, (FunctionPointerType)type);
+                    return;
                 case TypeFlags.GenericParameter:
                     AppendName(sb, (GenericParameterDesc)type);
                     return;
@@ -63,6 +66,7 @@ namespace Internal.TypeSystem
         public abstract void AppendName(StringBuilder sb, ArrayType type);
         public abstract void AppendName(StringBuilder sb, ByRefType type);
         public abstract void AppendName(StringBuilder sb, PointerType type);
+        public abstract void AppendName(StringBuilder sb, FunctionPointerType type);
         public abstract void AppendName(StringBuilder sb, GenericParameterDesc type);
         public abstract void AppendName(StringBuilder sb, SignatureMethodVariable type);
         public abstract void AppendName(StringBuilder sb, SignatureTypeVariable type);

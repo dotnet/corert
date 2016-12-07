@@ -18,30 +18,48 @@ namespace Internal.TypeSystem
         /// <param name="changed">True if the returned instantiation is different from '<paramref name="instantiation"/>'.</param>
         public static Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
-            TypeDesc[] newInstantiation = null;
+            TypeDesc[] canonInstantiation = null;
 
-            for (int i = 0; i < instantiation.Length; i++)
+            CanonicalFormKind currentKind = kind;
+            CanonicalFormKind startLoopKind;
+
+            // This logic is wrapped in a loop because we might potentially need to restart canonicalization if the policy
+            // changes due to one of the instantiation arguments already being universally canonical.
+            do
             {
-                TypeDesc typeToConvert = instantiation[i];
-                TypeDesc convertedType = ConvertToCanon(typeToConvert, kind);
+                startLoopKind = currentKind;
 
-                if (typeToConvert != convertedType || newInstantiation != null)
+                for (int instantiationIndex = 0; instantiationIndex < instantiation.Length; instantiationIndex++)
                 {
-                    if (newInstantiation == null)
+                    TypeDesc typeToConvert = instantiation[instantiationIndex];
+                    TypeDesc canonForm = ConvertToCanon(typeToConvert, ref currentKind);
+                    if (typeToConvert != canonForm || canonInstantiation != null)
                     {
-                        newInstantiation = new TypeDesc[instantiation.Length];
-                        for (int j = 0; j < i; j++)
-                            newInstantiation[j] = instantiation[j];
+                        if (canonInstantiation == null)
+                        {
+                            canonInstantiation = new TypeDesc[instantiation.Length];
+                            for (int i = 0; i < instantiationIndex; i++)
+                                canonInstantiation[i] = instantiation[i];
+                        }
+
+                        canonInstantiation[instantiationIndex] = canonForm;
                     }
-
-                    newInstantiation[i] = convertedType;
                 }
-            }
 
-            changed = newInstantiation != null;
+                // Optimization: even if canonical policy changed, we don't actually need to re-run the loop
+                // for instantiations that only have a single element.
+                if (instantiation.Length == 1)
+                {
+                    break;
+                }
+
+            } while (currentKind != startLoopKind);
+
+
+            changed = canonInstantiation != null;
             if (changed)
             {
-                return new Instantiation(newInstantiation);
+                return new Instantiation(canonInstantiation);
             }
 
             return instantiation;
@@ -57,6 +75,13 @@ namespace Internal.TypeSystem
         /// </summary>
         public static TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
+            // Wrap the call to the version that potentially modifies the parameter. External
+            // callers are not interested in that.
+            return ConvertToCanon(typeToConvert, ref kind);
+        }
+
+        private static TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
+        {
             TypeSystemContext context = typeToConvert.Context;
             if (kind == CanonicalFormKind.Universal)
             {
@@ -66,6 +91,7 @@ namespace Internal.TypeSystem
             {
                 if (typeToConvert == context.UniversalCanonType)
                 {
+                    kind = CanonicalFormKind.Universal;
                     return context.UniversalCanonType;
                 }
                 else if (typeToConvert.IsSignatureVariable)
@@ -77,7 +103,15 @@ namespace Internal.TypeSystem
                     if (!typeToConvert.IsValueType)
                         return context.CanonType;
                     else if (typeToConvert.HasInstantiation)
-                        return typeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    {
+                        TypeDesc convertedType = typeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
+                        if (convertedType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                        {
+                            kind = CanonicalFormKind.Universal;
+                            return context.UniversalCanonType;
+                        }
+                        return convertedType;
+                    }
                     else
                         return typeToConvert;
                 }
@@ -87,7 +121,13 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    return typeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    TypeDesc convertedType = typeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (convertedType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                    {
+                        kind = CanonicalFormKind.Universal;
+                        return context.UniversalCanonType;
+                    }
+                    return convertedType;
                 }
             }
             else

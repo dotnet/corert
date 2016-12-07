@@ -39,58 +39,58 @@ namespace System
         private IntPtr _count;
         private int _upperBound1;
         private int _upperBound2;
+        private int _lowerBound1;
+        private int _lowerBound2;
+        private T _data;
 
         public static T[,] Ctor(int length1, int length2)
         {
             if ((length1 < 0) || (length2 < 0))
                 throw new OverflowException();
-            MDArrayRank2<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank2<T>>(RuntimeImports.RhNewArray(typeof(T[,]).TypeHandle.ToEETypePtr(), checked(length1 * length2)));
 
+            MDArrayRank2<T> newArray = Unsafe.As<MDArrayRank2<T>>(RuntimeImports.RhNewArray(typeof(T[,]).TypeHandle.ToEETypePtr(), checked(length1 * length2)));
             newArray._upperBound1 = length1;
             newArray._upperBound2 = length2;
-            return RuntimeHelpers.UncheckedCast<T[,]>(newArray);
+            return Unsafe.As<T[,]>(newArray);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ByReference<T> InternalAddress(T[,] array, int index1, int index2)
+        private static ref T InternalAddress(T[,] array, int index1, int index2)
         {
-            MDArrayRank2<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank2<T>>(array);
+            MDArrayRank2<T> mdArrayObj = Unsafe.As<MDArrayRank2<T>>(array);
             if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
                 throw new IndexOutOfRangeException();
             if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
                 throw new IndexOutOfRangeException();
 
             int index = (index1 * mdArrayObj._upperBound2) + index2;
-
-            int offset = ByReference<T>.SizeOfT() * index + 2 * 8;
-            ByReference<int> _upperBound1Ref = ByReference<int>.FromRef(ref mdArrayObj._upperBound1);
-            return ByReference<int>.Cast<T>(ByReference<int>.AddRaw(_upperBound1Ref, offset));
+            return ref Unsafe.Add(ref mdArrayObj._data, index);
         }
 
-        public static ByReference<T> Address(T[,] array, int index1, int index2)
+        public static ref T Address(T[,] array, int index1, int index2)
         {
-            ByReference<T> returnValue = InternalAddress(array, index1, index2);
-            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            ref T returnValue = ref InternalAddress(array, index1, index2);
+            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
             {
-                if (!typeof(T).TypeHandle.Equals(new RuntimeTypeHandle(array.EETypePtr.ArrayElementType)))
+                if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
             }
-            return returnValue;
+            return ref returnValue;
         }
 
         public static T Get(T[,] array, int index1, int index2)
         {
-            return ByReference<T>.Load(InternalAddress(array, index1, index2));
+            return InternalAddress(array, index1, index2);
         }
 
         public static void Set(T[,] array, int index1, int index2, T value)
         {
-            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
 
-            ByReference<T>.Store(InternalAddress(array, index1, index2), value);
+            InternalAddress(array, index1, index2) = value;
         }
     }
 
@@ -101,23 +101,27 @@ namespace System
         private int _upperBound1;
         private int _upperBound2;
         private int _upperBound3;
+        private int _lowerBound1;
+        private int _lowerBound2;
+        private int _lowerBound3;
+        private T _data;
 
         public static T[,,] Ctor(int length1, int length2, int length3)
         {
             if ((length1 < 0) || (length2 < 0) || (length3 < 0))
                 throw new OverflowException();
-            MDArrayRank3<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank3<T>>(RuntimeImports.RhNewArray(typeof(T[,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3)));
 
+            MDArrayRank3<T> newArray = Unsafe.As<MDArrayRank3<T>>(RuntimeImports.RhNewArray(typeof(T[,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3)));
             newArray._upperBound1 = length1;
             newArray._upperBound2 = length2;
             newArray._upperBound3 = length3;
-            return RuntimeHelpers.UncheckedCast<T[,,]>(newArray);
+            return Unsafe.As<T[,,]>(newArray);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ByReference<T> InternalAddress(T[,,] array, int index1, int index2, int index3)
+        private static ref T InternalAddress(T[,,] array, int index1, int index2, int index3)
         {
-            MDArrayRank3<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank3<T>>(array);
+            MDArrayRank3<T> mdArrayObj = Unsafe.As<MDArrayRank3<T>>(array);
             if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
                 throw new IndexOutOfRangeException();
             if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
@@ -126,36 +130,33 @@ namespace System
                 throw new IndexOutOfRangeException();
 
             int index = (((index1 * mdArrayObj._upperBound2) + index2) * mdArrayObj._upperBound3) + index3;
-
-            int offset = ByReference<T>.SizeOfT() * index + 3 * 8;
-            ByReference<int> _upperBound1Ref = ByReference<int>.FromRef(ref mdArrayObj._upperBound1);
-            return ByReference<int>.Cast<T>(ByReference<int>.AddRaw(_upperBound1Ref, offset));
+            return ref Unsafe.Add(ref mdArrayObj._data, index);
         }
 
-        public static ByReference<T> Address(T[,,] array, int index1, int index2, int index3)
+        public static ref T Address(T[,,] array, int index1, int index2, int index3)
         {
-            ByReference<T> returnValue = InternalAddress(array, index1, index2, index3);
-            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            ref T returnValue = ref InternalAddress(array, index1, index2, index3);
+            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
             {
-                if (!typeof(T).TypeHandle.Equals(new RuntimeTypeHandle(array.EETypePtr.ArrayElementType)))
+                if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
             }
-            return returnValue;
+            return ref returnValue;
         }
 
         public static T Get(T[,,] array, int index1, int index2, int index3)
         {
-            return ByReference<T>.Load(InternalAddress(array, index1, index2, index3));
+            return InternalAddress(array, index1, index2, index3);
         }
 
         public static void Set(T[,,] array, int index1, int index2, int index3, T value)
         {
-            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
 
-            ByReference<T>.Store(InternalAddress(array, index1, index2, index3), value);
+            InternalAddress(array, index1, index2, index3) = value;
         }
     }
 
@@ -167,24 +168,29 @@ namespace System
         private int _upperBound2;
         private int _upperBound3;
         private int _upperBound4;
+        private int _lowerBound1;
+        private int _lowerBound2;
+        private int _lowerBound3;
+        private int _lowerBound4;
+        private T _data;
 
         public static T[,,,] Ctor(int length1, int length2, int length3, int length4)
         {
             if ((length1 < 0) || (length2 < 0) || (length3 < 0) || (length4 < 0))
                 throw new OverflowException();
-            MDArrayRank4<T> newArray = RuntimeHelpers.UncheckedCast<MDArrayRank4<T>>(RuntimeImports.RhNewArray(typeof(T[,,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3 * length4)));
 
+            MDArrayRank4<T> newArray = Unsafe.As<MDArrayRank4<T>>(RuntimeImports.RhNewArray(typeof(T[,,,]).TypeHandle.ToEETypePtr(), checked(length1 * length2 * length3 * length4)));
             newArray._upperBound1 = length1;
             newArray._upperBound2 = length2;
             newArray._upperBound3 = length3;
             newArray._upperBound4 = length4;
-            return RuntimeHelpers.UncheckedCast<T[,,,]>(newArray);
+            return Unsafe.As<T[,,,]>(newArray);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ByReference<T> InternalAddress(T[,,,] array, int index1, int index2, int index3, int index4)
+        private static ref T InternalAddress(T[,,,] array, int index1, int index2, int index3, int index4)
         {
-            MDArrayRank4<T> mdArrayObj = RuntimeHelpers.UncheckedCast<MDArrayRank4<T>>(array);
+            MDArrayRank4<T> mdArrayObj = Unsafe.As<MDArrayRank4<T>>(array);
             if ((index1 < 0) || (index1 >= mdArrayObj._upperBound1))
                 throw new IndexOutOfRangeException();
             if ((index2 < 0) || (index2 >= mdArrayObj._upperBound2))
@@ -195,37 +201,33 @@ namespace System
                 throw new IndexOutOfRangeException();
 
             int index = (((((index1 * mdArrayObj._upperBound2) + index2) * mdArrayObj._upperBound3) + index3) * mdArrayObj._upperBound4) + index4;
-
-
-            int offset = ByReference<T>.SizeOfT() * index + 4 * 8;
-            ByReference<int> _upperBound1Ref = ByReference<int>.FromRef(ref mdArrayObj._upperBound1);
-            return ByReference<int>.Cast<T>(ByReference<int>.AddRaw(_upperBound1Ref, offset));
+            return ref Unsafe.Add(ref mdArrayObj._data, index);
         }
 
-        public static ByReference<T> Address(T[,,,] array, int index1, int index2, int index3, int index4)
+        public static ref T Address(T[,,,] array, int index1, int index2, int index3, int index4)
         {
-            ByReference<T> returnValue = InternalAddress(array, index1, index2, index3, index4);
-            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4);
+            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
             {
-                if (!typeof(T).TypeHandle.Equals(new RuntimeTypeHandle(array.EETypePtr.ArrayElementType)))
+                if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
             }
-            return returnValue;
+            return ref returnValue;
         }
 
         public static T Get(T[,,,] array, int index1, int index2, int index3, int index4)
         {
-            return ByReference<T>.Load(InternalAddress(array, index1, index2, index3, index4));
+            return InternalAddress(array, index1, index2, index3, index4);
         }
 
         public static void Set(T[,,,] array, int index1, int index2, int index3, int index4, T value)
         {
-            if (!typeof(T).TypeHandle.ToEETypePtr().IsValueType)
+            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
             {
                 RuntimeImports.RhCheckArrayStore(array, (object)value);
             }
 
-            ByReference<T>.Store(InternalAddress(array, index1, index2, index3, index4), value);
+            InternalAddress(array, index1, index2, index3, index4) = value;
         }
     }
 }

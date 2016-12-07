@@ -14,6 +14,6 @@ namespace System.Runtime.InteropServices
         Cdecl = 2,
         StdCall = 3,
         ThisCall = 4,
-        //        FastCall        = 5,
+        FastCall = 5,
     }
 }

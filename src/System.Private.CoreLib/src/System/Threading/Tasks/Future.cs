@@ -12,16 +12,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Collections.Generic;
-using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.ExceptionServices;
-using System.Security;
-using System.Threading;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 
 // Disable the "reference to volatile field not treated as volatile" error.
@@ -352,11 +344,11 @@ namespace System.Threading.Tasks
         {
             if (function == null)
             {
-                throw new ArgumentNullException("function");
+                throw new ArgumentNullException(nameof(function));
             }
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                throw new ArgumentNullException(nameof(scheduler));
             }
 
             // Create and schedule the future.
@@ -372,11 +364,11 @@ namespace System.Threading.Tasks
         {
             if (function == null)
             {
-                throw new ArgumentNullException("function");
+                throw new ArgumentNullException(nameof(function));
             }
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                throw new ArgumentNullException(nameof(scheduler));
             }
 
             // Create and schedule the future.
@@ -400,7 +392,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Delegate d = (Delegate)m_action;
+                Delegate d = m_action;
                 if (d == null)
                     return "{null}";
                 IntPtr fptr = d.GetNativeFunctionPointer();
@@ -414,7 +406,7 @@ namespace System.Threading.Tasks
         internal bool TrySetResult(TResult result)
         {
             if (IsCompleted) return false;
-            Contract.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
+            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
             // has been made, (2) The result has not already been set, (3) An exception has not previously 
@@ -454,7 +446,7 @@ namespace System.Threading.Tasks
         // the task, avoiding expensive completion paths, before the task is actually given to anyone.
         internal void DangerousSetResult(TResult result)
         {
-            Contract.Assert(!IsCompleted, "The promise must not yet be completed.");
+            Debug.Assert(!IsCompleted, "The promise must not yet be completed.");
 
             // If we have a parent, we need to notify it of the completion.  Take the slow path to handle that.
             if (m_parent != null)
@@ -462,7 +454,7 @@ namespace System.Threading.Tasks
                 bool success = TrySetResult(result);
 
                 // Nobody else has had a chance to complete this Task yet, so we should succeed.
-                Contract.Assert(success);
+                Debug.Assert(success);
             }
             else
             {
@@ -496,7 +488,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Contract.Assert(!IsWaitNotificationEnabledOrNotRanToCompletion,
+                Debug.Assert(!IsWaitNotificationEnabledOrNotRanToCompletion,
                     "Should only be used when the task completed successfully and there's no wait notification enabled");
                 return m_result;
             }
@@ -515,7 +507,7 @@ namespace System.Threading.Tasks
             if (!IsRanToCompletion) ThrowIfExceptional(includeTaskCanceledExceptions: true);
 
             // We shouldn't be here if the result has not been set.
-            Contract.Assert(IsRanToCompletion, "Task<T>.Result getter: Expected result to have been set.");
+            Debug.Assert(IsRanToCompletion, "Task<T>.Result getter: Expected result to have been set.");
 
             return m_result;
         }
@@ -546,7 +538,7 @@ namespace System.Threading.Tasks
         internal override void InnerInvoke()
         {
             // Invoke the delegate
-            Contract.Assert(m_action != null);
+            Debug.Assert(m_action != null);
             var func = m_action as Func<TResult>;
             if (func != null)
             {
@@ -559,7 +551,7 @@ namespace System.Threading.Tasks
                 m_result = funcWithState(m_stateObject);
                 return;
             }
-            Contract.Assert(false, "Invalid m_action in Task<TResult>");
+            Debug.Assert(false, "Invalid m_action in Task<TResult>");
         }
 
         #region Await Support
@@ -745,12 +737,12 @@ namespace System.Threading.Tasks
         {
             if (continuationAction == null)
             {
-                throw new ArgumentNullException("continuationAction");
+                throw new ArgumentNullException(nameof(continuationAction));
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                throw new ArgumentNullException(nameof(scheduler));
             }
 
             TaskCreationOptions creationOptions;
@@ -938,12 +930,12 @@ namespace System.Threading.Tasks
         {
             if (continuationAction == null)
             {
-                throw new ArgumentNullException("continuationAction");
+                throw new ArgumentNullException(nameof(continuationAction));
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                throw new ArgumentNullException(nameof(scheduler));
             }
 
             TaskCreationOptions creationOptions;
@@ -1154,12 +1146,12 @@ namespace System.Threading.Tasks
         {
             if (continuationFunction == null)
             {
-                throw new ArgumentNullException("continuationFunction");
+                throw new ArgumentNullException(nameof(continuationFunction));
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                throw new ArgumentNullException(nameof(scheduler));
             }
 
             TaskCreationOptions creationOptions;
@@ -1377,12 +1369,12 @@ namespace System.Threading.Tasks
         {
             if (continuationFunction == null)
             {
-                throw new ArgumentNullException("continuationFunction");
+                throw new ArgumentNullException(nameof(continuationFunction));
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException("scheduler");
+                throw new ArgumentNullException(nameof(scheduler));
             }
 
             TaskCreationOptions creationOptions;

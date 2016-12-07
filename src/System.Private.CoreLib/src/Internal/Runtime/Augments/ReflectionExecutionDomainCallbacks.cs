@@ -25,24 +25,12 @@ namespace Internal.Runtime.Augments
     [CLSCompliant(false)]
     public abstract class ReflectionExecutionDomainCallbacks
     {
-        /// <summary>
-        /// Register reflection module. Not thread safe with respect to reflection runtime.
-        /// </summary>
-        /// <param name="moduleHandle">Handle of module to register</param>
-        public abstract void RegisterModule(IntPtr moduleHandle);
-
         // Api's that are exposed in System.Runtime but are really reflection apis.
-        public abstract Object ActivatorCreateInstance(Type type, Object[] args);
-        public abstract Type GetType(String typeName, bool throwOnError, bool ignoreCase);
-
-        public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
-        public abstract IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator);
+        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, string defaultAssembly);
 
         public abstract IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
-
-        public abstract bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name);
 
         //=======================================================================================
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
@@ -52,10 +40,8 @@ namespace Internal.Runtime.Augments
         public abstract Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank);
         public abstract Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle);
+        public abstract Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle);
-
-        // Generic Virtual Method Support
-        public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref IntPtr methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
 
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);

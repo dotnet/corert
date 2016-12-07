@@ -2,18 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.Augments;
-
+using System.Runtime.InteropServices;
+using System.Threading;
 using Internal.DeveloperExperience;
+using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -24,7 +20,7 @@ namespace System
         public static readonly OutOfMemoryException Instance = new OutOfMemoryException(message: null);  // Cannot call the nullary constructor as that triggers non-trivial resource manager logic.
     }
 
-    internal class RuntimeExceptionHelpers
+    public class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
@@ -119,7 +115,7 @@ namespace System
                 case RhFailFastReason.IllegalNativeCallableEntry:
                     return "Invalid Program: attempted to call a NativeCallable method from runtime-typesafe code.";
                 case RhFailFastReason.PN_UnhandledException:
-                    return "Unhandled exception: a managed exception was not handled before reaching unmanaged code";
+                    return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
                 case RhFailFastReason.PN_UnhandledExceptionFromPInvoke:
                     return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition.";
                 default:
@@ -147,10 +143,14 @@ namespace System
             // (in APPX scenarios, this one will get overwritten by the one with the CCW pointer)
             GenerateExceptionInformationForDump(exception, IntPtr.Zero);
 
+#if ENABLE_WINRT
             // If possible report the exception to GEH, if not fail fast.
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
             if (callbacks == null || !callbacks.ReportUnhandledError(exception))
                 FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+#else
+            FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+#endif
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
@@ -166,21 +166,26 @@ namespace System
                 if (!SafeToPerformRichExceptionSupport)
                     return;
 
-                if ((reason == RhFailFastReason.PN_UnhandledException) &&
-                    (exception != null) &&
-                    !(exception is OutOfMemoryException))
+                // Avoid complex processing and allocations if we are already in failfast or out of memory.
+                // We do not set InFailFast.Value here, because we want rich diagnostics in the FailFast
+                // call below and reentrancy is not possible for this method (all exceptions are ignored).
+                bool minimalFailFast = InFailFast.Value || (exception is OutOfMemoryException);
+                string failFastMessage = "";
+
+                if (!minimalFailFast)
                 {
-                    Debug.WriteLine("Unhandled Exception: " + exception.ToString());
+                    if ((reason == RhFailFastReason.PN_UnhandledException) && (exception != null))
+                    {
+                        Debug.WriteLine("Unhandled Exception: " + exception.ToString());
+                    }
+
+                    failFastMessage = String.Format("Runtime-generated FailFast: ({0}): {1}{2}",
+                        reason.ToString(),  // Explicit call to ToString() to avoid MissingMetadataException inside String.Format()
+                        GetStringForFailFastReason(reason),
+                        exception != null ? " [exception object available]" : "");
                 }
 
-                FailFast(String.Format("Runtime-generated FailFast: ({0}): {1}{2}",
-                                       reason.ToString(),  // Explicit call to ToString() to avoid MissingMetadataException inside String.Format().
-                                       GetStringForFailFastReason(reason),
-                                       exception != null ? " [exception object available]" : ""),
-                         exception,
-                         reason,
-                         pExAddress,
-                         pExContext);
+                FailFast(failFastMessage, exception, reason, pExAddress, pExContext);
             }
             catch
             {
@@ -193,14 +198,14 @@ namespace System
         {
             // If this a recursive call to FailFast, avoid all unnecessary and complex actitivy the second time around to avoid the recursion 
             // that got us here the first time (Some judgement is required as to what activity is "unnecessary and complex".)
-            bool minimalFailFast = s_inFailFast || (exception is OutOfMemoryException);
-            s_inFailFast = true;
+            bool minimalFailFast = InFailFast.Value || (exception is OutOfMemoryException);
+            InFailFast.Value = true;
 
             if (!minimalFailFast)
             {
                 String output = (exception != null) ?
                     "Unhandled Exception: " + exception.ToString()
-                  : message;
+                    : message;
                 DeveloperExperience.Default.WriteLine(output);
 
                 GenerateExceptionInformationForDump(exception, IntPtr.Zero);
@@ -226,10 +231,15 @@ namespace System
             Interop.mincore.RaiseFailFastException(errorCode, pExAddress, pExContext);
         }
 
-        // This boolean is used to stop runaway FailFast recursions. Though this is technically a concurrently set field, it only gets set during 
-        // fatal process shutdowns and it's only purpose is a reasonable-case effort to make a bad situation a little less bad.
-        // Trying to use locks or other concurrent access apis would actually defeat the purpose of making FailFast as robust as possible.
-        private static bool s_inFailFast;
+        // Use a nested class to avoid running the class constructor of the outer class when
+        // accessing this flag.
+        private static class InFailFast
+        {
+            // This boolean is used to stop runaway FailFast recursions. Though this is technically a concurrently set field, it only gets set during 
+            // fatal process shutdowns and it's only purpose is a reasonable-case effort to make a bad situation a little less bad.
+            // Trying to use locks or other concurrent access apis would actually defeat the purpose of making FailFast as robust as possible.
+            public static bool Value;
+        }
 
 #pragma warning disable 414 // field is assigned, but never used -- This is because C# doesn't realize that we
         //                                      copy the field into a buffer.
@@ -575,13 +585,13 @@ namespace System
         }
 
         private static GCHandle s_ExceptionInfoBufferPinningHandle;
-        private static object s_ExceptionInfoBufferLock = new object();
+        private static Lock s_ExceptionInfoBufferLock = new Lock();
 
         private unsafe static void UpdateErrorReportBuffer(byte[] finalBuffer)
         {
-            fixed (byte* pBuffer = finalBuffer)
+            using (LockHolder.Hold(s_ExceptionInfoBufferLock))
             {
-                lock (s_ExceptionInfoBufferLock)
+                fixed (byte* pBuffer = finalBuffer)
                 {
                     byte* pPrevBuffer = (byte*)RuntimeImports.RhSetErrorInfoBuffer(pBuffer);
                     Debug.Assert(s_ExceptionInfoBufferPinningHandle.IsAllocated == (pPrevBuffer != null));

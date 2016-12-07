@@ -114,6 +114,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetLastGCDuration")]
         internal static extern long RhGetLastGCDuration(int generation);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
+        internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpShutdown")]
+        internal static extern void RhpShutdown();
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
@@ -321,8 +329,28 @@ namespace System.Runtime
         internal static unsafe extern IntPtr RhGetGcStaticFieldData(EETypePtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhAllocateThunksFromTemplate")]
-        internal static extern IntPtr RhAllocateThunksFromTemplate(IntPtr moduleHandle, int templateRva, int templateSize);
+        [RuntimeImport(RuntimeLibrary, "RhCreateThunksHeap")]
+        internal static extern object RhCreateThunksHeap(IntPtr commonStubAddress);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhAllocateThunk")]
+        internal static extern IntPtr RhAllocateThunk(object thunksHeap);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhFreeThunk")]
+        internal static extern void RhFreeThunk(object thunksHeap, IntPtr thunkAddress);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhSetThunkData")]
+        internal static extern void RhSetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhTryGetThunkData")]
+        internal static extern bool RhTryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetThunkSize")]
+        internal static extern int RhGetThunkSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadLocalStorageForDynamicType")]
@@ -461,6 +489,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCurrentThreadStackTrace")]
         internal static extern int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetCurrentThreadStackBounds")]
+        internal static extern void RhGetCurrentThreadStackBounds(out IntPtr pStackLow, out IntPtr pStackHigh);
+
         // Functions involved in thunks from managed to managed functions (Universal transition transitions 
         // from an arbitrary method call into a defined function, and CallDescrWorker goes the other way.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -510,6 +542,30 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhDisableConservativeReportingRegion")]
         internal static extern unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc);
+
+        //
+        // Strong name helpers
+        //
+        internal static byte[] ConvertPublicKeyToPublicKeyToken(byte[] publicKey)
+        {
+            const int PUBLIC_KEY_TOKEN_LEN = 8;
+            byte[] publicKeyToken = new byte[PUBLIC_KEY_TOKEN_LEN];
+            unsafe
+            {
+                fixed (byte* pPublicKey = publicKey)
+                {
+                    fixed (byte* pPublicKeyToken = publicKeyToken)
+                    {
+                        RhConvertPublicKeyToPublicKeyToken(pPublicKey, publicKey.Length, pPublicKeyToken, publicKeyToken.Length);
+                    }
+                }
+            }
+            return publicKeyToken;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhConvertPublicKeyToPublicKeyToken")]
+        private extern static unsafe void RhConvertPublicKeyToPublicKeyToken(byte* pbPublicKey, int cbPublicKey, byte* pbPublicKeyTokenOut, int cbPublicKeyTokenOut);
 
         //
         // ETW helpers.

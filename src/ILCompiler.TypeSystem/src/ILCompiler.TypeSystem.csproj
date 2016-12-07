@@ -29,6 +29,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\FunctionPointerType.Canon.cs">
+      <Link>TypeSystem\Canon\FunctionPointerType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\GenericParameterDesc.Canon.cs">
+      <Link>TypeSystem\Canon\GenericParameterDesc.Canon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs">
       <Link>TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs</Link>
     </Compile>
@@ -71,14 +77,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\CachingVirtualMethodEnumerationAlgorithm.cs">
-      <Link>TypeSystem\Common\CachingVirtualMethodEnumerationAlgorithm.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
       <Link>TypeSystem\Common\ConstructedTypeRewritingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\FunctionPointerType.cs">
+      <Link>TypeSystem\Common\FunctionPointerType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>TypeSystem\Common\IAssemblyDesc.cs</Link>
@@ -86,11 +92,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\Instantiation.cs">
       <Link>TypeSystem\Common\Instantiation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs">
-      <Link>TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>TypeSystem\Common\ModuleDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemEntity.cs">
+      <Link>TypeSystem\Common\TypeSystemEntity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemException.cs">
+      <Link>TypeSystem\Common\TypeSystemException.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
@@ -118,6 +127,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.cs">
       <Link>TypeSystem\Common\GenericParameterDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
+      <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldForInstantiatedType.cs">
       <Link>TypeSystem\Common\FieldForInstantiatedType.cs</Link>
@@ -197,9 +209,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
       <Link>Utilities\TypeNameFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs">
-      <Link>TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs">
       <Link>TypeSystem\Common\WellKnownType.cs</Link>
     </Compile>
@@ -235,9 +244,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
       <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Canon.cs">
-      <Link>Ecma\EcmaGenericParameter.Canon.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
       <Link>Ecma\EcmaModule.Symbols.cs</Link>
@@ -320,11 +326,11 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\NoMetadata\NoMetadataType.cs">
-      <Link>NoMetadata\NoMetadataType.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs</Link>

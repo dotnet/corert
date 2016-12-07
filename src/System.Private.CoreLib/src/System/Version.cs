@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using NumberStyles = System.Globalization.NumberStyles;
 
 namespace System
 {
@@ -18,24 +18,24 @@ namespace System
     public sealed class Version : IComparable, IComparable<Version>, IEquatable<Version>, ICloneable
     {
         // AssemblyName depends on the order staying the same
-        private int _Major;
-        private int _Minor;
-        private int _Build = -1;
-        private int _Revision = -1;
+        private readonly int _Major;
+        private readonly int _Minor;
+        private readonly int _Build = -1;
+        private readonly int _Revision = -1;
 
         public Version(int major, int minor, int build, int revision)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException("major", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException("minor", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
 
             if (build < 0)
-                throw new ArgumentOutOfRangeException("build", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
 
             if (revision < 0)
-                throw new ArgumentOutOfRangeException("revision", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(revision), SR.ArgumentOutOfRange_Version);
             Contract.EndContractBlock();
 
             _Major = major;
@@ -47,13 +47,13 @@ namespace System
         public Version(int major, int minor, int build)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException("major", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException("minor", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
 
             if (build < 0)
-                throw new ArgumentOutOfRangeException("build", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
 
             Contract.EndContractBlock();
 
@@ -65,10 +65,10 @@ namespace System
         public Version(int major, int minor)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException("major", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException("minor", SR.ArgumentOutOfRange_Version);
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
             Contract.EndContractBlock();
 
             _Major = major;
@@ -84,9 +84,19 @@ namespace System
             _Revision = v.Revision;
         }
 
+        private Version(Version version)
+        {
+            Debug.Assert(version != null);
+
+            _Major = version._Major;
+            _Minor = version._Minor;
+            _Build = version._Build;
+            _Revision = version._Revision;
+        }
+
         public object Clone()
         {
-            return new Version(_Major, _Minor, _Build, _Revision);
+            return new Version(this);
         }
 
         // Properties for setting and getting version numbers
@@ -133,94 +143,34 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeVersion);
             }
 
-            if (_Major != v._Major)
-                if (_Major > v._Major)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Minor != v._Minor)
-                if (_Minor > v._Minor)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Build != v._Build)
-                if (_Build > v._Build)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Revision != v._Revision)
-                if (_Revision > v._Revision)
-                    return 1;
-                else
-                    return -1;
-
-            return 0;
+            return CompareTo(v);
         }
 
         public int CompareTo(Version value)
         {
-            if (value == null)
-                return 1;
-
-            if (_Major != value._Major)
-                if (_Major > value._Major)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Minor != value._Minor)
-                if (_Minor > value._Minor)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Build != value._Build)
-                if (_Build > value._Build)
-                    return 1;
-                else
-                    return -1;
-
-            if (_Revision != value._Revision)
-                if (_Revision > value._Revision)
-                    return 1;
-                else
-                    return -1;
-
-            return 0;
+            return
+                object.ReferenceEquals(value, this) ? 0 :
+                object.ReferenceEquals(value, null) ? 1 :
+                _Major != value._Major ? (_Major > value._Major ? 1 : -1) :
+                _Minor != value._Minor ? (_Minor > value._Minor ? 1 : -1) :
+                _Build != value._Build ? (_Build > value._Build ? 1 : -1) :
+                _Revision != value._Revision ? (_Revision > value._Revision ? 1 : -1) :
+                0;
         }
 
         public override bool Equals(Object obj)
         {
-            Version v = obj as Version;
-            if (v == null)
-                return false;
-
-            // check that major, minor, build & revision numbers match
-            if ((_Major != v._Major) ||
-                (_Minor != v._Minor) ||
-                (_Build != v._Build) ||
-                (_Revision != v._Revision))
-                return false;
-
-            return true;
+            return Equals(obj as Version);
         }
 
         public bool Equals(Version obj)
         {
-            if (obj == null)
-                return false;
-
-            // check that major, minor, build & revision numbers match
-            if ((_Major != obj._Major) ||
-                (_Minor != obj._Minor) ||
-                (_Build != obj._Build) ||
-                (_Revision != obj._Revision))
-                return false;
-
-            return true;
+            return object.ReferenceEquals(obj, this) ||
+                (!object.ReferenceEquals(obj, null) &&
+                _Major == obj._Major &&
+                _Minor == obj._Minor &&
+                _Build == obj._Build &&
+                _Revision == obj._Revision);
         }
 
         public override int GetHashCode()
@@ -257,17 +207,17 @@ namespace System
                     return (String.Concat(FormatComponent(_Major), ".", FormatComponent(_Minor)));
                 default:
                     if (_Build == -1)
-                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "2"), "fieldCount");
+                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "2"), nameof(fieldCount));
                     if (fieldCount == 3)
                         return (FormatComponent(_Major) + "." + FormatComponent(_Minor) + "." + FormatComponent(_Build));
 
                     if (_Revision == -1)
-                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "3"), "fieldCount");
+                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "3"), nameof(fieldCount));
 
                     if (fieldCount == 4)
                         return (FormatComponent(Major) + "." + FormatComponent(_Minor) + "." + FormatComponent(_Build) + "." + FormatComponent(_Revision));
 
-                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), "fieldCount");
+                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), nameof(fieldCount));
             }
         }
 
@@ -275,12 +225,12 @@ namespace System
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Contract.EndContractBlock();
 
             VersionResult r = new VersionResult();
-            r.Init("input", true);
+            r.Init(nameof(input), true);
             if (!TryParseVersion(input, ref r))
             {
                 throw r.GetVersionParseException();
@@ -291,7 +241,7 @@ namespace System
         public static bool TryParse(string input, out Version result)
         {
             VersionResult r = new VersionResult();
-            r.Init("input", false);
+            r.Init(nameof(input), false);
             bool b = TryParseVersion(input, ref r);
             result = r.m_parsedVersion;
             return b;
@@ -315,12 +265,12 @@ namespace System
                 return false;
             }
 
-            if (!TryParseComponent(parsedComponents[0], "version", ref result, out major))
+            if (!TryParseComponent(parsedComponents[0], nameof(version), ref result, out major))
             {
                 return false;
             }
 
-            if (!TryParseComponent(parsedComponents[1], "version", ref result, out minor))
+            if (!TryParseComponent(parsedComponents[1], nameof(version), ref result, out minor))
             {
                 return false;
             }
@@ -404,7 +354,7 @@ namespace System
         public static bool operator <(Version v1, Version v2)
         {
             if ((Object)v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) < 0);
         }
@@ -412,7 +362,7 @@ namespace System
         public static bool operator <=(Version v1, Version v2)
         {
             if ((Object)v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) <= 0);
         }
@@ -488,10 +438,10 @@ namespace System
                         {
                             return e;
                         }
-                        Contract.Assert(false, "Int32.Parse() did not throw exception but TryParse failed: " + m_exceptionArgument);
+                        Debug.Assert(false, "Int32.Parse() did not throw exception but TryParse failed: " + m_exceptionArgument);
                         return new FormatException(SR.Format_InvalidString);
                     default:
-                        Contract.Assert(false, "Unmatched case in Version.GetVersionParseException() for value: " + m_failure);
+                        Debug.Assert(false, "Unmatched case in Version.GetVersionParseException() for value: " + m_failure);
                         return new ArgumentException(SR.Arg_VersionString);
                 }
             }

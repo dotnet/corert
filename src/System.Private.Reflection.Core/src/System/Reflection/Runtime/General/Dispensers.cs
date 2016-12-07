@@ -2,24 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Dispensers;
-using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.PropertyInfos;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
 
 //=================================================================================================================
 // This file collects the various chokepoints that create the various Runtime*Info objects. This allows
@@ -34,8 +28,11 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     // Assemblies (maps 1-1 with a MetadataReader/ScopeDefinitionHandle.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeAssembly
+    internal partial class RuntimeAssembly
     {
+        /// <summary>
+        /// Returns non-null or throws.
+        /// </summary>
         internal static RuntimeAssembly GetRuntimeAssembly(RuntimeAssemblyName assemblyRefName)
         {
             RuntimeAssembly result;
@@ -45,9 +42,17 @@ namespace System.Reflection.Runtime.Assemblies
             return result;
         }
 
+        /// <summary>
+        /// Returns null if no assembly matches the assemblyRefName. Throws for other error cases.
+        /// </summary>
+        internal static RuntimeAssembly GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
+        {
+            return s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+        }
+
         internal static Exception TryGetRuntimeAssembly(RuntimeAssemblyName assemblyRefName, out RuntimeAssembly result)
         {
-            result = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            result = GetRuntimeAssemblyIfExists(assemblyRefName);
             if (result != null)
                 return null;
             else
@@ -61,83 +66,27 @@ namespace System.Reflection.Runtime.Assemblies
                 {
                     AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
                     AssemblyName convertedAssemblyRefName = assemblyRefName.ToAssemblyName();
-                    MetadataReader reader;
-                    ScopeDefinitionHandle scope;
+                    AssemblyBindResult bindResult;
                     Exception exception;
-                    IEnumerable<QScopeDefinition> overflowScopes;
-                    if (!binder.Bind(convertedAssemblyRefName, out reader, out scope, out overflowScopes, out exception))
+                    if (!binder.Bind(convertedAssemblyRefName, out bindResult, out exception))
                         return null;
-                    return GetRuntimeAssembly(reader, scope, overflowScopes);
+                    RuntimeAssembly result = null;
+
+                    GetNativeFormatRuntimeAssembly(bindResult, ref result);
+                    if (result != null)
+                        return result;
+
+                    GetEcmaRuntimeAssembly(bindResult, ref result);
+                    if (result != null)
+                        return result;
+
+                    return null;
                 }
         );
 
-
-        private static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflows)
-        {
-            return s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope, overflows));
-        }
-
-        private static readonly Dispenser<RuntimeAssemblyKey, RuntimeAssembly> s_scopeToAssemblyDispenser =
-            DispenserFactory.CreateDispenserV<RuntimeAssemblyKey, RuntimeAssembly>(
-                DispenserScenario.Scope_Assembly,
-                delegate (RuntimeAssemblyKey qScopeDefinition)
-                {
-                    return new RuntimeAssembly(qScopeDefinition.Reader, qScopeDefinition.Handle, qScopeDefinition.Overflows);
-                }
-        );
-
-        //-----------------------------------------------------------------------------------------------------------
-        // Captures a qualified scope (a reader plus a handle) representing the canonical definition of an assembly,
-        // plus a set of "overflow" scopes representing additional pieces of the assembly.
-        //-----------------------------------------------------------------------------------------------------------
-        private struct RuntimeAssemblyKey : IEquatable<RuntimeAssemblyKey>
-        {
-            public RuntimeAssemblyKey(MetadataReader reader, ScopeDefinitionHandle handle, IEnumerable<QScopeDefinition> overflows)
-            {
-                _reader = reader;
-                _handle = handle;
-                _overflows = overflows;
-            }
-
-            public MetadataReader Reader { get { return _reader; } }
-            public ScopeDefinitionHandle Handle { get { return _handle; } }
-            public IEnumerable<QScopeDefinition> Overflows { get { return _overflows; } }
-            public ScopeDefinition ScopeDefinition
-            {
-                get
-                {
-                    return _handle.GetScopeDefinition(_reader);
-                }
-            }
-
-            public override bool Equals(Object obj)
-            {
-                if (!(obj is RuntimeAssemblyKey))
-                    return false;
-                return Equals((RuntimeAssemblyKey)obj);
-            }
-
-
-            public bool Equals(RuntimeAssemblyKey other)
-            {
-                // Equality depends only on the canonical definition of an assembly, not
-                // the overflows.
-                if (!(_reader == other._reader))
-                    return false;
-                if (!(_handle.Equals(other._handle)))
-                    return false;
-                return true;
-            }
-
-            public override int GetHashCode()
-            {
-                return _handle.GetHashCode();
-            }
-
-            private readonly MetadataReader _reader;
-            private readonly ScopeDefinitionHandle _handle;
-            private readonly IEnumerable<QScopeDefinition> _overflows;
-        }
+        // Use C# partial method feature to avoid complex #if logic, whichever code files are included will drive behavior
+       static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
+       static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
     }
 }
 
@@ -156,30 +105,16 @@ namespace System.Reflection.Runtime.Modules
     }
 }
 
-namespace System.Reflection.Runtime.FieldInfos
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // FieldInfos
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeFieldInfo
-    {
-        internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
-        {
-            return new RuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo).WithDebugName();
-        }
-    }
-}
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //-----------------------------------------------------------------------------------------------------------
     // ConstructorInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimePlainConstructorInfo : RuntimeConstructorInfo
+    internal sealed partial class RuntimePlainConstructorInfo<TRuntimeMethodCommon> : RuntimeConstructorInfo
     {
-        internal static RuntimePlainConstructorInfo GetRuntimePlainConstructorInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimePlainConstructorInfo<TRuntimeMethodCommon> GetRuntimePlainConstructorInfo(TRuntimeMethodCommon common)
         {
-            return new RuntimePlainConstructorInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+            return new RuntimePlainConstructorInfo<TRuntimeMethodCommon>(common);
         }
     }
 
@@ -188,20 +123,20 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo
     {
-        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
-            return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypesAndReturn, options, invoker);
+            return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypes, options, invoker);
         }
     }
 
     //-----------------------------------------------------------------------------------------------------------
     // MethodInfos for method definitions (i.e. Foo.Moo() or Foo.Moo<>() but not Foo.Moo<int>)
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNamedMethodInfo : RuntimeMethodInfo
+    internal sealed partial class RuntimeNamedMethodInfo<TRuntimeMethodCommon>
     {
-        internal static RuntimeNamedMethodInfo GetRuntimeNamedMethodInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        internal static RuntimeNamedMethodInfo<TRuntimeMethodCommon> GetRuntimeNamedMethodInfo(TRuntimeMethodCommon common, RuntimeTypeInfo reflectedType)
         {
-            RuntimeNamedMethodInfo method = new RuntimeNamedMethodInfo(methodHandle, definingTypeInfo, contextTypeInfo);
+            RuntimeNamedMethodInfo<TRuntimeMethodCommon> method = new RuntimeNamedMethodInfo<TRuntimeMethodCommon>(common, reflectedType);
             method.WithDebugName();
             return method;
         }
@@ -223,37 +158,9 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo
     {
-        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
-            return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypesAndReturn, options, invoker).WithDebugName();
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.PropertyInfos
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // PropertyInfos
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimePropertyInfo
-    {
-        internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
-        {
-            return new RuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo).WithDebugName();
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.EventInfos
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // EventInfos
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeEventInfo
-    {
-        internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
-        {
-            return new RuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo).WithDebugName();
+            return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypes, returnType, options, invoker).WithDebugName();
         }
     }
 }
@@ -265,20 +172,9 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
         {
-            return new RuntimeThinMethodParameterInfo(member, position, reader, typeHandle, typeContext);
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos for MethodBase objects with Parameter metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
-    {
-        internal static RuntimeFatMethodParameterInfo GetRuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-        {
-            return new RuntimeFatMethodParameterInfo(member, methodHandle, position, parameterHandle, reader, typeHandle, typeContext);
+            return new RuntimeThinMethodParameterInfo(member, position, qualifiedParameterType, typeContext);
         }
     }
 
@@ -304,130 +200,3 @@ namespace System.Reflection.Runtime.ParameterInfos
         }
     }
 }
-
-namespace System.Reflection.Runtime.CustomAttributes
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // CustomAttributeData objects returned by various CustomAttributes properties.
-    //-----------------------------------------------------------------------------------------------------------
-    internal abstract partial class RuntimeCustomAttributeData
-    {
-        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, IEnumerable<CustomAttributeHandle> customAttributeHandles)
-        {
-            foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
-                yield return GetCustomAttributeData(reader, customAttributeHandle);
-        }
-
-        private static CustomAttributeData GetCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
-        {
-            return new RuntimeNormalCustomAttributeData(reader, customAttributeHandle);
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.TypeParsing
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // Name looks of namespace types. (Affects both type reference resolution and Type.GetType() calls.)
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NamespaceTypeName : NamedTypeName
-    {
-        public sealed override Exception TryResolve(RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
-        {
-            result = s_runtimeNamespaceTypeByNameDispenser.GetOrAdd(new NamespaceTypeNameKey(currentAssembly, this));
-            if (result != null)
-                return null;
-            if (!ignoreCase)
-                return new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, this.ToString(), currentAssembly.FullName));
-
-            return TryResolveCaseInsensitive(currentAssembly, out result);
-        }
-
-        private static readonly Dispenser<NamespaceTypeNameKey, RuntimeTypeInfo> s_runtimeNamespaceTypeByNameDispenser =
-            DispenserFactory.CreateDispenserV<NamespaceTypeNameKey, RuntimeTypeInfo>(
-                DispenserScenario.AssemblyAndNamespaceTypeName_Type,
-                delegate (NamespaceTypeNameKey key)
-                {
-                    RuntimeTypeInfo result;
-                    Exception typeLoadException = key.NamespaceTypeName.UncachedTryResolveCaseSensitive(key.RuntimeAssembly, out result);
-                    if (typeLoadException != null)
-                        return null;
-                    else
-                        return result;
-                }
-            );
-
-        private static LowLevelDictionary<String, QHandle> GetCaseInsensitiveTypeDictionary(RuntimeAssembly assembly)
-        {
-            return s_caseInsensitiveTypeDictionaryDispenser.GetOrAdd(assembly);
-        }
-
-        private static readonly Dispenser<RuntimeAssembly, LowLevelDictionary<String, QHandle>> s_caseInsensitiveTypeDictionaryDispenser =
-            DispenserFactory.CreateDispenserV<RuntimeAssembly, LowLevelDictionary<String, QHandle>>(
-                DispenserScenario.RuntimeAssembly_CaseInsensitiveTypeDictionary,
-                CreateCaseInsensitiveTypeDictionary
-            );
-
-
-        //
-        // Hash key for resolving NamespaceTypeNames to RuntimeTypes.
-        //
-        private struct NamespaceTypeNameKey : IEquatable<NamespaceTypeNameKey>
-        {
-            public NamespaceTypeNameKey(RuntimeAssembly runtimeAssembly, NamespaceTypeName namespaceTypeName)
-            {
-                _runtimeAssembly = runtimeAssembly;
-                _namespaceTypeName = namespaceTypeName;
-            }
-
-            public RuntimeAssembly RuntimeAssembly
-            {
-                get
-                {
-                    return _runtimeAssembly;
-                }
-            }
-
-            public NamespaceTypeName NamespaceTypeName
-            {
-                get
-                {
-                    return _namespaceTypeName;
-                }
-            }
-
-            public override bool Equals(Object obj)
-            {
-                if (!(obj is NamespaceTypeNameKey))
-                    return false;
-                return Equals((NamespaceTypeNameKey)obj);
-            }
-
-            public bool Equals(NamespaceTypeNameKey other)
-            {
-                if (!(_namespaceTypeName._name.Equals(other._namespaceTypeName._name)))
-                    return false;
-                if (!(_namespaceTypeName._namespaceParts.Length == other._namespaceTypeName._namespaceParts.Length))
-                    return false;
-                int count = _namespaceTypeName._namespaceParts.Length;
-                for (int i = 0; i < count; i++)
-                {
-                    if (!(_namespaceTypeName._namespaceParts[i] == other._namespaceTypeName._namespaceParts[i]))
-                        return false;
-                }
-                if (!(_runtimeAssembly.Equals(other._runtimeAssembly)))
-                    return false;
-                return true;
-            }
-
-            public override int GetHashCode()
-            {
-                return _namespaceTypeName._name.GetHashCode();
-            }
-
-            private readonly RuntimeAssembly _runtimeAssembly;
-            private readonly NamespaceTypeName _namespaceTypeName;
-        }
-    }
-}
-

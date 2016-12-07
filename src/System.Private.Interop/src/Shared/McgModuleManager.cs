@@ -38,7 +38,8 @@ namespace System.Runtime.InteropServices
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.McgModuleManager)]
     public static class McgModuleManager
     {
-        internal const int MAX_MODULES = 8;
+        internal const int NUM_BITS_FOR_MAX_MODULES = 3;
+        internal const int MAX_MODULES = 1 << NUM_BITS_FOR_MAX_MODULES;
 
         /// <summary>
         /// NOTE: Managed debugger depends on field name: "s_modules" and field type must be Array
@@ -47,21 +48,25 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static McgModule[] s_modules; // work around for multi-file cctor ordering issue: don't initialize in cctor, initialize lazily
         private static volatile int s_moduleCount;
-        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, McgInterfaceInfo> s_runtimeTypeHandleToMcgInterfaceInfoMap;
-        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, CCWTemplateInfo> s_runtimeTypeHandleToCCWTemplateInfoMap;
+        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToInterfaceIndexMap;
+        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToCCWTemplateIndexMap;
+        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToClassIndexMap;
+        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToCollectionIndexMap;
+        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToBoxingIndexMap;
 
         static McgModuleManager()
         {
+            UseDynamicInterop = false;
+            
             CCWLookupMap.InitializeStatics();
             ContextEntry.ContextEntryManager.InitializeStatics();
             ComObjectCache.InitializeStatics();
 
-            const int DefaultSize = 101; // small prime number to avoid resizing in start up code
-            s_runtimeTypeHandleToMcgInterfaceInfoMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, McgInterfaceInfo>(DefaultSize, new RuntimeTypeHandleComparer(), /* sync = */ true);
-            s_runtimeTypeHandleToCCWTemplateInfoMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, CCWTemplateInfo>(DefaultSize, new RuntimeTypeHandleComparer(), /* sync = */ true);
         }
 
         private static InternalModule s_internalModule;
+
+        public static bool UseDynamicInterop { get; set; }
 
         /// <summary>
         /// Register the module and add it into global module list
@@ -111,9 +116,101 @@ namespace System.Runtime.InteropServices
             s_moduleCount++;
         }
 
-        internal static McgModule GetModule(int moduleIndex)
+        private static void InsertDataIntoDictionary(Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> map, RuntimeTypeHandle typeHandle, int moduleIndex, int typeIndex)
         {
-            return s_modules[moduleIndex];
+            if (!typeHandle.Equals(McgModule.s_DependencyReductionTypeRemovedTypeHandle))
+            {
+                int index;
+                // TODO: Remove this check. Ideally there shouldn't be any duplicate types across all the modules, but today we do have them. When queried for
+                // type we return the one which resides in the module with highest priority.
+                if (!map.TryGetValue(typeHandle, out index))
+                {
+
+                    int totalIndex = (typeIndex << NUM_BITS_FOR_MAX_MODULES) | moduleIndex;
+                    map.Add(typeHandle, totalIndex);
+                }
+            }
+        }
+
+        public static void Initialize()
+        {
+            int totalInterfaces = 0;
+            int totalCCWTemplates = 0;
+            int totalClasses = 0;
+            int totalCollections = 0;
+            int totalBoxings = 0;
+            for (int moduleIndex = 0; moduleIndex < s_moduleCount; moduleIndex++)
+            {
+                totalInterfaces += s_modules[moduleIndex].GetInterfaceDataCount();
+                totalCCWTemplates += s_modules[moduleIndex].GetCCWTemplateDataCount();
+                totalClasses += s_modules[moduleIndex].GetClassDataCount();
+                totalCollections += s_modules[moduleIndex].GetCollectionDataCount();
+                totalBoxings += s_modules[moduleIndex].GetBoxingDataCount();
+            }
+
+            s_runtimeTypeHandleToInterfaceIndexMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int>(totalInterfaces, RuntimeTypeHandleComparer.Instance, /* sync = */ false);
+            s_runtimeTypeHandleToCCWTemplateIndexMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int>(totalCCWTemplates, RuntimeTypeHandleComparer.Instance, /* sync = */ false);
+            s_runtimeTypeHandleToClassIndexMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int>(totalClasses, RuntimeTypeHandleComparer.Instance, /* sync = */ false);
+            s_runtimeTypeHandleToCollectionIndexMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int>(totalCollections, RuntimeTypeHandleComparer.Instance, /* sync = */ false);
+            s_runtimeTypeHandleToBoxingIndexMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int>(totalBoxings, RuntimeTypeHandleComparer.Instance, /* sync = */ false);
+
+            for (int moduleIndex = 0; moduleIndex < s_moduleCount; moduleIndex++)
+            {
+                McgInterfaceData[] interfaceData = s_modules[moduleIndex].GetAllInterfaceData();
+                if (interfaceData != null)
+                {
+                    for (int typeIndex = 0; typeIndex < interfaceData.Length; typeIndex++)
+                    {
+                        InsertDataIntoDictionary(s_runtimeTypeHandleToInterfaceIndexMap, interfaceData[typeIndex].ItfType, moduleIndex, typeIndex);
+                    }
+                }
+
+                CCWTemplateData[] ccwTemplateData = s_modules[moduleIndex].GetAllCCWTemplateData();
+                if (ccwTemplateData != null)
+                {
+                    for (int typeIndex = 0; typeIndex < ccwTemplateData.Length; typeIndex++)
+                    {
+                        InsertDataIntoDictionary(s_runtimeTypeHandleToCCWTemplateIndexMap, ccwTemplateData[typeIndex].ClassType, moduleIndex, typeIndex);
+                    }
+                }
+
+                McgClassData[] classData = s_modules[moduleIndex].GetAllClassData();
+                if (classData != null)
+                {
+                    for (int typeIndex = 0; typeIndex < classData.Length; typeIndex++)
+                    {
+                        InsertDataIntoDictionary(s_runtimeTypeHandleToClassIndexMap, classData[typeIndex].ClassType, moduleIndex, typeIndex);
+                    }
+                }
+
+                McgCollectionData[] collectionData = s_modules[moduleIndex].GetAllCollectionData();
+                if (collectionData != null)
+                {
+                    for (int typeIndex = 0; typeIndex < collectionData.Length; typeIndex++)
+                    {
+                        InsertDataIntoDictionary(s_runtimeTypeHandleToCollectionIndexMap, collectionData[typeIndex].CollectionType, moduleIndex, typeIndex);
+                    }
+                }
+
+                McgBoxingData[] boxingData = s_modules[moduleIndex].GetAllBoxingData();
+                if (boxingData != null)
+                {
+                    for (int typeIndex = 0; typeIndex < boxingData.Length; typeIndex++)
+                    {
+                        InsertDataIntoDictionary(s_runtimeTypeHandleToBoxingIndexMap, boxingData[typeIndex].ManagedClassType, moduleIndex, typeIndex);
+                    }
+                }
+            }
+
+#if DEBUG
+            if (McgModuleManager.UseDynamicInterop)
+            {
+                for (int moduleIndex = 0; moduleIndex < s_moduleCount; moduleIndex++)
+                {
+                    s_modules[moduleIndex].VerifyWinRTGenericInterfaceGuids();
+                }
+            }
+#endif
         }
 
         /// <summary>
@@ -192,12 +289,25 @@ namespace System.Runtime.InteropServices
         {
             isWinRT = false;
 
-            for (int i = 0; i < s_moduleCount; ++i)
+            int moduleIndex, typeIndex;
+            string name;
+            if (GetIndicesForInterface(type, out moduleIndex, out typeIndex))
             {
-                string ret = s_modules[i].GetTypeName(type, ref isWinRT);
+                if (s_modules[moduleIndex].TryGetInterfaceTypeNameByIndex(typeIndex, out name))
+                {
+                    // WinRT interface or WinRT delegate
+                    isWinRT = s_modules[moduleIndex].GetInterfaceDataByIndex(typeIndex).IsIInspectableOrDelegate;
+                    return name;
+                }
+            }
 
-                if (ret != null)
-                    return ret;
+            if (GetIndicesForClass(type, out moduleIndex, out typeIndex))
+            {
+                if (s_modules[moduleIndex].TryGetClassTypeNameByIndex(typeIndex, out name))
+                {
+                    isWinRT = (s_modules[moduleIndex].GetClassDataByIndex(typeIndex).Flags & McgClassFlags.IsWinRT) != 0;
+                    return name;
+                }
             }
 
             return null;
@@ -252,94 +362,57 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal class RuntimeTypeHandleComparer : IEqualityComparer<RuntimeTypeHandle>
         {
-            //
-            // Calculates Hash code when RuntimeTypeHandle is an IntPtr(ProjectN)
-            //
-            private unsafe int GetHashCodeHelper(ref RuntimeTypeHandle handle)
-            {
-                IntPtr val;
-                fixed (RuntimeTypeHandle* pHandle = &handle)
-                {
-                    val = *(IntPtr*)pHandle;
-                }
-                return unchecked((int)(val.ToInt64()));
-            }
 
-            //
-            // Determines whether two types are equal when RuntimeTypeHandle is an IntPtr(ProjectN)
-            //
-            private unsafe bool EqualsHelper(ref RuntimeTypeHandle handle1, ref RuntimeTypeHandle handle2)
-            {
-                IntPtr val1, val2;
-                fixed (RuntimeTypeHandle* pHandle1 = &handle1, pHandle2 = &handle2)
-                {
-                    val1 = *(IntPtr*)pHandle1;
-                    val2 = *(IntPtr*)pHandle2;
-                }
-                return val1.Equals(val2);
-            }
+            public readonly static RuntimeTypeHandleComparer Instance = new RuntimeTypeHandleComparer();
 
             bool IEqualityComparer<RuntimeTypeHandle>.Equals(RuntimeTypeHandle handle1, RuntimeTypeHandle handle2)
             {
-                //
-                // Ideally, here we should use a symbol that identifies we are in ProjctN as in ProjectN RuntimeTypeHandle
-                // is an IntPtr. Since we don't have such symbol yet,  I am using ENABLE_WINRT which is synonymous to
-                // ProjectN for now. It may change in the future with CoreRT, in that case we may need to revisit this.
-                //
-#if ENABLE_WINRT
-                return EqualsHelper(ref handle1 , ref handle2);
-#else
                 return handle1.Equals(handle2);
-#endif
             }
 
             int IEqualityComparer<RuntimeTypeHandle>.GetHashCode(RuntimeTypeHandle obj)
             {
-                //
-                //  See the comment for Equals
-                //
-#if ENABLE_WINRT
-                return GetHashCodeHelper(ref obj);
-#else
                 return obj.GetHashCode();
-#endif
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static McgInterfaceInfo GetInterfaceInfoByHandle(RuntimeTypeHandle typeHnd)
+        private static bool GetIndicesFromMap(System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> map, RuntimeTypeHandle typeHandle, out int moduleIndex, out int typeIndex)
         {
-            McgInterfaceInfo interfaceInfo;
-
-            try
+            int totalIndex;
+            if (map.TryGetValue(typeHandle, out totalIndex))
             {
-                s_runtimeTypeHandleToMcgInterfaceInfoMap.LockAcquire();
-                if (!s_runtimeTypeHandleToMcgInterfaceInfoMap.TryGetValue(typeHnd, out interfaceInfo))
-                {
-                    interfaceInfo = GetInterfaceInfoByHandleInternal(typeHnd);
-                    s_runtimeTypeHandleToMcgInterfaceInfoMap.Add(typeHnd, interfaceInfo);
-                }
+                moduleIndex = totalIndex & (MAX_MODULES - 1);
+                typeIndex = totalIndex >> NUM_BITS_FOR_MAX_MODULES;
+                return true;
             }
-            finally
-            {
-                s_runtimeTypeHandleToMcgInterfaceInfoMap.LockRelease();
-            }
+            moduleIndex = -1;
+            typeIndex = -1;
+            return false;
 
-            return interfaceInfo;
+        }
+        internal static bool GetIndicesForInterface(RuntimeTypeHandle typeHandle, out int moduleIndex, out int interfaceIndex)
+        {
+            return GetIndicesFromMap(s_runtimeTypeHandleToInterfaceIndexMap, typeHandle, out moduleIndex, out interfaceIndex);
         }
 
-        private static McgInterfaceInfo GetInterfaceInfoByHandleInternal(RuntimeTypeHandle typeHnd)
+        internal static bool GetIndicesForClass(RuntimeTypeHandle typeHandle, out int moduleIndex, out int classIndex)
         {
-            int interfaceIndex;
-            for (int i = 0; i < s_moduleCount; ++i)
-            {
-                if (s_modules[i].TryLookupInterfaceType(typeHnd, out interfaceIndex))
-                {
-                    return new McgInterfaceInfo(i, interfaceIndex);
-                }
-            }
+            return GetIndicesFromMap(s_runtimeTypeHandleToClassIndexMap, typeHandle, out moduleIndex, out classIndex);
+        }
 
-            return null;
+        internal static bool GetIndicesForCCWTemplate(RuntimeTypeHandle typeHandle, out int moduleIndex, out int ccwTemplateIndex)
+        {
+            return GetIndicesFromMap(s_runtimeTypeHandleToCCWTemplateIndexMap, typeHandle, out moduleIndex, out ccwTemplateIndex);
+        }
+
+        internal static bool GetIndicesForCollection(RuntimeTypeHandle typeHandle, out int moduleIndex, out int collecitonIndex)
+        {
+            return GetIndicesFromMap(s_runtimeTypeHandleToCollectionIndexMap, typeHandle, out moduleIndex, out collecitonIndex);
+        }
+
+        internal static bool GetIndicesForBoxing(RuntimeTypeHandle typeHandle, out int moduleIndex, out int boxingIndex)
+        {
+            return GetIndicesFromMap(s_runtimeTypeHandleToBoxingIndexMap, typeHandle, out moduleIndex, out boxingIndex);
         }
 
         internal static McgInterfaceData GetInterfaceDataByIndex(int moduleIndex, int interfaceIndex)
@@ -368,68 +441,16 @@ namespace System.Runtime.InteropServices
             return new RuntimeTypeHandle[0];
         }
 
-        /// <summary>
-        /// Given a RuntimeTypeHandle, return the corresonding McgClassInfo
-        /// </summary>
-        internal static McgClassInfo GetClassInfoFromTypeHandle(RuntimeTypeHandle typeHnd)
-        {
-            int classIndex;
-            for (int i = 0; i < s_moduleCount; ++i)
-            {
-                if (s_modules[i].TryLookupClassType(typeHnd, out classIndex))
-                {
-                    return new McgClassInfo(i, classIndex);
-                }
-            }
-
-            return null;
-        }
-
-        internal static CCWTemplateInfo GetCCWTemplateDataInfoFromTypeHandle(RuntimeTypeHandle typeHnd)
-        {
-            CCWTemplateInfo ccwTemplateInfo;
-
-            try
-            {
-                s_runtimeTypeHandleToCCWTemplateInfoMap.LockAcquire();
-                if (!s_runtimeTypeHandleToCCWTemplateInfoMap.TryGetValue(typeHnd, out ccwTemplateInfo))
-                {
-                    ccwTemplateInfo = GetCCWTemplateDataInfoFromTypeHandleInternal(typeHnd);
-                    s_runtimeTypeHandleToCCWTemplateInfoMap.Add(typeHnd, ccwTemplateInfo);
-                }
-            }
-            finally
-            {
-                s_runtimeTypeHandleToCCWTemplateInfoMap.LockRelease();
-            }
-
-            return ccwTemplateInfo;
-        }
-
-        private static CCWTemplateInfo GetCCWTemplateDataInfoFromTypeHandleInternal(RuntimeTypeHandle typeHnd)
-        {
-            int ccwTemplateIndex;
-            for (int i = 0; i < s_moduleCount; ++i)
-            {
-                if (s_modules[i].TryLookupCCWTemplateType(typeHnd, out ccwTemplateIndex))
-                {
-                    return new CCWTemplateInfo(i, ccwTemplateIndex);
-                }
-            }
-
-            return null;
-        }
         #endregion
 
         #region "Interface Data"
         internal static bool TryGetTypeHandleForICollecton(RuntimeTypeHandle interfaceTypeHandle, out RuntimeTypeHandle firstTypeHandle, out RuntimeTypeHandle secondTypeHandle)
         {
-            for (int i = 0; i < s_moduleCount; i++)
+            int moduleIndex, typeIndex;
+            if (GetIndicesForCollection(interfaceTypeHandle, out moduleIndex, out typeIndex))
             {
-                if (s_modules[i].TryGetTypeHandleForICollecton(interfaceTypeHandle, out firstTypeHandle, out secondTypeHandle))
-                    return true;
+                return s_modules[moduleIndex].TryGetTypeHandleForICollecton(typeIndex, out firstTypeHandle, out secondTypeHandle);
             }
-
             firstTypeHandle = default(RuntimeTypeHandle);
             secondTypeHandle = default(RuntimeTypeHandle);
             return false;
@@ -452,9 +473,10 @@ namespace System.Runtime.InteropServices
         #region "CCWTemplate Data"
         internal static bool TryGetCCWRuntimeClassName(RuntimeTypeHandle ccwTypeHandle, out string ccwRuntimeClassName)
         {
-            for (int i = 0; i < s_moduleCount; ++i)
+            int moduleIndex, typeIndex;
+            if (GetIndicesForCCWTemplate(ccwTypeHandle, out moduleIndex, out typeIndex))
             {
-                if (s_modules[i].TryGetCCWRuntimeClassName(ccwTypeHandle, out ccwRuntimeClassName))
+                if (s_modules[moduleIndex].TryGetCCWRuntimeClassName(typeIndex, out ccwRuntimeClassName))
                     return true;
             }
 
@@ -463,9 +485,10 @@ namespace System.Runtime.InteropServices
         }
         internal static bool TryGetBaseType(RuntimeTypeHandle ccwType, out RuntimeTypeHandle baseType)
         {
-            for (int i = 0; i < s_moduleCount; ++i)
+            int moduleIndex, typeIndex;
+            if (GetIndicesForCCWTemplate(ccwType, out moduleIndex, out typeIndex))
             {
-                if (s_modules[i].TryGetBaseType(ccwType, out baseType))
+                if (s_modules[moduleIndex].TryGetBaseType(typeIndex, out baseType))
                 {
                     return true;
                 }
@@ -477,9 +500,10 @@ namespace System.Runtime.InteropServices
 
         internal static bool TryGetImplementedInterfaces(RuntimeTypeHandle ccwType, out IEnumerable<RuntimeTypeHandle> interfaces)
         {
-            for (int i = 0; i < s_moduleCount; ++i)
+            int moduleIndex, typeIndex;
+            if (GetIndicesForCCWTemplate(ccwType, out moduleIndex, out typeIndex))
             {
-                if (s_modules[i].TryGetImplementedInterfaces(ccwType, out interfaces))
+                if (s_modules[moduleIndex].TryGetImplementedInterfaces(typeIndex, out interfaces))
                 {
                     return true;
                 }
@@ -491,9 +515,10 @@ namespace System.Runtime.InteropServices
 
         internal static bool TryGetIsWinRTType(RuntimeTypeHandle ccwType, out bool isWinRTType)
         {
-            for (int i = 0; i < s_moduleCount; ++i)
+            int moduleIndex, typeIndex;
+            if (GetIndicesForCCWTemplate(ccwType, out moduleIndex, out typeIndex))
             {
-                if (s_modules[i].TryGetIsWinRTType(ccwType, out isWinRTType))
+                if (s_modules[moduleIndex].TryGetIsWinRTType(typeIndex, out isWinRTType))
                 {
                     return true;
                 }
@@ -574,6 +599,27 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
+        /// Fetch struct WinRT Name for a given struct. 
+        /// The returned WinRT name is only valid for computing guid during runtime
+        /// </summary>
+        /// <param name="structTypeHandle">Specified struct</param>
+        /// <param name="structWinRTName">Struct WinRT Name</param>
+        /// <returns>true, if the structs exists in mcg generated module</returns>
+        internal static bool TryGetStructWinRTName(RuntimeTypeHandle structTypeHandle, out string structWinRTName)
+        {
+            for (int i = 0; i < s_moduleCount; i++)
+            {
+                if (s_modules[i].TryGetStructWinRTName(structTypeHandle, out structWinRTName))
+                {
+                    return true;
+                }
+            }
+
+            structWinRTName = default(string);
+            return false;
+        }
+
+        /// <summary>
         /// Try to get Field Offset
         /// </summary>
         /// <param name="structureTypeHandle"></param>
@@ -609,12 +655,26 @@ namespace System.Runtime.InteropServices
         #endregion
 
         #region "Boxing"
-        internal static bool TryGetBoxingWrapperType(RuntimeTypeHandle typeHandle, bool IsSystemType, out RuntimeTypeHandle boxingWrapperType, out int boxingPropertyType, out IntPtr boxingStub)
+        internal static bool TryGetBoxingWrapperType(RuntimeTypeHandle typeHandle, object target, out RuntimeTypeHandle boxingWrapperType, out int boxingPropertyType, out IntPtr boxingStub)
         {
-            for (int i = 0; i < s_moduleCount; ++i)
+            int moduleIndex, typeIndex;
+            if (GetIndicesForBoxing(typeHandle, out moduleIndex, out typeIndex))
             {
-                if (s_modules[i].TryGetBoxingWrapperType(typeHandle, IsSystemType, out boxingWrapperType, out boxingPropertyType, out boxingStub))
+                McgBoxingData boxingData = s_modules[moduleIndex].GetBoxingDataByIndex(typeIndex);
+                boxingWrapperType = boxingData.CLRBoxingWrapperType;
+                boxingPropertyType = boxingData.PropertyType;
+                boxingStub = boxingData.BoxingStub;
+                return true;
+            }
+
+            if (target is Type)
+            {
+                if (GetIndicesForBoxing(typeof(System.Type).TypeHandle, out moduleIndex, out typeIndex))
                 {
+                    McgBoxingData boxingData = s_modules[moduleIndex].GetBoxingDataByIndex(typeIndex);
+                    boxingWrapperType = boxingData.CLRBoxingWrapperType;
+                    boxingPropertyType = boxingData.PropertyType;
+                    boxingStub = boxingData.BoxingStub;
                     return true;
                 }
             }
@@ -663,9 +723,10 @@ namespace System.Runtime.InteropServices
         #region "GenericArgumentData"
         internal static bool TryGetGenericArgumentMarshalInfo(RuntimeTypeHandle interfaceType, out McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo)
         {
-            for (int i = 0; i < s_moduleCount; ++i)
+            int moduleIndex, typeIndex;
+            if (GetIndicesForInterface(interfaceType, out moduleIndex, out typeIndex))
             {
-                if (s_modules[i].TryGetGenericArgumentMarshalInfo(interfaceType, out mcgGenericArgumentMarshalInfo))
+                if (s_modules[moduleIndex].TryGetGenericArgumentMarshalInfo(typeIndex, out mcgGenericArgumentMarshalInfo))
                 {
                     return true;
                 }

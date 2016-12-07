@@ -12,7 +12,8 @@
 class MdilModule;
 class EEType;
 class OptionalFields;
-class ModuleManager;
+class TypeManager;
+class DynamicModule;
 struct EETypeRef;
 enum GenericVarianceType : UInt8;
 class GenericComposition;
@@ -166,6 +167,7 @@ enum EETypeField
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_DynamicDispatchMap,
+    ETF_DynamicModule,
     ETF_GenericDefinition,
     ETF_GenericComposition,
     ETF_DynamicGcStatics,
@@ -202,6 +204,7 @@ private:
             EEType**    m_ppBaseTypeViaIAT;
 
             // Kinds.ClonedEEType
+            EEType** m_pCanonicalType;
             EEType** m_ppCanonicalTypeViaIAT;
 
             // Kinds.ParameterizedEEType
@@ -222,7 +225,7 @@ private:
     UInt16              m_usNumInterfaces;
     UInt32              m_uHashCode;
 #if defined(CORERT)
-    ModuleManager**     m_ppModuleManager;
+    TypeManager**     m_ppTypeManager;
 #endif
 
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
@@ -323,6 +326,10 @@ public:
 
         // This dynamically created type has thread statics
         IsDynamicTypeWithThreadStaticsFlag = 0x00001000,
+
+        // This EEType was constructed from a module where the open type is defined in
+        // a dynamically loaded type
+        HasDynamicModuleFlag    = 0x00002000,
     };
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -370,11 +377,9 @@ public:
     bool IsRelatedTypeViaIAT()
         { return ((m_usFlags & (UInt16)RelatedTypeViaIATFlag) != 0); }
 
+    // PREFER: get_ParameterizedTypeShape() >= SZARRAY_BASE_SIZE
     bool IsArray()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() != 0; }
-
-    bool IsPointerType()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() == 0; }
+        { return IsParameterizedType() && get_ParameterizedTypeShape() > 1 /* ParameterizedTypeShapeConstants.ByRef */; }
 
     bool IsParameterizedType()
         { return (get_Kind() == ParameterizedEEType); }
@@ -394,8 +399,9 @@ public:
 
     EEType * get_RelatedParameterType();
 
-    // A parameterized type shape is 0 to indicate that it is a pointer type, 
-    // and non-zero to indicate that it is an array type
+    // A parameterized type shape less than SZARRAY_BASE_SIZE indicates that this is not
+    // an array but some other parameterized type (see: ParameterizedTypeShapeConstants)
+    // For arrays, this number uniquely captures both Sz/Md array flavor and rank.
     UInt32 get_ParameterizedTypeShape() { return m_uBaseSize; }
 
     bool get_IsValueType()
@@ -462,9 +468,11 @@ public:
     bool IsGeneric()
         { return (m_usFlags & IsGenericFlag) != 0; }
 
+    DynamicModule* get_DynamicModule();
+
 #if defined(CORERT)
-    ModuleManager* GetModuleManager()
-         { return *m_ppModuleManager; }
+    TypeManager* GetTypeManager()
+         { return *m_ppTypeManager; }
 #endif
 
 #ifndef BINDER

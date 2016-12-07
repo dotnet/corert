@@ -208,6 +208,20 @@ namespace Internal.NativeFormat
             return (hashcode + _rotl(hashcode, 15));
         }
 
+        public static int ComputeMethodSignatureHashCode<ARG>(int returnTypeHashCode, ARG[] parameters)
+        {
+            // We're not taking calling conventions into consideration here mostly because there's no
+            // exchange enum type that would define them. We could define one, but the amount of additional
+            // information it would bring (16 or so possibilities) is likely not worth it.
+            int hashcode = returnTypeHashCode;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                int parameterHashCode = parameters[i].GetHashCode();
+                hashcode = (hashcode + _rotl(hashcode, 13)) ^ parameterHashCode;
+            }
+            return (hashcode + _rotl(hashcode, 15));
+        }
+
         /// <summary>
         /// Produce a hashcode for a specific method
         /// </summary>

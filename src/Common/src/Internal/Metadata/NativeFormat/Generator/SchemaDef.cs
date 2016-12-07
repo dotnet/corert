@@ -386,6 +386,7 @@ class SchemaDef
         "SZArraySignature",
         "ArraySignature",
         "PointerSignature",
+        "FunctionPointerSignature",
         "ByReferenceSignature",
         "TypeVariableSignature",
         "MethodTypeVariableSignature",
@@ -460,6 +461,8 @@ class SchemaDef
                 new MemberDef("PublicKey", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
                 new MemberDef("Culture", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
                 new MemberDef("RootNamespaceDefinition", "NamespaceDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("EntryPoint", "QualifiedMethod", MemberDefFlags.RecordRef),
+                new MemberDef("GlobalModuleType", "TypeDefinition", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -669,6 +672,12 @@ class SchemaDef
             name: "PointerSignature",
             members: new MemberDef[] {
                 new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
+            }
+        ),
+        new RecordDef(
+            name: "FunctionPointerSignature",
+            members: new MemberDef[] {
+                new MemberDef("Signature", "MethodSignature", MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(

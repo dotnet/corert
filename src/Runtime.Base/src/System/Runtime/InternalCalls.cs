@@ -13,6 +13,23 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
+    internal enum DispatchCellType
+    {
+        InterfaceAndSlot = 0x0,
+        MetadataToken = 0x1,
+        VTableOffset = 0x2,
+    }
+
+    internal struct DispatchCellInfo
+    {
+        public DispatchCellType CellType;
+        public EETypePtr InterfaceType;
+        public ushort InterfaceSlot;
+        public byte HasCache;
+        public uint MetadataToken;
+        public uint VTableOffset;
+    }
+
     internal static class InternalCalls
     {
         //
@@ -135,6 +152,11 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static void RhpCopyObjectContents(object objDest, object objSrc);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal unsafe extern static void RhpAssignRef(ref Object address, object obj);
+
 #if FEATURE_GC_STRESS
         //
         // internal calls for GC stress
@@ -178,7 +200,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpGetDispatchCellInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpGetDispatchCellInfo(IntPtr pCell, EEType** pInterfaceType, ushort* slot);
+        internal unsafe extern static void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
 
         [RuntimeImport(Redhawk.BaseName, "RhpSearchDispatchCellCache")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -188,12 +210,17 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpUpdateDispatchCellCache")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType);
+        internal unsafe extern static IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType, ref DispatchCellInfo newCellInfo);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunction")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
+
+        [RuntimeImport(Redhawk.BaseName, "RhGetModuleFromPointer")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static unsafe IntPtr RhGetModuleFromPointer(void* pointer);
 
         //
         // StackFrameIterator
@@ -298,6 +325,60 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatchHelper")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetCastableObjectDispatchHelper();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatchHelper_TailCalled")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetCastableObjectDispatchHelper_TailCalled();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatch_CommonStub")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetCastableObjectDispatch_CommonStub();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetTailCallTLSDispatchCell")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetTailCallTLSDispatchCell();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpSetTLSDispatchCell")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal unsafe extern static void RhpSetTLSDispatchCell(IntPtr pCell);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static int RhpGetNumThunkBlocksPerMapping();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunksPerBlock")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static int RhpGetNumThunksPerBlock();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkSize")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static int RhpGetThunkSize();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkDataBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkStubsBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNextThunkStubsBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress);
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
@@ -324,5 +405,15 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal extern static long PalGetTickCount64();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpAcquireThunkPoolLock();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpReleaseThunkPoolLock();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr RhAllocateThunksMapping();
+
     }
 }

@@ -16,11 +16,11 @@ typedef struct _GUID {
     unsigned char Data4[8];
 } GUID;
 
-static const GUID JITEEVersionIdentifier = { /* 718c4238-2a85-45de-88ad-9b1fed806547 */
-    0x718c4238,
-    0x2a85,
-    0x45de,
-    { 0x88, 0xad, 0x9b, 0x1f, 0xed, 0x80, 0x65, 0x47 }
+static const GUID JITEEVersionIdentifier = { /* 4bd06266-8ef7-4172-bec6-d3149fde7859 */
+    0x4bd06266,
+    0x8ef7,
+    0x4172,
+    {0xbe, 0xc6, 0xd3, 0x14, 0x9f, 0xde, 0x78, 0x59}
 };
 
 class Jit
@@ -59,7 +59,12 @@ DLL_EXPORT int JitCompileMethod(
     GUID versionId;
     pJit->getVersionIdentifier(&versionId);
     if (memcmp(&versionId, &JITEEVersionIdentifier, sizeof(GUID)) != 0)
+    {
+        // JIT and the compiler disagree on how the interface looks like.
+        // Either get a matching version of the JIT from the CoreCLR repo or update the interface
+        // on the CoreRT side. Under no circumstances should you comment this line out.
         return 1;
+    }
 
     try
     {

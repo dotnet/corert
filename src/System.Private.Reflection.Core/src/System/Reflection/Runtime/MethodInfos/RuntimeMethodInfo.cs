@@ -16,8 +16,6 @@ using System.Reflection.Runtime.BindingFlagSupport;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
@@ -44,7 +42,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                if (DeclaringType.GetTypeInfo().ContainsGenericParameters)
+                if (DeclaringType.ContainsGenericParameters)
                     return true;
 
                 if (!IsGenericMethod)
@@ -53,7 +51,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 Type[] pis = GetGenericArguments();
                 for (int i = 0; i < pis.Length; i++)
                 {
-                    if (pis[i].GetTypeInfo().ContainsGenericParameters)
+                    if (pis[i].ContainsGenericParameters)
                         return true;
                 }
 
@@ -132,13 +130,18 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodBase_GetParameters(this);
 #endif
 
-            RuntimeParameterInfo[] runtimeParameterInfos = this.RuntimeParametersAndReturn;
-            if (runtimeParameterInfos.Length == 1)
+            RuntimeParameterInfo[] runtimeParameterInfos = RuntimeParameters;
+            if (runtimeParameterInfos.Length == 0)
                 return Array.Empty<ParameterInfo>();
-            ParameterInfo[] result = new ParameterInfo[runtimeParameterInfos.Length - 1];
+            ParameterInfo[] result = new ParameterInfo[runtimeParameterInfos.Length];
             for (int i = 0; i < result.Length; i++)
-                result[i] = runtimeParameterInfos[i + 1];
+                result[i] = runtimeParameterInfos[i];
             return result;
+        }
+
+        public sealed override ParameterInfo[] GetParametersNoCopy()
+        {
+            return RuntimeParameters;
         }
 
         [DebuggerGuidedStepThroughAttribute]
@@ -148,8 +151,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();
@@ -201,6 +203,8 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public abstract override Type ReflectedType { get; }
+
         public sealed override ParameterInfo ReturnParameter
         {
             get
@@ -210,7 +214,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodInfo_ReturnParameter(this);
 #endif
 
-                return this.RuntimeParametersAndReturn[0];
+                return this.RuntimeReturnParameter;
             }
         }
 
@@ -262,26 +266,43 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         internal abstract RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get; }
 
+        internal abstract RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter);
+
         //
         // The non-public version of MethodInfo.GetParameters() (does not array-copy.) 
-        // The first element is actually the ReturnParameter value.
         //
-        internal abstract RuntimeParameterInfo[] GetRuntimeParametersAndReturn(RuntimeMethodInfo contextMethod);
-
-        internal RuntimeParameterInfo[] RuntimeParametersAndReturn
+        internal RuntimeParameterInfo[] RuntimeParameters
         {
             get
             {
-                RuntimeParameterInfo[] runtimeParametersAndReturn = _lazyRuntimeParametersAndReturn;
-                if (runtimeParametersAndReturn == null)
+                RuntimeParameterInfo[] parameters = _lazyParameters;
+                if (parameters == null)
                 {
-                    runtimeParametersAndReturn = _lazyRuntimeParametersAndReturn = GetRuntimeParametersAndReturn(this);
+                    RuntimeParameterInfo returnParameter;
+                    parameters = _lazyParameters = GetRuntimeParameters(this, out returnParameter);
+                    _lazyReturnParameter = returnParameter;  // Opportunistically initialize the _lazyReturnParameter latch as well.
                 }
-                return runtimeParametersAndReturn;
+                return parameters;
             }
         }
 
-        private volatile RuntimeParameterInfo[] _lazyRuntimeParametersAndReturn;
+        internal RuntimeParameterInfo RuntimeReturnParameter
+        {
+            get
+            {
+                RuntimeParameterInfo returnParameter = _lazyReturnParameter;
+                if (returnParameter == null)
+                {
+                    // Though the returnParameter is our primary objective, we can opportunistically initialize the _lazyParameters latch too.
+                    _lazyParameters = GetRuntimeParameters(this, out returnParameter);
+                    _lazyReturnParameter = returnParameter;
+                }
+                return returnParameter;
+            }
+        }
+
+        private volatile RuntimeParameterInfo[] _lazyParameters;
+        private volatile RuntimeParameterInfo _lazyReturnParameter;
 
         internal MethodInvoker MethodInvoker
         {
@@ -331,8 +352,8 @@ namespace System.Reflection.Runtime.MethodInfos
             // Make sure the return type is assignment-compatible.
             CheckIsAssignableFrom(executionEnvironment, invokeMethod.ReturnParameter.ParameterType, this.ReturnParameter.ParameterType);
 
-            IList<ParameterInfo> delegateParameters = invokeMethod.GetParameters();
-            IList<ParameterInfo> targetParameters = this.GetParameters();
+            IList<ParameterInfo> delegateParameters = invokeMethod.GetParametersNoCopy();
+            IList<ParameterInfo> targetParameters = this.GetParametersNoCopy();
             IEnumerator<ParameterInfo> delegateParameterEnumerator = delegateParameters.GetEnumerator();
             IEnumerator<ParameterInfo> targetParameterEnumerator = targetParameters.GetEnumerator();
 
@@ -421,12 +442,12 @@ namespace System.Reflection.Runtime.MethodInfos
             // they are not compatible yet enums can go into each other if their underlying element type is the same
             // or into their equivalent integral type
             Type dstTypeUnderlying = dstType;
-            if (dstType.GetTypeInfo().IsEnum)
+            if (dstType.IsEnum)
             {
                 dstTypeUnderlying = Enum.GetUnderlyingType(dstType);
             }
             Type srcTypeUnderlying = srcType;
-            if (srcType.GetTypeInfo().IsEnum)
+            if (srcType.IsEnum)
             {
                 srcTypeUnderlying = Enum.GetUnderlyingType(srcType);
             }

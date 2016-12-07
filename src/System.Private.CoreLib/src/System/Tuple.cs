@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
+using System.Text;
+
+//
+// Note: F# compiler depends on the exact tuple hashing algorithm. Do not ever change it.
+//
 
 namespace System
 {
@@ -142,7 +145,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             return comparer.Compare(m_Item1, objTuple.m_Item1);
@@ -231,7 +234,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -331,7 +334,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -440,7 +443,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -558,7 +561,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -685,7 +688,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -821,7 +824,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -971,7 +974,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -1037,7 +1040,7 @@ namespace System
                 case 7:
                     return Tuple.CombineHashCodes(comparer.GetHashCode(m_Item1), comparer.GetHashCode(m_Item2), comparer.GetHashCode(m_Item3), comparer.GetHashCode(m_Item4), comparer.GetHashCode(m_Item5), comparer.GetHashCode(m_Item6), comparer.GetHashCode(m_Item7), t.GetHashCode(comparer));
             }
-            Contract.Assert(false, "Missed all cases for computing Tuple hash code");
+            Debug.Assert(false, "Missed all cases for computing Tuple hash code");
             return -1;
         }
 

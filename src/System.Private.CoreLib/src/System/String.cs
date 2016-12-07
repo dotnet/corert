@@ -9,17 +9,15 @@
 **
 ===========================================================*/
 
-using System.Text;
-using System.Runtime;
-using System.Diagnostics;
-using System.Globalization;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
-using System.Security;
+using System.Text;
 
 namespace System
 {
@@ -136,16 +134,16 @@ namespace System
         private static String Ctor(char[] value, int startIndex, int length)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
 
             if (startIndex > value.Length - length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
 
             if (length > 0)
@@ -193,7 +191,7 @@ namespace System
             }
             catch (NullReferenceException)
             {
-                throw new ArgumentOutOfRangeException("ptr", SR.ArgumentOutOfRange_PartialWCHAR);
+                throw new ArgumentOutOfRangeException(nameof(ptr), SR.ArgumentOutOfRange_PartialWCHAR);
             }
         }
 
@@ -206,12 +204,12 @@ namespace System
         {
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
 
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
             Contract.EndContractBlock();
 
@@ -219,7 +217,7 @@ namespace System
             if (pFrom < ptr)
             {
                 // This means that the pointer operation has had an overflow
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_PartialWCHAR);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_PartialWCHAR);
             }
 
             if (length == 0)
@@ -235,7 +233,7 @@ namespace System
             }
             catch (NullReferenceException)
             {
-                throw new ArgumentOutOfRangeException("ptr", SR.ArgumentOutOfRange_PartialWCHAR);
+                throw new ArgumentOutOfRangeException(nameof(ptr), SR.ArgumentOutOfRange_PartialWCHAR);
             }
         }
 
@@ -283,7 +281,7 @@ namespace System
             else if (count == 0)
                 return String.Empty;
             else
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
         }
 
         public object Clone()
@@ -306,15 +304,13 @@ namespace System
             {
                 if ((uint)index >= _stringLength)
                     throw new IndexOutOfRangeException();
-                fixed (char* s = &_firstChar)
-                    return s[index];
+                return Unsafe.Add(ref _firstChar, index);
             }
 #else
             [BoundsChecking]
             get
             {
-                System.Runtime.CompilerServices.ByReference<char> mgdPtr = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _firstChar);
-                return System.Runtime.CompilerServices.ByReference<char>.LoadAtIndex(mgdPtr, index);
+                return Unsafe.Add(ref _firstChar, index);
             }
 #endif
         }
@@ -327,15 +323,15 @@ namespace System
         unsafe public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             if (destination == null)
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             if (sourceIndex < 0)
-                throw new ArgumentOutOfRangeException("sourceIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
             if (count > Length - sourceIndex)
-                throw new ArgumentOutOfRangeException("sourceIndex", SR.ArgumentOutOfRange_IndexCount);
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexCount);
             if (destinationIndex > destination.Length - count || destinationIndex < 0)
-                throw new ArgumentOutOfRangeException("destinationIndex", SR.ArgumentOutOfRange_IndexCount);
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_IndexCount);
 
             // Note: fixed does not like empty arrays
             if (count > 0)
@@ -370,9 +366,9 @@ namespace System
         {
             // Range check everything.
             if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
 
             if (length > 0)
             {
@@ -422,12 +418,12 @@ namespace System
         unsafe static internal String CreateStringFromEncoding(
             byte* bytes, int byteLength, Encoding encoding)
         {
-            Contract.Requires(bytes != null);
-            Contract.Requires(byteLength >= 0);
+            Debug.Assert(bytes != null);
+            Debug.Assert(byteLength >= 0);
 
             // Get our string length
             int stringLength = encoding.GetCharCount(bytes, byteLength, null);
-            Contract.Assert(stringLength >= 0, "stringLength >= 0");
+            Debug.Assert(stringLength >= 0, "stringLength >= 0");
 
             // They gave us an empty string if they needed one
             // 0 bytelength might be possible if there's something in an encoder
@@ -438,7 +434,7 @@ namespace System
             fixed (char* pTempChars = &s._firstChar)
             {
                 int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength, null);
-                Contract.Assert(stringLength == doubleCheck,
+                Debug.Assert(stringLength == doubleCheck,
                     "Expected encoding.GetChars to return same length as encoding.GetCharCount");
             }
 
@@ -528,7 +524,7 @@ namespace System
                 end += 2;
             }
 
-            Contract.Assert(end[0] == 0 || end[1] == 0);
+            Debug.Assert(end[0] == 0 || end[1] == 0);
             if (end[0] != 0) end++;
 #else // !BIT64
             // Based on https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
@@ -585,48 +581,12 @@ namespace System
 #endif // !BIT64
 
             FoundZero:
-            Contract.Assert(*end == 0);
+            Debug.Assert(*end == 0);
 
             int count = (int)(end - ptr);
 
             return count;
         }
-
-#if !CORERT
-        // This method give you access raw access to a unpinned (i.e. don't hand out via interop) 
-        // string data to do efficent string indexing and substring operations.
-        internal StringPointer GetStringPointer(int startIndex = 0)
-        {
-            return new StringPointer(this, startIndex);
-        }
-
-        [System.Runtime.CompilerServices.StackOnly]
-        internal struct StringPointer
-        {
-            private string _theString;
-            private int _index;
-
-            public StringPointer(string s, int startIndex = 0)
-            {
-                _theString = s;
-                _index = startIndex;
-            }
-
-            public char this[int offset]
-            {
-                get
-                {
-                    System.Runtime.CompilerServices.ByReference<char> mgdPtr = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _theString._firstChar);
-                    return System.Runtime.CompilerServices.ByReference<char>.LoadAtIndex(mgdPtr, offset + _index);
-                }
-                set
-                {
-                    System.Runtime.CompilerServices.ByReference<char> mgdPtr = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _theString._firstChar);
-                    System.Runtime.CompilerServices.ByReference<char>.StoreAtIndex(mgdPtr, offset + _index, value);
-                }
-            }
-        }
-#endif
 
         //
         // IConvertible implementation

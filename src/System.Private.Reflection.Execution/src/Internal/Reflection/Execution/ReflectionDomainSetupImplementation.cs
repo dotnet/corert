@@ -22,17 +22,7 @@ namespace Internal.Reflection.Execution
         public ReflectionDomainSetupImplementation(ExecutionEnvironmentImplementation executionEnvironment)
         {
             _executionEnvironment = executionEnvironment;
-            _foundationTypes = new FoundationTypesImplementation();
-            _assemblyBinder = new AssemblyBinderImplementation(executionEnvironment);
-        }
-
-        /// <summary>
-        /// Install module registration callbacks and call them for the modules that have already been registered.
-        /// See AssemblyBinderImplementation for the explanation why this cannot be done in the constructor.
-        /// </summary>
-        public void InstallModuleRegistrationCallbacks()
-        {
-            _assemblyBinder.InstallModuleRegistrationCallback();
+            _assemblyBinder = AssemblyBinderImplementation.Instance;
         }
 
         public sealed override AssemblyBinder AssemblyBinder
@@ -40,14 +30,6 @@ namespace Internal.Reflection.Execution
             get
             {
                 return _assemblyBinder;
-            }
-        }
-
-        public sealed override FoundationTypes FoundationTypes
-        {
-            get
-            {
-                return _foundationTypes;
             }
         }
 
@@ -97,7 +79,6 @@ namespace Internal.Reflection.Execution
             return MissingMetadataExceptionCreator.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
         }
 
-        private FoundationTypes _foundationTypes;
         private AssemblyBinderImplementation _assemblyBinder;
         private ExecutionEnvironmentImplementation _executionEnvironment;
     }

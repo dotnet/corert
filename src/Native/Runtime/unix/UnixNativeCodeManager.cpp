@@ -14,6 +14,9 @@
 
 #include "CommonMacros.inl"
 
+#define GCINFODECODER_NO_EE
+#include "coreclr/gcinfodecoder.cpp"
+
 #include "UnixContext.h"
 
 #define UBF_FUNC_KIND_MASK      0x03
@@ -23,11 +26,13 @@
 
 #define UBF_FUNC_HAS_EHINFO     0x04
 
+#define UBF_FUNC_REVERSE_PINVOKE 0x08
+
 struct UnixNativeMethodInfo
 {
     PTR_VOID pMethodStartAddress;
-    PTR_UInt8 pEhInfo;
-    uint8_t funcFlags;
+    PTR_UInt8 pMainLSDA;
+    PTR_UInt8 pLSDA;
     bool executionAborted;
 };
 
@@ -57,32 +62,26 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
         return false;
     }
 
-    PTR_UInt8 lsdaPtr = dac_cast<PTR_UInt8>(lsda);
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(lsda);
 
-    int offsetFromMainFunction = *dac_cast<PTR_Int32>(lsdaPtr);
-    lsdaPtr += sizeof(int);
-    pMethodInfo->funcFlags = *lsdaPtr;
-    ++lsdaPtr;
+    pMethodInfo->pLSDA = p;
 
-    PTR_UInt8 ehInfoPtr = NULL;
-    if (pMethodInfo->funcFlags & UBF_FUNC_HAS_EHINFO)
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
     {
-        // main function contains the EH info blob in its LSDA, funclets just refer
-        // to the main function's blob
-        if (offsetFromMainFunction == 0)
-        {
-            ehInfoPtr = lsdaPtr;
-        }
-        else
-        {
-            Int32 relAddr = *dac_cast<PTR_Int32>(lsdaPtr);
-            lsdaPtr += sizeof(Int32);
-            ehInfoPtr = lsdaPtr + relAddr;
-        }
+        // Funclets just refer to the main function's blob
+        pMethodInfo->pMainLSDA = p + *dac_cast<PTR_Int32>(p);
+        p += sizeof(int32_t);
+
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(startAddress - *dac_cast<PTR_Int32>(p));
+    }
+    else
+    {
+        pMethodInfo->pMainLSDA = dac_cast<PTR_UInt8>(lsda);
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(startAddress);
     }
 
-    pMethodInfo->pMethodStartAddress = (PTR_VOID)(startAddress - offsetFromMainFunction);
-    pMethodInfo->pEhInfo = ehInfoPtr;
     pMethodInfo->executionAborted = false;
 
     return true;
@@ -92,7 +91,8 @@ bool UnixNativeCodeManager::IsFunclet(MethodInfo * pMethodInfo)
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    return (pNativeMethodInfo->funcFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
+    uint8_t unwindBlockFlags = *(pNativeMethodInfo->pLSDA);
+    return (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
 }
 
 PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
@@ -101,7 +101,7 @@ PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
     // Return frame pointer for methods with EH and funclets
-    uint8_t unwindBlockFlags = pNativeMethodInfo->funcFlags;
+    uint8_t unwindBlockFlags = *(pNativeMethodInfo->pLSDA);
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0 || (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
     {
         return (PTR_VOID)pRegisterSet->GetFP();
@@ -129,13 +129,36 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                              REGDISPLAY *    pRegisterSet,                 // in/out
                                              PTR_VOID *      ppPreviousTransitionFrame)    // out
 {
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+    {
+        // Reverse PInvoke transition should on the main function body only
+        assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+            p += sizeof(int32_t);
+
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+
+        // @TODO: CORERT: Encode reverse PInvoke frame slot in GCInfo: https://github.com/dotnet/corert/issues/2115
+        // INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        // assert(slot != NO_REVERSE_PINVOKE_FRAME);
+
+        *ppPreviousTransitionFrame = (PTR_VOID)-1;
+        return true;
+    }
+
+    *ppPreviousTransitionFrame = NULL;
+
     if (!VirtualUnwind(pRegisterSet))
     {
         return false;
     }
-
-    // @TODO: CORERT: PInvoke transitions
-    *ppPreviousTransitionFrame = NULL;
 
     return true;
 }
@@ -189,8 +212,12 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
     // return if there is no EH info associated with this method
-    if ((pNativeMethodInfo->funcFlags & UBF_FUNC_HAS_EHINFO) == 0)
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) == 0)
     {
         return false;
     }
@@ -200,7 +227,7 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     *pMethodStartAddress = pNativeMethodInfo->pMethodStartAddress;
 
     pEnumState->pMethodStartAddress = dac_cast<PTR_UInt8>(pNativeMethodInfo->pMethodStartAddress);
-    pEnumState->pEHInfo = pNativeMethodInfo->pEhInfo;
+    pEnumState->pEHInfo = dac_cast<PTR_UInt8>(p + *dac_cast<PTR_Int32>(p));
     pEnumState->uClause = 0;
     pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
 
@@ -260,6 +287,12 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     }
 
     return true;
+}
+
+PTR_VOID UnixNativeCodeManager::GetMethodStartAddress(MethodInfo * pMethodInfo)
+{
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    return pNativeMethodInfo->pMethodStartAddress;
 }
 
 void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)

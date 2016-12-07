@@ -123,7 +123,6 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.HasGenericVarianceComputed;
             }
 
-            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 
@@ -184,8 +183,10 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // Behavior for this is undefined.
-                throw new NotSupportedException();
+                // The implementation below is correct (UniversalCanon is "a struct of indeterminate size and GC layout"),
+                // but we should probably still audit this if the assert is hit...
+                Debug.Assert(false);
+                return Context.GetWellKnownType(WellKnownType.ValueType);
             }
         }
 
@@ -212,7 +213,6 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.ValueType;
             }
 
-            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 

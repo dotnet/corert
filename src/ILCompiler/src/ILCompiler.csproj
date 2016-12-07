@@ -14,7 +14,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <DefineConstants>$(DefineConstants);FXCORE</DefineConstants>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
     <CopyNugetImplementations>false</CopyNugetImplementations>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -26,6 +26,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="RdXmlRootProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">

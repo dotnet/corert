@@ -24,11 +24,9 @@ namespace Internal.TypeSystem
                     else
                         OwningType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
 
-                    if (_offset == FieldAndOffset.InvalidOffset)
-                    {
-                        // Must be a field that doesn't participate in layout (literal or RVA mapped)
-                        throw new BadImageFormatException();
-                    }
+                    // If the offset still wasn't computed, this must be a field that doesn't participate in layout
+                    // (either literal or RVA mapped). We shouldn't be asking for the offset.
+                    Debug.Assert(_offset != FieldAndOffset.InvalidOffset);
                 }
                 return _offset;
             }
@@ -42,8 +40,9 @@ namespace Internal.TypeSystem
         {
             get
             {
-                Debug.Assert(IsStatic);
-
+                // If this assert fires then make sure the caller checks the IsThreadStatic attribute
+                // of FieldDesc before checking its HasGCStaticBase property.
+                Debug.Assert(IsStatic && !IsThreadStatic);
                 return Context.ComputeHasGCStaticBase(this);
             }
         }

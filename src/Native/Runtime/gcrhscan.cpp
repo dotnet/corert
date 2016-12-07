@@ -4,9 +4,14 @@
 #include "common.h"
 
 #include "gcenv.h"
-#include "gcscan.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "objecthandle.h"
+
+#ifdef FEATURE_STANDALONE_GC
+#include "gcenv.ee.h"
+#else
+#include "../gc/env/gcenv.ee.h"
+#endif // FEATURE_STANDALONE_GC
 
 #include "PalRedhawkCommon.h"
 
@@ -24,7 +29,8 @@
 #include "module.h"
 #include "RuntimeInstance.h"
 #include "threadstore.h"
-
+#include "threadstore.inl"
+#include "thread.inl"
 
 #ifndef DACCESS_COMPILE
 
@@ -51,7 +57,7 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
         // @TODO: it is very bizarre that this IsThreadUsingAllocationContextHeap takes a copy of the
         // allocation context instead of a reference or a pointer to it. This seems very wasteful given how
         // large the alloc_context is.
-        if (!GCHeap::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), 
+        if (!GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), 
                                                                      sc->thread_number))
         {
             // STRESS_LOG2(LF_GC|LF_GCROOTS, LL_INFO100, "{ Scan of Thread %p (ID = %x) declined by this heap\n", 
@@ -77,7 +83,7 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 
     sc->thread_under_crawl = NULL;
 
-    if ((!GCHeap::IsServerHeap() || sc->thread_number == 0) ||(condemned == max_gen && sc->promotion))
+    if ((!GCHeapUtilities::IsServerHeap() || sc->thread_number == 0) ||(condemned == max_gen && sc->promotion))
     {
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
         sc->dwEtwRootKind = kEtwGCRootStatic;
@@ -88,7 +94,7 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)
 {
-    if (GCHeap::UseAllocationContexts())
+    if (GCHeapUtilities::UseAllocationContexts())
     {
         FOREACH_THREAD(thread)
         {

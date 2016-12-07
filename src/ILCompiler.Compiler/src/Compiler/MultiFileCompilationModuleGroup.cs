@@ -2,24 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public class MultiFileCompilationModuleGroup : CompilationModuleGroup
+    public abstract class MultiFileCompilationModuleGroup : CompilationModuleGroup
     {
-        private HashSet<EcmaModule> _compilationModuleSet;
+        private HashSet<ModuleDesc> _compilationModuleSet;
 
-        public MultiFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext) : base(typeSystemContext)
-        { }
-
-        public override bool ContainsType(TypeDesc type)
+        public MultiFileCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+            : base(context)
         {
-            if (type.ContainsGenericVariables)
-                return true;
+            _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
+            // The fake assembly that holds compiler generated types is part of the compilation.
+            _compilationModuleSet.Add(this.GeneratedAssembly);
+        }
+
+        public sealed override bool ContainsType(TypeDesc type)
+        {
             EcmaType ecmaType = type as EcmaType;
 
             if (ecmaType == null)
@@ -33,81 +39,63 @@ namespace ILCompiler
             return true;
         }
 
-        public override bool ContainsMethod(MethodDesc method)
+        public sealed override bool ContainsMethod(MethodDesc method)
         {
-            if (method.GetTypicalMethodDefinition().ContainsGenericVariables)
+            if (method.HasInstantiation)
                 return true;
 
             return ContainsType(method.OwningType);
         }
 
-        private bool BuildingLibrary
-        {
-            get
-            {
-                foreach (var module in InputModules)
-                {
-                    if (module.PEReader.PEHeaders.IsExe)
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
-
-        public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
-        {
-            base.AddCompilationRoots(rootProvider);
-
-            if (BuildingLibrary)
-            {
-                foreach (var module in InputModules)
-                {
-                    AddCompilationRootsForMultifileLibrary(module, rootProvider);
-                }
-            }
-        }
-
-        private void AddCompilationRootsForMultifileLibrary(EcmaModule module, IRootingServiceProvider rootProvider)
-        {
-            foreach (TypeDesc type in module.GetAllTypes())
-            {
-                // Skip delegates (since their Invoke methods have no IL) and uninstantiated generic types
-                if (type.IsDelegate || type.ContainsGenericVariables)
-                    continue;
-
-                rootProvider.AddCompilationRoot(type, "Library module type");
-                RootMethods(type, "Library module method", rootProvider);
-            }
-        }
-
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
-            return InputModules.Contains(module);
+            return _compilationModuleSet.Contains(module);
         }
 
-        public override bool IsSingleFileCompilation
+        public sealed override bool IsSingleFileCompilation
         {
             get
             {
                 return false;
             }
+        }
+
+        public sealed override bool ShouldReferenceThroughImportTable(TypeDesc type)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
+    /// </summary>
+    public class MultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
+    {
+        public MultiFileSharedCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+            : base(context, compilationModuleSet)
+        {
         }
 
         public override bool ShouldProduceFullType(TypeDesc type)
         {
-            // TODO: Remove this once we have delgate constructor transform added and GetMethods() tells us about
-            //       the virtuals we add on to delegate types.
-            if (type.IsDelegate)
-                return false;
+            return true;
+        }
+    }
 
-            // Fully build all types when building a library
-            if (BuildingLibrary)
-                return true;
+    /// <summary>
+    /// Represents an unshared multifile compilation group where types contained in the group are expanded as needed.
+    /// </summary>
+    public class MultiFileLeafCompilationModuleGroup : MultiFileCompilationModuleGroup
+    {
+        public MultiFileLeafCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+            : base(context, compilationModuleSet)
+        {
+        }
 
+        public override bool ShouldProduceFullType(TypeDesc type)
+        {
             // Fully build all shareable types so they will be identical in each module
-            if (ShouldShareAcrossModules(type))
+            if (EETypeNode.IsTypeNodeShareable(type))
                 return true;
 
             // If referring to a type from another module, VTables, interface maps, etc should assume the
@@ -116,65 +104,6 @@ namespace ILCompiler
                 return true;
 
             return false;
-        }
-
-        public override bool ShouldShareAcrossModules(MethodDesc method)
-        {
-            if (method is InstantiatedMethod)
-                return true;
-
-            return ShouldShareAcrossModules(method.OwningType);
-        }
-
-        public override bool ShouldShareAcrossModules(TypeDesc type)
-        {
-            if (type is ParameterizedType || type is InstantiatedType)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
-        {
-            foreach (MethodDesc method in type.GetMethods())
-            {
-                // Skip methods with no IL and uninstantiated generic methods
-                if (method.IsIntrinsic || method.IsAbstract || method.ContainsGenericVariables)
-                    continue;
-
-                if (method.IsInternalCall)
-                    continue;
-
-                rootProvider.AddCompilationRoot(method, reason);
-            }
-        }
-
-        private HashSet<EcmaModule> InputModules
-        {
-            get
-            {
-                if (_compilationModuleSet == null)
-                {
-                    HashSet<EcmaModule> newCompilationModuleSet = new HashSet<EcmaModule>();
-
-                    foreach (var path in _typeSystemContext.InputFilePaths)
-                    {
-                        newCompilationModuleSet.Add(_typeSystemContext.GetModuleFromPath(path.Value));
-                    }
-
-                    lock (this)
-                    {
-                        if (_compilationModuleSet == null)
-                        {
-                            _compilationModuleSet = newCompilationModuleSet;
-                        }
-                    }
-                }
-
-                return _compilationModuleSet;
-            }
         }
     }
 }

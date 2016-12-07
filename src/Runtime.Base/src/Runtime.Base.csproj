@@ -4,7 +4,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <ProjectGuid>{BE95C560-B508-4588-8907-F9FC5BC1A0CF}</ProjectGuid>
+    <ProjectGuid>{CA7FAACD-89ED-4D41-8377-92C1D9055720}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>Runtime.Base</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -79,6 +79,7 @@
     <Compile Include="System\Diagnostics\Debug.cs" />
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
+    <Compile Include="System\Runtime\CastableObjectSupport.cs" />
     <Compile Include="System\Runtime\EEType.Runtime.cs" />
     <Compile Include="System\Runtime\EETypePtr.cs" />
     <Compile Include="System\Runtime\ExceptionHandling.cs" />
@@ -88,7 +89,9 @@
     <Compile Include="System\Runtime\RuntimeExports.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\StackFrameIterator.cs" />
+    <Compile Include="System\Runtime\ThunkPool.cs" />
     <Compile Include="System\Runtime\TypeCast.cs" />
+    <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />

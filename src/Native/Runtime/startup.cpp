@@ -50,6 +50,7 @@ extern RhConfig * g_pRhConfig;
 EXTERN_C bool g_fHasFastFxsave = false;
 
 CrstStatic g_CastCacheLock;
+CrstStatic g_ThunkPoolLock;
 
 bool InitDLL(HANDLE hPalInstance)
 {
@@ -69,13 +70,13 @@ bool InitDLL(HANDLE hPalInstance)
     if (!RestrictedCallouts::Initialize())
         return false;
 
-#ifndef APP_LOCAL_RUNTIME
+#if !defined(APP_LOCAL_RUNTIME) && !defined(USE_PORTABLE_HELPERS)
 #ifndef PLATFORM_UNIX
     PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif
-#endif
+#endif // !APP_LOCAL_RUNTIME && !USE_PORTABLE_HELPERS
 
     //
     // init per-instance state
@@ -113,6 +114,9 @@ bool InitDLL(HANDLE hPalInstance)
     DetectCPUFeatures();
 
     if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
+        return false;
+
+    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
         return false;
 
     return true;

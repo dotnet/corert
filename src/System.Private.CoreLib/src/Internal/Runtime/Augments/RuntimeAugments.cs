@@ -399,6 +399,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.AreTypesAssignable(srcEEType, dstEEType);
         }
 
+        public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
+        {
+            return (null != RuntimeImports.IsInstanceOfInterface(obj, interfaceTypeHandle.ToEETypePtr()));
+        }
+
         //
         // Return a type's base type using the runtime type system. If the underlying runtime type system does not support
         // this operation, return false and TypeInfo.BaseType will fall back to metadata.
@@ -408,7 +413,7 @@ namespace Internal.Runtime.Augments
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
             {
                 baseTypeHandle = default(RuntimeTypeHandle);
                 return false;
@@ -425,7 +430,7 @@ namespace Internal.Runtime.Augments
         public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
                 return null;
 
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
@@ -519,7 +524,21 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        public unsafe static RuntimeTypeHandle GetGenericInstantiation(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
+        public static RuntimeTypeHandle GetGenericDefinition(RuntimeTypeHandle typeHandle)
+        {
+            EETypePtr eeType = typeHandle.ToEETypePtr();
+            Debug.Assert(eeType.IsGeneric);
+            return new RuntimeTypeHandle(eeType.GenericDefinition);
+        }
+
+        public static RuntimeTypeHandle GetGenericArgument(RuntimeTypeHandle typeHandle, int argumentIndex)
+        {
+            EETypePtr eeType = typeHandle.ToEETypePtr();
+            Debug.Assert(eeType.IsGeneric);
+            return new RuntimeTypeHandle(eeType.Instantiation[argumentIndex]);
+        }
+
+        public static RuntimeTypeHandle GetGenericInstantiation(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
 
@@ -553,6 +572,11 @@ namespace Internal.Runtime.Augments
         public static bool HasCctor(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().HasCctor;
+        }
+
+        public static RuntimeTypeHandle RuntimeTypeHandleOf<T>()
+        {
+            return new RuntimeTypeHandle(EETypePtr.EETypePtrOf<T>());
         }
 
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
@@ -591,6 +615,8 @@ namespace Internal.Runtime.Augments
             if (srcEEType.IsGenericTypeDefinition || dstEEType.IsGenericTypeDefinition)
                 return false;
             if (srcEEType.IsPointer || dstEEType.IsPointer)
+                return false;
+            if (srcEEType.IsByRef || dstEEType.IsByRef)
                 return false;
 
             if (!srcEEType.IsPrimitive)
@@ -692,54 +718,6 @@ namespace Internal.Runtime.Augments
         {
             return TypeLoaderExports.RegisterResolutionFunction(functionPointer);
         }
-        
-        // IL Code: stobj
-        public unsafe static void Write<T>(IntPtr destination, T value, RuntimeTypeHandle typeHandle)
-        {
-            if (RuntimeAugments.IsValueType(typeHandle))
-            {
-                RuntimeAugments.StoreValueTypeField(destination, (object)value, typeHandle);
-            }
-            else
-            {
-                RuntimeAugments.StoreReferenceTypeField(destination, (object)value);
-            }
-        }
-
-        // IL Code:ldobj
-        public unsafe static T Read<T>(IntPtr source, RuntimeTypeHandle typeHandle)
-        {
-            if (RuntimeAugments.IsValueType(typeHandle))
-            {
-                return (T)RuntimeAugments.LoadValueTypeField(source, typeHandle);
-            }
-            else
-            {
-                return (T)RuntimeAugments.LoadReferenceTypeField(source);
-            }
-        }
-
-        // IL code: sizeof
-        public unsafe static int SizeOf<T>(RuntimeTypeHandle typeHandle)
-        {
-            if (RuntimeAugments.IsValueType(typeHandle))
-            {
-                return typeHandle.GetValueTypeSize();
-            }
-            else
-            {
-                return sizeof(IntPtr);
-            }
-        }
-
-        // IL code: conv.u
-        public unsafe static IntPtr AsPointer<T>(ref T value)
-        {
-            fixed (IntPtr* pValue = &value.m_pEEType)
-            {
-                return (IntPtr)pValue;
-            }
-        }
 
         //==============================================================================================
         // Internals
@@ -818,6 +796,42 @@ namespace Internal.Runtime.Augments
         public static IntPtr GetUniversalTransitionThunk()
         {
             return RuntimeImports.RhGetUniversalTransitionThunk();
+        }
+
+        public static object CreateThunksHeap(IntPtr commonStubAddress)
+        {
+            object newHeap = RuntimeImports.RhCreateThunksHeap(commonStubAddress);
+            if (newHeap == null)
+                throw new OutOfMemoryException();
+            return newHeap;
+        }
+
+        public static IntPtr AllocateThunk(object thunksHeap)
+        {
+            IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
+            if (newThunk == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return newThunk;
+        }
+
+        public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)
+        {
+            RuntimeImports.RhFreeThunk(thunksHeap, thunkAddress);
+        }
+
+        public static void SetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
+        {
+            RuntimeImports.RhSetThunkData(thunksHeap, thunkAddress, context, target);
+        }
+
+        public static bool TryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
+        {
+            return RuntimeImports.RhTryGetThunkData(thunksHeap, thunkAddress, out context, out target);
+        }
+
+        public static int GetThunkSize()
+        {
+            return RuntimeImports.RhGetThunkSize();
         }
 
         public static unsafe IntPtr GetRawAddrOfPinnedObject(IntPtr gcHandleAsIntPtr)

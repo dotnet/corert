@@ -147,14 +147,12 @@ COOP_PINVOKE_HELPER(UInt8 *, RhFindMethodStartAddress, (void * codeAddr))
 
 PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 {
-    FOREACH_MODULE(pModule)
+    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    MethodInfo methodInfo;
+    if (pCodeManager != NULL && pCodeManager->FindMethodInfo(ControlPC, &methodInfo))
     {
-        if (pModule->ContainsCodeAddress(ControlPC))
-        {
-            return pModule->FindMethodStartAddress(ControlPC);
-        }
+        return (PTR_UInt8)pCodeManager->GetMethodStartAddress(&methodInfo);
     }
-    END_FOREACH_MODULE;
 
     return NULL;
 }
@@ -757,7 +755,7 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (EEType * pInterface, In
     ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
 
     pCell[0].m_pStub = (UIntNative)&RhpInitialDynamicInterfaceDispatch;
-    pCell[0].m_pCache = ((UIntNative)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointer;
+    pCell[0].m_pCache = ((UIntNative)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointerOrMetadataToken;
     pCell[1].m_pStub = 0;
     pCell[1].m_pCache = (UIntNative)slotNumber;
 
@@ -808,13 +806,37 @@ COOP_PINVOKE_HELPER(void *, RhGetGcStaticFieldData, (EEType * pEEType))
     return NULL;
 }
 
-COOP_PINVOKE_HELPER(void *, RhAllocateThunksFromTemplate, (PTR_UInt8 moduleBase, UInt32 templateRva, UInt32 templateSize))
+#ifndef FEATURE_RX_THUNKS
+
+COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
+EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
 {
+    static void* pThunksTemplateAddress = NULL;
+
+    if (pThunksTemplateAddress == NULL)
+    {
+        // First, we use the thunks directly from the thunks template sections in the module until all
+        // thunks in that template are used up.
+        pThunksTemplateAddress = RhpGetThunksBase();
+        return pThunksTemplateAddress;
+    }
+
+    // We've already used the thunks template in the module for some previous thunks, and we 
+    // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have 
+    // more thunks
+
+    UInt8* pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
+    int templateRva = (int)((UInt8*)RhpGetThunksBase() - pModuleBase);
+    int templateSize = RhpGetNumThunkBlocksPerMapping() * OS_PAGE_SIZE * 2;
+
     void* pThunkMap = NULL;
-    if (PalAllocateThunksFromTemplate((HANDLE)moduleBase, templateRva, templateSize, &pThunkMap) == FALSE)
+    if (PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap) == FALSE)
         return NULL;
 
     return pThunkMap;
 }
+
+#endif      // FEATURE_RX_THUNKS
 
 #endif

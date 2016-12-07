@@ -129,9 +129,9 @@ void ThreadStore::AttachCurrentThread()
     g_pThreadList = pThread;
 }
 
-void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
+void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
-    GCHeap::GetGCHeap()->SetGCInProgress(TRUE);
+    g_theGCHeap->SetGCInProgress(TRUE);
 
     // TODO: Implement
 }
@@ -140,7 +140,7 @@ void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     // TODO: Implement
 
-    GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
+    g_theGCHeap->SetGCInProgress(FALSE);
 }
 
 void GCToEEInterface::GcScanRoots(promote_func* fn,  int condemned, int max_gen, ScanContext* sc)
@@ -184,7 +184,7 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
     pThread->DisablePreemptiveGC();
 }
 
-alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
+gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
 {
     return pThread->GetAllocContext();
 }

@@ -28,13 +28,10 @@ namespace ILCompiler.Compiler.CppCodeGen
                 if (node is EETypeNode)
                 {
                     var typeNode = node as EETypeNode;
-                    if (typeNode != null)
-                    {
-                        if (!_typeToNodeMap.ContainsKey(typeNode.Type))
-                            _typeToNodeMap[typeNode.Type] = typeNode;
-                        else if (typeNode is ConstructedEETypeNode)
-                            _typeToNodeMap[typeNode.Type] = typeNode;
-                    }
+                    if (!_typeToNodeMap.ContainsKey(typeNode.Type))
+                        _typeToNodeMap[typeNode.Type] = typeNode;
+                    else if (typeNode is ConstructedEETypeNode)
+                        _typeToNodeMap[typeNode.Type] = typeNode;
                 }
                 // Assume ordering doesn't matter
                 else _nodes.Add(node);

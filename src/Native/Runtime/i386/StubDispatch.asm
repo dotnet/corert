@@ -15,6 +15,85 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 EXTERN RhpCidResolve : PROC
 EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
+EXTERN RhpCastableObjectResolve : PROC
+
+EXTERN  _t_TLS_DispatchCell:DWORD
+EXTERN  __tls_index:DWORD
+
+GET_TLS_DISPATCH_CELL macro
+        ASSUME fs : NOTHING
+        mov     eax, [__tls_index]
+        add     eax, eax
+        add     eax, eax
+        add     eax, fs:[__tls_array]
+        mov     eax, [eax]
+        mov     eax, [eax + SECTIONREL _t_TLS_DispatchCell]
+endm
+
+SET_TLS_DISPATCH_CELL macro
+        ;; ecx: value to assign to the TLS variable
+        ASSUME fs : NOTHING
+        push    eax
+        mov     eax, [__tls_index]
+        add     eax, eax
+        add     eax, eax
+        add     eax, fs:[__tls_array]
+        mov     eax, [eax]
+        lea     eax, [eax + SECTIONREL _t_TLS_DispatchCell]
+        mov     [eax],ecx
+        pop     eax
+endm
+
+_RhpCastableObjectDispatch_CommonStub proc public
+        ;; There are arbitrary callers passing arguments with arbitrary signatures.
+        ;; Custom calling convention:
+        ;;      eax: pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
+
+        ;; make some scratch regs
+        push    ecx
+
+        ;; store dispatch cell address into the TLS variable
+        mov     ecx, [eax]
+        SET_TLS_DISPATCH_CELL
+        
+        ;; restore the regs we used
+        pop     ecx
+
+        ;; jump to the target
+        mov     eax, [eax + 4]                                  ;;   eax <- target slot data
+        jmp     eax
+_RhpCastableObjectDispatch_CommonStub endp
+
+_RhpTailCallTLSDispatchCell proc public
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+
+        ;; Tail call to the target of the dispatch cell
+        jmp     dword ptr [eax]
+_RhpTailCallTLSDispatchCell endp
+
+_RhpCastableObjectDispatchHelper_TailCalled proc public
+        ;; Load the dispatch cell out of the TLS variable
+        GET_TLS_DISPATCH_CELL
+        jmp     _RhpCastableObjectDispatchHelper
+_RhpCastableObjectDispatchHelper_TailCalled endp
+
+_RhpCastableObjectDispatchHelper proc public
+        push    ebp
+        mov     ebp, esp
+        ;; TODO! Implement fast lookup helper to avoid the universal transition each time we
+        ;; hit a CastableObject
+
+        ;; If the initial lookup fails, call into managed under the universal thunk
+        ;; to run the full lookup routine
+
+        ;; indirection cell address is in EAX, it will be passed by
+        ;; the universal transition thunk as an argument to RhpCastableObjectResolve
+        push    eax
+        lea     eax, RhpCastableObjectResolve
+        push    eax
+        jmp     _RhpUniversalTransition_DebugStepTailCall@0
+_RhpCastableObjectDispatchHelper endp
 
 
 ;; Macro that generates code to check a single cache entry.
@@ -64,7 +143,7 @@ CurrentEntry = CurrentEntry + 1
         ;; indirection cell using the back pointer in the cache block
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
         pop     ebx
-        jmp     InterfaceDispatchCacheMiss
+        jmp     RhpInterfaceDispatchSlow
 
     StubName endp
 
@@ -81,19 +160,19 @@ DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
 ;; Shared out of line helper used on cache misses.
-    InterfaceDispatchCacheMiss proc
+RhpInterfaceDispatchSlow proc
 ;; eax points at InterfaceDispatchCell
 
-;; Setup call to Universal Transition thunk
+        ;; Setup call to Universal Transition thunk
         push        ebp
         mov         ebp, esp
         push        eax   ; First argument (Interface Dispatch Cell)
         lea         eax, [RhpCidResolve]
         push        eax ; Second argument (RhpCidResolve)
 
-;; Jump to Universal Transition
+        ;; Jump to Universal Transition
         jmp         _RhpUniversalTransition_DebugStepTailCall@0
-    InterfaceDispatchCacheMiss endp
+RhpInterfaceDispatchSlow endp
 
 ;; Out of line helper used when we try to interface dispatch on a null pointer. Sets up the stack so the
 ;; debugger gives a reasonable stack trace.
@@ -104,14 +183,29 @@ RhpInterfaceDispatchNullReference proc public
         int     3
 RhpInterfaceDispatchNullReference endp
 
+;; Stub dispatch routine for dispatch to a vtable slot
+_RhpVTableOffsetDispatch proc public
+        ;; eax currently contains the indirection cell address. We need to update it to point to the vtable offset (which is in the m_pCache field)
+        mov     eax, [eax + OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        ;; add the vtable offset to the EEType pointer 
+        add     eax, [ecx]
+
+        ;; Load the target address of the vtable into eax
+        mov     eax, [eax]
+
+        ;; tail-jump to the target
+        jmp     eax
+_RhpVTableOffsetDispatch endp
+
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
-    RhpInitialInterfaceDispatch proc public
+_RhpInitialInterfaceDispatch proc public
     ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
 
-        jmp InterfaceDispatchCacheMiss
+        jmp RhpInterfaceDispatchSlow
 
-    RhpInitialInterfaceDispatch endp
+_RhpInitialInterfaceDispatch endp
 
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH

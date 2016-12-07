@@ -99,7 +99,7 @@ namespace System.Threading
         public override void Post(SendOrPostCallback d, object state)
         {
             if (d == null)
-                throw new ArgumentNullException("d");
+                throw new ArgumentNullException(nameof(d));
             Contract.EndContractBlock();
 
             var invoker = new Invoker(d, state);

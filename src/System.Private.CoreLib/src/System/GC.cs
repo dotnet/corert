@@ -34,6 +34,7 @@ namespace System
         NonBlocking = 0x00000001,
         Blocking = 0x00000002,
         Optimized = 0x00000004,
+        Compacting = 0x00000008,
     }
 
     public static class GC
@@ -42,7 +43,7 @@ namespace System
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
 
             return RuntimeImports.RhGetGeneration(obj);
@@ -68,14 +69,19 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking)
         {
+            Collect(generation, mode, blocking, false);
+        }
+
+        public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
+        {
             if (generation < 0)
             {
-                throw new ArgumentOutOfRangeException("generation", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
             }
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
             {
-                throw new ArgumentOutOfRangeException("mode", SR.ArgumentOutOfRange_Enum);
+                throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
 
             int iInternalModes = 0;
@@ -85,11 +91,16 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.Optimized;
             }
 
+            if (compacting)
+            {
+                iInternalModes |= (int)InternalGCCollectionMode.Compacting;
+            }
+
             if (blocking)
             {
                 iInternalModes |= (int)InternalGCCollectionMode.Blocking;
             }
-            else
+            else if (!compacting)
             {
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
@@ -107,7 +118,7 @@ namespace System
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
 
             RuntimeImports.RhSuppressFinalize(obj);
@@ -116,7 +127,7 @@ namespace System
         public static void ReRegisterForFinalize(Object obj)
         {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
 
             RuntimeImports.RhReRegisterForFinalize(obj);
         }
@@ -137,7 +148,7 @@ namespace System
         public static int CollectionCount(int generation)
         {
             if (generation < 0)
-                throw new ArgumentOutOfRangeException("generation", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
 
             return RuntimeImports.RhGetGcCollectionCount(generation, false);
         }
@@ -220,14 +231,14 @@ namespace System
         {
             if (bytesAllocated <= 0)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
 #if !BIT64
             if (bytesAllocated > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 #endif
@@ -289,14 +300,14 @@ namespace System
         {
             if (bytesAllocated <= 0)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
 #if !BIT64
             if (bytesAllocated > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("bytesAllocated",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                         SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 #endif

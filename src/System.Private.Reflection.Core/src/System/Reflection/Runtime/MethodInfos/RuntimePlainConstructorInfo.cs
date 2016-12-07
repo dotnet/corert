@@ -15,14 +15,12 @@ using Internal.Reflection.Core.Execution;
 
 using Internal.Reflection.Tracing;
 
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
     // The runtime's implementation of ConstructorInfo's represented in the metadata (this is the 99% case.)
     //
-    internal sealed partial class RuntimePlainConstructorInfo : RuntimeConstructorInfo
+    internal sealed partial class RuntimePlainConstructorInfo<TRuntimeMethodCommon> : RuntimeConstructorInfo where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
         //
         // methodHandle    - the "tkMethodDef" that identifies the method.
@@ -43,9 +41,9 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimePlainConstructorInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        private RuntimePlainConstructorInfo(TRuntimeMethodCommon common)
         {
-            _common = new RuntimeMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo);
+            _common = common;
         }
 
         public sealed override MethodAttributes Attributes
@@ -96,8 +94,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.ConstructorInfo_Invoke(this, parameters);
 #endif
-            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
-                throw new NotImplementedException();
+            binder.EnsureNotCustomBinder();
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();
@@ -134,7 +131,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimePlainConstructorInfo other = obj as RuntimePlainConstructorInfo;
+            RuntimePlainConstructorInfo<TRuntimeMethodCommon> other = obj as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
             if (other == null)
                 return false;
             return _common.Equals(other._common);
@@ -147,14 +144,15 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return _common.ComputeToString(this, Array.Empty<RuntimeTypeInfo>());
+            return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
 
-        protected sealed override RuntimeParameterInfo[] RuntimeParametersAndReturn
+        protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {
             get
             {
-                return _common.GetRuntimeParametersAndReturn(this, Array.Empty<RuntimeTypeInfo>());
+                RuntimeParameterInfo ignore;
+                return _lazyParameters ?? (_lazyParameters = RuntimeMethodHelpers.GetRuntimeParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out ignore));
             }
         }
 
@@ -168,11 +166,12 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
 
-                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_common.Reader, _common.DeclaringType, _common.MethodHandle, Array.Empty<RuntimeTypeInfo>(), this);
+                return _common.GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
         }
 
-        private readonly RuntimeMethodCommon _common;
+        private volatile RuntimeParameterInfo[] _lazyParameters;
+        private TRuntimeMethodCommon _common;
     }
 }
 

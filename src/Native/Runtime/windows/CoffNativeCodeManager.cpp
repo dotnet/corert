@@ -16,12 +16,17 @@
 
 #include "CommonMacros.inl"
 
+#define GCINFODECODER_NO_EE
+#include "coreclr/gcinfodecoder.cpp"
+
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
 #define UBF_FUNC_KIND_HANDLER   0x01
 #define UBF_FUNC_KIND_FILTER    0x02
 
 #define UBF_FUNC_HAS_EHINFO     0x04
+
+#define UBF_FUNC_REVERSE_PINVOKE 0x08
 
 #if defined(_TARGET_AMD64_)
 
@@ -300,7 +305,31 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
-    // @TODO: CORERT: PInvoke transitions
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
+
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+    {
+        // Reverse PInvoke transition should on the main function body only
+        assert(pNativeMethodInfo->mainRuntimeFunction == pNativeMethodInfo->runtimeFunction);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+            p += sizeof(int32_t);
+
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+
+        // @TODO: CORERT: Encode reverse PInvoke frame slot in GCInfo: https://github.com/dotnet/corert/issues/2115
+        // INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        // assert(slot != NO_REVERSE_PINVOKE_FRAME);
+
+        *ppPreviousTransitionFrame = (PTR_VOID)-1;
+        return true;
+    }
+
     *ppPreviousTransitionFrame = NULL;
 
     CONTEXT context;
@@ -409,7 +438,9 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);
 
-    uint8_t unwindBlockFlags = *(dac_cast<DPTR(uint8_t)>(pUnwindDataBlob) + unwindDataBlobSize);
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+
+    uint8_t unwindBlockFlags = *p++;
 
     // return if there is no EH info associated with this method
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) == 0)
@@ -418,8 +449,9 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     }
 
     *pMethodStartAddress = dac_cast<PTR_VOID>(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress);
+
     pEnumState->pMethodStartAddress = dac_cast<PTR_UInt8>(*pMethodStartAddress);
-    pEnumState->pEHInfo = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize + 1;
+    pEnumState->pEHInfo = dac_cast<PTR_UInt8>(m_moduleBase + *dac_cast<PTR_Int32>(p));
     pEnumState->uClause = 0;
     pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
 
@@ -476,6 +508,12 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     }
 
     return true;
+}
+
+PTR_VOID CoffNativeCodeManager::GetMethodStartAddress(MethodInfo * pMethodInfo)
+{
+    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+    return dac_cast<PTR_VOID>(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress);
 }
 
 void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)

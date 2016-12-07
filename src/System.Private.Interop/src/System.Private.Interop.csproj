@@ -23,16 +23,16 @@
     
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Threading\src\System.Private.Threading.csproj" />
-    <ProjectReference Include="..\..\System.Private.Reflection\src\System.Private.Reflection.csproj" />    
 
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Handles.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" >
+      <Aliases>CoreFX_Collections</Aliases>
+    </ReferencePath>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Contracts.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Debug.dll" />
@@ -59,6 +59,9 @@
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs" >
       <Link>Internal\NativeFormat\NativeFormatReader.String.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs">
+      <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
+    </Compile>
 
     <Compile Include="Shared\__ComObject.cs" />
     <Compile Include="Shared\ComCallableObject.cs" />
@@ -67,7 +70,6 @@
     <Compile Include="Shared\DebugAnnotations.cs" />
     <Compile Include="Shared\Dictionary.cs" />
     <Compile Include="Shared\DictionaryBase.cs" />
-    <Compile Include="Shared\EventRegistrationToken.cs" />
     <Compile Include="Shared\FixedHashTable.cs" />
     <Compile Include="Shared\GCEventProvider.cs" />
     <Compile Include="Shared\HashSet.cs" />
@@ -98,7 +100,7 @@
     <Compile Include="Shared\StandardInterfaces.cs" />
     <Compile Include="Shared\StringPool.cs" /> 
     <Compile Include="Shared\McgWindowsRuntimeVersionAttribute.cs" />    
-    <Compile Include="Shared\WindowsRuntimeMarshal.cs" />
+    <Compile Condition="'$(EnableWinRT)'=='true'" Include="Shared\WindowsRuntimeMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffset.cs" />
@@ -155,6 +157,7 @@
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="Interop\Interop.Memory.cs" />
   </ItemGroup>
 
@@ -235,6 +238,13 @@
   
 
    <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">     
+    <Compile Include="System\Reflection\DispatchProxy.cs" />
+    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
+    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
+    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
+  </ItemGroup> 
+
+  <ItemGroup Condition="'$(EnableWinRT)'=='true'">  
     <Compile Include="InteropCallbacks.cs"/>
     <Compile Include="WinRT\ExceptionHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
@@ -246,12 +256,7 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
-    <Compile Include="System\Reflection\DispatchProxy.cs" />
-    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
-    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
-    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
-  </ItemGroup> 
-
+  </ItemGroup>
   
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsProjectKLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">

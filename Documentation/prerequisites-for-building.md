@@ -13,11 +13,11 @@ PowerShell also needs to be available from the PATH environment variable (it's t
 Install basic dependency packages:
 
 ```
-sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev liblttng-ust liblttng-ust-dev uuid uuid-dev
+sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev liblttng-ust liblttng-ust-dev uuid uuid-dev
 ```
 
 # Mac OSX (10.10+)
 
 1. Install [Command Line Tools for XCode 6.3.1](https://developer.apple.com/xcode/download/) or higher. 
 2. Install [CMake](https://cmake.org/download/). Launch `/Applications/CMake.app/Contents/MacOS/CMake` GUI. Goto "OSX App Menu -> Tools -> Install For Command Line Use" and follow the steps. CMake < 3.6 has [a bug](https://cmake.org/Bug/view.php?id=16064) that can make `--install` fail. Do `sudo mkdir /usr/local/bin` to work around.
-3. Install OpenSSL. Build tools have a dependency on OpenSSL. You can use [Homebrew](http://brew.sh/) to install it: with Homebrew installed, run `brew install openssl` followed by `brew link --force openssl`.
+3. Install OpenSSL. Build tools have a dependency on OpenSSL. You can use [Homebrew](http://brew.sh/) to install it: with Homebrew installed, run `brew install openssl` followed by `ln -s /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib /usr/local/lib/`, followed by `ln -s /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/`.
