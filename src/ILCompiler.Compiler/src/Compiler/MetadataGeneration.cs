@@ -175,8 +175,7 @@ namespace ILCompiler
             var lookupSig = new DynamicInvokeMethodSignature(sig);
             if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
             {
-                // TODO: figure out a better owning type (for multifile)
-                thunk = new DynamicInvokeMethodThunk(context.SystemModule.GetGlobalModuleType(), lookupSig);
+                thunk = new DynamicInvokeMethodThunk(_nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
                 _dynamicInvokeThunks.Add(lookupSig, thunk);
             }
 
