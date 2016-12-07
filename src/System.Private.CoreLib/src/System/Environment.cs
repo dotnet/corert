@@ -20,6 +20,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.IO;
 
 using Internal.Runtime.Augments;
 
@@ -121,6 +122,20 @@ namespace System
                 EnvironmentAugments.ExitCode = value;
             }
         }
+
+#if !ENABLE_WINRT
+        // Returns the system directory (ie, C:\WinNT\System32).
+        public static String SystemDirectory {
+            get {
+                StringBuilder sb = new StringBuilder(Path.MAX_PATH);
+                int r = Win32Native.GetSystemDirectory(sb, Path.MAX_PATH);
+                if (r==0) __Error.WinIOError();
+                String path = sb.ToString();
+
+                return path;
+            }
+        }
+#endif
 
         public static void Exit(int exitCode) => EnvironmentAugments.Exit(exitCode);
     }
