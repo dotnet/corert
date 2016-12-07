@@ -53,7 +53,7 @@ namespace System.Collections.Generic
                     comparer = Comparer<T>.Default;
                 }
 
-                IntrospectiveSort(keys, index, length, comparer);
+                IntrospectiveSort(keys, index, length, comparer.Compare);
             }
             catch (IndexOutOfRangeException)
             {
@@ -84,6 +84,27 @@ namespace System.Collections.Generic
 
         #endregion
 
+        internal static void Sort(T[] keys, int index, int length, Comparison<T> comparer)
+        {
+            Debug.Assert(keys != null, "Check the arguments in the caller!");
+            Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(comparer != null, "Check the arguments in the caller!");
+
+            // Add a try block here to detect bogus comparisons
+            try
+            {
+                IntrospectiveSort(keys, index, length, comparer);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_IComparerFailed, e);
+            }
+        }
+
         internal static int InternalBinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
@@ -110,11 +131,11 @@ namespace System.Collections.Generic
             return ~lo;
         }
 
-        private static void SwapIfGreater(T[] keys, IComparer<T> comparer, int a, int b)
+        private static void SwapIfGreater(T[] keys, Comparison<T> comparer, int a, int b)
         {
             if (a != b)
             {
-                if (comparer.Compare(keys[a], keys[b]) > 0)
+                if (comparer(keys[a], keys[b]) > 0)
                 {
                     T key = keys[a];
                     keys[a] = keys[b];
@@ -133,7 +154,7 @@ namespace System.Collections.Generic
             }
         }
 
-        internal static void IntrospectiveSort(T[] keys, int left, int length, IComparer<T> comparer)
+        internal static void IntrospectiveSort(T[] keys, int left, int length, Comparison<T> comparer)
         {
             Debug.Assert(keys != null);
             Debug.Assert(comparer != null);
@@ -148,7 +169,7 @@ namespace System.Collections.Generic
             IntroSort(keys, left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2(keys.Length), comparer);
         }
 
-        private static void IntroSort(T[] keys, int lo, int hi, int depthLimit, IComparer<T> comparer)
+        private static void IntroSort(T[] keys, int lo, int hi, int depthLimit, Comparison<T> comparer)
         {
             Debug.Assert(keys != null);
             Debug.Assert(comparer != null);
@@ -195,7 +216,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private static int PickPivotAndPartition(T[] keys, int lo, int hi, IComparer<T> comparer)
+        private static int PickPivotAndPartition(T[] keys, int lo, int hi, Comparison<T> comparer)
         {
             Debug.Assert(keys != null);
             Debug.Assert(comparer != null);
@@ -218,8 +239,8 @@ namespace System.Collections.Generic
 
             while (left < right)
             {
-                while (comparer.Compare(keys[++left], pivot) < 0) ;
-                while (comparer.Compare(pivot, keys[--right]) < 0) ;
+                while (comparer(keys[++left], pivot) < 0) ;
+                while (comparer(pivot, keys[--right]) < 0) ;
 
                 if (left >= right)
                     break;
@@ -232,7 +253,7 @@ namespace System.Collections.Generic
             return left;
         }
 
-        private static void Heapsort(T[] keys, int lo, int hi, IComparer<T> comparer)
+        private static void Heapsort(T[] keys, int lo, int hi, Comparison<T> comparer)
         {
             Debug.Assert(keys != null);
             Debug.Assert(comparer != null);
@@ -252,7 +273,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void DownHeap(T[] keys, int i, int n, int lo, IComparer<T> comparer)
+        private static void DownHeap(T[] keys, int i, int n, int lo, Comparison<T> comparer)
         {
             Debug.Assert(keys != null);
             Debug.Assert(comparer != null);
@@ -264,11 +285,11 @@ namespace System.Collections.Generic
             while (i <= n / 2)
             {
                 child = 2 * i;
-                if (child < n && comparer.Compare(keys[lo + child - 1], keys[lo + child]) < 0)
+                if (child < n && comparer(keys[lo + child - 1], keys[lo + child]) < 0)
                 {
                     child++;
                 }
-                if (!(comparer.Compare(d, keys[lo + child - 1]) < 0))
+                if (!(comparer(d, keys[lo + child - 1]) < 0))
                     break;
                 keys[lo + i - 1] = keys[lo + child - 1];
                 i = child;
@@ -276,7 +297,7 @@ namespace System.Collections.Generic
             keys[lo + i - 1] = d;
         }
 
-        private static void InsertionSort(T[] keys, int lo, int hi, IComparer<T> comparer)
+        private static void InsertionSort(T[] keys, int lo, int hi, Comparison<T> comparer)
         {
             Debug.Assert(keys != null);
             Debug.Assert(lo >= 0);
@@ -289,7 +310,7 @@ namespace System.Collections.Generic
             {
                 j = i;
                 t = keys[i + 1];
-                while (j >= lo && comparer.Compare(t, keys[j]) < 0)
+                while (j >= lo && comparer(t, keys[j]) < 0)
                 {
                     keys[j + 1] = keys[j];
                     j--;
@@ -582,5 +603,3 @@ namespace System.Collections.Generic
     }
     #endregion
 }
-
-

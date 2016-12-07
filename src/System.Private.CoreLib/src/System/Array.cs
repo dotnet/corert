@@ -1987,23 +1987,7 @@ namespace System
                 throw new ArgumentNullException(nameof(comparison));
             }
 
-            IComparer<T> comparer = new FunctorComparer<T>(comparison);
-            Array.Sort(array, comparer);
-        }
-
-        internal sealed class FunctorComparer<T> : IComparer<T>
-        {
-            private Comparison<T> _comparison;
-
-            public FunctorComparer(Comparison<T> comparison)
-            {
-                _comparison = comparison;
-            }
-
-            public int Compare(T x, T y)
-            {
-                return _comparison(x, y);
-            }
+            ArraySortHelper<T>.Sort(array, 0, array.Length, comparison);
         }
 
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items)
