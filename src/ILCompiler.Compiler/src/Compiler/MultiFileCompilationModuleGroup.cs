@@ -66,9 +66,12 @@ namespace ILCompiler
         }
     }
 
-    public class MultiFileLibraryCompilationModuleGroup : MultiFileCompilationModuleGroup
+    /// <summary>
+    /// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
+    /// </summary>
+    public class MultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
     {
-        public MultiFileLibraryCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+        public MultiFileSharedCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
             : base(context, compilationModuleSet)
         {
         }
@@ -79,6 +82,9 @@ namespace ILCompiler
         }
     }
 
+    /// <summary>
+    /// Represents an unshared multifile compilation group where types contained in the group are expanded as needed.
+    /// </summary>
     public class MultiFileLeafCompilationModuleGroup : MultiFileCompilationModuleGroup
     {
         public MultiFileLeafCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
