@@ -18,13 +18,13 @@ namespace Internal.IL.Stubs.StartupCode
     public sealed class StartupCodeMainMethod : ILStubMethod
     {
         private TypeDesc _owningType;
-        private MethodDesc _mainMethod;
+        private MainMethodWrapper _mainMethod;
         private MethodSignature _signature;
 
         public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod)
         {
             _owningType = owningType;
-            _mainMethod = mainMethod;
+            _mainMethod = new MainMethodWrapper(owningType, mainMethod);
         }
 
         public override TypeSystemContext Context
@@ -143,6 +143,70 @@ namespace Internal.IL.Stubs.StartupCode
             get
             {
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// Wraps the main method in a layer of indirection. This is necessary to protect the startup code
+        /// infrastructure from situation when the owning type of the main method cannot be loaded, and codegen
+        /// is instructed to generate a throwing body. Without wrapping, this behavior would result in
+        /// replacing the entire startup code sequence with a throwing body, causing us to enter managed
+        /// environment without it being fully initialized. (In particular, the unhandled exception experience
+        /// won't be initialized, making this difficult to diagnose.)
+        /// </summary>
+        private class MainMethodWrapper : ILStubMethod
+        {
+            private MethodDesc _mainMethod;
+
+            public MainMethodWrapper(TypeDesc owningType, MethodDesc mainMethod)
+            {
+                _mainMethod = mainMethod;
+
+                OwningType = owningType;
+            }
+
+            public override TypeSystemContext Context
+            {
+                get
+                {
+                    return OwningType.Context;
+                }
+            }
+
+            public override TypeDesc OwningType
+            {
+                get;
+            }
+
+            public override string Name
+            {
+                get
+                {
+                    return "StartupCodeSafetyWrapper";
+                }
+            }
+
+            public override MethodSignature Signature
+            {
+                get
+                {
+                    return _mainMethod.Signature;
+                }
+            }
+
+            public override MethodIL EmitIL()
+            {
+                ILEmitter emit = new ILEmitter();
+                ILCodeStream codeStream = emit.NewCodeStream();
+
+                for (int i = 0; i < Signature.Length; i++)
+                    codeStream.EmitLdArg(i);
+
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_mainMethod));
+
+                codeStream.Emit(ILOpcode.ret);
+
+                return emit.Link(this);
             }
         }
     }
