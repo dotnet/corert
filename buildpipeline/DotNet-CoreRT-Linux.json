@@ -209,7 +209,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/cibuild/clean.sh",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/clean.sh",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -263,7 +263,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/cibuild/build-native.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-native.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -317,7 +317,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/cibuild/build-managed.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-managed.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -371,7 +371,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/cibuild/build-tests.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-tests.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

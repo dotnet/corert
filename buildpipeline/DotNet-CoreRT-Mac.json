@@ -56,7 +56,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)/corert/cibuild/clean.sh",
+      "displayName": "Run $(Build.SourcesDirectory)/corert/buildscripts/clean.sh",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -64,7 +64,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/cibuild/clean.sh",
+        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/clean.sh",
         "arguments": "-all",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -82,7 +82,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/cibuild/build-native.sh",
+        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/build-native.sh",
         "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -100,7 +100,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/cibuild/build-managed.sh",
+        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/build-managed.sh",
         "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -118,7 +118,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/cibuild/build-tests.sh",
+        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/build-tests.sh",
         "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -136,7 +136,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/cibuild/publish-packages.sh",
+        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/publish-packages.sh",
         "arguments": "",
         "workingFolder": "corert",
         "failOnStandardError": "false"

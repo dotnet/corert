@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-CoreRT_Root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
+scriptRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ "$BUILDVARS_DONE" != 1 ]; then
-    . $CoreRT_Root/cibuild/buildvars-setup.sh $*
+    . $scriptRoot/buildvars-setup.sh $*
 fi
 
 # Prepare the system for building

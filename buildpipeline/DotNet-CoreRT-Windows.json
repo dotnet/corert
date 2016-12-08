@@ -94,7 +94,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)\\corert\\cibuild\\clean.cmd",
+      "displayName": "Run $(Build.SourcesDirectory)\\corert\\buildscripts\\clean.cmd",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -102,7 +102,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\cibuild\\clean.cmd",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\clean.cmd",
         "arguments": "-all",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -120,7 +120,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\cibuild\\build-native.cmd",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\build-native.cmd",
         "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -138,7 +138,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\cibuild\\build-managed.cmd",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\build-managed.cmd",
         "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -156,7 +156,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\cibuild\\build-tests.cmd",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\build-tests.cmd",
         "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
@@ -361,7 +361,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\cibuild\\clean.cmd",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\clean.cmd",
         "arguments": "",
         "workingFolder": "corert",
         "failOnStandardError": "false"
