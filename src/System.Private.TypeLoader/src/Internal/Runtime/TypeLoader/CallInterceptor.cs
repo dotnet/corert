@@ -1128,8 +1128,6 @@ namespace Internal.Runtime.CallInterceptor
                                 }
                             }
                         }
-
-                        SerializedDebugData.RegisterTailCallThunk(_thunkAddress);
                     }
                 }
             }
