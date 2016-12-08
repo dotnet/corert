@@ -148,9 +148,9 @@ namespace Internal.IL.Stubs.StartupCode
 
         /// <summary>
         /// Wraps the main method in a layer of indirection. This is necessary to protect the startup code
-        /// infrastructure from situation when the owning type of the main method cannot be loaded, and codegen
+        /// infrastructure from situations when the owning type of the main method cannot be loaded, and codegen
         /// is instructed to generate a throwing body. Without wrapping, this behavior would result in
-        /// replacing the entire startup code sequence with a throwing body, causing us to enter managed
+        /// replacing the entire startup code sequence with a throwing body, causing us to enter the "rich" managed
         /// environment without it being fully initialized. (In particular, the unhandled exception experience
         /// won't be initialized, making this difficult to diagnose.)
         /// </summary>
