@@ -528,11 +528,13 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// The instance gc layout of a dynamically laid out type.
         /// null if one of the following is true
-        ///    - the type has no GC instance fields
-        ///    - the type already has a type handle
-        ///    - the type has a non-universal canonical template
-        ///    - the type is a reference type array
-        ///    - the type has already been constructed
+        ///     1) For an array type:
+        ///         - the type is a reference array
+        ///     2) For a generic type:
+        ///         - the type has no GC instance fields
+        ///         - the type already has a type handle
+        ///         - the type has a non-universal canonical template
+        ///         - the type has already been constructed
         ///    
         /// If the type is a valuetype array, this is the layout of the valuetype held in the array if the type has GC reference fields
         /// Otherwise, it is the layout of the fields in the type.
@@ -545,13 +547,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     LowLevelList<bool> instanceGCLayout = null;
 
-                    if (TypeBeingBuilt.RetrieveRuntimeTypeHandleIfPossible() ||
-                        TypeBeingBuilt.IsTemplateCanonical() ||
-                        (TypeBeingBuilt is PointerType))
-                    {
-                        _instanceGCLayout = s_emptyLayout;
-                    }
-                    else if (TypeBeingBuilt is ArrayType)
+                    if (TypeBeingBuilt is ArrayType)
                     {
                         if (!IsArrayOfReferenceTypes)
                         {
@@ -569,6 +565,12 @@ namespace Internal.Runtime.TypeLoader
                             // Array of reference type returns null
                             _instanceGCLayout = s_emptyLayout;
                         }
+                    }
+                    else if (TypeBeingBuilt.RetrieveRuntimeTypeHandleIfPossible() ||
+                             TypeBeingBuilt.IsTemplateCanonical() ||
+                             (TypeBeingBuilt is PointerType))
+                    {
+                        _instanceGCLayout = s_emptyLayout;
                     }
                     else
                     {
