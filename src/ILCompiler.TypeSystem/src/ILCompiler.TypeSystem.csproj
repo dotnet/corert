@@ -20,6 +20,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <PackageDestination Include="Tools">
+      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\ArrayType.Canon.cs">
       <Link>TypeSystem\Canon\ArrayType.Canon.cs</Link>
     </Compile>

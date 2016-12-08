@@ -29,7 +29,7 @@
       },
       "inputs": {
         "filename": "git",
-        "arguments": "clone $(GitUrl) corert",
+        "arguments": "clone $(GitUrl) $(SourceFolder)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -48,7 +48,7 @@
       "inputs": {
         "filename": "git",
         "arguments": "checkout $(SourceVersion)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -64,7 +64,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/init-tools.sh",
+        "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/init-tools.sh",
         "arguments": "",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -82,9 +82,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/Tools/scripts/docker/cleanup-docker.sh",
+        "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/Tools/scripts/docker/cleanup-docker.sh",
         "arguments": "",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -102,7 +102,7 @@
       "inputs": {
         "filename": "docker",
         "arguments": "run --name $(DockerContainerName) $(DockerImageName) git clone $(GitUrl) $(GitDirectory)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -120,7 +120,7 @@
       "inputs": {
         "filename": "docker",
         "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -138,7 +138,7 @@
       "inputs": {
         "filename": "docker",
         "arguments": "rm $(DockerContainerName)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -174,7 +174,7 @@
       "inputs": {
         "filename": "docker",
         "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -395,7 +395,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Remove container",
@@ -413,10 +413,10 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run publish-packages.sh",
+      "displayName": "Run build-packages.sh",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -425,7 +425,43 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/publish-packages.sh",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-packages.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Commit changes",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": false,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Remove container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "rm $(DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -503,6 +539,60 @@
     {
       "enabled": true,
       "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Download nuget",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "curl",
+        "arguments": "-L -k -o $(SourceFolder)/nuget.zip https://dotnet.myget.org/F/dotnet-buildtools/api/v2/package/NuGet.CommandLine/3.5.0-rc-1256",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Unzip nuget",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "unzip",
+        "arguments": "$(SourceFolder)/nuget.zip -d $(SourceFolder)/nuget",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": false,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "mono",
+        "arguments": "nuget/tools/NuGet.exe push bin/Product/pkg/*.nupkg $(MyGetApiKey) -Source $(MyGetFeedUrl) -Timeout 3600",
+        "workingFolder": "$(SourceFolder)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
       "alwaysRun": true,
       "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
@@ -512,7 +602,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "$(DockerCopyDest)/corert",
+        "CopyRoot": "$(DockerCopyDest)/$(SourceFolder)",
         "Contents": "*.log\n**/*.log",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
@@ -533,7 +623,7 @@
       "inputs": {
         "filename": "tar",
         "arguments": "-zcvf $(DockerCopyDest)/bin.tar.gz bin",
-        "workingFolder": "$(DockerCopyDest)/corert",
+        "workingFolder": "$(DockerCopyDest)/$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -638,11 +728,9 @@
       "value": "HEAD",
       "allowOverride": true
     },
-    "Build.Clean": {
-      "value": "all"
-    },
     "GitUrl": {
-      "value": "https://github.com/dotnet/corert"
+      "value": "https://github.com/dotnet/corert",
+      "allowOverride": true
     },
     "SourceBranch": {
       "value": "master",
@@ -652,7 +740,7 @@
       "value": "git"
     },
     "GitDirectory": {
-      "value": "/root/corert"
+      "value": "/root/$(SourceFolder)"
     },
     "DockerContainerName": {
       "value": "$(Build.BuildId)"
@@ -670,7 +758,19 @@
       "value": "latest"
     },
     "DockerCopyDest": {
-      "value": "$(Build.BinariesDirectory)/docker_repo"
+      "value": "$(Build.BinariesDirectory)/docker_$(SourceFolder)"
+    },
+    "SourceFolder": {
+      "value": "corert_$(Build.BuildId)",
+      "allowOverride": false
+    },
+    "MyGetFeedUrl": {
+      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
+    },
+    "MyGetApiKey": {
+      "value": null,
+      "isSecret": true,
+      "allowOverride": true
     }
   },
   "demands": [

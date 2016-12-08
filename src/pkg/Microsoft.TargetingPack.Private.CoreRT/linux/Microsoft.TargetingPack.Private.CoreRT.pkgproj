@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
+    <PackagePlatforms>x64;</PackagePlatforms>
+    <PackageTargetRuntime>linux-corert</PackageTargetRuntime>
+    <PreventImplementationReference>true</PreventImplementationReference>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.DeveloperExperience.Console\src\System.Private.DeveloperExperience.Console.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Interop\src\System.Private.Interop.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Reflection\src\System.Private.Reflection.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.StackTraceGenerator\src\System.Private.StackTraceGenerator.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Threading\src\System.Private.Threading.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj">
+      <OSGroup>Linux</OSGroup>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="GetPackageDependencies"/>
+</Project>
+

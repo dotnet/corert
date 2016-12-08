@@ -31,7 +31,7 @@ build_managed_corert()
         ToolchainMilestone=testing
     fi
 
-    $__ProjectRoot/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:TestNugetRuntimeId=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs $__ExtraMsBuildArgs
+    $__ProjectRoot/Tools/msbuild.sh "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:TestNugetRuntimeId=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs $__ExtraMsBuildArgs
     export BUILDERRORLEVEL=$?
 
     echo
@@ -39,6 +39,9 @@ build_managed_corert()
     # Pull the build summary from the log file
     tail -n 4 "$__buildlog"
     echo Build Exit Code = $BUILDERRORLEVEL
+    if [ $BUILDERRORLEVEL != 0 ]; then
+        exit $BUILDERRORLEVEL
+    fi
 }
 
 

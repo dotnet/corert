@@ -69,7 +69,7 @@ build_native_corert()
     if [ $? != 0 ]; then
         echo "Failed to build corert native components."
         popd
-        exit 1
+        exit $?
     fi
 
     echo "CoreRT native components successfully built."

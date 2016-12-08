@@ -19,6 +19,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageDestination Include="Tools">
+      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <Import Project="ILCompiler.MetadataWriter.targets" />
 
   <ItemGroup>
