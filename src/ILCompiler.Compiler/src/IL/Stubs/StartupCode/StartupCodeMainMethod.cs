@@ -182,7 +182,7 @@ namespace Internal.IL.Stubs.StartupCode
             {
                 get
                 {
-                    return "StartupCodeSafetyWrapper";
+                    return "MainMethodWrapper";
                 }
             }
 
