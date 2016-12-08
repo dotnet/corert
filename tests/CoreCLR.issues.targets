@@ -723,6 +723,13 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001j\method001j.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method003\method003.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method004\method004.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method007\method007.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method008\method008.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method009\method009.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method010\method010.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method011\method011.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method012\method012.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\CoreCLR\Method003\Method003.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\109968\test\test.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712\dev10_468712.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\208900\bug\bug.*" />
@@ -929,6 +936,11 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case7\case7.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case8\case8.*" />
 
+    <!-- Ambiguous virtual overloads -->
+    <!-- https://github.com/dotnet/corert/issues/190 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\InterfaceImplementation\HelloWorld\HelloWorld.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\Override\HelloWorld\HelloWorld.*" />
+
     <!-- Marshal.GetExceptionForHR not setting HResult -->
     <!-- https://github.com/dotnet/corert/issues/2256 -->
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetExceptionForHR\GetExceptionForHR\GetExceptionForHR.*" />
@@ -1093,7 +1105,29 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot\Class2_ImplicitOverrideVirtualNewslot.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot_Interface\Class2_ImplicitOverrideVirtualNewslot_Interface.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtual_Interface\Class2_ImplicitOverrideVirtual_Interface.*" />
+    
+    <!-- Allocation of abstract/incomplete types -->
+    <!-- https://github.com/dotnet/corert/issues/2311 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract01\abstract01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract02\abstract02.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract03\abstract03.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract04\abstract04.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract05\abstract05.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract06\abstract06.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract07\abstract07.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract08\abstract08.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract09\abstract09.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\abstract10\abstract10.*" />
 
+    <!-- Allocation of types that don't meet constrains -->
+    <!-- https://github.com/dotnet/corert/issues/2312 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param03\param03.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param04\param04.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param05\param05.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param06\param06.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param07\param07.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param08\param08.*" />
+    
     <!-- Pay for play reflection -->
     <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\system\delegate\miscellaneous\ClosedStatic\ClosedStatic.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\14610\TestObjectGetTypeVirtual\TestObjectGetTypeVirtual.*" />
