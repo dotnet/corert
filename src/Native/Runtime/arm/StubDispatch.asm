@@ -50,12 +50,12 @@
         ;; Check a single entry in the cache.
         ;;  R1 : Instance EEType*
         ;;  R12: Cache data structure
-        ;;  R2 : Trashed
+        ;;  R2 : Trashed. On succesful check, set to the target address to jump
 
         ldr     r2, [r12, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8))]
         cmp     r1, r2
         bne     %ft0
-        ldr     r12, [r12, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8) + 4)]
+        ldr     r2, [r12, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8) + 4)]
         b       %fa99
 0
     MEND
@@ -118,7 +118,7 @@ StubName    SETS    "RhpInterfaceDispatch$entries"
     NESTED_ENTRY $StubName
         ;; On input we have the indirection cell data structure in r12. But we need more scratch registers and
         ;; we may A/V on a null this. Both of these suggest we need a real prolog and epilog.
-        PROLOG_PUSH {r1-r2}
+        PROLOG_PUSH {r1-r2, r12}
 
         ;; r12 currently holds the indirection cell address. We need to update it to point to the cache
         ;; structure instead.
@@ -134,18 +134,23 @@ CurrentEntry SETA 0
 CurrentEntry SETA CurrentEntry + 1
     WEND
 
-        ;; r12 currently contains the cache block. We need to point it back to the 
-        ;; indirection cell using the back pointer in the cache block
-        ldr     r12, [r12, #OFFSETOF__InterfaceDispatchCache__m_pCell]
-
-        EPILOG_POP {r1-r2}
+        EPILOG_POP {r1-r2, r12}
         EPILOG_BRANCH RhpInterfaceDispatchSlow
 
         ;; Common epilog for cache hits. Have to out of line it here due to limitation on the number of
         ;; epilogs imposed by the unwind code macros.
 99
+
+        ;; Restore the indirection cell address
+        ldr     r12, [sp, #8]
+        ;; r2 contains the target address. Store it to the location where r12 was pushed
+        ;; at the entry. The EPILOG_LDRPC_POSTINC will load it into the pc, which will results 
+        ;; in jump to the target with all registers in the same state as when the current function 
+        ;; was entered.
+        str     r2, [sp, #8]
+        
         EPILOG_POP {r1-r2}
-        EPILOG_BRANCH_REG r12
+        EPILOG_LDRPC_POSTINC 4
 
     NESTED_END $StubName
 
