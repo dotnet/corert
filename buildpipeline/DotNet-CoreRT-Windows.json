@@ -94,7 +94,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)\\corert\\cibuild\\clean.cmd",
+      "displayName": "Run $(Build.SourcesDirectory)\\corert\\buildscripts\\clean.cmd",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -102,26 +102,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\cibuild\\clean.cmd",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\clean.cmd",
         "arguments": "-all",
-        "workingFolder": "corert",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)\\corert\\sync.cmd",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\sync.cmd",
-        "arguments": "-p",
         "workingFolder": "corert",
         "failOnStandardError": "false"
       }
@@ -130,7 +112,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Build",
+      "displayName": "Build native",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -138,8 +120,44 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\build.cmd",
-        "arguments": "$(Platform) $(Configuration)",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\build-native.cmd",
+        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build managed",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\build-managed.cmd",
+        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
+        "workingFolder": "corert",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build tests",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\build-tests.cmd",
+        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
         "workingFolder": "corert",
         "failOnStandardError": "false"
       }
@@ -343,7 +361,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corert\\cibuild\\clean.cmd",
+        "filename": "$(Build.SourcesDirectory)\\corert\\buildscripts\\clean.cmd",
         "arguments": "",
         "workingFolder": "corert",
         "failOnStandardError": "false"
