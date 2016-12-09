@@ -102,13 +102,7 @@ NextLabel textequ @CatStr( Attempt, %entry+1 )
         cmp     ebx, [eax + (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (entry * 8))]
         jne     @F
         pop     ebx
-        ;; push the target address so that the following ret will jump to it and all registers will
-        ;; be in the same state as at the entry to _RhpInterfaceDispatch.
-        push    dword ptr [eax + (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (entry * 8) + 4)]
-        ;; eax currently contains the cache block. We need to point it back to the 
-        ;; indirection cell using the back pointer in the cache block
-        mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
-        ret        
+        jmp     dword ptr [eax + (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (entry * 8) + 4)]
 @@:
 endm
 
@@ -150,7 +144,7 @@ CurrentEntry = CurrentEntry + 1
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
         pop     ebx
         jmp     RhpInterfaceDispatchSlow
-        
+
     StubName endp
 
     endm ;; DEFINE_INTERFACE_DISPATCH_STUB
