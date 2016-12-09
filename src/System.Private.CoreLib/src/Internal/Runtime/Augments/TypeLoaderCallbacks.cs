@@ -18,5 +18,11 @@ namespace Internal.Runtime.Augments
         public abstract IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind);
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeMethodSignature methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
+
+        /// <summary>
+        /// Register a new runtime-allocated code thunk in the diagnostic stream.
+        /// </summary>
+        /// <param name="thunkAddress">Address of thunk to register</param>
+        public abstract void RegisterThunk(IntPtr thunkAddress);
     }
 }

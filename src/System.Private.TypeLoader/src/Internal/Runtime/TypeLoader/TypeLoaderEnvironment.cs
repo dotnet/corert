@@ -63,6 +63,15 @@ namespace Internal.Runtime.TypeLoader
         {
             return TypeLoaderEnvironment.Instance.TryGetGenericVirtualTargetForTypeAndSlot(targetHandle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out methodPointer, out dictionaryPointer, out slotUpdated);
         }
+
+        /// <summary>
+        /// Register a new runtime-allocated code thunk in the diagnostic stream.
+        /// </summary>
+        /// <param name="thunkAddress">Address of thunk to register</param>
+        public override void RegisterThunk(IntPtr thunkAddress)
+        {
+            SerializedDebugData.RegisterTailCallThunk(thunkAddress);
+        }
     }
 
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.TypeLoaderEnvironment)]

@@ -132,8 +132,6 @@ namespace Internal.Runtime.TypeLoader
                 IntPtr constrainedCallDesc = Get(constraintType, constrainedMethodType, constrainedMethodSlot, true);
                 RuntimeAugments.SetThunkData(s_DirectConstrainedCall_ThunkPoolHeap, thunk, constrainedCallDesc, s_resolveDirectConstrainedCallFuncPtr);
 
-                SerializedDebugData.RegisterTailCallThunk(thunk);
-
                 return thunk;
             }
 
@@ -587,8 +585,6 @@ namespace Internal.Runtime.TypeLoader
                     result = thunk;
                     s_deferenceAndCallThunks.Add(target, result);
                 }
-
-                SerializedDebugData.RegisterTailCallThunk(result);
             }
 
             return result;

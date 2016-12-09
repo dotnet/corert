@@ -242,8 +242,6 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(callConversionInfo == s_allocatedThunks.Count);
                     s_allocatedThunks.Add(thunk);
                 }
-
-                SerializedDebugData.RegisterTailCallThunk(thunk);
             }
 
             return thunk;
