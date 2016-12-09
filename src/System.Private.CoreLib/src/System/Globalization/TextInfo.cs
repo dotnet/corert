@@ -328,7 +328,7 @@ namespace System.Globalization
             return c;
         }
 
-        static private bool IsAscii(Char c)
+        private static bool IsAscii(Char c)
         {
             return c < 0x80;
         }

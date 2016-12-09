@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal unsafe static partial class Sys
+    internal static unsafe partial class Sys
     {
         internal enum SysConfName
         {

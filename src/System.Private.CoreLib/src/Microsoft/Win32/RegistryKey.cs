@@ -425,11 +425,11 @@ namespace Microsoft.Win32
         {
         }
 
-        static private void ValidateKeyOptions(RegistryOptions options)
+        private static void ValidateKeyOptions(RegistryOptions options)
         {
         }
 
-        static private void ValidateKeyView(RegistryView view)
+        private static void ValidateKeyView(RegistryView view)
         {
         }
 

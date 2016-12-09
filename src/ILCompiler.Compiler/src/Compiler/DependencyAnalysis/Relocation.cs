@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             Target = target;
         }
 
-        public unsafe static void WriteValue(RelocType relocType, void* location, long value)
+        public static unsafe void WriteValue(RelocType relocType, void* location, long value)
         {
             switch (relocType)
             {
@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public unsafe static long ReadValue(RelocType relocType, void* location)
+        public static unsafe long ReadValue(RelocType relocType, void* location)
         {
             switch (relocType)
             {

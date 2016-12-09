@@ -10,7 +10,7 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    internal unsafe static class CachedInterfaceDispatch
+    internal static unsafe class CachedInterfaceDispatch
     {
         [RuntimeExport("RhpCidResolve")]
         unsafe private static IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
@@ -100,7 +100,7 @@ namespace System.Runtime
                                                                           slot);
         }
 
-        private unsafe static IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
+        private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
         {
             // Type of object we're dispatching on.
             EEType* pInstanceType = pObject.EEType;

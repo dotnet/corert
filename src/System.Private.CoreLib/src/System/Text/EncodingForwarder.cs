@@ -31,7 +31,7 @@ namespace System.Text
         // the parameter, it will call the same method again, which will eventually
         // lead to a StackOverflowException.
 
-        public unsafe static int GetByteCount(Encoding encoding, char[] chars, int index, int count)
+        public static unsafe int GetByteCount(Encoding encoding, char[] chars, int index, int count)
         {
             // Validate parameters
 
@@ -59,7 +59,7 @@ namespace System.Text
                 return encoding.GetByteCount(pChars + index, count, encoder: null);
         }
 
-        public unsafe static int GetByteCount(Encoding encoding, string s)
+        public static unsafe int GetByteCount(Encoding encoding, string s)
         {
             Debug.Assert(encoding != null);
             if (s == null)
@@ -82,7 +82,7 @@ namespace System.Text
                 return encoding.GetByteCount(pChars, s.Length, encoder: null);
         }
 
-        public unsafe static int GetByteCount(Encoding encoding, char* chars, int count)
+        public static unsafe int GetByteCount(Encoding encoding, char* chars, int count)
         {
             Debug.Assert(encoding != null);
             if (chars == null)
@@ -99,7 +99,7 @@ namespace System.Text
             return encoding.GetByteCount(chars, count, encoder: null);
         }
 
-        public unsafe static int GetBytes(Encoding encoding, string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        public static unsafe int GetBytes(Encoding encoding, string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             Debug.Assert(encoding != null);
             if (s == null || bytes == null)
@@ -135,7 +135,7 @@ namespace System.Text
             }
         }
 
-        public unsafe static int GetBytes(Encoding encoding, char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        public static unsafe int GetBytes(Encoding encoding, char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             Debug.Assert(encoding != null);
             if (chars == null || bytes == null)
@@ -175,7 +175,7 @@ namespace System.Text
             }
         }
 
-        public unsafe static int GetBytes(Encoding encoding, char* chars, int charCount, byte* bytes, int byteCount)
+        public static unsafe int GetBytes(Encoding encoding, char* chars, int charCount, byte* bytes, int byteCount)
         {
             Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
@@ -191,7 +191,7 @@ namespace System.Text
             return encoding.GetBytes(chars, charCount, bytes, byteCount, encoder: null);
         }
 
-        public unsafe static int GetCharCount(Encoding encoding, byte[] bytes, int index, int count)
+        public static unsafe int GetCharCount(Encoding encoding, byte[] bytes, int index, int count)
         {
             Debug.Assert(encoding != null);
             if (bytes == null)
@@ -217,7 +217,7 @@ namespace System.Text
                 return encoding.GetCharCount(pBytes + index, count, decoder: null);
         }
 
-        public unsafe static int GetCharCount(Encoding encoding, byte* bytes, int count)
+        public static unsafe int GetCharCount(Encoding encoding, byte* bytes, int count)
         {
             Debug.Assert(encoding != null);
             if (bytes == null)
@@ -233,7 +233,7 @@ namespace System.Text
             return encoding.GetCharCount(bytes, count, decoder: null);
         }
 
-        public unsafe static int GetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+        public static unsafe int GetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
@@ -271,7 +271,7 @@ namespace System.Text
             }
         }
 
-        public unsafe static int GetChars(Encoding encoding, byte* bytes, int byteCount, char* chars, int charCount)
+        public static unsafe int GetChars(Encoding encoding, byte* bytes, int byteCount, char* chars, int charCount)
         {
             Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
@@ -287,7 +287,7 @@ namespace System.Text
             return encoding.GetChars(bytes, byteCount, chars, charCount, decoder: null);
         }
 
-        public unsafe static string GetString(Encoding encoding, byte[] bytes, int index, int count)
+        public static unsafe string GetString(Encoding encoding, byte[] bytes, int index, int count)
         {
             Debug.Assert(encoding != null);
             if (bytes == null)

@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class FieldDesc : TypeSystemEntity
     {
-        public readonly static FieldDesc[] EmptyFields = new FieldDesc[0];
+        public static readonly FieldDesc[] EmptyFields = new FieldDesc[0];
 
         public override int GetHashCode()
         {

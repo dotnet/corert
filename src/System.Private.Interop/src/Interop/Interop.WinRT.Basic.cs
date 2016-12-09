@@ -76,14 +76,14 @@ namespace System.Runtime.InteropServices
         [DllImport(Libraries.CORE_WINRT_STRING)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern unsafe int WindowsCreateStringReference(char* sourceString,
+        internal static extern unsafe int WindowsCreateStringReference(char* sourceString,
                                                                        uint length,
                                                                        HSTRING_HEADER* phstringHeader,
                                                                        void* hstring);
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern int CoCreateFreeThreadedMarshaler(void* pOuter, void** ppunkMarshal);
+        internal static extern unsafe int CoCreateFreeThreadedMarshaler(void* pOuter, void** ppunkMarshal);
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
@@ -92,34 +92,34 @@ namespace System.Runtime.InteropServices
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern int CoGetObjectContext(Guid* iid, void* ppv);
+        internal static extern unsafe int CoGetObjectContext(Guid* iid, void* ppv);
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        private static unsafe extern int CoGetMarshalSizeMax(ulong* pulSize, Guid* iid, IntPtr pUnk, 
+        private static extern unsafe int CoGetMarshalSizeMax(ulong* pulSize, Guid* iid, IntPtr pUnk, 
                                                              Interop.COM.MSHCTX dwDestContext, 
                                                              IntPtr pvDestContext, 
                                                              Interop.COM.MSHLFLAGS mshlflags);
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        private extern unsafe static int CoMarshalInterface(IntPtr pStream, Guid* iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags);
+        private extern static unsafe int CoMarshalInterface(IntPtr pStream, Guid* iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags);
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        private static unsafe extern int CoUnmarshalInterface(IntPtr pStream, Guid* iid, void** ppv);
+        private static extern unsafe int CoUnmarshalInterface(IntPtr pStream, Guid* iid, void** ppv);
 
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern int CoReleaseMarshalData(IntPtr pStream);
+        internal static extern int CoReleaseMarshalData(IntPtr pStream);
 
 
         /// <summary>
         /// Marshal IUnknown * into IStream*
         /// </summary>
         /// <returns>HResult</returns>
-        static internal unsafe int CoMarshalInterface(IntPtr pStream, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
+        internal static unsafe int CoMarshalInterface(IntPtr pStream, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
         {
             fixed (Guid* unsafe_iid = &iid)
             {
@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices
         /// Marshal IStream* into IUnknown*
         /// </summary>
         /// <returns>HResult</returns>
-        static internal unsafe int CoUnmarshalInterface(IntPtr pStream, ref Guid iid, out IntPtr ppv)
+        internal static unsafe int CoUnmarshalInterface(IntPtr pStream, ref Guid iid, out IntPtr ppv)
         {
             fixed (Guid* unsafe_iid = &iid)
             {
@@ -146,7 +146,7 @@ namespace System.Runtime.InteropServices
         /// Returns an upper bound on the number of bytes needed to marshal the specified interface pointer to the specified object.
         /// </summary>
         /// <returns>HResult</returns>
-        static internal unsafe int CoGetMarshalSizeMax(out ulong pulSize, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
+        internal static unsafe int CoGetMarshalSizeMax(out ulong pulSize, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
         {
             fixed (ulong* unsafe_pulSize = &pulSize)
             {
@@ -157,7 +157,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        static internal unsafe void RoGetActivationFactory(string className, ref Guid iid, out IntPtr ppv)
+        internal static unsafe void RoGetActivationFactory(string className, ref Guid iid, out IntPtr ppv)
         {
             fixed (char* unsafe_className = className)
             {
@@ -196,7 +196,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        static internal unsafe int CoGetObjectContext(ref Guid iid, out IntPtr ppv)
+        internal static unsafe int CoGetObjectContext(ref Guid iid, out IntPtr ppv)
         {
             fixed (void* unsafe_ppv = &ppv)
             {

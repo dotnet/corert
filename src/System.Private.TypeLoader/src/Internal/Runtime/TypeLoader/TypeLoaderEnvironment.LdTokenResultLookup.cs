@@ -76,7 +76,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private unsafe static string GetStringFromMemoryInNativeFormat(IntPtr pointerToDataStream)
+        private static unsafe string GetStringFromMemoryInNativeFormat(IntPtr pointerToDataStream)
         {
             byte* dataStream = (byte*)pointerToDataStream.ToPointer();
             uint stringLen = NativePrimitiveDecoder.DecodeUnsigned(ref dataStream);

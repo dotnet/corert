@@ -13,19 +13,19 @@ namespace System.Collections.Generic.Internal
 {
     internal class SR
     {
-        static internal string ArgumentOutOfRange_NeedNonNegNum = "ArgumentOutOfRange_NeedNonNegNum";
-        static internal string Arg_WrongType = "Arg_WrongType";
-        static internal string Arg_ArrayPlusOffTooSmall = "Arg_ArrayPlusOffTooSmall";
-        static internal string Arg_RankMultiDimNotSupported = "Arg_RankMultiDimNotSupported";
-        static internal string Arg_NonZeroLowerBound = "Arg_NonZeroLowerBound";
-        static internal string Argument_InvalidArrayType = "Argument_InvalidArrayType";
-        static internal string Argument_AddingDuplicate = "Argument_AddingDuplicate";
-        static internal string InvalidOperation_EnumFailedVersion = "InvalidOperation_EnumFailedVersion";
-        static internal string InvalidOperation_EnumOpCantHappen = "InvalidOperation_EnumOpCantHappen";
-        static internal string NotSupported_KeyCollectionSet = "NotSupported_KeyCollectionSet";
-        static internal string NotSupported_ValueCollectionSet = "NotSupported_ValueCollectionSet";
-        static internal string ArgumentOutOfRange_SmallCapacity = "ArgumentOutOfRange_SmallCapacity";
-        static internal string Argument_InvalidOffLen = "Argument_InvalidOffLen";
+        internal static string ArgumentOutOfRange_NeedNonNegNum = "ArgumentOutOfRange_NeedNonNegNum";
+        internal static string Arg_WrongType = "Arg_WrongType";
+        internal static string Arg_ArrayPlusOffTooSmall = "Arg_ArrayPlusOffTooSmall";
+        internal static string Arg_RankMultiDimNotSupported = "Arg_RankMultiDimNotSupported";
+        internal static string Arg_NonZeroLowerBound = "Arg_NonZeroLowerBound";
+        internal static string Argument_InvalidArrayType = "Argument_InvalidArrayType";
+        internal static string Argument_AddingDuplicate = "Argument_AddingDuplicate";
+        internal static string InvalidOperation_EnumFailedVersion = "InvalidOperation_EnumFailedVersion";
+        internal static string InvalidOperation_EnumOpCantHappen = "InvalidOperation_EnumOpCantHappen";
+        internal static string NotSupported_KeyCollectionSet = "NotSupported_KeyCollectionSet";
+        internal static string NotSupported_ValueCollectionSet = "NotSupported_ValueCollectionSet";
+        internal static string ArgumentOutOfRange_SmallCapacity = "ArgumentOutOfRange_SmallCapacity";
+        internal static string Argument_InvalidOffLen = "Argument_InvalidOffLen";
     }
 
     internal class HashHelpers

@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// This class has all the helpers which are needed to provide the Exception support for WinRT and ClassicCOM
     /// </summary>
-    public unsafe static partial class ExceptionHelpers
+    public static unsafe partial class ExceptionHelpers
     {
         /// <summary>
         ///  This class is a helper class to call into IRestrictedErrorInfo methods.

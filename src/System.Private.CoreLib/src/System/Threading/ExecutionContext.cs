@@ -97,7 +97,7 @@ namespace System.Threading
                 OnContextChanged(previous, executionContext);
         }
 
-        static internal void EstablishCopyOnWriteScope(ref ExecutionContextSwitcher ecsw)
+        internal static void EstablishCopyOnWriteScope(ref ExecutionContextSwitcher ecsw)
         {
             ecsw.m_ec = Capture();
             ecsw.m_sc = SynchronizationContext.CurrentExplicit;

@@ -221,7 +221,7 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MethodDesc : TypeSystemEntity
     {
-        public readonly static MethodDesc[] EmptyMethods = new MethodDesc[0];
+        public static readonly MethodDesc[] EmptyMethods = new MethodDesc[0];
 
         private int _hashcode;
 

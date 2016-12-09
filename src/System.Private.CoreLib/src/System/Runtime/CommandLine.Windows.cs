@@ -13,7 +13,7 @@ namespace System.Runtime
     internal static class CommandLine
     {
         [RuntimeExport("CreateCommandLine")]
-        public unsafe static string[] InternalCreateCommandLine()
+        public static unsafe string[] InternalCreateCommandLine()
         {
             char * pCmdLine = Interop.mincore.GetCommandLine();
 
@@ -31,7 +31,7 @@ namespace System.Runtime
         //
         // This functions interface mimics the CommandLineToArgvW api.
         //
-        private unsafe static int SegmentCommandLine(char * pCmdLine, string[] argArray)
+        private static unsafe int SegmentCommandLine(char * pCmdLine, string[] argArray)
         {
             int nArgs = 0;
             char c;
@@ -97,7 +97,7 @@ namespace System.Runtime
             return nArgs;
         }
 
-        private unsafe static int ScanArgument(ref char* psrc, ref bool inquote, char[] arg)
+        private static unsafe int ScanArgument(ref char* psrc, ref bool inquote, char[] arg)
         {
             int charIdx = 0;
             // loop through scanning one argument

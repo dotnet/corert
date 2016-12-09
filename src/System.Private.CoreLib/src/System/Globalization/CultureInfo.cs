@@ -825,7 +825,7 @@ namespace System.Globalization
             }
         }
 
-        static private bool OkayToCacheClassWithCompatibilityBehavior
+        private static bool OkayToCacheClassWithCompatibilityBehavior
         {
             get
             {

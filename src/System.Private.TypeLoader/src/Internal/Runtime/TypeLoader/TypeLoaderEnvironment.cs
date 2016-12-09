@@ -481,7 +481,7 @@ namespace Internal.Runtime.TypeLoader
             return externalReferencesLookup.InitializeNativeReferences(moduleHandle);
         }
 
-        public unsafe static void GetFieldAlignmentAndSize(RuntimeTypeHandle fieldType, out int alignment, out int size)
+        public static unsafe void GetFieldAlignmentAndSize(RuntimeTypeHandle fieldType, out int alignment, out int size)
         {
             EEType* typePtr = fieldType.ToEETypePtr();
             if (typePtr->IsValueType)
@@ -503,7 +503,7 @@ namespace Internal.Runtime.TypeLoader
             public uint MethodRva;
         }
 
-        public unsafe static bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)
+        public static unsafe bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)
         {
             targetMethod = IntPtr.Zero;
 

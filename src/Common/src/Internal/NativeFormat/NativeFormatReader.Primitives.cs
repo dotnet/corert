@@ -16,47 +16,47 @@ namespace Internal.NativeFormat
     // Minimal functionality that is low level enough for use in the managed runtime.
     unsafe partial struct NativePrimitiveDecoder
     {
-        static public byte ReadUInt8(ref byte* stream)
+        public static byte ReadUInt8(ref byte* stream)
         {
             byte result = *(stream); // Assumes little endian and unaligned access
             stream++;
             return result;
         }
 
-        static public ushort ReadUInt16(ref byte* stream)
+        public static ushort ReadUInt16(ref byte* stream)
         {
             ushort result = *(ushort*)(stream); // Assumes little endian and unaligned access
             stream += 2;
             return result;
         }
 
-        static public uint ReadUInt32(ref byte* stream)
+        public static uint ReadUInt32(ref byte* stream)
         {
             uint result = *(uint*)(stream); // Assumes little endian and unaligned access
             stream += 4;
             return result;
         }
 
-        static public ulong ReadUInt64(ref byte* stream)
+        public static ulong ReadUInt64(ref byte* stream)
         {
             ulong result = *(ulong*)(stream); // Assumes little endian and unaligned access
             stream += 8;
             return result;
         }
 
-        static public unsafe float ReadFloat(ref byte* stream)
+        public static unsafe float ReadFloat(ref byte* stream)
         {
             uint value = ReadUInt32(ref stream);
             return *(float*)(&value);
         }
 
-        static public double ReadDouble(ref byte* stream)
+        public static double ReadDouble(ref byte* stream)
         {
             ulong value = ReadUInt64(ref stream);
             return *(double*)(&value);
         }
 
-        static public uint GetUnsignedEncodingSize(uint value)
+        public static uint GetUnsignedEncodingSize(uint value)
         {
             if (value < 128) return 1;
             if (value < 128 * 128) return 2;
@@ -65,7 +65,7 @@ namespace Internal.NativeFormat
             return 5;
         }
 
-        static public uint DecodeUnsigned(ref byte* stream)
+        public static uint DecodeUnsigned(ref byte* stream)
         {
             uint value = 0;
 
@@ -110,7 +110,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public int DecodeSigned(ref byte* stream)
+        public static int DecodeSigned(ref byte* stream)
         {
             int value = 0;
 
@@ -155,7 +155,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public ulong DecodeUnsignedLong(ref byte* stream)
+        public static ulong DecodeUnsignedLong(ref byte* stream)
         {
             ulong value = 0;
 
@@ -178,7 +178,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public long DecodeSignedLong(ref byte* stream)
+        public static long DecodeSignedLong(ref byte* stream)
         {
             long value = 0;
 

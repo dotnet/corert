@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public unsafe static String PtrToStringAnsi(IntPtr ptr)
+        public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public unsafe static String PtrToStringAnsi(IntPtr ptr, int len)
+        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
             return ConvertToUnicode(ptr, len);
         }
 
-        public unsafe static String PtrToStringUni(IntPtr ptr, int len)
+        public static unsafe String PtrToStringUni(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices
             return new String((char*)ptr, 0, len);
         }
 
-        public unsafe static String PtrToStringUni(IntPtr ptr)
+        public static unsafe String PtrToStringUni(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -666,12 +666,12 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public unsafe static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
             return ExternalInterop.MemReAlloc(pv, cb);
         }
 
-        private unsafe static void ConvertToAnsi(string source, IntPtr pbNativeBuffer, int cbNativeBuffer)
+        private static unsafe void ConvertToAnsi(string source, IntPtr pbNativeBuffer, int cbNativeBuffer)
         {
             Debug.Assert(source != null);
             Debug.Assert(pbNativeBuffer != IntPtr.Zero);
@@ -685,7 +685,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private unsafe static string ConvertToUnicode(IntPtr sourceBuffer, int cbSourceBuffer)
+        private static unsafe string ConvertToUnicode(IntPtr sourceBuffer, int cbSourceBuffer)
         {
             if (IsWin32Atom(sourceBuffer))
             {
@@ -766,7 +766,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // String convertions.
         //====================================================================
-        public unsafe static IntPtr StringToHGlobalAnsi(String s)
+        public static unsafe IntPtr StringToHGlobalAnsi(String s)
         {
             if (s == null)
             {
@@ -786,7 +786,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public unsafe static IntPtr StringToHGlobalUni(String s)
+        public static unsafe IntPtr StringToHGlobalUni(String s)
         {
             if (s == null)
             {
@@ -856,7 +856,7 @@ namespace System.Runtime.InteropServices
             return pNewMem;
         }
 
-        public unsafe static IntPtr StringToCoTaskMemUni(String s)
+        public static unsafe IntPtr StringToCoTaskMemUni(String s)
         {
             if (s == null)
             {
@@ -887,7 +887,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public unsafe static IntPtr StringToCoTaskMemAnsi(String s)
+        public static unsafe IntPtr StringToCoTaskMemAnsi(String s)
         {
             if (s == null)
             {

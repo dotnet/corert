@@ -2348,7 +2348,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Returns the default context cookie
         /// </summary>
-        static internal ContextCookie Default
+        internal static ContextCookie Default
         {
             get
             {
@@ -2392,7 +2392,7 @@ namespace System.Runtime.InteropServices
         /// NOTE: This does a P/Invoke so try to cache this whenever possible
         /// </summary>
         /// <returns>The current context cookie</returns>
-        static internal ContextCookie Current
+        internal static ContextCookie Current
         {
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3136,7 +3136,7 @@ namespace System.Runtime.InteropServices
             /// </summary>
             static Lock s_contextEntryLock;
 
-            static internal void InitializeStatics()
+            internal static void InitializeStatics()
             {
                 s_contextEntryCache = new System.Collections.Generic.Internal.Dictionary<ContextCookie, ContextEntry>(new ContextCookieComparer());
 
@@ -3148,7 +3148,7 @@ namespace System.Runtime.InteropServices
         /// Retrieve current ContextEntry from cache
         /// </summary>
         /// <param name="currentCookie">Current context cookie. Passed in for better perf</param>
-        static internal ContextEntry GetCurrentContext(ContextCookie currentCookie)
+        internal static ContextEntry GetCurrentContext(ContextCookie currentCookie)
         {
             Debug.Assert(currentCookie.IsCurrent);
             return ContextEntryManager.GetContextEntry(currentCookie);
@@ -3541,7 +3541,7 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal class IStringableHelper
     {
-        internal unsafe static bool TryGetIStringableToString(object obj, out string toStringResult)
+        internal static unsafe bool TryGetIStringableToString(object obj, out string toStringResult)
         {
             bool isIStringableToString = false;
             toStringResult = String.Empty;
@@ -3894,7 +3894,7 @@ namespace System.Runtime.InteropServices
 
         private static volatile FactoryCache s_factoryCache;
 
-        static internal FactoryCache Get()
+        internal static FactoryCache Get()
         {
 #pragma warning disable 0420
             if (s_factoryCache == null)

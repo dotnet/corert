@@ -569,7 +569,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Initialize RCWWalker
         /// </summary>
-        private unsafe static void Initialize(__com_IJupiterObject* pJupiterObject)
+        private static unsafe void Initialize(__com_IJupiterObject* pJupiterObject)
         {
             IntPtr pGCManager;
             int hr = CalliIntrinsics.StdCall<int>(pJupiterObject->pVtable->pfnGetJupiterGCManager, pJupiterObject, &pGCManager);

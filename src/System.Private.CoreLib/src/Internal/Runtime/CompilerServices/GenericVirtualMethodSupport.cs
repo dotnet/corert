@@ -12,7 +12,7 @@ namespace Internal.Runtime.CompilerServices
 {
     internal static class GenericVirtualMethodSupport
     {
-        private unsafe static IntPtr GVMLookupForSlotWorker(RuntimeTypeHandle type, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature methodNameAndSignature)
+        private static unsafe IntPtr GVMLookupForSlotWorker(RuntimeTypeHandle type, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature methodNameAndSignature)
         {
             bool slotChanged = false;
 
@@ -56,7 +56,7 @@ namespace Internal.Runtime.CompilerServices
             return resolution;
         }
 
-        internal unsafe static IntPtr GVMLookupForSlot(RuntimeTypeHandle type, RuntimeMethodHandle slot)
+        internal static unsafe IntPtr GVMLookupForSlot(RuntimeTypeHandle type, RuntimeMethodHandle slot)
         {
             RuntimeTypeHandle declaringTypeHandle;
             MethodNameAndSignature nameAndSignature;

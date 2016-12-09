@@ -175,8 +175,8 @@ internal partial class Interop
                     IntPtr pContextRecord,
                     uint dwFlags);
 
-        private readonly static System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
-        static internal void Sleep(uint milliseconds)
+        private static readonly System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
+        internal static void Sleep(uint milliseconds)
         {
             if (milliseconds == 0)
                 System.Threading.SpinWait.Yield();
@@ -193,7 +193,7 @@ internal partial class Interop
             RO_INIT_MULTITHREADED = 1
         }
 
-        static internal unsafe void RoInitialize(RO_INIT_TYPE initType)
+        internal static unsafe void RoInitialize(RO_INIT_TYPE initType)
         {
             int hr = RoInitialize((uint)initType);
 
@@ -209,10 +209,10 @@ internal partial class Interop
         [DllImport(Interop.CORE_WINRT)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern unsafe int RoInitialize(uint initType);
+        internal static extern unsafe int RoInitialize(uint initType);
 #else
         // Right now do what is necessary to ensure that the tools still work on pre-Win8 platforms
-        static internal unsafe int RoInitialize(uint initType)
+        internal static unsafe int RoInitialize(uint initType)
         {
             // RoInitialize gets called on startup so it can't throw a not implemented exception
             return 0;

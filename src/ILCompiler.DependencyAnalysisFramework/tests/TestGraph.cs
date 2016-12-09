@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
         public class TestNode : ComputedStaticDependencyNode<TestGraph>
         {
             private readonly string _data;
-            private readonly static CombinedDependencyListEntry[] s_emptyDynamicList = new CombinedDependencyListEntry[0];
+            private static readonly CombinedDependencyListEntry[] s_emptyDynamicList = new CombinedDependencyListEntry[0];
 
             public TestNode(string data)
             {

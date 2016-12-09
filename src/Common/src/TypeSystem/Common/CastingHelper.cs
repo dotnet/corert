@@ -141,7 +141,7 @@ namespace Internal.TypeSystem
         }
 
         // Returns true of the two types are equivalent primitive types. Used by array casts.
-        static private bool ArePrimitveTypesEquivalentSize(TypeDesc type1, TypeDesc type2)
+        private static bool ArePrimitveTypesEquivalentSize(TypeDesc type1, TypeDesc type2)
         {
             Debug.Assert(type1.IsPrimitive && type2.IsPrimitive);
 

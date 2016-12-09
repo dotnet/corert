@@ -713,7 +713,7 @@ namespace System
         //
         // Clears data from static members
         //
-        static internal void ClearCachedData()
+        internal static void ClearCachedData()
         {
             // Clear a fresh instance of cached data
             s_cachedData = new CachedData();
@@ -725,7 +725,7 @@ namespace System
         // Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
         //
 
-        static public DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
+        public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
         {
             if (destinationTimeZone == null)
             {
@@ -754,12 +754,12 @@ namespace System
             }
         }
 
-        static public DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone)
+        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone)
         {
             return ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, s_cachedData);
         }
 
-        static public DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
+        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
         {
             if (destinationTimeZone == null)
             {
@@ -784,12 +784,12 @@ namespace System
             }
         }
 
-        static internal DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags)
+        internal static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags)
         {
             return ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, flags, s_cachedData);
         }
 
-        static private DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
+        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
         {
             if (sourceTimeZone == null)
             {
@@ -868,7 +868,7 @@ namespace System
         }
 
 
-        static internal DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfoOptions flags)
+        internal static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfoOptions flags)
         {
             if (dateTime.Kind == DateTimeKind.Utc)
             {
@@ -1023,7 +1023,7 @@ namespace System
         // Accessing this property may throw InvalidTimeZoneException or COMException
         // if the machine is in an unstable or corrupt state.
         //
-        static public TimeZoneInfo Local
+        public static TimeZoneInfo Local
         {
             get
             {
@@ -1049,7 +1049,7 @@ namespace System
         //
         // returns a TimeZoneInfo instance that represents Universal Coordinated Time (UTC)
         //
-        static public TimeZoneInfo Utc
+        public static TimeZoneInfo Utc
         {
             get
             {
@@ -1128,7 +1128,7 @@ namespace System
         // returns a simple TimeZoneInfo instance that does
         // not support Daylight Saving Time
         //
-        static internal TimeZoneInfo CreateCustomTimeZone(
+        internal static TimeZoneInfo CreateCustomTimeZone(
                 String id,
                 TimeSpan baseUtcOffset,
                 String displayName,
@@ -1187,7 +1187,7 @@ namespace System
         // * returns DateTime.MaxValue when the converted value is too large
         // * returns DateTime.MinValue when the converted value is too small
         //
-        static private DateTime ConvertUtcToTimeZone(Int64 ticks, TimeZoneInfo destinationTimeZone, out Boolean isAmbiguousLocalDst)
+        private static DateTime ConvertUtcToTimeZone(Int64 ticks, TimeZoneInfo destinationTimeZone, out Boolean isAmbiguousLocalDst)
         {
             DateTime utcConverted;
             DateTime localConverted;
@@ -1231,7 +1231,7 @@ namespace System
         //
         // Converts TimeZoneInformation to an AdjustmentRule
         //
-        static internal AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
+        internal static AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
         {
             bool supportsDst = (timeZoneInformation.Dtzi.StandardDate.wMonth != 0);
 
@@ -1282,7 +1282,7 @@ namespace System
                 new TimeSpan(0, defaultBaseUtcOffset - timeZoneInformation.Dtzi.Bias, 0));
         }
 
-        static internal AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(ref TIME_ZONE_INFORMATION timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
+        internal static AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(ref TIME_ZONE_INFORMATION timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
         {
             bool supportsDst = (timeZoneInformation.StandardDate.wMonth != 0);
 
@@ -1338,7 +1338,7 @@ namespace System
         //
         // Helper function that returns a DaylightTimeStruct from a year and AdjustmentRule
         //
-        static private DaylightTimeStruct GetDaylightTime(Int32 year, AdjustmentRule rule)
+        private static DaylightTimeStruct GetDaylightTime(Int32 year, AdjustmentRule rule)
         {
             TimeSpan delta = rule.DaylightDelta;
             DateTime startTime = TransitionTimeToDateTime(year, rule.DaylightTransitionStart);
@@ -1354,7 +1354,7 @@ namespace System
         // Helper function that checks if a given dateTime is in Daylight Saving Time (DST)
         // This function assumes the dateTime and AdjustmentRule are both in the same time zone
         //
-        static private Boolean GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime, TimeZoneInfoOptions flags)
+        private static Boolean GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime, TimeZoneInfoOptions flags)
         {
             if (rule == null)
             {
@@ -1420,7 +1420,7 @@ namespace System
         // Helper function that checks if a given dateTime is in Daylight Saving Time (DST)
         // This function assumes the dateTime is in UTC and AdjustmentRule is in a different time zone
         //
-        static private Boolean GetIsDaylightSavingsFromUtc(DateTime time, Int32 Year, TimeSpan utc, AdjustmentRule rule, out Boolean isAmbiguousLocalDst, TimeZoneInfo zone)
+        private static Boolean GetIsDaylightSavingsFromUtc(DateTime time, Int32 Year, TimeSpan utc, AdjustmentRule rule, out Boolean isAmbiguousLocalDst, TimeZoneInfo zone)
         {
             isAmbiguousLocalDst = false;
 
@@ -1545,7 +1545,7 @@ namespace System
         }
 
 
-        static private Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime, bool ignoreYearAdjustment)
+        private static Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime, bool ignoreYearAdjustment)
         {
             Boolean isDst;
 
@@ -1593,7 +1593,7 @@ namespace System
         // In this example, any DateTime values that fall into the [1AM - 1:59:59AM] range
         // are ambiguous; as it is unclear if these times are in Daylight Saving Time.
         //
-        static private Boolean GetIsAmbiguousTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
+        private static Boolean GetIsAmbiguousTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
         {
             Boolean isAmbiguous = false;
             if (rule == null || rule.DaylightDelta == TimeSpan.Zero)
@@ -1669,7 +1669,7 @@ namespace System
         // A "time hole" is not limited to only occurring at the start of DST, and may occur at
         // the end of DST as well.
         //
-        static private Boolean GetIsInvalidTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
+        private static Boolean GetIsInvalidTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
         {
             Boolean isInvalid = false;
             if (rule == null || rule.DaylightDelta == TimeSpan.Zero)
@@ -1731,7 +1731,7 @@ namespace System
             return isInvalid;
         }
 
-        static private bool EqualStandardDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)
+        private static bool EqualStandardDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)
         {
             return timeZone.Dtzi.Bias == tdzi.Bias
                    && timeZone.Dtzi.StandardBias == tdzi.StandardBias
@@ -1745,7 +1745,7 @@ namespace System
                    && timeZone.Dtzi.StandardDate.wMilliseconds == tdzi.StandardDate.wMilliseconds;
         }
 
-        static private bool EqualDaylightDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)
+        private static bool EqualDaylightDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)
         {
             return timeZone.Dtzi.DaylightBias == tdzi.DaylightBias
                     && timeZone.Dtzi.DaylightDate.wYear == tdzi.DaylightDate.wYear
@@ -1758,7 +1758,7 @@ namespace System
                     && timeZone.Dtzi.DaylightDate.wMilliseconds == tdzi.DaylightDate.wMilliseconds;
         }
 
-        static private bool CheckDaylightSavingTimeNotSupported(TimeZoneInformation timeZone)
+        private static bool CheckDaylightSavingTimeNotSupported(TimeZoneInformation timeZone)
         {
             return (timeZone.Dtzi.DaylightDate.wYear == timeZone.Dtzi.StandardDate.wYear
                     && timeZone.Dtzi.DaylightDate.wMonth == timeZone.Dtzi.StandardDate.wMonth
@@ -1773,7 +1773,7 @@ namespace System
         //
         // enumerate all time zones till find a match and with valid key name
         //
-        static internal unsafe bool FindMatchToCurrentTimeZone(TimeZoneInformation timeZoneInformation)
+        internal static unsafe bool FindMatchToCurrentTimeZone(TimeZoneInformation timeZoneInformation)
         {
             uint index = 0;
             uint result = 0; // ERROR_SUCCESS
@@ -1815,7 +1815,7 @@ namespace System
         // assumes cachedData lock is taken
         //
 
-        static private TimeZoneInfo GetLocalTimeZone(CachedData cachedData)
+        private static TimeZoneInfo GetLocalTimeZone(CachedData cachedData)
         {
             ////
             //// Try using the "mincore!GetDynamicTimeZoneInformation" API to get the "id"
@@ -1851,7 +1851,7 @@ namespace System
         // try/catch logic for handling the TimeZoneInfo private constructor that takes
         // a Win32Native.TimeZoneInformation structure.
         //
-        static private TimeZoneInfo GetLocalTimeZoneFromWin32Data(TimeZoneInformation timeZoneInformation, Boolean dstDisabled)
+        private static TimeZoneInfo GetLocalTimeZoneFromWin32Data(TimeZoneInformation timeZoneInformation, Boolean dstDisabled)
         {
             // first try to create the TimeZoneInfo with the original 'dstDisabled' flag
             try
@@ -1883,7 +1883,7 @@ namespace System
         // Helper function that calculates the UTC offset for a dateTime in a timeZone.
         // This function assumes that the dateTime is already converted into the timeZone.
         //
-        static private TimeSpan GetUtcOffset(DateTime time, TimeZoneInfo zone, TimeZoneInfoOptions flags)
+        private static TimeSpan GetUtcOffset(DateTime time, TimeZoneInfo zone, TimeZoneInfoOptions flags)
         {
             TimeSpan baseOffset = zone.BaseUtcOffset;
             AdjustmentRule rule = zone.GetAdjustmentRuleForTime(time);
@@ -1909,20 +1909,20 @@ namespace System
         // This function assumes that the dateTime is represented in UTC and has *not*
         // already been converted into the timeZone.
         //
-        static private TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone)
+        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone)
         {
             Boolean isDaylightSavings;
             return GetUtcOffsetFromUtc(time, zone, out isDaylightSavings);
         }
 
-        static private TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings)
+        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings)
         {
             Boolean isAmbiguousLocalDst;
             return GetUtcOffsetFromUtc(time, zone, out isDaylightSavings, out isAmbiguousLocalDst);
         }
 
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
-        static internal TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out Boolean isAmbiguousLocalDst)
+        internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out Boolean isAmbiguousLocalDst)
         {
             Boolean isDaylightSavings = false;
             isAmbiguousLocalDst = false;
@@ -1944,7 +1944,7 @@ namespace System
             return baseOffset;
         }
 
-        static internal TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings, out Boolean isAmbiguousLocalDst)
+        internal static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings, out Boolean isAmbiguousLocalDst)
         {
             isDaylightSavings = false;
             isAmbiguousLocalDst = false;
@@ -1997,7 +1997,7 @@ namespace System
         // * when the argument 'readStart' is true the corresponding daylightTransitionTimeStart field is read
         // * when the argument 'readStart' is false the corresponding dayightTransitionTimeEnd field is read
         //
-        static private bool TransitionTimeFromTimeZoneInformation(TIME_ZONE_INFORMATION timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
+        private static bool TransitionTimeFromTimeZoneInformation(TIME_ZONE_INFORMATION timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
         {
             //
             // SYSTEMTIME - 
@@ -2114,7 +2114,7 @@ namespace System
         // Overloaded method which take TimeZoneInformation
         //
 
-        static private bool TransitionTimeFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
+        private static bool TransitionTimeFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
         {
             bool supportsDst = (timeZoneInformation.Dtzi.StandardDate.wMonth != 0);
 
@@ -2199,7 +2199,7 @@ namespace System
         //
         // Helper function that converts a year and TransitionTime into a DateTime
         //
-        static private DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
+        private static DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
         {
             DateTime value;
             DateTime timeOfDay = transitionTime.TimeOfDay;
@@ -2391,7 +2391,7 @@ namespace System
         //
         // assumes cachedData lock is taken
         //
-        static private TimeZoneInfoResult TryGetTimeZone(ref TimeZoneInformation timeZoneInformation, Boolean dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
+        private static TimeZoneInfoResult TryGetTimeZone(ref TimeZoneInformation timeZoneInformation, Boolean dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
         {
             TimeZoneInfoResult result = TimeZoneInfoResult.Success;
             e = null;
@@ -2454,7 +2454,7 @@ namespace System
         // Helper function that validates the TimeSpan is within +/- 14.0 hours
         //
         [Pure]
-        static internal Boolean UtcOffsetOutOfRange(TimeSpan offset)
+        internal static Boolean UtcOffsetOutOfRange(TimeSpan offset)
         {
             return (offset.TotalHours < -14.0 || offset.TotalHours > 14.0);
         }
@@ -2468,7 +2468,7 @@ namespace System
         //
         // returns a Boolean indicating whether the AdjustmentRule[] supports DST
         //
-        static private void ValidateTimeZoneInfo(
+        private static void ValidateTimeZoneInfo(
                 String id,
                 TimeSpan baseUtcOffset,
                 AdjustmentRule[] adjustmentRules,
@@ -2657,7 +2657,7 @@ namespace System
 
             // -------- SECTION: factory methods -----------------*
 
-            static public AdjustmentRule CreateAdjustmentRule(
+            public static AdjustmentRule CreateAdjustmentRule(
                              DateTime dateStart,
                              DateTime dateEnd,
                              TimeSpan daylightDelta,
@@ -2680,7 +2680,7 @@ namespace System
                 return rule;
             }
 
-            static internal AdjustmentRule CreateAdjustmentRule(
+            internal static AdjustmentRule CreateAdjustmentRule(
                             DateTime dateStart,
                             DateTime dateEnd,
                             TimeSpan daylightDelta,
@@ -2723,7 +2723,7 @@ namespace System
             // Helper function that performs all of the validation checks for the 
             // factory methods and deserialization callback
             //
-            static private void ValidateAdjustmentRule(
+            private static void ValidateAdjustmentRule(
                              DateTime dateStart,
                              DateTime dateEnd,
                              TimeSpan daylightDelta,
@@ -2916,7 +2916,7 @@ namespace System
             // -------- SECTION: factory methods -----------------*
 
 
-            static public TransitionTime CreateFixedDateRule(
+            public static TransitionTime CreateFixedDateRule(
                     DateTime timeOfDay,
                     Int32 month,
                     Int32 day)
@@ -2925,7 +2925,7 @@ namespace System
             }
 
 
-            static public TransitionTime CreateFloatingDateRule(
+            public static TransitionTime CreateFloatingDateRule(
                     DateTime timeOfDay,
                     Int32 month,
                     Int32 week,
@@ -2935,7 +2935,7 @@ namespace System
             }
 
 
-            static private TransitionTime CreateTransitionTime(
+            private static TransitionTime CreateTransitionTime(
                     DateTime timeOfDay,
                     Int32 month,
                     Int32 week,
@@ -2964,7 +2964,7 @@ namespace System
             //
             // Helper function that validates a TransitionTime instance
             //
-            static private void ValidateTransitionTime(
+            private static void ValidateTransitionTime(
                     DateTime timeOfDay,
                     Int32 month,
                     Int32 week,

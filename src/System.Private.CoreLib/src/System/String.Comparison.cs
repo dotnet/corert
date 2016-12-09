@@ -158,7 +158,7 @@ namespace System
         // both strings are non-null and that their lengths are equal. Ther caller should also have
         // done the Object.ReferenceEquals() fastpath check as we won't repeat it here.
         //
-        private unsafe static bool EqualsHelper(String strA, String strB)
+        private static unsafe bool EqualsHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
@@ -217,7 +217,7 @@ namespace System
             }
         }
 
-        private unsafe static bool StartsWithOrdinalHelper(String str, String startsWith)
+        private static unsafe bool StartsWithOrdinalHelper(String str, String startsWith)
         {
             Debug.Assert(str != null);
             Debug.Assert(startsWith != null);
@@ -272,7 +272,7 @@ namespace System
             }
         }
 
-        private unsafe static int CompareOrdinalHelper(String strA, String strB)
+        private static unsafe int CompareOrdinalHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
@@ -391,7 +391,7 @@ namespace System
             }
         }
 
-        internal unsafe static int CompareOrdinalHelper(string strA, int indexA, int countA, string strB, int indexB, int countB)
+        internal static unsafe int CompareOrdinalHelper(string strA, int indexA, int countA, string strB, int indexB, int countB)
         {
             // Argument validation should be handled by callers.
             Debug.Assert(strA != null && strB != null);

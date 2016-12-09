@@ -1036,11 +1036,11 @@ namespace System.Runtime.InteropServices
             return (char)0;
         }
 
-        static public string ToHexStringUnsigned(uint u)
+        public static string ToHexStringUnsigned(uint u)
         {
             return ToHexStringUnsignedLong(u, true, 8);
         }
-        static public unsafe string ToHexStringUnsignedLong(ulong u, bool zeroPrepad, int numChars)
+        public static unsafe string ToHexStringUnsignedLong(ulong u, bool zeroPrepad, int numChars)
         {
             char[] chars = new char[numChars];
 
@@ -1062,7 +1062,7 @@ namespace System.Runtime.InteropServices
             }
             return str;
         }
-        static public unsafe string BasicToString(int num)
+        public static unsafe string BasicToString(int num)
         {
             char* pRevBuffer = stackalloc char[16];
             char* pFwdBuffer = stackalloc char[16];

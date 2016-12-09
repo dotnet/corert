@@ -23,7 +23,7 @@ namespace System
 
 #if CORERT
         [Intrinsic]
-        internal unsafe static IntPtr GetValueInternal(RuntimeTypeHandle handle)
+        internal static unsafe IntPtr GetValueInternal(RuntimeTypeHandle handle)
         {
             return (IntPtr)handle._pEEType.ToPointer();
         }
