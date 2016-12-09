@@ -349,7 +349,7 @@ namespace System
             return new IntPtr(value);
         }
 
-        public unsafe static explicit operator long (IntPtr value)
+        public static unsafe explicit operator long (IntPtr value)
         {
 #if BIT64
             return (long)value.m_value;
@@ -358,12 +358,12 @@ namespace System
 #endif
         }
 
-        public unsafe static bool operator ==(IntPtr value1, IntPtr value2)
+        public static unsafe bool operator ==(IntPtr value1, IntPtr value2)
         {
             return value1.m_value == value2.m_value;
         }
 
-        public unsafe static bool operator !=(IntPtr value1, IntPtr value2)
+        public static unsafe bool operator !=(IntPtr value1, IntPtr value2)
         {
             return value1.m_value != value2.m_value;
         }

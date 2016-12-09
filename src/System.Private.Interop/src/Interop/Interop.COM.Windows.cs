@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices
             Marshal.FreeBSTR(pBSTR);
         }
 
-        static internal void VariantClear(IntPtr pObject)
+        internal static void VariantClear(IntPtr pObject)
         {
             //Nop
         }     
@@ -87,13 +87,13 @@ namespace System.Runtime.InteropServices
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal extern IntPtr CoTaskMemRealloc(IntPtr pv, IntPtr size);
+        internal static extern IntPtr CoTaskMemRealloc(IntPtr pv, IntPtr size);
 
 
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern int CoCreateInstanceFromApp(
+        internal static extern unsafe int CoCreateInstanceFromApp(
             Guid* clsid,
             IntPtr pUnkOuter,
             int context,
@@ -134,7 +134,7 @@ namespace System.Runtime.InteropServices
 
         [DllImport(Libraries.CORE_COM_AUT)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal extern void VariantClear(IntPtr pObject);
+        internal static extern void VariantClear(IntPtr pObject);
         
 
 

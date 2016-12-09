@@ -71,7 +71,7 @@ namespace System.Threading
         private TaskNode m_asyncTail;
 
         // A pre-completed task with Result==true
-        private readonly static Task<bool> s_trueTask =
+        private static readonly Task<bool> s_trueTask =
             new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
 
         // No maximum constant

@@ -53,7 +53,7 @@ namespace System.Runtime
         // objects that came off of the finalizer queue.  If such temps were reported across the duration of the 
         // finalizer thread wait operation, it could cause unpredictable behavior with weak handles.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe static void DrainQueue()
+        private static unsafe void DrainQueue()
         {
             // Drain the queue of finalizable objects.
             while (true)
@@ -73,7 +73,7 @@ namespace System.Runtime
         // objects derived from that class library's System.Object are finalized.  This is where we make those
         // callbacks.  When a class library is loaded, we set the s_fHasNewClasslibs flag and then the next
         // time the finalizer runs, we call this function to make any outstanding callbacks.
-        private unsafe static void MakeFinalizerInitCallbacks()
+        private static unsafe void MakeFinalizerInitCallbacks()
         {
             while (true)
             {

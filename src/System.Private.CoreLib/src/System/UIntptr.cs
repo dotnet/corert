@@ -109,7 +109,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static explicit operator uint (UIntPtr value)
+        public static unsafe explicit operator uint (UIntPtr value)
         {
 #if BIT64
             return checked((uint)value._value);
@@ -120,7 +120,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static explicit operator ulong (UIntPtr value)
+        public static unsafe explicit operator ulong (UIntPtr value)
         {
             return (ulong)value._value;
         }
@@ -132,14 +132,14 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static bool operator ==(UIntPtr value1, UIntPtr value2)
+        public static unsafe bool operator ==(UIntPtr value1, UIntPtr value2)
         {
             return value1._value == value2._value;
         }
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static bool operator !=(UIntPtr value1, UIntPtr value2)
+        public static unsafe bool operator !=(UIntPtr value1, UIntPtr value2)
         {
             return value1._value != value2._value;
         }

@@ -16,7 +16,7 @@ namespace System
             }
         }
 
-        public unsafe static String ExpandEnvironmentVariables(String name)
+        public static unsafe String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -53,7 +53,7 @@ namespace System
 
         public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
 
-        public unsafe static String GetEnvironmentVariable(String variable)
+        public static unsafe String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));

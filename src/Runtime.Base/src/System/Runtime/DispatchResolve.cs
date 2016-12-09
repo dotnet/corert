@@ -8,7 +8,7 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    internal unsafe static class DispatchResolve
+    internal static unsafe class DispatchResolve
     {
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 649

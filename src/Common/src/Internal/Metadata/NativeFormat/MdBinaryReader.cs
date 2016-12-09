@@ -15,18 +15,18 @@ namespace Internal.Metadata.NativeFormat
 {
     internal static partial class MdBinaryReader
     {
-        static public uint Read(this NativeReader reader, uint offset, out bool value)
+        public static uint Read(this NativeReader reader, uint offset, out bool value)
         {
             value = (reader.ReadUInt8(offset) != 0) ? true : false;
             return offset + 1;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out string value)
+        public static uint Read(this NativeReader reader, uint offset, out string value)
         {
             return reader.DecodeString(offset, out value);
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out char value)
+        public static uint Read(this NativeReader reader, uint offset, out char value)
         {
             uint val;
             offset = reader.DecodeUnsigned(offset, out val);
@@ -34,7 +34,7 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out short value)
+        public static uint Read(this NativeReader reader, uint offset, out short value)
         {
             int val;
             offset = reader.DecodeSigned(offset, out val);
@@ -42,34 +42,34 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out sbyte value)
+        public static uint Read(this NativeReader reader, uint offset, out sbyte value)
         {
             value = (sbyte)reader.ReadUInt8(offset);
             return offset + 1;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out ulong value)
+        public static uint Read(this NativeReader reader, uint offset, out ulong value)
         {
             return reader.DecodeUnsignedLong(offset, out value);
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out int value)
+        public static uint Read(this NativeReader reader, uint offset, out int value)
         {
             return reader.DecodeSigned(offset, out value);
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out uint value)
+        public static uint Read(this NativeReader reader, uint offset, out uint value)
         {
             return reader.DecodeUnsigned(offset, out value);
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out byte value)
+        public static uint Read(this NativeReader reader, uint offset, out byte value)
         {
             value = reader.ReadUInt8(offset);
             return offset + 1;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out ushort value)
+        public static uint Read(this NativeReader reader, uint offset, out ushort value)
         {
             uint val;
             offset = reader.DecodeUnsigned(offset, out val);
@@ -77,12 +77,12 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out long value)
+        public static uint Read(this NativeReader reader, uint offset, out long value)
         {
             return reader.DecodeSignedLong(offset, out value);
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out Handle handle)
+        public static uint Read(this NativeReader reader, uint offset, out Handle handle)
         {
             uint rawValue;
             offset = reader.DecodeUnsigned(offset, out rawValue);
@@ -90,13 +90,13 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out float value)
+        public static uint Read(this NativeReader reader, uint offset, out float value)
         {
             value = reader.ReadFloat(offset);
             return offset + 4;
         }
 
-        static public uint Read(this NativeReader reader, uint offset, out double value)
+        public static uint Read(this NativeReader reader, uint offset, out double value)
         {
             value = reader.ReadDouble(offset);
             return offset + 8;

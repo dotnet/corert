@@ -6,7 +6,7 @@ namespace System
 {
     public static partial class Environment
     {
-        public unsafe static String GetEnvironmentVariable(String variable)
+        public static unsafe String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));

@@ -11,6 +11,6 @@ internal static partial class Interop
     internal unsafe partial class Sys
     {
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_DoubleToString")]
-        internal static unsafe extern int DoubleToString(double value, byte *format, byte *buffer, int bufferLength);
+        internal static extern unsafe int DoubleToString(double value, byte *format, byte *buffer, int bufferLength);
     }
 }

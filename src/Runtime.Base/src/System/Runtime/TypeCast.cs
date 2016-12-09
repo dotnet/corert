@@ -43,7 +43,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
-        static public unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
         {
             if (obj == null)
             {
@@ -153,7 +153,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastClass")]
-        static public unsafe object CheckCastClass(Object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastClass(Object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -173,7 +173,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckUnbox")]
-        static public unsafe void CheckUnbox(Object obj, byte expectedCorElementType)
+        public static unsafe void CheckUnbox(Object obj, byte expectedCorElementType)
         {
             if (obj == null)
             {
@@ -190,7 +190,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfArray")]
-        static public unsafe object IsInstanceOfArray(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOfArray(object obj, void* pvTargetType)
         {
             if (obj == null)
             {
@@ -230,7 +230,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastArray")]
-        static public unsafe object CheckCastArray(Object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastArray(Object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -250,7 +250,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfInterface")]
-        static public unsafe object IsInstanceOfInterface(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOfInterface(object obj, void* pvTargetType)
         {
             if (obj == null)
             {
@@ -271,7 +271,7 @@ namespace System.Runtime
             return null;
         }
 
-        unsafe static bool IsInstanceOfInterfaceViaCastableObject(object obj, EEType* pTargetType)
+        static unsafe bool IsInstanceOfInterfaceViaCastableObject(object obj, EEType* pTargetType)
         {
             // To avoid stack overflow, it is not possible to implement the ICastableObject interface
             // itself via ICastableObject
@@ -304,7 +304,7 @@ namespace System.Runtime
             return false;
         }
 
-        unsafe static bool IsInstanceOfInterfaceViaCastableObjectWithException(object obj, EEType* pTargetType, ref Exception castError)
+        static unsafe bool IsInstanceOfInterfaceViaCastableObjectWithException(object obj, EEType* pTargetType, ref Exception castError)
         {
             // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
             // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
@@ -324,7 +324,7 @@ namespace System.Runtime
             // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
         }
 
-        static internal unsafe bool ImplementsInterface(EEType* pObjType, EEType* pTargetType)
+        internal static unsafe bool ImplementsInterface(EEType* pObjType, EEType* pTargetType)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "did not expect paramterized type");
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface EEType");
@@ -426,7 +426,7 @@ namespace System.Runtime
         }
 
         // Compare two types to see if they are compatible via generic variance.
-        static private unsafe bool TypesAreCompatibleViaGenericVariance(EEType* pSourceType, EEType* pTargetType)
+        private static unsafe bool TypesAreCompatibleViaGenericVariance(EEType* pSourceType, EEType* pTargetType)
         {
             EEType* pTargetGenericType = pTargetType->GenericDefinition;
             EEType* pSourceGenericType = pSourceType->GenericDefinition;
@@ -471,7 +471,7 @@ namespace System.Runtime
         // implies their arities are the same as well). The fForceCovariance argument tells the method to
         // override the defined variance of each parameter and instead assume it is covariant. This is used to
         // implement covariant array interfaces.
-        static internal unsafe bool TypeParametersAreCompatible(int arity,
+        internal static unsafe bool TypeParametersAreCompatible(int arity,
                                                                EETypeRef* pSourceInstantiation,
                                                                EETypeRef* pTargetInstantiation,
                                                                GenericVariance* pVarianceInfo,
@@ -561,7 +561,7 @@ namespace System.Runtime
         // compatible with Object and ValueType and an enum source is additionally compatible with Enum.
         //
         [RuntimeExport("RhTypeCast_AreTypesAssignable")]
-        static public unsafe bool AreTypesAssignable(void* pvSourceType, void* pvTargetType)
+        public static unsafe bool AreTypesAssignable(void* pvSourceType, void* pvTargetType)
         {
             EEType* pSourceType = (EEType*)pvSourceType;
             EEType* pTargetType = (EEType*)pvTargetType;
@@ -593,7 +593,7 @@ namespace System.Runtime
         //                            compatible with Object, ValueType and Enum (if applicable)
         //  fAllowSizeEquivalence   : allow identically sized integral types and enums to be considered
         //                            equivalent (currently used only for array element types)
-        static internal unsafe bool AreTypesAssignableInternal(EEType* pSourceType, EEType* pTargetType, AssignmentVariation variation)
+        internal static unsafe bool AreTypesAssignableInternal(EEType* pSourceType, EEType* pTargetType, AssignmentVariation variation)
         {
             bool fBoxedSource = ((variation & AssignmentVariation.BoxedSource) == AssignmentVariation.BoxedSource);
             bool fAllowSizeEquivalence = ((variation & AssignmentVariation.AllowSizeEquivalence ) == AssignmentVariation.AllowSizeEquivalence);
@@ -725,7 +725,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastInterface")]
-        static public unsafe object CheckCastInterface(Object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastInterface(Object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -760,7 +760,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckArrayStore")]
-        static public unsafe void CheckArrayStore(object array, object obj)
+        public static unsafe void CheckArrayStore(object array, object obj)
         {
             if (array == null || obj == null)
             {
@@ -785,7 +785,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckVectorElemAddr")]
-        static public unsafe void CheckVectorElemAddr(void* pvElemType, object array)
+        public static unsafe void CheckVectorElemAddr(void* pvElemType, object array)
         {
             if (array == null)
             {
@@ -819,7 +819,7 @@ namespace System.Runtime
         // Array stelem/ldelema helpers with RyuJIT conventions
         //
         [RuntimeExport("RhpStelemRef")]
-        static public unsafe void StelemRef(Array array, int index, object obj)
+        public static unsafe void StelemRef(Array array, int index, object obj)
         {
             // This is supported only on arrays
             Debug.Assert(array.EEType->IsArray, "first argument must be an array");
@@ -861,7 +861,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhpLdelemaRef")]
-        static public unsafe ref Object LdelemaRef(Array array, int index, IntPtr elementType)
+        public static unsafe ref Object LdelemaRef(Array array, int index, IntPtr elementType)
         {
             Debug.Assert(array.EEType->IsArray, "first argument must be an array");
 
@@ -880,7 +880,7 @@ namespace System.Runtime
             return ref Unsafe.Add(ref rawData, index);
         }
 
-        static internal unsafe bool IsDerived(EEType* pDerivedType, EEType* pBaseType)
+        internal static unsafe bool IsDerived(EEType* pDerivedType, EEType* pBaseType)
         {
             Debug.Assert(!pDerivedType->IsArray, "did not expect array type");
             Debug.Assert(!pDerivedType->IsParameterizedType, "did not expect parameterType");
@@ -925,7 +925,7 @@ namespace System.Runtime
         //   1. The pointers are Equal => true
         //   2. Either one or both the types are CLONED, follow to the canonical EEType and check
         //   3. For Arrays/Pointers, we have to further check for rank and element type equality
-        static internal unsafe bool AreTypesEquivalentInternal(EEType* pType1, EEType* pType2)
+        internal static unsafe bool AreTypesEquivalentInternal(EEType* pType1, EEType* pType2)
         {
             if (pType1 == pType2)
                 return true;
@@ -946,7 +946,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOf2")]  // Helper with RyuJIT calling convention
-        static public unsafe object IsInstanceOf2(void* pvTargetType, object obj)
+        public static unsafe object IsInstanceOf2(void* pvTargetType, object obj)
         {
             return IsInstanceOf(obj, pvTargetType);
         }
@@ -954,7 +954,7 @@ namespace System.Runtime
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
-        static public unsafe object IsInstanceOf(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOf(object obj, void* pvTargetType)
         {
             // @TODO: consider using the cache directly, but beware of ICastable in the interface case
             EEType* pTargetType = (EEType*)pvTargetType;
@@ -967,13 +967,13 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCast2")] // Helper with RyuJIT calling convention
-        static public unsafe object CheckCast2(void* pvTargetType, Object obj)
+        public static unsafe object CheckCast2(void* pvTargetType, Object obj)
         {
             return CheckCast(obj, pvTargetType);
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
-        static public unsafe object CheckCast(Object obj, void* pvTargetType)
+        public static unsafe object CheckCast(Object obj, void* pvTargetType)
         {
             // @TODO: consider using the cache directly, but beware of ICastable in the interface case
             EEType* pTargetType = (EEType*)pvTargetType;
@@ -986,7 +986,7 @@ namespace System.Runtime
         }
 
         // Returns true of the two types are equivalent primitive types. Used by array casts.
-        static private unsafe bool ArePrimitveTypesEquivalentSize(EEType* pType1, EEType* pType2)
+        private static unsafe bool ArePrimitveTypesEquivalentSize(EEType* pType1, EEType* pType2)
         {
             CorElementType sourceCorType = pType1->CorElementType;
             int sourcePrimitiveTypeEquivalenceSize = GetIntegralTypeMatchSize(sourceCorType);
@@ -1001,7 +1001,7 @@ namespace System.Runtime
             return sourcePrimitiveTypeEquivalenceSize == targetPrimitiveTypeEquivalenceSize;
         }
 
-        private unsafe static int GetIntegralTypeMatchSize(CorElementType corType)
+        private static unsafe int GetIntegralTypeMatchSize(CorElementType corType)
         {
             switch (corType)
             {
@@ -1095,7 +1095,7 @@ namespace System.Runtime
 
             }
 
-            public unsafe static bool AreTypesAssignableInternal(EEType* pSourceType, EEType* pTargetType, AssignmentVariation variation)
+            public static unsafe bool AreTypesAssignableInternal(EEType* pSourceType, EEType* pTargetType, AssignmentVariation variation)
             {
                 // Important special case -- it breaks infinite recursion in CastCache itself!
                 if (pSourceType == pTargetType)
@@ -1123,7 +1123,7 @@ namespace System.Runtime
                 return entry;
             }
 
-            private unsafe static bool CacheMiss(ref Key key)
+            private static unsafe bool CacheMiss(ref Key key)
             {
                 bool result = false;
                 bool previouslyCached = false;

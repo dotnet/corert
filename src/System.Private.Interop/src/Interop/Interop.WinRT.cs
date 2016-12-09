@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices
 
         [DllImport(Libraries.CORE_WINRT_ERROR1, PreserveSig = true)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal extern int RoOriginateLanguageException(int hr, HSTRING message, IntPtr pLanguageException);
+        internal static extern int RoOriginateLanguageException(int hr, HSTRING message, IntPtr pLanguageException);
 
         [DllImport(Libraries.CORE_WINRT_ERROR1, PreserveSig = true)]
         [McgGeneratedNativeCallCodeAttribute]

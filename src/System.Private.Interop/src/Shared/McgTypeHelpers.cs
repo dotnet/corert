@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices
         }
 
 
-        internal unsafe static void TypeToTypeName(
+        internal static unsafe void TypeToTypeName(
             Type type,
             out HSTRING nativeTypeName,
             out int nativeTypeKind)
@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices
             }
         }
 #endif //!CORECLR
-        private unsafe static void TypeToTypeName(
+        private static unsafe void TypeToTypeName(
             RuntimeTypeHandle typeHandle,
             out string typeName,
             out TypeKind typeKind)
@@ -1165,7 +1165,7 @@ namespace System.Runtime.InteropServices
                     //
                     // The duplicates comes from duplicated interface declarations in the metadata across
                     // parent/child classes, as well as the "injected" override interfaces for protected
-                    // virtual methods (for example, if a derived class implements a IShapeInternal protected
+                    // virtual methods (for example, if a derived class implements a IShapeprotected internal
                     // method, it only implements a protected method and doesn't implement IShapeInternal
                     // directly, and we have to "inject" it in MCG
                     //

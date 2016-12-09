@@ -12,7 +12,7 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegEnumKeyExW")]
-        internal unsafe static extern int RegEnumKeyEx(
+        internal static extern unsafe int RegEnumKeyEx(
             SafeRegistryHandle hKey,
             int dwIndex,
             char* lpName,

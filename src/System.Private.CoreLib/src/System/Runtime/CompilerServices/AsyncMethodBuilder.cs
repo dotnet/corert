@@ -208,7 +208,7 @@ namespace System.Runtime.CompilerServices
     public struct AsyncTaskMethodBuilder
     {
         /// <summary>A cached VoidTaskResult task used for builders that complete synchronously.</summary>
-        private readonly static Task<VoidTaskResult> s_cachedCompleted = AsyncTaskCache.CreateCacheableTask<VoidTaskResult>(default(VoidTaskResult));
+        private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskCache.CreateCacheableTask<VoidTaskResult>(default(VoidTaskResult));
 
         private Action m_moveNextAction;
 
@@ -401,7 +401,7 @@ namespace System.Runtime.CompilerServices
     {
 #if false
         /// <summary>A cached task for default(TResult).</summary>
-        internal readonly static Task<TResult> s_defaultResultTask = AsyncTaskCache.CreateCacheableTask(default(TResult));
+        internal static readonly Task<TResult> s_defaultResultTask = AsyncTaskCache.CreateCacheableTask(default(TResult));
 #endif
 
         private Action m_moveNextAction;
@@ -685,12 +685,12 @@ namespace System.Runtime.CompilerServices
         // All static members are initialized inline to ensure type is beforefieldinit
 #if false
         /// <summary>A cached Task{Boolean}.Result == true.</summary>
-        internal readonly static Task<Boolean> TrueTask = CreateCacheableTask(true);
+        internal static readonly Task<Boolean> TrueTask = CreateCacheableTask(true);
         /// <summary>A cached Task{Boolean}.Result == false.</summary>
-        internal readonly static Task<Boolean> FalseTask = CreateCacheableTask(false);
+        internal static readonly Task<Boolean> FalseTask = CreateCacheableTask(false);
 
         /// <summary>The cache of Task{Int32}.</summary>
-        internal readonly static Task<Int32>[] Int32Tasks = CreateInt32Tasks();
+        internal static readonly Task<Int32>[] Int32Tasks = CreateInt32Tasks();
         /// <summary>The minimum value, inclusive, for which we want a cached task.</summary>
         internal const Int32 INCLUSIVE_INT32_MIN = -1;
         /// <summary>The maximum value, exclusive, for which we want a cached task.</summary>

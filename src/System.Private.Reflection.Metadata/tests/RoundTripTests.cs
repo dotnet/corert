@@ -135,7 +135,7 @@ namespace System.Private.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public unsafe static void TestSimpleRoundTripping()
+        public static unsafe void TestSimpleRoundTripping()
         {
             var wr = new Writer.MetadataWriter();
             wr.ScopeDefinitions.Add(BuildSimpleTestData());
@@ -199,7 +199,7 @@ namespace System.Private.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public unsafe static void TestCommonTailOptimization()
+        public static unsafe void TestCommonTailOptimization()
         {
             var wr = new Writer.MetadataWriter();
             wr.ScopeDefinitions.Add(BuildSimpleTestData());

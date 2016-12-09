@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices
         }
 #if CORECLR
         
-        static internal int GetLastWin32Error()
+        internal static int GetLastWin32Error()
         {
            return 0;
         }
@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices
 
         [DllImport(Libraries.CORE_DEBUG, EntryPoint = "OutputDebugStringW")]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern void OutputDebugString(char* lpOutputString);
+        internal static extern unsafe void OutputDebugString(char* lpOutputString);
 
         internal static unsafe void OutputDebugString(string outputString)
         {
@@ -58,12 +58,12 @@ namespace System.Runtime.InteropServices
         [DllImport(Libraries.CORE_ERRORHANDLING, EntryPoint = "GetLastError")]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern int GetLastWin32Error();
+        internal static extern int GetLastWin32Error();
 
         [DllImport(Libraries.CORE_ERRORHANDLING, EntryPoint = "SetLastError")]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern void SetLastWin32Error(int errorCode);
+        internal static extern void SetLastWin32Error(int errorCode);
 #endif 
     }
 }

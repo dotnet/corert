@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Used for methods in System.Private.Interop.dll that need to work from offsets on boxed structs
-        public unsafe static void PinObjectAndCall(Object obj, Action<IntPtr> del)
+        public static unsafe void PinObjectAndCall(Object obj, Action<IntPtr> del)
         {
             fixed (IntPtr* pEEType = &obj.m_pEEType)
             {
@@ -434,7 +434,7 @@ namespace System.Runtime.InteropServices
             return new TypeInitializationException(message);
         }
 
-        public unsafe static IntPtr GetObjectID(object obj)
+        public static unsafe IntPtr GetObjectID(object obj)
         {
             fixed (void* p = &obj.m_pEEType)
             {

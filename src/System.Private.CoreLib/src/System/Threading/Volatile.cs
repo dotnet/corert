@@ -12,7 +12,7 @@ namespace System.Threading
     //
     // Methods for accessing memory with volatile semantics.
     //
-    public unsafe static class Volatile
+    public static unsafe class Volatile
     {
         #region Boolean
         private struct VolatileBoolean { public volatile Boolean Value; }

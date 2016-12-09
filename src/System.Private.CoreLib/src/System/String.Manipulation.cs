@@ -480,19 +480,19 @@ namespace System
             return Join(separator, value, 0, value.Length);
         }
 
-        public unsafe static string Join(char separator, params object[] values)
+        public static unsafe string Join(char separator, params object[] values)
         {
             // Defer argument validation to the internal function
             return JoinCore(&separator, 1, values);
         }
 
-        public unsafe static string Join<T>(char separator, IEnumerable<T> values)
+        public static unsafe string Join<T>(char separator, IEnumerable<T> values)
         {
             // Defer argument validation to the internal function
             return JoinCore(&separator, 1, values);
         }
 
-        public unsafe static string Join(char separator, string[] value, int startIndex, int count)
+        public static unsafe string Join(char separator, string[] value, int startIndex, int count)
         {
             // Defer argument validation to the internal function
             return JoinCore(&separator, 1, value, startIndex, count);
@@ -509,7 +509,7 @@ namespace System
             return Join(separator, value, 0, value.Length);
         }
 
-        public unsafe static string Join(string separator, params object[] values)
+        public static unsafe string Join(string separator, params object[] values)
         {
             separator = separator ?? string.Empty;
             fixed (char* pSeparator = &separator._firstChar)
@@ -519,7 +519,7 @@ namespace System
             }
         }
 
-        public unsafe static string Join<T>(string separator, IEnumerable<T> values)
+        public static unsafe string Join<T>(string separator, IEnumerable<T> values)
         {
             separator = separator ?? string.Empty;
             fixed (char* pSeparator = &separator._firstChar)
@@ -568,7 +568,7 @@ namespace System
 
         // Joins an array of strings together as one string with a separator between each original string.
         //
-        public unsafe static string Join(string separator, string[] value, int startIndex, int count)
+        public static unsafe string Join(string separator, string[] value, int startIndex, int count)
         {
             separator = separator ?? string.Empty;
             fixed (char* pSeparator = &separator._firstChar)
@@ -578,7 +578,7 @@ namespace System
             }
         }
 
-        private unsafe static string JoinCore(char* separator, int separatorLength, object[] values)
+        private static unsafe string JoinCore(char* separator, int separatorLength, object[] values)
         {
             if (values == null)
             {
@@ -613,7 +613,7 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
-        private unsafe static string JoinCore<T>(char* separator, int separatorLength, IEnumerable<T> values)
+        private static unsafe string JoinCore<T>(char* separator, int separatorLength, IEnumerable<T> values)
         {
             if (values == null)
             {
@@ -665,7 +665,7 @@ namespace System
             }
         }
 
-        private unsafe static string JoinCore(char* separator, int separatorLength, string[] value, int startIndex, int count)
+        private static unsafe string JoinCore(char* separator, int separatorLength, string[] value, int startIndex, int count)
         {
             // If the separator is null, it is converted to an empty string before entering this function.
             // Even for empty strings, fixed should never return null (it should return a pointer to a null char).

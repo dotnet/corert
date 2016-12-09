@@ -10,6 +10,6 @@ internal static partial class Interop
     internal static unsafe partial class mincore
     {
         [DllImport(Libraries.ProcessEnvironment, EntryPoint = "GetCommandLineW")]
-        internal static unsafe extern char* GetCommandLine();
+        internal static extern unsafe char* GetCommandLine();
     }
 }

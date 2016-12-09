@@ -40,10 +40,10 @@ partial class Interop
 #if RHTESTCL
         [DllImport(CORE_SYNCH_L2)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal extern void Sleep(int milliseconds);
+        internal static extern void Sleep(int milliseconds);
 #else
         private static readonly System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
-        static internal void Sleep(uint milliseconds)
+        internal static void Sleep(uint milliseconds)
         {
 #if CORECLR
             System.Threading.Thread.Sleep(0);

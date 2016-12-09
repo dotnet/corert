@@ -240,7 +240,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        static private bool GetCallingConverterDataFromMethodSignature_MethodSignature(TypeSystem.MethodSignature methodSignature, NativeLayoutInfoLoadContext nativeLayoutContext, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout)
+        private static bool GetCallingConverterDataFromMethodSignature_MethodSignature(TypeSystem.MethodSignature methodSignature, NativeLayoutInfoLoadContext nativeLayoutContext, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout)
         {
             // Compute parameters dependent on generic instantiation for their layout
             parametersWithGenericDependentLayout = new bool[methodSignature.Length + 1];
@@ -298,7 +298,7 @@ namespace Internal.Runtime.TypeLoader
         /// StructNotDependentOnArgsForSize<GenStructDependencyOnArgsForSize<T>> -> true
         /// StructNotDependentOnArgsForSize<GenStructDependencyOnArgsForSize<List<T>>>> -> false
         /// </summary>
-        static private bool TypeHasLayoutDependentOnGenericInstantiation(TypeDesc type, HasVarsInvestigationLevel investigationLevel)
+        private static bool TypeHasLayoutDependentOnGenericInstantiation(TypeDesc type, HasVarsInvestigationLevel investigationLevel)
         {
             if (type is SignatureVariable)
             {
@@ -377,7 +377,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        static public bool MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(TypeSystem.MethodSignature methodSignature)
+        public static bool MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(TypeSystem.MethodSignature methodSignature)
         {
             if (TypeHasLayoutDependentOnGenericInstantiation(methodSignature.ReturnType, HasVarsInvestigationLevel.Parameter))
                 return true;

@@ -1006,7 +1006,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        static private unsafe int GetWeakReference(
+        private static unsafe int GetWeakReference(
                                     IntPtr __IntPtr__pComThis,
                                     IntPtr __IntPtr__ppWeakReference)
         {
@@ -1070,7 +1070,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        static private unsafe int Resolve(
+        private static unsafe int Resolve(
                                     IntPtr __IntPtr__pComThis,
                                     IntPtr __IntPtr__piid,
                                     IntPtr __IntPtr__ppWeakReference)
@@ -1170,7 +1170,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        static private unsafe int ToString(
+        private static unsafe int ToString(
                                     IntPtr pComThis,
                                     IntPtr __IntPtr__pResult)
         {
@@ -1789,7 +1789,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         /// <param name="lSize">Requested size</param>
         /// <returns>The IStream*</returns>
-        internal unsafe static IntPtr CreateMemStm(ulong lSize)
+        internal static unsafe IntPtr CreateMemStm(ulong lSize)
         {
 #if ENABLE_WINRT
             __com_IStream* pIStream = (__com_IStream*)ExternalInterop.CoTaskMemAlloc(new IntPtr(sizeof(__com_IStream)));
@@ -1805,7 +1805,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        internal unsafe static void DestroyMemStm(__com_IStream* pIStream)
+        internal static unsafe void DestroyMemStm(__com_IStream* pIStream)
         {
             // Release memory allocated by CreateMemStm
             if (pIStream->m_pMem != null)

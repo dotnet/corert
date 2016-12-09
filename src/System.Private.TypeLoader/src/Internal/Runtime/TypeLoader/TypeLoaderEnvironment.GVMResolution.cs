@@ -340,7 +340,7 @@ namespace Internal.Runtime.TypeLoader
         }
 #endif
 
-        public unsafe static bool IsPregeneratedOrTemplateRuntimeTypeHandle(RuntimeTypeHandle rtth)
+        public static unsafe bool IsPregeneratedOrTemplateRuntimeTypeHandle(RuntimeTypeHandle rtth)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             if (!rtth.IsDynamicType())

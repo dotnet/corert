@@ -954,7 +954,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal unsafe static GenericDictionaryCell[] BuildDictionary(TypeBuilder typeBuilder, NativeLayoutInfoLoadContext nativeLayoutInfoLoadContext, NativeParser parser)
+        internal static unsafe GenericDictionaryCell[] BuildDictionary(TypeBuilder typeBuilder, NativeLayoutInfoLoadContext nativeLayoutInfoLoadContext, NativeParser parser)
         {
             uint parserStartOffset = parser.Offset;
 
@@ -980,7 +980,7 @@ namespace Internal.Runtime.TypeLoader
         /// Build an array of GenericDictionaryCell from a NativeParser stream that has the appropriate metadata
         /// Return null if there are no cells to describe
         /// </summary>
-        internal unsafe static GenericDictionaryCell[] BuildDictionaryFromMetadataTokensAndContext(TypeBuilder typeBuilder, NativeParser parser, NativeFormatMetadataUnit nativeMetadataUnit, FixupCellMetadataResolver resolver)
+        internal static unsafe GenericDictionaryCell[] BuildDictionaryFromMetadataTokensAndContext(TypeBuilder typeBuilder, NativeParser parser, NativeFormatMetadataUnit nativeMetadataUnit, FixupCellMetadataResolver resolver)
         {
             uint parserStartOffset = parser.Offset;
 

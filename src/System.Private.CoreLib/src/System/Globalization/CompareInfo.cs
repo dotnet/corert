@@ -162,13 +162,13 @@ namespace System.Globalization
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
-        public unsafe static bool IsSortable(char ch)
+        public static unsafe bool IsSortable(char ch)
         {
             char *pChar = &ch;
             return IsSortable(pChar, 1);
         }
 
-        public unsafe static bool IsSortable(string text)
+        public static unsafe bool IsSortable(string text)
         {
             if (text == null) 
             {

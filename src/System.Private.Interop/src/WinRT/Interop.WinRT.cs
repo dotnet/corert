@@ -28,7 +28,7 @@ partial class Interop
             return ret;
         }
 
-        static internal unsafe void RoGetActivationFactory(string className, ref Guid iid, out IntPtr ppv)
+        internal static unsafe void RoGetActivationFactory(string className, ref Guid iid, out IntPtr ppv)
         {
             fixed (char* unsafe_className = className)
             {
@@ -61,12 +61,12 @@ partial class Interop
         [DllImport(Interop.CORE_WINRT_STRING)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern unsafe int WindowsCreateString(char* sourceString, uint length, void* hstring);
+        internal static extern unsafe int WindowsCreateString(char* sourceString, uint length, void* hstring);
 
         [DllImport(Interop.CORE_WINRT_STRING)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern unsafe int WindowsCreateStringReference(
+        internal static extern unsafe int WindowsCreateStringReference(
             char* sourceString, uint length, HSTRING_HEADER* phstringHeader, void* hstring);
 
         [DllImport(Interop.CORE_WINRT_ERROR, PreserveSig = true)]
@@ -85,7 +85,7 @@ partial class Interop
 
         [DllImport(Interop.CORE_WINRT_ERROR1, PreserveSig = true)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal extern int RoOriginateLanguageException(int hr, HSTRING message, IntPtr pLanguageException);
+        internal static extern int RoOriginateLanguageException(int hr, HSTRING message, IntPtr pLanguageException);
 
         [DllImport(Interop.CORE_WINRT_ERROR1, PreserveSig = true)]
         [McgGeneratedNativeCallCodeAttribute]

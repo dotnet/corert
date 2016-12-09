@@ -38,13 +38,13 @@ namespace System.Runtime.CompilerServices
             return returnValue;
         }
 #else
-        private unsafe static object CheckStaticClassConstructionReturnGCStaticBase(StaticClassConstructionContext* context, object gcStaticBase)
+        private static unsafe object CheckStaticClassConstructionReturnGCStaticBase(StaticClassConstructionContext* context, object gcStaticBase)
         {
             EnsureClassConstructorRun(context);
             return gcStaticBase;
         }
 
-        private unsafe static IntPtr CheckStaticClassConstructionReturnNonGCStaticBase(StaticClassConstructionContext* context, IntPtr nonGcStaticBase)
+        private static unsafe IntPtr CheckStaticClassConstructionReturnNonGCStaticBase(StaticClassConstructionContext* context, IntPtr nonGcStaticBase)
         {
             EnsureClassConstructorRun(context);
             return nonGcStaticBase;
@@ -509,7 +509,7 @@ namespace System.Runtime.CompilerServices
 
             return unchecked((char)('a' + (u - 10)));
         }
-        static public unsafe string ToHexStringUnsignedLong(ulong u, bool zeroPrepad, int numChars)
+        public static unsafe string ToHexStringUnsignedLong(ulong u, bool zeroPrepad, int numChars)
         {
             char[] chars = new char[numChars];
 

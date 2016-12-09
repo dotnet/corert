@@ -176,7 +176,7 @@ public class PrimitiveType
 /// </summary>
 class SchemaDef
 {
-    public readonly static EnumType[] EnumTypes = new EnumType[]
+    public static readonly EnumType[] EnumTypes = new EnumType[]
     {
         new EnumType("AssemblyFlags", "uint"),
         new EnumType("AssemblyHashAlgorithm", "uint"),
@@ -196,7 +196,7 @@ class SchemaDef
         new EnumType("TypeAttributes", "uint"),
     };
 
-    public readonly static PrimitiveType[] PrimitiveTypes = new PrimitiveType[]
+    public static readonly PrimitiveType[] PrimitiveTypes = new PrimitiveType[]
     {
         new PrimitiveType("bool", "Boolean"),
         new PrimitiveType("char", "Char"),
@@ -214,7 +214,7 @@ class SchemaDef
     };
 
     // These enums supplement those defined by System.Reflection.Primitives.
-    public readonly static RecordDef[] EnumSchema = new RecordDef[]
+    public static readonly RecordDef[] EnumSchema = new RecordDef[]
     {
         // AssemblyFlags - as defined in ECMA
         new RecordDef(
@@ -287,7 +287,7 @@ class SchemaDef
     // that represent contant primitive type values. Adds concept of constant managed reference, which
     // must always have a null value (thus the use of the NotPersisted flag).
 
-    private readonly static RecordDef[] ConstantValueRecordSchema =
+    private static readonly RecordDef[] ConstantValueRecordSchema =
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
@@ -315,7 +315,7 @@ class SchemaDef
     // an array TypeDefOrRefOrSpec handles corresponding to System.Type arguments to the instantiation of a custom attribute, or to store
     // custom initialized object[] arrays in custom attributes).
 
-    private readonly static RecordDef[] ConstantArrayRecordSchema =
+    private static readonly RecordDef[] ConstantArrayRecordSchema =
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
@@ -338,7 +338,7 @@ class SchemaDef
         )
         .ToArray();
 
-    private readonly static RecordDef[] ConstantRecordSchema = 
+    private static readonly RecordDef[] ConstantRecordSchema = 
         ConstantValueRecordSchema.Concat(ConstantArrayRecordSchema)
         .OrderBy(record => record.Name, StringComparer.Ordinal)
         .ToArray();
@@ -347,7 +347,7 @@ class SchemaDef
     // Common tuple definitions
     //
 
-    private readonly static string[] EnumConstantValue = new string[]
+    private static readonly string[] EnumConstantValue = new string[]
     {
         "ConstantByteValue",
         "ConstantSByteValue",
@@ -359,20 +359,20 @@ class SchemaDef
         "ConstantUInt64Value",
     };
 
-    private readonly static string[] TypeDefOrRef = new string[]
+    private static readonly string[] TypeDefOrRef = new string[]
     {
         "TypeDefinition",
         "TypeReference",
     };
 
-    private readonly static string[] TypeDefOrRefOrSpec = new string[]
+    private static readonly string[] TypeDefOrRefOrSpec = new string[]
     {
         "TypeDefinition",
         "TypeReference",
         "TypeSpecification",
     };
 
-    private readonly static string[] TypeDefOrRefOrSpecOrMod = new string[]
+    private static readonly string[] TypeDefOrRefOrSpecOrMod = new string[]
     {
         "TypeDefinition",
         "TypeReference",
@@ -380,7 +380,7 @@ class SchemaDef
         "ModifiedType",
     };
 
-    private readonly static string[] TypeSig = new string[]
+    private static readonly string[] TypeSig = new string[]
     {
         "TypeInstantiationSignature",
         "SZArraySignature",
@@ -392,10 +392,10 @@ class SchemaDef
         "MethodTypeVariableSignature",
     };
 
-    private readonly static string[] TypeDefOrRefOrSpecOrConstant =
+    private static readonly string[] TypeDefOrRefOrSpecOrConstant =
         TypeDefOrRefOrSpec.Concat(from constantRecord in ConstantRecordSchema select constantRecord.Name).ToArray();
 
-    private readonly static string[] MethodDefOrRef = new string[]
+    private static readonly string[] MethodDefOrRef = new string[]
     {
         "QualifiedMethod",
         "MemberReference",
@@ -408,7 +408,7 @@ class SchemaDef
     // Member tuple format: (name, type, flags)
     // These are largely based on the definitions in ECMA335.
     //
-    public readonly static RecordDef[] RecordSchema = new RecordDef[]
+    public static readonly RecordDef[] RecordSchema = new RecordDef[]
     {
         new RecordDef(
             name: "TypeDefinition",
@@ -742,9 +742,9 @@ class SchemaDef
     /// <summary>
     // Contains a list of records with corresponding Handle types (currently all of them).
     /// </summary>
-    public readonly static string[] HandleSchema = (from record in RecordSchema select record.Name).ToArray();
+    public static readonly string[] HandleSchema = (from record in RecordSchema select record.Name).ToArray();
 
-    public readonly static string[] TypeNamesWithCollectionTypes =
+    public static readonly string[] TypeNamesWithCollectionTypes =
         RecordSchema.SelectMany(r =>
             from member in r.Members
             let memberTypeName = member.TypeName as string

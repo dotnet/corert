@@ -37,7 +37,7 @@ namespace Internal.Runtime.TypeLoader
         private delegate IntPtr RuntimeCacheFuncSignatureDel(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult);
 
         [DllImport("*", ExactSpelling = true, EntryPoint = "ConstrainedCallSupport_GetStubs")]
-        private unsafe extern static void ConstrainedCallSupport_GetStubs(out IntPtr constrainedCallSupport_DerefThisAndCall_CommonCallingStub, out IntPtr constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
+        private extern static unsafe void ConstrainedCallSupport_GetStubs(out IntPtr constrainedCallSupport_DerefThisAndCall_CommonCallingStub, out IntPtr constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
 
         private static IntPtr s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub;
         private static IntPtr s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub;
@@ -224,16 +224,16 @@ namespace Internal.Runtime.TypeLoader
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
 #endif
             {
                 IntPtr ignoredAuxResult;
                 return RuntimeAugments.RuntimeCacheLookup(thisPtr.GetType().TypeHandle.ToIntPtr(), callDescIntPtr, s_resolveCallOnReferenceTypeCacheMissFunc, thisPtr, out ignoredAuxResult);
             }
 
-            private unsafe static IntPtr ResolveCallOnReferenceTypeCacheMiss(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult)
+            private static unsafe IntPtr ResolveCallOnReferenceTypeCacheMiss(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult)
             {
                 auxResult = IntPtr.Zero;
                 NonGenericConstrainedCallDesc* callDesc = (NonGenericConstrainedCallDesc*)callDescIntPtr;
@@ -284,9 +284,9 @@ namespace Internal.Runtime.TypeLoader
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
 #endif
             {
                 NonGenericConstrainedCallDesc* callDesc = (NonGenericConstrainedCallDesc*)callDescIntPtr;
@@ -491,16 +491,16 @@ namespace Internal.Runtime.TypeLoader
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
 #endif
             {
                 IntPtr ignoredAuxResult;
                 return RuntimeAugments.RuntimeCacheLookup(thisPtr.GetType().TypeHandle.ToIntPtr(), callDescIntPtr, s_resolveCallOnReferenceTypeCacheMissFunc, thisPtr, out ignoredAuxResult);
             }
 
-            private unsafe static IntPtr ResolveCallOnReferenceTypeCacheMiss(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult)
+            private static unsafe IntPtr ResolveCallOnReferenceTypeCacheMiss(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult)
             {
                 auxResult = IntPtr.Zero;
 
@@ -522,9 +522,9 @@ namespace Internal.Runtime.TypeLoader
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
 #endif
             {
                 GenericConstrainedCallDesc* callDesc = (GenericConstrainedCallDesc*)callDescIntPtr;

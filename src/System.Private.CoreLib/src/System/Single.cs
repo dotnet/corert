@@ -36,25 +36,25 @@ namespace System
         public const float NaN = (float)0.0 / (float)0.0;
 
         [Pure]
-        public unsafe static bool IsInfinity(float f)
+        public static unsafe bool IsInfinity(float f)
         {
             return (*(int*)(&f) & 0x7FFFFFFF) == 0x7F800000;
         }
 
         [Pure]
-        public unsafe static bool IsPositiveInfinity(float f)
+        public static unsafe bool IsPositiveInfinity(float f)
         {
             return *(int*)(&f) == 0x7F800000;
         }
 
         [Pure]
-        public unsafe static bool IsNegativeInfinity(float f)
+        public static unsafe bool IsNegativeInfinity(float f)
         {
             return *(int*)(&f) == unchecked((int)0xFF800000);
         }
 
         [Pure]
-        public unsafe static bool IsNaN(float f)
+        public static unsafe bool IsNaN(float f)
         {
             return (*(int*)(&f) & 0x7FFFFFFF) > 0x7F800000;
         }

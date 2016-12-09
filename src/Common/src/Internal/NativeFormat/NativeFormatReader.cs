@@ -15,13 +15,13 @@ namespace Internal.NativeFormat
 {
     internal unsafe partial struct NativePrimitiveDecoder
     {
-        static public void ThrowBadImageFormatException()
+        public static void ThrowBadImageFormatException()
         {
             Debug.Assert(false);
             throw new BadImageFormatException();
         }
 
-        static public uint DecodeUnsigned(ref byte* stream, byte* streamEnd)
+        public static uint DecodeUnsigned(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -75,7 +75,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public int DecodeSigned(ref byte* stream, byte* streamEnd)
+        public static int DecodeSigned(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -129,7 +129,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public ulong DecodeUnsignedLong(ref byte* stream, byte* streamEnd)
+        public static ulong DecodeUnsignedLong(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -155,7 +155,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public long DecodeSignedLong(ref byte* stream, byte* streamEnd)
+        public static long DecodeSignedLong(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -181,7 +181,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public void SkipInteger(ref byte* stream)
+        public static void SkipInteger(ref byte* stream)
         {
             byte val = *stream;
             if ((val & 1) == 0)

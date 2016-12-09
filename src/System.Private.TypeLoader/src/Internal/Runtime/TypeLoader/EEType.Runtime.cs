@@ -13,7 +13,7 @@ namespace Internal.Runtime
     // Supplies type loader specific extentions to EEType
     internal partial struct EEType
     {
-        private unsafe static EEType* GetArrayEEType()
+        private static unsafe EEType* GetArrayEEType()
         {
             return typeof(Array).TypeHandle.ToEETypePtr();
         }

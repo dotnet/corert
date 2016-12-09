@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
 {
     public partial class ExternalInterop
     {
-        static internal int GetLastWin32Error()
+        internal static int GetLastWin32Error()
         {
             throw new PlatformNotSupportedException("GetLastWin32Error");
         }

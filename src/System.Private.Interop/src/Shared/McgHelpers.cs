@@ -376,7 +376,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int GetAt(IntPtr pComThis, uint index, IntPtr pItem)
+        internal static unsafe int GetAt(IntPtr pComThis, uint index, IntPtr pItem)
         {
             int hr = Interop.COM.S_OK;
 
@@ -407,7 +407,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
+        internal static unsafe int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
         {
             int hr = Interop.COM.S_OK;
 
@@ -433,7 +433,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int GetView(System.IntPtr pComThis, System.IntPtr pView)
+        static unsafe int GetView(System.IntPtr pComThis, System.IntPtr pView)
         {
             int hr = Interop.COM.S_OK;
 
@@ -462,7 +462,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
+        internal static unsafe int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
         {
             int hr = Interop.COM.S_OK;
 
@@ -501,7 +501,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int SetAt(System.IntPtr pComThis, uint index, IntPtr _value)
+        static unsafe int SetAt(System.IntPtr pComThis, uint index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -539,7 +539,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int InsertAt(System.IntPtr pComThis, uint index, IntPtr _value)
+        static unsafe int InsertAt(System.IntPtr pComThis, uint index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -578,7 +578,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int RemoveAt(System.IntPtr pComThis, uint index)
+        static unsafe int RemoveAt(System.IntPtr pComThis, uint index)
         {
             int hr = Interop.COM.S_OK;
 
@@ -614,7 +614,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Append(System.IntPtr pComThis, IntPtr _value)
+        static unsafe int Append(System.IntPtr pComThis, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -641,7 +641,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int RemoveAtEnd(System.IntPtr pComThis)
+        static unsafe int RemoveAtEnd(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -681,7 +681,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Clear(System.IntPtr pComThis)
+        static unsafe int Clear(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -708,7 +708,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
+        internal static unsafe int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
         {
             int hr = Interop.COM.S_OK;
 
@@ -763,7 +763,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
+        static unsafe int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
         {
             int hr = Interop.COM.S_OK;
 
@@ -853,7 +853,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int GetAt(IntPtr pComThis, uint _index, IntPtr pItem)
+        internal static unsafe int GetAt(IntPtr pComThis, uint _index, IntPtr pItem)
         {
             int hr = Interop.COM.S_OK;
 
@@ -883,7 +883,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
+        internal static unsafe int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
         {
             int hr = Interop.COM.S_OK;
 
@@ -910,7 +910,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int GetView(System.IntPtr pComThis, System.IntPtr pView)
+        static unsafe int GetView(System.IntPtr pComThis, System.IntPtr pView)
         {
             int hr = Interop.COM.S_OK;
 
@@ -938,7 +938,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
+        internal static unsafe int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
         {
             int hr = Interop.COM.S_OK;
 
@@ -976,7 +976,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int SetAt(System.IntPtr pComThis, uint _index, IntPtr _value)
+        static unsafe int SetAt(System.IntPtr pComThis, uint _index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1006,7 +1006,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int InsertAt(System.IntPtr pComThis, uint _index, IntPtr _value)
+        static unsafe int InsertAt(System.IntPtr pComThis, uint _index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1036,7 +1036,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int RemoveAt(System.IntPtr pComThis, uint _index)
+        static unsafe int RemoveAt(System.IntPtr pComThis, uint _index)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1067,7 +1067,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Append(System.IntPtr pComThis, IntPtr _value)
+        static unsafe int Append(System.IntPtr pComThis, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1094,7 +1094,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int RemoveAtEnd(System.IntPtr pComThis)
+        static unsafe int RemoveAtEnd(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1136,7 +1136,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Clear(System.IntPtr pComThis)
+        static unsafe int Clear(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1162,7 +1162,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
+        internal static unsafe int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1213,7 +1213,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
+        static unsafe int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
         {
             int hr = Interop.COM.S_OK;
 

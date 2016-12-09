@@ -415,7 +415,7 @@ namespace System
 
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect
-        unsafe static internal String CreateStringFromEncoding(
+        unsafe internal static String CreateStringFromEncoding(
             byte* bytes, int byteLength, Encoding encoding)
         {
             Debug.Assert(bytes != null);

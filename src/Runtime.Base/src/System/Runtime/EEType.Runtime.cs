@@ -109,7 +109,7 @@ namespace Internal.Runtime
         /// <summary>
         /// Return true if both types are good for simple casting: canonical, no related type via IAT, no generic variance
         /// </summary>
-        static internal bool BothSimpleCasting(EEType* pThis, EEType* pOther)
+        internal static bool BothSimpleCasting(EEType* pThis, EEType* pOther)
         {
             return ((pThis->_usFlags | pOther->_usFlags) & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
         }

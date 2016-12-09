@@ -14,12 +14,12 @@ namespace ILCompiler.DependencyAnalysis
         int Offset { get; }
     }
 
-    static public class ISymbolNodeExtensions
+    public static class ISymbolNodeExtensions
     {
         [ThreadStatic]
         static Utf8StringBuilder s_cachedUtf8StringBuilder;
 
-        static public string GetMangledName(this ISymbolNode symbolNode)
+        public static string GetMangledName(this ISymbolNode symbolNode)
         {
             Utf8StringBuilder sb = s_cachedUtf8StringBuilder;
             if (sb == null)

@@ -24,12 +24,12 @@ namespace System.Threading
         internal const int WAIT_TIMEOUT = (int)Interop.Constants.WaitTimeout;
         internal const int WAIT_FAILED = unchecked((int)Interop.Constants.WaitFailed);
 
-        internal unsafe static int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
+        internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
         {
             return WaitForMultipleObjects(&handle, 1, false, millisecondsTimeout);
         }
 
-        internal unsafe static int WaitForMultipleObjects(IntPtr[] handles, bool waitAll, int millisecondsTimeout)
+        internal static unsafe int WaitForMultipleObjects(IntPtr[] handles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = handles)
             {
@@ -37,7 +37,7 @@ namespace System.Threading
             }
         }
 
-        internal unsafe static int WaitForMultipleObjects(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
+        internal static unsafe int WaitForMultipleObjects(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
