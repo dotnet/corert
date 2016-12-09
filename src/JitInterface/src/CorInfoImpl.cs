@@ -139,45 +139,14 @@ namespace Internal.JitInterface
                 }
 
                 _methodScope = methodInfo.scope;
-
-                try
-                {
-                    MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
-
-                    // TODO: NoLineNumbers
-                    //if (!_compilation.Options.NoLineNumbers)
-                    {
-                        IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
-                        if (ilSequencePoints != null)
-                        {
-                            SetSequencePoints(ilSequencePoints);
-                        }
-                    }
-
-                    IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
-                    if (localVariables != null)
-                    {
-                        SetLocalVariables(localVariables);
-                    }
-
-                    IEnumerable<string> parameters = debugInfo.GetParameterNames();
-                    if (parameters != null)
-                    {
-                        SetParameterNames(parameters);
-                    }
-                }
-                catch (Exception e)
-                {
-                    // Debug info not successfully loaded.
-                    Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
-                }
+                SetDebugInformation(methodCodeNodeNeedingCode, methodIL);
 
                 CorInfoImpl _this = this;
 
                 IntPtr exception;
                 IntPtr nativeEntry;
                 uint codeSize;
-                var result = JitCompileMethod(out exception, 
+                var result = JitCompileMethod(out exception,
                         _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
                         ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
                 if (exception != IntPtr.Zero)
@@ -209,6 +178,63 @@ namespace Internal.JitInterface
             finally
             {
                 CompileMethodCleanup();
+            }
+        }
+
+        private void SetDebugInformation(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL)
+        {
+            try
+            {
+                MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
+
+                // TODO: NoLineNumbers
+                //if (!_compilation.Options.NoLineNumbers)
+                {
+                    IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
+                    if (ilSequencePoints != null)
+                    {
+                        SetSequencePoints(ilSequencePoints);
+                    }
+                }
+
+                IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
+                if (localVariables != null)
+                {
+                    SetLocalVariables(localVariables);
+                }
+
+                IEnumerable<string> parameters = debugInfo.GetParameterNames();
+                if (parameters != null)
+                {
+                    SetParameterNames(parameters);
+                }
+
+                ArrayBuilder<uint> variableToTypeIndex = new ArrayBuilder<uint>();
+
+                var signature = MethodBeingCompiled.Signature;
+                if (!signature.IsStatic)
+                {
+                    TypeDesc type = MethodBeingCompiled.OwningType;
+                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                }
+
+                for (int i = 0; i < signature.Length; ++i)
+                {
+                    TypeDesc type = signature[i];
+                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                }
+                var locals = methodIL.GetLocals();
+                for (int i = 0; i < locals.Length; ++i)
+                {
+                    TypeDesc type = locals[i].Type;
+                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                }
+                _variableToTypeIndex = variableToTypeIndex.ToArray();
+            }
+            catch (Exception e)
+            {
+                // Debug info not successfully loaded.
+                Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.ToString() + ")");
             }
         }
 
@@ -402,6 +428,7 @@ namespace Internal.JitInterface
             _sequencePoints = null;
             _debugLocInfos = null;
             _debugVarInfos = null;
+            _variableToTypeIndex = null;
 
             _lastException = null;
         }
@@ -1782,6 +1809,16 @@ namespace Internal.JitInterface
             _parameterIndexToNameMap = parameterIndexToNameMap;
         }
 
+        private uint GetVariableTypeIndex(TypeDesc type)
+        {
+            uint typeIndex = 0;
+            if (type.IsPrimitive)
+            {
+                typeIndex = TypesDebugInfo.PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);               
+            }
+            return typeIndex;
+        }
+
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
@@ -1909,9 +1946,7 @@ namespace Internal.JitInterface
 
             if (!debugVars.TryGetValue(nativeVarInfo.varNumber, out debugVar))
             {
-                // TODO: Force an INT32 type (0x0074 in CodeView) for now. Fix it later.
-                // ISSUE #784. 
-                debugVar = new DebugVarInfo(name, isParam, typeIndex : 0x0074);
+                debugVar = new DebugVarInfo(name, isParam, _variableToTypeIndex[(int)nativeVarInfo.varNumber]);
                 debugVars[nativeVarInfo.varNumber] = debugVar;
             }
 
@@ -2830,6 +2865,7 @@ namespace Internal.JitInterface
         private Dictionary<uint, string> _parameterIndexToNameMap;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
+        private uint[] _variableToTypeIndex;
 
         private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
