@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Internal.Runtime;
 
 namespace System.Runtime
 {
@@ -418,6 +419,10 @@ namespace System.Runtime
         internal static unsafe extern bool RhFindBlob(IntPtr hOsModule, uint blobId, byte** ppbBlob, uint* pcbBlob);
 
 #if CORERT
+        [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr RhGetModuleSection(IntPtr module, ReadyToRunSectionType section, out int length);
+
         internal static uint RhGetLoadedModules(IntPtr[] resultArray)
         {
             IntPtr[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.Modules;
@@ -444,6 +449,16 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
         internal static unsafe extern byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, IntPtr fieldCookie);
+
+#if CORERT
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
+        internal static unsafe extern Array RhGetThreadStaticStorageForModule(Int32 moduleIndex);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
+        internal static unsafe extern bool RhSetThreadStaticStorageForModule(Array storage, Int32 moduleIndex);
+#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]

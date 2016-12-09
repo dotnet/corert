@@ -27,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.DefinedSymbols.Add(this);
             objData.RequirePointerAlignment();
             objData.EmitZeroPointer();
+            objData.EmitZeroPointer();
             return objData.ToObjectData();
         }
     }

@@ -91,8 +91,8 @@ namespace ILCompiler.DependencyAnalysis
             totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC eetype size is 3 pointers
             dataBuilder.EmitInt(totalSize);
 
-            // This is just so that EEType::Validate doesn't blow up at runtime
-            dataBuilder.EmitPointerReloc(this); // Related type: itself
+            // Related type: System.Object. This allows storing an instance of this type in an array of objects.
+            dataBuilder.EmitPointerReloc(factory.NecessaryTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.Object)));
 
             return dataBuilder.ToObjectData();
         }

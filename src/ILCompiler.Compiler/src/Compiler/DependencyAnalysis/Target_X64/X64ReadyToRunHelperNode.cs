@@ -108,7 +108,41 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    encoder.EmitINT3();
+                    {
+                        MetadataType target = (MetadataType)Target;
+                        ThreadStaticsNode targetNode = factory.TypeThreadStaticsSymbol(target) as ThreadStaticsNode;
+                        int typeTlsIndex = 0;
+
+                        // The GetThreadStaticBase helper should be generated only in the compilation module group
+                        // that contains the thread static field because the helper needs the index of the type
+                        // in Thread Static section of the containing module.
+                        // TODO: This needs to be fixed this for the multi-module compilation
+                        Debug.Assert(targetNode != null);
+
+                        if (!relocsOnly)
+                        {
+                            // Get index of the targetNode in the Thread Static region
+                            typeTlsIndex = factory.ThreadStaticsRegion.IndexOfEmbeddedObject(targetNode);
+                        }
+
+                        // First arg: address of the TypeManager slot that provides the helper with
+                        // information about module index and the type manager instance (which is used
+                        // for initialization on first access).
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeManagerIndirection);
+                        // Second arg: index of the type in the ThreadStatic section of the modules
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, typeTlsIndex);
+
+                        if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        {
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                        }
+                        else
+                        {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
+                            // TODO: performance optimization - inline the check verifying whether we need to trigger the cctor
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                        }
+                    }
                     break;
 
                 case ReadyToRunHelperId.GetGCStaticBase:

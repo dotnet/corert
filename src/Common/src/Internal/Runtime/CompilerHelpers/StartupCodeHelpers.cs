@@ -26,7 +26,7 @@ namespace Internal.Runtime.CompilerHelpers
 
             for (int i = 0; i < modules.Length; i++)
             {
-                InitializeGlobalTablesForModule(modules[i]);
+                InitializeGlobalTablesForModule(modules[i], i);
             }
 
             // We are now at a stage where we can use GC statics - publish the list of modules
@@ -71,16 +71,17 @@ namespace Internal.Runtime.CompilerHelpers
         /// statics, etc that need initializing. InitializeGlobalTables walks through the modules
         /// and offers each a chance to initialize its global tables.
         /// </summary>
-        private static unsafe void InitializeGlobalTablesForModule(IntPtr typeManager)
+        private static unsafe void InitializeGlobalTablesForModule(IntPtr typeManager, int moduleIndex)
         {
             // Configure the module indirection cell with the newly created TypeManager. This allows EETypes to find
             // their interface dispatch map tables.
             int length;
-            IntPtr* section = (IntPtr*)GetModuleSection(typeManager, ReadyToRunSectionType.TypeManagerIndirection, out length);
-            *section = typeManager;
+            TypeManagerSlot* section = (TypeManagerSlot*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.TypeManagerIndirection, out length);
+            section->TypeManager = typeManager;
+            section->ModuleIndex = moduleIndex;
 
             // Initialize statics if any are present
-            IntPtr staticsSection = GetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
+            IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
@@ -88,7 +89,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             // Initialize frozen object segment with GC present
-            IntPtr frozenObjectSection = GetModuleSection(typeManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
+            IntPtr frozenObjectSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
             if (frozenObjectSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
@@ -110,7 +111,7 @@ namespace Internal.Runtime.CompilerHelpers
             int length;
 
             // Run eager class constructors if any are present
-            IntPtr eagerClassConstructorSection = GetModuleSection(typeManager, ReadyToRunSectionType.EagerCctor, out length);
+            IntPtr eagerClassConstructorSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.EagerCctor, out length);
             if (eagerClassConstructorSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
@@ -158,12 +159,15 @@ namespace Internal.Runtime.CompilerHelpers
             return len;
         }
 
-        [RuntimeImport(".", "RhpGetModuleSection")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr GetModuleSection(IntPtr module, ReadyToRunSectionType section, out int length);
-
         [RuntimeImport(".", "RhpCreateTypeManager")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static unsafe extern IntPtr CreateTypeManager(IntPtr moduleHeader);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TypeManagerSlot
+    {
+        public IntPtr TypeManager;
+        public Int32 ModuleIndex;
     }
 }
