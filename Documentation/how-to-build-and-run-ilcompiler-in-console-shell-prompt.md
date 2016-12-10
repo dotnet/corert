@@ -16,7 +16,7 @@ This will result in the following:
 
 # Install latest CLI tools
 
-* Download latest CLI tools from https://github.com/dotnet/cli/ and add them to the path. The latest CLI tools include MSBuild support that the native compilation build integration depends on.
+* Download latest CLI tools from [https://github.com/dotnet/cli/](https://github.com/dotnet/cli/) and add them to the path. The latest CLI tools include MSBuild support that the native compilation build integration depends on.
 * On windows ensure you are using the 'VS2015 x64 Native Tools Command Prompt'
     (This is distinct from the 'Developer Command Prompt for VS2015')
 
@@ -26,26 +26,42 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 * Ensure that you have done a repo build per the instructions above.
 * Create a new folder and switch into it. 
-* Run `dotnet new --type MSBuild` on the command/shell prompt. This will add a project template. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
-* Add the following `NuGet.Config` to your project. The CLI MSBuild support requires packages that have not been published to nuget.org yet. This step won't be necessary after official release.
+* Run `dotnet new` on the command/shell prompt. This will add a project template. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
+* Modify `.csproj` file that is part of your project. A few lines at the top and at the bottom are diferent from the default template.
+
 ```
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <!--To inherit the global NuGet package sources remove the <clear/> line below -->
-    <clear />
-    <add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <add key="cli-deps" value="https://dotnet.myget.org/F/cli-deps/api/v3/index.json" />
-    <add key="xunit" value="https://www.myget.org/F/xunit/api/v3/index.json" />
-    <add key="api.nuget.org" value="https://api.nuget.org/v3/index.json" />
-  </packageSources>
-</configuration>
+<Project ToolsVersion="15.0">
+  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" />
+    <EmbeddedResource Include="**\*.resx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App" Version="1.0.1" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
+  <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" />
+</Project>
+
 ```
-* Run `dotnet restore`. This will download nuget packages required for compilation
-* Add the following line at the end of `.csproj` file that is part of your project.
+
+* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1` argument to all dotnet commands below.
+
 ```
-    <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" />
+    set IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1
 ```
+
+* Run `dotnet restore`. This will download nuget packages required for compilation.
+
+* Please [open an issue](https://github.com/dotnet/corert/issues) if these instructions do not work anymore. .NET Core integration with MSBuild is work in progress and these instructions need updating accordingly from time to time.
 
 ## Using RyuJIT ##
 
@@ -54,7 +70,7 @@ This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github
 From the shell/command prompt, issue the following commands, from the folder containing your project, to generate the native executable
 
 ``` 
-    dotnet build3 /t:LinkNative /p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1
+    dotnet build /t:LinkNative
 ``` 
 
 Native executable will be dropped in `./bin/[configuration]/native/` folder and will have the same name as the folder in which your source file is present.
@@ -66,7 +82,7 @@ This approach uses platform specific C++ compiler and linker for compiling/linki
 From the shell/command prompt, issue the following commands to generate the native executable:
 
 ``` 
-    dotnet build3 /t:LinkNative /p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1 /p:NativeCodeGen=cpp /p:AdditionalCppCompilerFlags=/MTd
+    dotnet build /t:LinkNative /p:NativeCodeGen=cpp /p:AdditionalCppCompilerFlags=/MTd
 ```
 
 Omit `/p:AdditionalCppCompilerFlags=/MTd` for release CoreRT build.
