@@ -34,7 +34,7 @@ namespace System.Globalization
                 return returnValue;
             }
 
-            private unsafe static Boolean HexNumberToUInt32(ref NumberBuffer number, ref UInt32 value)
+            private static unsafe Boolean HexNumberToUInt32(ref NumberBuffer number, ref UInt32 value)
             {
                 Int32 i = number.scale;
                 if (i > UINT32_PRECISION || i < number.precision)
@@ -88,7 +88,7 @@ namespace System.Globalization
                 return true;
             }
 
-            private unsafe static Boolean HexNumberToUInt64(ref NumberBuffer number, ref UInt64 value)
+            private static unsafe Boolean HexNumberToUInt64(ref NumberBuffer number, ref UInt64 value)
             {
                 Int32 i = number.scale;
                 if (i > UINT64_PRECISION || i < number.precision)
@@ -142,7 +142,7 @@ namespace System.Globalization
                 return true;
             }
 
-            private unsafe static Boolean NumberToInt32(ref NumberBuffer number, ref Int32 value)
+            private static unsafe Boolean NumberToInt32(ref NumberBuffer number, ref Int32 value)
             {
                 Int32 i = number.scale;
                 if (i > INT32_PRECISION || i < number.precision)
@@ -183,7 +183,7 @@ namespace System.Globalization
                 return true;
             }
 
-            private unsafe static Boolean NumberToInt64(ref NumberBuffer number, ref Int64 value)
+            private static unsafe Boolean NumberToInt64(ref NumberBuffer number, ref Int64 value)
             {
                 Int32 i = number.scale;
                 if (i > INT64_PRECISION || i < number.precision)
@@ -224,7 +224,7 @@ namespace System.Globalization
                 return true;
             }
 
-            private unsafe static Boolean NumberToUInt32(ref NumberBuffer number, ref UInt32 value)
+            private static unsafe Boolean NumberToUInt32(ref NumberBuffer number, ref UInt32 value)
             {
                 Int32 i = number.scale;
                 if (i > UINT32_PRECISION || i < number.precision || number.sign)
@@ -256,7 +256,7 @@ namespace System.Globalization
                 return true;
             }
 
-            private unsafe static Boolean NumberToUInt64(ref NumberBuffer number, ref UInt64 value)
+            private static unsafe Boolean NumberToUInt64(ref NumberBuffer number, ref UInt64 value)
             {
                 Int32 i = number.scale;
                 if (i > UINT64_PRECISION || i < number.precision || number.sign)
@@ -302,7 +302,7 @@ namespace System.Globalization
                 return result;
             }
 
-            internal unsafe static Double ParseDouble(String value, NumberStyles options, IFormatProvider provider)
+            internal static unsafe Double ParseDouble(String value, NumberStyles options, IFormatProvider provider)
             {
                 if (value == null)
                 {
@@ -342,7 +342,7 @@ namespace System.Globalization
                 return d;
             }
 
-            internal unsafe static Int32 ParseInt32(String s, NumberStyles style, IFormatProvider provider)
+            internal static unsafe Int32 ParseInt32(String s, NumberStyles style, IFormatProvider provider)
             {
                 NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -368,7 +368,7 @@ namespace System.Globalization
                 return i;
             }
 
-            internal unsafe static Int64 ParseInt64(String value, NumberStyles options, IFormatProvider provider)
+            internal static unsafe Int64 ParseInt64(String value, NumberStyles options, IFormatProvider provider)
             {
                 NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -394,7 +394,7 @@ namespace System.Globalization
                 return i;
             }
 
-            internal unsafe static Single ParseSingle(String value, NumberStyles options, IFormatProvider provider)
+            internal static unsafe Single ParseSingle(String value, NumberStyles options, IFormatProvider provider)
             {
                 if (value == null)
                 {
@@ -438,7 +438,7 @@ namespace System.Globalization
                 return castSingle;
             }
 
-            internal unsafe static UInt32 ParseUInt32(String value, NumberStyles options, IFormatProvider provider)
+            internal static unsafe UInt32 ParseUInt32(String value, NumberStyles options, IFormatProvider provider)
             {
                 NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -465,7 +465,7 @@ namespace System.Globalization
                 return i;
             }
 
-            internal unsafe static UInt64 ParseUInt64(String value, NumberStyles options, IFormatProvider provider)
+            internal static unsafe UInt64 ParseUInt64(String value, NumberStyles options, IFormatProvider provider)
             {
                 NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = new NumberBuffer();
@@ -489,7 +489,7 @@ namespace System.Globalization
                 return i;
             }
 
-            private unsafe static void StringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal)
+            private static unsafe void StringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal)
             {
                 if (str == null)
                 {
@@ -508,7 +508,7 @@ namespace System.Globalization
                 }
             }
 
-            internal unsafe static Boolean TryParseDecimal(String value, NumberStyles options, IFormatProvider provider, out Decimal result)
+            internal static unsafe Boolean TryParseDecimal(String value, NumberStyles options, IFormatProvider provider, out Decimal result)
             {
                 NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -527,7 +527,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static Boolean TryParseDouble(String value, NumberStyles options, IFormatProvider provider, out Double result)
+            internal static unsafe Boolean TryParseDouble(String value, NumberStyles options, IFormatProvider provider, out Double result)
             {
                 NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = new NumberBuffer();
@@ -545,7 +545,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static Boolean TryParseInt32(String s, NumberStyles style, IFormatProvider provider, out Int32 result)
+            internal static unsafe Boolean TryParseInt32(String s, NumberStyles style, IFormatProvider provider, out Int32 result)
             {
                 NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -574,7 +574,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static Boolean TryParseInt64(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
+            internal static unsafe Boolean TryParseInt64(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
             {
                 NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -603,7 +603,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static Boolean TryParseSingle(String value, NumberStyles options, IFormatProvider provider, out Single result)
+            internal static unsafe Boolean TryParseSingle(String value, NumberStyles options, IFormatProvider provider, out Single result)
             {
                 NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = new NumberBuffer();
@@ -628,7 +628,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static Boolean TryParseUInt32(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
+            internal static unsafe Boolean TryParseUInt32(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
             {
                 NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -657,7 +657,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static Boolean TryParseUInt64(String s, NumberStyles style, IFormatProvider provider, out UInt64 result)
+            internal static unsafe Boolean TryParseUInt64(String s, NumberStyles style, IFormatProvider provider, out UInt64 result)
             {
                 NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -1043,7 +1043,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static void Int32ToDecChars(char[] buffer, ref int index, uint value, int digits)
+            internal static unsafe void Int32ToDecChars(char[] buffer, ref int index, uint value, int digits)
             {
                 while (--digits >= 0 || value != 0)
                 {
@@ -1052,19 +1052,19 @@ namespace System.Globalization
                 }
             }
 
-            static public bool IsPositiveInfinity(string s, IFormatProvider provider)
+            public static bool IsPositiveInfinity(string s, IFormatProvider provider)
             {
                 NumberFormatInfo nfi = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
                 return s.Equals(nfi.PositiveInfinitySymbol);
             }
 
-            static public bool IsNegativeInfinity(string s, IFormatProvider provider)
+            public static bool IsNegativeInfinity(string s, IFormatProvider provider)
             {
                 NumberFormatInfo nfi = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
                 return s.Equals(nfi.NegativeInfinitySymbol);
             }
 
-            static public bool IsNaNSymbol(string s, IFormatProvider provider)
+            public static bool IsNaNSymbol(string s, IFormatProvider provider)
             {
                 NumberFormatInfo nfi = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
                 return s.Equals(nfi.NaNSymbol);

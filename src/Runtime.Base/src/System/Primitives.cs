@@ -344,7 +344,7 @@ namespace System
         [Intrinsic]
         public static readonly IntPtr Zero;
 
-        public unsafe static int Size
+        public static unsafe int Size
         {
             [Intrinsic]
             get
@@ -422,19 +422,19 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe static bool operator ==(IntPtr value1, IntPtr value2)
+        public static unsafe bool operator ==(IntPtr value1, IntPtr value2)
         {
             return value1._value == value2._value;
         }
 
         [Intrinsic]
-        public unsafe static bool operator !=(IntPtr value1, IntPtr value2)
+        public static unsafe bool operator !=(IntPtr value1, IntPtr value2)
         {
             return value1._value != value2._value;
         }
 
         [Intrinsic]
-        public unsafe static IntPtr operator +(IntPtr pointer, int offset)
+        public static unsafe IntPtr operator +(IntPtr pointer, int offset)
         {
 #if BIT64
             return new IntPtr((long)pointer._value + offset);
@@ -504,7 +504,7 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe static explicit operator uint (UIntPtr value)
+        public static unsafe explicit operator uint (UIntPtr value)
         {
 #if BIT64
             return checked((uint)value._value);
@@ -514,19 +514,19 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe static explicit operator ulong (UIntPtr value)
+        public static unsafe explicit operator ulong (UIntPtr value)
         {
             return (ulong)value._value;
         }
 
         [Intrinsic]
-        public unsafe static bool operator ==(UIntPtr value1, UIntPtr value2)
+        public static unsafe bool operator ==(UIntPtr value1, UIntPtr value2)
         {
             return value1._value == value2._value;
         }
 
         [Intrinsic]
-        public unsafe static bool operator !=(UIntPtr value1, UIntPtr value2)
+        public static unsafe bool operator !=(UIntPtr value1, UIntPtr value2)
         {
             return value1._value != value2._value;
         }

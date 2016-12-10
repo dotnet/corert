@@ -99,7 +99,7 @@ namespace Internal.Runtime.TypeLoader
         internal static CallingConventionConverter_CommonCallingStub_PointerData s_commonStubData;
 
         [DllImport("*", ExactSpelling = true, EntryPoint = "CallingConventionConverter_GetStubs")]
-        private unsafe extern static void CallingConventionConverter_GetStubs(out IntPtr returnVoidStub,
+        private extern static unsafe void CallingConventionConverter_GetStubs(out IntPtr returnVoidStub,
                                                                       out IntPtr returnIntegerStub,
                                                                       out IntPtr commonStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
@@ -111,7 +111,7 @@ namespace Internal.Runtime.TypeLoader
 
 #if _TARGET_ARM_
         [DllImport("*", ExactSpelling = true, EntryPoint = "CallingConventionConverter_SpecifyCommonStubData")]
-        private unsafe extern static void CallingConventionConverter_SpecifyCommonStubData(IntPtr commonStubData);
+        private extern static unsafe void CallingConventionConverter_SpecifyCommonStubData(IntPtr commonStubData);
 #endif
 
         static unsafe CallConverterThunk()
@@ -183,7 +183,7 @@ namespace Internal.Runtime.TypeLoader
         private const int ObjectArrayThunk = 7;
 
 
-        public unsafe static IntPtr MakeThunk(ThunkKind thunkKind,
+        public static unsafe IntPtr MakeThunk(ThunkKind thunkKind,
                                               IntPtr targetPointer,
                                               IntPtr instantiatingArg,
                                               bool hasThis, RuntimeTypeHandle[] parameters,
@@ -206,19 +206,19 @@ namespace Internal.Runtime.TypeLoader
             return FindExistingOrAllocateThunk(callConversionInfo);
         }
 
-        public unsafe static IntPtr MakeThunk(ThunkKind thunkKind, IntPtr targetPointer, RuntimeMethodSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
+        public static unsafe IntPtr MakeThunk(ThunkKind thunkKind, IntPtr targetPointer, RuntimeMethodSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
         {
             int callConversionInfo = CallConversionInfo.RegisterCallConversionInfo(thunkKind, targetPointer, methodSignature, instantiatingArg, typeArgs, methodArgs);
             return FindExistingOrAllocateThunk(callConversionInfo);
         }
 
-        internal unsafe static IntPtr MakeThunk(ThunkKind thunkKind, IntPtr targetPointer, IntPtr instantiatingArg, ArgIteratorData argIteratorData, bool[] paramsByRefForced)
+        internal static unsafe IntPtr MakeThunk(ThunkKind thunkKind, IntPtr targetPointer, IntPtr instantiatingArg, ArgIteratorData argIteratorData, bool[] paramsByRefForced)
         {
             int callConversionInfo = CallConversionInfo.RegisterCallConversionInfo(thunkKind, targetPointer, instantiatingArg, argIteratorData, paramsByRefForced);
             return FindExistingOrAllocateThunk(callConversionInfo);
         }
 
-        private unsafe static IntPtr FindExistingOrAllocateThunk(int callConversionInfo)
+        private static unsafe IntPtr FindExistingOrAllocateThunk(int callConversionInfo)
         {
             IntPtr thunk = IntPtr.Zero;
 
@@ -247,7 +247,7 @@ namespace Internal.Runtime.TypeLoader
             return thunk;
         }
 
-        public unsafe static IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind)
+        public static unsafe IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind)
         {
             if (thunkKind == ReversePinvokeThunk)
             {
@@ -304,7 +304,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public unsafe static bool TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(IntPtr potentialStub, RuntimeTypeHandle exactType, out IntPtr nonUnboxingMethod)
+        public static unsafe bool TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(IntPtr potentialStub, RuntimeTypeHandle exactType, out IntPtr nonUnboxingMethod)
         {
             IntPtr callConversionId;
             IntPtr commonStubDataPtr;
@@ -1205,7 +1205,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
 #if CALLINGCONVENTION_CALLEE_POPS
-        private unsafe static void SetupCallerPopArgument(byte* callerTransitionBlock, ArgIterator callerArgs)
+        private static unsafe void SetupCallerPopArgument(byte* callerTransitionBlock, ArgIterator callerArgs)
         {
             int argStackPopSize = callerArgs.CbStackPop();
 

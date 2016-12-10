@@ -8,7 +8,7 @@ namespace System
 {
     public partial struct DateTime : IComparable, IFormattable, IComparable<DateTime>, IEquatable<DateTime>, IConvertible
     {
-        public unsafe static DateTime UtcNow
+        public static unsafe DateTime UtcNow
         {
             get
             {

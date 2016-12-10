@@ -738,7 +738,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private unsafe static int GetInstanceGCDescSize(TypeBuilderState state, EEType* pTemplateEEType, bool isValueType, bool isArray)
+        private static unsafe int GetInstanceGCDescSize(TypeBuilderState state, EEType* pTemplateEEType, bool isValueType, bool isArray)
         {
             var gcBitfield = state.InstanceGCLayout;
             if (isArray)

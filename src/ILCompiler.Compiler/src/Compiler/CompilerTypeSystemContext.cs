@@ -174,7 +174,7 @@ namespace ILCompiler
             return AddModule(filePath, null);
         }
 
-        private unsafe static PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
+        private static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
         {
             // System.Reflection.Metadata has heuristic that tries to save virtual address space. This heuristic does not work
             // well for us since it can make IL access very slow (call to OS for each method IL query). We will map the file

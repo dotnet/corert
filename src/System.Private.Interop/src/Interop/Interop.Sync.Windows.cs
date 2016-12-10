@@ -44,19 +44,19 @@ namespace System.Runtime.InteropServices
 
         [DllImport(Libraries.CORE_SYNCH_L1)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern void InitializeCriticalSectionEx(CRITICAL_SECTION* lpCriticalSection, int dwSpinCount, int flags);
+        internal static extern unsafe void InitializeCriticalSectionEx(CRITICAL_SECTION* lpCriticalSection, int dwSpinCount, int flags);
 
         [DllImport(Libraries.CORE_SYNCH_L1)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static extern unsafe void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [DllImport(Libraries.CORE_SYNCH_L1)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe  extern void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static unsafe  extern void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [DllImport(Libraries.CORE_SYNCH_L1)]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static extern unsafe void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
     }
 }

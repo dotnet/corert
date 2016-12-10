@@ -232,7 +232,7 @@ namespace System
         // If you use C#'s 'fixed' statement to get the address of m_pEEType, you want to pass it into this
         // function to get the address of the first field.  NOTE: If you use GetAddrOfPinnedObject instead,
         // C# may optimize away the pinned local, producing incorrect results.
-        static internal unsafe byte* GetAddrOfPinnedArrayFromEETypeField(IntPtr* ppEEType)
+        internal static unsafe byte* GetAddrOfPinnedArrayFromEETypeField(IntPtr* ppEEType)
         {
             // -POINTER_SIZE to account for the sync block
             return (byte*)ppEEType + new EETypePtr(*ppEEType).BaseSize - POINTER_SIZE;
@@ -938,7 +938,7 @@ namespace System
         }
 
         // Allocate new multidimensional array of given dimensions. Assumes that that pLengths is immutable.
-        internal unsafe static Array NewMultiDimArray(EETypePtr eeType, int * pLengths, int rank)
+        internal static unsafe Array NewMultiDimArray(EETypePtr eeType, int * pLengths, int rank)
         {
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
             Debug.Assert(rank == eeType.ArrayRank);

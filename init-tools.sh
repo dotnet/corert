@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-__scriptpath=$(cd "$(dirname "$0")"; pwd -P)
+__scriptpath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 __init_tools_log=$__scriptpath/init-tools.log
 __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
@@ -10,16 +11,20 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public class MultiFileCompilationModuleGroup : CompilationModuleGroup
+    public abstract class MultiFileCompilationModuleGroup : CompilationModuleGroup
     {
-        private HashSet<EcmaModule> _compilationModuleSet;
+        private HashSet<ModuleDesc> _compilationModuleSet;
 
-        public MultiFileCompilationModuleGroup(IEnumerable<EcmaModule> compilationModuleSet)
+        public MultiFileCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+            : base(context)
         {
-            _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
+            _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
+
+            // The fake assembly that holds compiler generated types is part of the compilation.
+            _compilationModuleSet.Add(this.GeneratedAssembly);
         }
 
-        public override bool ContainsType(TypeDesc type)
+        public sealed override bool ContainsType(TypeDesc type)
         {
             EcmaType ecmaType = type as EcmaType;
 
@@ -34,7 +39,7 @@ namespace ILCompiler
             return true;
         }
 
-        public override bool ContainsMethod(MethodDesc method)
+        public sealed override bool ContainsMethod(MethodDesc method)
         {
             if (method.HasInstantiation)
                 return true;
@@ -42,27 +47,12 @@ namespace ILCompiler
             return ContainsType(method.OwningType);
         }
 
-        private bool BuildingLibrary
-        {
-            get
-            {
-                foreach (var module in _compilationModuleSet)
-                {
-                    if (module.PEReader.PEHeaders.IsExe)
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
-
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
             return _compilationModuleSet.Contains(module);
         }
 
-        public override bool IsSingleFileCompilation
+        public sealed override bool IsSingleFileCompilation
         {
             get
             {
@@ -70,17 +60,40 @@ namespace ILCompiler
             }
         }
 
+        public sealed override bool ShouldReferenceThroughImportTable(TypeDesc type)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
+    /// </summary>
+    public class MultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
+    {
+        public MultiFileSharedCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+            : base(context, compilationModuleSet)
+        {
+        }
+
         public override bool ShouldProduceFullType(TypeDesc type)
         {
-            // TODO: Remove this once we have delgate constructor transform added and GetMethods() tells us about
-            //       the virtuals we add on to delegate types.
-            if (type.IsDelegate)
-                return false;
+            return true;
+        }
+    }
 
-            // Fully build all types when building a library
-            if (BuildingLibrary)
-                return true;
+    /// <summary>
+    /// Represents an unshared multifile compilation group where types contained in the group are expanded as needed.
+    /// </summary>
+    public class MultiFileLeafCompilationModuleGroup : MultiFileCompilationModuleGroup
+    {
+        public MultiFileLeafCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+            : base(context, compilationModuleSet)
+        {
+        }
 
+        public override bool ShouldProduceFullType(TypeDesc type)
+        {
             // Fully build all shareable types so they will be identical in each module
             if (EETypeNode.IsTypeNodeShareable(type))
                 return true;
@@ -90,11 +103,6 @@ namespace ILCompiler
             if (!ContainsType(type))
                 return true;
 
-            return false;
-        }
-
-        public override bool ShouldReferenceThroughImportTable(TypeDesc type)
-        {
             return false;
         }
     }

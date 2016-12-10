@@ -18,7 +18,7 @@ namespace System
 {
     public static partial class Environment
     {
-        public unsafe static String ExpandEnvironmentVariables(String name)
+        public static unsafe String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -28,7 +28,7 @@ namespace System
             return name;
         }
 
-        public unsafe static String GetEnvironmentVariable(String variable)
+        public static unsafe String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));

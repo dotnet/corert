@@ -34,7 +34,7 @@ namespace Internal.Runtime.TypeLoader
             return typeAsDefType != null && typeAsDefType.HasInstantiation;
         }
 
-        static public DefType GetClosestDefType(this TypeDesc type)
+        public static DefType GetClosestDefType(this TypeDesc type)
         {
             if (type is DefType)
                 return (DefType)type;
@@ -58,13 +58,13 @@ namespace Internal.Runtime.TypeLoader
             return RuntimeAugments.GetRuntimeTypeHandleRawValue(rtth) == IntPtr.Zero;
         }
 
-        public unsafe static bool IsDynamic(this RuntimeFieldHandle rtfh)
+        public static unsafe bool IsDynamic(this RuntimeFieldHandle rtfh)
         {
             IntPtr rtfhValue = *(IntPtr*)&rtfh;
             return (rtfhValue.ToInt64() & 0x1) == 0x1;
         }
 
-        public unsafe static bool IsDynamic(this RuntimeMethodHandle rtfh)
+        public static unsafe bool IsDynamic(this RuntimeMethodHandle rtfh)
         {
             IntPtr rtfhValue = *(IntPtr*)&rtfh;
             return (rtfhValue.ToInt64() & 0x1) == 0x1;

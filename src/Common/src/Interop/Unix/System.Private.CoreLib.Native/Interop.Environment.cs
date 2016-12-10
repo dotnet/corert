@@ -11,7 +11,7 @@ internal static partial class Interop
     internal unsafe partial class Sys
     {
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetEnvironmentVariable")]
-        internal static unsafe extern int GetEnvironmentVariable(string name, out IntPtr result);
+        internal static extern unsafe int GetEnvironmentVariable(string name, out IntPtr result);
 
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_ExitProcess")]
         internal static extern void ExitProcess(int exitCode);

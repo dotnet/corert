@@ -126,7 +126,7 @@ namespace System.Runtime
             }
         }
 
-        public unsafe static ThunksHeap CreateThunksHeap(IntPtr commonStubAddress)
+        public static unsafe ThunksHeap CreateThunksHeap(IntPtr commonStubAddress)
         {
             try
             {
@@ -356,7 +356,7 @@ namespace System.Runtime
         private static IntPtr[] s_currentlyMappedThunkBlocks = new IntPtr[Constants.NumThunkBlocksPerMapping];
         private static int s_currentlyMappedThunkBlocksIndex = Constants.NumThunkBlocksPerMapping;
 
-        public unsafe static IntPtr GetNewThunksBlock()
+        public static unsafe IntPtr GetNewThunksBlock()
         {
             IntPtr nextThunksBlock;
 
@@ -422,7 +422,7 @@ namespace System.Runtime
         }
 
         // TODO: [Feature] Keep track of mapped sections and free them if we need to.
-        // public unsafe static void FreeThunksBlock()
+        // public static unsafe void FreeThunksBlock()
         // {
         // }
     }

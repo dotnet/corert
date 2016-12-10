@@ -8,35 +8,35 @@ using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
-    static public class TypeSystemHelpers
+    public static class TypeSystemHelpers
     {
-        static public bool IsWellKnownType(this TypeDesc type, WellKnownType wellKnownType)
+        public static bool IsWellKnownType(this TypeDesc type, WellKnownType wellKnownType)
         {
             return type == type.Context.GetWellKnownType(wellKnownType);
         }
 
-        static public InstantiatedType MakeInstantiatedType(this MetadataType typeDef, Instantiation instantiation)
+        public static InstantiatedType MakeInstantiatedType(this MetadataType typeDef, Instantiation instantiation)
         {
             return typeDef.Context.GetInstantiatedType(typeDef, instantiation);
         }
 
-        static public InstantiatedType MakeInstantiatedType(this MetadataType typeDef, params TypeDesc[] genericParameters)
+        public static InstantiatedType MakeInstantiatedType(this MetadataType typeDef, params TypeDesc[] genericParameters)
         {
             return typeDef.Context.GetInstantiatedType(typeDef, new Instantiation(genericParameters));
         }
 
 
-        static public InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, Instantiation instantiation)
+        public static InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, Instantiation instantiation)
         {
             return methodDef.Context.GetInstantiatedMethod(methodDef, instantiation);
         }
 
-        static public InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, params TypeDesc[] genericParameters)
+        public static InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, params TypeDesc[] genericParameters)
         {
             return methodDef.Context.GetInstantiatedMethod(methodDef, new Instantiation(genericParameters));
         }
 
-        static public ArrayType MakeArrayType(this TypeDesc type)
+        public static ArrayType MakeArrayType(this TypeDesc type)
         {
             return type.Context.GetArrayType(type);
         }
@@ -45,22 +45,22 @@ namespace Internal.TypeSystem
         /// Creates a multidimensional array type with the specified rank.
         /// To create a vector, use the <see cref="MakeArrayType(TypeDesc)"/> overload.
         /// </summary>
-        static public ArrayType MakeArrayType(this TypeDesc type, int rank)
+        public static ArrayType MakeArrayType(this TypeDesc type, int rank)
         {
             return type.Context.GetArrayType(type, rank);
         }
 
-        static public ByRefType MakeByRefType(this TypeDesc type)
+        public static ByRefType MakeByRefType(this TypeDesc type)
         {
             return type.Context.GetByRefType(type);
         }
 
-        static public PointerType MakePointerType(this TypeDesc type)
+        public static PointerType MakePointerType(this TypeDesc type)
         {
             return type.Context.GetPointerType(type);
         }
 
-        static public int GetElementSize(this TypeDesc type)
+        public static int GetElementSize(this TypeDesc type)
         {
             if (type.IsValueType)
             {
@@ -72,14 +72,14 @@ namespace Internal.TypeSystem
             }
         }
 
-        static public MethodDesc GetDefaultConstructor(this TypeDesc type)
+        public static MethodDesc GetDefaultConstructor(this TypeDesc type)
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
             var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes);
             return type.GetMethod(".ctor", sig);
         }
 
-        static internal MethodDesc FindMethodOnExactTypeWithMatchingTypicalMethod(this TypeDesc type, MethodDesc method)
+        internal static MethodDesc FindMethodOnExactTypeWithMatchingTypicalMethod(this TypeDesc type, MethodDesc method)
         {
             MethodDesc methodTypicalDefinition = method.GetTypicalMethodDefinition();
 
@@ -110,7 +110,7 @@ namespace Internal.TypeSystem
         /// </summary>
         /// <param name="targetType">A potentially derived type</param>
         /// <param name="method">A base class's virtual method</param>
-        static public MethodDesc FindMethodOnTypeWithMatchingTypicalMethod(this TypeDesc targetType, MethodDesc method)
+        public static MethodDesc FindMethodOnTypeWithMatchingTypicalMethod(this TypeDesc targetType, MethodDesc method)
         {
             // If method is nongeneric and on a nongeneric type, then it is the matching method
             if (!method.HasInstantiation && !method.OwningType.HasInstantiation)
@@ -150,7 +150,7 @@ namespace Internal.TypeSystem
         /// for generic code.
         /// </summary>
         /// <returns>The resolved method or null if the constraint couldn't be resolved.</returns>
-        static public MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
+        public static MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
         {
             forceRuntimeLookup = false;
 

@@ -382,7 +382,7 @@ namespace System
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        public unsafe static void DynamicInvokeArgSetupPtrComplete(IntPtr argSetupStatePtr)
+        public static unsafe void DynamicInvokeArgSetupPtrComplete(IntPtr argSetupStatePtr)
         {
             // argSetupStatePtr is a pointer to a *pinned* ArgSetupState object
             DynamicInvokeArgSetupComplete(ref Unsafe.As<byte, ArgSetupState>(ref *(byte*)argSetupStatePtr));

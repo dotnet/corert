@@ -103,59 +103,59 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpNewFast")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static object RhpNewFast(EEType* pEEType);  // BEWARE: not for finalizable objects!
+        internal extern static unsafe object RhpNewFast(EEType* pEEType);  // BEWARE: not for finalizable objects!
 
         [RuntimeImport(Redhawk.BaseName, "RhpNewFinalizable")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static object RhpNewFinalizable(EEType* pEEType);
+        internal extern static unsafe object RhpNewFinalizable(EEType* pEEType);
 
         [RuntimeImport(Redhawk.BaseName, "RhpNewArray")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static object RhpNewArray(EEType* pEEType, int length);
+        internal extern static unsafe object RhpNewArray(EEType* pEEType, int length);
 
 #if FEATURE_64BIT_ALIGNMENT
         [RuntimeImport(Redhawk.BaseName, "RhpNewFastAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static object RhpNewFastAlign8(EEType * pEEType);  // BEWARE: not for finalizable objects!
+        internal extern static unsafe object RhpNewFastAlign8(EEType * pEEType);  // BEWARE: not for finalizable objects!
 
         [RuntimeImport(Redhawk.BaseName, "RhpNewFinalizableAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static object RhpNewFinalizableAlign8(EEType* pEEType);
+        internal extern static unsafe object RhpNewFinalizableAlign8(EEType* pEEType);
 
         [RuntimeImport(Redhawk.BaseName, "RhpNewArrayAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static object RhpNewArrayAlign8(EEType* pEEType, int length);
+        internal extern static unsafe object RhpNewArrayAlign8(EEType* pEEType, int length);
 
         [RuntimeImport(Redhawk.BaseName, "RhpNewFastMisalign")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static object RhpNewFastMisalign(EEType * pEEType);
+        internal extern static unsafe object RhpNewFastMisalign(EEType * pEEType);
 #endif // FEATURE_64BIT_ALIGNMENT
 
         [RuntimeImport(Redhawk.BaseName, "RhpBox")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static void RhpBox(object obj, ref byte data);
+        internal extern static unsafe void RhpBox(object obj, ref byte data);
 
         [RuntimeImport(Redhawk.BaseName, "RhUnbox")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static void RhUnbox(object obj, ref byte data, EEType* pUnboxToEEType);
+        internal extern static unsafe void RhUnbox(object obj, ref byte data, EEType* pUnboxToEEType);
 
         [RuntimeImport(Redhawk.BaseName, "RhpCopyObjectContents")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpCopyObjectContents(object objDest, object objSrc);
+        internal extern static unsafe void RhpCopyObjectContents(object objDest, object objSrc);
 
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpAssignRef(ref Object address, object obj);
+        internal extern static unsafe void RhpAssignRef(ref Object address, object obj);
 
 #if FEATURE_GC_STRESS
         //
@@ -164,58 +164,58 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpInitializeGcStress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpInitializeGcStress();
+        internal extern static unsafe void RhpInitializeGcStress();
 #endif // FEATURE_GC_STRESS
 
         [RuntimeImport(Redhawk.BaseName, "RhpEHEnumInitFromStackFrameIterator")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, byte** pMethodStartAddress, void* pEHEnum);
+        internal extern static unsafe bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, byte** pMethodStartAddress, void* pEHEnum);
 
         [RuntimeImport(Redhawk.BaseName, "RhpEHEnumNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
+        internal extern static unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetArrayBaseType")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static EEType* RhpGetArrayBaseType(EEType* pEEType);
+        internal extern static unsafe EEType* RhpGetArrayBaseType(EEType* pEEType);
 
         [RuntimeImport(Redhawk.BaseName, "RhpHasDispatchMap")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static bool RhpHasDispatchMap(EEType* pEETypen);
+        internal extern static unsafe bool RhpHasDispatchMap(EEType* pEETypen);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetDispatchMap")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static DispatchResolve.DispatchMap* RhpGetDispatchMap(EEType* pEEType);
+        internal extern static unsafe DispatchResolve.DispatchMap* RhpGetDispatchMap(EEType* pEEType);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetSealedVirtualSlot")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static IntPtr RhpGetSealedVirtualSlot(EEType* pEEType, ushort slot);
+        internal extern static unsafe IntPtr RhpGetSealedVirtualSlot(EEType* pEEType, ushort slot);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetDispatchCellInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
+        internal extern static unsafe void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
 
         [RuntimeImport(Redhawk.BaseName, "RhpSearchDispatchCellCache")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static IntPtr RhpSearchDispatchCellCache(IntPtr pCell, EEType* pInstanceType);
+        internal extern static unsafe IntPtr RhpSearchDispatchCellCache(IntPtr pCell, EEType* pInstanceType);
 
         [RuntimeImport(Redhawk.BaseName, "RhpUpdateDispatchCellCache")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType, ref DispatchCellInfo newCellInfo);
+        internal extern static unsafe IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType, ref DispatchCellInfo newCellInfo);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunction")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
+        internal extern static unsafe void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
 
         [RuntimeImport(Redhawk.BaseName, "RhGetModuleFromPointer")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -348,7 +348,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpSetTLSDispatchCell")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void RhpSetTLSDispatchCell(IntPtr pCell);
+        internal extern static unsafe void RhpSetTLSDispatchCell(IntPtr pCell);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
         [MethodImpl(MethodImplOptions.InternalCall)]

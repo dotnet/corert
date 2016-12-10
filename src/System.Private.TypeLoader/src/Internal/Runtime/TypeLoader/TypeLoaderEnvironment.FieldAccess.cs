@@ -298,7 +298,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="fieldAccessKind">type of static base to find</param>
         /// <param name="staticsRegionAddress">Output - statics region address info</param>
         /// <returns>true when found, false otherwise</returns>
-        private unsafe static bool TryGetStaticFieldBaseFromFieldAccessMap(
+        private static unsafe bool TryGetStaticFieldBaseFromFieldAccessMap(
             RuntimeTypeHandle declaringTypeHandle,
             FieldAccessStaticDataKind fieldAccessKind,
             out IntPtr staticsRegionAddress)

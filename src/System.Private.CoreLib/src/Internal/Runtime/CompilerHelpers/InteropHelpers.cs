@@ -49,7 +49,7 @@ namespace Internal.Runtime.CompilerHelpers
                 sb.ReplaceBuffer(p);
         }
 
-        internal unsafe static IntPtr ResolvePInvoke(MethodFixupCell* pCell)
+        internal static unsafe IntPtr ResolvePInvoke(MethodFixupCell* pCell)
         {
             if (pCell->Target != IntPtr.Zero)
                 return pCell->Target;
@@ -57,7 +57,7 @@ namespace Internal.Runtime.CompilerHelpers
             return ResolvePInvokeSlow(pCell);
         }
 
-        internal unsafe static IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
+        internal static unsafe IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
         {
             ModuleFixupCell* pModuleCell = pCell->Module;
             IntPtr hModule = pModuleCell->Handle;
@@ -71,7 +71,7 @@ namespace Internal.Runtime.CompilerHelpers
             return pCell->Target;
         }
 
-        internal unsafe static void FixupModuleCell(ModuleFixupCell* pCell)
+        internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
         {
 #if !PLATFORM_UNIX
             char* moduleName = (char*)pCell->ModuleName;
@@ -112,7 +112,7 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
         }
 
-        internal unsafe static void FixupMethodCell(IntPtr hModule, MethodFixupCell* pCell)
+        internal static unsafe void FixupMethodCell(IntPtr hModule, MethodFixupCell* pCell)
         {
             byte* methodName = (byte*)pCell->MethodName;
 
@@ -128,7 +128,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        internal unsafe static int strlen(byte* pString)
+        internal static unsafe int strlen(byte* pString)
         {
             int length = 0;
             for (; *pString != 0; pString++)

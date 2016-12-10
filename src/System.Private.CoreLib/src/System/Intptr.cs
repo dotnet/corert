@@ -96,22 +96,14 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static explicit operator IntPtr(int value)
+        public static unsafe explicit operator IntPtr(int value)
         {
             return new IntPtr(value);
         }
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static explicit operator IntPtr(long value)
-        {
-            return new IntPtr(value);
-        }
-
-        [CLSCompliant(false)]
-        [Intrinsic]
-        [NonVersionable]
-        public unsafe static explicit operator IntPtr(void* value)
+        public static unsafe explicit operator IntPtr(long value)
         {
             return new IntPtr(value);
         }
@@ -119,14 +111,22 @@ namespace System
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public unsafe static explicit operator void* (IntPtr value)
+        public static unsafe explicit operator IntPtr(void* value)
+        {
+            return new IntPtr(value);
+        }
+
+        [CLSCompliant(false)]
+        [Intrinsic]
+        [NonVersionable]
+        public static unsafe explicit operator void* (IntPtr value)
         {
             return value._value;
         }
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static explicit operator int (IntPtr value)
+        public static unsafe explicit operator int (IntPtr value)
         {
 #if BIT64
             long l = (long)value._value;
@@ -138,7 +138,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static explicit operator long (IntPtr value)
+        public static unsafe explicit operator long (IntPtr value)
         {
 #if BIT64
             return (long)value._value;
@@ -154,14 +154,14 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static bool operator ==(IntPtr value1, IntPtr value2)
+        public static unsafe bool operator ==(IntPtr value1, IntPtr value2)
         {
             return value1._value == value2._value;
         }
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static bool operator !=(IntPtr value1, IntPtr value2)
+        public static unsafe bool operator !=(IntPtr value1, IntPtr value2)
         {
             return value1._value != value2._value;
         }
@@ -179,7 +179,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static IntPtr operator +(IntPtr pointer, int offset)
+        public static unsafe IntPtr operator +(IntPtr pointer, int offset)
         {
 #if BIT64
             return new IntPtr((long)pointer._value + offset);
@@ -196,7 +196,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public unsafe static IntPtr operator -(IntPtr pointer, int offset)
+        public static unsafe IntPtr operator -(IntPtr pointer, int offset)
         {
 #if BIT64
             return new IntPtr((long)pointer._value - offset);
@@ -205,7 +205,7 @@ namespace System
 #endif
         }
 
-        public unsafe static int Size
+        public static unsafe int Size
         {
             [Intrinsic]
             [NonVersionable]

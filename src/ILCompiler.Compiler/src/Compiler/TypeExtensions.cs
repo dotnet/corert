@@ -26,7 +26,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets the type that defines virtual method slots for the specified type.
         /// </summary>
-        static public DefType GetClosestDefType(this TypeDesc type)
+        public static DefType GetClosestDefType(this TypeDesc type)
         {
             if (type.IsArray)
             {

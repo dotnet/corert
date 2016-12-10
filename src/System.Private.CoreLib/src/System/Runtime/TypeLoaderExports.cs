@@ -146,7 +146,7 @@ namespace System.Runtime
             return RawCalliHelper.Call<Object>(entry.Result, arg, entry.AuxResult);
         }
 
-        public unsafe static IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
+        public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
             Entry entry = LookupInCache(s_cache, delegateObj.m_pEEType, new IntPtr(whichThunk));
             if (entry == null)
@@ -156,7 +156,7 @@ namespace System.Runtime
             return entry.Result;
         }
 
-        public unsafe static IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
+        public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             Entry entry = LookupInCache(s_cache, obj.m_pEEType, *(IntPtr*)&slot);
             if (entry == null)
@@ -243,7 +243,7 @@ namespace System.Runtime
             return entry.Result;
         }
 
-        private unsafe static Entry CacheMiss(IntPtr context, IntPtr signature, SignatureKind signatureKind = SignatureKind.GenericDictionary, object contextObject = null)
+        private static unsafe Entry CacheMiss(IntPtr context, IntPtr signature, SignatureKind signatureKind = SignatureKind.GenericDictionary, object contextObject = null)
         {
             IntPtr result = IntPtr.Zero, auxResult = IntPtr.Zero;
             bool previouslyCached = false;

@@ -159,7 +159,7 @@ namespace System.Threading
         /* Methods */
 
 
-        private readonly static Action<Object> s_ActionToActionObjShunt = new Action<Object>(ActionToActionObjShunt);
+        private static readonly Action<Object> s_ActionToActionObjShunt = new Action<Object>(ActionToActionObjShunt);
         private static void ActionToActionObjShunt(object obj)
         {
             Action action = obj as Action;

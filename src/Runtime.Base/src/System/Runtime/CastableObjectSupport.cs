@@ -82,7 +82,7 @@ namespace System.Runtime
             return default(V);
         }
 
-        internal unsafe static int GetCachePopulation<V>(CastableObjectCacheEntry<V>[] cache)
+        internal static unsafe int GetCachePopulation<V>(CastableObjectCacheEntry<V>[] cache)
         {
             int population = 0;
             for (int i = 0; i < cache.Length; i++)
@@ -94,7 +94,7 @@ namespace System.Runtime
             return population;
         }
 
-        internal unsafe static void AddToExistingCache<V>(CastableObjectCacheEntry<V>[] cache, IntPtr key, V value)
+        internal static unsafe void AddToExistingCache<V>(CastableObjectCacheEntry<V>[] cache, IntPtr key, V value)
         {
             uint hashcode = unchecked((uint)key.ToInt64());
             uint cacheMask = (uint)cache.Length - 1;
@@ -135,7 +135,7 @@ namespace System.Runtime
         /// Add the newly allocated thunk of a CastableObject dispatch cell call to the cache if possible. (OOM errors may cause caching failure. 
         /// An OOM is specified not to introduce new failure points though.)
         /// </summary>
-        internal unsafe static void AddToThunkCache(IntPtr pDispatchCell, IntPtr pThunkTarget)
+        internal static unsafe void AddToThunkCache(IntPtr pDispatchCell, IntPtr pThunkTarget)
         {
             // Expand old cache if it isn't big enough.
             if (GetCachePopulation(s_ThunkBasedDispatchCellTargets) > (s_ThunkBasedDispatchCellTargets.Length / 2))
@@ -166,7 +166,7 @@ namespace System.Runtime
         /// Add the results of a CastableObject call to the cache if possible. (OOM errors may cause caching failure. An OOM is specified not
         /// to introduce new failure points though.)
         /// </summary>
-        internal unsafe static void AddToCastableCache(ICastableObject castableObject, EEType* interfaceType, object objectForType)
+        internal static unsafe void AddToCastableCache(ICastableObject castableObject, EEType* interfaceType, object objectForType)
         {
             CastableObjectCacheEntry<object>[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
             bool setNewCache = false;

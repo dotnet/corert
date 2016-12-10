@@ -72,7 +72,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
         // IUnknown
-        static internal McgInterfaceData s_IUnknown = new McgInterfaceData
+        internal static McgInterfaceData s_IUnknown = new McgInterfaceData
         {
             ItfType = InternalTypes.IUnknown,
             ItfGuid = Interop.COM.IID_IUnknown,
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices
         };
 
         // IInspectable
-        static internal McgInterfaceData s_IInspectable = new McgInterfaceData
+        internal static McgInterfaceData s_IInspectable = new McgInterfaceData
         {
             ItfType = InternalTypes.IInspectable,
             ItfGuid = Interop.COM.IID_IInspectable,
@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices
 
 #if ENABLE_MIN_WINRT
         // IActivationFactoryInternal
-        static internal McgInterfaceData s_IActivationFactoryInternal = new McgInterfaceData
+        internal static McgInterfaceData s_IActivationFactoryInternal = new McgInterfaceData
         {
             ItfType = InternalTypes.IActivationFactoryInternal,
             ItfGuid = Interop.COM.IID_IActivationFactoryInternal,
@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices
 
 #if ENABLE_WINRT
         // ICustomPropertyProvider
-        static internal McgInterfaceData s_ICustomPropertyProvider = new McgInterfaceData
+        internal static McgInterfaceData s_ICustomPropertyProvider = new McgInterfaceData
         {
             ItfType = InternalTypes.ICustomPropertyProvider,
             ItfGuid = Interop.COM.IID_ICustomPropertyProvider,
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
         };
 
         // IWeakReferenceSource
-        static internal McgInterfaceData s_IWeakReferenceSource = new McgInterfaceData
+        internal static McgInterfaceData s_IWeakReferenceSource = new McgInterfaceData
         {
             ItfType = InternalTypes.IWeakReferenceSource,
             ItfGuid = Interop.COM.IID_IWeakReferenceSource,
@@ -120,7 +120,7 @@ namespace System.Runtime.InteropServices
         };
 
         // IWeakReference
-        static internal McgInterfaceData s_IWeakReference = new McgInterfaceData
+        internal static McgInterfaceData s_IWeakReference = new McgInterfaceData
         {
             ItfType = InternalTypes.IWeakReference,
             ItfGuid = Interop.COM.IID_IWeakReference,
@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices
         };
 #endif
         // ICCW
-        static internal McgInterfaceData s_ICCW = new McgInterfaceData
+        internal static McgInterfaceData s_ICCW = new McgInterfaceData
         {
             ItfType = InternalTypes.ICCW,
             ItfGuid = Interop.COM.IID_ICCW,
@@ -139,7 +139,7 @@ namespace System.Runtime.InteropServices
 
 #if ENABLE_WINRT
         // IJupiterObject
-        static internal McgInterfaceData s_IJupiterObject = new McgInterfaceData
+        internal static McgInterfaceData s_IJupiterObject = new McgInterfaceData
         {
             ItfType = InternalTypes.IJupiterObject,
             ItfGuid = Interop.COM.IID_IJupiterObject,
@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices
         };
 
         // IStringable
-        static internal McgInterfaceData s_IStringable = new McgInterfaceData
+        internal static McgInterfaceData s_IStringable = new McgInterfaceData
         {
             ItfType = InternalTypes.IStringable,
             ItfGuid = Interop.COM.IID_IStringable,
@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices
         };
 
         // IManagedActivationFactory
-        static internal McgInterfaceData s_IManagedActivationFactory = new McgInterfaceData
+        internal static McgInterfaceData s_IManagedActivationFactory = new McgInterfaceData
         {
             ItfType = InternalTypes.IManagedActivationFactory,
             ItfGuid = Interop.COM.IID_IManagedActivationFactory,
@@ -165,7 +165,7 @@ namespace System.Runtime.InteropServices
         };
 
         // IRestrictedErrorInfo
-        static internal McgInterfaceData s_IRestrictedErrorInfo = new McgInterfaceData
+        internal static McgInterfaceData s_IRestrictedErrorInfo = new McgInterfaceData
         {
             ItfType = InternalTypes.IRestrictedErrorInfo,
             ItfGuid = Interop.COM.IID_IRestrictedErrorInfo,
@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices
         };
 #endif
         // IMarshal
-        static internal McgInterfaceData s_IMarshal = new McgInterfaceData
+        internal static McgInterfaceData s_IMarshal = new McgInterfaceData
         {
             ItfType = InternalTypes.IMarshal,
             ItfGuid = Interop.COM.IID_IMarshal,
@@ -182,7 +182,7 @@ namespace System.Runtime.InteropServices
         };
 
         // IDispatch
-        static internal McgInterfaceData s_IDispatch = new McgInterfaceData
+        internal static McgInterfaceData s_IDispatch = new McgInterfaceData
         {
             ItfType = InternalTypes.IDispatch,
             ItfGuid = Interop.COM.IID_IDispatch,
@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices
         };
 #if ENABLE_WINRT
         // HSTRING, just needed for TypeHandle comparison
-        static internal McgInterfaceData s_HSTRING = new McgInterfaceData
+        internal static McgInterfaceData s_HSTRING = new McgInterfaceData
         {
             ItfType = InternalTypes.HSTRING
         };

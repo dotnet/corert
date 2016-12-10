@@ -145,7 +145,7 @@ namespace Internal.Runtime
             public EEType** _ppRelatedParameterTypeViaIAT;
         }
 
-        unsafe static class OptionalFieldsReader
+        static unsafe class OptionalFieldsReader
         {
             internal static UInt32 GetInlineField(byte* pFields, EETypeOptionalFieldTag eTag, UInt32 uiDefaultValue)
             {
@@ -1283,7 +1283,7 @@ namespace Internal.Runtime
         }
 
 #if TYPE_LOADER_IMPLEMENTATION
-        static internal UInt32 GetSizeofEEType(
+        internal static UInt32 GetSizeofEEType(
             UInt16 cVirtuals,
             UInt16 cInterfaces,
             bool fHasFinalizer,

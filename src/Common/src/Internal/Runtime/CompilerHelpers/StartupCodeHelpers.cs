@@ -164,6 +164,6 @@ namespace Internal.Runtime.CompilerHelpers
 
         [RuntimeImport(".", "RhpCreateTypeManager")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern IntPtr CreateTypeManager(IntPtr moduleHeader);
+        private static extern unsafe IntPtr CreateTypeManager(IntPtr moduleHeader);
     }
 }

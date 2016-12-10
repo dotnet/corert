@@ -228,7 +228,10 @@ namespace ILCompiler
                         inputModules.Add(module);
                     }
 
-                    compilationGroup = new MultiFileCompilationModuleGroup(inputModules);
+                    if (entrypointModule == null)
+                        compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
+                    else
+                        compilationGroup = new MultiFileLeafCompilationModuleGroup(typeSystemContext, inputModules);
                 }
                 else
                 {
@@ -251,7 +254,7 @@ namespace ILCompiler
                         compilationRoots.Add(new SingleMethodRootProvider(exec.GetStaticConstructor()));
                     }
 
-                    compilationGroup = new SingleFileCompilationModuleGroup();
+                    compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }
 
                 foreach (var rdXmlFilePath in _rdXmlFilePaths)

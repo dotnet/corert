@@ -21,7 +21,7 @@ namespace Internal.Runtime.TypeLoader
 
         private static Lock s_lock = new Lock();
 
-        static public TypeSystemContext Create()
+        public static TypeSystemContext Create()
         {
             using (LockHolder.Hold(s_lock))
             {
@@ -47,7 +47,7 @@ namespace Internal.Runtime.TypeLoader
             TargetOS.Windows));
         }
 
-        static public void Recycle(TypeSystemContext context)
+        public static void Recycle(TypeSystemContext context)
         {
             // Only cache a reasonably small context that is still in Gen0
             if (context.LoadFactor > 200 || GC.GetGeneration(context) > 0)

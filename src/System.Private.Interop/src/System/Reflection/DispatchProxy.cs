@@ -31,7 +31,7 @@ namespace System.Reflection
     ///
     ///   static class ChannelFactory<T>
     ///   {
-    ///       static public T CreateChannel()
+    ///       public static T CreateChannel()
     ///       {
     ///           return DispatchProxy.Create<T, WcfProxy>();
     ///       }

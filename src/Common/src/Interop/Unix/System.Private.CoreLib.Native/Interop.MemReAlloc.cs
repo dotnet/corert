@@ -14,7 +14,7 @@ internal static partial class Interop
         internal static extern IntPtr MemReAlloc(IntPtr ptr, UIntPtr newSize);
     }
 
-    internal unsafe static IntPtr MemReAlloc(IntPtr ptr, UIntPtr newSize)
+    internal static unsafe IntPtr MemReAlloc(IntPtr ptr, UIntPtr newSize)
     {
         IntPtr allocatedMemory = Interop.Sys.MemReAlloc(ptr, newSize);
         if (allocatedMemory == IntPtr.Zero)

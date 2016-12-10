@@ -363,7 +363,7 @@ namespace System.Runtime.InteropServices
         internal class RuntimeTypeHandleComparer : IEqualityComparer<RuntimeTypeHandle>
         {
 
-            public readonly static RuntimeTypeHandleComparer Instance = new RuntimeTypeHandleComparer();
+            public static readonly RuntimeTypeHandleComparer Instance = new RuntimeTypeHandleComparer();
 
             bool IEqualityComparer<RuntimeTypeHandle>.Equals(RuntimeTypeHandle handle1, RuntimeTypeHandle handle2)
             {

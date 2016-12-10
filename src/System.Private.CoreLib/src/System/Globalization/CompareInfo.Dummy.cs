@@ -15,7 +15,7 @@ namespace System.Globalization
             _sortName = culture.SortName;
         }
 
-        internal unsafe static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             fixed (char *pSource = source) fixed (char *pValue = value)
             {
@@ -29,7 +29,7 @@ namespace System.Globalization
             }
         }
 
-        internal unsafe static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             fixed (char *pSource = source) fixed (char *pValue = value)
             {
@@ -141,7 +141,7 @@ namespace System.Globalization
         }
 
 
-        private unsafe static int FindStringOrdinal(char *source, int sourceCount, char *value,int valueCount, FindStringOptions option, bool ignoreCase)
+        private static unsafe int FindStringOrdinal(char *source, int sourceCount, char *value,int valueCount, FindStringOptions option, bool ignoreCase)
         {
             int ctrSource = 0;  // index value into source
             int ctrValue = 0;   // index value into value
@@ -405,7 +405,7 @@ namespace System.Globalization
             throw new NotImplementedException();
         }
 
-        private unsafe static bool IsSortable(char *text, int length)
+        private static unsafe bool IsSortable(char *text, int length)
         {
             // CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             // return (InternalIsSortable(c.m_dataHandle, c.m_handleOrigin, c.m_sortName, text, text.Length));

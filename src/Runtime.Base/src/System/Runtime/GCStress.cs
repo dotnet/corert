@@ -60,9 +60,9 @@ namespace System.Runtime
         }
 
 #if FEATURE_GC_STRESS
-        static internal bool Initialized { get; private set; }
-        static private GCStress Head;
-        static private GCStress Tail;
+        internal static bool Initialized { get; private set; }
+        private static GCStress Head;
+        private static GCStress Tail;
 
         private GCStress Next;
 #endif // FEATURE_GC_STRESS

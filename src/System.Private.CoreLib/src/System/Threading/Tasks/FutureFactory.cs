@@ -1223,7 +1223,7 @@ namespace System.Threading.Tasks
         private sealed class FromAsyncTrimPromise<TInstance> : Task<TResult> where TInstance : class
         {
             /// <summary>A cached delegate used as the callback for the BeginXx method.</summary>
-            internal readonly static AsyncCallback s_completeFromAsyncResult = CompleteFromAsyncResult;
+            internal static readonly AsyncCallback s_completeFromAsyncResult = CompleteFromAsyncResult;
 
             /// <summary>A reference to the object on which the begin/end methods are invoked.</summary>
             private TInstance m_thisRef;

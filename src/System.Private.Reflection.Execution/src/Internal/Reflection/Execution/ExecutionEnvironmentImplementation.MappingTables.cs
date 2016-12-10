@@ -128,7 +128,7 @@ namespace Internal.Reflection.Execution
             return staticFieldAddress;
         }
 
-        private unsafe static NativeReader GetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob)
+        private static unsafe NativeReader GetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob)
         {
             NativeReader reader;
             if (TryGetNativeReaderForBlob(module, blob, out reader))
@@ -140,7 +140,7 @@ namespace Internal.Reflection.Execution
             return default(NativeReader);
         }
 
-        private unsafe static bool TryGetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob, out NativeReader reader)
+        private static unsafe bool TryGetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob, out NativeReader reader)
         {
             byte* pBlob;
             uint cbBlob;

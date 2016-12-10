@@ -34,7 +34,7 @@ namespace System.Threading.Tasks
     internal class TaskExceptionHolder
     {
         /// <summary>Whether we should propagate exceptions on the finalizer.</summary>
-        private readonly static bool s_failFastOnUnobservedException = ShouldFailFastOnUnobservedException();
+        private static readonly bool s_failFastOnUnobservedException = ShouldFailFastOnUnobservedException();
 
         /// <summary>The task with which this holder is associated.</summary>
         private readonly Task m_task;

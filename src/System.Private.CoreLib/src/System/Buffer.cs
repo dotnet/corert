@@ -71,7 +71,7 @@ namespace System
         // It is however cross platform as the CRT hasn't ported their fast version to 64-bit
         // platforms.
         //
-        internal unsafe static int IndexOfByte(byte* src, byte value, int index, int count)
+        internal static unsafe int IndexOfByte(byte* src, byte value, int index, int count)
         {
             byte* pByte = src + index;
 
@@ -140,7 +140,7 @@ namespace System
             return -1;
         }
 
-        internal unsafe static void ZeroMemory(byte* src, long len)
+        internal static unsafe void ZeroMemory(byte* src, long len)
         {
             while (len-- > 0)
                 *(src + len) = 0;
@@ -226,7 +226,7 @@ namespace System
             Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
-        internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
+        internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping and the copy needs to be performed backwards
             // This check can produce false positives for lengths greater than Int32.MaxInt. It is fine because we want to use PInvoke path for the large lengths anyway.
@@ -447,7 +447,7 @@ namespace System
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private unsafe static void _Memmove(byte* dest, byte* src, nuint len)
+        private static unsafe void _Memmove(byte* dest, byte* src, nuint len)
         {
             RuntimeImports.memmove(dest, src, len);
         }

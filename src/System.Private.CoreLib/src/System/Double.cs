@@ -47,7 +47,7 @@ namespace System
         }
 
         [Pure]
-        public unsafe static bool IsInfinity(double d)
+        public static unsafe bool IsInfinity(double d)
         {
             return (*(long*)(&d) & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
         }
@@ -82,14 +82,14 @@ namespace System
 
 
         [Pure]
-        internal unsafe static bool IsNegative(double d)
+        internal static unsafe bool IsNegative(double d)
         {
             return (*(UInt64*)(&d) & 0x8000000000000000) == 0x8000000000000000;
         }
 
 
         [Pure]
-        public unsafe static bool IsNaN(double d)
+        public static unsafe bool IsNaN(double d)
         {
             return (*(UInt64*)(&d) & 0x7FFFFFFFFFFFFFFFL) > 0x7FF0000000000000L;
         }

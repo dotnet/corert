@@ -48,7 +48,7 @@ namespace System.Threading
             callback();
         }
 
-        internal unsafe static void QueueLongRunningWork(Action callback)
+        internal static unsafe void QueueLongRunningWork(Action callback)
         {
             var environ = default(Interop.mincore.TP_CALLBACK_ENVIRON);
 

@@ -37,7 +37,7 @@ namespace System
         private const int MinRadix = 2;
         private const int MaxRadix = 36;
 
-        public unsafe static long StringToLong(System.String s, int radix, int flags)
+        public static unsafe long StringToLong(System.String s, int radix, int flags)
         {
             int pos = 0;
             return StringToLong(s, radix, flags, ref pos);

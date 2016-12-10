@@ -23,7 +23,7 @@ namespace Internal.IL
         private LocalVariableDefinition[] _locals;
         private ILExceptionRegion[] _ilExceptionRegions;
 
-        static public EcmaMethodIL Create(EcmaMethod method)
+        public static EcmaMethodIL Create(EcmaMethod method)
         {
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)

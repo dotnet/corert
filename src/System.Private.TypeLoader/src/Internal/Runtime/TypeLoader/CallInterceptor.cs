@@ -153,7 +153,7 @@ namespace Internal.Runtime.CallInterceptor
         }
 
         private unsafe delegate void SetupArbitraryLocalVariableSet_InnerDel<T>(IntPtr* localData, ref T context, ref SetupLocalVariableSetInfo<T> localVarSetInfo);
-        private unsafe static void SetupArbitraryLocalVariableSet_Inner<T>(IntPtr* localData, ref T context, ref SetupLocalVariableSetInfo<T> localVarSetInfo)
+        private static unsafe void SetupArbitraryLocalVariableSet_Inner<T>(IntPtr* localData, ref T context, ref SetupLocalVariableSetInfo<T> localVarSetInfo)
         {
             LocalVariableSet localVars = new LocalVariableSet(localData, localVarSetInfo.Types);
             DefaultInitializeLocalVariableSet(ref localVars);
@@ -182,7 +182,7 @@ namespace Internal.Runtime.CallInterceptor
         /// ComputeNecessaryMemoryForStackLocalVariableSet specifies. Used as part of pattern for manual construction
         /// of LocalVariableSet
         /// </summary>
-        public unsafe static void DefaultInitializeLocalVariableSet(ref LocalVariableSet localSet)
+        public static unsafe void DefaultInitializeLocalVariableSet(ref LocalVariableSet localSet)
         {
             int localRegionOffset = IntPtr.Size * localSet._types.Length;
             byte* baseAddress = (byte*)localSet._pbMemory;
@@ -728,7 +728,7 @@ namespace Internal.Runtime.CallInterceptor
         }
 
         private unsafe delegate void SetupBlockDelegate(void* pBuffer, ref CallConversionInterpreterLocals locals);
-        private unsafe static void SetupLocalsBlock1(void* pBuffer, ref CallConversionInterpreterLocals locals)
+        private static unsafe void SetupLocalsBlock1(void* pBuffer, ref CallConversionInterpreterLocals locals)
         {
 #if CCCONVERTER_TRACE
             CallingConventionConverterLogger.WriteLine("     -> Setup Locals Block 1 @ " + new IntPtr(pBuffer).LowLevelToString());
@@ -738,7 +738,7 @@ namespace Internal.Runtime.CallInterceptor
             Interpret(ref locals);
         }
 
-        private unsafe static void SetupLocalsBlock2(void* pBuffer, ref CallConversionInterpreterLocals locals)
+        private static unsafe void SetupLocalsBlock2(void* pBuffer, ref CallConversionInterpreterLocals locals)
         {
 #if CCCONVERTER_TRACE
             CallingConventionConverterLogger.WriteLine("     -> Setup Locals Block 2 @ " + new IntPtr(pBuffer).LowLevelToString());
@@ -748,7 +748,7 @@ namespace Internal.Runtime.CallInterceptor
             Interpret(ref locals);
         }
 
-        private unsafe static void SetupTransitionBlock(void* pBuffer, ref CallConversionInterpreterLocals locals)
+        private static unsafe void SetupTransitionBlock(void* pBuffer, ref CallConversionInterpreterLocals locals)
         {
 #if CCCONVERTER_TRACE
             CallingConventionConverterLogger.WriteLine("     -> Setup Transition Block @ " + new IntPtr(pBuffer).LowLevelToString());
@@ -758,7 +758,7 @@ namespace Internal.Runtime.CallInterceptor
             Interpret(ref locals);
         }
 
-        public unsafe static void Interpret(ref CallConversionInterpreterLocals locals)
+        public static unsafe void Interpret(ref CallConversionInterpreterLocals locals)
         {
             while (locals.Index < locals.Opcodes.Length)
             {
@@ -1173,7 +1173,7 @@ namespace Internal.Runtime.CallInterceptor
         /// <summary>
         /// Make a dynamic call to a function pointer passing arguments from arguments, using the signature described in callSignature
         /// </summary>
-        public unsafe static void MakeDynamicCall(IntPtr address, DynamicCallSignature callSignature, LocalVariableSet arguments)
+        public static unsafe void MakeDynamicCall(IntPtr address, DynamicCallSignature callSignature, LocalVariableSet arguments)
         {
 #if CCCONVERTER_TRACE
             CallingConventionConverterLogger.WriteLine("MakeDynamicCall executing... ");
@@ -1356,7 +1356,7 @@ namespace Internal.Runtime.CallInterceptor
             return callConversionOps.ToArray();
         }
 
-        private unsafe static IntPtr CallInterceptorThunk(IntPtr callerTransitionBlockParam, IntPtr thunkId)
+        private static unsafe IntPtr CallInterceptorThunk(IntPtr callerTransitionBlockParam, IntPtr thunkId)
         {
 #if CCCONVERTER_TRACE
             CallingConventionConverterLogger.WriteLine("CallInterceptorThunk executing... ID = " + thunkId.LowLevelToString());

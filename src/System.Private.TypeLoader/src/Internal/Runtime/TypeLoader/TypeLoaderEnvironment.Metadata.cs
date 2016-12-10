@@ -144,7 +144,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="module">Address of module to search for the blob</param>
         /// <param name="blob">Blob ID within blob map for the module</param>
         /// <returns>Native reader for the blob (asserts and returns an empty native reader when not found)</returns>
-        internal unsafe static NativeReader GetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob)
+        internal static unsafe NativeReader GetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob)
         {
             NativeReader reader;
             if (TryGetNativeReaderForBlob(module, blob, out reader))
@@ -168,7 +168,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="runtimeTypeHandle">EEType of the type in question</param>
         /// <param name="metadataReader">Metadata reader for the type</param>
         /// <param name="typeRefHandle">Located TypeRef handle</param>
-        public unsafe static bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
+        public static unsafe bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
         {
             int hashCode = runtimeTypeHandle.GetHashCode();
 
@@ -228,7 +228,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
         /// <param name="typeRefHandle">TypeRef handle to look up</param>
         /// <param name="runtimeTypeHandle">Resolved EEType for the type reference</param>
-        public unsafe static bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle, bool searchAllModules = false)
+        public static unsafe bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle, bool searchAllModules = false)
         {
             int hashCode = typeRefHandle.ComputeHashCode(metadataReader);
             IntPtr typeRefModuleHandle = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
@@ -250,7 +250,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
         /// <param name="typeRefHandle">TypeRef handle to look up</param>
         /// <param name="runtimeTypeHandle">Resolved EEType for the type reference</param>
-        public unsafe static bool TryResolveNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
+        public static unsafe bool TryResolveNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
         {
             int hashCode = typeRefHandle.ComputeHashCode(metadataReader);
             IntPtr typeRefModuleHandle = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
@@ -265,7 +265,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private unsafe static bool TryGetNamedTypeForTypeReference_Inner(MetadataReader metadataReader,
+        private static unsafe bool TryGetNamedTypeForTypeReference_Inner(MetadataReader metadataReader,
             IntPtr typeRefModuleHandle,
             TypeReferenceHandle typeRefHandle,
             int hashCode,
@@ -336,7 +336,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="elementTypeHandle">EEType of the array element type</param>
         /// <param name="arrayTypeHandle">Resolved EEType of the array type</param>
-        public unsafe static bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
         {
             arrayTypeHandle = new RuntimeTypeHandle();
 
@@ -459,7 +459,7 @@ namespace Internal.Runtime.TypeLoader
         /// Locate the static constructor context given the runtime type handle (EEType) for the type in question.
         /// </summary>
         /// <param name="typeHandle">EEtype of the type to look up</param>
-        public unsafe static IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
+        public static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.HasCctor(typeHandle))
             {
@@ -522,7 +522,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="blob">Blob ID to fetch from the module</param>
         /// <param name="reader">Native reader created for the module blob</param>
         /// <returns>true when the blob was found in the module, false when not</returns>
-        private unsafe static bool TryGetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob, out NativeReader reader)
+        private static unsafe bool TryGetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob, out NativeReader reader)
         {
             byte* pBlob;
             uint cbBlob;
@@ -754,7 +754,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="vtableSlot">vtable slot index</param>
         /// <param name="methodNameAndSig">output name/sig of method</param>
         /// <returns></returns>
-        public unsafe static bool TryGetMethodMethodNameAndSigFromVTableSlotForPregeneratedOrTemplateType(TypeSystemContext context, RuntimeTypeHandle type, int vtableSlot, out MethodNameAndSignature methodNameAndSig)
+        public static unsafe bool TryGetMethodMethodNameAndSigFromVTableSlotForPregeneratedOrTemplateType(TypeSystemContext context, RuntimeTypeHandle type, int vtableSlot, out MethodNameAndSignature methodNameAndSig)
         {
             int logicalSlot = vtableSlot;
             EEType* ptrType = type.ToEETypePtr();
@@ -967,7 +967,7 @@ namespace Internal.Runtime.TypeLoader
         /// VTable slots reserved for dictionary pointers are ignored.</param>
         /// <param name="methodNameAndSig">The name and signature of the method</param>
         /// <returns>true if a definition is found, false if not</returns>
-        public unsafe static bool TryGetMethodNameAndSigFromVirtualResolveData(IntPtr moduleHandle,
+        public static unsafe bool TryGetMethodNameAndSigFromVirtualResolveData(IntPtr moduleHandle,
             RuntimeTypeHandle definitionType, int logicalSlot, out MethodNameAndSignature methodNameAndSig)
         {
             EEType* definitionEEType = definitionType.ToEETypePtr();

@@ -660,7 +660,7 @@ namespace System.Threading.Tasks
 
         // Static delegate to be used as a cancellation callback on unstarted tasks that have a valid cancellation token.
         // This is necessary to transition them into canceled state if their cancellation token is signalled while they are still not queued
-        private readonly static Action<Object> s_taskCancelCallback = new Action<Object>(TaskCancelCallback);
+        private static readonly Action<Object> s_taskCancelCallback = new Action<Object>(TaskCancelCallback);
         private static void TaskCancelCallback(Object o)
         {
             var targetTask = o as Task;
@@ -2098,7 +2098,7 @@ namespace System.Threading.Tasks
         }
 
         // statically allocated delegate for the removeall expression in Finish()
-        private readonly static Predicate<Task> s_IsExceptionObservedByParentPredicate = new Predicate<Task>((t) => { return t.IsExceptionObservedByParent; });
+        private static readonly Predicate<Task> s_IsExceptionObservedByParentPredicate = new Predicate<Task>((t) => { return t.IsExceptionObservedByParent; });
 
         /// <summary>
         /// FinishStageTwo is to be executed as soon as we known there are no more children to complete. 
@@ -4315,7 +4315,7 @@ namespace System.Threading.Tasks
         }
 
         // statically allocated delegate for the RemoveAll expression in RemoveContinuations() and AddContinuationComplex()
-        private readonly static Predicate<object> s_IsTaskContinuationNullPredicate =
+        private static readonly Predicate<object> s_IsTaskContinuationNullPredicate =
             new Predicate<object>((tc) => { return (tc == null); });
 
 
