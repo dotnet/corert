@@ -421,12 +421,18 @@ namespace System.Runtime.CompilerServices
                 int entryIndex = FindEntry(key, out value);
                 if (entryIndex != -1)
                 {
+                    ref Entry entry = ref _entries[entryIndex];
+
                     //
                     // We do not free the handle here, as we may be racing with readers who already saw the hash code.
                     // Instead, we simply overwrite the entry's hash code, so subsequent reads will ignore it.
                     // The handle will be free'd in Container's finalizer, after the table is resized or discarded.
                     //
-                    Volatile.Write(ref _entries[entryIndex].hashCode, -1);
+                    Volatile.Write(ref entry.hashCode, -1);
+
+                    // Also, clear the key to allow GC to collect objects pointed to by the entry 
+                    entry.depHnd.SetPrimary(null);
+
                     return true;
                 }
                 return false;
@@ -755,6 +761,11 @@ namespace System.Runtime.CompilerServices
         public object GetPrimaryAndSecondary(out Object secondary)
         {
             return RuntimeImports.RhHandleGetDependent(_handle, out secondary);
+        }
+
+        public void SetPrimary(Object primary)
+        {
+            RuntimeImports.RhHandleSet(_handle, primary);
         }
 
         //----------------------------------------------------------------------
