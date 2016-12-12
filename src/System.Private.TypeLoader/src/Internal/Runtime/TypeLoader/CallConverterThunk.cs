@@ -98,6 +98,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal static CallingConventionConverter_CommonCallingStub_PointerData s_commonStubData;
 
+#if !CORERT
         [DllImport("*", ExactSpelling = true, EntryPoint = "CallingConventionConverter_GetStubs")]
         private extern static unsafe void CallingConventionConverter_GetStubs(out IntPtr returnVoidStub,
                                                                       out IntPtr returnIntegerStub,
@@ -108,6 +109,7 @@ namespace Internal.Runtime.TypeLoader
                                                                        out IntPtr returnFloatingPointReturn8Thunk
 #endif
                                                                      );
+#endif // !CORERT
 
 #if _TARGET_ARM_
         [DllImport("*", ExactSpelling = true, EntryPoint = "CallingConventionConverter_SpecifyCommonStubData")]

@@ -33,7 +33,7 @@ internal partial class Interop
     }
 
     // MCG doesn't currently support constants that are not uint.
-    internal static IntPtr InvalidHandleValue = new IntPtr(-1);
+    internal static IntPtr InvalidHandleValue => new IntPtr(-1);
 
     internal enum _APTTYPE : uint
     {

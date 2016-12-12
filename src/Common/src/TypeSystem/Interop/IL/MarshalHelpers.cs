@@ -4,6 +4,7 @@
 
 using System;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 
@@ -102,6 +103,12 @@ namespace Internal.TypeSystem.Interop
             bool? forceLazyResolution = configuration.ForceLazyResolution;
             if (forceLazyResolution.HasValue)
                 return forceLazyResolution.Value;
+
+            string assemblySimpleName = ((EcmaAssembly)((MetadataType)method.OwningType).Module).GetName().Name;
+            if (assemblySimpleName == "System.Private.Interop")
+            {
+                return true;
+            }
 
             // Determine whether this call should be made through a lazy resolution or a static reference
             // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).

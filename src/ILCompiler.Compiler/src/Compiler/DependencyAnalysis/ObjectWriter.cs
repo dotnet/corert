@@ -703,6 +703,13 @@ namespace ILCompiler.DependencyAnalysis
             if (!_targetPlatform.IsWindows)
                 return false;
 
+            if (!(node is MethodCodeNode))
+                return node.IsShareable;
+
+            CompilerGeneratedType type = ((MethodCodeNode)node).Method.OwningType as CompilerGeneratedType;
+            if (type != null && type.Module == _nodeFactory.CompilationModuleGroup.GeneratedAssembly)
+                return true;
+
             return node.IsShareable;
         }
 
@@ -772,7 +779,8 @@ namespace ILCompiler.DependencyAnalysis
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
 
                     // Build CFI map (Unix) or publish unwind blob (Windows).
-                    objectWriter.BuildCFIMap(factory, node);
+                    if (!objectWriter.ShouldShareSymbol(node))
+                        objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);

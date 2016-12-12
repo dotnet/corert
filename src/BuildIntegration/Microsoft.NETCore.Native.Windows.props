@@ -50,6 +50,7 @@ See the LICENSE file in the project root for more information.
     <AdditionalNativeLibrary Include="oleaut32.lib" />
     <AdditionalNativeLibrary Include="uuid.lib" />
     <AdditionalNativeLibrary Include="bcrypt.lib" />
+    <AdditionalNativeLibrary Include="normaliz.lib" />
   </ItemGroup>
 
   <ItemGroup>

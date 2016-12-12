@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(_name);
         }
         public int Offset => 0;
-        public override bool IsShareable => false;
+        public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

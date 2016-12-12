@@ -221,6 +221,26 @@ extern "C" void __fail_fast()
     printf("Method: __fail_fast\n");
     exit(-1);
 }
+extern "C" void InteropNative_GetCurrentThunkContext()
+{
+    throw "InteropNative_GetCurrentThunkContext";
+}
+extern "C" void StdCallCOOPV()
+{
+    throw "StdCallCOOPV";
+}
+extern "C" void StdCallCOOP0()
+{
+    throw "StdCallCOOP0";
+}
+extern "C" void StdCallCOOPI()
+{
+    throw "StdCallCOOPI";
+}
+extern "C" void CCWAddRef()
+{
+    throw "CCWAddRef";
+}
 
 extern "C" bool REDHAWK_PALAPI PalInit();
 
