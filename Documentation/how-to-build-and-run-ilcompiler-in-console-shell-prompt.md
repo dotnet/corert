@@ -55,9 +55,9 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 * Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1` argument to all dotnet commands below.
 
-```
-    set IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1
-```
+    * Unix: `export IlcPath=<repo_root>/bin/Product/Linux.x64.Debug/packaging/publish1`
+
+    * Windows: `set IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1`
 
 * Run `dotnet restore`. This will download nuget packages required for compilation.
 
@@ -82,12 +82,20 @@ This approach uses platform specific C++ compiler and linker for compiling/linki
 From the shell/command prompt, issue the following commands to generate the native executable:
 
 ``` 
-    dotnet build /t:LinkNative /p:NativeCodeGen=cpp /p:AdditionalCppCompilerFlags=/MTd
+    dotnet build /t:LinkNative /p:NativeCodeGen=cpp
 ```
 
-Omit `/p:AdditionalCppCompilerFlags=/MTd` for release CoreRT build.
+For CoreRT debug build on Windows, add an extra `/p:AdditionalCppCompilerFlags=/MTd` argument.
 
-## Workarounds for linker errors on Windows ##
+## Workarounds for build errors on Windows ##
+
+If you are seeing errors such as:
+
+```
+    LNK2038: mismatch detected for 'RuntimeLibrary': value 'MTd_StaticDebug' doesn't match value 'MT_StaticRelease'
+```
+
+- Make sure to use release build, or pass the extra `/p:AdditionalCppCompilerFlags=/MTd` argument above.
 
 If you are seeing errors such as: 
 
@@ -96,7 +104,6 @@ If you are seeing errors such as:
     Linking of intermediate files failed.
 ```
 
-There are a few workarounds you might try:
  - Make sure you run these commands from the 'VS2015 x64 Native Tools Command Prompt' instead of a vanilla command prompt
  - Search for the missing lib files in your SDK, for example under C:\Program Files (x86)\Windows Kits\10\lib. Make sure the path to these libraries is included in the LIB environment variable. It appears VS 2015 RTM developer command prompt does not correctly set the LIB paths for the 10586 Windows SDK. VS 2015 Update 1 resolves that issue, so installing it is another alternative.
 
