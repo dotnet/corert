@@ -188,7 +188,7 @@ namespace System.Globalization
 
         internal static unsafe ushort InternalGetDigitValues(int ch)
         {
-            Contract.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
+            Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
             ushort index = s_pNumericLevel1Index[ch >> 8];
             // Get the level 2 WORD offset from the 4 - 7 bit of ch.  This provides the base offset of the level 3 table.

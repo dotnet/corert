@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 
-using Internal.Runtime.Augments;
 using Microsoft.Win32;
 
 namespace System.Globalization

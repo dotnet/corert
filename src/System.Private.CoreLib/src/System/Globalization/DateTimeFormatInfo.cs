@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -48,7 +49,7 @@ namespace System.Globalization
     }
 
 
-
+    [Serializable]
     public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
         // cache for the invariant culture.
@@ -56,19 +57,22 @@ namespace System.Globalization
         private static volatile DateTimeFormatInfo s_invariantInfo;
 
         // an index which points to a record in Culture Data Table.
+        [NonSerialized]
         private CultureData _cultureData;
 
         // The culture name used to create this DTFI.
-
         private String _name = null;
 
         // The language name of the culture used to create this DTFI.
+        [NonSerialized]
         private String _langName = null;
 
         // CompareInfo usually used by the parser.
+        [NonSerialized]
         private CompareInfo _compareInfo = null;
 
         // Culture matches current DTFI. mainly used for string comparisons during parsing.
+        [NonSerialized]
         private CultureInfo _cultureInfo = null;
 
         //
@@ -732,10 +736,9 @@ namespace System.Globalization
             }
         }
 
-
         // Note that cultureData derives this from the short date format (unless someone's set this previously)
         // Note that this property is quite undesirable.
-        public String DateSeparator
+        public string DateSeparator
         {
             get
             {
@@ -1203,7 +1206,7 @@ namespace System.Globalization
 
         // Note that cultureData derives this from the long time format (unless someone's set this previously)
         // Note that this property is quite undesirable.
-        public String TimeSeparator
+        public string TimeSeparator
         {
             get
             {
@@ -1620,7 +1623,7 @@ namespace System.Globalization
             return results.ToArray();
         }
 
-        public String[] GetAllDateTimePatterns(char format)
+        public string[] GetAllDateTimePatterns(char format)
         {
             Contract.Ensures(Contract.Result<String[]>() != null);
             String[] result = null;
@@ -2849,7 +2852,7 @@ namespace System.Globalization
                 }
                 previousNode = temp;
             };
-            Debug.Assert(true, "The hashtable is full.  This should not happen.");
+            Debug.Assert(false, "The hashtable is full.  This should not happen.");
         }
 
         private void InsertHash(TokenHashValue[] hashTable, String str, TokenType tokenType, int tokenValue)
@@ -2927,6 +2930,7 @@ namespace System.Globalization
                                     }
                                 }
                                 // The token to be inserted is already in the table.  Skip it.
+                                return;
                             }
                         }
                     }
@@ -2936,7 +2940,7 @@ namespace System.Globalization
                 hashcode += hashProbe;
                 if (hashcode >= TOKEN_HASH_SIZE) hashcode -= TOKEN_HASH_SIZE;
             } while (i < TOKEN_HASH_SIZE);
-            Debug.Assert(true, "The hashtable is full.  This should not happen.");
+            Debug.Assert(false, "The hashtable is full.  This should not happen.");
         }
         // class DateTimeFormatInfo
 

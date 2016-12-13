@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
 using Microsoft.Win32;
 
 namespace System.Globalization
 {
     public partial class HijriCalendar : Calendar
     {
-        public int GetHijriDateAdjustment()
+        private int GetHijriDateAdjustment()
         {
             if (_hijriAdvance == Int32.MinValue) {
                 // Never been set before.  Use the system value from registry.
@@ -37,8 +36,7 @@ namespace System.Globalization
         **      "AddHijriDate+1"  =>  Add +1 days to the current calculated Hijri date.
         **      "AddHijriDate+2"  =>  Add +2 days to the current calculated Hijri date.
         ============================================================================*/
-        [System.Security.SecurityCritical]  // auto-generated
-        static int GetAdvanceHijriDate() {
+        private static int GetAdvanceHijriDate() {
             int hijriAdvance = 0;
             Microsoft.Win32.RegistryKey key = null;
 

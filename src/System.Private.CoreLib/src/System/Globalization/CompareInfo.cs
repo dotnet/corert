@@ -201,7 +201,6 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String Name
         {
             get

@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 namespace System.Globalization
 {
-    public partial class HijriCalendar : Calendar
+    public partial class JapaneseCalendar : Calendar
     {
-        private static int GetHijriDateAdjustment()
+        private static EraInfo[] GetJapaneseEras()
         {
-            // this setting is not supported on Unix, so always return 0
-            return 0;
+            throw new NotImplementedException();
         }
     }
 }

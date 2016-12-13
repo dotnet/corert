@@ -8,7 +8,6 @@ namespace System.Globalization
     {
         private static int GetHijriDateAdjustment()
         {
-            // this setting is not supported on Unix, so always return 0
             return 0;
         }
     }
