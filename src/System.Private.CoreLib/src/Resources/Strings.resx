@@ -684,6 +684,12 @@
   <data name="Argument_TimeZoneNotFound" xml:space="preserve">
     <value>The time zone ID '{0}' was not found on the local computer.</value>
   </data>
+  <data name="Argument_TimeZoneInfoBadTZif" xml:space="preserve">
+    <value>The tzfile does not begin with the magic characters 'TZif'.  Please verify that the file is not corrupt.</value>
+  </data>
+  <data name="Argument_TimeZoneInfoInvalidTZif" xml:space="preserve">
+    <value>The TZif data structure is corrupt.</value>
+  </data>
   <data name="Argument_TransitionTimesAreIdentical" xml:space="preserve">
     <value>The DaylightTransitionStart property must not equal the DaylightTransitionEnd property.</value>
   </data>

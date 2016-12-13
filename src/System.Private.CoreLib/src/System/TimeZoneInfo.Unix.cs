@@ -14,6 +14,7 @@
 ============================================================*/
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -28,7 +29,8 @@ namespace System
         private static readonly TransitionTime c_transition10_15 = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 10, 15);
         private static readonly TransitionTime c_transition12_15 = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 12, 15);
 
-        private TimeZoneInfo(Byte[] data, Boolean dstDisabled) {
+        private TimeZoneInfo(Byte[] data, Boolean dstDisabled)
+        {
             TZifHead t;
             DateTime[] dts;
             Byte[] typeOfLocalTime;
@@ -87,13 +89,53 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        static public TimeZoneInfo FindSystemTimeZoneById(string id) {
+        // ---- SECTION: public methods --------------*
+        //
+        // GetAdjustmentRules -
+        //
+        // returns a cloned array of AdjustmentRule objects
+        //
+        public AdjustmentRule[] GetAdjustmentRules()
+        {
+            if (_adjustmentRules == null)
+            {
+                return Array.Empty<AdjustmentRule>();
+            }
+
+            // The rules we use in Unix cares mostly about the start and end dates but doesn’t fill the transition start and end info. 
+            // as the rules now is public, we should fill it properly so the caller doesn’t have to know how we use it internally 
+            // and can use it as it is used in Windows
+
+            AdjustmentRule[] rules = new AdjustmentRule[_adjustmentRules.Length];
+
+            for (int i = 0; i < _adjustmentRules.Length; i++)
+            {
+                var rule = _adjustmentRules[i];
+                var start = rule.DateStart.Kind == DateTimeKind.Utc ?
+                            new DateTime(TimeZoneInfo.ConvertTime(rule.DateStart, this).Ticks, DateTimeKind.Unspecified) :
+                            rule.DateStart;
+                var end = rule.DateEnd.Kind == DateTimeKind.Utc ?
+                            new DateTime(TimeZoneInfo.ConvertTime(rule.DateEnd, this).Ticks - 1, DateTimeKind.Unspecified) :
+                            rule.DateEnd;
+
+                var startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
+                var endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
+
+                rules[i] = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition);
+            }
+
+            return rules;
+        }
+
+        public static TimeZoneInfo FindSystemTimeZoneById(string id) {
             // UNIXTODO
             throw new NotImplementedException();
         }
 
-        static public ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones() {
+        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones() {
             // UNIXTODO
+            if (s_cachedData._allSystemTimeZonesRead)
+                s_cachedData._allSystemTimeZonesRead = true;
             throw new NotImplementedException();
         }
 
@@ -102,15 +144,8 @@ namespace System
             throw new NotImplementedException();
         }
 
-        //
-        // GetLocalTimeZoneFromTzFile -
-        //
-        // Helper function used by 'GetLocalTimeZone()' - this function wraps the call
-        // for loading time zone data from computers without Registry support.
-        //
-        // The GetLocalTzFile() call returns a Byte[] containing the compiled tzfile.
-        // 
-        static private TimeZoneInfo GetLocalTimeZoneFromTzFile() {
+        private static TimeZoneInfo GetLocalTimeZone(CachedData cachedData)
+        {
             Byte[] rawData = GetLocalTzFile();
 
             if (rawData != null) {
@@ -269,7 +304,7 @@ namespace System
         // standardTime      =     False
         // gmtTime           =     False
         //
-        static private TransitionTime TZif_CalculateTransitionTime(DateTime utc, TimeSpan offset,
+        private static TransitionTime TZif_CalculateTransitionTime(DateTime utc, TimeSpan offset,
                                                                    TZifType transitionType, Boolean standardTime,
                                                                    Boolean gmtTime, out DateTime ruleDate) {
 
@@ -294,7 +329,7 @@ namespace System
             return TransitionTime.CreateFixedDateRule(timeOfDay, month, day);
         }
 
-        static private void TZif_GenerateAdjustmentRules(out AdjustmentRule[] rules, DateTime[] dts, Byte[] typeOfLocalTime,
+        private static void TZif_GenerateAdjustmentRules(out AdjustmentRule[] rules, DateTime[] dts, Byte[] typeOfLocalTime,
                                                          TZifType[] transitionType, Boolean[] StandardTime, Boolean[] GmtTime) {
             rules = null;
 
@@ -313,7 +348,7 @@ namespace System
         }
 
 
-        static private bool TZif_GenerateAdjustmentRule(ref int startIndex, ref List<AdjustmentRule> rulesList, DateTime[] dts, Byte[] typeOfLocalTime,
+        private static bool TZif_GenerateAdjustmentRule(ref int startIndex, ref List<AdjustmentRule> rulesList, DateTime[] dts, Byte[] typeOfLocalTime,
                                                                   TZifType[] transitionType, Boolean[] StandardTime, Boolean[] GmtTime) {
 
             int index = startIndex;
@@ -474,7 +509,7 @@ namespace System
             return false; // did not create a new AdjustmentRule
         }
 
-        static private void TZif_CreateFirstMultiYearRule(ref List<AdjustmentRule> rulesList, TimeSpan daylightBias, DateTime startTransitionDate,
+        private static void TZif_CreateFirstMultiYearRule(ref List<AdjustmentRule> rulesList, TimeSpan daylightBias, DateTime startTransitionDate,
                                                           int DstStartIndex, int dstStartTypeIndex, int dstEndTypeIndex, DateTime[] dts, TZifType[] transitionType,
                                                           Byte[] typeOfLocalTime, bool[] StandardTime, bool[] GmtTime) {
 
@@ -528,7 +563,7 @@ namespace System
         }         
 
 
-        static private void TZif_CreateLastMultiYearRule(ref List<AdjustmentRule> rulesList, TimeSpan daylightBias, DateTime endTransitionDate,
+        private static void TZif_CreateLastMultiYearRule(ref List<AdjustmentRule> rulesList, TimeSpan daylightBias, DateTime endTransitionDate,
                                                           int DstStartIndex, int dstStartTypeIndex, int DstEndIndex, int dstEndTypeIndex, DateTime[] dts, TZifType[] transitionType,
                                                           Byte[] typeOfLocalTime, bool[] StandardTime, bool[] GmtTime) {
 
@@ -570,7 +605,7 @@ namespace System
         }    
 
         
-        static private void TZif_CreateMiddleMultiYearRules(ref List<AdjustmentRule> rulesList, TimeSpan daylightBias, DateTime endTransitionDate) {
+        private static void TZif_CreateMiddleMultiYearRules(ref List<AdjustmentRule> rulesList, TimeSpan daylightBias, DateTime endTransitionDate) {
                     // 
                     // [AdjustmentRule       #1] // middle-year all-DST rule
                     // [1947/06/16 - 1947/11/15] // * starts 1 day after last day in previous rule
@@ -626,7 +661,7 @@ namespace System
 
         // Returns the Substring from zoneAbbreviations starting at index and ending at '\0'
         // zoneAbbreviations is expected to be in the form: "PST\0PDT\0PWT\0\PPT"
-        static private String TZif_GetZoneAbbreviation(String zoneAbbreviations, int index) {
+        private static String TZif_GetZoneAbbreviation(String zoneAbbreviations, int index) {
             int lastIndex = zoneAbbreviations.IndexOf('\0', index);
             if (lastIndex > 0) {
                 return zoneAbbreviations.Substring(index, lastIndex - index); 
@@ -638,7 +673,7 @@ namespace System
 
         // verify the 'index' is referenced from the typeOfLocalTime byte array.
         //
-        static private Boolean TZif_ValidTransitionType(int index, Byte[] typeOfLocalTime) {
+        private static Boolean TZif_ValidTransitionType(int index, Byte[] typeOfLocalTime) {
            Boolean result = false;
 
            if (typeOfLocalTime != null) {
@@ -654,13 +689,13 @@ namespace System
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
         [System.Security.SecuritySafeCritical]  // auto-generated
-        static private unsafe int TZif_ToInt32 (byte[]value, int startIndex) {
+        private static unsafe int TZif_ToInt32 (byte[]value, int startIndex) {
             fixed( byte * pbyte = &value[startIndex]) {
                 return (*pbyte << 24) | (*(pbyte + 1) << 16)  | (*(pbyte + 2) << 8) | (*(pbyte + 3));                        
             }
         }
 
-        static private void TZif_ParseRaw(Byte[] data, out TZifHead t, out DateTime[] dts, out Byte[] typeOfLocalTime, out TZifType[] transitionType,
+        private static void TZif_ParseRaw(Byte[] data, out TZifHead t, out DateTime[] dts, out Byte[] typeOfLocalTime, out TZifType[] transitionType,
                                           out String zoneAbbreviations, out Boolean[] StandardTime, out Boolean[] GmtTime) {
 
             // initialize the out parameters in case the TZifHead ctor throws
