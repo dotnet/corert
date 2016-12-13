@@ -75,6 +75,37 @@ namespace System.Runtime.CompilerServices
         }
 
         //--------------------------------------------------------------------------------------------
+        // key: key to add or update. May not be null.
+        // value: value to associate with key.
+        //
+        // If the key is already entered into the dictionary, this method will update the value associated with key.
+        //--------------------------------------------------------------------------------------------
+        public void AddOrUpdate(TKey key, TValue value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            lock (LockHolder.Hold(_lock))
+            {
+                object otherValue;
+                int entryIndex = _container.FindEntry(key, out otherValue);
+
+                // if we found a key we should just update, if no we should create a new entry.
+                if (entryIndex != -1)
+                {
+                    _container.UpdateValue(entryIndex, value);
+                }
+                else
+                {
+                    CreateEntry(key, value);
+                }
+
+            }
+        }
+
+        //--------------------------------------------------------------------------------------------
         // key: key to remove. May not be null.
         //
         // Returns true if the key is found and removed. Returns false if the key was not in the dictionary.
@@ -438,6 +469,18 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
+            internal void UpdateValue(int entryIndex, TValue newValue)
+            {
+                Debug.Assert(entryIndex != -1);
+
+                VerifyIntegrity();
+                _invalid = true;
+
+                _entries[entryIndex].depHnd.SetSecondary(newValue);
+
+                _invalid = false;
+            }
+
             //----------------------------------------------------------------------------------------
             // This does two things: resize and scrub expired keys off bucket lists.
             //
@@ -758,14 +801,19 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhHandleGet(_handle);
         }
 
-        public object GetPrimaryAndSecondary(out Object secondary)
+        public object GetPrimaryAndSecondary(out object secondary)
         {
             return RuntimeImports.RhHandleGetDependent(_handle, out secondary);
         }
 
-        public void SetPrimary(Object primary)
+        public void SetPrimary(object primary)
         {
             RuntimeImports.RhHandleSet(_handle, primary);
+        }
+
+        public void SetSecondary(object secondary)
+        {
+            RuntimeImports.RhHandleSetDependentSecondary(_handle, secondary);
         }
 
         //----------------------------------------------------------------------
