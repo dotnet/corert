@@ -686,5 +686,29 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+        // Normalization Methods
+        // These just wrap calls to Normalization class
+        public bool IsNormalized()
+        {
+            // Default to Form IDNA
+            return IsNormalized((NormalizationForm)ExtendedNormalizationForms.FormIdna);
+        }
+
+        public bool IsNormalized(NormalizationForm normalizationForm)
+        {
+            return Normalization.IsNormalized(this, normalizationForm);
+        }
+
+        public String Normalize()
+        {
+            // Default to Form IDNA
+            return Normalize((NormalizationForm)ExtendedNormalizationForms.FormIdna);
+        }
+
+        public String Normalize(NormalizationForm normalizationForm)
+        {
+            return Normalization.Normalize(this, normalizationForm);
+        }
     }
 }

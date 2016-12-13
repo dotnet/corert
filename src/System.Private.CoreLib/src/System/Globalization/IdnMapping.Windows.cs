@@ -104,8 +104,10 @@ namespace System.Globalization
 
         private static void ThrowForZeroLength(string paramName, string invalidNameString, string otherString)
         {
+            int lastError = Interop.mincore.GetLastError();
+
             throw new ArgumentException(
-                Marshal.GetLastWin32Error() == Interop.ERROR_INVALID_NAME ? invalidNameString : otherString,
+                lastError == Interop.ERROR_INVALID_NAME ? invalidNameString : otherString,
                 paramName);
         }
     }
