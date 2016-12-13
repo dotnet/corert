@@ -628,7 +628,6 @@
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
-  <!-- Windows is default build -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">  
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
@@ -768,12 +767,15 @@
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.Unix.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
-    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <!--
+    <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
+    <Compile Include="System\Globalization\CultureData.Unix.cs" />
+    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CalendarData.Unix.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
+    -->
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
@@ -803,6 +805,16 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
     </Compile>
+  </ItemGroup>
+  <!-- Dummy globalization implementation -->
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
+    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
+    <Compile Include="System\Text\Normalization.Dummy.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">

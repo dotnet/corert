@@ -588,6 +588,9 @@
   <data name="Argument_InvalidNeutralRegionName" xml:space="preserve">
     <value>The region name {0} should not correspond to neutral culture; a specific culture name is required.</value>
   </data>
+  <data name="Argument_InvalidNormalizationForm" xml:space="preserve">
+    <value>Invalid normalization form.</value>
+  </data>
   <data name="Argument_InvalidNumberStyles" xml:space="preserve">
     <value>An undefined NumberStyles value is being used.</value>
   </data>
