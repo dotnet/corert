@@ -112,8 +112,8 @@ namespace ILCompiler.DependencyAnalysis
             // that use the same dictionary layout.
             foreach (var method in _owningType.GetAllMethods())
             {
-                // Static and generic methods have their own generic dictionaries
-                if (method.Signature.IsStatic || method.HasInstantiation)
+                // Generic methods have their own generic dictionaries
+                if (method.HasInstantiation)
                     continue;
 
                 // Abstract methods don't have a body
