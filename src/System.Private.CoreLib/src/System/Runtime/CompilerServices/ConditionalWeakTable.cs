@@ -87,7 +87,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException(nameof(key));
             }
 
-            lock (LockHolder.Hold(_lock))
+            using (LockHolder.Hold(_lock))
             {
                 object otherValue;
                 int entryIndex = _container.FindEntry(key, out otherValue);
