@@ -73,9 +73,11 @@ _RhpTailCallTLSDispatchCell proc public
 _RhpTailCallTLSDispatchCell endp
 
 _RhpCastableObjectDispatchHelper_TailCalled proc public
+        push    ebp
+        mov     ebp, esp
         ;; Load the dispatch cell out of the TLS variable
         GET_TLS_DISPATCH_CELL
-        jmp     _RhpCastableObjectDispatchHelper
+        jmp     _RhpCastableObjectDispatchHelper2
 _RhpCastableObjectDispatchHelper_TailCalled endp
 
 _RhpCastableObjectDispatchHelper proc public
@@ -87,6 +89,11 @@ _RhpCastableObjectDispatchHelper proc public
         ;; If the initial lookup fails, call into managed under the universal thunk
         ;; to run the full lookup routine
 
+        ;; EAX currently contains the cache block. We need to point it to the 
+        ;; indirection cell using the back pointer in the cache block
+        mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
+
+ALTERNATE_ENTRY RhpCastableObjectDispatchHelper2       
         ;; indirection cell address is in EAX, it will be passed by
         ;; the universal transition thunk as an argument to RhpCastableObjectResolve
         push    eax
