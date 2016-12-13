@@ -513,6 +513,15 @@
   <data name="Argument_FallbackBufferNotEmpty" xml:space="preserve">
     <value>Cannot change fallback when buffer is not empty. Previous Convert() call left data in the fallback buffer.</value>
   </data>
+  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
+    <value>IDN labels must be between 1 and 63 characters long.</value>
+  </data>
+  <data name="Argument_IdnBadPunycode" xml:space="preserve">
+    <value>Invalid IDN encoded string.</value>
+  </data>
+  <data name="Argument_IdnIllegalName" xml:space="preserve">
+    <value>Decoded string is not a valid IDN name.</value>
+  </data>
   <data name="Argument_ImplementIComparable" xml:space="preserve">
     <value>At least one object must implement IComparable.</value>
   </data>
@@ -527,6 +536,9 @@
   </data>
   <data name="Argument_InvalidCalendar" xml:space="preserve">
     <value>Not a valid calendar for the given culture.</value>
+  </data>
+  <data name="Argument_InvalidCharSequence" xml:space="preserve">
+    <value>Invalid Unicode code point found at index {0}.</value>
   </data>
   <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
     <value>String contains invalid Unicode code points.</value>
@@ -575,6 +587,9 @@
   </data>
   <data name="Argument_InvalidNeutralRegionName" xml:space="preserve">
     <value>The region name {0} should not correspond to neutral culture; a specific culture name is required.</value>
+  </data>
+  <data name="Argument_InvalidNormalizationForm" xml:space="preserve">
+    <value>Invalid normalization form.</value>
   </data>
   <data name="Argument_InvalidNumberStyles" xml:space="preserve">
     <value>An undefined NumberStyles value is being used.</value>
@@ -1758,5 +1773,8 @@
   </data>
   <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
     <value>Access to the registry key '{0}' is denied.</value>
+  </data>
+  <data name="UnknownError_Num" xml:space="preserve">
+    <value>Unknown error '{0}'.</value>
   </data>
 </root>
