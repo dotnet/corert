@@ -810,7 +810,7 @@ namespace Internal.JitInterface
             // transitions in inlined methods today (impCheckForPInvokeCall is not called for inlinees and number of other places
             // depend on it). To get a decent code with this limitation, we mirror CoreCLR behavior: Check
             // whether PInvoke stub is required here, and disable inlining of PInvoke methods in getMethodAttribsInternal.
-            return Internal.IL.Stubs.PInvokeILEmitter.IsStubRequired(method);
+            return _compilation.PInvokeILProvider.IsStubRequired(method);
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]

@@ -21,6 +21,7 @@ namespace Internal.IL.Stubs
     public struct PInvokeILEmitter
     {
         private MethodDesc _targetMethod;
+        private PInvokeILEmitterConfiguration _pinvokeILEmitterConfiguration;
         private TypeSystemContext _context;
         private PInvokeMetadata _importMetadata;
 
@@ -29,11 +30,12 @@ namespace Internal.IL.Stubs
         private ILCodeStream _returnValueMarshallingCodeStream;
         private ILCodeStream _unmarshallingCodestream;
 
-        private PInvokeILEmitter(MethodDesc targetMethod)
+        private PInvokeILEmitter(MethodDesc targetMethod, PInvokeILEmitterConfiguration pinvokeIlEmitterConfiguration)
         {
             Debug.Assert(targetMethod.IsPInvoke);
 
             _targetMethod = targetMethod;
+            _pinvokeILEmitterConfiguration = pinvokeIlEmitterConfiguration;
             _context = _targetMethod.Context;
             _importMetadata = targetMethod.GetPInvokeMethodMetadata();
 
@@ -46,7 +48,7 @@ namespace Internal.IL.Stubs
         /// <summary>
         /// Returns true if <paramref name="method"/> requires a stub to be generated.
         /// </summary>
-        public static bool IsStubRequired(MethodDesc method)
+        public static bool IsStubRequired(MethodDesc method, PInvokeILEmitterConfiguration configuration)
         {
             Debug.Assert(method.IsPInvoke);
 
@@ -65,7 +67,7 @@ namespace Internal.IL.Stubs
                 }
             }
 
-            if (UseLazyResolution(method, method.GetPInvokeMethodMetadata().Module))
+            if (UseLazyResolution(method, method.GetPInvokeMethodMetadata().Module, configuration))
             {
                 return true;
             }
@@ -124,11 +126,14 @@ namespace Internal.IL.Stubs
         /// <summary>
         /// Returns true if the PInvoke target should be resolved lazily.
         /// </summary>
-        private static bool UseLazyResolution(MethodDesc method, string importModule)
+        private static bool UseLazyResolution(MethodDesc method, string importModule, PInvokeILEmitterConfiguration configuration)
         {
             // TODO: Test and make this work on non-Windows
             if (!method.Context.Target.IsWindows)
                 return false;
+
+            if (configuration.ForceLazyResolution)
+                return true;
 
             // Determine whether this call should be made through a lazy resolution or a static reference
             // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
@@ -478,7 +483,7 @@ namespace Internal.IL.Stubs
             throw new NotSupportedException();
         }
 
-        public MethodIL EmitIL()
+        private MethodIL EmitIL()
         {
             MethodSignature targetMethodSignature = _targetMethod.Signature;
 
@@ -533,7 +538,7 @@ namespace Internal.IL.Stubs
 
             TypeDesc nativeReturnType = MarshalReturnValue(targetMethodSignature.ReturnType);
 
-            if (UseLazyResolution(_targetMethod, _importMetadata.Module))
+            if (UseLazyResolution(_targetMethod, _importMetadata.Module, _pinvokeILEmitterConfiguration))
             {
                 MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
                 FieldDesc lazyDispatchCell = new PInvokeLazyFixupField((DefType)_targetMethod.OwningType, _importMetadata);
@@ -560,7 +565,7 @@ namespace Internal.IL.Stubs
                     targetMethodSignature.Flags, 0, nativeReturnType, nativeParameterTypes);
 
                 MethodDesc nativeMethod =
-                    new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, nativeImportMetadata);
+                    new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, nativeImportMetadata, _pinvokeILEmitterConfiguration.GetNextNativeMethodId());
 
                 callsiteSetupCodeStream.Emit(ILOpcode.call, _emitter.NewToken(nativeMethod));
             }
@@ -570,11 +575,11 @@ namespace Internal.IL.Stubs
             return _emitter.Link(_targetMethod);
         }
 
-        public static MethodIL EmitIL(MethodDesc method)
+        public static MethodIL EmitIL(MethodDesc method, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration)
         {
             try
             {
-                return new PInvokeILEmitter(method).EmitIL();
+                return new PInvokeILEmitter(method, pinvokeILEmitterConfiguration).EmitIL();
             }
             catch (NotSupportedException)
             {
@@ -605,20 +610,17 @@ namespace Internal.IL.Stubs
     /// </summary>
     internal sealed class PInvokeTargetNativeMethod : MethodDesc
     {
-        private static int s_nativeMethodCounter;
-
         private TypeDesc _owningType;
         private MethodSignature _signature;
         private PInvokeMetadata _methodMetadata;
         private int _sequenceNumber;
 
-        public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata)
+        public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata, int sequenceNumber)
         {
             _owningType = owningType;
             _signature = signature;
             _methodMetadata = methodMetadata;
-
-            _sequenceNumber = System.Threading.Interlocked.Increment(ref s_nativeMethodCounter);
+            _sequenceNumber = sequenceNumber;
         }
 
         public override TypeSystemContext Context
