@@ -7,7 +7,9 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#if ENABLE_WINRT
 using Internal.Runtime.Augments;
+#endif
 
 namespace System.Globalization
 {
@@ -601,7 +603,7 @@ namespace System.Globalization
         {
             return GetLocaleInfo(LocaleNumberData.LanguageId);
         }
-        
+
         private static string LCIDToLocaleName(int culture)
         {
             throw new NotImplementedException();

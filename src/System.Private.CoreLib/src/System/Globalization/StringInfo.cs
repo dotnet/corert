@@ -14,14 +14,17 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public class StringInfo
     {
         private string _str;
 
+        [NonSerialized]
         private int[] _indexes;
 
         // Legacy constructor
@@ -154,7 +157,7 @@ namespace System.Globalization
             }
         }
 
-        public static String GetNextTextElement(String str)
+        public static string GetNextTextElement(string str)
         {
             return (GetNextTextElement(str, 0));
         }

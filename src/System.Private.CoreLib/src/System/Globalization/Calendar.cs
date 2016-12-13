@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -27,7 +28,7 @@ namespace System.Globalization
     // The calculation of hour/minute/second is moved to Calendar from GregorianCalendar,
     // since most of the calendars (or all?) have the same way of calcuating hour/minute/second.
 
-
+    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Calendar : ICloneable
     {

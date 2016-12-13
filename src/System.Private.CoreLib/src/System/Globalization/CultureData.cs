@@ -43,8 +43,6 @@ namespace System.Globalization
     internal partial class CultureData
     {
         private const int undef = -1;
-        private const int LOCALE_CUSTOM_UNSPECIFIED = 0x1000;
-        private const int LOCALE_CUSTOM_DEFAULT = 0x0c00;
 
         // Override flag
         private String _sRealName; // Name you passed in (ie: en-US, en, or de-DE_phoneb)
@@ -461,16 +459,16 @@ namespace System.Globalization
                     invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
                     invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
                     invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
-		            invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
-		            invariant._iInputLanguageHandle = 0x07F;         // input language handle
+                    invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
+                    invariant._iInputLanguageHandle = 0x07F;         // input language handle
 
                     // Region
                     invariant._sRegionName = "IV";                    // (RegionInfo)
                     invariant._sEnglishCountry = "Invariant Country"; // english country name (RegionInfo)
                     invariant._sNativeCountry = "Invariant Country";  // native country name (Windows Only)
                     invariant._sISO3166CountryName = "IV";            // (RegionInfo), ie: US
-		            invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
-		            invariant._iGeoId = 244;                          // GeoId (Windows Only)
+                    invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
+                    invariant._iGeoId = 244;                          // GeoId (Windows Only)
 
                     // Numbers
                     invariant._sPositiveSign = "+";                    // positive sign
