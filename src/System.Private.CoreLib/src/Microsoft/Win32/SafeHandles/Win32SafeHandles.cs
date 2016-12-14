@@ -30,6 +30,10 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        protected SafeHandleZeroOrMinusOneIsInvalid(IntPtr handle, bool ownsHandle) : base(handle, ownsHandle)
+        {
+        }
+
         public override bool IsInvalid
         {
             get

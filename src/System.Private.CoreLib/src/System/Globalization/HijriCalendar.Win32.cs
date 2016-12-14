@@ -36,7 +36,8 @@ namespace System.Globalization
         **      "AddHijriDate+1"  =>  Add +1 days to the current calculated Hijri date.
         **      "AddHijriDate+2"  =>  Add +2 days to the current calculated Hijri date.
         ============================================================================*/
-        private static int GetAdvanceHijriDate() {
+        private static int GetAdvanceHijriDate()
+        {
             int hijriAdvance = 0;
             Microsoft.Win32.RegistryKey key = null;
 
