@@ -46,7 +46,7 @@ internal static partial class Interop
             internal SYSTEMTIME DaylightDate;
             internal int DaylightBias;
 
-            public unsafe TIME_ZONE_INFORMATION(TIME_DYNAMIC_ZONE_INFORMATION dtzi) 
+            public unsafe TIME_ZONE_INFORMATION(TIME_DYNAMIC_ZONE_INFORMATION dtzi)
             {
                 Bias = dtzi.Bias;
                 fixed (char* standard = StandardName)

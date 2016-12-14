@@ -16,7 +16,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_MemFree")]
         internal static extern void MemFree(IntPtr ptr);
     }
-    
+
     internal static IntPtr MemAlloc(UIntPtr sizeInBytes)
     {
         IntPtr allocatedMemory = Interop.Sys.MemAlloc(sizeInBytes);

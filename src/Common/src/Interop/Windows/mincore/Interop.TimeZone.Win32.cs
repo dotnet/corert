@@ -89,17 +89,18 @@ internal static partial class Interop
                     { // data is aligned 
                         return *((short*)pbyte);
                     }
-                    else {
+                    else
+                    {
                         if (IsLittleEndian)
                         {
                             return (short)((*pbyte) | (*(pbyte + 1) << 8));
                         }
-                        else {
+                        else
+                        {
                             return (short)((*pbyte << 8) | (*(pbyte + 1)));
                         }
                     }
                 }
-
             }
 
             public static readonly bool IsLittleEndian = true;
@@ -112,12 +113,14 @@ internal static partial class Interop
                     { // data is aligned 
                         return *((int*)pbyte);
                     }
-                    else {
+                    else
+                    {
                         if (IsLittleEndian)
                         {
                             return (*pbyte) | (*(pbyte + 1) << 8) | (*(pbyte + 2) << 16) | (*(pbyte + 3) << 24);
                         }
-                        else {
+                        else
+                        {
                             return (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
                         }
                     }

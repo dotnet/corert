@@ -26,14 +26,14 @@ namespace System.Globalization
 
             if (toUpper)
             {
-                for (int i=0; i<s.Length; i++)
+                for (int i = 0; i < s.Length; i++)
                 {
                     buffer[i] = ('a' <= s[i] && s[i] <= 'z') ? (char)(s[i] - 0x20) : s[i];
                 }
             }
             else
             {
-                for (int i=0; i<s.Length; i++)
+                for (int i = 0; i < s.Length; i++)
                 {
                     buffer[i] = ('A' <= s[i] && s[i] <= 'Z') ? (char)(s[i] | 0x20) : s[i];
                 }

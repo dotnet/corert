@@ -15,7 +15,7 @@ namespace Internal.Runtime
     internal struct ObjHeader
     {
         // Contents of the object header
-        IntPtr objHeaderContents;
+        private IntPtr _objHeaderContents;
     }
 
     [StructLayout(LayoutKind.Sequential)]

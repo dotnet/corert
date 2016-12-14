@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class mincore
     {
-        [DllImport("api-ms-win-core-sysinfo-l1-2-1", EntryPoint="GetSystemDirectoryW")]
+        [DllImport("api-ms-win-core-sysinfo-l1-2-1", EntryPoint = "GetSystemDirectoryW")]
         internal static extern int GetSystemDirectory([Out]StringBuilder sb, int length);
     }
 }

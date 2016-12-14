@@ -4,10 +4,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// AggregateException.cs
-//
-
-//
 // Public type to communicate multiple failures to an end-user.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -32,7 +28,7 @@ namespace System
     [DebuggerDisplay("Count = {InnerExceptionCount}")]
     public class AggregateException : Exception
     {
-        private ReadOnlyCollection<Exception> m_innerExceptions; // Complete set of exceptions.
+        private ReadOnlyCollection<Exception> _innerExceptions; // Complete set of exceptions.
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateException"/> class.
@@ -40,7 +36,7 @@ namespace System
         public AggregateException()
             : base(SR.AggregateException_ctor_DefaultMessage)
         {
-            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
+            _innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>
@@ -51,7 +47,7 @@ namespace System
         public AggregateException(string message)
             : base(message)
         {
-            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
+            _innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>
@@ -70,7 +66,7 @@ namespace System
                 throw new ArgumentNullException(nameof(innerException));
             }
 
-            m_innerExceptions = new ReadOnlyCollection<Exception>(new Exception[] { innerException });
+            _innerExceptions = new ReadOnlyCollection<Exception>(new Exception[] { innerException });
         }
 
         /// <summary>
@@ -165,7 +161,7 @@ namespace System
                 }
             }
 
-            m_innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+            _innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
         }
 
         /// <summary>
@@ -244,7 +240,7 @@ namespace System
                 }
             }
 
-            m_innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+            _innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
         }
 
         /// <summary>
@@ -271,7 +267,7 @@ namespace System
         /// </summary>
         public ReadOnlyCollection<Exception> InnerExceptions
         {
-            get { return m_innerExceptions; }
+            get { return _innerExceptions; }
         }
 
 
@@ -302,18 +298,18 @@ namespace System
             }
 
             LowLevelListWithIList<Exception> unhandledExceptions = null;
-            for (int i = 0; i < m_innerExceptions.Count; i++)
+            for (int i = 0; i < _innerExceptions.Count; i++)
             {
                 // If the exception was not handled, lazily allocate a list of unhandled
                 // exceptions (to be rethrown later) and add it.
-                if (!predicate(m_innerExceptions[i]))
+                if (!predicate(_innerExceptions[i]))
                 {
                     if (unhandledExceptions == null)
                     {
                         unhandledExceptions = new LowLevelListWithIList<Exception>();
                     }
 
-                    unhandledExceptions.Add(m_innerExceptions[i]);
+                    unhandledExceptions.Add(_innerExceptions[i]);
                 }
             }
 
@@ -385,7 +381,7 @@ namespace System
         {
             get
             {
-                if (m_innerExceptions.Count == 0)
+                if (_innerExceptions.Count == 0)
                 {
                     return base.Message;
                 }
@@ -393,10 +389,10 @@ namespace System
                 StringBuilder sb = new StringBuilder();
                 sb.Append(base.Message);
                 sb.Append(' ');
-                for (int i = 0; i < m_innerExceptions.Count; i++)
+                for (int i = 0; i < _innerExceptions.Count; i++)
                 {
                     sb.Append('(');
-                    sb.Append(m_innerExceptions[i].Message);
+                    sb.Append(_innerExceptions[i].Message);
                     sb.Append(") ");
                 }
                 sb.Length -= 1;
@@ -413,12 +409,12 @@ namespace System
             StringBuilder text = new StringBuilder();
             text.Append(base.ToString());
 
-            for (int i = 0; i < m_innerExceptions.Count; i++)
+            for (int i = 0; i < _innerExceptions.Count; i++)
             {
                 text.Append(Environment.NewLine);
                 text.Append("---> ");
                 text.Append(string.Format(CultureInfo.InvariantCulture, SR.AggregateException_InnerException, i));
-                text.Append(m_innerExceptions[i].ToString());
+                text.Append(_innerExceptions[i].ToString());
                 text.Append("<---");
                 text.Append(Environment.NewLine);
             }
