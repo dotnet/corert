@@ -162,7 +162,7 @@ namespace System
                 m_helperObject = firstParameter;
             }
         }
-        
+
         // This is used to implement MethodInfo.CreateDelegate() in a desktop-compatible way. Yes, the desktop really
         // let you use that api to invoke an instance method with a null 'this'.
         private void InitializeClosedInstanceWithoutNullCheck(object firstParameter, IntPtr functionPointer)

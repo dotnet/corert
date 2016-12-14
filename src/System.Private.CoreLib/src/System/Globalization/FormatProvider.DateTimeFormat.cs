@@ -1103,7 +1103,7 @@ namespace System.Globalization
 
                 return StringBuilderCache.GetStringAndRelease(result);
             }
-            
+
             private static void AppendHHmmssTimeOfDay(StringBuilder result, DateTime dateTime)
             {
                 // HH:mm:ss
@@ -1113,7 +1113,7 @@ namespace System.Globalization
                 result.Append(':');
                 AppendNumber(result, dateTime.Second, 2);
             }
-        
+
             internal static void AppendNumber(StringBuilder builder, long val, int digits)
             {
                 for (int i = 0; i < digits; i++)

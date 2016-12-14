@@ -28,10 +28,10 @@ namespace System.Globalization
         private int _index;
         private int _startIndex;
 
-        [NonSerialized] 
+        [NonSerialized]
         private int _strLen;                // This is the length of the total string, counting from the beginning of string.
 
-        [NonSerialized] 
+        [NonSerialized]
         private int _currTextElementLen; // The current text element lenght after MoveNext() is called.
 
         private UnicodeCategory _uc;

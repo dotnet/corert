@@ -258,7 +258,8 @@ namespace System
 
         public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array)
         {
-            if (array == null) {
+            if (array == null)
+            {
                 throw new ArgumentNullException(nameof(array));
             }
 
@@ -938,7 +939,7 @@ namespace System
         }
 
         // Allocate new multidimensional array of given dimensions. Assumes that that pLengths is immutable.
-        internal static unsafe Array NewMultiDimArray(EETypePtr eeType, int * pLengths, int rank)
+        internal static unsafe Array NewMultiDimArray(EETypePtr eeType, int* pLengths, int rank)
         {
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
             Debug.Assert(rank == eeType.ArrayRank);
@@ -1461,7 +1462,7 @@ namespace System
 
         private static bool StructOnlyEquals<T>(T left, T right)
         {
-           return left.Equals(right);
+            return left.Equals(right);
         }
 
         /// <summary>

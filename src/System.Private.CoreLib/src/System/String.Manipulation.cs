@@ -497,7 +497,7 @@ namespace System
             // Defer argument validation to the internal function
             return JoinCore(&separator, 1, value, startIndex, count);
         }
-    
+
         // Joins an array of strings together as one string with a separator between each original string.
         //
         public static string Join(string separator, params string[] value)
@@ -626,7 +626,7 @@ namespace System
                 {
                     return string.Empty;
                 }
-                
+
                 // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
@@ -688,7 +688,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
-            
+
             if (count <= 1)
             {
                 return count == 0 ?
@@ -743,7 +743,7 @@ namespace System
                     FillStringChecked(result, copiedLength, currentValue);
                     copiedLength += valueLen;
                 }
-                    
+
                 if (i < end - 1)
                 {
                     // Fill in the separator.

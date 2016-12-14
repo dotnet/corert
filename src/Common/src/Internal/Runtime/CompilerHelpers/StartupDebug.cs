@@ -11,7 +11,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// It's not safe to use the full-blown Debug class during startup because big chunks
     /// of the managed execution environment are not initialized yet.
     /// </summary>
-    static class StartupDebug
+    internal static class StartupDebug
     {
         [Conditional("DEBUG")]
         public static void Assert(bool condition)
@@ -19,6 +19,5 @@ namespace Internal.Runtime.CompilerHelpers
             if (!condition)
                 unsafe { *(int*)0 = 0; }
         }
-
     }
 }

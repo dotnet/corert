@@ -494,15 +494,15 @@ namespace System.Runtime.CompilerServices
         // We cannot utilize any of the typical number formatting code because it triggers globalization code to run 
         // and this cctor code is layered below globalization.
 #if DEBUG
-        static string ToHexString(int num)
+        private static string ToHexString(int num)
         {
             return ToHexStringUnsignedLong((ulong)num, false, 8);
         }
-        static string ToHexString(IntPtr num)
+        private static string ToHexString(IntPtr num)
         {
             return ToHexStringUnsignedLong((ulong)num, false, 16);
         }
-        static char GetHexChar(uint u)
+        private static char GetHexChar(uint u)
         {
             if (u < 10)
                 return unchecked((char)('0' + u));

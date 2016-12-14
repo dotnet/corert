@@ -41,6 +41,6 @@ internal static partial class Interop
         internal extern static IntPtr SubmitThreadpoolWork(IntPtr pwk);
 
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
-        internal extern static unsafe bool TrySubmitThreadpoolCallback(IntPtr pns, IntPtr pv, TP_CALLBACK_ENVIRON * pcbe);
+        internal extern static unsafe bool TrySubmitThreadpoolCallback(IntPtr pns, IntPtr pv, TP_CALLBACK_ENVIRON* pcbe);
     }
 }

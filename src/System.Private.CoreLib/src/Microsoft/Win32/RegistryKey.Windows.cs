@@ -123,7 +123,7 @@ namespace Microsoft.Win32
 
             Debug.Fail("Unexpected code path in RegistryKey::CreateSubKey");
             return null;
-        } 
+        }
 
         /// <summary>
         /// Retrieves a new RegistryKey that represents the requested key. Valid

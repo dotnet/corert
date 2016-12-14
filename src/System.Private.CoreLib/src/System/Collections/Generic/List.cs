@@ -31,7 +31,7 @@ namespace System.Collections.Generic
         [NonSerialized]
         private object _syncRoot;
 
-        static readonly T[] _emptyArray = new T[0];
+        private static readonly T[] s_emptyArray = new T[0];
 
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
@@ -39,7 +39,7 @@ namespace System.Collections.Generic
         // as required.
         public List()
         {
-            _items = _emptyArray;
+            _items = s_emptyArray;
         }
 
         // Constructs a List with a given initial capacity. The list is
@@ -52,7 +52,7 @@ namespace System.Collections.Generic
             Contract.EndContractBlock();
 
             if (capacity == 0)
-                _items = _emptyArray;
+                _items = s_emptyArray;
             else
                 _items = new T[capacity];
         }
@@ -73,7 +73,7 @@ namespace System.Collections.Generic
                 int count = c.Count;
                 if (count == 0)
                 {
-                    _items = _emptyArray;
+                    _items = s_emptyArray;
                 }
                 else
                 {
@@ -85,7 +85,7 @@ namespace System.Collections.Generic
             else
             {
                 _size = 0;
-                _items = _emptyArray;
+                _items = s_emptyArray;
                 // This enumerable could be empty.  Let Add allocate a new array, if needed.
                 // Note it will also go to _defaultCapacity first, not 1, then 2, etc.
 
@@ -128,7 +128,7 @@ namespace System.Collections.Generic
                     }
                     else
                     {
-                        _items = _emptyArray;
+                        _items = s_emptyArray;
                     }
                 }
             }
@@ -357,17 +357,18 @@ namespace System.Collections.Generic
             }
             return false;
         }
- 
-        public List<TOutput> ConvertAll<TOutput>(Converter<T,TOutput> converter) 
+
+        public List<TOutput> ConvertAll<TOutput>(Converter<T, TOutput> converter)
         {
-            if( converter == null)
+            if (converter == null)
             {
                 throw new ArgumentNullException(nameof(converter));
             }
             Contract.EndContractBlock();
- 
+
             List<TOutput> list = new List<TOutput>(_size);
-            for (int i = 0; i< _size; i++) {
+            for (int i = 0; i < _size; i++)
+            {
                 list._items[i] = converter(_items[i]);
             }
             list._size = _size;
@@ -1117,7 +1118,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                return _emptyArray;
+                return s_emptyArray;
             }
 
             T[] array = new T[_size];
@@ -1163,17 +1164,17 @@ namespace System.Collections.Generic
         [Serializable]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
-            private List<T> list;
-            private int index;
-            private int version;
-            private T current;
+            private List<T> _list;
+            private int _index;
+            private int _version;
+            private T _current;
 
             internal Enumerator(List<T> list)
             {
-                this.list = list;
-                index = 0;
-                version = list._version;
-                current = default(T);
+                _list = list;
+                _index = 0;
+                _version = list._version;
+                _current = default(T);
             }
 
             public void Dispose()
@@ -1182,12 +1183,12 @@ namespace System.Collections.Generic
 
             public bool MoveNext()
             {
-                List<T> localList = list;
+                List<T> localList = _list;
 
-                if (version == localList._version && ((uint)index < (uint)localList._size))
+                if (_version == localList._version && ((uint)_index < (uint)localList._size))
                 {
-                    current = localList._items[index];
-                    index++;
+                    _current = localList._items[_index];
+                    _index++;
                     return true;
                 }
                 return MoveNextRare();
@@ -1195,13 +1196,13 @@ namespace System.Collections.Generic
 
             private bool MoveNextRare()
             {
-                if (version != list._version)
+                if (_version != _list._version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                index = list._size + 1;
-                current = default(T);
+                _index = _list._size + 1;
+                _current = default(T);
                 return false;
             }
 
@@ -1209,7 +1210,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    return current;
+                    return _current;
                 }
             }
 
@@ -1217,7 +1218,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (index == 0 || index == list._size + 1)
+                    if (_index == 0 || _index == _list._size + 1)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -1227,13 +1228,13 @@ namespace System.Collections.Generic
 
             void System.Collections.IEnumerator.Reset()
             {
-                if (version != list._version)
+                if (_version != _list._version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                index = 0;
-                current = default(T);
+                _index = 0;
+                _current = default(T);
             }
         }
     }

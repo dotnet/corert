@@ -399,11 +399,11 @@ namespace System.IO
                 get { return 0; }
                 set { }
             }
-            
+
             public override void CopyTo(Stream destination, int bufferSize)
             {
                 StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-                
+
                 // After we validate arguments this is a nop.
             }
 

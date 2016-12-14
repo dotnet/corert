@@ -4,8 +4,6 @@
 
 /*============================================================
 **
-** Class:  Random
-**
 **
 ** Purpose: A random number generator.
 **
@@ -33,9 +31,9 @@ namespace System
         //
         // Member Variables
         //
-        private int inext;
-        private int inextp;
-        private int[] SeedArray = new int[56];
+        private int _inext;
+        private int _inextp;
+        private int[] _seedArray = new int[56];
 
         //
         // Public Constants
@@ -68,28 +66,28 @@ namespace System
             //Initialize our Seed array.
             int subtraction = (Seed == Int32.MinValue) ? Int32.MaxValue : Math.Abs(Seed);
             mj = MSEED - subtraction;
-            SeedArray[55] = mj;
+            _seedArray[55] = mj;
             mk = 1;
             for (int i = 1; i < 55; i++)
             {  //Apparently the range [1..55] is special (Knuth) and so we're wasting the 0'th position.
-                if ((ii += 21) >= 55) ii -= 55; 
-                SeedArray[ii] = mk;
+                if ((ii += 21) >= 55) ii -= 55;
+                _seedArray[ii] = mk;
                 mk = mj - mk;
                 if (mk < 0) mk += MBIG;
-                mj = SeedArray[ii];
+                mj = _seedArray[ii];
             }
             for (int k = 1; k < 5; k++)
             {
                 for (int i = 1; i < 56; i++)
                 {
-                    int n = i + 30; 
-                    if (n >= 55) n -= 55; 
-                    SeedArray[i] -= SeedArray[1 + n];
-                    if (SeedArray[i] < 0) SeedArray[i] += MBIG;
+                    int n = i + 30;
+                    if (n >= 55) n -= 55;
+                    _seedArray[i] -= _seedArray[1 + n];
+                    if (_seedArray[i] < 0) _seedArray[i] += MBIG;
                 }
             }
-            inext = 0;
-            inextp = 21;
+            _inext = 0;
+            _inextp = 21;
             Seed = 1;
         }
 
@@ -113,21 +111,21 @@ namespace System
         private int InternalSample()
         {
             int retVal;
-            int locINext = inext;
-            int locINextp = inextp;
+            int locINext = _inext;
+            int locINextp = _inextp;
 
             if (++locINext >= 56) locINext = 1;
             if (++locINextp >= 56) locINextp = 1;
 
-            retVal = SeedArray[locINext] - SeedArray[locINextp];
+            retVal = _seedArray[locINext] - _seedArray[locINextp];
 
             if (retVal == MBIG) retVal--;
             if (retVal < 0) retVal += MBIG;
 
-            SeedArray[locINext] = retVal;
+            _seedArray[locINext] = retVal;
 
-            inext = locINext;
-            inextp = locINextp;
+            _inext = locINext;
+            _inextp = locINextp;
 
             return retVal;
         }
@@ -143,9 +141,11 @@ namespace System
         private static int GenerateSeed()
         {
             Random rnd = t_threadRandom;
-            if (rnd == null) {
+            if (rnd == null)
+            {
                 int seed;
-                lock (s_globalRandom) {
+                lock (s_globalRandom)
+                {
                     seed = s_globalRandom.Next();
                 }
                 rnd = new Random(seed);

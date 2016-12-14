@@ -414,6 +414,5 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr RhAllocateThunksMapping();
-
     }
 }

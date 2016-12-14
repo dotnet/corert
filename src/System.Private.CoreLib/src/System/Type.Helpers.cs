@@ -378,7 +378,6 @@ namespace System
                 case MemberTypes.Constructor:
                 case MemberTypes.Method:
                     {
-
                         MethodAttributes criteria = 0;
                         try
                         {
