@@ -45,7 +45,37 @@ internal static partial class Interop
             internal fixed char DaylightName[32];
             internal SYSTEMTIME DaylightDate;
             internal int DaylightBias;
+
+            public unsafe TIME_ZONE_INFORMATION(TIME_DYNAMIC_ZONE_INFORMATION dtzi) 
+            {
+                Bias = dtzi.Bias;
+                fixed (char* standard = StandardName)
+                {
+                    for (int i = 0; i < 32; ++i)
+                    {
+                        standard[i] = dtzi.StandardName[i];
+                    }
+                }
+                fixed (char* daylight = DaylightName)
+                {
+                    for (int i = 0; i < 32; ++i)
+                    {
+                        daylight[i] = dtzi.DaylightName[i];
+                    }
+                }
+                StandardDate = dtzi.StandardDate;
+                StandardBias = dtzi.StandardBias;
+                DaylightDate = dtzi.DaylightDate;
+                DaylightBias = dtzi.DaylightBias;
+            }
         }
+
+        // TimeZone
+        internal const int TIME_ZONE_ID_INVALID = -1;
+        internal const int TIME_ZONE_ID_UNKNOWN = 0;
+        internal const int TIME_ZONE_ID_STANDARD = 1;
+        internal const int TIME_ZONE_ID_DAYLIGHT = 2;
+        internal const int MAX_PATH = 260;
 
         [DllImport("api-ms-win-core-timezone-l1-1-0.dll")]
         internal extern static uint EnumDynamicTimeZoneInformation(uint dwIndex, out TIME_DYNAMIC_ZONE_INFORMATION lpTimeZoneInformation);
@@ -58,5 +88,8 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-timezone-l1-1-0.dll")]
         internal extern static bool GetTimeZoneInformationForYear(ushort wYear, ref TIME_DYNAMIC_ZONE_INFORMATION pdtzi, out TIME_ZONE_INFORMATION ptzi);
+
+        [DllImport("api-ms-win-core-timezone-l1-1-0.dll")]
+        internal static extern int GetTimeZoneInformation(out TIME_ZONE_INFORMATION lpTimeZoneInformation);
     }
 }
