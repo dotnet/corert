@@ -148,7 +148,7 @@ namespace Microsoft.Win32
             {
                 RegistryKey key = InternalOpenSubKey(subkey, writable);
                 if (key != null)
-                { 
+                {
                     // Key already exits
                     return key;
                 }
@@ -323,7 +323,7 @@ namespace Microsoft.Win32
             {
                 EnsureNotDisposed();
             }
-            
+
             // Name can be null!  It's the most common use of RegQueryValueEx
             return InternalGetValueCore(name, defaultValue, doNotExpand);
         }
@@ -469,26 +469,32 @@ namespace Microsoft.Win32
         /**
          * Closes this key, flushes it to disk if the contents have been modified.
          */
-        public void Close() {
+        public void Close()
+        {
             Dispose(true);
-        }        
+        }
 
-        private void Dispose(bool disposing) {
-            if (_hkey != null) {
-
-                if (!IsSystemKey()) {
-                    try {
+        private void Dispose(bool disposing)
+        {
+            if (_hkey != null)
+            {
+                if (!IsSystemKey())
+                {
+                    try
+                    {
                         _hkey.Dispose();
                     }
-                    catch (IOException){
+                    catch (IOException)
+                    {
                         // we don't really care if the handle is invalid at this point
                     }
                     finally
                     {
-                       _hkey = null;
+                        _hkey = null;
                     }
                 }
-                else if (disposing && IsPerfDataKey()) {
+                else if (disposing && IsPerfDataKey())
+                {
                     // System keys should never be closed.  However, we want to call RegCloseKey
                     // on HKEY_PERFORMANCE_DATA when called from PerformanceCounter.CloseSharedResources
                     // (i.e. when disposing is true) so that we release the PERFLIB cache and cause it
@@ -501,23 +507,24 @@ namespace Microsoft.Win32
                     // This is less of an issue when OS > NT5 (i.e Vista & higher), we can close the perfkey  
                     // (to release & refresh PERFLIB resources) and the OS will rebuild PERFLIB as necessary. 
                     Interop.mincore.RegCloseKey(RegistryKey.HKEY_PERFORMANCE_DATA);
-                }  
+                }
             }
         }
 
-        internal static RegistryKey GetBaseKey(IntPtr hKey) {
+        internal static RegistryKey GetBaseKey(IntPtr hKey)
+        {
             return GetBaseKey(hKey, RegistryView.Default);
         }
 
-        internal static RegistryKey GetBaseKey(IntPtr hKey, RegistryView view) {
-
+        internal static RegistryKey GetBaseKey(IntPtr hKey, RegistryView view)
+        {
             int index = ((int)hKey) & 0x0FFFFFFF;
 
             bool isPerf = hKey == HKEY_PERFORMANCE_DATA;
             // only mark the SafeHandle as ownsHandle if the key is HKEY_PERFORMANCE_DATA.
             SafeRegistryHandle srh = new SafeRegistryHandle(hKey, isPerf);
 
-            RegistryKey key = new RegistryKey(srh, true, true,false, isPerf, view);
+            RegistryKey key = new RegistryKey(srh, true, true, false, isPerf, view);
             key._keyName = s_hkeyNames[index];
             return key;
         }

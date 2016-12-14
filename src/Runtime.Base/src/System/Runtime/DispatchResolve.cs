@@ -35,7 +35,7 @@ namespace System.Runtime
             // Use the dynamic module resolver if it's present
             if ((dynamicModule != null) && (dynamicModule->DynamicTypeSlotDispatchResolve != IntPtr.Zero))
             {
-                return CalliIntrinsics.Call<IntPtr>(dynamicModule->DynamicTypeSlotDispatchResolve, 
+                return CalliIntrinsics.Call<IntPtr>(dynamicModule->DynamicTypeSlotDispatchResolve,
                                                     (IntPtr)pTgtType, (IntPtr)pItfType, itfSlotNumber);
             }
 

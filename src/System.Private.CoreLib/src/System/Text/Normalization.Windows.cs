@@ -10,7 +10,7 @@ using System.Text;
 
 namespace System.Text
 {
-    static partial class Normalization
+    internal static partial class Normalization
     {
         public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
         {

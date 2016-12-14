@@ -804,7 +804,7 @@ namespace System.Runtime
             return false;
         }
 
-        static EEType* s_pLowLevelObjectType;
+        private static EEType* s_pLowLevelObjectType;
 
         private static bool ShouldTypedClauseCatchThisException(object exception, EEType* pClauseType)
         {

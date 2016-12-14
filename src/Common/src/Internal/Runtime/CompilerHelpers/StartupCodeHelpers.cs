@@ -51,7 +51,7 @@ namespace Internal.Runtime.CompilerHelpers
                 // The null pointers are sentinel values and padding inserted as side-effect of
                 // the section merging. (The global static constructors section used by C++ has 
                 // them too.)
-                if (((IntPtr *)moduleHeaders)[i] != IntPtr.Zero)
+                if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
                     moduleCount++;
             }
 
@@ -59,8 +59,8 @@ namespace Internal.Runtime.CompilerHelpers
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {
-                if (((IntPtr *)moduleHeaders)[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = CreateTypeManager(((IntPtr *)moduleHeaders)[i]);
+                if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
+                    modules[moduleIndex++] = CreateTypeManager(((IntPtr*)moduleHeaders)[i]);
             }
 
             return modules;
@@ -117,7 +117,7 @@ namespace Internal.Runtime.CompilerHelpers
                 RunEagerClassConstructors(eagerClassConstructorSection, length);
             }
         }
-        
+
         private static void Call(System.IntPtr pfn)
         {
         }

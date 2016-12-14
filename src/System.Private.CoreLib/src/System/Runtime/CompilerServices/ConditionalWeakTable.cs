@@ -521,7 +521,7 @@ namespace System.Runtime.CompilerServices
 
                 return Resize(newSize);
             }
-            
+
             internal Container Resize(int newSize)
             {
                 Debug.Assert(IsPowerOfTwo(newSize));

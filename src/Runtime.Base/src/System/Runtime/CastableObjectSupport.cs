@@ -1,11 +1,15 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using Internal.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-    static class CastableObjectSupport
+    internal static class CastableObjectSupport
     {
         private static object s_castFailCanary = new object();
         private static CastableObjectCacheEntry<IntPtr>[] s_ThunkBasedDispatchCellTargets = new CastableObjectCacheEntry<IntPtr>[16];
@@ -220,7 +224,7 @@ namespace System.Runtime
             return;
         }
 
-        internal static unsafe object GetCastableTargetIfPossible(ICastableObject castableObject, EEType *interfaceType, bool produceException, ref Exception exception)
+        internal static unsafe object GetCastableTargetIfPossible(ICastableObject castableObject, EEType* interfaceType, bool produceException, ref Exception exception)
         {
             CastableObjectCacheEntry<object>[] cache = Unsafe.As<CastableObject>(castableObject).Cache;
 

@@ -4,8 +4,6 @@
 
 /*============================================================
 **
-** Class:  OperationCanceledException
-**
 **
 ** Purpose: Exception for cancelled IO requests.
 **

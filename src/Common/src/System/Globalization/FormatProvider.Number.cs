@@ -385,7 +385,7 @@ namespace System.Globalization
                         else if (currSymbol != null && (next = MatchChars(p, currSymbol)) != null)
                         {
                             state |= StateCurrency;
-                            currSymbol = null;  
+                            currSymbol = null;
 
                             // We already found the currency symbol. There should not be more currency symbols. Set
                             // currSymbol to NULL so that we won't search it again in the later code path.

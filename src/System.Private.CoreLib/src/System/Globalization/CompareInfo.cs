@@ -49,8 +49,8 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType);
 
-            // Mask used to check if we have the right flags.
-        private const CompareOptions ValidSortkeyCtorMaskOffFlags = 
+        // Mask used to check if we have the right flags.
+        private const CompareOptions ValidSortkeyCtorMaskOffFlags =
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
@@ -84,7 +84,7 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
-            if (assembly != typeof(Object).Module.Assembly) 
+            if (assembly != typeof(Object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib);
             }
@@ -164,13 +164,13 @@ namespace System.Globalization
 
         public static unsafe bool IsSortable(char ch)
         {
-            char *pChar = &ch;
+            char* pChar = &ch;
             return IsSortable(pChar, 1);
         }
 
         public static unsafe bool IsSortable(string text)
         {
-            if (text == null) 
+            if (text == null)
             {
                 // A null param is invalid here.
                 throw new ArgumentNullException(nameof(text));
@@ -181,8 +181,8 @@ namespace System.Globalization
                 // A zero length string is not invalid, but it is also not sortable.
                 return (false);
             }
-            
-            fixed (char *pChar = text)
+
+            fixed (char* pChar = text)
             {
                 return IsSortable(pChar, text.Length);
             }

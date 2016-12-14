@@ -106,7 +106,7 @@ namespace System.Runtime
             }
         }
 
-        private static unsafe bool UnboxAnyTypeCompare(EEType *pEEType, EEType *ptrUnboxToEEType)
+        private static unsafe bool UnboxAnyTypeCompare(EEType* pEEType, EEType* ptrUnboxToEEType)
         {
             bool result = false;
 
@@ -185,7 +185,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnbox2")]
         public static unsafe ref byte RhUnbox2(EETypePtr pUnboxToEEType, Object obj)
         {
-            EEType * ptrUnboxToEEType = (EEType *)pUnboxToEEType.ToPointer();
+            EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
             if (obj.EEType != ptrUnboxToEEType)
             {
                 // We allow enums and their primtive type to be interchangable
@@ -308,7 +308,7 @@ namespace System.Runtime
         // library's objects the caller understands (we support multiple class libraries with multiple root
         // System.Object types).
         [NativeCallable(EntryPoint = "RhpCalculateStackTraceWorker", CallingConvention = CallingConvention.Cdecl)]
-        private static unsafe int RhpCalculateStackTraceWorker(IntPtr * pOutputBuffer, uint outputBufferLength)
+        private static unsafe int RhpCalculateStackTraceWorker(IntPtr* pOutputBuffer, uint outputBufferLength)
         {
             uint nFrames = 0;
             bool success = true;

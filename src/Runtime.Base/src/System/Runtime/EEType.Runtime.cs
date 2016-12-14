@@ -54,11 +54,11 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal void SetToCloneOf(EEType *pOrigType)
+        internal void SetToCloneOf(EEType* pOrigType)
         {
             Debug.Assert((_usFlags & (ushort)EETypeFlags.EETypeKindMask) == 0, "should be a canonical type");
-            this._usFlags |= (ushort)EETypeKind.ClonedEEType;
-            this._relatedType._pCanonicalType = pOrigType;
+            _usFlags |= (ushort)EETypeKind.ClonedEEType;
+            _relatedType._pCanonicalType = pOrigType;
         }
 
         // Returns an address in the module most closely associated with this EEType that can be handed to

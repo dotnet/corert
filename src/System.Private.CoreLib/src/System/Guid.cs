@@ -1002,7 +1002,7 @@ namespace System
         public unsafe override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
-            fixed (int* ptr = &this._a)
+            fixed (int* ptr = &_a)
                  return ptr[0] ^ ptr[1] ^ ptr[2] ^ ptr[3];
         }
 

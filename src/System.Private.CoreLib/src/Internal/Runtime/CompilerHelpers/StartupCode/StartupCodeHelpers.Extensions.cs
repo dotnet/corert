@@ -11,7 +11,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    partial class StartupCodeHelpers
+    internal partial class StartupCodeHelpers
     {
         internal static unsafe void InitializeCommandLineArgsW(int argc, char** argv)
         {

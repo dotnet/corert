@@ -271,7 +271,7 @@ namespace System.Runtime
             return null;
         }
 
-        static unsafe bool IsInstanceOfInterfaceViaCastableObject(object obj, EEType* pTargetType)
+        private static unsafe bool IsInstanceOfInterfaceViaCastableObject(object obj, EEType* pTargetType)
         {
             // To avoid stack overflow, it is not possible to implement the ICastableObject interface
             // itself via ICastableObject
@@ -304,7 +304,7 @@ namespace System.Runtime
             return false;
         }
 
-        static unsafe bool IsInstanceOfInterfaceViaCastableObjectWithException(object obj, EEType* pTargetType, ref Exception castError)
+        private static unsafe bool IsInstanceOfInterfaceViaCastableObjectWithException(object obj, EEType* pTargetType, ref Exception castError)
         {
             // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
             // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
@@ -596,7 +596,7 @@ namespace System.Runtime
         internal static unsafe bool AreTypesAssignableInternal(EEType* pSourceType, EEType* pTargetType, AssignmentVariation variation)
         {
             bool fBoxedSource = ((variation & AssignmentVariation.BoxedSource) == AssignmentVariation.BoxedSource);
-            bool fAllowSizeEquivalence = ((variation & AssignmentVariation.AllowSizeEquivalence ) == AssignmentVariation.AllowSizeEquivalence);
+            bool fAllowSizeEquivalence = ((variation & AssignmentVariation.AllowSizeEquivalence) == AssignmentVariation.AllowSizeEquivalence);
 
             //
             // Are the types identical?
@@ -633,7 +633,7 @@ namespace System.Runtime
             //
             if (pTargetType->IsParameterizedType)
             {
-                if (pSourceType->IsParameterizedType 
+                if (pSourceType->IsParameterizedType
                     && (pTargetType->ParameterizedTypeShape == pSourceType->ParameterizedTypeShape))
                 {
                     // Source type is also a parameterized type. Are the parameter types compatible? 
@@ -657,7 +657,7 @@ namespace System.Runtime
                         // Note that using AreTypesAssignableInternal with AssignmentVariation.AllowSizeEquivalence 
                         // here handles array covariance as well as IFoo[] -> Foo[] etc.  We are not using 
                         // AssignmentVariation.BoxedSource because int[] is not assignable to object[].
-                        return CastCache.AreTypesAssignableInternal(pSourceType->RelatedParameterType, 
+                        return CastCache.AreTypesAssignableInternal(pSourceType->RelatedParameterType,
                             pTargetType->RelatedParameterType, AssignmentVariation.AllowSizeEquivalence);
                     }
                 }
@@ -1051,15 +1051,15 @@ namespace System.Runtime
 
             private sealed class Entry
             {
-                public Entry    Next;
-                public Key      Key;
-                public bool     Result;     // @TODO: consider storing this bit in the Key -- there is room
+                public Entry Next;
+                public Key Key;
+                public bool Result;     // @TODO: consider storing this bit in the Key -- there is room
             }
 
             private unsafe struct Key
             {
-                IntPtr _sourceTypeAndVariation;
-                IntPtr _targetType;
+                private IntPtr _sourceTypeAndVariation;
+                private IntPtr _targetType;
 
                 public Key(EEType* pSourceType, EEType* pTargetType, AssignmentVariation variation)
                 {
@@ -1092,7 +1092,6 @@ namespace System.Runtime
 
                 public EEType* SourceType { get { return (EEType*)(((long)_sourceTypeAndVariation) & ~3L); } }
                 public EEType* TargetType { get { return (EEType*)_targetType; } }
-
             }
 
             public static unsafe bool AreTypesAssignableInternal(EEType* pSourceType, EEType* pTargetType, AssignmentVariation variation)
@@ -1177,7 +1176,7 @@ namespace System.Runtime
                         // BEWARE: Array store check can lead to infinite recursion. We avoid this by making certain 
                         // that the cache trivially answers the case of equivalent types without triggering the cache
                         // miss path. (See CastCache.AreTypesAssignableInternal)
-                        cache[entryIndex] = newEntry;  
+                        cache[entryIndex] = newEntry;
                         return newEntry.Result;
                     }
                     catch (OutOfMemoryException)
