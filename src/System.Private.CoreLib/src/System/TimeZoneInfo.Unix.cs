@@ -745,13 +745,9 @@ namespace System
 
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private static unsafe int TZif_ToInt32(byte[] value, int startIndex)
+        private static int TZif_ToInt32(byte[] value, int startIndex)
         {
-            fixed (byte* pbyte = &value[startIndex])
-            {
-                return (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-            }
+            return (value[startIndex] << 24) | (value[startIndex + 1] << 16) | (value[startIndex + 2] << 8) | value[startIndex + 3];
         }
 
         private static void TZif_ParseRaw(Byte[] data, out TZifHead t, out DateTime[] dts, out Byte[] typeOfLocalTime, out TZifType[] transitionType,
