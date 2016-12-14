@@ -59,5 +59,10 @@ namespace ILCompiler.DependencyAnalysis
                     return 0;
             }
         }
+
+        public override string ToString()
+        {
+            return $"{Target} ({RelocType}, 0x{Offset:X})";
+        }
     }
 }
