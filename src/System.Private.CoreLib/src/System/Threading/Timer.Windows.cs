@@ -12,7 +12,6 @@ namespace System.Threading
     //
     internal partial class TimerQueue
     {
-
         //
         // We need to keep our notion of time synchronized with the calls to SleepEx that drive
         // the underlying native timer.  In Win8, SleepEx does not count the time the machine spends
@@ -35,6 +34,5 @@ namespace System.Threading
                 return (int)(uint)(time100ns / 10000);
             }
         }
-                
     }
 }

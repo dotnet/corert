@@ -12,7 +12,7 @@ namespace System.Threading
     //
     internal static partial class ThreadPool
     {
-        static IntPtr s_work;
+        private static IntPtr s_work;
 
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)

@@ -19,6 +19,6 @@ internal static partial class Interop
         internal const int MUI_NON_LANG_NEUTRAL_FILE = 0x200;
 
         [DllImport("api-ms-win-core-localization-l1-2-1.dll", CharSet = CharSet.Unicode)]
-        internal static extern bool GetFileMUIPath(int flags, String filePath, StringBuilder language, ref int languageLength, StringBuilder fileMuiPath, ref int fileMuiPathLength, ref Int64 enumerator);   
+        internal static extern bool GetFileMUIPath(int flags, String filePath, StringBuilder language, ref int languageLength, StringBuilder fileMuiPath, ref int fileMuiPathLength, ref Int64 enumerator);
     }
 }

@@ -25,6 +25,6 @@ namespace System.Threading
             {
                 return Environment.TickCount;
             }
-        }        
+        }
     }
 }

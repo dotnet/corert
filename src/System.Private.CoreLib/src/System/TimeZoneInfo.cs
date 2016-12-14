@@ -1989,7 +1989,7 @@ namespace System
             info.AddValue("SupportsDaylightSavingTime", _supportsDaylightSavingTime);
         }
 
-        TimeZoneInfo(SerializationInfo info, StreamingContext context)
+        private TimeZoneInfo(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
@@ -2624,7 +2624,6 @@ namespace System
         [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
         sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
         {
-
             // ---- SECTION:  members supporting exposed properties -------------*
             private DateTime _dateStart;
             private DateTime _dateEnd;
@@ -2639,7 +2638,7 @@ namespace System
             {
                 get
                 {
-                    return this._dateStart;
+                    return _dateStart;
                 }
             }
 
@@ -2647,7 +2646,7 @@ namespace System
             {
                 get
                 {
-                    return this._dateEnd;
+                    return _dateEnd;
                 }
             }
 
@@ -2655,7 +2654,7 @@ namespace System
             {
                 get
                 {
-                    return this._daylightDelta;
+                    return _daylightDelta;
                 }
             }
 
@@ -2664,7 +2663,7 @@ namespace System
             {
                 get
                 {
-                    return this._daylightTransitionStart;
+                    return _daylightTransitionStart;
                 }
             }
 
@@ -2673,7 +2672,7 @@ namespace System
             {
                 get
                 {
-                    return this._daylightTransitionEnd;
+                    return _daylightTransitionEnd;
                 }
             }
 
@@ -2681,7 +2680,7 @@ namespace System
             {
                 get
                 {
-                    return this._baseUtcOffsetDelta;
+                    return _baseUtcOffsetDelta;
                 }
             }
 
@@ -2701,13 +2700,13 @@ namespace System
             public bool Equals(AdjustmentRule other)
             {
                 bool equals = (other != null
-                     && this._dateStart == other._dateStart
-                     && this._dateEnd == other._dateEnd
-                     && this._daylightDelta == other._daylightDelta
-                     && this._baseUtcOffsetDelta == other._baseUtcOffsetDelta);
+                     && _dateStart == other._dateStart
+                     && _dateEnd == other._dateEnd
+                     && _daylightDelta == other._daylightDelta
+                     && _baseUtcOffsetDelta == other._baseUtcOffsetDelta);
 
-                equals = equals && this._daylightTransitionEnd.Equals(other._daylightTransitionEnd)
-                         && this._daylightTransitionStart.Equals(other._daylightTransitionStart);
+                equals = equals && _daylightTransitionEnd.Equals(other._daylightTransitionEnd)
+                         && _daylightTransitionStart.Equals(other._daylightTransitionStart);
 
                 return equals;
             }
@@ -2734,7 +2733,6 @@ namespace System
                              TransitionTime daylightTransitionStart,
                              TransitionTime daylightTransitionEnd)
             {
-
                 ValidateAdjustmentRule(dateStart, dateEnd, daylightDelta,
                                        daylightTransitionStart, daylightTransitionEnd);
 
@@ -2800,8 +2798,6 @@ namespace System
                              TransitionTime daylightTransitionStart,
                              TransitionTime daylightTransitionEnd)
             {
-
-
                 if (dateStart.Kind != DateTimeKind.Unspecified)
                 {
                     throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(dateStart));
@@ -2886,7 +2882,7 @@ namespace System
                 info.AddValue("BaseUtcOffsetDelta", _baseUtcOffsetDelta);
             }
 
-            AdjustmentRule(SerializationInfo info, StreamingContext context)
+            private AdjustmentRule(SerializationInfo info, StreamingContext context)
             {
                 if (info == null)
                 {
@@ -2925,7 +2921,6 @@ namespace System
         [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
         public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
-
             // ---- SECTION:  members supporting exposed properties -------------*
             private DateTime _timeOfDay;
             private byte _month;
@@ -3009,20 +3004,20 @@ namespace System
             [Pure]
             public bool Equals(TransitionTime other)
             {
-
-                bool equal = (this._isFixedDateRule == other._isFixedDateRule
-                             && this._timeOfDay == other._timeOfDay
-                             && this._month == other._month);
+                bool equal = (_isFixedDateRule == other._isFixedDateRule
+                             && _timeOfDay == other._timeOfDay
+                             && _month == other._month);
 
                 if (equal)
                 {
                     if (other._isFixedDateRule)
                     {
-                        equal = (this._day == other._day);
+                        equal = (_day == other._day);
                     }
-                    else {
-                        equal = (this._week == other._week
-                            && this._dayOfWeek == other._dayOfWeek);
+                    else
+                    {
+                        equal = (_week == other._week
+                            && _dayOfWeek == other._dayOfWeek);
                     }
                 }
                 return equal;
@@ -3056,7 +3051,6 @@ namespace System
                     Int32 month,
                     Int32 day)
             {
-
                 return CreateTransitionTime(timeOfDay, month, 1, day, DayOfWeek.Sunday, true);
             }
 
@@ -3067,7 +3061,6 @@ namespace System
                     Int32 week,
                     DayOfWeek dayOfWeek)
             {
-
                 return CreateTransitionTime(timeOfDay, month, week, 1, dayOfWeek, false);
             }
 
@@ -3080,7 +3073,6 @@ namespace System
                     DayOfWeek dayOfWeek,
                     Boolean isFixedDateRule)
             {
-
                 ValidateTransitionTime(timeOfDay, month, week, day, dayOfWeek);
 
                 TransitionTime t = new TransitionTime();
@@ -3177,7 +3169,7 @@ namespace System
                 info.AddValue("IsFixedDateRule", _isFixedDateRule);
             }
 
-            TransitionTime(SerializationInfo info, StreamingContext context)
+            private TransitionTime(SerializationInfo info, StreamingContext context)
             {
                 if (info == null)
                 {
@@ -3207,7 +3199,6 @@ namespace System
         ============================================================*/
         sealed private class StringSerializer
         {
-
             // ---- SECTION: private members  -------------*
             private enum State
             {
@@ -3392,7 +3383,8 @@ namespace System
                     serializedText.Append(SerializeSubstitute(time.Day.ToString(CultureInfo.InvariantCulture)));
                     serializedText.Append(sep);
                 }
-                else {
+                else
+                {
                     serializedText.Append(SerializeSubstitute(time.TimeOfDay.ToString(timeOfDayFormat, DateTimeFormatInfo.InvariantInfo)));
                     serializedText.Append(sep);
                     serializedText.Append(SerializeSubstitute(time.Month.ToString(CultureInfo.InvariantCulture)));
@@ -3464,7 +3456,8 @@ namespace System
                                     {
                                         _state = State.EndOfLine;
                                     }
-                                    else {
+                                    else
+                                    {
                                         _state = State.StartOfToken;
                                     }
                                     return;
@@ -3502,7 +3495,6 @@ namespace System
             //
             private String GetNextStringValue(Boolean canEndWithoutSeparator)
             {
-
                 // first verify the internal state of the object
                 if (_state == State.EndOfLine)
                 {
@@ -3510,7 +3502,8 @@ namespace System
                     {
                         return null;
                     }
-                    else {
+                    else
+                    {
                         throw new SerializationException(SR.Serialization_InvalidData);
                     }
                 }
@@ -3552,7 +3545,8 @@ namespace System
                                     _state = State.StartOfToken;
                                     return token.ToString();
                                 }
-                                else {
+                                else
+                                {
                                     // ']' is an unexpected character
                                     throw new SerializationException(SR.Serialization_InvalidData);
                                 }
@@ -3563,7 +3557,8 @@ namespace System
                                 {
                                     _state = State.EndOfLine;
                                 }
-                                else {
+                                else
+                                {
                                     _state = State.StartOfToken;
                                 }
                                 return StringBuilderCache.GetStringAndRelease(token);
@@ -3700,7 +3695,8 @@ namespace System
                     {
                         return null;
                     }
-                    else {
+                    else
+                    {
                         throw new SerializationException(SR.Serialization_InvalidData);
                     }
                 }
@@ -3757,7 +3753,8 @@ namespace System
                     // than just skipping the data at the end of the [AdjustmentRule].
                     SkipVersionNextDataFields(1);
                 }
-                else {
+                else
+                {
                     _currentTokenStartIndex++;
                 }
 
@@ -3778,7 +3775,8 @@ namespace System
                 {
                     _state = State.EndOfLine;
                 }
-                else {
+                else
+                {
                     _state = State.StartOfToken;
                 }
                 return rule;
@@ -3792,7 +3790,6 @@ namespace System
             //
             private TransitionTime GetNextTransitionTimeValue(Boolean canEndWithoutSeparator)
             {
-
                 // first verify the internal state of the object
 
                 if (_state == State.EndOfLine
@@ -3845,7 +3842,8 @@ namespace System
                         throw new SerializationException(SR.Serialization_InvalidData, e);
                     }
                 }
-                else {
+                else
+                {
                     Int32 week = GetNextInt32Value(false);
                     Int32 dayOfWeek = GetNextInt32Value(false);
 
@@ -3857,7 +3855,6 @@ namespace System
                     {
                         throw new SerializationException(SR.Serialization_InvalidData, e);
                     }
-
                 }
 
                 // verify that the string is now at the right-hand-side marker ("]") ...
@@ -3876,7 +3873,8 @@ namespace System
                     // than just skipping the data at the end of the [TransitionTime].
                     SkipVersionNextDataFields(1);
                 }
-                else {
+                else
+                {
                     _currentTokenStartIndex++;
                 }
 
@@ -3902,7 +3900,8 @@ namespace System
                 {
                     _state = State.EndOfLine;
                 }
-                else {
+                else
+                {
                     _state = State.StartOfToken;
                 }
                 return transition;

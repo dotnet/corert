@@ -4,7 +4,7 @@
 
 namespace System.Globalization
 {
-    sealed partial class IdnMapping
+    public sealed partial class IdnMapping
     {
         private unsafe string GetAsciiCore(char* unicode, int count)
         {

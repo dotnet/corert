@@ -5,12 +5,12 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 
-namespace Microsoft.Win32 
+namespace Microsoft.Win32
 {
-    sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid 
+    sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeLibraryHandle() : base(true) {}
-        internal SafeLibraryHandle(IntPtr handle) : base(handle, true) {}
+        internal SafeLibraryHandle() : base(true) { }
+        internal SafeLibraryHandle(IntPtr handle) : base(handle, true) { }
 
         override protected bool ReleaseHandle()
         {

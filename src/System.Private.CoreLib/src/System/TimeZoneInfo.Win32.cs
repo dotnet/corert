@@ -109,7 +109,6 @@ namespace System
                                         false
                                         ))
                     {
-
                         if (reg != null)
                         {
                             foreach (string keyName in reg.GetSubKeyNames())
@@ -149,12 +148,12 @@ namespace System
         //
         private unsafe TimeZoneInfo(TIME_ZONE_INFORMATION zone, Boolean dstDisabled)
         {
-
             if (String.IsNullOrEmpty(new String(zone.StandardName)))
             {
                 _id = c_localId;  // the ID must contain at least 1 character - initialize _id to "Local"
             }
-            else {
+            else
+            {
                 _id = new String(zone.StandardName);
             }
             _baseUtcOffset = new TimeSpan(0, -(zone.Bias), 0);
@@ -273,7 +272,6 @@ namespace System
                               false
                               ))
             {
-
                 if (key == null)
                 {
                     return null;
@@ -397,19 +395,22 @@ namespace System
         // This function will either return a valid TimeZoneInfo instance or 
         // it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
         //
-        public static TimeZoneInfo FindSystemTimeZoneById(string id) {
-
+        public static TimeZoneInfo FindSystemTimeZoneById(string id)
+        {
             // Special case for Utc as it will not exist in the dictionary with the rest
             // of the system time zones.  There is no need to do this check for Local.Id
             // since Local is a real time zone that exists in the dictionary cache
-            if (String.Compare(id, c_utcId, StringComparison.OrdinalIgnoreCase) == 0) {
+            if (String.Compare(id, c_utcId, StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 return TimeZoneInfo.Utc;
             }
 
-            if (id == null) {
+            if (id == null)
+            {
                 throw new ArgumentNullException("id");
             }
-            if (id.Length == 0 || id.Length > c_maxKeyLength || id.Contains("\0")) {
+            if (id.Length == 0 || id.Length > c_maxKeyLength || id.Contains("\0"))
+            {
                 throw new TimeZoneNotFoundException(String.Format(SR.TimeZoneNotFound_MissingRegistryData, id));
             }
 
@@ -420,20 +421,25 @@ namespace System
 
             CachedData cachedData = s_cachedData;
 
-            lock (cachedData) {
+            lock (cachedData)
+            {
                 result = TryGetTimeZone(id, false, out value, out e, cachedData);
             }
 
-            if (result == TimeZoneInfoResult.Success) {
+            if (result == TimeZoneInfoResult.Success)
+            {
                 return value;
             }
-            else if (result == TimeZoneInfoResult.InvalidTimeZoneException) {
+            else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
+            {
                 throw new InvalidTimeZoneException(String.Format(SR.InvalidTimeZone_InvalidRegistryData, id), e);
             }
-            else if (result == TimeZoneInfoResult.SecurityException) {
+            else if (result == TimeZoneInfoResult.SecurityException)
+            {
                 throw new SecurityException(String.Format(SR.Security_CannotReadRegistryData, id), e);
             }
-            else {
+            else
+            {
                 throw new TimeZoneNotFoundException(String.Format(SR.TimeZoneNotFound_MissingRegistryData, id), e);
             }
         }
@@ -507,7 +513,8 @@ namespace System
                                      timeZoneInformation.DaylightDate.wDay,   /* Week 1-5 */
                                      (DayOfWeek)timeZoneInformation.DaylightDate.wDayOfWeek);
                 }
-                else {
+                else
+                {
                     transitionTime = TransitionTime.CreateFixedDateRule(
                                      new DateTime(1,    /* year  */
                                                   1,    /* month */
@@ -520,7 +527,8 @@ namespace System
                                      timeZoneInformation.DaylightDate.wDay);
                 }
             }
-            else {
+            else
+            {
                 //
                 // read the "daylightTransitionEnd"
                 //
@@ -538,7 +546,8 @@ namespace System
                                      timeZoneInformation.StandardDate.wDay,   /* Week 1-5 */
                                      (DayOfWeek)timeZoneInformation.StandardDate.wDayOfWeek);
                 }
-                else {
+                else
+                {
                     transitionTime = TransitionTime.CreateFixedDateRule(
                                      new DateTime(1,    /* year  */
                                                   1,    /* month */
@@ -615,7 +624,8 @@ namespace System
                         {
                             rules = null;
                         }
-                        else {
+                        else
+                        {
                             rules = new AdjustmentRule[1];
                             rules[0] = rule;
                         }
@@ -659,7 +669,8 @@ namespace System
                         {
                             rules = null;
                         }
-                        else {
+                        else
+                        {
                             rules = new AdjustmentRule[1];
                             rules[0] = rule;
                         }
@@ -775,7 +786,6 @@ namespace System
         //
         static unsafe private Boolean TryCompareTimeZoneInformationToRegistry(TIME_ZONE_INFORMATION timeZone, string id, out Boolean dstDisabled)
         {
-
             dstDisabled = false;
             using (RegistryKey key = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(
                               String.Format(CultureInfo.InvariantCulture, "{0}\\{1}",
@@ -783,7 +793,6 @@ namespace System
                                   false
                                   ))
             {
-
                 if (key == null)
                 {
                     return false;
@@ -937,7 +946,6 @@ namespace System
                 using (SafeLibraryHandle handle =
                            new SafeLibraryHandle(Interop.mincore.LoadLibraryEx(file, IntPtr.Zero, Interop.mincore.LOAD_LIBRARY_AS_DATAFILE)))
                 {
-
                     if (!handle.IsInvalid)
                     {
                         StringBuilder localizedResource = StringBuilderCache.Acquire(Interop.mincore.LOAD_STRING_MAX_LENGTH);
@@ -1060,7 +1068,6 @@ namespace System
                                   false
                                   ))
             {
-
                 if (key == null)
                 {
                     value = null;
@@ -1121,7 +1128,6 @@ namespace System
                     e = ex;
                     return TimeZoneInfoResult.InvalidTimeZoneException;
                 }
-
             }
         }
 
@@ -1150,7 +1156,8 @@ namespace System
                         // we found a cache hit but we want a time zone without DST and this one has DST data
                         value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
                     }
-                    else {
+                    else
+                    {
                         value = new TimeZoneInfo(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
                                               match._daylightDisplayName, match._adjustmentRules, false);
                     }
@@ -1175,16 +1182,19 @@ namespace System
                         // we found a cache hit but we want a time zone without DST and this one has DST data
                         value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
                     }
-                    else {
+                    else
+                    {
                         value = new TimeZoneInfo(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
                                               match._daylightDisplayName, match._adjustmentRules, false);
                     }
                 }
-                else {
+                else
+                {
                     value = null;
                 }
             }
-            else {
+            else
+            {
                 result = TimeZoneInfoResult.TimeZoneNotFoundException;
                 value = null;
             }

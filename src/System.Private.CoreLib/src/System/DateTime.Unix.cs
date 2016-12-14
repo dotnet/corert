@@ -18,6 +18,6 @@ namespace System
                 // For performance, use a private constructor that does not validate arguments.
                 return new DateTime(((ulong)(Interop.Sys.GetSystemTimeAsTicks() + TicksTo1970)) | KindUtc);
             }
-        }      
+        }
     }
 }
