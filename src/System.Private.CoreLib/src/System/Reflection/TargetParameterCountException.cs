@@ -12,7 +12,7 @@ using System;
 
 namespace System.Reflection
 {
-    public sealed class TargetParameterCountException : Exception
+    public sealed class TargetParameterCountException : ApplicationException
     {
         public TargetParameterCountException()
             : base(SR.Arg_TargetParameterCountException)

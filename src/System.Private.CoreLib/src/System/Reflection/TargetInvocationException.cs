@@ -18,7 +18,7 @@ using System;
 
 namespace System.Reflection
 {
-    public sealed class TargetInvocationException : Exception
+    public sealed class TargetInvocationException : ApplicationException
     {
         public TargetInvocationException(System.Exception inner)
             : base(SR.Arg_TargetInvocationException, inner)

@@ -12,6 +12,7 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -47,5 +48,7 @@ namespace System
         {
             SetErrorCode(__HResults.E_POINTER);
         }
+
+        protected ArgumentNullException(SerializationInfo info, StreamingContext context) : base(info, context) {}
     }
 }

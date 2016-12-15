@@ -11,10 +11,12 @@
 **
 =============================================================================*/
 
+using System.Runtime.Serialization;
+
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class OutOfMemoryException : Exception
+    public class OutOfMemoryException : SystemException
     {
         public OutOfMemoryException()
             : base(SR.Arg_OutOfMemoryException)
@@ -33,5 +35,7 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_OUTOFMEMORY);
         }
+
+        protected OutOfMemoryException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -13,6 +13,7 @@
 
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -58,6 +59,14 @@ namespace System
             //  (2) Signature is non-null when this exception is created from the native runtime. Which we don't do in .Net Native.
             //  (3) Only other time the signature is non-null is if this exception object is deserialized from a persisted blob from an older runtime.
             return string.Empty;
+        }
+
+        protected MissingMemberException(SerializationInfo info, StreamingContext context) 
+            : base (info, context) 
+        {
+            ClassName = (String)info.GetString("MMClassName");
+            MemberName = (String)info.GetString("MMMemberName");
+            Signature = (byte[])info.GetValue("MMSignature", typeof(byte[]));
         }
 
         // If ClassName != null, GetMessage will construct on the fly using it

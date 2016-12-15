@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.IO
 {
@@ -12,6 +13,7 @@ namespace System.IO
     public class FileNotFoundException : IOException
     {
         private String _fileName;  // The name of the file that isn't found.
+        private String _fusionLog;  // fusion log (when applicable)
 
         public FileNotFoundException()
             : base(SR.IO_FileNotFound)
@@ -44,6 +46,21 @@ namespace System.IO
             _fileName = fileName;
         }
 
+        protected FileNotFoundException(SerializationInfo info, StreamingContext context) : base (info, context) 
+        {
+            // Base class constructor will check info != null.
+
+            _fileName = info.GetString("FileNotFound_FileName");
+            try
+            {
+                _fusionLog = info.GetString("FileNotFound_FusionLog");
+            }
+            catch 
+            {
+                _fusionLog = null;
+            }
+        }
+
         public override String Message
         {
             get
@@ -68,6 +85,11 @@ namespace System.IO
         public String FileName
         {
             get { return _fileName; }
+        }
+
+        public String FusionLog 
+        {
+            get { return _fusionLog; }
         }
 
         public override String ToString()

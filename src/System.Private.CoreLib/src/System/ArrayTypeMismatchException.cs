@@ -12,6 +12,7 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -19,7 +20,7 @@ namespace System
     // an object of the wrong type within an array occurs.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class ArrayTypeMismatchException : Exception
+    public class ArrayTypeMismatchException : SystemException
     {
         // Creates a new ArrayMismatchException with its message string set to
         // the empty string, its HRESULT set to COR_E_ARRAYTYPEMISMATCH, 
@@ -45,5 +46,7 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_ARRAYTYPEMISMATCH);
         }
+
+        protected ArrayTypeMismatchException(SerializationInfo info, StreamingContext context) : base(info, context) {}
     }
 }

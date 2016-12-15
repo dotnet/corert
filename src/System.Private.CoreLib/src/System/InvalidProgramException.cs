@@ -16,7 +16,7 @@ using System;
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class InvalidProgramException : Exception
+    public sealed class InvalidProgramException : SystemException
     {
         public InvalidProgramException()
             : base(SR.InvalidProgram_Default)

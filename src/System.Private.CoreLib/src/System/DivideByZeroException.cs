@@ -11,6 +11,8 @@
 **
 =============================================================================*/
 
+using System.Runtime.Serialization;
+
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -33,5 +35,7 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_DIVIDEBYZERO);
         }
+
+        protected DivideByZeroException(SerializationInfo info, StreamingContext context) : base(info, context) {}
     }
 }
