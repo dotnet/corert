@@ -14,6 +14,8 @@ class Program
         TestDelegateFatFunctionPointers.Run();
         TestVirtualMethodUseTracking.Run();
         TestSlotsInHierarchy.Run();
+        TestDelegateVirtualMethod.Run();
+        TestDelegateInterfaceMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestUnusedGVMsDoNotCrashCompiler.Run();
 
@@ -139,6 +141,63 @@ class Program
             string roundtrip = new TestDelegateFatFunctionPointers().Generic<string>(hw);
             if (roundtrip != hw)
                 throw new Exception();
+        }
+    }
+
+    class TestDelegateVirtualMethod
+    {
+        static void Generic<T>()
+        {
+            Base<T> o = new Derived<T>();
+            Func<string> f = o.Do;
+            if (f() != "Derived")
+                throw new Exception();
+
+            o = new Base<T>();
+            f = o.Do;
+            if (f() != "Base")
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            Generic<string>();
+        }
+
+        class Base<T>
+        {
+            public virtual string Do() => "Base";
+        }
+
+        class Derived<T> : Base<T>
+        {
+            public override string Do() => "Derived";
+        }
+    }
+
+    class TestDelegateInterfaceMethod
+    {
+        static void Generic<T>()
+        {
+            IFoo<T> o = new Foo<T>();
+            Func<string> f = o.Do;
+            if (f() != "Foo")
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            Generic<string>();
+        }
+
+        interface IFoo<T>
+        {
+            string Do();
+        }
+
+        class Foo<T> : IFoo<T>
+        {
+            public string Do() => "Foo";
         }
     }
 

@@ -42,6 +42,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new VirtualDispatchGenericLookupResult(method);
                 });
 
+                _virtualResolveHelpers = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                {
+                    return new VirtualResolveGenericLookupResult(method);
+                });
+
                 _typeGCStaticBaseSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new TypeGCStaticBaseGenericLookupResult(type);
@@ -86,6 +91,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult VirtualCall(MethodDesc method)
             {
                 return _virtualCallHelpers.GetOrAdd(method);
+            }
+
+            private NodeCache<MethodDesc, GenericLookupResult> _virtualResolveHelpers;
+
+            public GenericLookupResult VirtualMethodAddress(MethodDesc method)
+            {
+                return _virtualResolveHelpers.GetOrAdd(method);
             }
 
             private NodeCache<MethodDesc, GenericLookupResult> _methodEntrypoints;
