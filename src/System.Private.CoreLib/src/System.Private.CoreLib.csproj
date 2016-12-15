@@ -197,9 +197,11 @@
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
     <Compile Include="System\__Canon.cs" />
+    <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Action.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\AggregateException.cs" />
+    <Compile Include="System\ApplicationException.cs" />
     <Compile Include="System\ArgumentException.cs" />
     <Compile Include="System\ArgumentNullException.cs" />
     <Compile Include="System\ArgumentOutOfRangeException.cs" />
@@ -302,11 +304,14 @@
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
     <Compile Include="System\DivideByZeroException.cs" />
     <Compile Include="System\Double.cs" />
+    <Compile Include="System\DuplicateWaitObjectException.cs" />
     <Compile Include="System\Enum.cs" />
+    <Compile Include="System\EntryPointNotFoundException.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\Environment.EnvironmentVariables.cs" />
     <Compile Include="System\EventArgs.cs" />
     <Compile Include="System\EventHandler.cs" />
+    <Compile Include="System\ExecutionEngineException.cs" />
     <Compile Include="System\FormatException.cs" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\CalendarAlgorithmType.cs" />
@@ -351,6 +356,7 @@
     <Compile Include="System\IFormattable.cs" />
     <Compile Include="System\IndexOutOfRangeException.cs" />
     <Compile Include="System\InsufficientExecutionStackException.cs" />
+    <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Int16.cs" />
     <Compile Include="System\Int32.cs" />
     <Compile Include="System\Int64.cs" />
@@ -372,6 +378,7 @@
     <Compile Include="System\MissingMethodException.cs" />
     <Compile Include="System\MidpointRounding.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
+    <Compile Include="System\MulticastNotSupportedException.cs" />
     <Compile Include="System\NotImplementedException.cs" />
     <Compile Include="System\NotSupportedException.cs" />
     <Compile Include="System\Nullable.cs" />
@@ -426,6 +433,7 @@
     <Compile Include="System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
     <Compile Include="System\Runtime\CompilerServices\StateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerOrderedStaticConstructorAttribute.cs" />
@@ -437,12 +445,15 @@
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\CorruptingExceptionCommon.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\ExceptionNotification.cs" />
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\ComVisibleAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ExternalException.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
@@ -469,15 +480,18 @@
     <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
     <Compile Include="System\SByte.cs" />
     <Compile Include="System\Security\Attributes.cs" />
+    <Compile Include="System\Security\CryptographicException.cs" />
     <Compile Include="System\Security\SecurityException.cs" />
     <Compile Include="System\Security\VerificationException.cs" />
     <Compile Include="System\Single.cs" />
+    <Compile Include="System\StackOverflowException.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
     <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\String.Searching.cs" />
     <Compile Include="System\StringComparer.cs" />
     <Compile Include="System\StringSplitOptions.cs" />
+    <Compile Include="System\SystemException.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\IDisposable.cs" />
@@ -607,6 +621,8 @@
     <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntptr.cs" />
     <Compile Include="System\UnauthorizedAccessException.cs" />
+    <Compile Include="System\UnhandledExceptionEventArgs.cs" />
+    <Compile Include="System\UnhandledExceptionEventHandler.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
     <Compile Include="System\Void.cs" />

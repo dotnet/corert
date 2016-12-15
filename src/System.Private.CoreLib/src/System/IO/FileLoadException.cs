@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.IO
 {
@@ -10,6 +11,7 @@ namespace System.IO
     public class FileLoadException : IOException
     {
         private String _fileName;   // the name of the file we could not load.
+        private String _fusionLog;  // fusion log (when applicable)
 
         public FileLoadException()
             : base(SR.IO_FileLoad)
@@ -42,6 +44,21 @@ namespace System.IO
             _fileName = fileName;
         }
 
+        protected FileLoadException(SerializationInfo info, StreamingContext context) : base (info, context) 
+        {
+            // Base class constructor will check info != null.
+            _fileName = info.GetString("FileLoad_FileName");
+
+            try
+            {
+                _fusionLog = info.GetString("FileLoad_FusionLog");
+            }
+            catch 
+            {
+                _fusionLog = null;
+            }
+        }
+
         public String FileName
         {
             get { return _fileName; }
@@ -56,6 +73,11 @@ namespace System.IO
 
                 return _message;
             }
+        }
+
+        public String FusionLog 
+        {
+            get { return _fusionLog; }
         }
 
         public override String ToString()

@@ -11,6 +11,8 @@
 **
 =============================================================================*/
 
+using System.Runtime.Serialization;
+
 namespace System
 {
     // NullReferenceException is required by Bartok due to an internal implementation detail, but Redhawk 
@@ -18,7 +20,7 @@ namespace System
     // has a 'throw new NullReferenceException()'
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class NullReferenceException : Exception
+    public class NullReferenceException : SystemException
     {
         public NullReferenceException()
             : base(SR.Arg_NullReferenceException)
@@ -37,5 +39,7 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_NULLREFERENCE);
         }
+
+        protected NullReferenceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public class TargetException : Exception
+    public class TargetException : ApplicationException
     {
         public TargetException()
             : this(null)

@@ -16,7 +16,7 @@ using System;
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class IndexOutOfRangeException : Exception
+    public sealed class IndexOutOfRangeException : SystemException
     {
         public IndexOutOfRangeException()
             : base(SR.Arg_IndexOutOfRangeException)

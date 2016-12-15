@@ -13,7 +13,7 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public sealed class ReflectionTypeLoadException : Exception, ISerializable
+    public sealed class ReflectionTypeLoadException : SystemException, ISerializable
     {
         private Type[] _classes;
         private Exception[] _exceptions;

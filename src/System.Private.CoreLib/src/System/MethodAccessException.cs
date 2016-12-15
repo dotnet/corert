@@ -10,6 +10,7 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -33,5 +34,7 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_METHODACCESS);
         }
+
+        protected MethodAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

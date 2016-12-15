@@ -18,6 +18,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -166,6 +167,32 @@ namespace System
             }
 
             m_innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AggregateException"/> class with serialized data.
+        /// </summary>
+        /// <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo"/> that holds
+        /// the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext"/> that
+        /// contains contextual information about the source or destination. </param>
+        /// <exception cref="T:System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        /// <exception cref="T:System.Runtime.Serialization.SerializationException">The exception could not be deserialized correctly.</exception>
+        protected AggregateException(SerializationInfo info, StreamingContext context) :
+            base(info, context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            Exception[] innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[];
+            if (innerExceptions == null)
+            {
+                throw new SerializationException(SR.AggregateException_DeserializationFailure);
+            }
+
+            m_innerExceptions = new ReadOnlyCollection<Exception>(innerExceptions);
         }
 
         /// <summary>

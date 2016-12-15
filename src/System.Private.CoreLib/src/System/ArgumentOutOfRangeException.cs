@@ -13,6 +13,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -90,6 +91,12 @@ namespace System
         public virtual Object ActualValue
         {
             get { return _actualValue; }
+        }
+
+        protected ArgumentOutOfRangeException(SerializationInfo info, StreamingContext context)
+            : base(info, context) 
+        {
+            _actualValue = info.GetValue("ActualValue", typeof(Object));
         }
     }
 }

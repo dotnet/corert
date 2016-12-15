@@ -20,7 +20,7 @@ using System.Globalization;
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class TypeInitializationException : Exception
+    public sealed class TypeInitializationException : SystemException
     {
         private String _typeName;
 

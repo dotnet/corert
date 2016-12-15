@@ -4,7 +4,7 @@
 
 namespace System
 {
-    public sealed class InsufficientExecutionStackException : Exception
+    public sealed class InsufficientExecutionStackException : SystemException
     {
         public InsufficientExecutionStackException()
             : base(SR.Arg_InsufficientExecutionStackException)
