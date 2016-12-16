@@ -9,12 +9,11 @@
 =============================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class InvalidCastException : SystemException
+    public class InvalidCastException : Exception
     {
         public InvalidCastException()
             : base(SR.Arg_InvalidCastException)
@@ -39,7 +38,5 @@ namespace System
         {
             SetErrorCode(errorCode);
         }
-
-        protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context) {}
     }
 }

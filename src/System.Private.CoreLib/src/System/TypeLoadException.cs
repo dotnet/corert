@@ -15,13 +15,12 @@ using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Security;
 using System.Diagnostics.Contracts;
 
 namespace System
 {
-    public class TypeLoadException : SystemException
+    public class TypeLoadException : Exception
     {
         public TypeLoadException()
             : base(SR.Arg_TypeLoadException)
@@ -47,8 +46,6 @@ namespace System
             SetErrorCode(__HResults.COR_E_TYPELOAD);
             _typeName = typeName;
         }
-
-        protected TypeLoadException(SerializationInfo info, StreamingContext context) : base(info, context) {}
 
         public override String Message
         {

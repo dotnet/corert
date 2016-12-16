@@ -13,7 +13,6 @@
 
 using System;
 using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace System
 {
@@ -22,7 +21,7 @@ namespace System
     // message describing what was wrong and which parameter is incorrect.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class ArgumentException : SystemException
+    public class ArgumentException : Exception
     {
         private String _paramName;
 
@@ -62,12 +61,6 @@ namespace System
         {
             _paramName = paramName;
             SetErrorCode(__HResults.COR_E_ARGUMENT);
-        }
-
-        protected ArgumentException(SerializationInfo info, StreamingContext context)
-            : base(info, context) 
-        {
-            _paramName = info.GetString("ParamName");
         }
 
         public override String Message

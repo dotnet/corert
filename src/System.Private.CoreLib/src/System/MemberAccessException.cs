@@ -9,7 +9,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System
 {
@@ -17,7 +16,7 @@ namespace System
     // member fails.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class MemberAccessException : SystemException
+    public class MemberAccessException : Exception
     {
         // Creates a new MemberAccessException with its message string set to
         // the empty string, its HRESULT set to COR_E_MEMBERACCESS, 
@@ -43,7 +42,5 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_MEMBERACCESS);
         }
-
-        protected MemberAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

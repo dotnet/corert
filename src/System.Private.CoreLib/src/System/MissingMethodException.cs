@@ -12,7 +12,6 @@
 =============================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System
 {
@@ -50,7 +49,5 @@ namespace System
                 return ClassName == null ? base.Message : SR.Format(SR.MissingMethod_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
             }
         }
-
-        protected MissingMethodException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

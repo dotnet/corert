@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Globalization
@@ -56,12 +55,6 @@ namespace System.Globalization
             : base(message, paramName)
         {
             _invalidCultureId = invalidCultureId;
-        }
-
-        protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) 
-        {
-            _invalidCultureId      = (Nullable<int>) info.GetValue("InvalidCultureId", typeof(Nullable<int>));
-            _invalidCultureName    = (string) info.GetValue("InvalidCultureName", typeof(string));
         }
 
         public virtual Nullable<int> InvalidCultureId

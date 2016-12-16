@@ -4,7 +4,6 @@
 
 using System;
 using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace System
 {
@@ -66,12 +65,6 @@ namespace System
                 }
                 return _objectName;
             }
-        }
-
-        protected ObjectDisposedException(SerializationInfo info, StreamingContext context) 
-            : base(info, context) 
-        {
-            _objectName = info.GetString("ObjectName");
         }
     }
 }

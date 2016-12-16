@@ -14,7 +14,7 @@ using global::System;
 namespace System.Reflection
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AmbiguousMatchException : SystemException
+    public sealed class AmbiguousMatchException : Exception
     {
         public AmbiguousMatchException()
             : base(SR.RFLCT_Ambiguous)

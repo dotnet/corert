@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System.IO
 {
@@ -26,7 +25,5 @@ namespace System.IO
         {
             SetErrorCode(__HResults.COR_E_PATHTOOLONG);
         }
-
-        protected PathTooLongException(SerializationInfo info, StreamingContext context) : base (info, context) { }
     }
 }

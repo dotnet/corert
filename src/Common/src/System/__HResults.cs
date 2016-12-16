@@ -64,7 +64,6 @@ namespace System
         internal const int COR_E_FORMAT = unchecked((int)0x80131537);
         internal const int COR_E_INDEXOUTOFRANGE = unchecked((int)0x80131508);
         internal const int COR_E_INSUFFICIENTEXECUTIONSTACK = unchecked((int)0x80131578);
-        internal const int COR_E_INSUFFICIENTMEMORY = unchecked((int)0x8013153d);
         internal const int COR_E_INVALIDCAST = unchecked((int)0x80004002);
         internal const int COR_E_INVALIDCOMOBJECT = unchecked((int)0x80131527);
         internal const int COR_E_INVALIDFILTERCRITERIA = unchecked((int)0x80131601);

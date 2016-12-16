@@ -8,7 +8,6 @@ using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
@@ -226,37 +225,6 @@ namespace System
             return this.StackTrace;
         }
 
-        public MethodBase TargetSite 
-        {
-            get { return GetTargetSiteInternal(); }
-        }
-    
-
-        // this function is provided as a private helper to avoid the security demand
-        private MethodBase GetTargetSiteInternal() 
-        {
-            if (_exceptionMethod!=null) 
-            {
-                return _exceptionMethod;
-            }
-
-            if (_stackTrace==null) 
-            {
-                return null;
-            }
-
-            if (_exceptionMethodString!=null) 
-            {
-                _exceptionMethod = GetExceptionMethodFromString();
-            } 
-            else 
-            {
-                _exceptionMethod = GetExceptionMethodFromStackTrace();
-            }
-
-            return _exceptionMethod;
-        }
-
         public virtual String HelpLink
         {
             get
@@ -320,27 +288,14 @@ namespace System
             return s;
         }
 
-        private MethodBase GetExceptionMethodFromString() 
-        {
-            throw new NotImplementedException();
-        }
-
-        private MethodBase GetExceptionMethodFromStackTrace()
-        {
-            throw new NotImplementedException();
-        }
-
         // WARNING: We allow diagnostic tools to directly inspect these three members (_message, _innerException and _HResult)
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
         // Get in touch with the diagnostics team if you have questions.
         internal String _message;
-        private MethodBase _exceptionMethod = null;  //Needed for serialization.  
-        private String _exceptionMethodString = ""; //Needed for serialization. 
         private IDictionary _data;
         private Exception _innerException;
         private String _helpURL;
-        private Object _stackTrace = new Object();
         private String _source;         // Mainly used by VB. 
 
         private int _HResult;     // HResult

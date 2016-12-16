@@ -13,12 +13,11 @@
 =============================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class InvalidOperationException : SystemException
+    public class InvalidOperationException : Exception
     {
         public InvalidOperationException()
             : base(SR.Arg_InvalidOperationException)
@@ -37,8 +36,6 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_INVALIDOPERATION);
         }
-
-        protected InvalidOperationException(SerializationInfo info, StreamingContext context) : base(info, context) {}
     }
 }
 

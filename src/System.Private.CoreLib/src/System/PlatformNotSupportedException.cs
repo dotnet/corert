@@ -11,8 +11,6 @@
 **
 =============================================================================*/
 
-using System.Runtime.Serialization;
-
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -35,7 +33,5 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_PLATFORMNOTSUPPORTED);
         }
-
-        protected PlatformNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

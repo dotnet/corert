@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.Serialization;
-
 namespace System
 {
     // TypeAccessException derives from TypeLoadException rather than MemberAccessException because in
@@ -27,11 +25,5 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_TYPEACCESS);
         }
-
-        protected TypeAccessException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            SetErrorCode(__HResults.COR_E_TYPEACCESS);
-        }    
     }
 }

@@ -12,7 +12,6 @@
 =============================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System
 {
@@ -20,7 +19,7 @@ namespace System
     // occurs.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class ArithmeticException : SystemException
+    public class ArithmeticException : Exception
     {
         // Creates a new ArithmeticException with its message string set to
         // the empty string, its HRESULT set to COR_E_ARITHMETIC, 
@@ -45,11 +44,6 @@ namespace System
             : base(message, innerException)
         {
             SetErrorCode(__HResults.COR_E_ARITHMETIC);
-        }
-
-        protected ArithmeticException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
         }
     }
 }

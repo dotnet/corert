@@ -13,12 +13,11 @@
 =============================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class NotImplementedException : SystemException
+    public class NotImplementedException : Exception
     {
         public NotImplementedException()
             : base(SR.Arg_NotImplementedException)
@@ -35,7 +34,5 @@ namespace System
         {
             SetErrorCode(__HResults.E_NOTIMPL);
         }
-
-        protected NotImplementedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

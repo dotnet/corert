@@ -13,14 +13,12 @@
 
 using System;
 using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace System
 {
-    public class BadImageFormatException : SystemException
+    public class BadImageFormatException : Exception
     {
         private String _fileName;  // The name of the corrupt PE file.
-        private String _fusionLog;  // fusion log (when applicable)
 
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
@@ -94,27 +92,6 @@ namespace System
                 s += Environment.NewLine + StackTrace;
 
             return s;
-        }
-
-        protected BadImageFormatException(SerializationInfo info, StreamingContext context) 
-            : base(info, context) 
-        {
-            // Base class constructor will check info != null.
-
-            _fileName = info.GetString("BadImageFormat_FileName");
-            try
-            {
-                _fusionLog = info.GetString("BadImageFormat_FusionLog");
-            }
-            catch 
-            {
-                _fusionLog = null;
-            }
-        }
-
-        public String FusionLog 
-        {
-            get { return _fusionLog; }
         }
     }
 }

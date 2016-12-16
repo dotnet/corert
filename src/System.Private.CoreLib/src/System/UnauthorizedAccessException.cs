@@ -13,14 +13,12 @@
 ** 
 ===========================================================*/
 
-using System.Runtime.Serialization;
-
 namespace System
 {
     // The UnauthorizedAccessException is thrown when access errors 
     // occur from IO or other OS methods.  
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class UnauthorizedAccessException : SystemException
+    public class UnauthorizedAccessException : Exception
     {
         public UnauthorizedAccessException()
             : base(SR.Arg_UnauthorizedAccessException)
@@ -39,7 +37,5 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_UNAUTHORIZEDACCESS);
         }
-
-        protected UnauthorizedAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

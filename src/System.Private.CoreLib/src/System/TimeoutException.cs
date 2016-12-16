@@ -11,12 +11,10 @@
 **
 =============================================================================*/
 
-using System.Runtime.Serialization;
-
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class TimeoutException : SystemException
+    public class TimeoutException : Exception
     {
         public TimeoutException()
             : base(SR.Arg_TimeoutException)
@@ -35,8 +33,6 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_TIMEOUT);
         }
-
-        protected TimeoutException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
 

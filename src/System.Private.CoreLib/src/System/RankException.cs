@@ -13,12 +13,11 @@
 =============================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class RankException : SystemException
+    public class RankException : Exception
     {
         public RankException()
             : base(SR.Arg_RankException)
@@ -37,7 +36,5 @@ namespace System
         {
             SetErrorCode(__HResults.COR_E_RANK);
         }
-
-        protected RankException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
