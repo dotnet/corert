@@ -16,7 +16,6 @@ using System.Threading;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IAsyncResult
     {
         bool IsCompleted { get; }

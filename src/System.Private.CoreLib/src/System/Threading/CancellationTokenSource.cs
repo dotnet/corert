@@ -32,7 +32,6 @@ namespace System.Threading
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
     public class CancellationTokenSource : IDisposable
     {
         //static sources that can be used as the backing source for 'fixed' CancellationTokens that never change state.

@@ -27,7 +27,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyCopyrightAttribute : Attribute
     {
         private String _copyright;
@@ -44,7 +43,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyTrademarkAttribute : Attribute
     {
         private String _trademark;
@@ -62,7 +60,6 @@ namespace System.Reflection
 
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyProductAttribute : Attribute
     {
         private String _product;
@@ -79,7 +76,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyCompanyAttribute : Attribute
     {
         private String _company;
@@ -96,7 +92,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyDescriptionAttribute : Attribute
     {
         private String _description;
@@ -113,7 +108,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyTitleAttribute : Attribute
     {
         private String _title;
@@ -130,7 +124,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyConfigurationAttribute : Attribute
     {
         private String _configuration;
@@ -147,7 +140,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyDefaultAliasAttribute : Attribute
     {
         private String _defaultAlias;
@@ -164,7 +156,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyInformationalVersionAttribute : Attribute
     {
         private String _informationalVersion;
@@ -181,7 +172,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyFileVersionAttribute : Attribute
     {
         private String _version;
@@ -201,7 +191,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class AssemblyCultureAttribute : Attribute
     {
         private String _culture;
@@ -218,7 +207,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class AssemblyVersionAttribute : Attribute
     {
         private String _version;
@@ -235,7 +223,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyKeyFileAttribute : Attribute
     {
         private String _keyFile;
@@ -252,7 +239,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyDelaySignAttribute : Attribute
     {
         private bool _delaySign;
@@ -270,7 +256,6 @@ namespace System.Reflection
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class AssemblyFlagsAttribute : Attribute
     {
         private AssemblyNameFlags _flags;
@@ -352,7 +337,6 @@ namespace System.Reflection
         }
     }
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyKeyNameAttribute : Attribute
     {
         private String _keyName;

@@ -15,7 +15,6 @@ namespace System
     // The MemberAccessException is thrown when trying to access a class
     // member fails.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class MemberAccessException : Exception
     {
         // Creates a new MemberAccessException with its message string set to

@@ -20,7 +20,6 @@ namespace System
     // IConvertible implementation should simply throw an InvalidCastException.
 
     [CLSCompliant(false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IConvertible
     {
         // Returns the type code of this object. An implementation of this method

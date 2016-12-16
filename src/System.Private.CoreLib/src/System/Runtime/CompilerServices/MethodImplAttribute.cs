@@ -9,7 +9,6 @@ namespace System.Runtime.CompilerServices
     // This Enum matchs the miImpl flags defined in corhdr.h. It is used to specify 
     // certain method properties.
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum MethodImplOptions
     {
         NoInlining = 0x0008,
@@ -21,7 +20,6 @@ namespace System.Runtime.CompilerServices
 
     // Custom attribute to specify additional method properties.
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     sealed public class MethodImplAttribute : Attribute
     {
         internal MethodImplOptions _val;

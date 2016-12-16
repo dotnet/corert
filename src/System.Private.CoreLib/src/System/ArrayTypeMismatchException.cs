@@ -18,7 +18,6 @@ namespace System
     // The ArrayMismatchException is thrown when an attempt to store
     // an object of the wrong type within an array occurs.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ArrayTypeMismatchException : Exception
     {
         // Creates a new ArrayMismatchException with its message string set to

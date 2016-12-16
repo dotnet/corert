@@ -11,7 +11,6 @@ namespace System
     // IComparable can be used to sort arrays and collections of objects
     // that implement the interface.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IComparable
     {
         // Interface does not need to be marked with the serializable attribute

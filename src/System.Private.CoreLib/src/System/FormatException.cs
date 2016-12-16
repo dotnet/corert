@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class FormatException : Exception
     {
         public FormatException()

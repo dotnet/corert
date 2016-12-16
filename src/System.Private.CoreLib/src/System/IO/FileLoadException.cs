@@ -6,7 +6,6 @@ using System;
 
 namespace System.IO
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class FileLoadException : IOException
     {
         private String _fileName;   // the name of the file we could not load.

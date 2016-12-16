@@ -12,7 +12,6 @@ using System;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class InvalidCastException : Exception
     {
         public InvalidCastException()

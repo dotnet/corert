@@ -57,7 +57,6 @@ namespace System
     // data buffered by the StreamWriter cannot be written to the Stream.  In this
     // case, it doesn't make much sense to provide a finalizer on the StreamWriter
     // since you cannot solve this problem correctly.  
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IDisposable
     {
         void Dispose();

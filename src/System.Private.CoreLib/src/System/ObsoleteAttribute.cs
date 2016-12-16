@@ -24,7 +24,6 @@ namespace System
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum |
         AttributeTargets.Interface | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Delegate
         , Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ObsoleteAttribute : Attribute
     {
         private String _message;

@@ -7,7 +7,6 @@ using System.Threading;
 
 namespace System.Globalization
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CultureNotFoundException : ArgumentException
     {
         private string _invalidCultureName; // unrecognized culture name

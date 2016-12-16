@@ -146,7 +146,6 @@ namespace System.Globalization
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public int LCID
         {
             get
@@ -178,7 +177,6 @@ namespace System.Globalization
         //  Detect if the object is readonly.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsReadOnly
         {
             get { return (_isReadOnly); }
@@ -206,7 +204,6 @@ namespace System.Globalization
         //  readonly.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static TextInfo ReadOnly(TextInfo textInfo)
         {
             if (textInfo == null) { throw new ArgumentNullException(nameof(textInfo)); }

@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    [ComVisibleAttribute(false)]
 
     public class WaitHandleCannotBeOpenedException : Exception
     {

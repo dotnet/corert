@@ -18,7 +18,6 @@ namespace System.Text
     // class are typically obtained through calls to the GetDecoder method
     // of Encoding objects.
     //
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Decoder
     {
         internal DecoderFallback m_fallback = null;
@@ -30,7 +29,6 @@ namespace System.Text
             // We don't call default reset because default reset probably isn't good if we aren't initialized.
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public DecoderFallback Fallback
         {
             get
@@ -56,7 +54,6 @@ namespace System.Text
 
         // Note: we don't test for threading here because async access to Encoders and Decoders
         // doesn't work anyway.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public DecoderFallbackBuffer FallbackBuffer
         {
             get
@@ -90,7 +87,6 @@ namespace System.Text
         //
         // Virtual implimentation has to call GetChars with flush and a big enough buffer to clear a 0 byte string
         // We avoid GetMaxCharCount() because a) we can't call the base encoder and b) it might be really big.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual void Reset()
         {
             byte[] byteTemp = { };
@@ -108,7 +104,6 @@ namespace System.Text
         //
         public abstract int GetCharCount(byte[] bytes, int index, int count);
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
             return GetCharCount(bytes, index, count);
@@ -116,7 +111,6 @@ namespace System.Text
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
-        [System.Runtime.InteropServices.ComVisible(false)]
         internal virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             // Validate input parameters
@@ -179,7 +173,6 @@ namespace System.Text
         // the char[] to our char* output buffer.  If the result count was wrong, we
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow charCount either.
-        [System.Runtime.InteropServices.ComVisible(false)]
         internal virtual unsafe int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush)
         {
@@ -238,7 +231,6 @@ namespace System.Text
         // Note that if all of the input bytes are not consumed, then we'll do a /2, which means
         // that its likely that we didn't consume as many bytes as we could have.  For some
         // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual void Convert(byte[] bytes, int byteIndex, int byteCount,
                                       char[] chars, int charIndex, int charCount, bool flush,
                                       out int bytesUsed, out int charsUsed, out bool completed)

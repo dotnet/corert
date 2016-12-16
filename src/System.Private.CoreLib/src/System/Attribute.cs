@@ -7,7 +7,6 @@ using System.Diagnostics;
 namespace System
 {
     [AttributeUsageAttribute(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract partial class Attribute
     {
         protected Attribute() { }

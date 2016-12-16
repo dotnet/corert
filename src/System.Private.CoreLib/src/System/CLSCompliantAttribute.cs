@@ -14,7 +14,6 @@
 namespace System
 {
     [AttributeUsage(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class CLSCompliantAttribute : Attribute
     {
         private bool _compliant;

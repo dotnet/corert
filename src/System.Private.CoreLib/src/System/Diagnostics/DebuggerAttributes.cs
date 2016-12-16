@@ -22,7 +22,6 @@ namespace System.Diagnostics
     //
     [System.Runtime.CompilerServices.DependencyReductionRoot]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
-    [ComVisible(true)]
     public sealed class DebuggerStepThroughAttribute : Attribute
     {
         public DebuggerStepThroughAttribute() { }
@@ -37,21 +36,18 @@ namespace System.Diagnostics
     // This attribute is not in Win8P because it is not portable and so we aren't including it, if it turns out to be important we can consider 
     // adding it into the next version of System.Diagnostics.Debug contract assembly
     //[AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
-    //[ComVisible(true)]
     //public sealed class DebuggerStepperBoundaryAttribute : Attribute
     //{
     //    public DebuggerStepperBoundaryAttribute() { }
     //} 
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false)]
-    [ComVisible(true)]
     public sealed class DebuggerHiddenAttribute : Attribute
     {
         public DebuggerHiddenAttribute() { }
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Struct, Inherited = false)]
-    [ComVisible(true)]
     public sealed class DebuggerNonUserCodeAttribute : Attribute
     {
         public DebuggerNonUserCodeAttribute() { }
@@ -66,11 +62,9 @@ namespace System.Diagnostics
     // won't preserve the debugging info, which will make debugging after
     // a JIT attach difficult.
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module, AllowMultiple = false)]
-    [ComVisible(true)]
     public sealed class DebuggableAttribute : Attribute
     {
         [Flags]
-        [ComVisible(true)]
         public enum DebuggingModes
         {
             None = 0x0,
@@ -98,7 +92,6 @@ namespace System.Diagnostics
 
     //  Please also change the code which validates DebuggerBrowsableState variable (in this file)
     //  if you change this enum.
-    [ComVisible(true)]
     public enum DebuggerBrowsableState
     {
         Never = 0,
@@ -112,7 +105,6 @@ namespace System.Diagnostics
     // the one currently supported with the csee.dat 
     // (mcee.dat, autoexp.dat) file. 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
-    [ComVisible(true)]
     public sealed class DebuggerBrowsableAttribute : Attribute
     {
         private DebuggerBrowsableState _state;

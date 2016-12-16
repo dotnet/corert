@@ -9,7 +9,6 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MulticastDelegate : Delegate
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a

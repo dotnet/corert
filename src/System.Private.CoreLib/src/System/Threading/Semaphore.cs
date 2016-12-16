@@ -11,7 +11,6 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    [ComVisibleAttribute(false)]
     public sealed class Semaphore : WaitHandle
     {
         private const int MAX_PATH = (int)Interop.Constants.MaxPath;

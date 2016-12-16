@@ -7,7 +7,6 @@ using System;
 namespace System.Reflection
 {
     [FlagsAttribute()]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum AssemblyNameFlags
     {
         None = 0x0000,

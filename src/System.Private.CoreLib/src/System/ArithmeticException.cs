@@ -18,7 +18,6 @@ namespace System
     // The ArithmeticException is thrown when overflow or underflow
     // occurs.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ArithmeticException : Exception
     {
         // Creates a new ArithmeticException with its message string set to

@@ -33,7 +33,6 @@ namespace System.Text
     // used mostly to distinguish UTF-8 text from other encodings, and doesn't
     // switch the byte orderings.
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class UTF8Encoding : Encoding
     {
         /*
@@ -127,7 +126,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
             return EncodingForwarder.GetByteCount(this, chars, count);
@@ -155,7 +153,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
@@ -170,7 +167,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             return EncodingForwarder.GetCharCount(this, bytes, count);
@@ -183,7 +179,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             return EncodingForwarder.GetChars(this, bytes, byteCount, chars, charCount);
@@ -192,7 +187,6 @@ namespace System.Text
         // Returns a string containing the decoded representation of a range of
         // bytes in a byte array.
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override String GetString(byte[] bytes, int index, int count)
         {
             return EncodingForwarder.GetString(this, bytes, index, count);

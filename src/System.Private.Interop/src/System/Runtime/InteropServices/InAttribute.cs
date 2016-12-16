@@ -5,7 +5,6 @@
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class InAttribute : Attribute
     {
         public InAttribute()

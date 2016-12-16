@@ -13,7 +13,6 @@ using global::System;
 
 namespace System.Reflection
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ManifestResourceInfo
     {
         private Assembly _containingAssembly;

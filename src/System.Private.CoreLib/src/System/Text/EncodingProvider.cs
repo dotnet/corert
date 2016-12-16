@@ -8,7 +8,6 @@ using System.Collections.Generic;
 
 namespace System.Text
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class EncodingProvider
     {
         public EncodingProvider() { }

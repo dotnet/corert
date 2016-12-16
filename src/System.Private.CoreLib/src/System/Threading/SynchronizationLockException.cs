@@ -16,7 +16,6 @@ using System;
 
 namespace System.Threading
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class SynchronizationLockException : Exception
     {
         public SynchronizationLockException()

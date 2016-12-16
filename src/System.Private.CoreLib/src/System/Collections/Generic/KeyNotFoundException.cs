@@ -6,7 +6,6 @@ using System;
 
 namespace System.Collections.Generic
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class KeyNotFoundException : Exception
     {
         public KeyNotFoundException()

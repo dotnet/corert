@@ -818,7 +818,6 @@ namespace System.Threading
         }
     }
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     internal delegate void WaitCallback(Object state);
 
     //

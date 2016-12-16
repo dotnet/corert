@@ -1134,7 +1134,6 @@ namespace System.Runtime.InteropServices
     // This struct intentionally does no self-synchronization. It's up to the caller to
     // to use DependentHandles in a thread-safe way.
     //=========================================================================================
-    [ComVisible(false)]
     struct DependentHandle
     {
         #region Constructors

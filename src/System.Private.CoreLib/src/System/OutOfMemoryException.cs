@@ -13,7 +13,6 @@
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class OutOfMemoryException : Exception
     {
         public OutOfMemoryException()

@@ -5,7 +5,6 @@
 namespace System
 {
     /// <summary>Defines an interface indicating that an object may be cloned.</summary>
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface ICloneable
     {
         object Clone();

@@ -29,7 +29,6 @@ namespace System.Globalization
     // since most of the calendars (or all?) have the same way of calcuating hour/minute/second.
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Calendar : ICloneable
     {
         // Number of 100ns (10E-7 second) ticks per time unit
@@ -67,7 +66,6 @@ namespace System.Globalization
 
         // The minimum supported DateTime range for the calendar.
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual DateTime MinSupportedDateTime
         {
             get
@@ -78,7 +76,6 @@ namespace System.Globalization
 
         // The maximum supported DateTime range for the calendar.
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual DateTime MaxSupportedDateTime
         {
             get
@@ -87,7 +84,6 @@ namespace System.Globalization
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual CalendarAlgorithmType AlgorithmType
         {
             get
@@ -128,7 +124,6 @@ namespace System.Globalization
         //  Detect if the object is readonly.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsReadOnly
         {
             get { return (_isReadOnly); }
@@ -141,7 +136,6 @@ namespace System.Globalization
         //  Is the implementation of ICloneable.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual object Clone()
         {
             object o = MemberwiseClone();
@@ -157,7 +151,6 @@ namespace System.Globalization
         //  readonly.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static Calendar ReadOnly(Calendar calendar)
         {
             if (calendar == null) { throw new ArgumentNullException(nameof(calendar)); }
@@ -698,7 +691,6 @@ namespace System.Globalization
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual int GetLeapMonth(int year)
         {
             return (GetLeapMonth(year, CurrentEra));
@@ -708,7 +700,6 @@ namespace System.Globalization
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual int GetLeapMonth(int year, int era)
         {
             if (!IsLeapYear(year, era))

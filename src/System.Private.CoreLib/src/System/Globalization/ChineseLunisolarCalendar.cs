@@ -42,7 +42,6 @@ namespace System.Globalization
         internal static DateTime minDate = new DateTime(MIN_GREGORIAN_YEAR, MIN_GREGORIAN_MONTH, MIN_GREGORIAN_DAY);
         internal static DateTime maxDate = new DateTime((new DateTime(MAX_GREGORIAN_YEAR, MAX_GREGORIAN_MONTH, MAX_GREGORIAN_DAY, 23, 59, 59, 999)).Ticks + 9999);
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime
         {
             get
@@ -52,7 +51,6 @@ namespace System.Globalization
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -362,7 +360,6 @@ namespace System.Globalization
         {
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetEra(DateTime time)
         {
             CheckTicksRange(time.Ticks);
@@ -387,7 +384,6 @@ namespace System.Globalization
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int[] Eras
         {
             get

@@ -19,7 +19,6 @@ using System.Runtime.Serialization;
 namespace System.Globalization
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StringInfo
     {
         private string _str;
@@ -36,7 +35,6 @@ namespace System.Globalization
             this.String = value;
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override bool Equals(Object value)
         {
             StringInfo that = value as StringInfo;
@@ -47,7 +45,6 @@ namespace System.Globalization
             return (false);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetHashCode()
         {
             return _str.GetHashCode();

@@ -6,7 +6,6 @@ using System;
 
 namespace System.IO
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class IOException : Exception
     {
         public IOException()
