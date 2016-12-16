@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Internal.Runtime;
 
 namespace System.Runtime
 {
@@ -43,6 +44,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
         internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
+
+        [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr RhGetModuleSection(IntPtr module, ReadyToRunSectionType section, out int length);
 
         //
         // calls to runtime for allocation

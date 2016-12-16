@@ -8,6 +8,9 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime;
+using Internal.Runtime.CompilerHelpers;
+
 namespace System.Runtime.CompilerServices
 {
     // Marked [EagerStaticClassConstruction] because Cctor.GetCctor
@@ -48,6 +51,13 @@ namespace System.Runtime.CompilerServices
         {
             EnsureClassConstructorRun(context);
             return nonGcStaticBase;
+        }
+
+        private unsafe static object CheckStaticClassConstructionReturnThreadStaticBase(TypeManagerSlot* pModuleData, Int32 typeTlsIndex, StaticClassConstructionContext* context)
+        {
+            object threadStaticBase = ThreadStatics.GetThreadStaticBaseForType(pModuleData, typeTlsIndex);
+            EnsureClassConstructorRun(context);
+            return threadStaticBase;
         }
 #endif
 
