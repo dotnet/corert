@@ -51,7 +51,6 @@ namespace System
     // Decimal throws an OverflowException if the value is not within
     // the range of the Decimal type.
     [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial struct Decimal : IFormattable, IComparable, IComparable<Decimal>, IEquatable<Decimal>, IConvertible
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a

@@ -15,7 +15,6 @@
 namespace System.Globalization
 {
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum NumberStyles
     {
         // Bit flag indicating that leading whitespace is allowed. Character values

@@ -17,7 +17,6 @@ namespace System
     // does not promote AVs to NullReferenceExceptions, so it won't be catchable unless someone explicitly 
     // has a 'throw new NullReferenceException()'
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class NullReferenceException : Exception
     {
         public NullReferenceException()

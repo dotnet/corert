@@ -5,7 +5,6 @@
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class FieldOffsetAttribute : Attribute
     {
         private int _val;

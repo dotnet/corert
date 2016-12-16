@@ -15,7 +15,6 @@ using System.Threading;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class OperationCanceledException : Exception
     {
         private CancellationToken _cancellationToken;

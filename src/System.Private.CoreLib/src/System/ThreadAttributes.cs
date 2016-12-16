@@ -11,7 +11,6 @@
 namespace System
 {
     [AttributeUsage(AttributeTargets.Method)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class STAThreadAttribute : Attribute
     {
         public STAThreadAttribute()
@@ -20,7 +19,6 @@ namespace System
     }
 
     [AttributeUsage(AttributeTargets.Method)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class MTAThreadAttribute : Attribute
     {
         public MTAThreadAttribute()

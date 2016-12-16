@@ -16,7 +16,6 @@ using System;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class RankException : Exception
     {
         public RankException()

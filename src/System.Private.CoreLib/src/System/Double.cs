@@ -20,7 +20,6 @@ using System.Diagnostics.Contracts;
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct Double : IComparable, IFormattable, IComparable<Double>, IEquatable<Double>, IConvertible
     {
         internal double m_value;

@@ -12,6 +12,5 @@
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void AsyncCallback(IAsyncResult ar);
 }

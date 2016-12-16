@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>
     {
         private static readonly StringComparer s_ordinal = new OrdinalComparer(false);

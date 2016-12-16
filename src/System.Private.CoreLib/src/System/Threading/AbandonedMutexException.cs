@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    [ComVisibleAttribute(false)]
     public class AbandonedMutexException : Exception
     {
         private int _mutexIndex = -1;

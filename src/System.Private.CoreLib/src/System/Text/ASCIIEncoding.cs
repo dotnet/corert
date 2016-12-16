@@ -18,7 +18,6 @@ namespace System.Text
     //       use fallbacks, and we cannot guarantee that fallbacks are normalized.
     //
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ASCIIEncoding : Encoding
     {
         // Used by Encoding.ASCII for lazy initialization
@@ -68,7 +67,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
             return EncodingForwarder.GetByteCount(this, chars, count);
@@ -96,7 +94,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
@@ -111,7 +108,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             return EncodingForwarder.GetCharCount(this, bytes, count);
@@ -124,7 +120,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             return EncodingForwarder.GetChars(this, bytes, byteCount, chars, charCount);
@@ -736,7 +731,6 @@ namespace System.Text
 
         // True if and only if the encoding only uses single byte code points.  (Ie, ASCII, 1252, etc)
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override bool IsSingleByte
         {
             get
@@ -745,14 +739,12 @@ namespace System.Text
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override Decoder GetDecoder()
         {
             return new DecoderNLS(this);
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override Encoder GetEncoder()
         {
             return new EncoderNLS(this);

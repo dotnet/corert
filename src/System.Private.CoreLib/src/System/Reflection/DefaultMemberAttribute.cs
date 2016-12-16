@@ -12,7 +12,6 @@
 namespace System.Reflection
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DefaultMemberAttribute : Attribute
     {
         // The name of the member

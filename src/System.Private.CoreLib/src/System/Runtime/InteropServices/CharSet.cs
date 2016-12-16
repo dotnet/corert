@@ -14,7 +14,6 @@ namespace System.Runtime.InteropServices
     // Generally you probably want to use Auto, which does the
     // right thing 99% of the time.
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum CharSet
     {
         None = 1,        // User didn't specify how to marshal strings.

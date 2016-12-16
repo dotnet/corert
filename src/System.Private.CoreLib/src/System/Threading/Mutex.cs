@@ -24,7 +24,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
-    [ComVisible(true)]
     public sealed class Mutex : WaitHandle
     {
         private static bool s_dummyBool;

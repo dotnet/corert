@@ -14,7 +14,6 @@ namespace System
     // (both unspecified and specified), and an unspecified component is "less than" any
     // specified component.
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Version : IComparable, IComparable<Version>, IEquatable<Version>, ICloneable
     {
         // AssemblyName depends on the order staying the same

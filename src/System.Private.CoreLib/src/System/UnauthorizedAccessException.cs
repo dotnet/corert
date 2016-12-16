@@ -17,7 +17,6 @@ namespace System
 {
     // The UnauthorizedAccessException is thrown when access errors 
     // occur from IO or other OS methods.  
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class UnauthorizedAccessException : Exception
     {
         public UnauthorizedAccessException()

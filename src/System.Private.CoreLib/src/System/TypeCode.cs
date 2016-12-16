@@ -23,7 +23,6 @@
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum TypeCode
     {
         Empty = 0,          // Null reference

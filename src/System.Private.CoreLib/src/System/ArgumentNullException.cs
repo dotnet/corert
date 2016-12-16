@@ -18,7 +18,6 @@ namespace System
     // The ArgumentException is thrown when an argument 
     // is null when it shouldn't be.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ArgumentNullException : ArgumentException
     {
         // Creates a new ArgumentNullException with its message 
