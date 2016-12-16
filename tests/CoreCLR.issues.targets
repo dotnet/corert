@@ -757,6 +757,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\nonvirtualcall\generics2_d\generics2_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\nonvirtualcall\generics2_r\generics2_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\576621\VSW576621\VSW576621.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b374944\b374944\b374944.*" />
 
     <!-- DynamicInvoke stub for a method with 8192 parameters -->
     <!-- https://github.com/dotnet/corert/issues/2349 -->
@@ -882,6 +883,10 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\instance03\instance03.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\static01\static01.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\static02\static02.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\SciMark\SciMark\SciMark.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\Crypto\Crypto\Crypto.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b13647\b13647\b13647.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\M00\b140298\b140298\b140298.*" />
 
     <!-- System.Diagnostics.Process -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect_Default_1\Collect_Default_1.*" />
@@ -896,7 +901,15 @@
 
     <!-- System.Linq.Expressions -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev11_95728\dev11_95728\dev11_95728.*" />
+    
+    <!-- System.Xml.XmlDocument -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\RunBenchmarks\RunBenchmarks\RunBenchmarks.*" />
 
+    <!-- Did not expect to collide with a 1st-pass ExInfo during a EH stackwalk -->
+    <!-- https://github.com/dotnet/corert/issues/2359 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b68872\b68872\b68872.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_4044\GitHub_4044\GitHub_4044.*" />
+    
     <!-- Arrays with non-zero lower bounds -->
     <!-- https://github.com/dotnet/corert/issues/2245 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\huge\_il_dbghuge_b\_il_dbghuge_b.*" />
@@ -968,6 +981,23 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case7\case7.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case8\case8.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test21\test21.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test9\test9.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test16\test16.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\asurt150271\test3\test3.*" />
+
+    <!-- Infinitely recursive variant interface casting -->
+    <!-- https://github.com/dotnet/corert/issues/2365 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\dev10_531793\dev10_531793\dev10_531793.*" />
+
+    <!-- Disallow allocation of delegate types with bad variance -->
+    <!-- https://github.com/dotnet/corert/issues/2366 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Delegates\Delegates002\Delegates002.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Interfaces\Interfaces001\Interfaces001.*" />
+
+    <!-- Ambiguous interface method resolution -->
+    <!-- https://github.com/dotnet/corert/issues/2367 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\InterfaceFolding\Ambiguous\Ambiguous.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\SameMethodImpl\CollapsedInterfaces\HelloWorld\HelloWorld.*" />
 
     <!-- Ambiguous virtual overloads -->
     <!-- https://github.com/dotnet/corert/issues/190 -->
@@ -1161,6 +1191,22 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param07\param07.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param08\param08.*" />
     
+    <!-- Incompatible behavior GC.Collect  -->
+    <!-- https://github.com/dotnet/corert/issues/2354 -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize\Finalize.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize2\Finalize2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizearray\finalizearray.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizenested\finalizenested.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\finalnstruct\finalnstruct.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakGen\leakgen\leakgen.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime1\lifetime1.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.*" />
+
+    <!-- InteropExtensions.MightBeBlittable is only an approximation -->
+    <!-- https://github.com/dotnet/corert/issues/2355 -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedObject\PinnedObject.*" />
+
     <!-- Pay for play reflection -->
     <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\system\delegate\miscellaneous\ClosedStatic\ClosedStatic.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\14610\TestObjectGetTypeVirtual\TestObjectGetTypeVirtual.*" />
@@ -1191,6 +1237,8 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b219940\b219940\b219940.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_200492\DevDiv_200492\DevDiv_200492.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeForwarding\UnitTest\UnitTest\UnitTest.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b423721\b423721\b423721.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_403582\dev10_403582\dev10_403582.*" />
 
     <!-- Incompatible exception name generated for generic exceptions -->
     <!-- https://github.com/dotnet/corert/issues/2290 -->
@@ -1484,6 +1532,43 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b28776\b28776\b28776.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30126\b30126\b30126.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30128\b30128\b30128.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\539509\test1\test1.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack\LdfldaHack.*" />
+
+    <!-- Variant interface method resolution -->
+    <!-- https://github.com/dotnet/corert/issues/2358 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\dev10_bug719093\variancesmall\variancesmall.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance1\Variance1.*" />
+
+    <!-- Needs temaplate type loader (MakeArrayType) -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\array\array.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b309539\b309539\b309539.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.*" />
+
+    <!-- RhUnbox2 doesn't do a type check -->
+    <!-- https://github.com/dotnet/corert/issues/2357 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Conversions\Reference\gentogen03\gentogen03.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\IsInst004\IsInst004.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox004\Unbox004.*" />
+
+    <!-- Overlapping fields not reported to JIT -->
+    <!-- https://github.com/dotnet/corert/issues/2362 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\devdiv_911875\DevDiv_911875_do\DevDiv_911875_do.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\devdiv_911875\DevDiv_911875_ro\DevDiv_911875_ro.*" />
+
+    <!-- InvalidCastException doesn't include type names -->
+    <!-- https://github.com/dotnet/corert/issues/2369 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\347422\b347422\b347422.*" />
+    
+    <!-- Support explicit default constructor for structs -->
+    <!-- https://github.com/dotnet/corert/issues/2370 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\vsw188290\vsw188290\vsw188290.*" />
+
+    <!-- Module constructors -->
+    <!-- https://github.com/dotnet/corert/issues/657 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\529206\vsw529206ModuleCctor\vsw529206ModuleCctor.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\vsw529206\vsw529206ModuleCctor\vsw529206ModuleCctor.*" />
 
     <!-- NetStandard2: System.Delegate System.Delegate.CreateDelegate -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_720779\dev10_720779\dev10_720779.*" />
