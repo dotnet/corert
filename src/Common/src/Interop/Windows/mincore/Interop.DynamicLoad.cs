@@ -20,7 +20,7 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll")]
         internal static extern bool FreeLibrary(IntPtr hModule);
 
-        [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", EntryPoint = "LoadStringW")]
+        [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", EntryPoint = "LoadStringW", CharSet = CharSet.Unicode)]
         internal static extern int LoadString(SafeLibraryHandle handle, int id, StringBuilder buffer, int bufferLength);
 
         internal const int LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
