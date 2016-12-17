@@ -108,35 +108,30 @@ namespace System.Runtime
 
         private static unsafe bool UnboxAnyTypeCompare(EEType* pEEType, EEType* ptrUnboxToEEType)
         {
-            bool result = false;
+            if (TypeCast.AreTypesEquivalentInternal(pEEType, ptrUnboxToEEType))
+                return true;
 
             if (pEEType->CorElementType == ptrUnboxToEEType->CorElementType)
             {
-                result = TypeCast.AreTypesEquivalentInternal(pEEType, ptrUnboxToEEType);
-
-                if (!result)
+                // Enum's and primitive types should pass the UnboxAny exception cases
+                // if they have an exactly matching cor element type.
+                switch (ptrUnboxToEEType->CorElementType)
                 {
-                    // Enum's and primitive types should pass the UnboxAny exception cases
-                    // if they have an exactly matching cor element type.
-                    switch (ptrUnboxToEEType->CorElementType)
-                    {
-                        case CorElementType.ELEMENT_TYPE_I1:
-                        case CorElementType.ELEMENT_TYPE_U1:
-                        case CorElementType.ELEMENT_TYPE_I2:
-                        case CorElementType.ELEMENT_TYPE_U2:
-                        case CorElementType.ELEMENT_TYPE_I4:
-                        case CorElementType.ELEMENT_TYPE_U4:
-                        case CorElementType.ELEMENT_TYPE_I8:
-                        case CorElementType.ELEMENT_TYPE_U8:
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-                            result = true;
-                            break;
-                    }
+                    case CorElementType.ELEMENT_TYPE_I1:
+                    case CorElementType.ELEMENT_TYPE_U1:
+                    case CorElementType.ELEMENT_TYPE_I2:
+                    case CorElementType.ELEMENT_TYPE_U2:
+                    case CorElementType.ELEMENT_TYPE_I4:
+                    case CorElementType.ELEMENT_TYPE_U4:
+                    case CorElementType.ELEMENT_TYPE_I8:
+                    case CorElementType.ELEMENT_TYPE_U8:
+                    case CorElementType.ELEMENT_TYPE_I:
+                    case CorElementType.ELEMENT_TYPE_U:
+                        return true;
                 }
             }
 
-            return result;
+            return false;
         }
 
         [RuntimeExport("RhUnboxAny")]
@@ -186,13 +181,10 @@ namespace System.Runtime
         public static unsafe ref byte RhUnbox2(EETypePtr pUnboxToEEType, Object obj)
         {
             EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
-            if (obj.EEType != ptrUnboxToEEType)
+            if ((obj == null) || !UnboxAnyTypeCompare(obj.EEType, ptrUnboxToEEType))
             {
-                // We allow enums and their primtive type to be interchangable
-                if (obj.EEType->CorElementType != ptrUnboxToEEType->CorElementType)
-                {
-                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-                }
+                ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
+                throw ptrUnboxToEEType->GetClasslibException(exID);
             }
             return ref obj.GetRawData();
         }
@@ -201,7 +193,7 @@ namespace System.Runtime
         public static unsafe void RhUnboxNullable(ref byte data, EETypePtr pUnboxToEEType, Object obj)
         {
             EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
-            if ((obj != null) && (obj.EEType != ptrUnboxToEEType->NullableType))
+            if ((obj != null) && !TypeCast.AreTypesEquivalentInternal(obj.EEType, ptrUnboxToEEType->NullableType))
             {
                 throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
