@@ -99,7 +99,7 @@ exit /b 1
 
 :EvaluatePS
 :: Eval the output from probe-win1.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\Native\probe-win.ps1"""') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\Native\probe-win.ps1"""') do %%a
 
 
 set __VSProductVersion=

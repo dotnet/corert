@@ -22,7 +22,7 @@ if /i "%3" == "x64" (set __VSString=%__VSString% Win64)
 if defined CMakePath goto DoGen
 
 :: Eval the output from probe-win1.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& .\probe-win.ps1"') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& .\probe-win.ps1"') do %%a
 
 :DoGen
 "%CMakePath%" "-DCLR_CMAKE_TARGET_ARCH=%3" -G "Visual Studio %__VSString%" %1
