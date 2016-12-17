@@ -572,20 +572,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Check the type doesn't have bogus MethodImpls or overrides and we can get the finalizer.
                 defType.GetFinalizer();
-
-                const int FieldOffsetMax = (1 << 27) - 1; // FIELD_OFFSET_MAX in CoreCLR
-                const int FieldOffsetLastRealOffset = FieldOffsetMax - 6; // FIELD_OFFSET_LAST_REAL_OFFSET in CoreCLR
-                // No need to look at individual fields if the class is smaller.
-                if (defType.InstanceByteCount > FieldOffsetLastRealOffset)
-                {
-                    // CoreCLR requires the top 5 bits of the field offset to be zero. This means we can have a class
-                    // larger than FieldOffsetMax, but no field can have an offset bigger than that.
-                    foreach (var field in defType.GetFields())
-                    {
-                        if (!field.IsStatic && field.Offset > FieldOffsetLastRealOffset)
-                            throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                    }
-                }
             }
 
             // Validate parameterized types
