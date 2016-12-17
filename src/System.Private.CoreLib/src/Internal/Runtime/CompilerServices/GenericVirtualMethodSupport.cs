@@ -28,7 +28,7 @@ namespace Internal.Runtime.CompilerServices
             {
                 RuntimeTypeHandle handle = new RuntimeTypeHandle(eetype);
                 string methodName = methodNameAndSignature.Name;
-                RuntimeMethodSignature methodSignature = methodNameAndSignature.Signature;
+                RuntimeSignature methodSignature = methodNameAndSignature.Signature;
                 if (RuntimeAugments.TypeLoaderCallbacks.TryGetGenericVirtualTargetForTypeAndSlot(handle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out functionPointer, out genericDictionary, out slotChanged))
                 {
                     methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);

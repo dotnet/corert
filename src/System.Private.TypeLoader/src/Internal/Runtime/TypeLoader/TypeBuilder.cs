@@ -725,7 +725,7 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 NativeParser sigParser = methodSignaturesParser.GetParserFromRelativeOffset();
-                state.VTableMethodSignatures[i].MethodSignature = sigParser.Reader.OffsetToAddress(sigParser.Offset);
+                state.VTableMethodSignatures[i].MethodSignature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._moduleHandle, (int)sigParser.Offset);
             }
         }
 
@@ -1034,7 +1034,7 @@ namespace Internal.Runtime.TypeLoader
                 IntPtr thunkPtr = CallConverterThunk.MakeThunk(
                     ThunkKind.StandardToGeneric,
                     originalFunctionPointerFromVTable,
-                    RuntimeMethodSignature.CreateFromNativeLayoutSignature(state.VTableMethodSignatures[i].MethodSignature),
+                    state.VTableMethodSignatures[i].MethodSignature,
                     IntPtr.Zero,                                        // No instantiating arg for non-generic instance methods
                     typeArgs,
                     Empty<RuntimeTypeHandle>.Array);                    // No GVMs in vtables, no no method args
@@ -1997,9 +1997,9 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal static bool TryGetDelegateInvokeMethodSignature(RuntimeTypeHandle delegateTypeHandle, out RuntimeMethodSignature signature)
+        internal static bool TryGetDelegateInvokeMethodSignature(RuntimeTypeHandle delegateTypeHandle, out RuntimeSignature signature)
         {
-            signature = default(RuntimeMethodSignature);
+            signature = default(RuntimeSignature);
             bool success = false;
 
             TypeSystemContext context = TypeSystemContextFactory.Create();
@@ -2008,13 +2008,14 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(delegateType.HasInstantiation);
 
             NativeLayoutInfoLoadContext loadContext;
-            var parser = delegateType.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out loadContext);
+            NativeLayoutInfo universalLayoutInfo;
+            NativeParser parser = delegateType.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out loadContext, out universalLayoutInfo);
             if (!parser.IsNull)
             {
                 NativeParser sigParser = parser.GetParserForBagElementKind(BagElementKind.DelegateInvokeSignature);
                 if (!sigParser.IsNull)
                 {
-                    signature = RuntimeMethodSignature.CreateFromNativeLayoutSignature(sigParser.Reader.OffsetToAddress(sigParser.Offset));
+                    signature = RuntimeSignature.CreateFromNativeLayoutSignature(universalLayoutInfo.Module, (int)sigParser.Offset);
                     success = true;
                 }
             }

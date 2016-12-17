@@ -414,7 +414,7 @@ namespace Internal.TypeSystem.NativeFormat
                 int handleAsToken = _handle.ToInt();
 
                 IntPtr moduleHandle = Internal.Runtime.TypeLoader.ModuleList.Instance.GetModuleForMetadataReader(MetadataReader);
-                return new MethodNameAndSignature(Name, RuntimeMethodSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
+                return new MethodNameAndSignature(Name, RuntimeSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
             }
         }
     }

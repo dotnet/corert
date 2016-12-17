@@ -422,6 +422,11 @@ namespace Internal.IL.Stubs
                         return EmitByRefMarshalling(byRefType);
                     }
                 }
+                else if (IsSafeHandle(byRefType.ParameterType))
+                {
+                    // HACK... This is incorrect
+                    return EmitSafeHandleMarshalling(byRefType.ParameterType);
+                }
             }
 
             if (type.IsString)

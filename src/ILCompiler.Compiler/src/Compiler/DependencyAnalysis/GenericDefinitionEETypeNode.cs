@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            return null;
+            return ComputeGenericVirtualMethodEntries(factory);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

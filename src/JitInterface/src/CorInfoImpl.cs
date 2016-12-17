@@ -728,7 +728,7 @@ namespace Internal.JitInterface
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
         {
             // No restrictions on inlining
-            return CorInfoInline.INLINE_PASS;
+            return CorInfoInline.INLINE_FAIL;
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
@@ -2475,7 +2475,10 @@ namespace Internal.JitInterface
         private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
         { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
         private CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_** ppIndirection)
-        { throw new NotImplementedException("getJustMyCodeHandle"); }
+        {
+            // TODO
+            return null;
+        }
         private void GetProfilingHandle([MarshalAs(UnmanagedType.Bool)] ref bool pbHookFunction, ref void* pProfilerHandle, [MarshalAs(UnmanagedType.Bool)] ref bool pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
 
@@ -2722,10 +2725,12 @@ namespace Internal.JitInterface
             else if (method.HasInstantiation)
             {
                 // GVM Call Support
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
+
+                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                    _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
+
                 pResult.nullInstanceCheck = false;
             }
             else if((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
@@ -3113,6 +3118,18 @@ namespace Internal.JitInterface
                     // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject((IntPtr)target);
 
+                    MethodCodeNode targetMethod = targetObject as MethodCodeNode;
+                    if (targetMethod != null)
+                    {
+                        if (targetMethod.Method is IL.Stubs.PInvokeTargetNativeMethod)
+                        {
+                            string externName = targetMethod.Method.GetPInvokeMethodMetadata().Name ?? targetMethod.Method.Name;
+                            Debug.Assert(externName != null);
+                            targetObject = _compilation.NodeFactory.ExternSymbol(externName);
+
+                        }
+                    }
+
                     if (targetObject is FieldDesc)
                     {
                         // We only support FieldDesc for InitializeArray intrinsic right now.
@@ -3151,6 +3168,7 @@ namespace Internal.JitInterface
 
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
+            flags.Set(CorJitFlag.CORJIT_FLAG_DEBUG_CODE);
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);

@@ -249,7 +249,7 @@ namespace Internal.NativeFormat
 
         public IntPtr OffsetToAddress(uint offset)
         {
-            Debug.Assert(offset < _size);
+            Debug.Assert(offset <= _size);
 
             return new IntPtr(_base + offset);
         }
@@ -447,7 +447,7 @@ namespace Internal.NativeFormat
         }
     }
 
-    internal struct NativeHashtable
+    struct NativeHashtable
     {
         private NativeReader _reader;
         private uint _baseOffset;
@@ -480,9 +480,9 @@ namespace Internal.NativeFormat
         //
         public struct Enumerator
         {
-            private NativeParser _parser;
-            private uint _endOffset;
-            private byte _lowHashcode;
+            NativeParser _parser;
+            uint _endOffset;
+            byte _lowHashcode;
 
             internal Enumerator(NativeParser parser, uint endOffset, byte lowHashcode)
             {
@@ -518,10 +518,10 @@ namespace Internal.NativeFormat
 
         public struct AllEntriesEnumerator
         {
-            private NativeHashtable _table;
-            private NativeParser _parser;
-            private uint _currentBucket;
-            private uint _endOffset;
+            NativeHashtable _table;
+            NativeParser _parser;
+            uint _currentBucket;
+            uint _endOffset;
 
             internal AllEntriesEnumerator(NativeHashtable table)
             {

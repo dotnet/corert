@@ -220,7 +220,11 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.ResolveGenericVirtualMethod:
-                    encoder.EmitINT3();
+                    {
+                        encoder.EmitLEAQ(Register.RDX, factory.RuntimeMethodHandle((MethodDesc)Target));
+                        encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GVMLookupForSlot));
+                        encoder.EmitRET();
+                    }
                     break;
 
                 default:

@@ -51,7 +51,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Method signature and generic context info. Signatures are parsed lazily when they are really needed
         //
-        private RuntimeMethodSignature _methodSignature;
+        private RuntimeSignature _methodSignature;
         private volatile bool _signatureParsed;
         private RuntimeTypeHandle[] _typeArgs;
         private RuntimeTypeHandle[] _methodArgs;
@@ -179,11 +179,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
 
-                    if (_methodSignature.IsNativeLayoutSignature)
-                        nativeLayoutContext._moduleHandle = RuntimeAugments.GetModuleFromPointer(_methodSignature.NativeLayoutSignature);
-                    else
-                        nativeLayoutContext._moduleHandle = _methodSignature.ModuleHandle;
-
+                    nativeLayoutContext._moduleHandle = _methodSignature.ModuleHandle;
                     nativeLayoutContext._typeSystemContext = context;
                     nativeLayoutContext._typeArgumentHandles = Instantiation.Empty;
                     nativeLayoutContext._methodArgumentHandles = Instantiation.Empty;
@@ -252,7 +248,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public static int RegisterCallConversionInfo(ThunkKind thunkKind, IntPtr targetPointer, RuntimeMethodSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
+        public static int RegisterCallConversionInfo(ThunkKind thunkKind, IntPtr targetPointer, RuntimeSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
         {
             CallConversionInfo newConversionInfo = new CallConversionInfo();
             newConversionInfo._registrationKind = CallConversionInfoRegistrationKind.UsesMethodSignatureAndGenericArgs;
