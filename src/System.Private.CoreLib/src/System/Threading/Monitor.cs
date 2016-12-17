@@ -30,7 +30,7 @@ namespace System.Threading
         private static ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
         private static ConditionalWeakTable<object, Condition>.CreateValueCallback s_createCondition = (o) => new Condition(GetLock(o));
 
-        private static Lock GetLock(Object obj)
+        internal static Lock GetLock(Object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -237,7 +237,7 @@ namespace System.Threading
 
         #region Slow path for Entry/TryEnter methods.
 
-        private static bool TryAcquireContended(Lock lck, Object obj, int millisecondsTimeout)
+        internal static bool TryAcquireContended(Lock lck, Object obj, int millisecondsTimeout)
         {
 #if FEATURE_GET_BLOCKING_OBJECTS
             int removeCookie = t_blockingObjects.Add(obj, ReasonForBlocking.OnCrst);
