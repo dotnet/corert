@@ -13,6 +13,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
+using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -230,6 +231,21 @@ namespace ILCompiler.DependencyAnalysis
                 return new InterfaceDispatchCellNode(method);
             });
 
+            _runtimeMethodHandles = new NodeCache<MethodDesc, RuntimeMethodHandleNode>((MethodDesc method) =>
+            {
+                return new RuntimeMethodHandleNode(this, method);
+            });
+
+            _nativeLayoutInfoSignatureNodes = new NodeCache<Vertex, NativeLayoutInfoSignatureNode>((Vertex signature) =>
+            {
+                return new NativeLayoutInfoSignatureNode(signature);
+            });
+            
+            _nativeLayoutInfoTokenNodes = new NodeCache<Vertex, NativeLayoutInfoTokenNode>((Vertex nativeVertex) =>
+            {
+                return new NativeLayoutInfoTokenNode(nativeVertex);
+            });
+
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
             {
                 return new InterfaceDispatchMapNode(type);
@@ -366,6 +382,27 @@ namespace ILCompiler.DependencyAnalysis
         internal InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method)
         {
             return _interfaceDispatchCells.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;
+
+        internal RuntimeMethodHandleNode RuntimeMethodHandle(MethodDesc method)
+        {
+            return _runtimeMethodHandles.GetOrAdd(method);
+        }
+
+        private NodeCache<Vertex, NativeLayoutInfoSignatureNode> _nativeLayoutInfoSignatureNodes;
+        
+        internal NativeLayoutInfoSignatureNode NativeLayoutInfoSignature(Vertex signature)
+        {
+            return _nativeLayoutInfoSignatureNodes.GetOrAdd(signature);
+        }
+        
+        private NodeCache<Vertex, NativeLayoutInfoTokenNode> _nativeLayoutInfoTokenNodes;
+        
+        internal NativeLayoutInfoTokenNode NativeLayoutInfoToken(Vertex nativeVertex)
+        {
+            return _nativeLayoutInfoTokenNodes.GetOrAdd(nativeVertex);
         }
 
         private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<Utf8String, byte[], int>>
@@ -506,7 +543,8 @@ namespace ILCompiler.DependencyAnalysis
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnThreadStaticBase" },
-            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" }
+            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" },
+            new string[] { "System.Runtime", "TypeLoaderExports", "GVMLookupForSlot" }
         };
 
         private ISymbolNode[] _helperEntrypointSymbols;
@@ -720,5 +758,7 @@ namespace ILCompiler.DependencyAnalysis
         EnsureClassConstructorRunAndReturnNonGCStaticBase,
         EnsureClassConstructorRunAndReturnThreadStaticBase,
         GetThreadStaticBaseForType,
+        GVMLookupForSlot,
+
     }
 }
