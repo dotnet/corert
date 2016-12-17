@@ -85,7 +85,7 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
@@ -94,7 +94,7 @@ See the LICENSE file in the project root for more information.
       <TestHost Condition="'$(OS)' != 'Windows_NT'">corerun</TestHost>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(IlcPath)\$(TestHost)&quot; &quot;$(IlcPath)\ilc.exe&quot; @&quot;$(NativeIntermediateOutputPath)ilc.rsp&quot;">
+    <Exec Command="&quot;$(IlcPath)\$(TestHost)&quot; &quot;$(IlcPath)\ilc.exe&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;">
     </Exec>
 
   </Target>
