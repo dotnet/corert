@@ -159,6 +159,19 @@ namespace ILCompiler
                     mangledName = "RhTypeCast_IsInstanceOf2";
                     break;
 
+                case ReadyToRunHelper.MonitorEnter:
+                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorEnter");
+                    break;
+                case ReadyToRunHelper.MonitorExit:
+                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExit");
+                    break;
+                case ReadyToRunHelper.MonitorEnterStatic:
+                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorEnterStatic");
+                    break;
+                case ReadyToRunHelper.MonitorExitStatic:
+                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExitStatic");
+                    break;
+
                 default:
                     throw new NotImplementedException(id.ToString());
             }

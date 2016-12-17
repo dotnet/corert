@@ -81,6 +81,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />

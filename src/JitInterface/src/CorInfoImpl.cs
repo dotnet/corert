@@ -641,9 +641,8 @@ namespace Internal.JitInterface
             if (method.Signature.IsStatic)
                 result |= CorInfoFlag.CORINFO_FLG_STATIC;
 
-            // TODO: if (pMD->IsSynchronized())
-            //    result |= CORINFO_FLG_SYNCH;
-
+            if (method.IsSynchronized)
+                result |= CorInfoFlag.CORINFO_FLG_SYNCH;
             if (method.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
@@ -2261,6 +2260,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY: id = ReadyToRunHelper.CheckCastAny; break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY: id = ReadyToRunHelper.CheckInstanceAny; break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER: id = ReadyToRunHelper.MonitorEnter; break;
+                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT: id = ReadyToRunHelper.MonitorExit; break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER_STATIC: id = ReadyToRunHelper.MonitorEnterStatic; break;
+                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC: id = ReadyToRunHelper.MonitorExitStatic; break;
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -2293,8 +2298,13 @@ namespace Internal.JitInterface
 
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
+
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        { throw new NotImplementedException("getMethodSync"); }
+        {
+            MethodDesc method = HandleToObject(ftn);
+            TypeDesc type = method.OwningType;
+            return (void*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(type));
+        }
 
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
         {

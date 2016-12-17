@@ -106,5 +106,11 @@ namespace ILCompiler
         // P/Invoke support
         ReversePInvokeEnter         = 0xF2,
         ReversePInvokeExit          = 0xF3,
+
+        // Synchronized methods
+        MonitorEnter                = 0xF8,
+        MonitorExit                 = 0xF9,
+        MonitorEnterStatic          = 0xFA,
+        MonitorExitStatic           = 0xFB,
     }
 }
