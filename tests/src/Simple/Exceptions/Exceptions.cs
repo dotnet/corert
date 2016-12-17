@@ -11,6 +11,7 @@ public class BringUpTest
     const int Fail = -1;
 
     volatile int myField;
+    volatile Object myObjectField;
 
     public BringUpTest()
     {
@@ -56,6 +57,16 @@ public class BringUpTest
                 Console.WriteLine("Unexpected stack trace: " + stackTrace);
                 return Fail;
             }
+            counter++;
+        }
+
+        try
+        {
+             g.myObjectField = new Object();
+        }
+        catch (NullReferenceException)
+        {
+            Console.WriteLine("Null reference exception in write barrier caught!");
             counter++;
         }
 
@@ -110,7 +121,7 @@ public class BringUpTest
             counter++;
         }
 
-        if (counter != 7)
+        if (counter != 8)
         {
             Console.WriteLine("Unexpected counter value");
             return Fail;
