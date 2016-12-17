@@ -63,6 +63,8 @@ namespace Internal.Runtime
                     return SR.ClassLoad_ValueClassTooLarge;
                 case ExceptionStringID.ClassLoadExplicitLayout:
                     return SR.ClassLoad_ExplicitLayout;
+                case ExceptionStringID.ClassLoadRankTooLarge:
+                    return SR.ClassLoad_RankTooLarge;
                 case ExceptionStringID.InvalidProgramSpecific:
                     return SR.InvalidProgram_Specific;
                 case ExceptionStringID.InvalidProgramVararg:

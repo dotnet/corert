@@ -1819,6 +1819,9 @@
   <data name="ClassLoad_General" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}'.</value>
   </data>
+  <data name="ClassLoad_RankTooLarge" xml:space="preserve">
+    <value>'{0}' from assembly '{1}' has too many dimensions.</value>
+  </data>
   <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>
   </data>
