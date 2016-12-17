@@ -575,7 +575,8 @@ namespace ILCompiler.DependencyAnalysis
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnThreadStaticBase" },
-            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" }
+            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" },
+            new string[] { "System.Runtime", "TypeLoaderExports", "GVMLookupForSlot" }
         };
 
         private ISymbolNode[] _helperEntrypointSymbols;
@@ -778,5 +779,7 @@ namespace ILCompiler.DependencyAnalysis
         EnsureClassConstructorRunAndReturnNonGCStaticBase,
         EnsureClassConstructorRunAndReturnThreadStaticBase,
         GetThreadStaticBaseForType,
+        GVMLookupForSlot,
+
     }
 }

@@ -159,7 +159,10 @@ namespace ILCompiler.DependencyAnalysis
             objData.Alignment = objData.TargetPointerSize;
             objData.DefinedSymbols.Add(this);
 
-            ComputeOptionalEETypeFields(factory);
+            if (!(_type is CanonBaseType))
+            {
+                ComputeOptionalEETypeFields(factory);
+            }
 
             OutputGCDesc(ref objData);
             OutputComponentSize(ref objData);
@@ -261,7 +264,11 @@ namespace ILCompiler.DependencyAnalysis
             int pointerSize = _type.Context.Target.PointerSize;
             int objectSize;
 
-            if (_type.IsDefType)
+            if (_type is CanonBaseType)
+            {
+                objectSize = pointerSize;
+            }
+            else if (_type.IsDefType)
             {
                 objectSize = pointerSize +
                     ((DefType)_type).InstanceByteCount; // +pointerSize for SyncBlock

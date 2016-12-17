@@ -727,7 +727,7 @@ namespace Internal.JitInterface
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
         {
             // No restrictions on inlining
-            return CorInfoInline.INLINE_PASS;
+            return CorInfoInline.INLINE_FAIL;
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
@@ -2732,11 +2732,34 @@ namespace Internal.JitInterface
             else if (method.HasInstantiation)
             {
                 // GVM Call Support
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                // TODO: pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN_GENERIC_DESCRIPTOR;
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                pResult.nullInstanceCheck = true;
+
+                // HACK!! BEGIN REMOVE THIS CODE WHEN WE HAVE JIT SUPPORT FOR GVMs
+                if (pResult.exactContextNeedsRuntimeLookup)
+                {
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod != MethodBeingCompiled)
+                    {
+                        return;
+                    }
+
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack;
+                }
+                else
+                {
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
+                }
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
-                pResult.nullInstanceCheck = false;
+                // HACK!! END REMOVE THIS CODE WHEN WE HAVE JIT SUPPORT FOR GVMs
             }
             else if((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {
@@ -3118,6 +3141,18 @@ namespace Internal.JitInterface
                 default:
                     // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject((IntPtr)target);
+
+                    MethodCodeNode targetMethod = targetObject as MethodCodeNode;
+                    if (targetMethod != null)
+                    {
+                        if (targetMethod.Method is IL.Stubs.PInvokeTargetNativeMethod)
+                        {
+                            string externName = targetMethod.Method.GetPInvokeMethodMetadata().Name ?? targetMethod.Method.Name;
+                            Debug.Assert(externName != null);
+                            targetObject = _compilation.NodeFactory.ExternSymbol(externName);
+
+                        }
+                    }
 
                     if (targetObject is FieldDesc)
                     {

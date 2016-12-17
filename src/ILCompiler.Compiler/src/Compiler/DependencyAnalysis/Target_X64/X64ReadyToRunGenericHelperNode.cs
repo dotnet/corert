@@ -141,12 +141,15 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodDictionary:
                 case ReadyToRunHelperId.VirtualCall:
                 case ReadyToRunHelperId.ResolveVirtualFunction:
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack:
                 case ReadyToRunHelperId.MethodEntry:
                     {
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();
                     }
                     break;
+
                 default:
                     throw new NotImplementedException();
             }

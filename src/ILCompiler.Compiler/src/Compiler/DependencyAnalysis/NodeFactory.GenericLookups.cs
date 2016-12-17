@@ -52,6 +52,12 @@ namespace ILCompiler.DependencyAnalysis
                     return new VirtualResolveGenericLookupResult(method);
                 });
 
+                // HACK
+                _gvmResolveHelpers = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                {
+                    return new GenericVirtualResolveGenericLookupResult(method);
+                });
+
                 _typeThreadStaticBaseIndexSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new TypeThreadStaticBaseIndexGenericLookupResult(type);
@@ -132,6 +138,14 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult VirtualMethodAddress(MethodDesc method)
             {
                 return _virtualResolveHelpers.GetOrAdd(method);
+            }
+
+            // HACK
+            private NodeCache<MethodDesc, GenericLookupResult> _gvmResolveHelpers;
+
+            public GenericLookupResult GenericVirtualMethodAddress(MethodDesc method)
+            {
+                return _gvmResolveHelpers.GetOrAdd(method);
             }
 
             private NodeCache<MethodDesc, GenericLookupResult> _methodEntrypoints;

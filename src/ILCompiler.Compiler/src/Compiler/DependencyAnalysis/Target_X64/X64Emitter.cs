@@ -40,6 +40,20 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitInt(imm32);
         }
 
+        public void EmitPUSH(Register regSrc)
+        {
+            AddrMode rexAddrMode = new AddrMode(regSrc, null, 0, 0, AddrModeSize.Int64);
+            EmitRexPrefix(regSrc, ref rexAddrMode);
+            Builder.EmitByte((byte)(0x50 | ((int)regSrc & 0x07)));
+        }
+
+        public void EmitPOP(Register regDst)
+        {
+            AddrMode rexAddrMode = new AddrMode(regDst, null, 0, 0, AddrModeSize.Int64);
+            EmitRexPrefix(regDst, ref rexAddrMode);
+            Builder.EmitByte((byte)(0x58 | ((int)regDst & 0x07)));
+        }
+
         public void EmitLEAQ(Register reg, ISymbolNode symbol, int delta = 0)
         {
             AddrMode rexAddrMode = new AddrMode(Register.RAX, null, 0, 0, AddrModeSize.Int64);
@@ -72,9 +86,37 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitByte((byte)immediate);
         }
 
+        public void EmitADD(Register regDst, sbyte immediate)
+        {
+            Builder.EmitByte(0x48);
+            Builder.EmitByte(0x83);
+            Builder.EmitByte((byte)(0xC0 | ((int)regDst & 0x07)));
+            Builder.EmitByte((byte)immediate);
+        }
+
+        public void EmitSUB(Register regDst, sbyte immediate)
+        {
+            Builder.EmitByte(0x48);
+            Builder.EmitByte(0x83);
+            Builder.EmitByte((byte)(0xE8 | ((int)regDst & 0x07)));
+            Builder.EmitByte((byte)immediate);
+        }
+
         public void EmitJMP(ISymbolNode symbol)
         {
             Builder.EmitByte(0xE9);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+        }
+
+        public void EmitJMP(Register regDst)
+        {
+            Builder.EmitByte(0xFF);
+            Builder.EmitByte((byte)(0xE0 | ((int)regDst & 0x07)));
+        }
+
+        public void EmitCALL(ISymbolNode symbol)
+        {
+            Builder.EmitByte(0xE8);
             Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
         }
 

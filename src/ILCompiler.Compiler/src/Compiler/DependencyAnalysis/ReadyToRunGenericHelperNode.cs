@@ -46,6 +46,9 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.VirtualCall((MethodDesc)target);
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     return factory.GenericLookup.VirtualMethodAddress((MethodDesc)target);
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack:
+                    return factory.GenericLookup.GenericVirtualMethodAddress((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 default:

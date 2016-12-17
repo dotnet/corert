@@ -211,7 +211,35 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.ResolveGenericVirtualMethod:
-                    encoder.EmitINT3();
+                    {
+                        encoder.EmitLEAQ(Register.RDX, factory.RuntimeMethodHandle((MethodDesc)Target));
+                        encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GVMLookupForSlot));
+                    }
+                    break;
+
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack:
+                    {
+                        encoder.EmitPUSH(Register.RBP);
+                        encoder.EmitPUSH(Register.RCX);
+                        encoder.EmitPUSH(Register.RDX);
+                        encoder.EmitPUSH(Register.R8);
+                        encoder.EmitPUSH(Register.R9);
+
+                        encoder.EmitSUB(Register.RSP, 32);
+
+                        encoder.EmitLEAQ(Register.RDX, factory.RuntimeMethodHandle((MethodDesc)Target));
+                        encoder.EmitCALL(factory.HelperEntrypoint(HelperEntrypoint.GVMLookupForSlot));
+
+                        encoder.EmitADD(Register.RSP, 32);
+
+                        encoder.EmitPOP(Register.R9);
+                        encoder.EmitPOP(Register.R8);
+                        encoder.EmitPOP(Register.RDX);
+                        encoder.EmitPOP(Register.RCX);
+                        encoder.EmitPOP(Register.RBP);
+
+                        encoder.EmitJMP(Register.RAX);
+                    }
                     break;
 
                 default:

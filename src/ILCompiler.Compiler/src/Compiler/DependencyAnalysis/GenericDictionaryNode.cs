@@ -164,6 +164,18 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(factory, _owningMethod);
+
+            if (_owningMethod.IsVirtual && _owningMethod.HasInstantiation)
+                dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_owningMethod), "GVM Dependencies Support for method dictinoary"));
+
+            return dependencies;
+        }
+
+        public MethodDesc OwningMethod => _owningMethod;
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
             return GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(factory, _owningMethod);
         }
 

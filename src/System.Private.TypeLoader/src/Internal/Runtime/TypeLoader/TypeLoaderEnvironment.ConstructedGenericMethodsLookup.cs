@@ -366,7 +366,7 @@ namespace Internal.Runtime.TypeLoader
                     return true;
                 }
             }
-
+            
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
             TemplateLocator templateLocator = new TemplateLocator();
             NativeLayoutInfo nativeLayoutInfo = new NativeLayoutInfo();
@@ -393,6 +393,21 @@ namespace Internal.Runtime.TypeLoader
             }
 
             Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
+
+#if CORERT
+            // HACK: Use an instantiating standard to standard calling convention convertion thunk to correctly pass the
+            // generic context argument to the target function (Requires JIT work to support this without this hack)
+            if (!templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
+            {
+                RuntimeTypeHandle[] typeArgs = Array.Empty<RuntimeTypeHandle>();
+                if (RuntimeAugments.IsGenericType(targetTypeHandle))
+                    RuntimeAugments.GetGenericInstantiation(targetTypeHandle, out typeArgs);
+
+                IntPtr thunkPtr = CallConverterThunk.MakeThunk(CallConverterThunk.ThunkKind.StandardToStandardInstantiating, methodPointer, nameAndSignature.Signature, dictionaryPointer, typeArgs, genericMethodArgumentHandles);
+                methodPointer = thunkPtr;
+                dictionaryPointer = IntPtr.Zero;
+            }
+#endif
 
             if (templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
             {
@@ -433,7 +448,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        #region Privates
+#region Privates
         private bool TryGetDynamicGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
         {
             result = IntPtr.Zero;
@@ -563,6 +578,6 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        #endregion
+#endregion
     }
 }
