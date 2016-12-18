@@ -66,8 +66,8 @@
             </ILCompilerBinPlace>
 
             <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.targets" />
-            <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.Windows.targets" />
-            <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.Unix.targets" />
+            <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.Windows.props" />
+            <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.Unix.props" />
             <ILCompilerBinPlace Include="@(ILCompilerContentFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerBinPlace>

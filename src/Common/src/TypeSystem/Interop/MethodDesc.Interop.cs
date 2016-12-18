@@ -28,6 +28,47 @@ namespace Internal.TypeSystem
         {
             return default(PInvokeMetadata);
         }
+
+        /// <summary>
+        /// Retrieves the metadata related to the parameters of the method.
+        /// </summary>
+        public virtual ParameterMetadata[] GetParameterMetadata()
+        {
+            return default(ParameterMetadata[]);
+        }
+    }
+
+    [Flags]
+    public enum ParameterAttributes
+    {
+        None = 0,
+        In = 1,
+        Out = 2,
+        Optional = 16,
+        HasDefault = 4096,
+        HasFieldMarshal = 8192
+    }
+
+    public struct ParameterMetadata
+    {
+        private  readonly ParameterAttributes _attributes;
+        public readonly TypeDesc MarshalAs;
+        public readonly int Index;
+
+        public bool In { get { return (_attributes & ParameterAttributes.In) == ParameterAttributes.In; } }
+        public bool Out { get { return (_attributes & ParameterAttributes.Out) == ParameterAttributes.Out; } }
+        public bool Return { get { return Index == 0;  } }
+        public bool Optional { get { return (_attributes & ParameterAttributes.Optional) == ParameterAttributes.Optional;  } }
+        public bool HasDefault { get { return (_attributes & ParameterAttributes.HasDefault) == ParameterAttributes.HasDefault; } }
+        public bool HasFieldMarshal { get { return (_attributes & ParameterAttributes.HasFieldMarshal) == ParameterAttributes.HasFieldMarshal; } }
+
+
+        public ParameterMetadata(int index, ParameterAttributes attributes, TypeDesc marshalAs)
+        {
+            Index = index;
+            _attributes = attributes;
+            MarshalAs = marshalAs;       
+        }
     }
 
     [Flags]

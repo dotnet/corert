@@ -46,9 +46,6 @@ See the LICENSE file in the project root for more information.
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == ''">IlcCompile</LinkNativeDependsOn>
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'cpp'">CppCompile</LinkNativeDependsOn>
-    
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.5</CppCompilerAndLinker>
   </PropertyGroup>
 
   <ItemGroup>
@@ -99,7 +96,42 @@ See the LICENSE file in the project root for more information.
 
   </Target>
 
-  <Import Project="Microsoft.NETCore.Native.Windows.targets" Condition="'$(TargetOS)' == 'Windows_NT'" />
-  <Import Project="Microsoft.NETCore.Native.Unix.targets" Condition="'$(TargetOS)' != 'Windows_NT'" />
+  <Import Project="Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />
+  <Import Project="Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'Windows_NT'" />
+  
+  <Target Name="CppCompile"
+      Inputs="$(IlcCompileOutput)"
+      Outputs="$(NativeObject)"
+      DependsOnTargets="IlcCompile">
 
+    <ItemGroup>
+      <CompilerArg Include="$(IlcCompileOutput)" />
+      <CompilerArg Include="/Fo$(NativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
+      <CompilerArg Include="-o $(NativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
+      <CompilerArg Include="@(CppCompilerAndLinkerArg)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath)" />
+    <Exec Command="$(CppCompiler) @(CompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)cl.rsp" Lines="@(CompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  </Target>
+
+  <Target Name="LinkNative"
+      Inputs="$(NativeObject)"
+      Outputs="$(NativeBinary)"
+      DependsOnTargets="$(LinkNativeDependsOn)">
+
+    <ItemGroup>
+      <CustomLinkerArg Include="$(NativeObject)" />
+      <CustomLinkerArg Include="-o $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
+      <CustomLinkerArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLinkerArg Include="@(LinkerArg)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeBinary)))" />
+    <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  </Target>
 </Project>
