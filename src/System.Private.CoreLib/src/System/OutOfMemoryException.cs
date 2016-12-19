@@ -11,26 +11,31 @@
 **
 =============================================================================*/
 
+using System.Runtime.Serialization;
+
 namespace System
 {
-    public class OutOfMemoryException : Exception
+    [Serializable]
+    public class OutOfMemoryException : SystemException
     {
         public OutOfMemoryException()
             : base(SR.Arg_OutOfMemoryException)
         {
-            SetErrorCode(__HResults.COR_E_OUTOFMEMORY);
+            HResult = __HResults.COR_E_OUTOFMEMORY;
         }
 
         public OutOfMemoryException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_OUTOFMEMORY);
+            HResult = __HResults.COR_E_OUTOFMEMORY;
         }
 
         public OutOfMemoryException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_OUTOFMEMORY);
+            HResult = __HResults.COR_E_OUTOFMEMORY;
         }
+
+        protected OutOfMemoryException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

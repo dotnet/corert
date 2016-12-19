@@ -49,13 +49,13 @@
         CHECK_CACHE_ENTRY $entry
         ;; Check a single entry in the cache.
         ;;  R1 : Instance EEType*
-        ;;  R12: Cache data structure
-        ;;  R2 : Trashed. On succesful check, set to the target address to jump to.
+        ;;  R2: Cache data structure
+        ;;  R12 : Trashed. On succesful check, set to the target address to jump to.
 
-        ldr     r2, [r12, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8))]
-        cmp     r1, r2
+        ldr     r12, [r2, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8))]
+        cmp     r1, r12
         bne     %ft0
-        ldr     r2, [r12, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8) + 4)]
+        ldr     r12, [r2, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 8) + 4)]
         b       %fa99
 0
     MEND
@@ -95,11 +95,9 @@ SECTIONREL_t_TLS_DispatchCell
     LEAF_END RhpCastableObjectDispatchHelper_TailCalled
 
     LEAF_ENTRY  RhpCastableObjectDispatchHelper
-
-        ;; r12 contains address of the cache block. We need to point it to
-        ;; the indirection cell using the back pointer in the cache block
+        ;; The address of the cache block is passed to this function in the red zone
+        ldr     r12, [sp, #-8] 
         ldr     r12, [r12, #OFFSETOF__InterfaceDispatchCache__m_pCell]
-
     ALTERNATE_ENTRY RhpCastableObjectDispatchHelper2
         ;; The calling convention of the universal thunk is that the parameter
         ;; for the universal thunk target is to be placed in sp-8
@@ -123,11 +121,10 @@ StubName    SETS    "RhpInterfaceDispatch$entries"
     NESTED_ENTRY $StubName
         ;; On input we have the indirection cell data structure in r12. But we need more scratch registers and
         ;; we may A/V on a null this. Both of these suggest we need a real prolog and epilog.
-        PROLOG_PUSH {r1-r2, r12}
+        PROLOG_PUSH {r1-r2}
 
-        ;; r12 currently holds the indirection cell address. We need to update it to point to the cache
-        ;; structure instead.
-        ldr     r12, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
+        ;; r12 currently holds the indirection cell address. We need to get the cache structure instead.
+        ldr     r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         ;; Load the EEType from the object instance in r0.
         ldr     r1, [r0]
@@ -139,22 +136,23 @@ CurrentEntry SETA 0
 CurrentEntry SETA CurrentEntry + 1
     WEND
 
-        EPILOG_POP {r1-r2, r12}
+        ;; Point r12 to the indirection cell using the back pointer in the cache block
+        ldr     r12, [r2, #OFFSETOF__InterfaceDispatchCache__m_pCell]
+
+        EPILOG_POP {r1-r2}
         EPILOG_BRANCH RhpInterfaceDispatchSlow
 
         ;; Common epilog for cache hits. Have to out of line it here due to limitation on the number of
         ;; epilogs imposed by the unwind code macros.
 99
-        ;; r12 contains the cache block address.
-        ;; r2 contains the target address. Store it to the location where r12 was pushed
-        ;; at the entry. The EPILOG_LDRPC_POSTINC will load it into the pc, which will results 
-        ;; in jump to the target with all registers except r12 in the same state as when 
-        ;; the current function was entered. R12 will point to the cache block address,
-        ;; which is a contract with the RhpCastableObjectDispatchHelper.
-        str     r2, [sp, #8]
-        
-        EPILOG_POP {r1-r2}
-        EPILOG_LDRPC_POSTINC 4
+        ;; R2 contains address of the cache block. We store it in the red zone in case the target we jump
+        ;; to needs it. Currently the RhpCastableObjectDispatchHelper is the only such target.
+        ;; R12 contains the target address to jump to
+        EPILOG_POP r1
+        ;; The red zone is only 8 bytes long, so we have to store r2 into it between the pops.
+        EPILOG_NOP str     r2, [sp, #-4]
+        EPILOG_POP r2
+        EPILOG_BRANCH_REG r12
 
     NESTED_END $StubName
 

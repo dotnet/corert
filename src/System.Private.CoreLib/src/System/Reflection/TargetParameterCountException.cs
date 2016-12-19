@@ -8,11 +8,12 @@
 **
 ==============================================================*/
 
-using System;
+using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public sealed class TargetParameterCountException : Exception
+    [Serializable]
+    public sealed class TargetParameterCountException : ApplicationException
     {
         public TargetParameterCountException()
             : base(SR.Arg_TargetParameterCountException)
@@ -31,6 +32,7 @@ namespace System.Reflection
         {
             HResult = __HResults.COR_E_TARGETPARAMCOUNT;
         }
+
+        internal TargetParameterCountException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
-

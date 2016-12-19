@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -101,6 +102,7 @@ namespace System.Text
         }
     }
 
+    [Serializable]
     public sealed class EncoderFallbackException : ArgumentException
     {
         private char _charUnknown;
@@ -111,30 +113,27 @@ namespace System.Text
         public EncoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
         }
 
         public EncoderFallbackException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
         }
 
         public EncoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
         }
 
-        internal EncoderFallbackException(
-            String message, char charUnknown, int index) : base(message)
+        internal EncoderFallbackException(String message, char charUnknown, int index)
+            : base(message)
         {
             _charUnknown = charUnknown;
             _index = index;
         }
 
-        internal EncoderFallbackException(
-            String message, char charUnknownHigh, char charUnknownLow, int index) : base(message)
+        internal EncoderFallbackException(String message, char charUnknownHigh, char charUnknownLow, int index)
+            : base(message)
         {
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
@@ -153,6 +152,11 @@ namespace System.Text
             _charUnknownHigh = charUnknownHigh;
             _charUnknownLow = charUnknownLow;
             _index = index;
+        }
+
+        internal EncoderFallbackException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
         }
 
         public char CharUnknown
