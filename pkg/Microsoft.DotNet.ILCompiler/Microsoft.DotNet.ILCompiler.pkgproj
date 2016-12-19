@@ -15,18 +15,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ILCompiler\src\ILCompiler.csproj"/>
-    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj"/>
-    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj"/>
-    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj"/>
-    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj"/>
-    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj"/>
+    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler\src\ILCompiler.csproj"/>
+    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.Compiler\src\ILCompiler.Compiler.csproj"/>
+    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj"/>
+    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj"/>
+    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj"/>
+    <ProjectReference Include="$(PackageSourceDirectory)ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj"/>
 
     <Dependency Include="Microsoft.DotNet.ObjectWriter">
       <Version>1.0.13-prerelease-00001</Version>
     </Dependency>
     <Dependency Include="Microsoft.NetCore.Jit">
-      <Version>1.1.0-preview1-24512-00</Version>
+      <Version>1.2.0-beta-24815-03</Version>
     </Dependency>
     <Dependency Include="System.Collections.Immutable">
       <Version>1.2.0</Version>
@@ -35,6 +35,6 @@
 
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
   <Target Name="GetPackageDependencies"/>
 </Project>
