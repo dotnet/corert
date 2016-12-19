@@ -13,7 +13,8 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public sealed class ReflectionTypeLoadException : Exception, ISerializable
+    [Serializable]
+    public sealed class ReflectionTypeLoadException : SystemException, ISerializable
     {
         private Type[] _classes;
         private Exception[] _exceptions;
@@ -32,6 +33,19 @@ namespace System.Reflection
             HResult = __HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
+        internal ReflectionTypeLoadException(SerializationInfo info, StreamingContext context) : base (info, context)
+        {
+            _classes = (Type[])(info.GetValue("Types", typeof(Type[])));
+            _exceptions = (Exception[])(info.GetValue("Exceptions", typeof(Exception[])));
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("Types", _classes, typeof(Type[]));
+            info.AddValue("Exceptions", _exceptions, typeof(Exception[]));
+        }
+
         public Type[] Types
         {
             get { return _classes; }
@@ -41,11 +55,5 @@ namespace System.Reflection
         {
             get { return _exceptions; }
         }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
-

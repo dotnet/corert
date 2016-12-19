@@ -11,36 +11,52 @@
 **
 =============================================================================*/
 
-using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class MissingMemberException : MemberAccessException
     {
         public MissingMemberException()
             : base(SR.Arg_MissingMemberException)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMEMBER);
+            HResult = __HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMEMBER);
+            HResult = __HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMEMBER);
+            HResult = __HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(string className, string memberName)
         {
             ClassName = className;
             MemberName = memberName;
+        }
+
+        protected MissingMemberException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            ClassName = (String)info.GetString("MMClassName");
+            MemberName = (String)info.GetString("MMMemberName");
+            Signature = (byte[])info.GetValue("MMSignature", typeof(byte[]));
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("MMClassName", ClassName, typeof(String));
+            info.AddValue("MMMemberName", MemberName, typeof(String));
+            info.AddValue("MMSignature", Signature, typeof(byte[]));
         }
 
         public override string Message

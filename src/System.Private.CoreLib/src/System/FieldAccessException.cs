@@ -9,29 +9,31 @@
 **
 =============================================================================*/
 
-using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class FieldAccessException : MemberAccessException
     {
         public FieldAccessException()
             : base(SR.Arg_FieldAccessException)
         {
-            SetErrorCode(__HResults.COR_E_FIELDACCESS);
+            HResult = __HResults.COR_E_FIELDACCESS;
         }
 
         public FieldAccessException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_FIELDACCESS);
+            HResult = __HResults.COR_E_FIELDACCESS;
         }
 
         public FieldAccessException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_FIELDACCESS);
+            HResult = __HResults.COR_E_FIELDACCESS;
         }
+
+        protected FieldAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

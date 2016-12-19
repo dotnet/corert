@@ -6,7 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public class TargetException : Exception
+    [Serializable]
+    public class TargetException : ApplicationException
     {
         public TargetException()
             : this(null)
@@ -20,12 +21,9 @@ namespace System.Reflection
 
         public TargetException(string message, Exception inner) : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_TARGET);
+            HResult = __HResults.COR_E_TARGET;
         }
 
-        protected TargetException(SerializationInfo info, StreamingContext context)
-        {
-            throw new NotImplementedException();
-        }
+        protected TargetException(SerializationInfo info, StreamingContext context) : base (info, context) { }
     }
 }

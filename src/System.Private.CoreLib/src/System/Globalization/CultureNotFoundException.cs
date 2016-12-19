@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Globalization
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class CultureNotFoundException : ArgumentException
     {
         private string _invalidCultureName; // unrecognized culture name
@@ -55,6 +56,20 @@ namespace System.Globalization
             : base(message, paramName)
         {
             _invalidCultureId = invalidCultureId;
+        }
+
+        protected CultureNotFoundException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _invalidCultureId = (Nullable<int>)info.GetValue("InvalidCultureId", typeof(Nullable<int>));
+            _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("InvalidCultureId", _invalidCultureId, typeof(int?));
+            info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));
         }
 
         public virtual Nullable<int> InvalidCultureId

@@ -120,6 +120,12 @@
   <data name="Arg_AccessException" xml:space="preserve">
     <value>Cannot access member.</value>
   </data>
+  <data name="Arg_AccessViolationException" xml:space="preserve">
+    <value>Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</value>
+  </data>
+  <data name="Arg_ApplicationException" xml:space="preserve">
+    <value>Error in the application.</value>
+  </data>
   <data name="Arg_ArgumentException" xml:space="preserve">
     <value>Value does not fall within the expected range.</value>
   </data>
@@ -156,6 +162,9 @@
   <data name="Arg_CopyOutOfRange" xml:space="preserve">
     <value>Requested range extends past the end of the array.</value>
   </data>
+  <data name="Arg_CryptographyException" xml:space="preserve">
+    <value>Error occurred during a cryptographic operation.</value>
+  </data>
   <data name="Arg_DataMisalignedException" xml:space="preserve">
     <value>A datatype misalignment was detected in a load or store instruction.</value>
   </data>
@@ -177,11 +186,23 @@
   <data name="Arg_DlgtNullInst" xml:space="preserve">
     <value>Delegate to an instance method cannot have null 'this'.</value>
   </data>
+  <data name="Arg_DuplicateWaitObjectException" xml:space="preserve">
+    <value>Duplicate objects in argument.</value>
+  </data>
   <data name="Arg_EnumAndObjectMustBeSameType" xml:space="preserve">
     <value>Object must be the same type as the enum. The type passed in was '{0}'; the enum type was '{1}'.</value>
   </data>
+  <data name="Arg_EntryPointNotFoundException" xml:space="preserve">
+    <value>Entry point was not found.</value>
+  </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}.</value>
+  </data>
+  <data name="Arg_ExecutionEngineException" xml:space="preserve">
+    <value>Internal error in the runtime.</value>
+  </data>
+  <data name="Arg_ExternalException" xml:space="preserve">
+    <value>External component has thrown an exception.</value>
   </data>
   <data name="Arg_FieldAccessException" xml:space="preserve">
     <value>Attempted to access a field that is not accessible by the caller.</value>
@@ -248,6 +269,9 @@
   </data>
   <data name="Arg_MissingMethodException" xml:space="preserve">
     <value>Attempted to access a missing method.</value>
+  </data>
+  <data name="Arg_MulticastNotSupportedException" xml:space="preserve">
+    <value>Attempted to add multiple callbacks to a delegate that does not support multicast.</value>
   </data>
   <data name="Arg_MustBeBoolean" xml:space="preserve">
     <value>Object must be of type Boolean.</value>
@@ -327,6 +351,9 @@
   <data name="Arg_NegativeArgCount" xml:space="preserve">
     <value>Argument count must not be negative.</value>
   </data>
+  <data name="Arg_NotFiniteNumberException" xml:space="preserve">
+    <value>Arg_NotFiniteNumberException = Number encountered was not a finite quantity.</value>
+  </data>
   <data name="Arg_NonZeroLowerBound" xml:space="preserve">
     <value>The lower bound of target array must be zero.</value>
   </data>
@@ -390,8 +417,14 @@
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
   </data>
+  <data name="Arg_StackOverflowException" xml:space="preserve">
+    <value>Operation caused a stack overflow.</value>
+  </data>
   <data name="Arg_SynchronizationLockException" xml:space="preserve">
     <value>Object synchronization method was called from an unsynchronized block of code.</value>
+  </data>
+  <data name="Arg_SystemException" xml:space="preserve">
+    <value>System error.</value>
   </data>
   <data name="Arg_TargetInvocationException" xml:space="preserve">
     <value>Exception has been thrown by the target of an invocation.</value>
@@ -1299,6 +1332,9 @@
   <data name="Rank_MultiDimNotSupported" xml:space="preserve">
     <value>Only single dimension arrays are supported here.</value>
   </data>
+  <data name="RuntimeWrappedException" xml:space="preserve">
+    <value>An object that does not derive from System.Exception has been wrapped in a RuntimeWrappedException.</value>
+  </data>
   <data name="SpinWait_SpinUntil_ArgumentNull" xml:space="preserve">
     <value>The condition argument is null.</value>
   </data>
@@ -1496,6 +1532,9 @@
   </data>
   <data name="AggregateException_ctor_InnerExceptionNull" xml:space="preserve">
     <value>An element of innerExceptions was null.</value>
+  </data>
+  <data name="AggregateException_DeserializationFailure" xml:space="preserve">
+    <value>The serialization stream contains no inner exceptions.</value>
   </data>
   <data name="AggregateException_InnerException" xml:space="preserve">
     <value>(Inner Exception #{0}) </value>

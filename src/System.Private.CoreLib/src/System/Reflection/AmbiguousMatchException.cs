@@ -9,12 +9,13 @@
 **
 ==============================================================*/
 
-using global::System;
+using System;
+using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AmbiguousMatchException : Exception
+    [Serializable]
+    public sealed class AmbiguousMatchException : SystemException
     {
         public AmbiguousMatchException()
             : base(SR.RFLCT_Ambiguous)
@@ -31,6 +32,7 @@ namespace System.Reflection
         {
             HResult = __HResults.COR_E_AMBIGUOUSMATCH;
         }
+
+        internal AmbiguousMatchException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
-

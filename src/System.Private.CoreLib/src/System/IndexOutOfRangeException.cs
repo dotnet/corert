@@ -11,29 +11,31 @@
 **
 =============================================================================*/
 
-using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class IndexOutOfRangeException : Exception
+    [Serializable]
+    public sealed class IndexOutOfRangeException : SystemException
     {
         public IndexOutOfRangeException()
             : base(SR.Arg_IndexOutOfRangeException)
         {
-            SetErrorCode(__HResults.COR_E_INDEXOUTOFRANGE);
+            HResult = __HResults.COR_E_INDEXOUTOFRANGE;
         }
 
         public IndexOutOfRangeException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_INDEXOUTOFRANGE);
+            HResult = __HResults.COR_E_INDEXOUTOFRANGE;
         }
 
         public IndexOutOfRangeException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_INDEXOUTOFRANGE);
+            HResult = __HResults.COR_E_INDEXOUTOFRANGE;
         }
+
+        internal IndexOutOfRangeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
