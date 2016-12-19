@@ -36,6 +36,8 @@ if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
+if /i "%1" == "vs2017"   (set __VSVersion=vs2017&shift&goto Arg_Loop)
+
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptests" (set __SkipTests=1&shift&goto Arg_Loop)
@@ -104,6 +106,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__
 
 set __VSProductVersion=
 if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
+if /i "%__VSVersion%" == "vs2017" set __VSProductVersion=150
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
