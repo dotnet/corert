@@ -17,6 +17,7 @@ if %basePath:~-1%==\ set "basePath=%basePath:~0,-1%"
 
 set __VSString=12 2013
 if /i "%2" == "vs2015" (set __VSString=14 2015)
+if /i "%2" == "vs2017" (set __VSString=15 2017)
 if /i "%3" == "x64" (set __VSString=%__VSString% Win64)
 
 if defined CMakePath goto DoGen
