@@ -96,33 +96,6 @@ namespace System
             throw new ArgumentException(String.Format(SR.Argument_TimeZoneNotFound, id));
         }
 
-        private const long TIME_ZONE_ID_INVALID = -1;
-
-        internal TimeZoneInfo(
-                String id,
-                TimeSpan baseUtcOffset,
-                String displayName,
-                String standardDisplayName,
-                String daylightDisplayName,
-                AdjustmentRule[] adjustmentRules,
-                Boolean disableDaylightSavingTime)
-        {
-            Boolean adjustmentRulesSupportDst;
-            ValidateTimeZoneInfo(id, baseUtcOffset, adjustmentRules, out adjustmentRulesSupportDst);
-
-            if (!disableDaylightSavingTime && adjustmentRules != null && adjustmentRules.Length > 0)
-            {
-                _adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
-            }
-
-            _id = id;
-            _baseUtcOffset = baseUtcOffset;
-            _displayName = displayName;
-            _standardDisplayName = standardDisplayName;
-            _daylightDisplayName = (disableDaylightSavingTime ? null : daylightDisplayName);
-            _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
-        }
-
         private static bool EqualStandardDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)
         {
             return timeZone.Dtzi.Bias == tdzi.Bias

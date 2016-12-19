@@ -32,6 +32,10 @@ using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using System.Threading;
 
+#if ENABLE_WINRT
+using Internal.Runtime.Augments;
+#endif
+
 namespace System.Globalization
 {
     [Serializable]
@@ -423,7 +427,7 @@ namespace System.Globalization
                 }
 
                 // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
-                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
+                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn't get chance to initialize
                 if (s_userDefaultCulture == null)
                 {
                     Init();
@@ -475,7 +479,7 @@ namespace System.Globalization
                 }
 
                 // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
-                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
+                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn't get chance to initialize
                 if (s_userDefaultCulture == null)
                 {
                     Init();
