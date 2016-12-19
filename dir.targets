@@ -15,6 +15,9 @@
 
   <Import Project="$(ToolsDir)/Build.Common.targets" />
 
+  <!-- Override corefx multi targeting support -->
+  <Target Name="ConvertCommonMetadataToAdditionalProperties" BeforeTargets="AssignProjectConfiguration" />
+
   <!-- Remove once we pick up buildtools with the fix - https://github.com/dotnet/buildtools/pull/1082 -->
   <!-- Override GetLatestCommitHash with redirected error output to avoid bogus messages 
        about missing git tool when building inside VS -->
