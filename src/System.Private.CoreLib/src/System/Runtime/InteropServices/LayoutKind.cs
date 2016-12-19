@@ -12,7 +12,6 @@
 namespace System.Runtime.InteropServices
 {
     // Used in the StructLayoutAttribute class
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum LayoutKind
     {
         Sequential = 0, // 0x00000008,

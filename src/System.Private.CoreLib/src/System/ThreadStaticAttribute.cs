@@ -18,7 +18,6 @@ using System;
 namespace System
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ThreadStaticAttribute : Attribute
     {
         public ThreadStaticAttribute()

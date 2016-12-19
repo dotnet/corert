@@ -76,10 +76,12 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupDebug.cs">
       <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupDebug.cs</Link>
     </Compile>
+    <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
@@ -646,7 +648,6 @@
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
-  <!-- Windows is default build -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">  
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
@@ -796,20 +797,23 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="System\TimeZoneInfo.Unix.cs" />
+    <!--
     <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.Unix.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
-    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
+    <Compile Include="System\Globalization\CultureData.Unix.cs" />
+    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CalendarData.Unix.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
+    -->
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Threading\ThreadPool.Unix.cs" />
     <Compile Include="System\Threading\Timer.Unix.cs" />
-    <Compile Include="System\Threading\TimeZoneInfo.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
     </Compile>
@@ -834,6 +838,18 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
     </Compile>
+  </ItemGroup>
+  <!-- Dummy globalization implementation -->
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="System\Globalization\HijriCalendar.Dummy.cs" />
+    <Compile Include="System\Globalization\JapaneseCalendar.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
+    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
+    <Compile Include="System\Text\Normalization.Dummy.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">

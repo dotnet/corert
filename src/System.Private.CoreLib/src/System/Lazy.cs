@@ -31,7 +31,6 @@ namespace System
     /// using parameters to the type's constructors.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerTypeProxy(typeof(System_LazyDebugView<>))]
     [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
     public class Lazy<T>

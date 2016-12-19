@@ -22,7 +22,6 @@ namespace System
     // This type is LayoutKind Sequential
 
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct Int32 : IComparable, IFormattable, IComparable<Int32>, IEquatable<Int32>, IConvertible
     {
         // m_value is never assigned to by any of the methods.

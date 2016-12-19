@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 namespace Internal.NativeFormat
 {
     // Minimal functionality that is low level enough for use in the managed runtime.
-    unsafe partial struct NativePrimitiveDecoder
+    internal unsafe partial struct NativePrimitiveDecoder
     {
         public static byte ReadUInt8(ref byte* stream)
         {

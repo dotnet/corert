@@ -13,7 +13,6 @@ namespace System.IO
     ///   the Win32 errorcode-as-HRESULT ERROR_PATH_NOT_FOUND (0x80070003)
     ///   and STG_E_PATHNOTFOUND (0x80030003).</para>
     /// </devdoc>
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class DirectoryNotFoundException : IOException
     {
         public DirectoryNotFoundException()

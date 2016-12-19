@@ -71,7 +71,6 @@ namespace System
     // constructed itself depends on this class also being eagerly constructed. Plus, it's nice to have this
     // eagerly constructed to avoid the cost of defered ctors. I can't imagine any app that doesn't use string
     //
-    [ComVisible(true)]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
     public sealed partial class String : IComparable, IEnumerable, IEnumerable<char>, IComparable<String>, IEquatable<String>, IConvertible, ICloneable

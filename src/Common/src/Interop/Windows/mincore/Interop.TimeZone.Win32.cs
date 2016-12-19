@@ -81,47 +81,14 @@ internal static partial class Interop
                 DaylightDate.wMilliseconds = (ushort)ToInt16(bytes, 42);
             }
 
-            private static unsafe short ToInt16(byte[] value, int startIndex)
+            private static short ToInt16(byte[] value, int startIndex)
             {
-                fixed (byte* pbyte = &value[startIndex])
-                {
-                    if (startIndex % 2 == 0)
-                    { // data is aligned 
-                        return *((short*)pbyte);
-                    }
-                    else {
-                        if (IsLittleEndian)
-                        {
-                            return (short)((*pbyte) | (*(pbyte + 1) << 8));
-                        }
-                        else {
-                            return (short)((*pbyte << 8) | (*(pbyte + 1)));
-                        }
-                    }
-                }
-
+                return (short)(value[startIndex] | (value[startIndex + 1] << 8));
             }
 
-            public static readonly bool IsLittleEndian = true;
-
-            private static unsafe int ToInt32(byte[] value, int startIndex)
+            private static int ToInt32(byte[] value, int startIndex)
             {
-                fixed (byte* pbyte = &value[startIndex])
-                {
-                    if (startIndex % 4 == 0)
-                    { // data is aligned 
-                        return *((int*)pbyte);
-                    }
-                    else {
-                        if (IsLittleEndian)
-                        {
-                            return (*pbyte) | (*(pbyte + 1) << 8) | (*(pbyte + 2) << 16) | (*(pbyte + 3) << 24);
-                        }
-                        else {
-                            return (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-                        }
-                    }
-                }
+                return value[startIndex] | (value[startIndex + 1] << 8) | (value[startIndex + 2] << 16) | (value[startIndex + 3] << 24);
             }
         }
     }

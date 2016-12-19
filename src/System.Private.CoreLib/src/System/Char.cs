@@ -19,7 +19,6 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     [StructLayout(LayoutKind.Sequential)]
     public struct Char : IComparable, IComparable<Char>, IEquatable<Char>, IConvertible
     {

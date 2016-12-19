@@ -15,7 +15,6 @@ using System;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IFormatProvider
     {
         // Interface does not need to be marked with the serializable attribute

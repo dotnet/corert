@@ -4,7 +4,7 @@
 
 // Helper methods for using Tasks to implement the APM pattern.
 //
-// Code is dupliacted from CoreFX repo. Please keep it in sync
+// Code is duplicated from CoreFX repo. Please keep it in sync
 
 using System.Diagnostics;
 using System.IO;

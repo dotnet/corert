@@ -128,6 +128,11 @@ namespace ILCompiler.DependencyAnalysis
         public VirtualDispatchGenericLookupResult(MethodDesc method)
         {
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+            Debug.Assert(method.IsVirtual);
+
+            // Normal virtual methods don't need a generic lookup.
+            Debug.Assert(method.OwningType.IsInterface || method.HasInstantiation);
+
             _method = method;
         }
 
@@ -144,6 +149,42 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"VirtualCall: {_method}";
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to a virtual function address load stub.
+    /// </summary>
+    internal sealed class VirtualResolveGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public VirtualResolveGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+            Debug.Assert(method.IsVirtual);
+
+            // Normal virtual methods don't need a generic lookup.
+            Debug.Assert(method.OwningType.IsInterface || method.HasInstantiation);
+
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+
+            // https://github.com/dotnet/corert/issues/2342 - we put a pointer to the virtual call helper into the dictionary
+            // but this should be something that will let us compute the target of the dipatch (e.g. interface dispatch cell).
+            return factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, instantiatedMethod);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("VirtualResolve_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"VirtualResolve: {_method}";
     }
 
     /// <summary>

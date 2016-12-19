@@ -447,7 +447,7 @@ namespace Internal.NativeFormat
         }
     }
 
-    struct NativeHashtable
+    internal struct NativeHashtable
     {
         private NativeReader _reader;
         private uint _baseOffset;
@@ -480,9 +480,9 @@ namespace Internal.NativeFormat
         //
         public struct Enumerator
         {
-            NativeParser _parser;
-            uint _endOffset;
-            byte _lowHashcode;
+            private NativeParser _parser;
+            private uint _endOffset;
+            private byte _lowHashcode;
 
             internal Enumerator(NativeParser parser, uint endOffset, byte lowHashcode)
             {
@@ -518,10 +518,10 @@ namespace Internal.NativeFormat
 
         public struct AllEntriesEnumerator
         {
-            NativeHashtable _table;
-            NativeParser _parser;
-            uint _currentBucket;
-            uint _endOffset;
+            private NativeHashtable _table;
+            private NativeParser _parser;
+            private uint _currentBucket;
+            private uint _endOffset;
 
             internal AllEntriesEnumerator(NativeHashtable table)
             {

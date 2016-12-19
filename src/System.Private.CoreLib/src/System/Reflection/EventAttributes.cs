@@ -8,7 +8,6 @@
 namespace System.Reflection
 {
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum EventAttributes
     {
         None = 0x0000,

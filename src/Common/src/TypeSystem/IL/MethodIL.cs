@@ -101,5 +101,10 @@ namespace Internal.IL
         {
             return this;
         }
+
+        public override string ToString()
+        {
+            return OwningMethod.ToString();
+        }
     }
 }

@@ -28,6 +28,7 @@ namespace Internal.TypeSystem.NativeFormat
             public const int AggressiveInlining = 0x0040;
             public const int RuntimeImplemented = 0x0080;
             public const int InternalCall = 0x0100;
+            public const int Synchronized = 0x0200;
 
             public const int AttributeMetadataCache = 0x1000;
             public const int Intrinsic = 0x2000;
@@ -172,6 +173,9 @@ namespace Internal.TypeSystem.NativeFormat
                 if ((methodImplAttributes & MethodImplAttributes.InternalCall) != 0)
                     flags |= MethodFlags.InternalCall;
 
+                if ((methodImplAttributes & MethodImplAttributes.Synchronized) != 0)
+                    flags |= MethodFlags.Synchronized;
+
                 flags |= MethodFlags.BasicMetadataCache;
             }
 
@@ -302,6 +306,14 @@ namespace Internal.TypeSystem.NativeFormat
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.InternalCall) & MethodFlags.InternalCall) != 0;
+            }
+        }
+
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Synchronized) & MethodFlags.Synchronized) != 0;
             }
         }
 

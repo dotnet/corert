@@ -14,7 +14,6 @@
 namespace System
 {
     [AttributeUsage(AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ParamArrayAttribute : Attribute
     {
         public ParamArrayAttribute() { }

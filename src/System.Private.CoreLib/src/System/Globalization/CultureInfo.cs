@@ -29,12 +29,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Threading;
 
+#if ENABLE_WINRT
 using Internal.Runtime.Augments;
+#endif
 
 namespace System.Globalization
 {
+    [Serializable]
     public partial class CultureInfo : IFormatProvider, ICloneable
     {
         //--------------------------------------------------------------------//
@@ -189,7 +193,7 @@ namespace System.Globalization
             this.m_isInherited = !this.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<CultureInfo>());
         }
 
-        public CultureInfo(int culture) : this(culture, true) 
+        public CultureInfo(int culture) : this(culture, true)
         {
         }
 
@@ -237,14 +241,14 @@ namespace System.Globalization
         {
             if (cultureName == null)
             {
-                throw new ArgumentNullException(nameof(cultureName),SR.ArgumentNull_String);
+                throw new ArgumentNullException(nameof(cultureName), SR.ArgumentNull_String);
             }
             Contract.EndContractBlock();
 
             m_cultureData = CultureData.GetCultureData(cultureName, false);
             if (m_cultureData == null)
                 throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
-            
+
             m_name = m_cultureData.CultureName;
 
             CultureInfo altCulture = GetCultureInfo(textAndCompareCultureName);
@@ -423,7 +427,7 @@ namespace System.Globalization
                 }
 
                 // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
-                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
+                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn't get chance to initialize
                 if (s_userDefaultCulture == null)
                 {
                     Init();
@@ -475,7 +479,7 @@ namespace System.Globalization
                 }
 
                 // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
-                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
+                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn't get chance to initialize
                 if (s_userDefaultCulture == null)
                 {
                     Init();
@@ -590,17 +594,18 @@ namespace System.Globalization
             {
                 if (null == _parent)
                 {
+                    CultureInfo culture = null;
                     try
                     {
                         string parentName = this.m_cultureData.SPARENT;
 
                         if (String.IsNullOrEmpty(parentName))
                         {
-                            _parent = InvariantCulture;
+                            culture = InvariantCulture;
                         }
                         else
                         {
-                            _parent = new CultureInfo(parentName, this.m_cultureData.UseUserOverride);
+                            culture = new CultureInfo(parentName, this.m_cultureData.UseUserOverride);
                         }
                     }
                     catch (ArgumentException)
@@ -608,8 +613,9 @@ namespace System.Globalization
                         // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
                         // We can't allow ourselves to fail.  In case of custom cultures the parent of the
                         // current custom culture isn't installed.
-                        _parent = InvariantCulture;
+                        culture = InvariantCulture;
                     }
+                    Interlocked.CompareExchange<CultureInfo>(ref _parent, culture, null);
                 }
                 return _parent;
             }
@@ -636,7 +642,7 @@ namespace System.Globalization
             Contract.Ensures(Contract.Result<CultureInfo[]>() != null);
             // internally we treat UserCustomCultures as Supplementals but v2
             // treats as Supplementals and Replacements
-            if((types & CultureTypes.UserCustomCulture) == CultureTypes.UserCustomCulture)
+            if ((types & CultureTypes.UserCustomCulture) == CultureTypes.UserCustomCulture)
             {
                 types |= CultureTypes.ReplacementCultures;
             }
@@ -954,11 +960,11 @@ namespace System.Globalization
 
                 types |= m_cultureData.IsWin32Installed ? CultureTypes.InstalledWin32Cultures : 0;
 
-// Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
+                // Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
 #pragma warning disable 618
                 types |= m_cultureData.IsFramework ? CultureTypes.FrameworkCultures : 0;
-
 #pragma warning restore 618
+
                 types |= m_cultureData.IsSupplementalCustomCulture ? CultureTypes.UserCustomCulture : 0;
                 types |= m_cultureData.IsReplacementCulture ? CultureTypes.ReplacementCultures | CultureTypes.UserCustomCulture : 0;
 
@@ -1027,9 +1033,9 @@ namespace System.Globalization
             s_userDefaultCulture = null;
 
             RegionInfo.s_currentRegionInfo = null;
-            #pragma warning disable 0618 // disable the obsolete warning 
+#pragma warning disable 0618 // disable the obsolete warning 
             //TimeZone.ResetTimeZone();
-            #pragma warning restore 0618
+#pragma warning restore 0618
             TimeZoneInfo.ClearCachedData();
             s_LcidCachedCultures = null;
             s_NameCachedCultures = null;
@@ -1286,7 +1292,7 @@ namespace System.Globalization
             {
                 name = CultureData.AnsiToLower(name);
             }
-            
+
             if (altName != null)
             {
                 altName = CultureData.AnsiToLower(altName);
@@ -1383,13 +1389,13 @@ namespace System.Globalization
                 // Remember our name (as constructed).  Do NOT use alternate sort name versions because
                 // we have internal state representing the sort.  (So someone would get the wrong cached version)
                 string newName = CultureData.AnsiToLower(retval.m_name);
-                
+
                 // We add this new culture info object to both tables.
                 using (LockHolder.Hold(s_lock))
                 {
                     tempNameHT[newName] = retval;
                 }
-            } 
+            }
             else
             {
                 using (LockHolder.Hold(s_lock))
@@ -1419,7 +1425,7 @@ namespace System.Globalization
             // Must check for -1 now since the helper function uses the value to signal
             // the altCulture code path for SQL Server.
             // Also check for zero as this would fail trying to add as a key to the hash.
-            if (culture <= 0) 
+            if (culture <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
             }
@@ -1466,7 +1472,7 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(altName));
             }
-            
+
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
             Contract.EndContractBlock();
 
@@ -1489,7 +1495,7 @@ namespace System.Globalization
             {
                 throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_CultureIetfNotSupported, name));
             }
-            
+
             CultureInfo ci = GetCultureInfo(name);
 
             // Disallow alt sorts and es-es_TS
@@ -1497,7 +1503,7 @@ namespace System.Globalization
             {
                 throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_CultureIetfNotSupported, name));
             }
-            
+
             return ci;
         }
     }

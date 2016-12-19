@@ -73,6 +73,18 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value specifying whether the implementation of this method is
+        /// implicitly synchronized
+        /// </summary>
+        public virtual bool IsSynchronized
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets a value specifying whether this method is directly callable
         /// by external unmanaged code.
         /// </summary>
@@ -140,6 +152,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return _methodDef.IsSynchronized;
+            }
+        }
+
         public override bool IsNativeCallable
         {
             get
@@ -189,6 +209,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsInternalCall;
+            }
+        }
+
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return _typicalMethodDef.IsSynchronized;
             }
         }
 

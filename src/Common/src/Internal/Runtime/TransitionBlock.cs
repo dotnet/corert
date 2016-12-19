@@ -289,7 +289,7 @@ namespace Internal.Runtime
     // TransitionBlock is layout of stack frame of method call, saved argument registers and saved callee saved registers. Even though not 
     // all fields are used all the time, we use uniform form for simplicity.
     //
-    struct TransitionBlock
+    internal struct TransitionBlock
     {
 #pragma warning disable 0169,0649
 
@@ -383,7 +383,7 @@ namespace Internal.Runtime
             return offset >= (int)(ofsArgRegs + ArchitectureConstants.ARGUMENTREGISTERS_SIZE);
         }
 
-        static bool IsArgumentRegisterOffset(int offset)
+        public static bool IsArgumentRegisterOffset(int offset)
         {
             int ofsArgRegs = GetOffsetOfArgumentRegisters();
 

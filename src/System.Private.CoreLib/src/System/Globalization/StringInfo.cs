@@ -14,14 +14,16 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class StringInfo
     {
         private string _str;
 
+        [NonSerialized]
         private int[] _indexes;
 
         // Legacy constructor
@@ -33,7 +35,6 @@ namespace System.Globalization
             this.String = value;
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override bool Equals(Object value)
         {
             StringInfo that = value as StringInfo;
@@ -44,7 +45,6 @@ namespace System.Globalization
             return (false);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetHashCode()
         {
             return _str.GetHashCode();
@@ -100,13 +100,13 @@ namespace System.Globalization
             }
         }
 
-        public string SubstringByTextElements(int startingTextElement) 
+        public string SubstringByTextElements(int startingTextElement)
         {
             // If the string is empty, no sense going further. 
-            if (null == this.Indexes) 
+            if (null == this.Indexes)
             {
                 // Just decide which error to give depending on the param they gave us....
-                if (startingTextElement < 0) 
+                if (startingTextElement < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(startingTextElement), SR.ArgumentOutOfRange_NeedPosNum);
                 }
@@ -118,7 +118,7 @@ namespace System.Globalization
             return (SubstringByTextElements(startingTextElement, Indexes.Length - startingTextElement));
         }
 
-        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) 
+        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements)
         {
             if (startingTextElement < 0)
             {
@@ -154,7 +154,7 @@ namespace System.Globalization
             }
         }
 
-        public static String GetNextTextElement(String str)
+        public static string GetNextTextElement(string str)
         {
             return (GetNextTextElement(str, 0));
         }

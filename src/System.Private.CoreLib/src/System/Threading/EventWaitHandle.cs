@@ -21,7 +21,6 @@ using System.IO;
 
 namespace System.Threading
 {
-    [ComVisibleAttribute(true)]
     public class EventWaitHandle : WaitHandle
     {
         public EventWaitHandle(bool initialState, EventResetMode mode) : this(initialState, mode, null) { }

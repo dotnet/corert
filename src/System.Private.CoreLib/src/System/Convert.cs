@@ -2345,7 +2345,6 @@ namespace System
             return ToBase64String(inArray, 0, inArray.Length, Base64FormattingOptions.None);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         internal static String ToBase64String(byte[] inArray, Base64FormattingOptions options)
         {
             if (inArray == null)
@@ -2362,7 +2361,6 @@ namespace System
             return ToBase64String(inArray, offset, length, Base64FormattingOptions.None);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         internal static unsafe String ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options)
         {
             //Do data verfication
@@ -2412,7 +2410,6 @@ namespace System
             return ToBase64CharArray(inArray, offsetIn, length, outArray, offsetOut, Base64FormattingOptions.None);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         internal static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options)
         {
             //Do data verfication

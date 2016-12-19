@@ -17,7 +17,6 @@ namespace System.Globalization
     // 0 CurrentEra (AD)
     // 1 BeforeCurrentEra (BC)
 
-    [System.Runtime.InteropServices.ComVisible(true)]
 
     public class GregorianCalendar : Calendar
     {
@@ -54,7 +53,6 @@ namespace System.Globalization
         private static volatile Calendar s_defaultInstance;
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime
         {
             get
@@ -63,7 +61,6 @@ namespace System.Globalization
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -72,7 +69,6 @@ namespace System.Globalization
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -498,7 +494,6 @@ namespace System.Globalization
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetLeapMonth(int year, int era)
         {
             if (era != CurrentEra && era != ADEra)

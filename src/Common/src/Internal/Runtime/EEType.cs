@@ -15,7 +15,7 @@ namespace Internal.Runtime
     internal struct ObjHeader
     {
         // Contents of the object header
-        IntPtr objHeaderContents;
+        private IntPtr _objHeaderContents;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -68,8 +68,8 @@ namespace Internal.Runtime
             internal UInt16 _usImplMethodSlot;
         }
 
-        UInt32 _entryCount;
-        DispatchMapEntry _dispatchMap; // at least one entry if any interfaces defined
+        private UInt32 _entryCount;
+        private DispatchMapEntry _dispatchMap; // at least one entry if any interfaces defined
 
         public bool IsEmpty
         {
@@ -145,7 +145,7 @@ namespace Internal.Runtime
             public EEType** _ppRelatedParameterTypeViaIAT;
         }
 
-        static unsafe class OptionalFieldsReader
+        private static unsafe class OptionalFieldsReader
         {
             internal static UInt32 GetInlineField(byte* pFields, EETypeOptionalFieldTag eTag, UInt32 uiDefaultValue)
             {
@@ -184,10 +184,10 @@ namespace Internal.Runtime
 
         // vtable follows
 
-    // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
-    // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
-    // the rest of the padding data.
-    // If paddings of greater than 7 bytes are necessary, then the high bits of the field represent that padding
+        // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
+        // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
+        // the rest of the padding data.
+        // If paddings of greater than 7 bytes are necessary, then the high bits of the field represent that padding
         private const UInt32 ValueTypePaddingLowMask = 0x7;
         private const UInt32 ValueTypePaddingHighMask = 0xFFFFFF00;
         private const UInt32 ValueTypePaddingMax = 0x07FFFFFF;
@@ -386,7 +386,7 @@ namespace Internal.Runtime
                 return IsArray && ParameterizedTypeShape == SZARRAY_BASE_SIZE;
             }
         }
-        
+
         internal bool IsGeneric
         {
             get
@@ -668,9 +668,9 @@ namespace Internal.Runtime
             }
         }
 
-        internal UInt32 ValueTypeFieldPadding 
-        { 
-            get 
+        internal UInt32 ValueTypeFieldPadding
+        {
+            get
             {
                 byte* optionalFields = OptionalFieldsPtr;
 
@@ -688,18 +688,18 @@ namespace Internal.Runtime
             }
         }
 
-        internal UInt32 ValueTypeSize 
-        { 
-            get 
-            { 
-                Debug.Assert(IsValueType); 
+        internal UInt32 ValueTypeSize
+        {
+            get
+            {
+                Debug.Assert(IsValueType);
                 // get_BaseSize returns the GC size including space for the sync block index field, the EEType* and
                 // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
                 // elements or fields of another type.
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(EEType*) + ValueTypeFieldPadding);
             }
         }
-        
+
         internal UInt32 FieldByteCountNonGCAligned
         {
             get
@@ -752,7 +752,7 @@ namespace Internal.Runtime
                 {
                     if (HasDynamicallyAllocatedDispatchMap)
                         return true;
-                    else if(IsDynamicType)
+                    else if (IsDynamicType)
                         return DynamicTemplateType->HasDispatchMap;
                     return false;
                 }
@@ -781,7 +781,7 @@ namespace Internal.Runtime
             }
 #endif
         }
-        
+
         internal EEType* BaseType
         {
             get
@@ -893,7 +893,7 @@ namespace Internal.Runtime
                 UInt32 cbNullableTypeOffset = GetFieldOffset(EETypeField.ETF_NullableType);
                 fixed (EEType* pThis = &this)
                 {
-                    if(IsNullableTypeViaIAT)
+                    if (IsNullableTypeViaIAT)
                         return **(EEType***)((byte*)pThis + cbNullableTypeOffset);
                     else
                         return *(EEType**)((byte*)pThis + cbNullableTypeOffset);
@@ -965,13 +965,13 @@ namespace Internal.Runtime
             return (IntPtr*)pResult;
         }
 
-        static IntPtr FollowRelativePointer(Int32* pDist)
+        private static IntPtr FollowRelativePointer(Int32* pDist)
         {
             Int32 dist = *pDist;
             IntPtr result = (IntPtr)((byte*)pDist + dist);
             return result;
         }
-        
+
         internal IntPtr GetSealedVirtualSlot(UInt16 slotNumber)
         {
             Debug.Assert(!IsNullable);
@@ -1099,7 +1099,7 @@ namespace Internal.Runtime
             get
             {
                 // This is always a pointer to a pointer to a module manager
-                return *(IntPtr *)_ppTypeManager;
+                return *(IntPtr*)_ppTypeManager;
             }
         }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -1188,7 +1188,7 @@ namespace Internal.Runtime
                 return (RareFlags & EETypeRareFlags.HasCctorFlag) != 0;
             }
         }
-        
+
         public UInt32 GetFieldOffset(EETypeField eField)
         {
             // First part of EEType consists of the fixed portion followed by the vtable.
@@ -1348,14 +1348,14 @@ namespace Internal.Runtime
     {
         // Size field used to indicate the number of bytes of this structure that are defined in Runtime Known ways
         // This is used to drive versioning of this field
-        int _cbSize;
+        private int _cbSize;
 
         // Pointer to interface dispatch resolver that works off of a type/slot pair
         // This is a function pointer with the following signature IntPtr()(IntPtr targetType, IntPtr interfaceType, ushort slot)
-        IntPtr _dynamicTypeSlotDispatchResolve;
+        private IntPtr _dynamicTypeSlotDispatchResolve;
 
         // Starting address for the the binary module corresponding to this dynamic module.
-        IntPtr _getRuntimeException;
+        private IntPtr _getRuntimeException;
 
 #if TYPE_LOADER_IMPLEMENTATION
         public int CbSize

@@ -91,6 +91,11 @@ struct ThreadBuffer
     // Thread Statics Storage for dynamic types
     UInt32          m_numDynamicTypesTlsCells;
     PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
+
+#if CORERT
+    PTR_PTR_VOID    m_pThreadLocalModuleStatics;
+    UInt32          m_numThreadLocalModuleStatics;
+#endif // CORERT
 };
 
 struct ReversePInvokeFrame
@@ -248,6 +253,11 @@ public:
 
     bool InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame);
     void InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame);
+
+#if CORERT
+    Object* GetThreadStaticStorageForModule(UInt32 moduleIndex);
+    Boolean SetThreadStaticStorageForModule(Object * pStorage, UInt32 moduleIndex);
+#endif // CORERT
 };
 
 #ifndef GCENV_INCLUDED

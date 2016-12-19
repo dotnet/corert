@@ -337,6 +337,12 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
     // compare the IP against the list of known possible AV locations in the write barrier helpers
     for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
     {
+#if defined(_AMD64_) || defined(_X86_)
+        // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
+        // wraps every method symbol with a jump stub that breaks the following check.
+        ASSERT(*(UInt8*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
+#endif
+
         if (writeBarrierAVLocations[i] == faultingIP)
             return true;
     }

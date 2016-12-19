@@ -28,9 +28,9 @@ namespace System
 
     public struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
     {
-        private T[] _array;
-        private int _offset;
-        private int _count;
+        private readonly T[] _array;
+        private readonly int _offset;
+        private readonly int _count;
 
         public ArraySegment(T[] array)
         {
@@ -110,17 +110,26 @@ namespace System
             }
         }
 
+        public Enumerator GetEnumerator()
+        {
+            if (_array == null)
+                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
+            Contract.EndContractBlock();
+
+            return new Enumerator(this);
+        }
+
         public override int GetHashCode()
         {
             if (_array == null)
             {
                 return 0;
             }
-            
+
             int hash = 5381;
             hash = System.Numerics.Hashing.HashHelpers.Combine(hash, _offset);
             hash = System.Numerics.Hashing.HashHelpers.Combine(hash, _count);
-            
+
             // The array hash is expected to be an evenly-distributed mixture of bits,
             // so rather than adding the cost of another rotation we just xor it.
             hash ^= _array.GetHashCode();
@@ -266,35 +275,21 @@ namespace System
         #endregion
 
         #region IEnumerable<T>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            if (_array == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
-            Contract.EndContractBlock();
-
-            return new ArraySegmentEnumerator(this);
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         #endregion
 
         #region IEnumerable
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            if (_array == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
-            Contract.EndContractBlock();
-
-            return new ArraySegmentEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
 
-        private sealed class ArraySegmentEnumerator : IEnumerator<T>
+        public struct Enumerator : IEnumerator<T>
         {
-            private T[] _array;
-            private int _start;
-            private int _end;
+            private readonly T[] _array;
+            private readonly int _start;
+            private readonly int _end; // cache Offset + Count, since it's a little slow
             private int _current;
 
-            internal ArraySegmentEnumerator(ArraySegment<T> arraySegment)
+            internal Enumerator(ArraySegment<T> arraySegment)
             {
                 Debug.Assert(arraySegment.Array != null);
                 Debug.Assert(arraySegment.Offset >= 0);
@@ -321,19 +316,15 @@ namespace System
             {
                 get
                 {
-                    if (_current < _start) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                    if (_current >= _end) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                    if (_current < _start)
+                        throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
+                    if (_current >= _end)
+                        throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
                     return _array[_current];
                 }
             }
 
-            object IEnumerator.Current
-            {
-                get
-                {
-                    return Current;
-                }
-            }
+            object IEnumerator.Current => Current;
 
             void IEnumerator.Reset()
             {

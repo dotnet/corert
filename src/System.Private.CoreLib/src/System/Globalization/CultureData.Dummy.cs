@@ -10,7 +10,6 @@ using Internal.Runtime.Augments;
 
 namespace System.Globalization
 {
-
     internal partial class CultureData
     {
         private unsafe bool InitCultureData()
@@ -39,7 +38,7 @@ namespace System.Globalization
 
         private int[] GetLocaleInfo(LocaleGroupingData type)
         {
-            return new int [] { 0 };
+            return new int[] { 0 };
         }
 
         private static CultureInfo GetUserDefaultCulture()
@@ -69,12 +68,12 @@ namespace System.Globalization
 
         private String[] GetShortTimeFormats()
         {
-            return new string [] { "h:mm tt" };
+            return new string[] { "h:mm tt" };
         }
 
         private String[] GetTimeFormats()
         {
-            return new string [] { "h:mm:ss tt", "h:mm tt" };
+            return new string[] { "h:mm:ss tt", "h:mm tt" };
         }
 
         private int GetFirstDayOfWeek()
@@ -86,7 +85,7 @@ namespace System.Globalization
         {
             throw new NotImplementedException();
         }
-        
+
         private static string LCIDToLocaleName(int culture)
         {
             throw new NotImplementedException();
@@ -146,11 +145,10 @@ namespace System.Globalization
         {
             get { throw new NotImplementedException(); }
         }
-        
+
         internal bool IsReplacementCulture
         {
             get { throw new NotImplementedException(); }
         }
-
     }
 }

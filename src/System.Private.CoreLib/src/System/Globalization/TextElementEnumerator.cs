@@ -12,6 +12,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -19,15 +20,17 @@ namespace System.Globalization
     // This is public because GetTextElement() is public.
     //
 
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class TextElementEnumerator : IEnumerator
     {
         private String _str;
         private int _index;
         private int _startIndex;
 
+        [NonSerialized]
         private int _strLen;                // This is the length of the total string, counting from the beginning of string.
 
+        [NonSerialized]
         private int _currTextElementLen; // The current text element lenght after MoveNext() is called.
 
         private UnicodeCategory _uc;

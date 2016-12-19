@@ -34,7 +34,7 @@ namespace Internal.Reflection.Augments
         //
         public static void Initialize(ReflectionCoreCallbacks reflectionCoreCallbacks)
         {
-            _reflectionCoreCallbacks = reflectionCoreCallbacks;
+            s_reflectionCoreCallbacks = reflectionCoreCallbacks;
         }
 
         public static CustomAttributeNamedArgument CreateCustomAttributeNamedArgument(Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue)
@@ -97,14 +97,14 @@ namespace Internal.Reflection.Augments
         {
             get
             {
-                ReflectionCoreCallbacks callbacks = _reflectionCoreCallbacks;
+                ReflectionCoreCallbacks callbacks = s_reflectionCoreCallbacks;
                 if (callbacks == null)
                     throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
                 return callbacks;
             }
         }
 
-        private static ReflectionCoreCallbacks _reflectionCoreCallbacks;
+        private static ReflectionCoreCallbacks s_reflectionCoreCallbacks;
     }
 
     //

@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
-
 namespace System.Globalization
 {
     public partial class HijriCalendar : Calendar
     {
-        public static int GetHijriDateAdjustment()
+        private static int GetHijriDateAdjustment()
         {
-            // UNIXTODO: HijriCalendar
-            throw new NotImplementedException();
+            // this setting is not supported on Unix, so always return 0
+            return 0;
         }
     }
 }

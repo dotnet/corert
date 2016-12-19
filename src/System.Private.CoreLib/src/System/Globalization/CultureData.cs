@@ -43,8 +43,6 @@ namespace System.Globalization
     internal partial class CultureData
     {
         private const int undef = -1;
-        private const int LOCALE_CUSTOM_UNSPECIFIED = 0x1000;
-        private const int LOCALE_CUSTOM_DEFAULT = 0x0c00;
 
         // Override flag
         private String _sRealName; // Name you passed in (ie: en-US, en, or de-DE_phoneb)
@@ -66,7 +64,7 @@ namespace System.Globalization
         private String _sNativeLanguage; // Native name of this language
         private String _sAbbrevLang; // abbreviated language name (Windows Language Name) ex: ENU
         private string _sConsoleFallbackName; // The culture name for the console fallback UI culture
-        private int    _iInputLanguageHandle=undef;// input language handle
+        private int _iInputLanguageHandle = undef;// input language handle
 
         // Region
         private String _sRegionName; // (RegionInfo)
@@ -75,7 +73,7 @@ namespace System.Globalization
         private String _sNativeCountry; // native country name
         private String _sISO3166CountryName; // ISO 3166 (RegionInfo), ie: US
         private String _sISO3166CountryName2; // 3 char ISO 3166 country name 2 2(RegionInfo) ex: USA (ISO)
-        private int    _iGeoId = undef; // GeoId
+        private int _iGeoId = undef; // GeoId
 
         // Numbers
         private String _sPositiveSign; // (user can override) positive sign
@@ -406,7 +404,7 @@ namespace System.Globalization
                                                         CultureTypes.ReplacementCultures | CultureTypes.WindowsOnlyCultures |
                                                         CultureTypes.FrameworkCultures)) != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(types), 
+                throw new ArgumentOutOfRangeException(nameof(types),
                               SR.Format(SR.ArgumentOutOfRange_Range, CultureTypes.NeutralCultures, CultureTypes.FrameworkCultures));
             }
 
@@ -421,7 +419,7 @@ namespace System.Globalization
                 // Remove the enum as it is an no-op.
                 types &= (~CultureTypes.WindowsOnlyCultures);
             }
-            
+
 #pragma warning restore 618
             return EnumCultures(types);
         }
@@ -461,16 +459,16 @@ namespace System.Globalization
                     invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
                     invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
                     invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
-		            invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
-		            invariant._iInputLanguageHandle = 0x07F;         // input language handle
+                    invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
+                    invariant._iInputLanguageHandle = 0x07F;         // input language handle
 
                     // Region
                     invariant._sRegionName = "IV";                    // (RegionInfo)
                     invariant._sEnglishCountry = "Invariant Country"; // english country name (RegionInfo)
                     invariant._sNativeCountry = "Invariant Country";  // native country name (Windows Only)
                     invariant._sISO3166CountryName = "IV";            // (RegionInfo), ie: US
-		            invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
-		            invariant._iGeoId = 244;                          // GeoId (Windows Only)
+                    invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
+                    invariant._iGeoId = 244;                          // GeoId (Windows Only)
 
                     // Numbers
                     invariant._sPositiveSign = "+";                    // positive sign
@@ -493,8 +491,8 @@ namespace System.Globalization
                     // Currency
                     invariant._sCurrency = "\x00a4";                // local monetary symbol: for international monetary symbol
                     invariant._sIntlMonetarySymbol = "XDR";                  // international monetary symbol (RegionInfo)
-		            invariant._sEnglishCurrency = "International Monetary Fund"; // English name for this currency (Windows Only)
-		            invariant._sNativeCurrency = "International Monetary Fund"; // Native name for this currency (Windows Only)
+                    invariant._sEnglishCurrency = "International Monetary Fund"; // English name for this currency (Windows Only)
+                    invariant._sNativeCurrency = "International Monetary Fund"; // Native name for this currency (Windows Only)
                     invariant._iCurrencyDigits = 2;                      // # local monetary fractional digits
                     invariant._iCurrency = 0;                      // positive currency format
                     invariant._iNegativeCurrency = 0;                      // negative currency format
@@ -2284,9 +2282,9 @@ namespace System.Globalization
         // This is ONLY used for caching names and shouldn't be used for anything else
         internal static string AnsiToLower(string testString)
         {
-            int index = 0; 
-            
-            while (index<testString.Length && (testString[index]<'A' || testString[index]>'Z' ))
+            int index = 0;
+
+            while (index < testString.Length && (testString[index] < 'A' || testString[index] > 'Z'))
             {
                 index++;
             }
@@ -2294,16 +2292,16 @@ namespace System.Globalization
             {
                 return testString; // we didn't really change the string
             }
-            
+
             StringBuilder sb = new StringBuilder(testString.Length);
-            for (int i=0; i<index; i++)
+            for (int i = 0; i < index; i++)
             {
                 sb.Append(testString[i]);
             }
 
-            sb.Append((char) (testString[index] -'A' + 'a'));
+            sb.Append((char)(testString[index] - 'A' + 'a'));
 
-            for (int ich = index+1; ich < testString.Length; ich++)
+            for (int ich = index + 1; ich < testString.Length; ich++)
             {
                 char ch = testString[ich];
                 sb.Append(ch <= 'Z' && ch >= 'A' ? (char)(ch - 'A' + 'a') : ch);

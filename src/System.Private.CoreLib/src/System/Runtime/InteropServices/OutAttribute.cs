@@ -9,7 +9,6 @@
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OutAttribute : Attribute
     {
         public OutAttribute()

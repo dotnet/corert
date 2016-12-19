@@ -17,7 +17,6 @@ namespace System
 {
     /* By default, attributes are inherited and multiple attributes are not allowed */
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AttributeUsageAttribute : Attribute
     {
         internal AttributeTargets m_attributeTarget = AttributeTargets.All; // Defaults to all

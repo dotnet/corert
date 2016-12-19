@@ -12,7 +12,6 @@ using Internal.Runtime.Augments;
 
 namespace System.Collections.ObjectModel
 {
-    [System.Runtime.InteropServices.ComVisible(false)]
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class Collection<T> : IList<T>, IList, IReadOnlyList<T>

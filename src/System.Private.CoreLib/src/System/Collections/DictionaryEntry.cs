@@ -6,7 +6,6 @@ namespace System.Collections
 {
     // A DictionaryEntry holds a key and a value from a dictionary.
     // It is returned by IDictionaryEnumerator::GetEntry().
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct DictionaryEntry
     {
         private Object _key;

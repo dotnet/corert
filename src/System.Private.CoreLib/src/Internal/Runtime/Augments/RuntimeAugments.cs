@@ -141,7 +141,7 @@ namespace Internal.Runtime.Augments
             }
 
             // Create a local copy of the lenghts that cannot be motified by the caller
-            int * pLengths = stackalloc int[lengths.Length];
+            int* pLengths = stackalloc int[lengths.Length];
             for (int i = 0; i < lengths.Length; i++)
                 pLengths[i] = lengths[i];
 
@@ -270,12 +270,12 @@ namespace Internal.Runtime.Augments
 
         public static unsafe void StoreReferenceTypeField(IntPtr address, Object fieldValue)
         {
-            Volatile.Write<Object>(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)address), fieldValue);
+            Volatile.Write<Object>(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr*)address), fieldValue);
         }
 
         public static unsafe Object LoadReferenceTypeField(IntPtr address)
         {
-            return Volatile.Read<Object>(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)address));
+            return Volatile.Read<Object>(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr*)address));
         }
 
         public static unsafe void StoreReferenceTypeField(Object obj, int fieldOffset, Object fieldValue)
@@ -899,7 +899,7 @@ namespace Internal.Runtime.Augments
             {
                 // This will be filled in by an IL transform
             }
-            public static unsafe void Call<T,U>(System.IntPtr pfn, void* arg1, ref T arg2, ref U arg3)
+            public static unsafe void Call<T, U>(System.IntPtr pfn, void* arg1, ref T arg2, ref U arg3)
             {
                 // This will be filled in by an IL transform
             }
@@ -950,7 +950,7 @@ namespace Internal.Runtime.Augments
         /// <param name="context">context to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
         /// <param name="context2">context2 to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
         [DebuggerGuidedStepThroughAttribute]
-        public static void RunFunctionWithConservativelyReportedBuffer<T,U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2)
+        public static void RunFunctionWithConservativelyReportedBuffer<T, U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2)
         {
             RuntimeImports.ConservativelyReportedRegionDesc regionDesc = new RuntimeImports.ConservativelyReportedRegionDesc();
             RunFunctionWithConservativelyReportedBufferInternal(cbBuffer, pfnTargetToInvoke, ref context, ref context2, ref regionDesc);
@@ -962,7 +962,7 @@ namespace Internal.Runtime.Augments
         // will be ignored.
         [DebuggerGuidedStepThroughAttribute]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T,U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
+        private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T, U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
         {
             fixed (RuntimeImports.ConservativelyReportedRegionDesc* pRegionDesc = &regionDesc)
             {
@@ -971,7 +971,7 @@ namespace Internal.Runtime.Augments
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
-                RawCalliHelper.Call<T,U>(pfnTargetToInvoke, region, ref context, ref context2);
+                RawCalliHelper.Call<T, U>(pfnTargetToInvoke, region, ref context, ref context2);
                 System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
 
                 RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);

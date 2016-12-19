@@ -10,7 +10,6 @@ using System.Runtime;
 
 namespace System.Collections.ObjectModel
 {
-    [System.Runtime.InteropServices.ComVisible(false)]
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class ReadOnlyCollection<T> : IList<T>, IList, IReadOnlyList<T>

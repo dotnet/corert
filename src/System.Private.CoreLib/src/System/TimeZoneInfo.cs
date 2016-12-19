@@ -8,8 +8,7 @@
 **
 ** Purpose: 
 ** This class is used to represent a Dynamic TimeZone.  It
-** has methods for converting a DateTime between TimeZones,
-** and for reading TimeZone data from the Windows Registry
+** has methods for converting a DateTime between TimeZones.
 **
 **
 ============================================================*/
@@ -20,13 +19,32 @@ using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading;
 
 using TIME_ZONE_INFORMATION = Interop.mincore.TIME_ZONE_INFORMATION;
 using TIME_DYNAMIC_ZONE_INFORMATION = Interop.mincore.TIME_DYNAMIC_ZONE_INFORMATION;
-namespace System 
-{
 
+namespace System
+{
+    //
+    // DateTime uses TimeZoneInfo under the hood for IsDaylightSavingTime, IsAmbiguousTime, and GetUtcOffset.
+    // These TimeZoneInfo APIs can throw ArgumentException when an Invalid-Time is passed in.  To avoid this
+    // unwanted behavior in DateTime public APIs, DateTime internally passes the
+    // TimeZoneInfoOptions.NoThrowOnInvalidTime flag to internal TimeZoneInfo APIs.
+    //
+    // In the future we can consider exposing similar options on the public TimeZoneInfo APIs if there is enough
+    // demand for this alternate behavior.
+    //
+    [Flags]
+    internal enum TimeZoneInfoOptions
+    {
+        None = 1,
+        NoThrowOnInvalidTime = 2
+    };
+
+
+    [Serializable]
     [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
     sealed public partial class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
@@ -713,10 +731,53 @@ namespace System
         //
         // Clears data from static members
         //
-        static internal void ClearCachedData()
+        public static void ClearCachedData()
         {
             // Clear a fresh instance of cached data
             s_cachedData = new CachedData();
+        }
+
+        //
+        // ConvertTimeBySystemTimeZoneId -
+        //
+        // Converts the value of a DateTime object from sourceTimeZone to destinationTimeZone
+        //
+        public static DateTimeOffset ConvertTimeBySystemTimeZoneId(DateTimeOffset dateTimeOffset, String destinationTimeZoneId)
+        {
+            return ConvertTime(dateTimeOffset, FindSystemTimeZoneById(destinationTimeZoneId));
+        }
+
+        public static DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, String destinationTimeZoneId)
+        {
+            return ConvertTime(dateTime, FindSystemTimeZoneById(destinationTimeZoneId));
+        }
+
+        public static DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, String sourceTimeZoneId, String destinationTimeZoneId)
+        {
+            if (dateTime.Kind == DateTimeKind.Local && String.Compare(sourceTimeZoneId, TimeZoneInfo.Local.Id, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                // TimeZoneInfo.Local can be cleared by another thread calling TimeZoneInfo.ClearCachedData.
+                // Take snapshot of cached data to guarantee this method will not be impacted by the ClearCachedData call.
+                // Without the snapshot, there is a chance that ConvertTime will throw since 'source' won't
+                // be reference equal to the new TimeZoneInfo.Local
+                //
+                CachedData cachedData = s_cachedData;
+                return ConvertTime(dateTime, cachedData.Local, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
+            }
+            else if (dateTime.Kind == DateTimeKind.Utc && String.Compare(sourceTimeZoneId, TimeZoneInfo.Utc.Id, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                // TimeZoneInfo.Utc can be cleared by another thread calling TimeZoneInfo.ClearCachedData.
+                // Take snapshot of cached data to guarantee this method will not be impacted by the ClearCachedData call.
+                // Without the snapshot, there is a chance that ConvertTime will throw since 'source' won't
+                // be reference equal to the new TimeZoneInfo.Utc
+                //
+                CachedData cachedData = s_cachedData;
+                return ConvertTime(dateTime, cachedData.Utc, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
+            }
+            else
+            {
+                return ConvertTime(dateTime, FindSystemTimeZoneById(sourceTimeZoneId), FindSystemTimeZoneById(destinationTimeZoneId));
+            }
         }
 
         //
@@ -725,7 +786,7 @@ namespace System
         // Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
         //
 
-        static public DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
+        public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
         {
             if (destinationTimeZone == null)
             {
@@ -754,7 +815,7 @@ namespace System
             }
         }
 
-        static public DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
+        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
         {
             if (destinationTimeZone == null)
             {
@@ -779,17 +840,17 @@ namespace System
             }
         }
 
-        static public DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone)
+        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone)
         {
             return ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, s_cachedData);
         }
 
-        static internal DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags)
+        internal static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags)
         {
             return ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, flags, s_cachedData);
         }
 
-        static private DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
+        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
         {
             if (sourceTimeZone == null)
             {
@@ -867,7 +928,34 @@ namespace System
             }
         }
 
-        static internal DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfoOptions flags)
+        //
+        // ConvertTimeFromUtc -
+        //
+        // Converts the value of a DateTime object from Coordinated Universal Time (UTC) to
+        // the destinationTimeZone.
+        //
+        public static DateTime ConvertTimeFromUtc(DateTime dateTime, TimeZoneInfo destinationTimeZone)
+        {
+            CachedData cachedData = s_cachedData;
+            return ConvertTime(dateTime, cachedData.Utc, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
+        }
+
+        //
+        // ConvertTimeToUtc -
+        //
+        // Converts the value of a DateTime object to Coordinated Universal Time (UTC).
+        //
+        public static DateTime ConvertTimeToUtc(DateTime dateTime)
+        {
+            if (dateTime.Kind == DateTimeKind.Utc)
+            {
+                return dateTime;
+            }
+            CachedData cachedData = s_cachedData;
+            return ConvertTime(dateTime, cachedData.Local, cachedData.Utc, TimeZoneInfoOptions.None, cachedData);
+        }
+
+        internal static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfoOptions flags)
         {
             if (dateTime.Kind == DateTimeKind.Utc)
             {
@@ -875,6 +963,12 @@ namespace System
             }
             CachedData cachedData = s_cachedData;
             return ConvertTime(dateTime, cachedData.Local, cachedData.Utc, flags, cachedData);
+        }
+
+        public static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfo sourceTimeZone)
+        {
+            CachedData cachedData = s_cachedData;
+            return ConvertTime(dateTime, sourceTimeZone, cachedData.Utc, TimeZoneInfoOptions.None, cachedData);
         }
 
         //
@@ -886,6 +980,19 @@ namespace System
         public bool Equals(TimeZoneInfo other)
         {
             return (other != null && String.Compare(_id, other._id, StringComparison.OrdinalIgnoreCase) == 0 && HasSameRules(other));
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as TimeZoneInfo);
+        }
+
+        //
+        // GetHashCode -
+        //
+        public override int GetHashCode()
+        {
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(_id);
         }
 
         //
@@ -949,7 +1056,7 @@ namespace System
         // Accessing this property may throw InvalidTimeZoneException or COMException
         // if the machine is in an unstable or corrupt state.
         //
-        static public TimeZoneInfo Local
+        public static TimeZoneInfo Local
         {
             get
             {
@@ -970,11 +1077,48 @@ namespace System
         }
 
         //
+        // ToSerializedString -
+        //
+        // "TimeZoneInfo"           := TimeZoneInfo Data;[AdjustmentRule Data 1];...;[AdjustmentRule Data N]
+        //
+        // "TimeZoneInfo Data"      := <_id>;<_baseUtcOffset>;<_displayName>;
+        //                          <_standardDisplayName>;<_daylightDispayName>;
+        //
+        // "AdjustmentRule Data" := <DateStart>;<DateEnd>;<DaylightDelta>;
+        //                          [TransitionTime Data DST Start]
+        //                          [TransitionTime Data DST End]
+        //
+        // "TransitionTime Data" += <DaylightStartTimeOfDat>;<Month>;<Week>;<DayOfWeek>;<Day>
+        //
+        public String ToSerializedString()
+        {
+            return StringSerializer.GetSerializedString(this);
+        }
+
+        //
+        // FromSerializedString -
+        //
+        public static TimeZoneInfo FromSerializedString(string source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+            if (source.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidSerializedString, "source");
+            }
+            Contract.EndContractBlock();
+
+            return StringSerializer.GetDeserializedTimeZoneInfo(source);
+        }
+
+        //
         // Utc -
         //
         // returns a TimeZoneInfo instance that represents Universal Coordinated Time (UTC)
         //
-        static public TimeZoneInfo Utc
+        public static TimeZoneInfo Utc
         {
             get
             {
@@ -991,11 +1135,11 @@ namespace System
         // returns a simple TimeZoneInfo instance that does
         // not support Daylight Saving Time
         //
-        static internal TimeZoneInfo CreateCustomTimeZone(
+        public static TimeZoneInfo CreateCustomTimeZone(
                 String id,
                 TimeSpan baseUtcOffset,
                 String displayName,
-                  String standardDisplayName)
+                String standardDisplayName)
         {
             return new TimeZoneInfo(
                            id,
@@ -1005,6 +1149,58 @@ namespace System
                            standardDisplayName,
                            null,
                            false);
+        }
+
+        //
+        // CreateCustomTimeZone -
+        // 
+        // returns a TimeZoneInfo instance that may
+        // support Daylight Saving Time
+        //
+        public static TimeZoneInfo CreateCustomTimeZone(
+                String id,
+                TimeSpan baseUtcOffset,
+                String displayName,
+                String standardDisplayName,
+                String daylightDisplayName,
+                AdjustmentRule[] adjustmentRules)
+        {
+            return new TimeZoneInfo(
+                           id,
+                           baseUtcOffset,
+                           displayName,
+                           standardDisplayName,
+                           daylightDisplayName,
+                           adjustmentRules,
+                           false);
+        }
+
+        //
+        // CreateCustomTimeZone -
+        // 
+        // returns a TimeZoneInfo instance that may
+        // support Daylight Saving Time
+        //
+        // This class factory method is identical to the
+        // TimeZoneInfo private constructor
+        //
+        public static TimeZoneInfo CreateCustomTimeZone(
+                String id,
+                TimeSpan baseUtcOffset,
+                String displayName,
+                String standardDisplayName,
+                String daylightDisplayName,
+                AdjustmentRule[] adjustmentRules,
+                Boolean disableDaylightSavingTime)
+        {
+            return new TimeZoneInfo(
+                            id,
+                            baseUtcOffset,
+                            displayName,
+                            standardDisplayName,
+                            daylightDisplayName,
+                            adjustmentRules,
+                            disableDaylightSavingTime);
         }
 
         // ----- SECTION: internal instance utility methods ----------------*
@@ -1043,7 +1239,7 @@ namespace System
         // * returns DateTime.MaxValue when the converted value is too large
         // * returns DateTime.MinValue when the converted value is too small
         //
-        static private DateTime ConvertUtcToTimeZone(Int64 ticks, TimeZoneInfo destinationTimeZone, out Boolean isAmbiguousLocalDst)
+        private static DateTime ConvertUtcToTimeZone(Int64 ticks, TimeZoneInfo destinationTimeZone, out Boolean isAmbiguousLocalDst)
         {
             DateTime utcConverted;
             DateTime localConverted;
@@ -1086,7 +1282,7 @@ namespace System
         //
         // Helper function that returns a DaylightTimeStruct from a year and AdjustmentRule
         //
-        static private DaylightTimeStruct GetDaylightTime(Int32 year, AdjustmentRule rule)
+        private static DaylightTimeStruct GetDaylightTime(Int32 year, AdjustmentRule rule)
         {
             TimeSpan delta = rule.DaylightDelta;
             DateTime startTime = TransitionTimeToDateTime(year, rule.DaylightTransitionStart);
@@ -1100,7 +1296,7 @@ namespace System
         // Helper function that checks if a given dateTime is in Daylight Saving Time (DST)
         // This function assumes the dateTime and AdjustmentRule are both in the same time zone
         //
-        static private Boolean GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime, TimeZoneInfoOptions flags)
+        private static Boolean GetIsDaylightSavings(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime, TimeZoneInfoOptions flags)
         {
             if (rule == null)
             {
@@ -1165,7 +1361,7 @@ namespace System
         // Helper function that checks if a given dateTime is in Daylight Saving Time (DST)
         // This function assumes the dateTime is in UTC and AdjustmentRule is in a different time zone
         //
-        static private Boolean GetIsDaylightSavingsFromUtc(DateTime time, Int32 Year, TimeSpan utc, AdjustmentRule rule, out Boolean isAmbiguousLocalDst, TimeZoneInfo zone)
+        private static Boolean GetIsDaylightSavingsFromUtc(DateTime time, Int32 Year, TimeSpan utc, AdjustmentRule rule, out Boolean isAmbiguousLocalDst, TimeZoneInfo zone)
         {
             isAmbiguousLocalDst = false;
 
@@ -1289,7 +1485,7 @@ namespace System
             return isDst;
         }
 
-        static private Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime, bool ignoreYearAdjustment)
+        private static Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime, bool ignoreYearAdjustment)
         {
             Boolean isDst;
 
@@ -1336,7 +1532,7 @@ namespace System
         // In this example, any DateTime values that fall into the [1AM - 1:59:59AM] range
         // are ambiguous; as it is unclear if these times are in Daylight Saving Time.
         //
-        static private Boolean GetIsAmbiguousTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
+        private static Boolean GetIsAmbiguousTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
         {
             Boolean isAmbiguous = false;
             if (rule == null || rule.DaylightDelta == TimeSpan.Zero)
@@ -1410,7 +1606,7 @@ namespace System
         // A "time hole" is not limited to only occurring at the start of DST, and may occur at
         // the end of DST as well.
         //
-        static private Boolean GetIsInvalidTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
+        private static Boolean GetIsInvalidTime(DateTime time, AdjustmentRule rule, DaylightTimeStruct daylightTime)
         {
             Boolean isInvalid = false;
             if (rule == null || rule.DaylightDelta == TimeSpan.Zero)
@@ -1478,7 +1674,7 @@ namespace System
         // Helper function that calculates the UTC offset for a dateTime in a timeZone.
         // This function assumes that the dateTime is already converted into the timeZone.
         //
-        static private TimeSpan GetUtcOffset(DateTime time, TimeZoneInfo zone, TimeZoneInfoOptions flags)
+        private static TimeSpan GetUtcOffset(DateTime time, TimeZoneInfo zone, TimeZoneInfoOptions flags)
         {
             TimeSpan baseOffset = zone.BaseUtcOffset;
             AdjustmentRule rule = zone.GetAdjustmentRuleForTime(time);
@@ -1498,7 +1694,7 @@ namespace System
         }
 
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
-        static internal TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out Boolean isAmbiguousLocalDst)
+        internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out Boolean isAmbiguousLocalDst)
         {
             Boolean isDaylightSavings = false;
             isAmbiguousLocalDst = false;
@@ -1527,19 +1723,19 @@ namespace System
         // This function assumes that the dateTime is represented in UTC and has *not*
         // already been converted into the timeZone.
         //
-        static private TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone)
+        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone)
         {
             Boolean isDaylightSavings;
             return GetUtcOffsetFromUtc(time, zone, out isDaylightSavings);
         }
 
-        static private TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings)
+        private static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings)
         {
             Boolean isAmbiguousLocalDst;
             return GetUtcOffsetFromUtc(time, zone, out isDaylightSavings, out isAmbiguousLocalDst);
         }
 
-        static internal TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings, out Boolean isAmbiguousLocalDst)
+        internal static TimeSpan GetUtcOffsetFromUtc(DateTime time, TimeZoneInfo zone, out Boolean isDaylightSavings, out Boolean isAmbiguousLocalDst)
         {
             isDaylightSavings = false;
             isAmbiguousLocalDst = false;
@@ -1563,7 +1759,7 @@ namespace System
 
                 // As we get the associated rule using the adjusted targetTime, we should use the adjusted year (targetTime.Year) too as after adding the baseOffset, 
                 // sometimes the year value can change if the input datetime was very close to the beginning or the end of the year. Examples of such cases:
-                //      “Libya Standard Time” when used with the date 2011-12-31T23:59:59.9999999Z
+                //      "Libya Standard Time" when used with the date 2011-12-31T23:59:59.9999999Z
                 //      "W. Australia Standard Time" used with date 2005-12-31T23:59:00.0000000Z
                 year = targetTime.Year;
 
@@ -1588,7 +1784,7 @@ namespace System
         //
         // Helper function that converts a year and TransitionTime into a DateTime
         //
-        static private DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
+        private static DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
         {
             DateTime value;
             DateTime timeOfDay = transitionTime.TimeOfDay;
@@ -1658,7 +1854,7 @@ namespace System
         // Helper function that validates the TimeSpan is within +/- 14.0 hours
         //
         [Pure]
-        static internal Boolean UtcOffsetOutOfRange(TimeSpan offset)
+        internal static Boolean UtcOffsetOutOfRange(TimeSpan offset)
         {
             return (offset.TotalHours < -14.0 || offset.TotalHours > 14.0);
         }
@@ -1671,7 +1867,7 @@ namespace System
         //
         // returns a Boolean indicating whether the AdjustmentRule[] supports DST
         //
-        static private void ValidateTimeZoneInfo(
+        private static void ValidateTimeZoneInfo(
                 String id,
                 TimeSpan baseUtcOffset,
                 AdjustmentRule[] adjustmentRules,
@@ -1793,7 +1989,7 @@ namespace System
             info.AddValue("SupportsDaylightSavingTime", _supportsDaylightSavingTime);
         }
 
-        TimeZoneInfo(SerializationInfo info, StreamingContext context)
+        private TimeZoneInfo(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
@@ -1836,7 +2032,7 @@ namespace System
         //
         // assumes cachedData lock is taken
         //
-        static private TimeZoneInfoResult TryGetTimeZone(ref TimeZoneInformation timeZoneInformation, Boolean dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
+        private static TimeZoneInfoResult TryGetTimeZone(ref TimeZoneInformation timeZoneInformation, Boolean dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
         {
             TimeZoneInfoResult result = TimeZoneInfoResult.Success;
             e = null;
@@ -1898,7 +2094,7 @@ namespace System
         // try/catch logic for handling the TimeZoneInfo private constructor that takes
         // a Win32Native.TimeZoneInformation structure.
         //
-        static private TimeZoneInfo GetLocalTimeZoneFromWin32Data(TimeZoneInformation timeZoneInformation, Boolean dstDisabled)
+        private static TimeZoneInfo GetLocalTimeZoneFromWin32Data(TimeZoneInformation timeZoneInformation, Boolean dstDisabled)
         {
             // first try to create the TimeZoneInfo with the original 'dstDisabled' flag
             try
@@ -2076,12 +2272,37 @@ namespace System
             _daylightDisplayName = zone.DaylightName;
         }
 
+        private TimeZoneInfo(
+                String id,
+                TimeSpan baseUtcOffset,
+                String displayName,
+                String standardDisplayName,
+                String daylightDisplayName,
+                AdjustmentRule[] adjustmentRules,
+                Boolean disableDaylightSavingTime)
+        {
+            Boolean adjustmentRulesSupportDst;
+            ValidateTimeZoneInfo(id, baseUtcOffset, adjustmentRules, out adjustmentRulesSupportDst);
+
+            if (!disableDaylightSavingTime && adjustmentRules != null && adjustmentRules.Length > 0)
+            {
+                _adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
+            }
+
+            _id = id;
+            _baseUtcOffset = baseUtcOffset;
+            _displayName = displayName;
+            _standardDisplayName = standardDisplayName;
+            _daylightDisplayName = (disableDaylightSavingTime ? null : daylightDisplayName);
+            _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
+        }
+
         //
         // CreateAdjustmentRuleFromTimeZoneInformation-
         //
         // Converts TimeZoneInformation to an AdjustmentRule
         //
-        static internal AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
+        internal static AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
         {
             bool supportsDst = (timeZoneInformation.Dtzi.StandardDate.wMonth != 0);
 
@@ -2132,7 +2353,7 @@ namespace System
                 new TimeSpan(0, defaultBaseUtcOffset - timeZoneInformation.Dtzi.Bias, 0));
         }
 
-        static internal AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(ref TIME_ZONE_INFORMATION timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
+        internal static AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(ref TIME_ZONE_INFORMATION timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
         {
             bool supportsDst = (timeZoneInformation.StandardDate.wMonth != 0);
 
@@ -2187,7 +2408,7 @@ namespace System
         // Overloaded method which take TimeZoneInformation
         //
 
-        static private bool TransitionTimeFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
+        private static bool TransitionTimeFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
         {
             bool supportsDst = (timeZoneInformation.Dtzi.StandardDate.wMonth != 0);
 
@@ -2275,7 +2496,7 @@ namespace System
         // * when the argument 'readStart' is true the corresponding daylightTransitionTimeStart field is read
         // * when the argument 'readStart' is false the corresponding dayightTransitionTimeEnd field is read
         //
-        static private bool TransitionTimeFromTimeZoneInformation(TIME_ZONE_INFORMATION timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
+        private static bool TransitionTimeFromTimeZoneInformation(TIME_ZONE_INFORMATION timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
         {
             //
             // SYSTEMTIME - 
@@ -2385,6 +2606,1306 @@ namespace System
             }
 
             return true;
+        }
+        /*============================================================
+        **
+        ** Class: TimeZoneInfo.AdjustmentRule
+        **
+        **
+        ** Purpose: 
+        ** This class is used to represent a Dynamic TimeZone.  It
+        ** has methods for converting a DateTime to UTC from local time
+        ** and to local time from UTC and methods for getting the 
+        ** standard name and daylight name of the time zone.  
+        **
+        **
+        ============================================================*/
+        [Serializable]
+        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
+        sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
+        {
+            // ---- SECTION:  members supporting exposed properties -------------*
+            private DateTime _dateStart;
+            private DateTime _dateEnd;
+            private TimeSpan _daylightDelta;
+            private TransitionTime _daylightTransitionStart;
+            private TransitionTime _daylightTransitionEnd;
+            private TimeSpan _baseUtcOffsetDelta;   // delta from the default Utc offset (utcOffset = defaultUtcOffset + _baseUtcOffsetDelta)
+
+
+            // ---- SECTION: public properties --------------*
+            public DateTime DateStart
+            {
+                get
+                {
+                    return _dateStart;
+                }
+            }
+
+            public DateTime DateEnd
+            {
+                get
+                {
+                    return _dateEnd;
+                }
+            }
+
+            public TimeSpan DaylightDelta
+            {
+                get
+                {
+                    return _daylightDelta;
+                }
+            }
+
+
+            public TransitionTime DaylightTransitionStart
+            {
+                get
+                {
+                    return _daylightTransitionStart;
+                }
+            }
+
+
+            public TransitionTime DaylightTransitionEnd
+            {
+                get
+                {
+                    return _daylightTransitionEnd;
+                }
+            }
+
+            internal TimeSpan BaseUtcOffsetDelta
+            {
+                get
+                {
+                    return _baseUtcOffsetDelta;
+                }
+            }
+
+            internal bool HasDaylightSaving
+            {
+                get
+                {
+                    return this.DaylightDelta != TimeSpan.Zero ||
+                            this.DaylightTransitionStart.TimeOfDay != DateTime.MinValue ||
+                            this.DaylightTransitionEnd.TimeOfDay != DateTime.MinValue.AddMilliseconds(1);
+                }
+            }
+
+            // ---- SECTION: public methods --------------*
+
+            // IEquatable<AdjustmentRule>
+            public bool Equals(AdjustmentRule other)
+            {
+                bool equals = (other != null
+                     && _dateStart == other._dateStart
+                     && _dateEnd == other._dateEnd
+                     && _daylightDelta == other._daylightDelta
+                     && _baseUtcOffsetDelta == other._baseUtcOffsetDelta);
+
+                equals = equals && _daylightTransitionEnd.Equals(other._daylightTransitionEnd)
+                         && _daylightTransitionStart.Equals(other._daylightTransitionStart);
+
+                return equals;
+            }
+
+
+            public override int GetHashCode()
+            {
+                return _dateStart.GetHashCode();
+            }
+
+
+
+            // -------- SECTION: constructors -----------------*
+
+            private AdjustmentRule() { }
+
+
+            // -------- SECTION: factory methods -----------------*
+
+            public static AdjustmentRule CreateAdjustmentRule(
+                             DateTime dateStart,
+                             DateTime dateEnd,
+                             TimeSpan daylightDelta,
+                             TransitionTime daylightTransitionStart,
+                             TransitionTime daylightTransitionEnd)
+            {
+                ValidateAdjustmentRule(dateStart, dateEnd, daylightDelta,
+                                       daylightTransitionStart, daylightTransitionEnd);
+
+                AdjustmentRule rule = new AdjustmentRule();
+
+                rule._dateStart = dateStart;
+                rule._dateEnd = dateEnd;
+                rule._daylightDelta = daylightDelta;
+                rule._daylightTransitionStart = daylightTransitionStart;
+                rule._daylightTransitionEnd = daylightTransitionEnd;
+                rule._baseUtcOffsetDelta = TimeSpan.Zero;
+
+                return rule;
+            }
+
+            internal static AdjustmentRule CreateAdjustmentRule(
+                             DateTime dateStart,
+                             DateTime dateEnd,
+                             TimeSpan daylightDelta,
+                             TransitionTime daylightTransitionStart,
+                             TransitionTime daylightTransitionEnd,
+                             TimeSpan baseUtcOffsetDelta)
+            {
+                AdjustmentRule rule = CreateAdjustmentRule(dateStart, dateEnd, daylightDelta, daylightTransitionStart, daylightTransitionEnd);
+                rule._baseUtcOffsetDelta = baseUtcOffsetDelta;
+                return rule;
+            }
+
+            // ----- SECTION: internal utility methods ----------------*
+
+            //
+            // When Windows sets the daylight transition start Jan 1st at 12:00 AM, it means the year starts with the daylight saving on. 
+            // We have to special case this value and not adjust it when checking if any date is in the daylight saving period. 
+            //
+            internal bool IsStartDateMarkerForBeginningOfYear()
+            {
+                return DaylightTransitionStart.Month == 1 && DaylightTransitionStart.Day == 1 && DaylightTransitionStart.TimeOfDay.Hour == 0 &&
+                       DaylightTransitionStart.TimeOfDay.Minute == 0 && DaylightTransitionStart.TimeOfDay.Second == 0 &&
+                       _dateStart.Year == _dateEnd.Year;
+            }
+
+            //
+            // When Windows sets the daylight transition end Jan 1st at 12:00 AM, it means the year ends with the daylight saving on. 
+            // We have to special case this value and not adjust it when checking if any date is in the daylight saving period. 
+            //
+            internal bool IsEndDateMarkerForEndOfYear()
+            {
+                return DaylightTransitionEnd.Month == 1 && DaylightTransitionEnd.Day == 1 && DaylightTransitionEnd.TimeOfDay.Hour == 0 &&
+                       DaylightTransitionEnd.TimeOfDay.Minute == 0 && DaylightTransitionEnd.TimeOfDay.Second == 0 &&
+                       _dateStart.Year == _dateEnd.Year;
+            }
+
+            //
+            // ValidateAdjustmentRule -
+            //
+            // Helper function that performs all of the validation checks for the 
+            // factory methods and deserialization callback
+            //
+            private static void ValidateAdjustmentRule(
+                             DateTime dateStart,
+                             DateTime dateEnd,
+                             TimeSpan daylightDelta,
+                             TransitionTime daylightTransitionStart,
+                             TransitionTime daylightTransitionEnd)
+            {
+                if (dateStart.Kind != DateTimeKind.Unspecified)
+                {
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(dateStart));
+                }
+
+                if (dateEnd.Kind != DateTimeKind.Unspecified)
+                {
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(dateEnd));
+                }
+
+                if (daylightTransitionStart.Equals(daylightTransitionEnd))
+                {
+                    throw new ArgumentException(SR.Argument_TransitionTimesAreIdentical,
+                                                nameof(daylightTransitionEnd));
+                }
+
+
+                if (dateStart > dateEnd)
+                {
+                    throw new ArgumentException(SR.Argument_OutOfOrderDateTimes, nameof(dateStart));
+                }
+
+                if (TimeZoneInfo.UtcOffsetOutOfRange(daylightDelta))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(daylightDelta), daylightDelta,
+                        SR.ArgumentOutOfRange_UtcOffset);
+                }
+
+                if (daylightDelta.Ticks % TimeSpan.TicksPerMinute != 0)
+                {
+                    throw new ArgumentException(SR.Argument_TimeSpanHasSeconds,
+                        nameof(daylightDelta));
+                }
+
+                if (dateStart.TimeOfDay != TimeSpan.Zero)
+                {
+                    throw new ArgumentException(SR.Argument_DateTimeHasTimeOfDay,
+                        nameof(dateStart));
+                }
+
+                if (dateEnd.TimeOfDay != TimeSpan.Zero)
+                {
+                    throw new ArgumentException(SR.Argument_DateTimeHasTimeOfDay,
+                        nameof(dateEnd));
+                }
+                Contract.EndContractBlock();
+            }
+
+
+
+            // ----- SECTION: private serialization instance methods  ----------------*
+
+            void IDeserializationCallback.OnDeserialization(Object sender)
+            {
+                // OnDeserialization is called after each instance of this class is deserialized.
+                // This callback method performs AdjustmentRule validation after being deserialized.
+
+                try
+                {
+                    ValidateAdjustmentRule(_dateStart, _dateEnd, _daylightDelta,
+                                           _daylightTransitionStart, _daylightTransitionEnd);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
+                }
+            }
+
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException("info");
+                }
+                Contract.EndContractBlock();
+
+                info.AddValue("DateStart", _dateStart);
+                info.AddValue("DateEnd", _dateEnd);
+                info.AddValue("DaylightDelta", _daylightDelta);
+                info.AddValue("DaylightTransitionStart", _daylightTransitionStart);
+                info.AddValue("DaylightTransitionEnd", _daylightTransitionEnd);
+                info.AddValue("BaseUtcOffsetDelta", _baseUtcOffsetDelta);
+            }
+
+            private AdjustmentRule(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException("info");
+                }
+
+                _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime));
+                _dateEnd = (DateTime)info.GetValue("DateEnd", typeof(DateTime));
+                _daylightDelta = (TimeSpan)info.GetValue("DaylightDelta", typeof(TimeSpan));
+                _daylightTransitionStart = (TransitionTime)info.GetValue("DaylightTransitionStart", typeof(TransitionTime));
+                _daylightTransitionEnd = (TransitionTime)info.GetValue("DaylightTransitionEnd", typeof(TransitionTime));
+
+                object o = info.GetValueNoThrow("BaseUtcOffsetDelta", typeof(TimeSpan));
+                if (o != null)
+                {
+                    _baseUtcOffsetDelta = (TimeSpan)o;
+                }
+            }
+        }
+
+
+        /*============================================================
+        **
+        ** Class: TimeZoneInfo.TransitionTime
+        **
+        **
+        ** Purpose: 
+        ** This class is used to represent a Dynamic TimeZone.  It
+        ** has methods for converting a DateTime to UTC from local time
+        ** and to local time from UTC and methods for getting the 
+        ** standard name and daylight name of the time zone.  
+        **
+        **
+        ============================================================*/
+        [Serializable]
+        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
+        public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
+        {
+            // ---- SECTION:  members supporting exposed properties -------------*
+            private DateTime _timeOfDay;
+            private byte _month;
+            private byte _week;
+            private byte _day;
+            private DayOfWeek _dayOfWeek;
+            private Boolean _isFixedDateRule;
+
+
+            // ---- SECTION: public properties --------------*
+            public DateTime TimeOfDay
+            {
+                get
+                {
+                    return _timeOfDay;
+                }
+            }
+
+            public Int32 Month
+            {
+                get
+                {
+                    return (int)_month;
+                }
+            }
+
+
+            public Int32 Week
+            {
+                get
+                {
+                    return (int)_week;
+                }
+            }
+
+            public Int32 Day
+            {
+                get
+                {
+                    return (int)_day;
+                }
+            }
+
+            public DayOfWeek DayOfWeek
+            {
+                get
+                {
+                    return _dayOfWeek;
+                }
+            }
+
+            public Boolean IsFixedDateRule
+            {
+                get
+                {
+                    return _isFixedDateRule;
+                }
+            }
+
+            // ---- SECTION: public methods --------------*
+            [Pure]
+            public override bool Equals(Object obj)
+            {
+                if (obj is TransitionTime)
+                {
+                    return Equals((TransitionTime)obj);
+                }
+                return false;
+            }
+
+            public static bool operator ==(TransitionTime t1, TransitionTime t2)
+            {
+                return t1.Equals(t2);
+            }
+
+            public static bool operator !=(TransitionTime t1, TransitionTime t2)
+            {
+                return (!t1.Equals(t2));
+            }
+
+            [Pure]
+            public bool Equals(TransitionTime other)
+            {
+                bool equal = (_isFixedDateRule == other._isFixedDateRule
+                             && _timeOfDay == other._timeOfDay
+                             && _month == other._month);
+
+                if (equal)
+                {
+                    if (other._isFixedDateRule)
+                    {
+                        equal = (_day == other._day);
+                    }
+                    else
+                    {
+                        equal = (_week == other._week
+                            && _dayOfWeek == other._dayOfWeek);
+                    }
+                }
+                return equal;
+            }
+
+
+            public override int GetHashCode()
+            {
+                return ((int)_month ^ (int)_week << 8);
+            }
+
+
+            // -------- SECTION: constructors -----------------*
+            /*
+                        private TransitionTime() {           
+                            _timeOfDay = new DateTime();
+                            _month = 0;
+                            _week  = 0;
+                            _day   = 0;
+                            _dayOfWeek = DayOfWeek.Sunday;
+                            _isFixedDateRule = false;
+                        }
+            */
+
+
+            // -------- SECTION: factory methods -----------------*
+
+
+            public static TransitionTime CreateFixedDateRule(
+                    DateTime timeOfDay,
+                    Int32 month,
+                    Int32 day)
+            {
+                return CreateTransitionTime(timeOfDay, month, 1, day, DayOfWeek.Sunday, true);
+            }
+
+
+            public static TransitionTime CreateFloatingDateRule(
+                    DateTime timeOfDay,
+                    Int32 month,
+                    Int32 week,
+                    DayOfWeek dayOfWeek)
+            {
+                return CreateTransitionTime(timeOfDay, month, week, 1, dayOfWeek, false);
+            }
+
+
+            private static TransitionTime CreateTransitionTime(
+                    DateTime timeOfDay,
+                    Int32 month,
+                    Int32 week,
+                    Int32 day,
+                    DayOfWeek dayOfWeek,
+                    Boolean isFixedDateRule)
+            {
+                ValidateTransitionTime(timeOfDay, month, week, day, dayOfWeek);
+
+                TransitionTime t = new TransitionTime();
+                t._isFixedDateRule = isFixedDateRule;
+                t._timeOfDay = timeOfDay;
+                t._dayOfWeek = dayOfWeek;
+                t._day = (byte)day;
+                t._week = (byte)week;
+                t._month = (byte)month;
+
+                return t;
+            }
+
+
+            // ----- SECTION: internal utility methods ----------------*
+
+            //
+            // ValidateTransitionTime -
+            //
+            // Helper function that validates a TransitionTime instance
+            //
+            private static void ValidateTransitionTime(
+                    DateTime timeOfDay,
+                    Int32 month,
+                    Int32 week,
+                    Int32 day,
+                    DayOfWeek dayOfWeek)
+            {
+                if (timeOfDay.Kind != DateTimeKind.Unspecified)
+                {
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(timeOfDay));
+                }
+
+                // Month range 1-12
+                if (month < 1 || month > 12)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_MonthParam);
+                }
+
+                // Day range 1-31
+                if (day < 1 || day > 31)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(day), SR.ArgumentOutOfRange_DayParam);
+                }
+
+                // Week range 1-5
+                if (week < 1 || week > 5)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(week), SR.ArgumentOutOfRange_Week);
+                }
+
+                // DayOfWeek range 0-6
+                if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), SR.ArgumentOutOfRange_DayOfWeek);
+                }
+                Contract.EndContractBlock();
+
+                if (timeOfDay.Year != 1 || timeOfDay.Month != 1
+                || timeOfDay.Day != 1 || (timeOfDay.Ticks % TimeSpan.TicksPerMillisecond != 0))
+                {
+                    throw new ArgumentException(SR.Argument_DateTimeHasTicks, nameof(timeOfDay));
+                }
+            }
+
+            void IDeserializationCallback.OnDeserialization(Object sender)
+            {
+                // OnDeserialization is called after each instance of this class is deserialized.
+                // This callback method performs TransitionTime validation after being deserialized.
+
+                try
+                {
+                    ValidateTransitionTime(_timeOfDay, (Int32)_month, (Int32)_week, (Int32)_day, _dayOfWeek);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
+                }
+            }
+
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException("info");
+                }
+                Contract.EndContractBlock();
+
+                info.AddValue("TimeOfDay", _timeOfDay);
+                info.AddValue("Month", _month);
+                info.AddValue("Week", _week);
+                info.AddValue("Day", _day);
+                info.AddValue("DayOfWeek", _dayOfWeek);
+                info.AddValue("IsFixedDateRule", _isFixedDateRule);
+            }
+
+            private TransitionTime(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException("info");
+                }
+
+                _timeOfDay = (DateTime)info.GetValue("TimeOfDay", typeof(DateTime));
+                _month = (byte)info.GetValue("Month", typeof(byte));
+                _week = (byte)info.GetValue("Week", typeof(byte));
+                _day = (byte)info.GetValue("Day", typeof(byte));
+                _dayOfWeek = (DayOfWeek)info.GetValue("DayOfWeek", typeof(DayOfWeek));
+                _isFixedDateRule = (Boolean)info.GetValue("IsFixedDateRule", typeof(Boolean));
+            }
+        }
+
+
+        /*============================================================
+        **
+        ** Class: TimeZoneInfo.StringSerializer
+        **
+        **
+        ** Purpose: 
+        ** This class is used to serialize and deserialize TimeZoneInfo
+        ** objects based on the custom string serialization format
+        **
+        **
+        ============================================================*/
+        sealed private class StringSerializer
+        {
+            // ---- SECTION: private members  -------------*
+            private enum State
+            {
+                Escaped = 0,
+                NotEscaped = 1,
+                StartOfToken = 2,
+                EndOfLine = 3
+            }
+
+            private String _serializedText;
+            private int _currentTokenStartIndex;
+            private State _state;
+
+            // the majority of the strings contained in the OS time zones fit in 64 chars
+            private const int initialCapacityForString = 64;
+            private const char esc = '\\';
+            private const char sep = ';';
+            private const char lhs = '[';
+            private const char rhs = ']';
+            private const string escString = "\\";
+            private const string sepString = ";";
+            private const string lhsString = "[";
+            private const string rhsString = "]";
+            private const string escapedEsc = "\\\\";
+            private const string escapedSep = "\\;";
+            private const string escapedLhs = "\\[";
+            private const string escapedRhs = "\\]";
+            private const string dateTimeFormat = "MM:dd:yyyy";
+            private const string timeOfDayFormat = "HH:mm:ss.FFF";
+
+
+            // ---- SECTION: public static methods --------------*
+
+            //
+            // GetSerializedString -
+            //
+            // static method that creates the custom serialized string
+            // representation of a TimeZoneInfo instance
+            //
+            public static String GetSerializedString(TimeZoneInfo zone)
+            {
+                StringBuilder serializedText = StringBuilderCache.Acquire();
+
+                //
+                // <_id>;<_baseUtcOffset>;<_displayName>;<_standardDisplayName>;<_daylightDispayName>
+                //
+                serializedText.Append(SerializeSubstitute(zone.Id));
+                serializedText.Append(sep);
+                serializedText.Append(SerializeSubstitute(
+                           zone.BaseUtcOffset.TotalMinutes.ToString(CultureInfo.InvariantCulture)));
+                serializedText.Append(sep);
+                serializedText.Append(SerializeSubstitute(zone.DisplayName));
+                serializedText.Append(sep);
+                serializedText.Append(SerializeSubstitute(zone.StandardName));
+                serializedText.Append(sep);
+                serializedText.Append(SerializeSubstitute(zone.DaylightName));
+                serializedText.Append(sep);
+
+                AdjustmentRule[] rules = zone.GetAdjustmentRules();
+
+                if (rules != null && rules.Length > 0)
+                {
+                    for (int i = 0; i < rules.Length; i++)
+                    {
+                        AdjustmentRule rule = rules[i];
+
+                        serializedText.Append(lhs);
+                        serializedText.Append(SerializeSubstitute(rule.DateStart.ToString(
+                                                dateTimeFormat, DateTimeFormatInfo.InvariantInfo)));
+                        serializedText.Append(sep);
+                        serializedText.Append(SerializeSubstitute(rule.DateEnd.ToString(
+                                                dateTimeFormat, DateTimeFormatInfo.InvariantInfo)));
+                        serializedText.Append(sep);
+                        serializedText.Append(SerializeSubstitute(rule.DaylightDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture)));
+                        serializedText.Append(sep);
+                        // serialize the TransitionTime's
+                        SerializeTransitionTime(rule.DaylightTransitionStart, serializedText);
+                        serializedText.Append(sep);
+                        SerializeTransitionTime(rule.DaylightTransitionEnd, serializedText);
+                        serializedText.Append(sep);
+                        if (rule.BaseUtcOffsetDelta != TimeSpan.Zero)
+                        { // Serialize it only when BaseUtcOffsetDelta has a value to reduce the impact of adding rule.BaseUtcOffsetDelta
+                            serializedText.Append(SerializeSubstitute(rule.BaseUtcOffsetDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture)));
+                            serializedText.Append(sep);
+                        }
+                        serializedText.Append(rhs);
+                    }
+                }
+                serializedText.Append(sep);
+                return StringBuilderCache.GetStringAndRelease(serializedText);
+            }
+
+
+            //
+            // GetDeserializedTimeZoneInfo -
+            //
+            // static method that instantiates a TimeZoneInfo from a custom serialized
+            // string
+            //
+            public static TimeZoneInfo GetDeserializedTimeZoneInfo(String source)
+            {
+                StringSerializer s = new StringSerializer(source);
+
+                String id = s.GetNextStringValue(false);
+                TimeSpan baseUtcOffset = s.GetNextTimeSpanValue(false);
+                String displayName = s.GetNextStringValue(false);
+                String standardName = s.GetNextStringValue(false);
+                String daylightName = s.GetNextStringValue(false);
+                AdjustmentRule[] rules = s.GetNextAdjustmentRuleArrayValue(false);
+
+                try
+                {
+                    return TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, displayName, standardName, daylightName, rules);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData, ex);
+                }
+                catch (InvalidTimeZoneException ex)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData, ex);
+                }
+            }
+
+            // ---- SECTION: public instance methods --------------*
+
+
+            // -------- SECTION: constructors -----------------*
+
+            //
+            // StringSerializer -
+            //
+            // private constructor - used by GetDeserializedTimeZoneInfo()
+            //
+            private StringSerializer(String str)
+            {
+                _serializedText = str;
+                _state = State.StartOfToken;
+            }
+
+
+
+            // ----- SECTION: internal static utility methods ----------------*
+
+            //
+            // SerializeSubstitute -
+            //
+            // returns a new string with all of the reserved sub-strings escaped
+            //
+            // ";" -> "\;"
+            // "[" -> "\["
+            // "]" -> "\]"
+            // "\" -> "\\"
+            //
+            private static String SerializeSubstitute(String text)
+            {
+                text = text.Replace(escString, escapedEsc);
+                text = text.Replace(lhsString, escapedLhs);
+                text = text.Replace(rhsString, escapedRhs);
+                return text.Replace(sepString, escapedSep);
+            }
+
+
+            //
+            // SerializeTransitionTime -
+            //
+            // Helper method to serialize a TimeZoneInfo.TransitionTime object
+            //
+            private static void SerializeTransitionTime(TransitionTime time, StringBuilder serializedText)
+            {
+                serializedText.Append(lhs);
+                Int32 fixedDate = (time.IsFixedDateRule ? 1 : 0);
+                serializedText.Append(fixedDate.ToString(CultureInfo.InvariantCulture));
+                serializedText.Append(sep);
+
+                if (time.IsFixedDateRule)
+                {
+                    serializedText.Append(SerializeSubstitute(time.TimeOfDay.ToString(timeOfDayFormat, DateTimeFormatInfo.InvariantInfo)));
+                    serializedText.Append(sep);
+                    serializedText.Append(SerializeSubstitute(time.Month.ToString(CultureInfo.InvariantCulture)));
+                    serializedText.Append(sep);
+                    serializedText.Append(SerializeSubstitute(time.Day.ToString(CultureInfo.InvariantCulture)));
+                    serializedText.Append(sep);
+                }
+                else
+                {
+                    serializedText.Append(SerializeSubstitute(time.TimeOfDay.ToString(timeOfDayFormat, DateTimeFormatInfo.InvariantInfo)));
+                    serializedText.Append(sep);
+                    serializedText.Append(SerializeSubstitute(time.Month.ToString(CultureInfo.InvariantCulture)));
+                    serializedText.Append(sep);
+                    serializedText.Append(SerializeSubstitute(time.Week.ToString(CultureInfo.InvariantCulture)));
+                    serializedText.Append(sep);
+                    serializedText.Append(SerializeSubstitute(((int)time.DayOfWeek).ToString(CultureInfo.InvariantCulture)));
+                    serializedText.Append(sep);
+                }
+                serializedText.Append(rhs);
+            }
+
+            //
+            // VerifyIsEscapableCharacter -
+            //
+            // Helper function to determine if the passed in string token is allowed to be preceeded by an escape sequence token
+            //
+            private static void VerifyIsEscapableCharacter(char c)
+            {
+                if (c != esc && c != sep && c != lhs && c != rhs)
+                {
+                    throw new SerializationException(String.Format(SR.Serialization_InvalidEscapeSequence, c));
+                }
+            }
+
+            // ----- SECTION: internal instance utility methods ----------------*
+
+            //
+            // SkipVersionNextDataFields -
+            //
+            // Helper function that reads past "v.Next" data fields.  Receives a "depth" parameter indicating the
+            // current relative nested bracket depth that _currentTokenStartIndex is at.  The function ends
+            // successfully when "depth" returns to zero (0).
+            //
+            //
+            private void SkipVersionNextDataFields(Int32 depth /* starting depth in the nested brackets ('[', ']')*/)
+            {
+                if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                State tokenState = State.NotEscaped;
+
+                // walk the serialized text, building up the token as we go...
+                for (int i = _currentTokenStartIndex; i < _serializedText.Length; i++)
+                {
+                    if (tokenState == State.Escaped)
+                    {
+                        VerifyIsEscapableCharacter(_serializedText[i]);
+                        tokenState = State.NotEscaped;
+                    }
+                    else if (tokenState == State.NotEscaped)
+                    {
+                        switch (_serializedText[i])
+                        {
+                            case esc:
+                                tokenState = State.Escaped;
+                                break;
+
+                            case lhs:
+                                depth++;
+                                break;
+                            case rhs:
+                                depth--;
+                                if (depth == 0)
+                                {
+                                    _currentTokenStartIndex = i + 1;
+                                    if (_currentTokenStartIndex >= _serializedText.Length)
+                                    {
+                                        _state = State.EndOfLine;
+                                    }
+                                    else
+                                    {
+                                        _state = State.StartOfToken;
+                                    }
+                                    return;
+                                }
+                                break;
+
+                            case '\0':
+                                // invalid character
+                                throw new SerializationException(SR.Serialization_InvalidData);
+
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+                throw new SerializationException(SR.Serialization_InvalidData);
+            }
+
+
+            //
+            // GetNextStringValue -
+            //
+            // Helper function that reads a string token from the serialized text.  The function
+            // updates the _currentTokenStartIndex to point to the next token on exit.  Also _state
+            // is set to either State.StartOfToken or State.EndOfLine on exit.
+            //
+            // The function takes a parameter "canEndWithoutSeparator".  
+            //
+            // * When set to 'false' the function requires the string token end with a ";".
+            // * When set to 'true' the function requires that the string token end with either
+            //   ";", State.EndOfLine, or "]".  In the case that "]" is the terminal case the
+            //   _currentTokenStartIndex is left pointing at index "]" to allow the caller to update
+            //   its depth logic.
+            //
+            private String GetNextStringValue(Boolean canEndWithoutSeparator)
+            {
+                // first verify the internal state of the object
+                if (_state == State.EndOfLine)
+                {
+                    if (canEndWithoutSeparator)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        throw new SerializationException(SR.Serialization_InvalidData);
+                    }
+                }
+                if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                State tokenState = State.NotEscaped;
+                StringBuilder token = StringBuilderCache.Acquire(initialCapacityForString);
+
+                // walk the serialized text, building up the token as we go...
+                for (int i = _currentTokenStartIndex; i < _serializedText.Length; i++)
+                {
+                    if (tokenState == State.Escaped)
+                    {
+                        VerifyIsEscapableCharacter(_serializedText[i]);
+                        token.Append(_serializedText[i]);
+                        tokenState = State.NotEscaped;
+                    }
+                    else if (tokenState == State.NotEscaped)
+                    {
+                        switch (_serializedText[i])
+                        {
+                            case esc:
+                                tokenState = State.Escaped;
+                                break;
+
+                            case lhs:
+                                // '[' is an unexpected character
+                                throw new SerializationException(SR.Serialization_InvalidData);
+
+                            case rhs:
+                                if (canEndWithoutSeparator)
+                                {
+                                    // if ';' is not a required terminal then treat ']' as a terminal
+                                    // leave _currentTokenStartIndex pointing to ']' so our callers can handle
+                                    // this special case
+                                    _currentTokenStartIndex = i;
+                                    _state = State.StartOfToken;
+                                    return token.ToString();
+                                }
+                                else
+                                {
+                                    // ']' is an unexpected character
+                                    throw new SerializationException(SR.Serialization_InvalidData);
+                                }
+
+                            case sep:
+                                _currentTokenStartIndex = i + 1;
+                                if (_currentTokenStartIndex >= _serializedText.Length)
+                                {
+                                    _state = State.EndOfLine;
+                                }
+                                else
+                                {
+                                    _state = State.StartOfToken;
+                                }
+                                return StringBuilderCache.GetStringAndRelease(token);
+
+                            case '\0':
+                                // invalid character
+                                throw new SerializationException(SR.Serialization_InvalidData);
+
+                            default:
+                                token.Append(_serializedText[i]);
+                                break;
+                        }
+                    }
+                }
+                //
+                // we are at the end of the line
+                //
+                if (tokenState == State.Escaped)
+                {
+                    // we are at the end of the serialized text but we are in an escaped state
+                    throw new SerializationException(String.Format(SR.Serialization_InvalidEscapeSequence, String.Empty));
+                }
+
+                if (!canEndWithoutSeparator)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                _currentTokenStartIndex = _serializedText.Length;
+                _state = State.EndOfLine;
+                return StringBuilderCache.GetStringAndRelease(token);
+            }
+
+            //
+            // GetNextDateTimeValue -
+            //
+            // Helper function to read a DateTime token.  Takes a boolean "canEndWithoutSeparator"
+            // and a "format" string.
+            //
+            private DateTime GetNextDateTimeValue(Boolean canEndWithoutSeparator, string format)
+            {
+                String token = GetNextStringValue(canEndWithoutSeparator);
+                DateTime time;
+                if (!DateTime.TryParseExact(token, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out time))
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                return time;
+            }
+
+            //
+            // GetNextTimeSpanValue -
+            //
+            // Helper function to read a DateTime token.  Takes a boolean "canEndWithoutSeparator".
+            //
+            private TimeSpan GetNextTimeSpanValue(Boolean canEndWithoutSeparator)
+            {
+                Int32 token = GetNextInt32Value(canEndWithoutSeparator);
+
+                try
+                {
+                    return new TimeSpan(0 /* hours */, token /* minutes */, 0 /* seconds */);
+                }
+                catch (ArgumentOutOfRangeException e)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
+                }
+            }
+
+
+            //
+            // GetNextInt32Value -
+            //
+            // Helper function to read an Int32 token.  Takes a boolean "canEndWithoutSeparator".
+            //
+            private Int32 GetNextInt32Value(Boolean canEndWithoutSeparator)
+            {
+                String token = GetNextStringValue(canEndWithoutSeparator);
+                Int32 value;
+                if (!Int32.TryParse(token, NumberStyles.AllowLeadingSign /* "[sign]digits" */, CultureInfo.InvariantCulture, out value))
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                return value;
+            }
+
+
+            //
+            // GetNextAdjustmentRuleArrayValue -
+            //
+            // Helper function to read an AdjustmentRule[] token.  Takes a boolean "canEndWithoutSeparator".
+            //
+            private AdjustmentRule[] GetNextAdjustmentRuleArrayValue(Boolean canEndWithoutSeparator)
+            {
+                List<AdjustmentRule> rules = new List<AdjustmentRule>(1);
+                int count = 0;
+
+                // individual AdjustmentRule array elements do not require semicolons
+                AdjustmentRule rule = GetNextAdjustmentRuleValue(true);
+                while (rule != null)
+                {
+                    rules.Add(rule);
+                    count++;
+
+                    rule = GetNextAdjustmentRuleValue(true);
+                }
+
+                if (!canEndWithoutSeparator)
+                {
+                    // the AdjustmentRule array must end with a separator
+                    if (_state == State.EndOfLine)
+                    {
+                        throw new SerializationException(SR.Serialization_InvalidData);
+                    }
+                    if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
+                    {
+                        throw new SerializationException(SR.Serialization_InvalidData);
+                    }
+                }
+
+                return (count != 0 ? rules.ToArray() : null);
+            }
+
+            //
+            // GetNextAdjustmentRuleValue -
+            //
+            // Helper function to read an AdjustmentRule token.  Takes a boolean "canEndWithoutSeparator".
+            //
+            private AdjustmentRule GetNextAdjustmentRuleValue(Boolean canEndWithoutSeparator)
+            {
+                // first verify the internal state of the object
+                if (_state == State.EndOfLine)
+                {
+                    if (canEndWithoutSeparator)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        throw new SerializationException(SR.Serialization_InvalidData);
+                    }
+                }
+
+                if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                // check to see if the very first token we see is the separator
+                if (_serializedText[_currentTokenStartIndex] == sep)
+                {
+                    return null;
+                }
+
+                // verify the current token is a left-hand-side marker ("[")
+                if (_serializedText[_currentTokenStartIndex] != lhs)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                _currentTokenStartIndex++;
+
+                DateTime dateStart = GetNextDateTimeValue(false, dateTimeFormat);
+                DateTime dateEnd = GetNextDateTimeValue(false, dateTimeFormat);
+                TimeSpan daylightDelta = GetNextTimeSpanValue(false);
+                TransitionTime daylightStart = GetNextTransitionTimeValue(false);
+                TransitionTime daylightEnd = GetNextTransitionTimeValue(false);
+                TimeSpan baseUtcOffsetDelta = TimeSpan.Zero;
+                // verify that the string is now at the right-hand-side marker ("]") ...
+
+                if (_state == State.EndOfLine || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                // Check if we have baseUtcOffsetDelta in the serialized string and then deserialize it
+                if ((_serializedText[_currentTokenStartIndex] >= '0' && _serializedText[_currentTokenStartIndex] <= '9') ||
+                    _serializedText[_currentTokenStartIndex] == '-' || _serializedText[_currentTokenStartIndex] == '+')
+                {
+                    baseUtcOffsetDelta = GetNextTimeSpanValue(false);
+                }
+
+                if (_state == State.EndOfLine || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                if (_serializedText[_currentTokenStartIndex] != rhs)
+                {
+                    // skip ahead of any "v.Next" data at the end of the AdjustmentRule
+                    //
+                    // FUTURE: if the serialization format is extended in the future then this
+                    // code section will need to be changed to read the new fields rather
+                    // than just skipping the data at the end of the [AdjustmentRule].
+                    SkipVersionNextDataFields(1);
+                }
+                else
+                {
+                    _currentTokenStartIndex++;
+                }
+
+                // create the AdjustmentRule from the deserialized fields ...
+
+                AdjustmentRule rule;
+                try
+                {
+                    rule = AdjustmentRule.CreateAdjustmentRule(dateStart, dateEnd, daylightDelta, daylightStart, daylightEnd, baseUtcOffsetDelta);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
+                }
+
+                // finally set the state to either EndOfLine or StartOfToken for the next caller
+                if (_currentTokenStartIndex >= _serializedText.Length)
+                {
+                    _state = State.EndOfLine;
+                }
+                else
+                {
+                    _state = State.StartOfToken;
+                }
+                return rule;
+            }
+
+
+            //
+            // GetNextTransitionTimeValue -
+            //
+            // Helper function to read a TransitionTime token.  Takes a boolean "canEndWithoutSeparator".
+            //
+            private TransitionTime GetNextTransitionTimeValue(Boolean canEndWithoutSeparator)
+            {
+                // first verify the internal state of the object
+
+                if (_state == State.EndOfLine
+                    || (_currentTokenStartIndex < _serializedText.Length
+                        && _serializedText[_currentTokenStartIndex] == rhs))
+                {
+                    //
+                    // we are at the end of the line or we are starting at a "]" character
+                    //
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                // verify the current token is a left-hand-side marker ("[")
+
+                if (_serializedText[_currentTokenStartIndex] != lhs)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+                _currentTokenStartIndex++;
+
+                Int32 isFixedDate = GetNextInt32Value(false);
+
+                if (isFixedDate != 0 && isFixedDate != 1)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                TransitionTime transition;
+
+                DateTime timeOfDay = GetNextDateTimeValue(false, timeOfDayFormat);
+                timeOfDay = new DateTime(1, 1, 1, timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
+
+                Int32 month = GetNextInt32Value(false);
+
+                if (isFixedDate == 1)
+                {
+                    Int32 day = GetNextInt32Value(false);
+
+                    try
+                    {
+                        transition = TransitionTime.CreateFixedDateRule(timeOfDay, month, day);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        throw new SerializationException(SR.Serialization_InvalidData, e);
+                    }
+                }
+                else
+                {
+                    Int32 week = GetNextInt32Value(false);
+                    Int32 dayOfWeek = GetNextInt32Value(false);
+
+                    try
+                    {
+                        transition = TransitionTime.CreateFloatingDateRule(timeOfDay, month, week, (DayOfWeek)dayOfWeek);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        throw new SerializationException(SR.Serialization_InvalidData, e);
+                    }
+                }
+
+                // verify that the string is now at the right-hand-side marker ("]") ...
+
+                if (_state == State.EndOfLine || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+                if (_serializedText[_currentTokenStartIndex] != rhs)
+                {
+                    // skip ahead of any "v.Next" data at the end of the AdjustmentRule
+                    //
+                    // FUTURE: if the serialization format is extended in the future then this
+                    // code section will need to be changed to read the new fields rather
+                    // than just skipping the data at the end of the [TransitionTime].
+                    SkipVersionNextDataFields(1);
+                }
+                else
+                {
+                    _currentTokenStartIndex++;
+                }
+
+                // check to see if the string is now at the separator (";") ...
+                Boolean sepFound = false;
+                if (_currentTokenStartIndex < _serializedText.Length
+                    && _serializedText[_currentTokenStartIndex] == sep)
+                {
+                    // handle the case where we ended on a ";"
+                    _currentTokenStartIndex++;
+                    sepFound = true;
+                }
+
+                if (!sepFound && !canEndWithoutSeparator)
+                {
+                    // we MUST end on a separator
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
+
+
+                // finally set the state to either EndOfLine or StartOfToken for the next caller
+                if (_currentTokenStartIndex >= _serializedText.Length)
+                {
+                    _state = State.EndOfLine;
+                }
+                else
+                {
+                    _state = State.StartOfToken;
+                }
+                return transition;
+            }
         }
     }
 }

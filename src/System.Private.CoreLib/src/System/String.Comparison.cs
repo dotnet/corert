@@ -428,7 +428,7 @@ namespace System
             {
                 throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
-            
+
             if (object.ReferenceEquals(strA, strB))
             {
                 return 0;
@@ -487,7 +487,7 @@ namespace System
         // at indexA of length count is compared with the substring of strB
         // beginning at indexB of the same length.  Case sensitivity is determined by the ignoreCase boolean.
         //
-        
+
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, bool ignoreCase)
         {
             // Ideally we would just forward to the string.Compare overload that takes
@@ -506,7 +506,7 @@ namespace System
 
             int lengthA = length;
             int lengthB = length;
-            
+
             if (strA != null)
             {
                 lengthA = Math.Min(lengthA, strA.Length - indexA);
@@ -516,7 +516,7 @@ namespace System
             {
                 lengthB = Math.Min(lengthB, strB.Length - indexB);
             }
-            
+
             return ignoreCase ?
                 FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB) :
                 FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
@@ -557,7 +557,7 @@ namespace System
                 string paramName = strA.Length - indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
-            
+
             if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
             {
                 return 0;
@@ -641,7 +641,7 @@ namespace System
                 string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
-            
+
             int lengthA = Math.Min(length, strA.Length - indexA);
             int lengthB = Math.Min(length, strB.Length - indexB);
 

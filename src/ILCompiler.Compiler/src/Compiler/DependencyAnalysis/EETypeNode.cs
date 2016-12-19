@@ -570,6 +570,8 @@ namespace ILCompiler.DependencyAnalysis
                     // TODO: validate constraints
                 }
 
+                // Check the type doesn't have bogus MethodImpls or overrides and we can get the finalizer.
+                defType.GetFinalizer();
             }
 
             // Validate parameterized types
@@ -594,6 +596,11 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         // Element size over 64k can't be encoded in the GCDesc
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                    }
+
+                    if (((ArrayType)parameterizedType).Rank > 32)
+                    {
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
                     }
                 }
 

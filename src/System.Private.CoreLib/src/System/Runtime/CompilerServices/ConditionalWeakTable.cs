@@ -10,7 +10,6 @@ using System.Threading;
 namespace System.Runtime.CompilerServices
 {
     #region ConditionalWeakTable
-    [ComVisible(false)]
     public sealed class ConditionalWeakTable<TKey, TValue>
         where TKey : class
         where TValue : class
@@ -71,6 +70,36 @@ namespace System.Runtime.CompilerServices
                 }
 
                 CreateEntry(key, value);
+            }
+        }
+
+        //--------------------------------------------------------------------------------------------
+        // key: key to add or update. May not be null.
+        // value: value to associate with key.
+        //
+        // If the key is already entered into the dictionary, this method will update the value associated with key.
+        //--------------------------------------------------------------------------------------------
+        public void AddOrUpdate(TKey key, TValue value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            using (LockHolder.Hold(_lock))
+            {
+                object otherValue;
+                int entryIndex = _container.FindEntry(key, out otherValue);
+
+                // if we found a key we should just update, if no we should create a new entry.
+                if (entryIndex != -1)
+                {
+                    _container.UpdateValue(entryIndex, value);
+                }
+                else
+                {
+                    CreateEntry(key, value);
+                }
             }
         }
 
@@ -421,15 +450,33 @@ namespace System.Runtime.CompilerServices
                 int entryIndex = FindEntry(key, out value);
                 if (entryIndex != -1)
                 {
+                    ref Entry entry = ref _entries[entryIndex];
+
                     //
                     // We do not free the handle here, as we may be racing with readers who already saw the hash code.
                     // Instead, we simply overwrite the entry's hash code, so subsequent reads will ignore it.
                     // The handle will be free'd in Container's finalizer, after the table is resized or discarded.
                     //
-                    Volatile.Write(ref _entries[entryIndex].hashCode, -1);
+                    Volatile.Write(ref entry.hashCode, -1);
+
+                    // Also, clear the key to allow GC to collect objects pointed to by the entry 
+                    entry.depHnd.SetPrimary(null);
+
                     return true;
                 }
                 return false;
+            }
+
+            internal void UpdateValue(int entryIndex, TValue newValue)
+            {
+                Debug.Assert(entryIndex != -1);
+
+                VerifyIntegrity();
+                _invalid = true;
+
+                _entries[entryIndex].depHnd.SetSecondary(newValue);
+
+                _invalid = false;
             }
 
             //----------------------------------------------------------------------------------------
@@ -473,7 +520,7 @@ namespace System.Runtime.CompilerServices
 
                 return Resize(newSize);
             }
-            
+
             internal Container Resize(int newSize)
             {
                 Debug.Assert(IsPowerOfTwo(newSize));
@@ -725,7 +772,6 @@ namespace System.Runtime.CompilerServices
     // This struct intentionally does no self-synchronization. It's up to the caller to
     // to use DependentHandles in a thread-safe way.
     //=========================================================================================
-    [ComVisible(false)]
     internal struct DependentHandle
     {
         #region Constructors
@@ -752,9 +798,19 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhHandleGet(_handle);
         }
 
-        public object GetPrimaryAndSecondary(out Object secondary)
+        public object GetPrimaryAndSecondary(out object secondary)
         {
             return RuntimeImports.RhHandleGetDependent(_handle, out secondary);
+        }
+
+        public void SetPrimary(object primary)
+        {
+            RuntimeImports.RhHandleSet(_handle, primary);
+        }
+
+        public void SetSecondary(object secondary)
+        {
+            RuntimeImports.RhHandleSetDependentSecondary(_handle, secondary);
         }
 
         //----------------------------------------------------------------------

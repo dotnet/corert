@@ -641,9 +641,8 @@ namespace Internal.JitInterface
             if (method.Signature.IsStatic)
                 result |= CorInfoFlag.CORINFO_FLG_STATIC;
 
-            // TODO: if (pMD->IsSynchronized())
-            //    result |= CORINFO_FLG_SYNCH;
-
+            if (method.IsSynchronized)
+                result |= CorInfoFlag.CORINFO_FLG_SYNCH;
             if (method.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
@@ -810,7 +809,7 @@ namespace Internal.JitInterface
             // transitions in inlined methods today (impCheckForPInvokeCall is not called for inlinees and number of other places
             // depend on it). To get a decent code with this limitation, we mirror CoreCLR behavior: Check
             // whether PInvoke stub is required here, and disable inlining of PInvoke methods in getMethodAttribsInternal.
-            return Internal.IL.Stubs.PInvokeILEmitter.IsStubRequired(method);
+            return _compilation.PInvokeILProvider.IsStubRequired(method);
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -2261,6 +2260,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY: id = ReadyToRunHelper.CheckCastAny; break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY: id = ReadyToRunHelper.CheckInstanceAny; break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER: id = ReadyToRunHelper.MonitorEnter; break;
+                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT: id = ReadyToRunHelper.MonitorExit; break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER_STATIC: id = ReadyToRunHelper.MonitorEnterStatic; break;
+                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC: id = ReadyToRunHelper.MonitorExitStatic; break;
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -2293,8 +2298,13 @@ namespace Internal.JitInterface
 
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
+
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        { throw new NotImplementedException("getMethodSync"); }
+        {
+            MethodDesc method = HandleToObject(ftn);
+            TypeDesc type = method.OwningType;
+            return (void*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(type));
+        }
 
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
         {
@@ -2718,13 +2728,39 @@ namespace Internal.JitInterface
                     (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
                 pResult.nullInstanceCheck = false;
             }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            else if((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
-                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
+                // If this is a non-interface/non-GVM call, we actually don't need a runtime lookup to find the target.
+                // We don't even need to keep track of the runtime-determined method being called because the system ensures
+                // that if e.g. Foo<__Canon>.GetHashCode is needed and we're generating a dictionary for Foo<string>,
+                // Foo<string>.GetHashCode is needed too.
+                if (pResult.exactContextNeedsRuntimeLookup &&
+                    (targetMethod.HasInstantiation || targetMethod.OwningType.IsInterface))
+                {
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod != MethodBeingCompiled)
+                    {
+                        return;
+                    }
+
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.ResolveVirtualFunction;
+                }
+                else
+                {
+                    pResult.exactContextNeedsRuntimeLookup = false;
+                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+
+                    pResult.codePointerOrStubLookup.constLookup.addr =
+                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
+                }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
                 // TODO: Optimize this
@@ -2736,10 +2772,14 @@ namespace Internal.JitInterface
                 // call that should not be inlined.
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
-                if (pResult.exactContextNeedsRuntimeLookup)
+                // If this is a non-interface/non-GVM call, we actually don't need a runtime lookup to find the target.
+                // We don't even need to keep track of the runtime-determined method being called because the system ensures
+                // that if e.g. Foo<__Canon>.GetHashCode is needed and we're generating a dictionary for Foo<string>,
+                // Foo<string>.GetHashCode is needed too.
+                if (pResult.exactContextNeedsRuntimeLookup &&
+                    (targetMethod.HasInstantiation || targetMethod.OwningType.IsInterface))
                 {
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
 
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
@@ -2755,6 +2795,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
+                    pResult.exactContextNeedsRuntimeLookup = false;
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                     pResult.codePointerOrStubLookup.constLookup.addr =

@@ -30,6 +30,7 @@ namespace ILCompiler
         internal NodeFactory NodeFactory => _nodeFactory;
         internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         internal Logger Logger => _logger;
+        internal PInvokeILProvider PInvokeILProvider { get; }
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
 
@@ -56,15 +57,18 @@ namespace ILCompiler
                 rootProvider.AddCompilationRoots(rootingService);
 
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType());
+
+            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(!nodeFactory.CompilationModuleGroup.IsSingleFileCompilation));
+            _methodILCache = new ILProvider(PInvokeILProvider);
         }
 
-        private ILProvider _methodILCache = new ILProvider();
-
+        private ILProvider _methodILCache;
+        
         internal MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
-                _methodILCache = new ILProvider();
+                _methodILCache = new ILProvider(PInvokeILProvider);
 
             return _methodILCache.GetMethodIL(method);
         }
@@ -184,9 +188,20 @@ namespace ILCompiler
             public void AddCompilationRoot(TypeDesc type, string reason)
             {
                 if (type.IsGenericDefinition)
+                {
                     _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
+                }
                 else
+                {
                     _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
+
+                    // If the type has a thread static field then we should eagerly create a helper
+                    // to access such fields at runtime. This is required for multi-module compilation.
+                    if (type.IsDefType && (((DefType)type).ThreadStaticFieldSize > 0))
+                    {
+                        _graph.AddRoot(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetThreadStaticBase, (MetadataType)type), reason);
+                    }
+                }
             }
         }
     }

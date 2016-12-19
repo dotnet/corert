@@ -17,6 +17,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Globalization;
+using System.Diagnostics.Contracts;
+using System.Collections.Generic;
 
 namespace System.Text
 {
@@ -1050,6 +1052,88 @@ namespace System.Text
             return this;
         }
 
+        // Append joined values with a separator between each value.
+        public unsafe StringBuilder AppendJoin<T>(char separator, params T[] values)
+        {
+            // Defer argument validation to the internal function
+            return AppendJoinCore(&separator, 1, values);
+        }
+
+        public unsafe StringBuilder AppendJoin<T>(string separator, params T[] values)
+        {
+            separator = separator ?? string.Empty;
+            fixed (char* pSeparator = separator)
+            {
+                // Defer argument validation to the internal function
+                return AppendJoinCore(pSeparator, separator.Length, values);
+            }
+        }
+
+        public unsafe StringBuilder AppendJoin<T>(char separator, IEnumerable<T> values)
+        {
+            // Defer argument validation to the internal function
+            return AppendJoinCore(&separator, 1, values);
+        }
+
+        public unsafe StringBuilder AppendJoin<T>(string separator, IEnumerable<T> values)
+        {
+            separator = separator ?? string.Empty;
+            fixed (char* pSeparator = separator)
+            {
+                // Defer argument validation to the internal function
+                return AppendJoinCore(pSeparator, separator.Length, values);
+            }
+        }
+
+        private unsafe StringBuilder AppendJoinCore<T>(char* separator, int separatorLength, params T[] values)
+        {
+            if (values == null)
+                throw new ArgumentNullException(nameof(values));
+            Contract.Ensures(Contract.Result<StringBuilder>() != null);
+
+            if (values.Length == 0)
+                return this;
+
+            var value = values[0];
+            if (value != null)
+                Append(value.ToString());
+
+            for (var i = 1; i < values.Length; i++)
+            {
+                Append(separator, separatorLength);
+                value = values[i];
+                if (value != null)
+                    Append(value.ToString());
+            }
+            return this;
+        }
+
+        private unsafe StringBuilder AppendJoinCore<T>(char* separator, int separatorLength, IEnumerable<T> values)
+        {
+            if (values == null)
+                throw new ArgumentNullException(nameof(values));
+            Contract.Ensures(Contract.Result<StringBuilder>() != null);
+
+            using (var en = values.GetEnumerator())
+            {
+                if (!en.MoveNext())
+                    return this;
+
+                var value = en.Current;
+                if (value != null)
+                    Append(value.ToString());
+
+                while (en.MoveNext())
+                {
+                    Append(separator, separatorLength);
+                    value = en.Current;
+                    if (value != null)
+                        Append(value.ToString());
+                }
+            }
+            return this;
+        }
+
         /*====================================Insert====================================
         **
         ==============================================================================*/
@@ -1449,18 +1533,18 @@ namespace System.Text
                             {
                                 if (pos < len && format[pos] == '{')  // Treat as escape character for {{
                                     pos++;
-                                else 
+                                else
                                     FormatError();
                             }
                             else
                             {
                                 if (pos < len && format[pos] == '}')  // Treat as escape character for }}
-                                    pos++; 
-                                else 
-                                { 
-                                    pos--; 
-                                    break; 
-                                } 
+                                    pos++;
+                                else
+                                {
+                                    pos--;
+                                    break;
+                                }
                             }
 
                             // Reaching here means the brace has been escaped 
@@ -1474,20 +1558,20 @@ namespace System.Text
                         }
                     }
 
-                    if (unescapedItemFormat == null || unescapedItemFormat.Length == 0) 
-                    { 
-                        if (startPos != pos) 
-                        { 
+                    if (unescapedItemFormat == null || unescapedItemFormat.Length == 0)
+                    {
+                        if (startPos != pos)
+                        {
                             // There was no brace escaping, extract the item format as a single string 
-                            itemFormat = format.Substring(startPos, pos - startPos); 
-                         } 
-                    } 
-                    else 
-                    { 
-                        unescapedItemFormat.Append(format, startPos, pos - startPos); 
-                        itemFormat = unescapedItemFormat.ToString(); 
-                        unescapedItemFormat.Clear(); 
-                     }
+                            itemFormat = format.Substring(startPos, pos - startPos);
+                        }
+                    }
+                    else
+                    {
+                        unescapedItemFormat.Append(format, startPos, pos - startPos);
+                        itemFormat = unescapedItemFormat.ToString();
+                        unescapedItemFormat.Clear();
+                    }
                 }
                 if (ch != '}') FormatError();
                 pos++;

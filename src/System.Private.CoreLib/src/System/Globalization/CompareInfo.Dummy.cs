@@ -17,9 +17,9 @@ namespace System.Globalization
 
         internal static unsafe int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            fixed (char *pSource = source) fixed (char *pValue = value)
+            fixed (char* pSource = source) fixed (char* pValue = value)
             {
-                char *pSrc = &pSource[startIndex];
+                char* pSrc = &pSource[startIndex];
                 int index = FindStringOrdinal(pSrc, count, pValue, value.Length, FindStringOptions.Start, ignoreCase);
                 if (index >= 0)
                 {
@@ -31,9 +31,9 @@ namespace System.Globalization
 
         internal static unsafe int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            fixed (char *pSource = source) fixed (char *pValue = value)
+            fixed (char* pSource = source) fixed (char* pValue = value)
             {
-                char *pSrc = &pSource[startIndex - count + 1];
+                char* pSrc = &pSource[startIndex - count + 1];
                 int index = FindStringOrdinal(pSrc, count, pValue, value.Length, FindStringOptions.End, ignoreCase);
                 if (index >= 0)
                 {
@@ -45,7 +45,7 @@ namespace System.Globalization
 
         private unsafe bool StartsWith(string source, string prefix, CompareOptions options)
         {
-            fixed (char *pSource = source) fixed (char *pValue = prefix)
+            fixed (char* pSource = source) fixed (char* pValue = prefix)
             {
                 return FindStringOrdinal(pSource, source.Length, pValue, prefix.Length, FindStringOptions.StartsWith,
                                          (options & CompareOptions.IgnoreCase) != 0) >= 0;
@@ -54,7 +54,7 @@ namespace System.Globalization
 
         private unsafe bool EndsWith(string source, string suffix, CompareOptions options)
         {
-            fixed (char *pSource = source) fixed (char *pValue = suffix)
+            fixed (char* pSource = source) fixed (char* pValue = suffix)
             {
                 return FindStringOrdinal(pSource, source.Length, pValue, suffix.Length, FindStringOptions.EndsWith,
                                          (options & CompareOptions.IgnoreCase) != 0) >= 0;
@@ -85,10 +85,10 @@ namespace System.Globalization
 
         private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
         {
-            fixed (char *pStr1 = string1) fixed (char *pStr2 = string2)
+            fixed (char* pStr1 = string1) fixed (char* pStr2 = string2)
             {
-                char *pString1 = &pStr1[offset1];
-                char *pString2 = &pStr2[offset2];
+                char* pString1 = &pStr1[offset1];
+                char* pString2 = &pStr2[offset2];
 
                 return CompareString(pString1, length1, pString2, length2, options);
             }
@@ -99,14 +99,14 @@ namespace System.Globalization
             return CompareString(string1, count1, string2, count2, 0);
         }
 
-        private static unsafe int CompareString(char *pString1, int length1, char *pString2, int length2, CompareOptions options)
+        private static unsafe int CompareString(char* pString1, int length1, char* pString2, int length2, CompareOptions options)
         {
             bool ignoreCase = (options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0;
             int index = 0;
 
             if (ignoreCase)
             {
-                while ( index < length1 &&
+                while (index < length1 &&
                         index < length2 &&
                         ToUpper(pString1[index]) == ToUpper(pString2[index]))
                 {
@@ -115,7 +115,7 @@ namespace System.Globalization
             }
             else
             {
-                while ( index < length1 &&
+                while (index < length1 &&
                         index < length2 &&
                         pString1[index] == pString2[index])
                 {
@@ -141,7 +141,7 @@ namespace System.Globalization
         }
 
 
-        private static unsafe int FindStringOrdinal(char *source, int sourceCount, char *value,int valueCount, FindStringOptions option, bool ignoreCase)
+        private static unsafe int FindStringOrdinal(char* source, int sourceCount, char* value, int valueCount, FindStringOptions option, bool ignoreCase)
         {
             int ctrSource = 0;  // index value into source
             int ctrValue = 0;   // index value into value
@@ -151,27 +151,27 @@ namespace System.Globalization
 
             Debug.Assert(source != null);
             Debug.Assert(value != null);
-            Debug.Assert(sourceCount>= 0);
+            Debug.Assert(sourceCount >= 0);
             Debug.Assert(valueCount >= 0);
 
-            if(valueCount == 0)
+            if (valueCount == 0)
             {
                 switch (option)
                 {
                     case FindStringOptions.StartsWith:
                     case FindStringOptions.Start:
-                        return(0);
+                        return (0);
 
                     case FindStringOptions.EndsWith:
                     case FindStringOptions.End:
-                        return(sourceCount);
+                        return (sourceCount);
 
                     default:
                         return -1;
                 }
             }
 
-            if(sourceCount < valueCount)
+            if (sourceCount < valueCount)
             {
                 return -1;
             }
@@ -179,198 +179,200 @@ namespace System.Globalization
             switch (option)
             {
                 case FindStringOptions.StartsWith:
-                {
-                    if (ignoreCase)
                     {
-                        for (ctrValue = 0; ctrValue < valueCount; ctrValue++)
+                        if (ignoreCase)
                         {
-                            sourceChar = ToUpper(source[ctrValue]);
-                            valueChar  = ToUpper(value[ctrValue]);
-
-                            if (sourceChar != valueChar)
+                            for (ctrValue = 0; ctrValue < valueCount; ctrValue++)
                             {
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for (ctrValue = 0; ctrValue < valueCount; ctrValue++)
-                        {
-                                sourceChar = source[ctrValue];
-                                valueChar  = value[ctrValue];
+                                sourceChar = ToUpper(source[ctrValue]);
+                                valueChar = ToUpper(value[ctrValue]);
 
                                 if (sourceChar != valueChar)
                                 {
                                     break;
                                 }
+                            }
+                        }
+                        else
+                        {
+                            for (ctrValue = 0; ctrValue < valueCount; ctrValue++)
+                            {
+                                sourceChar = source[ctrValue];
+                                valueChar = value[ctrValue];
+
+                                if (sourceChar != valueChar)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (ctrValue == valueCount)
+                        {
+                            return 0;
                         }
                     }
-
-                    if (ctrValue == valueCount)
-                    {
-                        return 0;
-                    }
-                }
-                break;
+                    break;
 
                 case FindStringOptions.Start:
-                {
-                    lastSourceStart = sourceCount - valueCount;
-                    if (ignoreCase)
                     {
-                        char firstValueChar = ToUpper(value[0]);
-                        for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
+                        lastSourceStart = sourceCount - valueCount;
+                        if (ignoreCase)
                         {
-                            sourceChar = ToUpper(source[ctrSource]);
-                            if (sourceChar != firstValueChar)
+                            char firstValueChar = ToUpper(value[0]);
+                            for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
                             {
-                                continue;
-                            }
-
-                            for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                            {
-                                sourceChar = ToUpper(source[ctrSource + ctrValue]);
-                                valueChar  = ToUpper(value[ctrValue]);
-
-                                if (sourceChar != valueChar)
+                                sourceChar = ToUpper(source[ctrSource]);
+                                if (sourceChar != firstValueChar)
                                 {
-                                    break;
+                                    continue;
+                                }
+
+                                for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
+                                {
+                                    sourceChar = ToUpper(source[ctrSource + ctrValue]);
+                                    valueChar = ToUpper(value[ctrValue]);
+
+                                    if (sourceChar != valueChar)
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                if (ctrValue == valueCount)
+                                {
+                                    return ctrSource;
                                 }
                             }
-
-                            if (ctrValue == valueCount)
+                        }
+                        else
+                        {
+                            char firstValueChar = value[0];
+                            for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
                             {
-                                return ctrSource;
+                                sourceChar = source[ctrSource];
+                                if (sourceChar != firstValueChar)
+                                {
+                                    continue;
+                                }
+
+                                for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
+                                {
+                                    sourceChar = source[ctrSource + ctrValue];
+                                    valueChar = value[ctrValue];
+
+                                    if (sourceChar != valueChar)
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                if (ctrValue == valueCount)
+                                {
+                                    return ctrSource;
+                                }
                             }
                         }
                     }
-                    else
-                    {
-                        char firstValueChar = value[0];
-                        for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
-                        {
-                            sourceChar = source[ctrSource];
-                            if (sourceChar != firstValueChar)
-                            {
-                                continue;
-                            }
-
-                            for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                            {
-                                sourceChar = source[ctrSource + ctrValue];
-                                valueChar  = value[ctrValue];
-
-                                if (sourceChar != valueChar)
-                                {
-                                    break;
-                                }
-                            }
-
-                            if (ctrValue == valueCount)
-                            {
-                                return ctrSource;
-                            }
-                        }
-                    }
-                }
-                break;
+                    break;
 
                 case FindStringOptions.EndsWith:
-                {
-                    lastSourceStart = sourceCount - valueCount;
-                    if (ignoreCase)
                     {
-                        for (ctrSource = lastSourceStart, ctrValue = 0; ctrValue < valueCount; ctrSource++,ctrValue++)
+                        lastSourceStart = sourceCount - valueCount;
+                        if (ignoreCase)
                         {
-                            sourceChar = ToUpper(source[ctrSource]);
-                            valueChar  = ToUpper(value[ctrValue]);
-
-                            if (sourceChar != valueChar)
+                            for (ctrSource = lastSourceStart, ctrValue = 0; ctrValue < valueCount; ctrSource++, ctrValue++)
                             {
-                                break;
+                                sourceChar = ToUpper(source[ctrSource]);
+                                valueChar = ToUpper(value[ctrValue]);
+
+                                if (sourceChar != valueChar)
+                                {
+                                    break;
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        for (ctrSource = lastSourceStart, ctrValue = 0; ctrValue < valueCount; ctrSource++,ctrValue++)
+                        else
                         {
-                            sourceChar = source[ctrSource];
-                            valueChar  = value[ctrValue];
-
-                            if (sourceChar != valueChar)
+                            for (ctrSource = lastSourceStart, ctrValue = 0; ctrValue < valueCount; ctrSource++, ctrValue++)
                             {
-                                break;
+                                sourceChar = source[ctrSource];
+                                valueChar = value[ctrValue];
+
+                                if (sourceChar != valueChar)
+                                {
+                                    break;
+                                }
                             }
                         }
-                    }
 
-                    if (ctrValue == valueCount)
-                    {
-                        return sourceCount - valueCount;
+                        if (ctrValue == valueCount)
+                        {
+                            return sourceCount - valueCount;
+                        }
                     }
-                }
-                break;
+                    break;
 
                 case FindStringOptions.End:
-                {
-                    lastSourceStart = sourceCount - valueCount;
-                    if (ignoreCase)
                     {
-                        char firstValueChar = ToUpper(value[0]);
-                        for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
+                        lastSourceStart = sourceCount - valueCount;
+                        if (ignoreCase)
                         {
-                            sourceChar = ToUpper(source[ctrSource]);
-                            if(sourceChar != firstValueChar)
+                            char firstValueChar = ToUpper(value[0]);
+                            for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
                             {
-                                continue;
-                            }
-                            for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                            {
-                                sourceChar = ToUpper(source[ctrSource + ctrValue]);
-                                valueChar  = ToUpper(value[ctrValue]);
-
-                                if (sourceChar != valueChar)
+                                sourceChar = ToUpper(source[ctrSource]);
+                                if (sourceChar != firstValueChar)
                                 {
-                                    break;
+                                    continue;
                                 }
-                            }
+                                for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
+                                {
+                                    sourceChar = ToUpper(source[ctrSource + ctrValue]);
+                                    valueChar = ToUpper(value[ctrValue]);
 
-                            if (ctrValue == valueCount)
-                            {
-                                return ctrSource;
+                                    if (sourceChar != valueChar)
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                if (ctrValue == valueCount)
+                                {
+                                    return ctrSource;
+                                }
                             }
                         }
-                    } else {
-                        char firstValueChar = value[0];
-                        for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
+                        else
                         {
-                            sourceChar = source[ctrSource];
-                            if(sourceChar != firstValueChar)
+                            char firstValueChar = value[0];
+                            for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
                             {
-                                continue;
-                            }
-
-                            for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
-                            {
-                                sourceChar = source[ctrSource + ctrValue];
-                                valueChar  = value[ctrValue];
-
-                                if (sourceChar != valueChar)
+                                sourceChar = source[ctrSource];
+                                if (sourceChar != firstValueChar)
                                 {
-                                    break;
+                                    continue;
                                 }
-                            }
 
-                            if (ctrValue == valueCount)
-                            {
-                                return ctrSource;
+                                for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
+                                {
+                                    sourceChar = source[ctrSource + ctrValue];
+                                    valueChar = value[ctrValue];
+
+                                    if (sourceChar != valueChar)
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                if (ctrValue == valueCount)
+                                {
+                                    return ctrSource;
+                                }
                             }
                         }
                     }
-                }
-                break;
+                    break;
 
                 default:
                     return -1;
@@ -394,7 +396,7 @@ namespace System.Globalization
 
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
         {
-            if (source==null) { throw new ArgumentNullException(nameof(source)); }
+            if (source == null) { throw new ArgumentNullException(nameof(source)); }
             Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
@@ -405,7 +407,7 @@ namespace System.Globalization
             throw new NotImplementedException();
         }
 
-        private static unsafe bool IsSortable(char *text, int length)
+        private static unsafe bool IsSortable(char* text, int length)
         {
             // CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             // return (InternalIsSortable(c.m_dataHandle, c.m_handleOrigin, c.m_sortName, text, text.Length));

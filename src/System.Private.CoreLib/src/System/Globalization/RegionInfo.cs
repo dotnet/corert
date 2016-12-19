@@ -16,9 +16,11 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
+    [Serializable]
     public class RegionInfo
     {
         //--------------------------------------------------------------------//
@@ -89,10 +91,10 @@ namespace System.Globalization
         public RegionInfo(int culture)
         {
             if (culture == CultureInfo.LOCALE_INVARIANT) //The InvariantCulture has no matching region
-            { 
+            {
                 throw new ArgumentException(SR.Argument_NoRegionInvariantCulture);
             }
-            
+
             if (culture == CultureInfo.LOCALE_NEUTRAL)
             {
                 // Not supposed to be neutral
@@ -104,7 +106,7 @@ namespace System.Globalization
                 // Not supposed to be neutral
                 throw new ArgumentException(SR.Format(SR.Argument_CustomCultureCannotBePassedByNumber, culture), nameof(culture));
             }
-            
+
             _cultureData = CultureData.GetCultureData(culture, true);
             _name = _cultureData.SREGIONNAME;
 
@@ -284,9 +286,9 @@ namespace System.Globalization
             }
         }
 
-        public virtual int GeoId 
+        public virtual int GeoId
         {
-            get 
+            get
             {
                 return (_cultureData.IGEOID);
             }

@@ -65,7 +65,7 @@ namespace System.Runtime
 
     internal class ThunksHeap
     {
-        class AllocatedBlock
+        private class AllocatedBlock
         {
             internal IntPtr _blockBaseAddress;
             internal AllocatedBlock _nextBlock;

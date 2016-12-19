@@ -5,7 +5,6 @@
 namespace System.Reflection
 {
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum MethodAttributes
     {
         // NOTE: This Enum matchs the CorMethodAttr defined in CorHdr.h

@@ -30,6 +30,9 @@
 
 #ifndef DACCESS_COMPILE
 
+EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
+EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void*);
+
 #ifdef _MSC_VER
 extern "C" void _ReadWriteBarrier(void);
 #pragma intrinsic(_ReadWriteBarrier)
@@ -286,6 +289,11 @@ void Thread::Construct()
     m_numDynamicTypesTlsCells = 0;
     m_pDynamicTypesTlsCells = NULL;
 
+#if CORERT
+    m_pThreadLocalModuleStatics = NULL;
+    m_numThreadLocalModuleStatics = 0;
+#endif // CORERT
+
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The 
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
     // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread 
@@ -367,6 +375,20 @@ void Thread::Destroy()
         }
         delete[] m_pDynamicTypesTlsCells;
     }
+
+#if CORERT
+    if (m_pThreadLocalModuleStatics != NULL)
+    {
+        for (UInt32 i = 0; i < m_numThreadLocalModuleStatics; i++)
+        {
+            if (m_pThreadLocalModuleStatics[i] != NULL)
+            {
+                RhHandleFree(m_pThreadLocalModuleStatics[i]);
+            }
+        }
+        delete[] m_pThreadLocalModuleStatics;
+    }
+#endif // CORERT
 
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
 
@@ -1129,6 +1151,81 @@ FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame
         RhpWaitForSuspend2();
     }
 }
+
+#if CORERT
+Object* Thread::GetThreadStaticStorageForModule(UInt32 moduleIndex)
+{
+    // Return a pointer to the TLS storage if it has already been
+    // allocated for the specified module.
+    if (moduleIndex < m_numThreadLocalModuleStatics)
+    {
+        Object** threadStaticsStorageHandle = (Object**)m_pThreadLocalModuleStatics[moduleIndex];
+        if (threadStaticsStorageHandle != NULL)
+        {
+            return *threadStaticsStorageHandle;
+        }
+    }
+
+    return NULL;
+}
+
+Boolean Thread::SetThreadStaticStorageForModule(Object * pStorage, UInt32 moduleIndex)
+{
+    // Grow thread local storage if needed.
+    if (m_numThreadLocalModuleStatics <= moduleIndex)
+    {
+        UInt32 newSize = moduleIndex + 1;
+        if (newSize < moduleIndex)
+        {
+            return FALSE;
+        }
+
+        PTR_PTR_VOID pThreadLocalModuleStatics = new (nothrow) PTR_VOID[newSize];
+        if (pThreadLocalModuleStatics == NULL)
+        {
+            return FALSE;
+        }
+
+        memset(&pThreadLocalModuleStatics[m_numThreadLocalModuleStatics], 0, sizeof(PTR_VOID) * (newSize - m_numThreadLocalModuleStatics));
+
+        if (m_pThreadLocalModuleStatics != NULL)
+        {
+            memcpy(pThreadLocalModuleStatics, m_pThreadLocalModuleStatics, sizeof(PTR_VOID) * m_numThreadLocalModuleStatics);
+            delete[] m_pThreadLocalModuleStatics;
+        }
+
+        m_pThreadLocalModuleStatics = pThreadLocalModuleStatics;
+        m_numThreadLocalModuleStatics = newSize;
+    }
+
+    void* threadStaticsStorageHandle = RhpHandleAlloc(pStorage, 2 /* Normal */);
+    if (threadStaticsStorageHandle == NULL)
+    {
+        return FALSE;
+    }
+
+    // Free the existing storage before assigning a new one
+    if (m_pThreadLocalModuleStatics[moduleIndex] != NULL)
+    {
+        RhHandleFree(m_pThreadLocalModuleStatics[moduleIndex]);
+    }
+
+    m_pThreadLocalModuleStatics[moduleIndex] = threadStaticsStorageHandle;
+    return TRUE;
+}
+
+COOP_PINVOKE_HELPER(Array*, RhGetThreadStaticStorageForModule, (UInt32 moduleIndex))
+{
+    Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
+    return (Array*)pCurrentThread->GetThreadStaticStorageForModule(moduleIndex);
+}
+
+COOP_PINVOKE_HELPER(Boolean, RhSetThreadStaticStorageForModule, (Array * pStorage, UInt32 moduleIndex))
+{
+    Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
+    return pCurrentThread->SetThreadStaticStorageForModule((Object*)pStorage, moduleIndex);
+}
+#endif // CORERT
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)
