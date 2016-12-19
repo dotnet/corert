@@ -1546,9 +1546,8 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b309539\b309539\b309539.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.*" />
 
-    <!-- RhUnbox2 doesn't do a type check -->
-    <!-- https://github.com/dotnet/corert/issues/2357 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Conversions\Reference\gentogen03\gentogen03.*" />
+    <!-- Complex variant casts -->
+    <!-- https://github.com/dotnet/corert/issues/2380 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\IsInst004\IsInst004.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox004\Unbox004.*" />
 
