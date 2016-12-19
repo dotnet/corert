@@ -455,7 +455,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\Inlined\Inlined.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\Inlined_Multinested\Inlined_Multinested.*" />
 
-    <!-- System.DIagnostics.StackTrace -->
+    <!-- System.Diagnostics.StackTrace -->
     <!-- https://github.com/dotnet/corert/issues/370 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\AttributeConflict\AttributeConflict.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\NegativeCases\NegativeCases.*" />
@@ -1525,26 +1525,16 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\433497\vsw433497\vsw433497.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\vsw514968\vsw514968\vsw514968.*" />
 
-    <!-- AV instead of NullReferenceException -->
-    <!-- https://github.com/dotnet/corert/issues/2348 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\gc\regress\vswhidbey\143837\143837.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b16335\b16335\b16335.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b28776\b28776\b28776.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30126\b30126\b30126.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30128\b30128\b30128.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\539509\test1\test1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack\LdfldaHack.*" />
-
     <!-- Variant interface method resolution -->
     <!-- https://github.com/dotnet/corert/issues/2358 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\dev10_bug719093\variancesmall\variancesmall.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance1\Variance1.*" />
 
-    <!-- Needs temaplate type loader (MakeArrayType) -->
+    <!-- Needs template type loader (MakeArrayType) -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\array\array.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b309539\b309539\b309539.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\539509\test1\test1.*" />
 
     <!-- Complex variant casts -->
     <!-- https://github.com/dotnet/corert/issues/2380 -->
@@ -1575,17 +1565,18 @@
     <!-- NetStandard2: System.AppDomain -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof\_il_dbgsizeof.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof\_il_relsizeof.*" />
-    
+
     <!-- NetStandard2: String..ctor(SByte*) -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxblk\cpblk3_il_d\cpblk3_il_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxblk\cpblk3_il_r\cpblk3_il_r.*" />
-    
+
     <!-- NetStandard2: System.Runtime.Loader.AssemblyLoadContext -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\modulector\runmoduleconstructor\runmoduleconstructor.*" />
-    
+
     <!-- NetStandard2: AccessViolationException -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\calli_excep\calli_excep.*" />
-    
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack\LdfldaHack.*" />
+
     <!-- NetStandard2: RuntimeHelpers.TryCode -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\RuntimeHelpers\ExecuteCodeWithGuaranteedCleanup\ExecuteCodeWithGuaranteedCleanup.*" />
 
