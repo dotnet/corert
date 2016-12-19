@@ -11,8 +11,8 @@
 **
 =============================================================================*/
 
-using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -20,7 +20,8 @@ namespace System
     // the contract of the method.  Ideally it should give a meaningful error
     // message describing what was wrong and which parameter is incorrect.
     // 
-    public class ArgumentException : Exception
+    [Serializable]
+    public class ArgumentException : SystemException
     {
         private String _paramName;
 
@@ -29,7 +30,7 @@ namespace System
         public ArgumentException()
             : base(SR.Arg_ArgumentException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         // Creates a new ArgumentException with its message 
@@ -38,28 +39,39 @@ namespace System
         public ArgumentException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public ArgumentException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public ArgumentException(String message, String paramName, Exception innerException)
             : base(message, innerException)
         {
             _paramName = paramName;
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public ArgumentException(String message, String paramName)
-
             : base(message)
         {
             _paramName = paramName;
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
+        }
+
+        protected ArgumentException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _paramName = info.GetString("ParamName");
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("ParamName", _paramName, typeof(String));
         }
 
         public override String Message

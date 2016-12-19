@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -25,6 +26,7 @@ namespace System
     /// <see cref="AggregateException"/> is used to consolidate multiple failures into a single, throwable
     /// exception object.
     /// </remarks>
+    [Serializable]
     [DebuggerDisplay("Count = {InnerExceptionCount}")]
     public class AggregateException : Exception
     {
@@ -241,6 +243,45 @@ namespace System
             }
 
             _innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AggregateException"/> class with serialized data.
+        /// </summary>
+        /// <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo"/> that holds
+        /// the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext"/> that
+        /// contains contextual information about the source or destination. </param>
+        /// <exception cref="T:System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        /// <exception cref="T:System.Runtime.Serialization.SerializationException">The exception could not be deserialized correctly.</exception>
+        protected AggregateException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            Exception[] innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[];
+            if (innerExceptions == null)
+            {
+                throw new SerializationException(SR.AggregateException_DeserializationFailure);
+            }
+
+            _innerExceptions = new ReadOnlyCollection<Exception>(innerExceptions);
+        }
+
+        /// <summary>
+        /// Sets the <see cref="T:System.Runtime.Serialization.SerializationInfo"/> with information about
+        /// the exception.
+        /// </summary>
+        /// <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo"/> that holds
+        /// the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext"/> that
+        /// contains contextual information about the source or destination. </param>
+        /// <exception cref="T:System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+
+            Exception[] innerExceptions = new Exception[_innerExceptions.Count];
+            _innerExceptions.CopyTo(innerExceptions, 0);
+            info.AddValue("InnerExceptions", innerExceptions, typeof(Exception[]));
         }
 
         /// <summary>

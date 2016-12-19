@@ -3,22 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 //
 // TargetInvocationException is used to report an exception that was thrown
-// 
-
 //    by the target of an invocation.
 //
-// 
-// 
-//
 
-using System;
+using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public sealed class TargetInvocationException : Exception
+    [Serializable]
+    public sealed class TargetInvocationException : ApplicationException
     {
         public TargetInvocationException(System.Exception inner)
             : base(SR.Arg_TargetInvocationException, inner)
@@ -26,9 +21,12 @@ namespace System.Reflection
             HResult = __HResults.COR_E_TARGETINVOCATION;
         }
 
-        public TargetInvocationException(String message, Exception inner) : base(message, inner)
+        public TargetInvocationException(String message, Exception inner)
+            : base(message, inner)
         {
             HResult = __HResults.COR_E_TARGETINVOCATION;
         }
+
+        internal TargetInvocationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

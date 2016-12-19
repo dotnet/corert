@@ -14,12 +14,13 @@
 **
 =============================================================================*/
 
-using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System
 {
-    public sealed class TypeInitializationException : Exception
+    [Serializable]
+    public sealed class TypeInitializationException : SystemException
     {
         private String _typeName;
 
@@ -28,7 +29,7 @@ namespace System
         private TypeInitializationException()
             : base(SR.TypeInitialization_Default)
         {
-            SetErrorCode(__HResults.COR_E_TYPEINITIALIZATION);
+            HResult = __HResults.COR_E_TYPEINITIALIZATION;
         }
 
 
@@ -41,14 +42,26 @@ namespace System
         // for Interop only, though it's not particularly useful.
         internal TypeInitializationException(String message) : base(message)
         {
-            SetErrorCode(__HResults.COR_E_TYPEINITIALIZATION);
+            HResult = __HResults.COR_E_TYPEINITIALIZATION;
         }
 
         internal TypeInitializationException(String fullTypeName, String message, Exception innerException)
             : base(message, innerException)
         {
             _typeName = fullTypeName;
-            SetErrorCode(__HResults.COR_E_TYPEINITIALIZATION);
+            HResult = __HResults.COR_E_TYPEINITIALIZATION;
+        }
+
+        internal TypeInitializationException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _typeName = info.GetString("TypeName");
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("TypeName", TypeName, typeof(String));
         }
 
         public String TypeName

@@ -8,14 +8,15 @@
 // access, due to it being removed, private or something similar.
 ////////////////////////////////////////////////////////////////////////////////
 
-using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
     // The MemberAccessException is thrown when trying to access a class
     // member fails.
     // 
-    public class MemberAccessException : Exception
+    [Serializable]
+    public class MemberAccessException : SystemException
     {
         // Creates a new MemberAccessException with its message string set to
         // the empty string, its HRESULT set to COR_E_MEMBERACCESS, 
@@ -23,7 +24,7 @@ namespace System
         public MemberAccessException()
             : base(SR.Arg_AccessException)
         {
-            SetErrorCode(__HResults.COR_E_MEMBERACCESS);
+            HResult = __HResults.COR_E_MEMBERACCESS;
         }
 
         // Creates a new MemberAccessException with its message string set to
@@ -33,13 +34,15 @@ namespace System
         public MemberAccessException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_MEMBERACCESS);
+            HResult = __HResults.COR_E_MEMBERACCESS;
         }
 
         public MemberAccessException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_MEMBERACCESS);
+            HResult = __HResults.COR_E_MEMBERACCESS;
         }
+
+        protected MemberAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

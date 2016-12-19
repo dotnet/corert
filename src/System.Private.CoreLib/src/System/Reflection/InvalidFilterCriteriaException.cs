@@ -6,7 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public class InvalidFilterCriteriaException : Exception
+    [Serializable]
+    public class InvalidFilterCriteriaException : ApplicationException
     {
         public InvalidFilterCriteriaException()
             : this(SR.Arg_InvalidFilterCriteriaException)
@@ -21,12 +22,9 @@ namespace System.Reflection
         public InvalidFilterCriteriaException(string message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_INVALIDFILTERCRITERIA);
+            HResult = __HResults.COR_E_INVALIDFILTERCRITERIA;
         }
 
-        protected InvalidFilterCriteriaException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
+        protected InvalidFilterCriteriaException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

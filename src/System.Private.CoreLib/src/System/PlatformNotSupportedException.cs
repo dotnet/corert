@@ -11,26 +11,31 @@
 **
 =============================================================================*/
 
+using System.Runtime.Serialization;
+
 namespace System
 {
+    [Serializable]
     public class PlatformNotSupportedException : NotSupportedException
     {
         public PlatformNotSupportedException()
             : base(SR.Arg_PlatformNotSupported)
         {
-            SetErrorCode(__HResults.COR_E_PLATFORMNOTSUPPORTED);
+            HResult = __HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
         public PlatformNotSupportedException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_PLATFORMNOTSUPPORTED);
+            HResult = __HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
         public PlatformNotSupportedException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_PLATFORMNOTSUPPORTED);
+            HResult = __HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
+
+        protected PlatformNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
