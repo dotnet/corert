@@ -4,7 +4,8 @@
 
 namespace System.Runtime.Serialization
 {
-    public class SerializationException : Exception
+    [Serializable]
+    public class SerializationException : SystemException
     {
         private static string s_nullMessage = SR.SerializationException;
 
@@ -17,6 +18,10 @@ namespace System.Runtime.Serialization
         }
 
         public SerializationException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected SerializationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }

@@ -10,10 +10,11 @@
 using System;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [ComVisibleAttribute(false)]
+    [Serializable]
     public class AbandonedMutexException : Exception
     {
         private int _mutexIndex = -1;
@@ -22,40 +23,45 @@ namespace System.Threading
         public AbandonedMutexException()
             : base(SR.Threading_AbandonedMutexException)
         {
-            SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
+            HResult = __HResults.COR_E_ABANDONEDMUTEX;
         }
 
         public AbandonedMutexException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
+            HResult = __HResults.COR_E_ABANDONEDMUTEX;
         }
 
         public AbandonedMutexException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
+            HResult = __HResults.COR_E_ABANDONEDMUTEX;
         }
 
         public AbandonedMutexException(int location, WaitHandle handle)
             : base(SR.Threading_AbandonedMutexException)
         {
-            SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
+            HResult = __HResults.COR_E_ABANDONEDMUTEX;
             SetupException(location, handle);
         }
 
         public AbandonedMutexException(String message, int location, WaitHandle handle)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
+            HResult = __HResults.COR_E_ABANDONEDMUTEX;
             SetupException(location, handle);
         }
 
         public AbandonedMutexException(String message, Exception inner, int location, WaitHandle handle)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
+            HResult = __HResults.COR_E_ABANDONEDMUTEX;
             SetupException(location, handle);
+        }
+
+        protected AbandonedMutexException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
         }
 
         private void SetupException(int location, WaitHandle handle)
@@ -82,4 +88,3 @@ namespace System.Threading
         }
     }
 }
-

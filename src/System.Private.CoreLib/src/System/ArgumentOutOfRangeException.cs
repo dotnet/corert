@@ -11,50 +11,42 @@
 **
 =============================================================================*/
 
-using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System
 {
     // The ArgumentOutOfRangeException is thrown when an argument 
     // is outside the legal range for that argument.  
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class ArgumentOutOfRangeException : ArgumentException
     {
         private Object _actualValue;
 
-        private static String RangeMessage
-        {
-            get
-            {
-                return SR.Arg_ArgumentOutOfRangeException;
-            }
-        }
-
         // Creates a new ArgumentOutOfRangeException with its message 
         // string set to a default message explaining an argument was out of range.
         public ArgumentOutOfRangeException()
-            : base(RangeMessage)
+            : base(SR.Arg_ArgumentOutOfRangeException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String paramName)
-            : base(RangeMessage, paramName)
+            : base(SR.Arg_ArgumentOutOfRangeException, paramName)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String paramName, String message)
             : base(message, paramName)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         // We will not use this in the classlibs, but we'll provide it for
@@ -64,7 +56,19 @@ namespace System
             : base(message, paramName)
         {
             _actualValue = actualValue;
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
+        }
+
+        protected ArgumentOutOfRangeException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _actualValue = info.GetValue("ActualValue", typeof(Object));
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("ActualValue", _actualValue, typeof(Object));
         }
 
         public override String Message

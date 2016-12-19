@@ -12,30 +12,31 @@
 **
 =============================================================================*/
 
-using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class InvalidOperationException : Exception
+    [Serializable]
+    public class InvalidOperationException : SystemException
     {
         public InvalidOperationException()
             : base(SR.Arg_InvalidOperationException)
         {
-            SetErrorCode(__HResults.COR_E_INVALIDOPERATION);
+            HResult = __HResults.COR_E_INVALIDOPERATION;
         }
 
         public InvalidOperationException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_INVALIDOPERATION);
+            HResult = __HResults.COR_E_INVALIDOPERATION;
         }
 
         public InvalidOperationException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_INVALIDOPERATION);
+            HResult = __HResults.COR_E_INVALIDOPERATION;
         }
+
+        protected InvalidOperationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
-

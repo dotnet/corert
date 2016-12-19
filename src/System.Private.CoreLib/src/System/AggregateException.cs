@@ -4,10 +4,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// AggregateException.cs
-//
-
-//
 // Public type to communicate multiple failures to an end-user.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -18,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -29,10 +26,11 @@ namespace System
     /// <see cref="AggregateException"/> is used to consolidate multiple failures into a single, throwable
     /// exception object.
     /// </remarks>
+    [Serializable]
     [DebuggerDisplay("Count = {InnerExceptionCount}")]
     public class AggregateException : Exception
     {
-        private ReadOnlyCollection<Exception> m_innerExceptions; // Complete set of exceptions.
+        private ReadOnlyCollection<Exception> _innerExceptions; // Complete set of exceptions.
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateException"/> class.
@@ -40,7 +38,7 @@ namespace System
         public AggregateException()
             : base(SR.AggregateException_ctor_DefaultMessage)
         {
-            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
+            _innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>
@@ -51,7 +49,7 @@ namespace System
         public AggregateException(string message)
             : base(message)
         {
-            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
+            _innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>
@@ -70,7 +68,7 @@ namespace System
                 throw new ArgumentNullException(nameof(innerException));
             }
 
-            m_innerExceptions = new ReadOnlyCollection<Exception>(new Exception[] { innerException });
+            _innerExceptions = new ReadOnlyCollection<Exception>(new Exception[] { innerException });
         }
 
         /// <summary>
@@ -165,7 +163,7 @@ namespace System
                 }
             }
 
-            m_innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+            _innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
         }
 
         /// <summary>
@@ -244,7 +242,46 @@ namespace System
                 }
             }
 
-            m_innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+            _innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AggregateException"/> class with serialized data.
+        /// </summary>
+        /// <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo"/> that holds
+        /// the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext"/> that
+        /// contains contextual information about the source or destination. </param>
+        /// <exception cref="T:System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        /// <exception cref="T:System.Runtime.Serialization.SerializationException">The exception could not be deserialized correctly.</exception>
+        protected AggregateException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            Exception[] innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[];
+            if (innerExceptions == null)
+            {
+                throw new SerializationException(SR.AggregateException_DeserializationFailure);
+            }
+
+            _innerExceptions = new ReadOnlyCollection<Exception>(innerExceptions);
+        }
+
+        /// <summary>
+        /// Sets the <see cref="T:System.Runtime.Serialization.SerializationInfo"/> with information about
+        /// the exception.
+        /// </summary>
+        /// <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo"/> that holds
+        /// the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext"/> that
+        /// contains contextual information about the source or destination. </param>
+        /// <exception cref="T:System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+
+            Exception[] innerExceptions = new Exception[_innerExceptions.Count];
+            _innerExceptions.CopyTo(innerExceptions, 0);
+            info.AddValue("InnerExceptions", innerExceptions, typeof(Exception[]));
         }
 
         /// <summary>
@@ -271,7 +308,7 @@ namespace System
         /// </summary>
         public ReadOnlyCollection<Exception> InnerExceptions
         {
-            get { return m_innerExceptions; }
+            get { return _innerExceptions; }
         }
 
 
@@ -302,18 +339,18 @@ namespace System
             }
 
             LowLevelListWithIList<Exception> unhandledExceptions = null;
-            for (int i = 0; i < m_innerExceptions.Count; i++)
+            for (int i = 0; i < _innerExceptions.Count; i++)
             {
                 // If the exception was not handled, lazily allocate a list of unhandled
                 // exceptions (to be rethrown later) and add it.
-                if (!predicate(m_innerExceptions[i]))
+                if (!predicate(_innerExceptions[i]))
                 {
                     if (unhandledExceptions == null)
                     {
                         unhandledExceptions = new LowLevelListWithIList<Exception>();
                     }
 
-                    unhandledExceptions.Add(m_innerExceptions[i]);
+                    unhandledExceptions.Add(_innerExceptions[i]);
                 }
             }
 
@@ -385,7 +422,7 @@ namespace System
         {
             get
             {
-                if (m_innerExceptions.Count == 0)
+                if (_innerExceptions.Count == 0)
                 {
                     return base.Message;
                 }
@@ -393,10 +430,10 @@ namespace System
                 StringBuilder sb = new StringBuilder();
                 sb.Append(base.Message);
                 sb.Append(' ');
-                for (int i = 0; i < m_innerExceptions.Count; i++)
+                for (int i = 0; i < _innerExceptions.Count; i++)
                 {
                     sb.Append('(');
-                    sb.Append(m_innerExceptions[i].Message);
+                    sb.Append(_innerExceptions[i].Message);
                     sb.Append(") ");
                 }
                 sb.Length -= 1;
@@ -413,12 +450,12 @@ namespace System
             StringBuilder text = new StringBuilder();
             text.Append(base.ToString());
 
-            for (int i = 0; i < m_innerExceptions.Count; i++)
+            for (int i = 0; i < _innerExceptions.Count; i++)
             {
                 text.Append(Environment.NewLine);
                 text.Append("---> ");
                 text.Append(string.Format(CultureInfo.InvariantCulture, SR.AggregateException_InnerException, i));
-                text.Append(m_innerExceptions[i].ToString());
+                text.Append(_innerExceptions[i].ToString());
                 text.Append("<---");
                 text.Append(Environment.NewLine);
             }

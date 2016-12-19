@@ -11,27 +11,31 @@
 **
 =============================================================================*/
 
+using System.Runtime.Serialization;
+
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class DivideByZeroException : ArithmeticException
     {
         public DivideByZeroException()
             : base(SR.Arg_DivideByZero)
         {
-            SetErrorCode(__HResults.COR_E_DIVIDEBYZERO);
+            HResult = __HResults.COR_E_DIVIDEBYZERO;
         }
 
         public DivideByZeroException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_DIVIDEBYZERO);
+            HResult = __HResults.COR_E_DIVIDEBYZERO;
         }
 
         public DivideByZeroException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_DIVIDEBYZERO);
+            HResult = __HResults.COR_E_DIVIDEBYZERO;
         }
+
+        protected DivideByZeroException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -11,7 +11,7 @@ namespace System
     ///    <para> The exception that is thrown when accessing an object that was
     ///       disposed.</para>
     /// </devdoc>
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class ObjectDisposedException : InvalidOperationException
     {
         private String _objectName;
@@ -29,14 +29,26 @@ namespace System
 
         public ObjectDisposedException(String objectName, String message) : base(message)
         {
-            SetErrorCode(__HResults.COR_E_OBJECTDISPOSED);
+            HResult = __HResults.COR_E_OBJECTDISPOSED;
             _objectName = objectName;
         }
 
         public ObjectDisposedException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_OBJECTDISPOSED);
+            HResult = __HResults.COR_E_OBJECTDISPOSED;
+        }
+
+        protected ObjectDisposedException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _objectName = info.GetString("ObjectName");
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("ObjectName",ObjectName,typeof(String));
         }
 
         /// <devdoc>

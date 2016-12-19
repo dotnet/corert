@@ -4,44 +4,61 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.IO
 {
     // Thrown when trying to access a file that doesn't exist on disk.
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public class FileNotFoundException : IOException
     {
         private String _fileName;  // The name of the file that isn't found.
+        private String _fusionLog;  // fusion log (when applicable)
 
         public FileNotFoundException()
             : base(SR.IO_FileNotFound)
         {
-            HResult = (__HResults.COR_E_FILENOTFOUND);
+            HResult = __HResults.COR_E_FILENOTFOUND;
         }
 
         public FileNotFoundException(String message)
             : base(message)
         {
-            HResult = (__HResults.COR_E_FILENOTFOUND);
+            HResult = __HResults.COR_E_FILENOTFOUND;
         }
 
         public FileNotFoundException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = (__HResults.COR_E_FILENOTFOUND);
+            HResult = __HResults.COR_E_FILENOTFOUND;
         }
 
         public FileNotFoundException(String message, String fileName) : base(message)
         {
-            HResult = (__HResults.COR_E_FILENOTFOUND);
+            HResult = __HResults.COR_E_FILENOTFOUND;
             _fileName = fileName;
         }
 
         public FileNotFoundException(String message, String fileName, Exception innerException)
             : base(message, innerException)
         {
-            HResult = (__HResults.COR_E_FILENOTFOUND);
+            HResult = __HResults.COR_E_FILENOTFOUND;
             _fileName = fileName;
+        }
+
+        protected FileNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            // Base class constructor will check info != null.
+
+            _fileName = info.GetString("FileNotFound_FileName");
+            try
+            {
+                _fusionLog = info.GetString("FileNotFound_FusionLog");
+            }
+            catch
+            {
+                _fusionLog = null;
+            }
         }
 
         public override String Message
@@ -51,7 +68,7 @@ namespace System.IO
                 if (_message == null)
                 {
                     if ((_fileName == null) &&
-                        (HResult == System.__HResults.COR_E_EXCEPTION))
+                        (HResult == __HResults.COR_E_EXCEPTION))
                     {
                         _message = SR.IO_FileNotFound;
                     }
@@ -68,6 +85,11 @@ namespace System.IO
         public String FileName
         {
             get { return _fileName; }
+        }
+
+        public String FusionLog
+        {
+            get { return _fusionLog; }
         }
 
         public override String ToString()
@@ -87,4 +109,3 @@ namespace System.IO
         }
     }
 }
-

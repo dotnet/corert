@@ -11,44 +11,68 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System
 {
-    public class BadImageFormatException : Exception
+    [Serializable]
+    public class BadImageFormatException : SystemException
     {
         private String _fileName;  // The name of the corrupt PE file.
+        private String _fusionLog;  // fusion log (when applicable)
 
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message, String fileName) : base(message)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
         }
 
         public BadImageFormatException(String message, String fileName, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
+        }
+
+        protected BadImageFormatException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _fileName = info.GetString("BadImageFormat_FileName");
+            try
+            {
+                _fusionLog = info.GetString("BadImageFormat_FusionLog");
+            }
+            catch
+            {
+                _fusionLog = null;
+            }
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+
+            info.AddValue("BadImageFormat_FileName", _fileName, typeof(String));
+            info.AddValue("BadImageFormat_FusionLog", _fusionLog, typeof(String));
         }
 
         public override String Message
@@ -65,7 +89,7 @@ namespace System
             if (_message == null)
             {
                 //if ((_fileName == null) &&
-                //    (HResult == System.__HResults.COR_E_EXCEPTION))
+                //    (HResult == __HResults.COR_E_EXCEPTION))
                 _message = SR.Format(SR.BadImageFormatException_CouldNotLoadFileOrAssembly, _fileName);
                 //else
                 //TODO: Implement support to contain the correctly formatted message when using a filename
@@ -92,6 +116,11 @@ namespace System
                 s += Environment.NewLine + StackTrace;
 
             return s;
+        }
+
+        public String FusionLog
+        {
+            get { return _fusionLog; }
         }
     }
 }

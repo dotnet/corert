@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -98,6 +99,7 @@ namespace System.Text
     }
 
     // Exception for decoding unknown byte sequences.
+    [Serializable]
     public sealed class DecoderFallbackException : ArgumentException
     {
         private byte[] _bytesUnknown = null;
@@ -106,26 +108,28 @@ namespace System.Text
         public DecoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
         }
 
         public DecoderFallbackException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
         }
 
         public DecoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
         }
 
-        public DecoderFallbackException(
-            String message, byte[] bytesUnknown, int index) : base(message)
+        public DecoderFallbackException(String message, byte[] bytesUnknown, int index)
+            : base(message)
         {
             _bytesUnknown = bytesUnknown;
             _index = index;
+        }
+
+        internal DecoderFallbackException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
         }
 
         public byte[] BytesUnknown
