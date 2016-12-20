@@ -25,7 +25,17 @@ namespace System.Reflection
         /// <seealso cref="System.Reflection.DispatchProxyEntry "/>
         public static void RegisterImplementations(DispatchProxyEntry[] entryTable)
         {
-            s_entryTable = entryTable;
+            if (s_entryTable != null)
+            {
+                DispatchProxyEntry[] newEntryTable = new DispatchProxyEntry[s_entryTable.Length + entryTable.Length];
+                Array.Copy(s_entryTable, 0, newEntryTable, 0, s_entryTable.Length);
+                Array.Copy(entryTable, 0, newEntryTable, s_entryTable.Length, entryTable.Length);
+                s_entryTable = newEntryTable;
+            }
+            else
+            {
+                s_entryTable = entryTable;
+            }
         }
 
         /// <summary>
