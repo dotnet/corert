@@ -2699,16 +2699,13 @@ namespace System
             // IEquatable<AdjustmentRule>
             public bool Equals(AdjustmentRule other)
             {
-                bool equals = (other != null
+                return other != null
                      && _dateStart == other._dateStart
                      && _dateEnd == other._dateEnd
                      && _daylightDelta == other._daylightDelta
-                     && _baseUtcOffsetDelta == other._baseUtcOffsetDelta);
-
-                equals = equals && _daylightTransitionEnd.Equals(other._daylightTransitionEnd)
-                         && _daylightTransitionStart.Equals(other._daylightTransitionStart);
-
-                return equals;
+                     && _baseUtcOffsetDelta == other._baseUtcOffsetDelta
+                     && _daylightTransitionEnd.Equals(other._daylightTransitionEnd)
+                     && _daylightTransitionStart.Equals(other._daylightTransitionStart);
             }
 
 
