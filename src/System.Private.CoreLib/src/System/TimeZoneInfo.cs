@@ -2625,12 +2625,12 @@ namespace System
         sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
-            private DateTime _dateStart;
-            private DateTime _dateEnd;
-            private TimeSpan _daylightDelta;
-            private TransitionTime _daylightTransitionStart;
-            private TransitionTime _daylightTransitionEnd;
-            private TimeSpan _baseUtcOffsetDelta;   // delta from the default Utc offset (utcOffset = defaultUtcOffset + _baseUtcOffsetDelta)
+            private readonly DateTime _dateStart;
+            private readonly DateTime _dateEnd;
+            private readonly TimeSpan _daylightDelta;
+            private readonly TransitionTime _daylightTransitionStart;
+            private readonly TransitionTime _daylightTransitionEnd;
+            private readonly TimeSpan _baseUtcOffsetDelta;   // delta from the default Utc offset (utcOffset = defaultUtcOffset + _baseUtcOffsetDelta)
 
 
             // ---- SECTION: public properties --------------*
@@ -2718,7 +2718,24 @@ namespace System
 
             // -------- SECTION: constructors -----------------*
 
-            private AdjustmentRule() { }
+            private AdjustmentRule(
+                DateTime dateStart,
+                DateTime dateEnd,
+                TimeSpan daylightDelta,
+                TransitionTime daylightTransitionStart,
+                TransitionTime daylightTransitionEnd,
+                TimeSpan baseUtcOffsetDelta)
+            {
+                ValidateAdjustmentRule(dateStart, dateEnd, daylightDelta,
+                                       daylightTransitionStart, daylightTransitionEnd);
+
+                _dateStart = dateStart;
+                _dateEnd = dateEnd;
+                _daylightDelta = daylightDelta;
+                _daylightTransitionStart = daylightTransitionStart;
+                _daylightTransitionEnd = daylightTransitionEnd;
+                _baseUtcOffsetDelta = baseUtcOffsetDelta;
+            }
 
 
             // -------- SECTION: factory methods -----------------*
@@ -2730,19 +2747,13 @@ namespace System
                              TransitionTime daylightTransitionStart,
                              TransitionTime daylightTransitionEnd)
             {
-                ValidateAdjustmentRule(dateStart, dateEnd, daylightDelta,
-                                       daylightTransitionStart, daylightTransitionEnd);
-
-                AdjustmentRule rule = new AdjustmentRule();
-
-                rule._dateStart = dateStart;
-                rule._dateEnd = dateEnd;
-                rule._daylightDelta = daylightDelta;
-                rule._daylightTransitionStart = daylightTransitionStart;
-                rule._daylightTransitionEnd = daylightTransitionEnd;
-                rule._baseUtcOffsetDelta = TimeSpan.Zero;
-
-                return rule;
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta: TimeSpan.Zero);
             }
 
             internal static AdjustmentRule CreateAdjustmentRule(
@@ -2753,9 +2764,13 @@ namespace System
                              TransitionTime daylightTransitionEnd,
                              TimeSpan baseUtcOffsetDelta)
             {
-                AdjustmentRule rule = CreateAdjustmentRule(dateStart, dateEnd, daylightDelta, daylightTransitionStart, daylightTransitionEnd);
-                rule._baseUtcOffsetDelta = baseUtcOffsetDelta;
-                return rule;
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta);
             }
 
             // ----- SECTION: internal utility methods ----------------*
