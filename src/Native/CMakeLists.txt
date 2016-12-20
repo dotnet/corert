@@ -1,8 +1,13 @@
-cmake_minimum_required(VERSION 3.7.0)
+cmake_minimum_required(VERSION 2.8.12)
 project(CoreRT)
 
 # Include cmake functions
 include(functions.cmake)
+
+string_has_prefix(${CMAKE_GENERATOR} "Visual Studio 15 2017" GENERATOR_IS_VS2017)
+if(GENERATOR_IS_VS2017 AND (CMAKE_VERSION VERSION_LESS 3.7.0))
+    message(FATAL_ERROR "CMake version 3.7.0 or higher is required to compile targeting VS 2017")
+endif()
 
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
