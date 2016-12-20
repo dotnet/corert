@@ -610,8 +610,7 @@ namespace System
             try
             {
                 using (RegistryKey dynamicKey = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(
-                                   String.Format(CultureInfo.InvariantCulture, "{0}\\{1}\\Dynamic DST",
-                                       c_timeZonesRegistryHive, id),
+                                   c_timeZonesRegistryHive + "\\" + id + "\\Dynamic DST",
                                    false
                                    ))
                 {
@@ -788,8 +787,7 @@ namespace System
         {
             dstDisabled = false;
             using (RegistryKey key = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(
-                              String.Format(CultureInfo.InvariantCulture, "{0}\\{1}",
-                                  c_timeZonesRegistryHive, id),
+                                  c_timeZonesRegistryHive + "\\" + id,
                                   false
                                   ))
             {
@@ -1063,8 +1061,7 @@ namespace System
             e = null;
 
             using (RegistryKey key = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(
-                              String.Format(CultureInfo.InvariantCulture, "{0}\\{1}",
-                                  c_timeZonesRegistryHive, id),
+                                  c_timeZonesRegistryHive + "\\" + id,
                                   false
                                   ))
             {

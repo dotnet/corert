@@ -58,17 +58,19 @@ namespace System
         };
 
         // ---- SECTION:  members supporting exposed properties -------------*
-        private String _id;
-        private String _displayName;
-        private String _standardDisplayName;
-        private String _daylightDisplayName;
-        private TimeSpan _baseUtcOffset;
-        private Boolean _supportsDaylightSavingTime;
-        private AdjustmentRule[] _adjustmentRules;
+        private readonly String _id;
+        private readonly String _displayName;
+        private readonly String _standardDisplayName;
+        private readonly String _daylightDisplayName;
+        private readonly TimeSpan _baseUtcOffset;
+        private readonly Boolean _supportsDaylightSavingTime;
+        private readonly AdjustmentRule[] _adjustmentRules;
 
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
         private const string c_utcId = "UTC";
         private const string c_localId = "Local";
+
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateCustomTimeZone(c_utcId, TimeSpan.Zero, c_utcId, c_utcId);
 
         private static CachedData s_cachedData = new CachedData();
 
@@ -82,7 +84,6 @@ namespace System
         private class CachedData
         {
             private volatile TimeZoneInfo _localTimeZone;
-            private volatile TimeZoneInfo _utcTimeZone;
             private Lock _lock = new Lock();
 
             private TimeZoneInfo CreateLocal()
@@ -125,35 +126,6 @@ namespace System
                 }
             }
 
-            private TimeZoneInfo CreateUtc()
-            {
-                using (LockHolder.Hold(_lock))
-                {
-                    TimeZoneInfo timeZone = _utcTimeZone;
-                    if (timeZone == null)
-                    {
-                        timeZone = CreateCustomTimeZone(c_utcId, TimeSpan.Zero, c_utcId, c_utcId);
-                        _utcTimeZone = timeZone;
-                    }
-                    return timeZone;
-                }
-            }
-
-            public TimeZoneInfo Utc
-            {
-                get
-                {
-                    Contract.Ensures(Contract.Result<TimeZoneInfo>() != null);
-
-                    TimeZoneInfo timeZone = _utcTimeZone;
-                    if (timeZone == null)
-                    {
-                        timeZone = CreateUtc();
-                    }
-                    return timeZone;
-                }
-            }
-
             //
             // GetCorrespondingKind-
             //
@@ -182,7 +154,7 @@ namespace System
                 // in this example.  Only when the user passes in TimeZoneInfo.Local or
                 // TimeZoneInfo.Utc to the ConvertTime(...) methods will this check succeed.
                 //
-                if ((object)timeZone == (object)_utcTimeZone)
+                if ((object)timeZone == (object)s_utcTimeZone)
                 {
                     kind = DateTimeKind.Utc;
                 }
@@ -438,7 +410,7 @@ namespace System
             else if (dateTime.Kind == DateTimeKind.Utc)
             {
                 CachedData cachedData = s_cachedData;
-                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Utc, this, TimeZoneInfoOptions.None, cachedData);
+                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, s_utcTimeZone, this, TimeZoneInfoOptions.None, cachedData);
             }
             else
             {
@@ -514,7 +486,7 @@ namespace System
                     //
                     // normal case of converting from Local to Utc and then getting the offset from the UTC DateTime
                     //
-                    DateTime adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Local, cachedData.Utc, flags);
+                    DateTime adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags);
                     return GetUtcOffsetFromUtc(adjustedTime, this);
                 }
                 //
@@ -590,7 +562,7 @@ namespace System
             else if (dateTime.Kind == DateTimeKind.Utc)
             {
                 CachedData cachedData = s_cachedData;
-                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, cachedData.Utc, this, flags, cachedData);
+                adjustedTime = TimeZoneInfo.ConvertTime(dateTime, s_utcTimeZone, this, flags, cachedData);
             }
             else
             {
@@ -772,7 +744,7 @@ namespace System
                 // be reference equal to the new TimeZoneInfo.Utc
                 //
                 CachedData cachedData = s_cachedData;
-                return ConvertTime(dateTime, cachedData.Utc, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
+                return ConvertTime(dateTime, s_utcTimeZone, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
             }
             else
             {
@@ -832,7 +804,7 @@ namespace System
             CachedData cachedData = s_cachedData;
             if (dateTime.Kind == DateTimeKind.Utc)
             {
-                return ConvertTime(dateTime, cachedData.Utc, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
+                return ConvertTime(dateTime, s_utcTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
             }
             else
             {
@@ -937,7 +909,7 @@ namespace System
         public static DateTime ConvertTimeFromUtc(DateTime dateTime, TimeZoneInfo destinationTimeZone)
         {
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Utc, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
+            return ConvertTime(dateTime, s_utcTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
         }
 
         //
@@ -952,7 +924,7 @@ namespace System
                 return dateTime;
             }
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Local, cachedData.Utc, TimeZoneInfoOptions.None, cachedData);
+            return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, TimeZoneInfoOptions.None, cachedData);
         }
 
         internal static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfoOptions flags)
@@ -962,13 +934,13 @@ namespace System
                 return dateTime;
             }
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Local, cachedData.Utc, flags, cachedData);
+            return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags, cachedData);
         }
 
         public static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfo sourceTimeZone)
         {
             CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, sourceTimeZone, cachedData.Utc, TimeZoneInfoOptions.None, cachedData);
+            return ConvertTime(dateTime, sourceTimeZone, s_utcTimeZone, TimeZoneInfoOptions.None, cachedData);
         }
 
         //
@@ -1123,7 +1095,7 @@ namespace System
             get
             {
                 Contract.Ensures(Contract.Result<TimeZoneInfo>() != null);
-                return s_cachedData.Utc;
+                return s_utcTimeZone;
             }
         }
 
@@ -1165,7 +1137,7 @@ namespace System
                 String daylightDisplayName,
                 AdjustmentRule[] adjustmentRules)
         {
-            return new TimeZoneInfo(
+            return CreateCustomTimeZone(
                            id,
                            baseUtcOffset,
                            displayName,
@@ -1193,6 +1165,11 @@ namespace System
                 AdjustmentRule[] adjustmentRules,
                 Boolean disableDaylightSavingTime)
         {
+            if (!disableDaylightSavingTime && adjustmentRules?.Length > 0)
+            {
+                adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
+            }
+
             return new TimeZoneInfo(
                             id,
                             baseUtcOffset,
@@ -2284,17 +2261,13 @@ namespace System
             Boolean adjustmentRulesSupportDst;
             ValidateTimeZoneInfo(id, baseUtcOffset, adjustmentRules, out adjustmentRulesSupportDst);
 
-            if (!disableDaylightSavingTime && adjustmentRules != null && adjustmentRules.Length > 0)
-            {
-                _adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
-            }
-
             _id = id;
             _baseUtcOffset = baseUtcOffset;
             _displayName = displayName;
             _standardDisplayName = standardDisplayName;
             _daylightDisplayName = (disableDaylightSavingTime ? null : daylightDisplayName);
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
+            _adjustmentRules = adjustmentRules;
         }
 
         //
@@ -2625,12 +2598,12 @@ namespace System
         sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
-            private DateTime _dateStart;
-            private DateTime _dateEnd;
-            private TimeSpan _daylightDelta;
-            private TransitionTime _daylightTransitionStart;
-            private TransitionTime _daylightTransitionEnd;
-            private TimeSpan _baseUtcOffsetDelta;   // delta from the default Utc offset (utcOffset = defaultUtcOffset + _baseUtcOffsetDelta)
+            private readonly DateTime _dateStart;
+            private readonly DateTime _dateEnd;
+            private readonly TimeSpan _daylightDelta;
+            private readonly TransitionTime _daylightTransitionStart;
+            private readonly TransitionTime _daylightTransitionEnd;
+            private readonly TimeSpan _baseUtcOffsetDelta;   // delta from the default Utc offset (utcOffset = defaultUtcOffset + _baseUtcOffsetDelta)
 
 
             // ---- SECTION: public properties --------------*
@@ -2699,16 +2672,13 @@ namespace System
             // IEquatable<AdjustmentRule>
             public bool Equals(AdjustmentRule other)
             {
-                bool equals = (other != null
+                return other != null
                      && _dateStart == other._dateStart
                      && _dateEnd == other._dateEnd
                      && _daylightDelta == other._daylightDelta
-                     && _baseUtcOffsetDelta == other._baseUtcOffsetDelta);
-
-                equals = equals && _daylightTransitionEnd.Equals(other._daylightTransitionEnd)
-                         && _daylightTransitionStart.Equals(other._daylightTransitionStart);
-
-                return equals;
+                     && _baseUtcOffsetDelta == other._baseUtcOffsetDelta
+                     && _daylightTransitionEnd.Equals(other._daylightTransitionEnd)
+                     && _daylightTransitionStart.Equals(other._daylightTransitionStart);
             }
 
 
@@ -2721,7 +2691,24 @@ namespace System
 
             // -------- SECTION: constructors -----------------*
 
-            private AdjustmentRule() { }
+            private AdjustmentRule(
+                DateTime dateStart,
+                DateTime dateEnd,
+                TimeSpan daylightDelta,
+                TransitionTime daylightTransitionStart,
+                TransitionTime daylightTransitionEnd,
+                TimeSpan baseUtcOffsetDelta)
+            {
+                ValidateAdjustmentRule(dateStart, dateEnd, daylightDelta,
+                                       daylightTransitionStart, daylightTransitionEnd);
+
+                _dateStart = dateStart;
+                _dateEnd = dateEnd;
+                _daylightDelta = daylightDelta;
+                _daylightTransitionStart = daylightTransitionStart;
+                _daylightTransitionEnd = daylightTransitionEnd;
+                _baseUtcOffsetDelta = baseUtcOffsetDelta;
+            }
 
 
             // -------- SECTION: factory methods -----------------*
@@ -2733,19 +2720,13 @@ namespace System
                              TransitionTime daylightTransitionStart,
                              TransitionTime daylightTransitionEnd)
             {
-                ValidateAdjustmentRule(dateStart, dateEnd, daylightDelta,
-                                       daylightTransitionStart, daylightTransitionEnd);
-
-                AdjustmentRule rule = new AdjustmentRule();
-
-                rule._dateStart = dateStart;
-                rule._dateEnd = dateEnd;
-                rule._daylightDelta = daylightDelta;
-                rule._daylightTransitionStart = daylightTransitionStart;
-                rule._daylightTransitionEnd = daylightTransitionEnd;
-                rule._baseUtcOffsetDelta = TimeSpan.Zero;
-
-                return rule;
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta: TimeSpan.Zero);
             }
 
             internal static AdjustmentRule CreateAdjustmentRule(
@@ -2756,9 +2737,13 @@ namespace System
                              TransitionTime daylightTransitionEnd,
                              TimeSpan baseUtcOffsetDelta)
             {
-                AdjustmentRule rule = CreateAdjustmentRule(dateStart, dateEnd, daylightDelta, daylightTransitionStart, daylightTransitionEnd);
-                rule._baseUtcOffsetDelta = baseUtcOffsetDelta;
-                return rule;
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta);
             }
 
             // ----- SECTION: internal utility methods ----------------*
@@ -2922,12 +2907,12 @@ namespace System
         public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
-            private DateTime _timeOfDay;
-            private byte _month;
-            private byte _week;
-            private byte _day;
-            private DayOfWeek _dayOfWeek;
-            private Boolean _isFixedDateRule;
+            private readonly DateTime _timeOfDay;
+            private readonly byte _month;
+            private readonly byte _week;
+            private readonly byte _day;
+            private readonly DayOfWeek _dayOfWeek;
+            private readonly Boolean _isFixedDateRule;
 
 
             // ---- SECTION: public properties --------------*
@@ -3031,16 +3016,24 @@ namespace System
 
 
             // -------- SECTION: constructors -----------------*
-            /*
-                        private TransitionTime() {           
-                            _timeOfDay = new DateTime();
-                            _month = 0;
-                            _week  = 0;
-                            _day   = 0;
-                            _dayOfWeek = DayOfWeek.Sunday;
-                            _isFixedDateRule = false;
-                        }
-            */
+
+            private TransitionTime(
+                DateTime timeOfDay,
+                Int32 month,
+                Int32 week,
+                Int32 day,
+                DayOfWeek dayOfWeek,
+                Boolean isFixedDateRule)
+            {
+                ValidateTransitionTime(timeOfDay, month, week, day, dayOfWeek);
+
+                _timeOfDay = timeOfDay;
+                _month = (byte)month;
+                _week = (byte)week;
+                _day = (byte)day;
+                _dayOfWeek = dayOfWeek;
+                _isFixedDateRule = isFixedDateRule;
+            }
 
 
             // -------- SECTION: factory methods -----------------*
@@ -3051,7 +3044,7 @@ namespace System
                     Int32 month,
                     Int32 day)
             {
-                return CreateTransitionTime(timeOfDay, month, 1, day, DayOfWeek.Sunday, true);
+                return new TransitionTime(timeOfDay, month, 1, day, DayOfWeek.Sunday, true);
             }
 
 
@@ -3061,29 +3054,7 @@ namespace System
                     Int32 week,
                     DayOfWeek dayOfWeek)
             {
-                return CreateTransitionTime(timeOfDay, month, week, 1, dayOfWeek, false);
-            }
-
-
-            private static TransitionTime CreateTransitionTime(
-                    DateTime timeOfDay,
-                    Int32 month,
-                    Int32 week,
-                    Int32 day,
-                    DayOfWeek dayOfWeek,
-                    Boolean isFixedDateRule)
-            {
-                ValidateTransitionTime(timeOfDay, month, week, day, dayOfWeek);
-
-                TransitionTime t = new TransitionTime();
-                t._isFixedDateRule = isFixedDateRule;
-                t._timeOfDay = timeOfDay;
-                t._dayOfWeek = dayOfWeek;
-                t._day = (byte)day;
-                t._week = (byte)week;
-                t._month = (byte)month;
-
-                return t;
+                return new TransitionTime(timeOfDay, month, week, 1, dayOfWeek, false);
             }
 
 
@@ -3311,7 +3282,7 @@ namespace System
 
                 try
                 {
-                    return TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, displayName, standardName, daylightName, rules);
+                    return new TimeZoneInfo(id, baseUtcOffset, displayName, standardName, daylightName, rules, disableDaylightSavingTime: false);
                 }
                 catch (ArgumentException ex)
                 {
