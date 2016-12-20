@@ -1137,7 +1137,7 @@ namespace System
                 String daylightDisplayName,
                 AdjustmentRule[] adjustmentRules)
         {
-            return new TimeZoneInfo(
+            return CreateCustomTimeZone(
                            id,
                            baseUtcOffset,
                            displayName,
@@ -1165,6 +1165,11 @@ namespace System
                 AdjustmentRule[] adjustmentRules,
                 Boolean disableDaylightSavingTime)
         {
+            if (!disableDaylightSavingTime && adjustmentRules?.Length > 0)
+            {
+                adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
+            }
+
             return new TimeZoneInfo(
                             id,
                             baseUtcOffset,
@@ -2256,17 +2261,13 @@ namespace System
             Boolean adjustmentRulesSupportDst;
             ValidateTimeZoneInfo(id, baseUtcOffset, adjustmentRules, out adjustmentRulesSupportDst);
 
-            if (!disableDaylightSavingTime && adjustmentRules != null && adjustmentRules.Length > 0)
-            {
-                _adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
-            }
-
             _id = id;
             _baseUtcOffset = baseUtcOffset;
             _displayName = displayName;
             _standardDisplayName = standardDisplayName;
             _daylightDisplayName = (disableDaylightSavingTime ? null : daylightDisplayName);
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
+            _adjustmentRules = adjustmentRules;
         }
 
         //
@@ -3281,7 +3282,7 @@ namespace System
 
                 try
                 {
-                    return TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, displayName, standardName, daylightName, rules);
+                    return new TimeZoneInfo(id, baseUtcOffset, displayName, standardName, daylightName, rules, disableDaylightSavingTime: false);
                 }
                 catch (ArgumentException ex)
                 {
