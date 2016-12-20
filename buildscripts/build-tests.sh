@@ -10,3 +10,6 @@ pushd ${__ProjectRoot}/tests
 source ${__ProjectRoot}/tests/runtest.sh $__BuildOS $__BuildArch $__BuildType -dotnetclipath $__dotnetclipath
 TESTERRORLEVEL=$?
 popd
+if [ $TESTERRORLEVEL != 0 ]; then
+    exit $TESTERRORLEVEL
+fi

@@ -17,6 +17,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <PackageDestination Include="Tools">
+      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
       <Project>{D66338D4-F9E4-4051-B302-232C6BFB6EF6}</Project>
       <Name>ILCompiler.MetadataWriter</Name>

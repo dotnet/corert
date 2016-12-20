@@ -39,6 +39,9 @@ build_managed_corert()
     # Pull the build summary from the log file
     tail -n 4 "$__buildlog"
     echo Build Exit Code = $BUILDERRORLEVEL
+    if [ $BUILDERRORLEVEL != 0 ]; then
+        exit $BUILDERRORLEVEL
+    fi
 }
 
 
