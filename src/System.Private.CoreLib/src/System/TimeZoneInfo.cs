@@ -2934,12 +2934,12 @@ namespace System
         public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
-            private DateTime _timeOfDay;
-            private byte _month;
-            private byte _week;
-            private byte _day;
-            private DayOfWeek _dayOfWeek;
-            private Boolean _isFixedDateRule;
+            private readonly DateTime _timeOfDay;
+            private readonly byte _month;
+            private readonly byte _week;
+            private readonly byte _day;
+            private readonly DayOfWeek _dayOfWeek;
+            private readonly Boolean _isFixedDateRule;
 
 
             // ---- SECTION: public properties --------------*
@@ -3043,16 +3043,24 @@ namespace System
 
 
             // -------- SECTION: constructors -----------------*
-            /*
-                        private TransitionTime() {           
-                            _timeOfDay = new DateTime();
-                            _month = 0;
-                            _week  = 0;
-                            _day   = 0;
-                            _dayOfWeek = DayOfWeek.Sunday;
-                            _isFixedDateRule = false;
-                        }
-            */
+
+            private TransitionTime(
+                DateTime timeOfDay,
+                Int32 month,
+                Int32 week,
+                Int32 day,
+                DayOfWeek dayOfWeek,
+                Boolean isFixedDateRule)
+            {
+                ValidateTransitionTime(timeOfDay, month, week, day, dayOfWeek);
+
+                _timeOfDay = timeOfDay;
+                _month = (byte)month;
+                _week = (byte)week;
+                _day = (byte)day;
+                _dayOfWeek = dayOfWeek;
+                _isFixedDateRule = isFixedDateRule;
+            }
 
 
             // -------- SECTION: factory methods -----------------*
@@ -3063,7 +3071,7 @@ namespace System
                     Int32 month,
                     Int32 day)
             {
-                return CreateTransitionTime(timeOfDay, month, 1, day, DayOfWeek.Sunday, true);
+                return new TransitionTime(timeOfDay, month, 1, day, DayOfWeek.Sunday, true);
             }
 
 
@@ -3073,29 +3081,7 @@ namespace System
                     Int32 week,
                     DayOfWeek dayOfWeek)
             {
-                return CreateTransitionTime(timeOfDay, month, week, 1, dayOfWeek, false);
-            }
-
-
-            private static TransitionTime CreateTransitionTime(
-                    DateTime timeOfDay,
-                    Int32 month,
-                    Int32 week,
-                    Int32 day,
-                    DayOfWeek dayOfWeek,
-                    Boolean isFixedDateRule)
-            {
-                ValidateTransitionTime(timeOfDay, month, week, day, dayOfWeek);
-
-                TransitionTime t = new TransitionTime();
-                t._isFixedDateRule = isFixedDateRule;
-                t._timeOfDay = timeOfDay;
-                t._dayOfWeek = dayOfWeek;
-                t._day = (byte)day;
-                t._week = (byte)week;
-                t._month = (byte)month;
-
-                return t;
+                return new TransitionTime(timeOfDay, month, week, 1, dayOfWeek, false);
             }
 
 
