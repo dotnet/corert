@@ -58,13 +58,13 @@ namespace System
         };
 
         // ---- SECTION:  members supporting exposed properties -------------*
-        private String _id;
-        private String _displayName;
-        private String _standardDisplayName;
-        private String _daylightDisplayName;
-        private TimeSpan _baseUtcOffset;
-        private Boolean _supportsDaylightSavingTime;
-        private AdjustmentRule[] _adjustmentRules;
+        private readonly String _id;
+        private readonly String _displayName;
+        private readonly String _standardDisplayName;
+        private readonly String _daylightDisplayName;
+        private readonly TimeSpan _baseUtcOffset;
+        private readonly Boolean _supportsDaylightSavingTime;
+        private readonly AdjustmentRule[] _adjustmentRules;
 
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
         private const string c_utcId = "UTC";
