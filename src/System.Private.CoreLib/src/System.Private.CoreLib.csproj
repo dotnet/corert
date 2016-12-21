@@ -254,6 +254,7 @@
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
+    <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="System\Convert.cs" />
     <Compile Include="System\ContextBoundObject.cs" />
     <Compile Include="System\DataMisalignedException.cs" />
