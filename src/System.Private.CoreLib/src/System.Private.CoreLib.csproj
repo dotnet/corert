@@ -135,8 +135,6 @@
     <Compile Include="System\IO\SeekOrigin.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ITuple.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
@@ -200,8 +198,6 @@
     <Compile Include="System\Reflection\TypeInfo.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
-    <Compile Include="System\TupleExtensions.cs" />
-    <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Action.cs" />
@@ -432,6 +428,7 @@
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ILTransformInjectedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ITuple.cs" />
     <Compile Include="System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\InitializedDataAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\InternalCompilerAttributes.cs" />
@@ -444,6 +441,7 @@
     <Compile Include="System\Runtime\CompilerServices\StateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerOrderedStaticConstructorAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\Unsafe.cs" />
@@ -616,6 +614,7 @@
     <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\TimeZoneNotFoundException.cs" />
     <Compile Include="System\Tuple.cs" />
+    <Compile Include="System\TupleExtensions.cs" />
     <Compile Include="System\Type.cs" />
     <Compile Include="System\Type.Helpers.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
@@ -630,6 +629,7 @@
     <Compile Include="System\UnauthorizedAccessException.cs" />
     <Compile Include="System\UnhandledExceptionEventArgs.cs" />
     <Compile Include="System\UnhandledExceptionEventHandler.cs" />
+    <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
     <Compile Include="System\Void.cs" />
