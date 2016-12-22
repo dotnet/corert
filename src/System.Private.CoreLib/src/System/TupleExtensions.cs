@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Note: EditorBrowsable can be un-commented once https://github.com/dotnet/corefx/issues/14447 is resolved
-//using System.ComponentModel;
-
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -18,7 +16,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 1 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1>(
             this Tuple<T1> value,
             out T1 item1)
@@ -29,7 +27,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 2 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2>(
             this Tuple<T1, T2> value,
             out T1 item1, out T2 item2)
@@ -41,7 +39,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 3 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3>(
             this Tuple<T1, T2, T3> value,
             out T1 item1, out T2 item2, out T3 item3)
@@ -54,7 +52,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 4 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4>(
             this Tuple<T1, T2, T3, T4> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4)
@@ -68,7 +66,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 5 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5>(
             this Tuple<T1, T2, T3, T4, T5> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5)
@@ -83,7 +81,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 6 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6>(
             this Tuple<T1, T2, T3, T4, T5, T6> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6)
@@ -99,7 +97,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 7 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7)
@@ -116,7 +114,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 8 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8)
@@ -134,7 +132,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 9 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9)
@@ -153,7 +151,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 10 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10)
@@ -173,7 +171,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 11 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11)
@@ -194,7 +192,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 12 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12)
@@ -216,7 +214,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 13 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13)
@@ -239,7 +237,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 14 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14)
@@ -263,7 +261,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 15 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15>>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14, out T15 item15)
@@ -288,7 +286,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 16 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16>>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14, out T15 item15, out T16 item16)
@@ -314,7 +312,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 17 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17>>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14, out T15 item15, out T16 item16, out T17 item17)
@@ -341,7 +339,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 18 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17, T18>>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14, out T15 item15, out T16 item16, out T17 item17, out T18 item18)
@@ -369,7 +367,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 19 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17, T18, T19>>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14, out T15 item15, out T16 item16, out T17 item17, out T18 item18, out T19 item19)
@@ -398,7 +396,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 20 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17, T18, T19, T20>>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14, out T15 item15, out T16 item16, out T17 item17, out T18 item18, out T19 item19, out T20 item20)
@@ -428,7 +426,7 @@ namespace System
         /// <summary>
         /// Deconstruct a properly nested <see cref="Tuple"/> with 21 elements.
         /// </summary>
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Deconstruct<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21>(
             this Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17, T18, T19, T20, T21>>> value,
             out T1 item1, out T2 item2, out T3 item3, out T4 item4, out T5 item5, out T6 item6, out T7 item7, out T8 item8, out T9 item9, out T10 item10, out T11 item11, out T12 item12, out T13 item13, out T14 item14, out T15 item15, out T16 item16, out T17 item17, out T18 item18, out T19 item19, out T20 item20, out T21 item21)
