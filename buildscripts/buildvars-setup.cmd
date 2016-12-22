@@ -128,12 +128,12 @@ exit /b 1
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
 if /i "%__VSVersion%" == "vs2017" (
-    :: The MSBuild that is installed in the shared location is not compatible
-    :: with VS2017 C++ projects. I must use the MSBuild located in
-    :: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
-    :: which is compatible. However, I don't know a good way to specify this
-    :: path in a way that isn't specific to my system, so I am relying on the
-    :: system PATH to locate this tool.
+    rem The MSBuild that is installed in the shared location is not compatible
+    rem with VS2017 C++ projects. I must use the MSBuild located in
+    rem C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
+    rem which is compatible. However, I don't know a good way to specify this
+    rem path in a way that isn't specific to my system, so I am relying on the
+    rem system PATH to locate this tool.
     set _msbuildexe=msbuild
 ) else (
     set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
