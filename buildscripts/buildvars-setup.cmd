@@ -36,6 +36,8 @@ if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
+if /i "%1" == "vs2017"   (set __VSVersion=vs2017&shift&goto Arg_Loop)
+
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptests" (set __SkipTests=1&shift&goto Arg_Loop)
@@ -104,6 +106,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__
 
 set __VSProductVersion=
 if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
+if /i "%__VSVersion%" == "vs2017" set __VSProductVersion=150
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
@@ -124,9 +127,19 @@ exit /b 1
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
-set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1
+if /i "%__VSVersion%" == "vs2017" (
+    rem The MSBuild that is installed in the shared location is not compatible
+    rem with VS2017 C++ projects. I must use the MSBuild located in
+    rem C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
+    rem which is compatible. However, I don't know a good way to specify this
+    rem path in a way that isn't specific to my system, so I am relying on the
+    rem system PATH to locate this tool.
+    set _msbuildexe=msbuild
+) else (
+    set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
+    if not exist !_msbuildexe! (set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe")
+    if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
+)
 
 rem Explicitly set Platform causes conflicts in managed project files. Clear it to allow building from VS x64 Native Tools Command Prompt
 set Platform=
@@ -154,7 +167,7 @@ echo.
 echo./? -? /h -h /help -help: view this message.
 echo Build architecture: one of x64, x86, arm ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
-echo Visual Studio version: ^(default: VS2015^).
+echo Visual Studio version: ^(default: VS2015, VS2017 also supported^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
 echo skiptests: skip building tests ^(default: tests are built^).
 exit /b 1

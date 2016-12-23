@@ -33,7 +33,13 @@ echo.
 :: Set the environment for the native build
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
-call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+
+:: VS2017 changed the location of vcvarsall.bat.
+if /i "%__VSVersion%" == "vs2017" (
+    call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+) else (
+    call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+)
 
 :: Regenerate the VS solution
 pushd "%__IntermediatesDir%"
