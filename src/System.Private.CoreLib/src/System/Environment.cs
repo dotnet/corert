@@ -25,6 +25,13 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
+    public enum EnvironmentVariableTarget
+    {
+        Process = 0,
+        User = 1,
+        Machine = 2,
+    }
+
     // Environment is marked as Eager to allow Lock to read the current
     // thread ID, since Lock is used in ClassConstructorRunner.Cctor.GetCctor
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemEnvironment)]
