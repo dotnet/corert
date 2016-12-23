@@ -1,22 +1,6 @@
 {
   "build": [
     {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Delete files from $(build.SourcesDirectory)/corert",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "SourceFolder": "$(build.SourcesDirectory)/corert",
-        "Contents": "**\n.gitignore"
-      }
-    },
-    {
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
@@ -29,7 +13,7 @@
       },
       "inputs": {
         "filename": "$(Git)",
-        "arguments": "clone $(GitUrl) corert",
+        "arguments": "clone $(GitUrl) $(SourceFolder)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -48,7 +32,7 @@
       "inputs": {
         "filename": "$(Git)",
         "arguments": "checkout $(SourceVersion)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -56,7 +40,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)/corert/buildscripts/clean.sh",
+      "displayName": "Run $(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/clean.sh",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -64,9 +48,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/clean.sh",
+        "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/clean.sh",
         "arguments": "-all",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -82,9 +66,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/build-native.sh",
+        "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-native.sh",
         "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -100,9 +84,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/build-managed.sh",
+        "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-managed.sh",
         "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -118,14 +102,68 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/build-tests.sh",
+        "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-tests.sh",
         "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-packages.sh",
+        "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "workingFolder": "$(SourceFolder)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Download nuget",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "curl",
+        "arguments": "-L -k -o $(SourceFolder)/nuget.zip https://dotnet.myget.org/F/dotnet-buildtools/api/v2/package/NuGet.CommandLine/3.5.0-rc-1256",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Unzip nuget",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "unzip",
+        "arguments": "$(SourceFolder)/nuget.zip -d $(SourceFolder)/nuget",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish packages",
@@ -136,9 +174,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corert/buildscripts/publish-packages.sh",
-        "arguments": "",
-        "workingFolder": "corert",
+        "filename": "mono",
+        "arguments": "nuget/tools/NuGet.exe push bin/Product/pkg/*.nupkg $(MyGetApiKey) -Source $(MyGetFeedUrl) -Timeout 3600",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -155,7 +193,7 @@
       },
       "inputs": {
         "CopyRoot": "",
-        "Contents": "*.log\ncorert/bin/Logs/*.*\n**/*.log",
+        "Contents": "*.log\n$(SourceFolder)/bin/Logs/*.*\n**/*.log",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
@@ -175,7 +213,7 @@
       "inputs": {
         "filename": "tar",
         "arguments": "-zcvf bin.tar.gz bin",
-        "workingFolder": "corert",
+        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -192,7 +230,7 @@
       },
       "inputs": {
         "CopyRoot": "",
-        "Contents": "corert/bin.tar.gz",
+        "Contents": "$(SourceFolder)/bin.tar.gz",
         "ArtifactName": "bin",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
@@ -262,11 +300,9 @@
       "value": "HEAD",
       "allowOverride": true
     },
-    "Build.Clean": {
-      "value": "all"
-    },
     "GitUrl": {
-      "value": "https://github.com/dotnet/corert"
+      "value": "https://github.com/dotnet/corert",
+      "allowOverride": true
     },
     "SourceBranch": {
       "value": "master",
@@ -274,6 +310,18 @@
     },
     "Git": {
       "value": "git"
+    },
+    "SourceFolder": {
+      "value": "corert_$(Build.BuildId)",
+      "allowOverride": false
+    },
+    "MyGetFeedUrl": {
+      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
+    },
+    "MyGetApiKey": {
+      "value": null,
+      "isSecret": true,
+      "allowOverride": true
     }
   },
   "demands": [

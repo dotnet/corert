@@ -7,19 +7,17 @@
   },
   "Pipelines": [
     {
-      "Name": "All-Release",
+      "Name": "All-Release-x64",
       "Parameters": {
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "ConfigurationGroup": "Release"
+        "Platform": "x64",
+        "Configuration": "Release"
       },
       "Definitions": [
         {
           "Name": "DotNet-CoreRT-Linux",
-          "Parameters": {
-            "DockerTag": "latest"
-          },
           "ReportingParameters": {
             "OperatingSystem": "Debian 8.2",
             "SubType": "native",

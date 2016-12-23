@@ -18,6 +18,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <PackageDestination Include="Tools">
+      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ComputedStaticDependencyNode.cs" />
     <Compile Include="DependencyAnalyzer.cs" />
     <Compile Include="DependencyAnalyzerBase.cs" />

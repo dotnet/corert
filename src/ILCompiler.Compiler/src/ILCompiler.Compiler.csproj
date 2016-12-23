@@ -20,6 +20,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <PackageDestination Include="Tools">
+      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj">
       <Project>{dac23e9f-f826-4577-ae7a-0849ff83280c}</Project>
       <Name>ILCompiler.DependencyAnalysisFramework</Name>

@@ -4,6 +4,11 @@ project(CoreRT)
 # Include cmake functions
 include(functions.cmake)
 
+string(FIND ${CMAKE_GENERATOR} "Visual Studio 15 2017" VS2017_POS)
+if(VS2017_POS EQUAL 0 AND (CMAKE_VERSION VERSION_LESS 3.6.0))
+    message(FATAL_ERROR "CMake version 3.6.0 or higher is required to compile targeting VS 2017")
+endif()
+
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

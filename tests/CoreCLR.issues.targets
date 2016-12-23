@@ -1191,14 +1191,18 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param07\param07.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param08\param08.*" />
     
-    <!-- Incompatible behavior GC.Collect  -->
+    <!-- Precise GC -->
     <!-- https://github.com/dotnet/corert/issues/2354 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\ReRegisterForFinalize\ReRegisterForFinalize.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\HandleCopy\HandleCopy.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\Weak\Weak.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize\Finalize.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize2\Finalize2.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizearray\finalizearray.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizenested\finalizenested.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\finalnstruct\finalnstruct.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\finalnstructresur\finalnstructresur.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakGen\leakgen\leakgen.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime1\lifetime1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.*" />
@@ -1549,7 +1553,7 @@
     <!-- InvalidCastException doesn't include type names -->
     <!-- https://github.com/dotnet/corert/issues/2369 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\347422\b347422\b347422.*" />
-    
+
     <!-- Support explicit default constructor for structs -->
     <!-- https://github.com/dotnet/corert/issues/2370 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\vsw188290\vsw188290\vsw188290.*" />
@@ -1558,6 +1562,14 @@
     <!-- https://github.com/dotnet/corert/issues/657 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\529206\vsw529206ModuleCctor\vsw529206ModuleCctor.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\vsw529206\vsw529206ModuleCctor\vsw529206ModuleCctor.*" />
+
+    <!-- Absurdly large field offset -->
+    <!-- https://github.com/dotnet/corert/issues/2396 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test3\test3.*" />
+
+    <!-- Disallow loading of types that override an override -->
+    <!-- https://github.com/dotnet/corert/issues/2368 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\MethodImpl\override_override1\override_override1.*" />
 
     <!-- NetStandard2: System.Delegate System.Delegate.CreateDelegate -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_720779\dev10_720779\dev10_720779.*" />
