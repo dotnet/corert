@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
@@ -90,5 +91,12 @@ namespace Internal.Runtime.Augments
         }
 
         public static int TickCount => Environment.TickCount;
+
+        public static string GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
+        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) { throw new NotImplementedException(); }
+        public static IDictionary GetEnvironmentVariables() { throw new NotImplementedException(); }
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) { throw new NotImplementedException(); }
+        public static void SetEnvironmentVariable(string variable, string value) { throw new NotImplementedException(); }
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) { throw new NotImplementedException(); }
     }
 }
