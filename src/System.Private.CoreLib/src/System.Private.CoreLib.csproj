@@ -218,6 +218,11 @@
     <Compile Include="System\Char.cs" />
     <Compile Include="System\CharEnumerator.cs" />
     <Compile Include="System\CLSCompliantAttribute.cs" />
+    <Compile Include="System\Buffers\ArrayPool.cs" />
+    <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
+    <Compile Include="System\Buffers\ConfigurableArrayPool.cs" />
+    <Compile Include="System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
+    <Compile Include="System\Buffers\Utilities.cs" />
     <Compile Include="System\Collections\DictionaryEntry.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
@@ -654,7 +659,7 @@
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">  
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
@@ -768,6 +773,9 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs">
+      <Link>Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <!-- CORERT-TODO: Port to Unix -->
@@ -843,6 +851,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SchedGetCpu.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Dummy globalization implementation -->

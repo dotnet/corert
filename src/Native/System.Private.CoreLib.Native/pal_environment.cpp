@@ -9,6 +9,10 @@
 #include <sys/time.h>
 #include <time.h>
 
+#if HAVE_SCHED_GETCPU
+#include <sched.h>
+#endif
+
 #if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
 static mach_timebase_info_data_t s_timebaseInfo = {};
@@ -93,6 +97,15 @@ extern "C" uint64_t CoreLibNative_GetTickCount64()
     }
 #endif
     return retval;
+}
+
+extern "C" int32_t CoreLibNative_SchedGetCpu()
+{
+#if HAVE_SCHED_GETCPU
+    return sched_getcpu();
+#else
+    return -1;
+#endif
 }
 
 extern "C" void CoreLibNative_ExitProcess(int32_t exitCode)
