@@ -84,11 +84,10 @@ namespace System
         private class CachedData
         {
             private volatile TimeZoneInfo _localTimeZone;
-            private Lock _lock = new Lock();
 
             private TimeZoneInfo CreateLocal()
             {
-                using (LockHolder.Hold(_lock))
+                lock (this)
                 {
                     TimeZoneInfo timeZone = _localTimeZone;
                     if (timeZone == null)
@@ -202,39 +201,6 @@ namespace System
             public LowLevelDictionaryWithIEnumerable<OrdinalIgnoreCaseString, TimeZoneInfo> _systemTimeZones;
             public volatile ReadOnlyCollection<TimeZoneInfo> _readOnlySystemTimeZones;
             public bool _allSystemTimeZonesRead;
-
-            public void EnumerateSystemTimes()
-            {
-                LowLevelListWithIList<TimeZoneInfo> enumeratedTimeZoneList = new LowLevelListWithIList<TimeZoneInfo>();
-                uint index = 0;
-                TIME_DYNAMIC_ZONE_INFORMATION tdzi;
-                while (Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi) != Interop.mincore.Errors.ERROR_NO_MORE_ITEMS)
-                {
-                    TimeZoneInformation timeZoneInformation = new TimeZoneInformation(tdzi);
-                    TimeZoneInfo value;
-                    Exception e;
-                    TimeZoneInfoResult result = TryGetTimeZone(ref timeZoneInformation, false, out value, out e, s_cachedData);
-                    if (result == TimeZoneInfoResult.Success)
-                    {
-                        enumeratedTimeZoneList.Add(value);
-                    }
-                    index++;
-                }
-                TimeZoneInfo[] array = enumeratedTimeZoneList.ToArray();
-                Array.Sort(array, new TimeZoneInfoComparer());
-                _readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
-            }
-
-            public bool AreSystemTimesEnumerated { get { return _readOnlySystemTimeZones != null; } }
-
-            public ReadOnlyCollection<TimeZoneInfo> GetOrCreateReadonlySystemTimes()
-            {
-                if (_readOnlySystemTimeZones == null)
-                {
-                    EnumerateSystemTimes();
-                }
-                return _readOnlySystemTimeZones;
-            }
 
             private static TimeZoneInfo GetCurrentOneYearLocal()
             {
@@ -965,6 +931,57 @@ namespace System
         public override int GetHashCode()
         {
             return StringComparer.OrdinalIgnoreCase.GetHashCode(_id);
+        }
+
+        //
+        // GetSystemTimeZones -
+        //
+        // returns a ReadOnlyCollection<TimeZoneInfo> containing all valid TimeZone's
+        // from the local machine.  The entries in the collection are sorted by
+        // 'DisplayName'.
+        //
+        // This method does *not* throw TimeZoneNotFoundException or
+        // InvalidTimeZoneException.
+        //
+        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones()
+        {
+            CachedData cachedData = s_cachedData;
+
+            lock (cachedData)
+            {
+                if (cachedData._readOnlySystemTimeZones == null)
+                {
+                    PopulateAllSystemTimeZones(cachedData);
+                    cachedData._allSystemTimeZonesRead = true;
+
+                    List<TimeZoneInfo> list;
+                    if (cachedData._systemTimeZones != null)
+                    {
+                        // return a collection of the cached system time zones
+                        list = new List<TimeZoneInfo>(cachedData._systemTimeZones.Count);
+                        foreach (var pair in cachedData._systemTimeZones)
+                        {
+                            list.Add(pair.Value);
+                        }
+                    }
+                    else
+                    {
+                        // return an empty collection
+                        list = new List<TimeZoneInfo>();
+                    }
+
+                    // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+                    list.Sort((x, y) =>
+                    {
+                        // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                        int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                        return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                    });
+
+                    cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(list);
+                }
+            }
+            return cachedData._readOnlySystemTimeZones;
         }
 
         //
@@ -1910,16 +1927,6 @@ namespace System
                         throw new InvalidTimeZoneException(SR.Argument_AdjustmentRulesOutOfOrder);
                     }
                 }
-            }
-        }
-
-        private class TimeZoneInfoComparer : IComparer<TimeZoneInfo>
-        {
-            int System.Collections.Generic.IComparer<TimeZoneInfo>.Compare(TimeZoneInfo x, TimeZoneInfo y)
-            {
-                // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                return comparison == 0 ? String.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal) : comparison;
             }
         }
 
