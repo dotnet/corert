@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Arg_BufferTooSmall" xml:space="preserve">
-    <value>Not enough space available in the buffer.</value>
-  </data>
   <data name="Arg_DllNotFoundException" xml:space="preserve">
     <value>Dll was not found.</value>
   </data>
@@ -174,14 +171,8 @@
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added.</value>
   </data>
-  <data name="Argument_InvalidOffLength" xml:space="preserve">
-    <value>The offset and length provided do not fit within the bounds of the array</value>
-  </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
     <value>The specified Type must not be a generic type definition.</value>
-  </data>
-  <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
-    <value>The specified Type must be a struct containing no references.</value>
   </data>
   <data name="Argument_ObjNotComObject" xml:space="preserve">
     <value>The object's type must be __ComObject or derived from __ComObject.</value>
@@ -189,14 +180,8 @@
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>
   </data>
-  <data name="ArgumentOutOfRange_AddressSpace" xml:space="preserve">
-    <value>The number of bytes cannot exceed the virtual address space on a 32 bit machine.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
-  </data>
-  <data name="ArgumentOutOfRange_UIntPtrMaxMinusOne" xml:space="preserve">
-    <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
   </data>
   <data name="Null_HString" xml:space="preserve">
     <value>Null strings may not be marshaled in Windows Runtime arguments.</value>
@@ -209,9 +194,6 @@
   </data>
   <data name="InvalidOperation_HCCountOverflow" xml:space="preserve">
     <value>Handle collector count overflows or underflows.</value>
-  </data>
-  <data name="InvalidOperation_MustCallInitialize" xml:space="preserve">
-    <value>You must call Initialize on this object instance before using it.</value>
   </data>
   <data name="StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>
