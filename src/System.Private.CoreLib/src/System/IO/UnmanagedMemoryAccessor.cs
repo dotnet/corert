@@ -479,6 +479,74 @@ namespace System.IO
             return (UInt64)ReadInt64(position);
         }
 
+        /// <summary>
+        // Reads a struct of type T from unmanaged memory, into the reference pointed to by ref value.  
+        // Note: this method is not safe, since it overwrites the contents of a structure, it can be 
+        // used to modify the private members of a struct.
+        // This method is most performant when used with medium to large sized structs
+        // (larger than 8 bytes -- though this is number is JIT and architecture dependent).   As 
+        // such, it is best to use the ReadXXX methods for small standard types such as ints, longs, 
+        // bools, etc.
+        /// </summary>
+        public void Read<T>(Int64 position, out T structure) where T : struct
+        {
+            int sizeOfType = Unsafe.SizeOf<T>();
+            EnsureSafeToRead(position, sizeOfType);
+
+            structure = _buffer.Read<T>((UInt64)(_offset + position));
+        }
+
+        /// <summary>
+        // Reads 'count' structs of type T from unmanaged memory, into 'array' starting at 'offset'.  
+        // Note: this method is not safe, since it overwrites the contents of structures, it can 
+        // be used to modify the private members of a struct.
+        /// </summary>
+        public int ReadArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
+            }
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (array.Length - offset < count)
+            {
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            }
+            Contract.EndContractBlock();
+
+            EnsureSafeToRead(position, 0);
+
+            // ask for fewer Ts if count is too big
+
+            UInt32 sizeOfT = SafeBuffer.AlignedSizeOf<T>();
+
+            int n = count;
+            long spaceLeft = _capacity - position;
+            if (spaceLeft < 0)
+            {
+                n = 0;
+            }
+            else
+            {
+                ulong spaceNeeded = (ulong)(sizeOfT * count);
+                if ((ulong)spaceLeft < spaceNeeded)
+                {
+                    n = (int)(spaceLeft / sizeOfT);
+                }
+            }
+
+            _buffer.ReadArray<T>((UInt64)(_offset + position), array, offset, n);
+
+            return n;
+        }
+
         // ************** Write Methods ****************/
 
         // The following 13 WriteXXX methods write a value of type XXX into unmanaged memory at 'position'. 
@@ -789,13 +857,64 @@ namespace System.IO
             Write(position, (Int64)value);
         }
 
+        /// <summary>
+        // Writes the struct pointed to by ref value into unmanaged memory.  Note that this method
+        // is most performant when used with medium to large sized structs (larger than 8 bytes 
+        // though this is number is JIT and architecture dependent).   As such, it is best to use 
+        // the WriteX methods for small standard types such as ints, longs, bools, etc.
+        /// </summary>
+        public void Write<T>(Int64 position, ref T structure) where T : struct
+        {
+            int sizeOfType = Unsafe.SizeOf<T>();
+            EnsureSafeToWrite(position, sizeOfType);
+
+            _buffer.Write<T>((UInt64)(_offset + position), structure);
+        }
+
+        /// <summary>
+        // Writes 'count' structs of type T from 'array' (starting at 'offset') into unmanaged memory. 
+        /// </summary>
+        public void WriteArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
+            }
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (array.Length - offset < count)
+            {
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            }
+            Contract.EndContractBlock();
+
+            EnsureSafeToWrite(position, 0);
+
+            UInt32 sizeOfT = SafeBuffer.AlignedSizeOf<T>();
+
+            long spaceLeft = _capacity - position;
+            ulong spaceNeeded = (ulong)(sizeOfT * count);
+            if ((ulong)spaceLeft < spaceNeeded)
+            {
+                throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
+            }
+
+            _buffer.WriteArray<T>((UInt64)(_offset + position), array, offset, count);
+        }
+
         private void EnsureSafeToRead(Int64 position, int sizeOfType)
         {
             if (!_isOpen)
             {
                 throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
             }
-            if (!CanRead)
+            if (!_canRead)
             {
                 throw new NotSupportedException(SR.NotSupported_Reading);
             }
@@ -803,7 +922,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
@@ -823,7 +941,7 @@ namespace System.IO
             {
                 throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
             }
-            if (!CanWrite)
+            if (!_canWrite)
             {
                 throw new NotSupportedException(SR.NotSupported_Writing);
             }
@@ -831,7 +949,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)

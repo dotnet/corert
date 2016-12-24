@@ -1891,9 +1891,6 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
-  <data name="Argument_InvalidOffLength" xml:space="preserve">
-    <value>The offset and length provided do not fit within the bounds of the array</value>
-  </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
     <value>The specified Type must not be a generic type definition.</value>
   </data>

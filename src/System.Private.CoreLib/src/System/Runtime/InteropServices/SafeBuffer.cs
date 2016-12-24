@@ -222,18 +222,19 @@ namespace System.Runtime.InteropServices
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOfType<T>();
+            uint sizeofT = SizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
             SpaceCheck(ptr, sizeofT);
 
             // return *(T*) (_ptr + byteOffset);
-            T value;
+            T value = default(T);
             bool mustCallRelease = false;
             try
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                GenericPtrToStructure<T>(ptr, out value, sizeofT);
+                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
+                    Buffer.Memmove(pStructure, ptr, sizeofT);
             }
             finally
             {
@@ -254,13 +255,13 @@ namespace System.Runtime.InteropServices
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLength);
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOfType<T>();
+            uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
             SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
@@ -270,8 +271,17 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                for (int i = 0; i < count; i++)
-                    unsafe { GenericPtrToStructure<T>(ptr + alignedSizeofT * i, out array[i + index], sizeofT); }
+                if (count > 0)
+                {
+                    unsafe
+                    {
+                        fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
+                        {
+                            for (int i = 0; i < count; i++)
+                                Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
+                        }
+                    }
+                }
             }
             finally
             {
@@ -294,7 +304,7 @@ namespace System.Runtime.InteropServices
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOfType<T>();
+            uint sizeofT = SizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
             SpaceCheck(ptr, sizeofT);
 
@@ -303,7 +313,9 @@ namespace System.Runtime.InteropServices
             try
             {
                 DangerousAddRef(ref mustCallRelease);
-                GenericStructureToPtr(ref value, ptr, sizeofT);
+
+                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
+                    Buffer.Memmove(ptr, pStructure, sizeofT);
             }
             finally
             {
@@ -323,13 +335,13 @@ namespace System.Runtime.InteropServices
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLength);
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOfType<T>();
+            uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
             SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
@@ -338,8 +350,18 @@ namespace System.Runtime.InteropServices
             try
             {
                 DangerousAddRef(ref mustCallRelease);
-                for (int i = 0; i < count; i++)
-                    unsafe { GenericStructureToPtr(ref array[i + index], ptr + alignedSizeofT * i, sizeofT); }
+
+                if (count > 0)
+                {
+                    unsafe
+                    {
+                        fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
+                        {
+                            for (int i = 0; i < count; i++)
+                                Buffer.Memmove(ptr + alignedSizeofT * i, pStructure + sizeofT * i, sizeofT);
+                        }
+                    }
+                }
             }
             finally
             {
@@ -385,50 +407,13 @@ namespace System.Runtime.InteropServices
             return new InvalidOperationException(SR.InvalidOperation_MustCallInitialize);
         }
 
-        internal static void GenericPtrToStructure<T>(byte* ptr, out T structure, uint sizeofT) where T : struct
-        {
-            RuntimeTypeHandle structureTypeHandle = typeof(T).TypeHandle;
-            if (!structureTypeHandle.IsBlittable())
-                throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
-
-            Object boxedStruct = new T();
-            InteropExtensions.PinObjectAndCall(boxedStruct,
-                unboxedStructPtr =>
-                {
-                    InteropExtensions.Memcpy(
-                        (IntPtr)((IntPtr*)unboxedStructPtr + 1),  // safe (need to adjust offset as boxed structure start at offset 1)
-                        (IntPtr)ptr,                              // unsafe (no need to adjust as it is always struct)
-                        (int)sizeofT
-                    );
-                });
-
-            structure = (T)boxedStruct;
-        }
-
-        internal static void GenericStructureToPtr<T>(ref T structure, byte* ptr, uint sizeofT) where T : struct
-        {
-            RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
-            if (!structureTypeHandle.IsBlittable())
-                throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
-
-            InteropExtensions.PinObjectAndCall((Object)structure,
-                unboxedStructPtr =>
-                {
-                    InteropExtensions.Memcpy(
-                        (IntPtr)ptr,                              // unsafe (no need to adjust as it is always struct)
-                        (IntPtr)((IntPtr*)unboxedStructPtr + 1),  // safe (need to adjust offset as boxed structure start at offset 1)
-                        (int)sizeofT
-                    );
-                });
-        }
-
         #region "SizeOf Helpers"
         /// <summary>
         /// Returns the aligned size of an instance of a value type.
         /// </summary>
-        private static uint AlignedSizeOf<T>() where T : struct
+        internal static uint AlignedSizeOf<T>() where T : struct
         {
-            uint size = SizeOfType<T>();
+            uint size = SizeOf<T>();
             if (size == 1 || size == 2)
             {
                 return size;
@@ -441,24 +426,13 @@ namespace System.Runtime.InteropServices
             return (uint)(((size + 3) & (~3)));
         }
 
-        private static uint SizeOfType<T>() where T : struct
+        private static uint SizeOf<T>() where T : struct
         {
-            return (uint)SizeOf(typeof(T));
-        }
-
-        [Pure]
-        private static int SizeOf(Type t)
-        {
-            Debug.Assert(t != null, nameof(t));
-
-            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
-
-            RuntimeTypeHandle typeHandle = t.TypeHandle;
-            if (!(typeHandle.IsBlittable() && typeHandle.IsValueType()))
+            RuntimeTypeHandle structureTypeHandle = typeof(T).TypeHandle;
+            if (!structureTypeHandle.IsBlittable())
                 throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
-            return typeHandle.GetValueTypeSize();
+            return (uint)Unsafe.SizeOf<T>();
         }
         #endregion
     }
