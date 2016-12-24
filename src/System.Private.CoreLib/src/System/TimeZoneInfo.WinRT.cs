@@ -50,9 +50,20 @@ namespace System
             return (AdjustmentRule[])_adjustmentRules.Clone();
         }
 
-        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones()
+        private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
-            return s_cachedData.GetOrCreateReadonlySystemTimes();
+            Debug.Assert(Monitor.IsEntered(cachedData));
+
+            uint index = 0;
+            TIME_DYNAMIC_ZONE_INFORMATION tdzi;
+            while (Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi) != Interop.mincore.Errors.ERROR_NO_MORE_ITEMS)
+            {
+                TimeZoneInformation timeZoneInformation = new TimeZoneInformation(tdzi);
+                TimeZoneInfo value;
+                Exception e;
+                TimeZoneInfoResult result = TryGetTimeZone(ref timeZoneInformation, false, out value, out e, cachedData);
+                index++;
+            }
         }
 
         public static TimeZoneInfo FindSystemTimeZoneById(string id)
@@ -76,21 +87,26 @@ namespace System
 
             TimeZoneInfo value;
             CachedData cache = s_cachedData;
-            // Use the current cache if it exists
-            if (cache._systemTimeZones != null)
+
+            lock (cache)
             {
-                if (cache._systemTimeZones.TryGetValue(id, out value))
+                // Use the current cache if it exists
+                if (cache._systemTimeZones != null)
                 {
-                    return value;
+                    if (cache._systemTimeZones.TryGetValue(id, out value))
+                    {
+                        return value;
+                    }
                 }
-            }
-            // See if the cache was fully filled, if not, fill it then check again.
-            if (!cache.AreSystemTimesEnumerated)
-            {
-                cache.EnumerateSystemTimes();
-                if (cache._systemTimeZones.TryGetValue(id, out value))
+                // See if the cache was fully filled, if not, fill it then check again.
+                if (!cache._allSystemTimeZonesRead)
                 {
-                    return value;
+                    PopulateAllSystemTimeZones(cache);
+                    cachedData._allSystemTimeZonesRead = true;
+                    if (cache._systemTimeZones != null && cache._systemTimeZones.TryGetValue(id, out value))
+                    {
+                        return value;
+                    }
                 }
             }
             throw new ArgumentException(String.Format(SR.Argument_TimeZoneNotFound, id));
