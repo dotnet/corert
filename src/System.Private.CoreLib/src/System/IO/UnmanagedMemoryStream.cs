@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,40 +31,7 @@ namespace System.IO
      * call free, run a user-provided delegate to free the memory, etc.  
      * We'll suggest user write a subclass of UnmanagedMemoryStream that uses
      * a SafeHandle subclass to hold onto the memory.
-     * Check for problems when using this in the negative parts of a 
-     * process's address space.  We may need to use unsigned longs internally
-     * and change the overflow detection logic.
      * 
-     * -----SECURITY MODEL AND SILVERLIGHT-----
-     * A few key notes about exposing UMS in silverlight:
-     * 1. No ctors are exposed to transparent code. This version of UMS only
-     * supports byte* (not SafeBuffer). Therefore, framework code can create
-     * a UMS and hand it to transparent code. Transparent code can use most
-     * operations on a UMS, but not operations that directly expose a 
-     * pointer.
-     * 
-     * 2. Scope of "unsafe" and non-CLS compliant operations reduced: The
-     * Whidbey version of this class has CLSCompliant(false) at the class 
-     * level and unsafe modifiers at the method level. These were reduced to 
-     * only where the unsafe operation is performed -- i.e. immediately 
-     * around the pointer manipulation. Note that this brings UMS in line 
-     * with recent changes in pu/clr to support SafeBuffer.
-     * 
-     * 3. Currently, the only caller that creates a UMS is ResourceManager, 
-     * which creates read-only UMSs, and therefore operations that can 
-     * change the length will throw because write isn't supported. A 
-     * conservative option would be to formalize the concept that _only_
-     * read-only UMSs can be creates, and enforce this by making WriteX and
-     * SetLength SecurityCritical. However, this is a violation of 
-     * security inheritance rules, so we must keep these safe. The 
-     * following notes make this acceptable for future use.
-     *    a. a race condition in WriteX that could have allowed a thread to 
-     *    read from unzeroed memory was fixed
-     *    b. memory region cannot be expanded beyond _capacity; in other 
-     *    words, a UMS creator is saying a writable UMS is safe to 
-     *    write to anywhere in the memory range up to _capacity, specified
-     *    in the ctor. Even if the caller doesn't specify a capacity, then
-     *    length is used as the capacity.
      */
 
     /// <summary>
@@ -73,9 +39,7 @@ namespace System.IO
     /// </summary>
     public class UnmanagedMemoryStream : Stream
     {
-        [System.Security.SecurityCritical] // auto-generated
         private SafeBuffer _buffer;
-        [SecurityCritical]
         private unsafe byte* _mem;
         private long _length;
         private long _capacity;
@@ -91,7 +55,6 @@ namespace System.IO
         /// </summary>
         /// <param name="src"></param>
         /// <param name="len"></param>
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe static void ZeroMemory(byte* src, long len)
         {
             while (len-- > 0)
@@ -102,7 +65,6 @@ namespace System.IO
         /// Creates a closed stream.
         /// </summary>
         // Needed for subclasses that need to map a file, etc.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected UnmanagedMemoryStream()
         {
             unsafe
@@ -118,7 +80,6 @@ namespace System.IO
         /// <param name="buffer"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length)
         {
             Initialize(buffer, offset, length, FileAccess.Read, false);
@@ -127,7 +88,6 @@ namespace System.IO
         /// <summary>
         /// Creates a stream over a SafeBuffer.
         /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
             Initialize(buffer, offset, length, access, false);
@@ -140,13 +100,11 @@ namespace System.IO
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <param name="access"></param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
             Initialize(buffer, offset, length, access, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck)
         {
             if (buffer == null)
@@ -209,7 +167,6 @@ namespace System.IO
         /// <summary>
         /// Creates a stream over a byte*.
         /// </summary>
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length)
         {
@@ -219,7 +176,6 @@ namespace System.IO
         /// <summary>
         /// Creates a stream over a byte*.
         /// </summary>
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access)
         {
@@ -229,7 +185,6 @@ namespace System.IO
         /// <summary>
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
@@ -239,7 +194,6 @@ namespace System.IO
         /// <summary>
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
         {
             if (pointer == null)
@@ -293,23 +247,9 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Asynchronously reads the bytes from the current stream and writes them to another
-        /// stream, using a specified buffer size and cancellation token.
-        /// </summary>
-        /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
-        /// <param name="bufferSize"> The size, in bytes, of the buffer.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns></returns>
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
-        }
-
-        /// <summary>
         /// Closes the stream. The stream's memory needs to be dealt with separately.
         /// </summary>
         /// <param name="disposing"></param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected override void Dispose(bool disposing)
         {
             _isOpen = false;
@@ -385,7 +325,6 @@ namespace System.IO
                 Contract.EndContractBlock();
                 return Interlocked.Read(ref _position);
             }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
                 if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -411,7 +350,6 @@ namespace System.IO
         [CLSCompliant(false)]
         public unsafe byte* PositionPointer
         {
-            [System.Security.SecurityCritical]  // auto-generated_required
             get
             {
                 if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
@@ -424,7 +362,6 @@ namespace System.IO
 
                 return ptr;
             }
-            [System.Security.SecurityCritical]  // auto-generated_required
             set
             {
                 if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
@@ -442,7 +379,6 @@ namespace System.IO
         /// <param name="offset">Starting index in the buffer.</param>
         /// <param name="count">Maximum number of bytes to read.</param>
         /// <returns>Number of bytes actually read.</returns>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
@@ -484,7 +420,7 @@ namespace System.IO
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
-                            Buffer.MemoryCopy(source: pointer + pos + _offset, destination: pBuffer + offset, destinationSizeInBytes: nInt, sourceBytesToCopy: nInt);
+                            Buffer.Memmove(pBuffer + offset, pointer + pos + _offset, (uint)nInt);
                         }
                         finally
                         {
@@ -496,7 +432,7 @@ namespace System.IO
                     }
                     else
                     {
-                        Buffer.MemoryCopy(source: _mem + pos, destination: pBuffer + offset, destinationSizeInBytes: nInt, sourceBytesToCopy: nInt);
+                        Buffer.Memmove(pBuffer + offset, _mem + pos, (uint)nInt);
                     }
                 }
             }
@@ -544,7 +480,6 @@ namespace System.IO
         /// Returns the byte at the stream current Position and advances the Position.
         /// </summary>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override int ReadByte()
         {
             if (!_isOpen) throw Error.GetStreamIsClosed();
@@ -630,7 +565,6 @@ namespace System.IO
         /// Sets the Length of the stream.
         /// </summary>
         /// <param name="value"></param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void SetLength(long value)
         {
             if (value < 0)
@@ -666,7 +600,6 @@ namespace System.IO
         /// <param name="buffer">Buffer that will be written.</param>
         /// <param name="offset">Starting index in the buffer.</param>
         /// <param name="count">Number of bytes to write.</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
@@ -729,7 +662,7 @@ namespace System.IO
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
-                            Buffer.MemoryCopy(source: pBuffer + offset, destination: pointer + pos + _offset, destinationSizeInBytes: count, sourceBytesToCopy: count);
+                            Buffer.Memmove(pointer + pos + _offset, pBuffer + offset, (uint)count);
                         }
                         finally
                         {
@@ -741,7 +674,7 @@ namespace System.IO
                     }
                     else
                     {
-                        Buffer.MemoryCopy(source: pBuffer + offset, destination: _mem + pos, destinationSizeInBytes: count, sourceBytesToCopy: count);
+                        Buffer.Memmove(_mem + pos, pBuffer + offset, (uint)count);
                     }
                 }
             }
@@ -788,7 +721,6 @@ namespace System.IO
         /// Writes a byte to the stream and advances the current Position.
         /// </summary>
         /// <param name="value"></param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void WriteByte(byte value)
         {
             if (!_isOpen) throw Error.GetStreamIsClosed();

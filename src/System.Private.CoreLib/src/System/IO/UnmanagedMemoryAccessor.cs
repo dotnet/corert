@@ -16,10 +16,8 @@ namespace System.IO
     /// this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable
     {
-        [System.Security.SecurityCritical] // auto-generated
         private SafeBuffer _buffer;
         private Int64 _offset;
-        [ContractPublicPropertyName("Capacity")]
         private Int64 _capacity;
         private FileAccess _access;
         private bool _isOpen;
@@ -41,10 +39,7 @@ namespace System.IO
         /// <param name="buffer">Buffer containing raw bytes.</param>
         /// <param name="offset">First byte belonging to the slice.</param>
         /// <param name="capacity">Number of bytes in the slice.</param>
-        // <SecurityKernel Critical="True" Ring="1">
-        // <ReferencesCritical Name="Method: Initialize(SafeBuffer, Int64, Int64, FileAccess):Void" Ring="1" />
         // </SecurityKernel>
-        [System.Security.SecuritySafeCritical]
         public UnmanagedMemoryAccessor(SafeBuffer buffer, Int64 offset, Int64 capacity)
         {
             Initialize(buffer, offset, capacity, FileAccess.Read);
@@ -57,13 +52,11 @@ namespace System.IO
         /// <param name="offset">First byte belonging to the slice.</param>
         /// <param name="capacity">Number of bytes in the slice.</param>
         /// <param name="access">Access permissions.</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public UnmanagedMemoryAccessor(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access)
         {
             Initialize(buffer, offset, capacity, access);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected void Initialize(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access)
         {
             if (buffer == null)
@@ -189,11 +182,7 @@ namespace System.IO
         /// </summary>
         public bool ReadBoolean(Int64 position)
         {
-            int sizeOfType = sizeof(bool);
-            EnsureSafeToRead(position, sizeOfType);
-
-            byte b = InternalReadByte(position);
-            return b != 0;
+            return ReadByte(position) != 0;
         }
 
         /// <summary>
@@ -204,20 +193,7 @@ namespace System.IO
             int sizeOfType = sizeof(byte);
             EnsureSafeToRead(position, sizeOfType);
 
-            return InternalReadByte(position);
-        }
-
-        /// <summary>
-        /// reads a Char value at given position
-        /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public char ReadChar(Int64 position)
-        {
-            int sizeOfType = sizeof(char);
-            EnsureSafeToRead(position, sizeOfType);
-
-            char result;
-
+            byte result;
             unsafe
             {
                 byte* pointer = null;
@@ -225,17 +201,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        result = *((char*)(pointer));
-                    }
-                    else
-                    {
-                        result = (char)(*pointer | *(pointer + 1) << 8);
-                    }
+                    result = *((byte*)(pointer + _offset + position));
                 }
                 finally
                 {
@@ -245,14 +211,20 @@ namespace System.IO
                     }
                 }
             }
-
             return result;
+        }
+
+        /// <summary>
+        /// reads a Char value at given position
+        /// </summary>
+        public char ReadChar(Int64 position)
+        {
+            return (char)ReadInt16(position);
         }
 
         /// <summary>
         /// reads an Int16 value at given position
         /// </summary>
-        [System.Security.SecuritySafeCritical] // auto-generated
         public Int16 ReadInt16(Int64 position)
         {
             int sizeOfType = sizeof(Int16);
@@ -295,7 +267,6 @@ namespace System.IO
         /// <summary>
         /// reads an Int32 value at given position
         /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Int32 ReadInt32(Int64 position)
         {
             int sizeOfType = sizeof(Int32);
@@ -337,7 +308,6 @@ namespace System.IO
         /// <summary>
         /// reads an Int64 value at given position
         /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Int64 ReadInt64(Int64 position)
         {
             int sizeOfType = sizeof(Int64);
@@ -399,7 +369,6 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte of the value.</param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Decimal ReadDecimal(Int64 position)
         {
             const int ScaleMask = 0x00FF0000;
@@ -447,87 +416,25 @@ namespace System.IO
         /// </summary>
         /// <param name="position"></param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Single ReadSingle(Int64 position)
         {
-            int sizeOfType = sizeof(Single);
-            EnsureSafeToRead(position, sizeOfType);
-
-            Single result;
             unsafe
             {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        result = *((Single*)(pointer));
-                    }
-                    else
-                    {
-                        UInt32 tempResult = (UInt32)(*pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24);
-                        result = *((float*)&tempResult);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
+                Int32 result = ReadInt32(position);
+                return *((Single*)&result);
             }
-
-            return result;
         }
 
         /// <summary>
         /// reads a Double value at given position
         /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Double ReadDouble(Int64 position)
         {
-            int sizeOfType = sizeof(Double);
-            EnsureSafeToRead(position, sizeOfType);
-
-            Double result;
             unsafe
             {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        result = *((Double*)(pointer));
-                    }
-                    else
-                    {
-                        UInt32 lo = (UInt32)(*pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24);
-                        UInt32 hi = (UInt32)(*(pointer + 4) | *(pointer + 5) << 8 | *(pointer + 6) << 16 | *(pointer + 7) << 24);
-                        UInt64 tempResult = ((UInt64)hi) << 32 | lo;
-                        result = *((double*)&tempResult);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
+                Int64 result = ReadInt64(position);
+                return *((Double*)&result);
             }
-
-            return result;
         }
 
         /// <summary>
@@ -535,76 +442,19 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte of the value.</param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public SByte ReadSByte(Int64 position)
         {
-            int sizeOfType = sizeof(SByte);
-            EnsureSafeToRead(position, sizeOfType);
-
-            SByte result;
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-                    result = *((SByte*)pointer);
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
-
-            return result;
+            return (SByte)ReadByte(position);
         }
 
         /// <summary>
         /// reads a UInt16 value at given position
         /// </summary>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public UInt16 ReadUInt16(Int64 position)
         {
-            int sizeOfType = sizeof(UInt16);
-            EnsureSafeToRead(position, sizeOfType);
-
-            UInt16 result;
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        result = *((UInt16*)(pointer));
-                    }
-                    else
-                    {
-                        result = (UInt16)(*pointer | *(pointer + 1) << 8);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
-
-            return result;
+            return (UInt16)ReadInt16(position);
         }
 
         /// <summary>
@@ -612,43 +462,10 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte of the value.</param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public UInt32 ReadUInt32(Int64 position)
         {
-            int sizeOfType = sizeof(UInt32);
-            EnsureSafeToRead(position, sizeOfType);
-
-            UInt32 result;
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        result = *((UInt32*)(pointer));
-                    }
-                    else
-                    {
-                        result = (UInt32)(*pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
-
-            return result;
+            return (UInt32)ReadInt32(position);
         }
 
         /// <summary>
@@ -656,45 +473,10 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte of the value.</param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public UInt64 ReadUInt64(Int64 position)
         {
-            int sizeOfType = sizeof(UInt64);
-            EnsureSafeToRead(position, sizeOfType);
-
-            UInt64 result;
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        result = *((UInt64*)(pointer));
-                    }
-                    else
-                    {
-                        UInt32 lo = (UInt32)(*pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24);
-                        UInt32 hi = (UInt32)(*(pointer + 4) | *(pointer + 5) << 8 | *(pointer + 6) << 16 | *(pointer + 7) << 24);
-                        result = (UInt64)(((UInt64)hi << 32) | lo);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
-
-            return result;
+            return (UInt64)ReadInt64(position);
         }
 
         // ************** Write Methods ****************/
@@ -711,11 +493,7 @@ namespace System.IO
         /// <param name="value">Value to be written to the memory</param>
         public void Write(Int64 position, bool value)
         {
-            int sizeOfType = sizeof(bool);
-            EnsureSafeToWrite(position, sizeOfType);
-
-            byte b = (byte)(value ? 1 : 0);
-            InternalWrite(position, b);
+            Write(position, (byte)(value ? 1 : 0));
         }
 
         /// <summary>
@@ -728,20 +506,6 @@ namespace System.IO
             int sizeOfType = sizeof(byte);
             EnsureSafeToWrite(position, sizeOfType);
 
-            InternalWrite(position, value);
-        }
-
-        /// <summary>
-        /// Writes the value at the specified position.
-        /// </summary>
-        /// <param name="position">The position of the first byte.</param>
-        /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public void Write(Int64 position, char value)
-        {
-            int sizeOfType = sizeof(char);
-            EnsureSafeToWrite(position, sizeOfType);
-
             unsafe
             {
                 byte* pointer = null;
@@ -749,18 +513,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        *((char*)pointer) = value;
-                    }
-                    else
-                    {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                    }
+                    *((byte*)(pointer + _offset + position)) = value;
                 }
                 finally
                 {
@@ -777,7 +530,16 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
+        public void Write(Int64 position, char value)
+        {
+            Write(position, (Int16)value);
+        }
+
+        /// <summary>
+        /// Writes the value at the specified position.
+        /// </summary>
+        /// <param name="position">The position of the first byte.</param>
+        /// <param name="value">Value to be written to the memory</param>
         public void Write(Int64 position, Int16 value)
         {
             int sizeOfType = sizeof(Int16);
@@ -818,7 +580,6 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Int32 value)
         {
             int sizeOfType = sizeof(Int32);
@@ -861,7 +622,6 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Int64 value)
         {
             int sizeOfType = sizeof(Int64);
@@ -925,7 +685,6 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Decimal value)
         {
             int sizeOfType = sizeof(Decimal);
@@ -965,42 +724,11 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Single value)
         {
-            int sizeOfType = sizeof(Single);
-            EnsureSafeToWrite(position, sizeOfType);
-
             unsafe
             {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        *((Single*)pointer) = value;
-                    }
-                    else
-                    {
-                        UInt32 tmpValue = *(UInt32*)&value;
-                        *(pointer) = (byte)tmpValue;
-                        *(pointer + 1) = (byte)(tmpValue >> 8);
-                        *(pointer + 2) = (byte)(tmpValue >> 16);
-                        *(pointer + 3) = (byte)(tmpValue >> 24);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
+                Write(position, *(Int32*)&value);
             }
         }
 
@@ -1009,46 +737,11 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Double value)
         {
-            int sizeOfType = sizeof(Double);
-            EnsureSafeToWrite(position, sizeOfType);
-
             unsafe
             {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        *((Double*)pointer) = value;
-                    }
-                    else
-                    {
-                        UInt64 tmpValue = *(UInt64*)&value;
-                        *(pointer) = (byte)tmpValue;
-                        *(pointer + 1) = (byte)(tmpValue >> 8);
-                        *(pointer + 2) = (byte)(tmpValue >> 16);
-                        *(pointer + 3) = (byte)(tmpValue >> 24);
-                        *(pointer + 4) = (byte)(tmpValue >> 32);
-                        *(pointer + 5) = (byte)(tmpValue >> 40);
-                        *(pointer + 6) = (byte)(tmpValue >> 48);
-                        *(pointer + 7) = (byte)(tmpValue >> 56);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
+                Write(position, *(Int64*)&value);
             }
         }
 
@@ -1057,31 +750,10 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, SByte value)
         {
-            int sizeOfType = sizeof(SByte);
-            EnsureSafeToWrite(position, sizeOfType);
-
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-                    *((SByte*)pointer) = value;
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
+            Write(position, (byte)value);
         }
 
         /// <summary>
@@ -1089,41 +761,10 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt16 value)
         {
-            int sizeOfType = sizeof(UInt16);
-            EnsureSafeToWrite(position, sizeOfType);
-
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        *((UInt16*)pointer) = value;
-                    }
-                    else
-                    {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
+            Write(position, (Int16)value);
         }
 
         /// <summary>
@@ -1131,43 +772,10 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt32 value)
         {
-            int sizeOfType = sizeof(UInt32);
-            EnsureSafeToWrite(position, sizeOfType);
-
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        *((UInt32*)pointer) = value;
-                    }
-                    else
-                    {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                        *(pointer + 2) = (byte)(value >> 16);
-                        *(pointer + 3) = (byte)(value >> 24);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
+            Write(position, (Int32)value);
         }
 
         /// <summary>
@@ -1175,101 +783,10 @@ namespace System.IO
         /// </summary>
         /// <param name="position">The position of the first byte.</param>
         /// <param name="value">Value to be written to the memory</param>
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt64 value)
         {
-            int sizeOfType = sizeof(UInt64);
-            EnsureSafeToWrite(position, sizeOfType);
-
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0)
-                    {
-                        *((UInt64*)pointer) = value;
-                    }
-                    else
-                    {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                        *(pointer + 2) = (byte)(value >> 16);
-                        *(pointer + 3) = (byte)(value >> 24);
-                        *(pointer + 4) = (byte)(value >> 32);
-                        *(pointer + 5) = (byte)(value >> 40);
-                        *(pointer + 6) = (byte)(value >> 48);
-                        *(pointer + 7) = (byte)(value >> 56);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private byte InternalReadByte(Int64 position)
-        {
-            Debug.Assert(CanRead, "UMA not readable");
-            Debug.Assert(position >= 0, "position less than 0");
-            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
-
-            byte result;
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    result = *((byte*)(pointer + _offset + position));
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
-            return result;
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private void InternalWrite(Int64 position, byte value)
-        {
-            Debug.Assert(CanWrite, "UMA not writable");
-            Debug.Assert(position >= 0, "position less than 0");
-            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
-
-            unsafe
-            {
-                byte* pointer = null;
-
-                try
-                {
-                    _buffer.AcquirePointer(ref pointer);
-                    *((byte*)(pointer + _offset + position)) = value;
-                }
-                finally
-                {
-                    if (pointer != null)
-                    {
-                        _buffer.ReleasePointer();
-                    }
-                }
-            }
+            Write(position, (Int64)value);
         }
 
         private void EnsureSafeToRead(Int64 position, int sizeOfType)
