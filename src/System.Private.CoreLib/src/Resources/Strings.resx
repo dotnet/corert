@@ -1918,4 +1918,7 @@
   <data name="InvalidOperation_MustCallInitialize" xml:space="preserve">
     <value>You must call Initialize on this object instance before using it.</value>
   </data>
+  <data name="ArgumentException_BufferNotFromPool" xml:space="preserve">
+    <value>The buffer is not associated with this pool and may not be returned to it.</value>
+  </data>
 </root>
