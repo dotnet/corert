@@ -10,15 +10,12 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetEnvironmentVariable")]
-        internal static extern unsafe int GetEnvironmentVariable(string name, out IntPtr result);
-
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_ExitProcess")]
-        internal static extern void ExitProcess(int exitCode);
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_Exit")]
+        internal static extern void Exit(int exitCode);
     }
 
     internal static void ExitProcess(int exitCode)
     {
-        Sys.ExitProcess(exitCode);
+        Sys.Exit(exitCode);
     }
 }

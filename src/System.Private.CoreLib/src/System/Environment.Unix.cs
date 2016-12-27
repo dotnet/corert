@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -70,17 +71,7 @@ namespace System
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));
 
-            IntPtr result;
-            int size = Interop.Sys.GetEnvironmentVariable(variable, out result);
-
-            // The size can be -1 if the environment variable's size overflows an integer
-            if (size == -1)
-                throw new OverflowException();
-
-            if (result == IntPtr.Zero)
-                return null;
-
-            return Encoding.UTF8.GetString((byte*)result, size);
+            return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
         }
     }
 }

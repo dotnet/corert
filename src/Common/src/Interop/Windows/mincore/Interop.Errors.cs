@@ -17,6 +17,7 @@ internal partial class Interop
             internal const int ERROR_INVALID_DATA = 0xD;
             internal const int ERROR_INVALID_DRIVE = 0xF;
             internal const int ERROR_SHARING_VIOLATION = 0x20;
+            internal const int ERROR_FILE_EXISTS = 0x50;
             internal const int ERROR_INVALID_PARAMETER = 0x57;
             internal const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
             internal const int ERROR_INVALID_NAME = 0x7B;
@@ -26,6 +27,7 @@ internal partial class Interop
             internal const int ERROR_FILENAME_EXCED_RANGE = 0xCE;
             internal const int ERROR_MORE_DATA = 0xEA;
             internal const int ERROR_NO_MORE_ITEMS = 0x103;
+            internal const int ERROR_OPERATION_ABORTED = 0x3E3;
             internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         }
     }

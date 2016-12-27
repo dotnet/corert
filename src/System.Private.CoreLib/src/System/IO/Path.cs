@@ -156,9 +156,8 @@ namespace System.IO
         // used as either a folder name or a file name.
         public static unsafe string GetRandomFileName()
         {
-
             byte* pKey = stackalloc byte[KeyLength];
-            GetCryptoRandomBytes(pKey, KeyLength);
+            Interop.GetRandomBytes(pKey, KeyLength);
 
             const int RandomFileNameLength = 12;
             char* pRandomFileName = stackalloc char[RandomFileNameLength];

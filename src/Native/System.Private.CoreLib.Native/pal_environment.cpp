@@ -18,28 +18,9 @@
 static mach_timebase_info_data_t s_timebaseInfo = {};
 #endif
 
-extern "C" int32_t CoreLibNative_GetEnvironmentVariable(const char* variable, char** result)
+extern "C" char* CoreLibNative_GetEnv(const char* variable)
 {
-    assert(result != NULL);
-
-    // Read the environment variable
-    *result = getenv(variable);
-
-    if (*result == NULL)
-    {
-        return 0;
-    }
-
-    size_t resultSize = strlen(*result);
-
-    // Return -1 if the size overflows an integer so that we can throw on managed side
-    if ((size_t)(int32_t)resultSize != resultSize)
-    {
-        *result = NULL;
-        return -1;
-    }
-
-    return (int32_t)resultSize;
+    return getenv(variable);
 }
 
 #define SECONDS_TO_MILLISECONDS 1000
@@ -108,7 +89,7 @@ extern "C" int32_t CoreLibNative_SchedGetCpu()
 #endif
 }
 
-extern "C" void CoreLibNative_ExitProcess(int32_t exitCode)
+extern "C" void CoreLibNative_Exit(int32_t exitCode)
 {
     exit(exitCode);
 }

@@ -206,50 +206,6 @@ namespace System.IO
             return IsPathRooted(path) ? DirectorySeparatorCharAsString : String.Empty;
         }
 
-        private static unsafe void GetCryptoRandomBytes(byte* bytes, int byteCount)
-        {
-#if FEATURE_CORECLR
-            // We want to avoid dependencies on the Crypto library when compiling in CoreCLR. This
-            // will use the existing PAL implementation.
-            byte[] buffer = new byte[KeyLength];
-            Microsoft.Win32.Win32Native.Random(bStrong: true, buffer: buffer, length: KeyLength);
-            Runtime.InteropServices.Marshal.Copy(buffer, 0, (IntPtr)bytes, KeyLength);
-#else
-            if (s_isMac)
-            {
-                GetCryptoRandomBytesApple(bytes, byteCount);
-            }
-            else
-            {
-                GetCryptoRandomBytesOpenSsl(bytes, byteCount);
-            }
-#endif
-        }
-
-#if !FEATURE_CORECLR
-        private static unsafe void GetCryptoRandomBytesApple(byte* bytes, int byteCount)
-        {
-            Debug.Assert(bytes != null);
-            Debug.Assert(byteCount >= 0);
-
-            if (Interop.CommonCrypto.CCRandomGenerateBytes(bytes, byteCount) != 0)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
-            }
-        }
-
-        private static unsafe void GetCryptoRandomBytesOpenSsl(byte* bytes, int byteCount)
-        {
-            Debug.Assert(bytes != null);
-            Debug.Assert(byteCount >= 0);
-
-            if (!Interop.Crypto.GetRandomBytes(bytes, byteCount))
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
-            }
-        }
-#endif
-
         /// <summary>Gets whether the system is case-sensitive.</summary>
         internal static bool IsCaseSensitive { get { return !s_isMac; } }
     }
