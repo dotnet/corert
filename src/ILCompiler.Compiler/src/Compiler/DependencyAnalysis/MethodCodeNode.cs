@@ -99,6 +99,27 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
             }
 
+            if (_method.HasInstantiation)
+            {
+                if (factory.MetadataManager.GetExactMethodInstantiationsNode().AddNativeLayoutExactMethodInstantiationHashTableEntry(factory, _method))
+                {
+                    // Ensure dependency nodes used by the signature are added to the graph
+                    if (dependencies == null)
+                        dependencies = new DependencyList();
+
+                    dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(_method.OwningType), "Exact method instantiation signature"));
+
+                    foreach(var arg in _method.Instantiation)
+                        dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(arg), "Exact method instantiation signature"));
+
+                    dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(_method.Signature.ReturnType), "Exact method instantiation signature"));
+
+                    for(int i = 0; i < _method.Signature.Length; i++)
+                        dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(_method.Signature[i]), "Exact method instantiation signature"));
+                }
+            }
+
+
             return dependencies;
         }
 

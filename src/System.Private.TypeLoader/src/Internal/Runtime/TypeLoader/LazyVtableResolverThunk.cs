@@ -490,7 +490,7 @@ namespace Internal.Runtime.TypeLoader
                     continue;
 
                 MethodSignatureComparer sigComparer = new MethodSignatureComparer(method.MetadataReader, method.Handle);
-                if (!sigComparer.IsMatchingNativeLayoutMethodNameAndSignature(methodNameAndSig.Name, methodNameAndSig.Signature.NativeLayoutSignature))
+                if (!sigComparer.IsMatchingNativeLayoutMethodNameAndSignature(methodNameAndSig.Name, methodNameAndSig.Signature.NativeLayoutSignature()))
                     continue;
 
                 // At this point we've matched

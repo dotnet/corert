@@ -206,7 +206,7 @@ namespace Internal.Runtime.TypeLoader
             return FindExistingOrAllocateThunk(callConversionInfo);
         }
 
-        public static unsafe IntPtr MakeThunk(ThunkKind thunkKind, IntPtr targetPointer, RuntimeMethodSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
+        public static unsafe IntPtr MakeThunk(ThunkKind thunkKind, IntPtr targetPointer, RuntimeSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
         {
             int callConversionInfo = CallConversionInfo.RegisterCallConversionInfo(thunkKind, targetPointer, methodSignature, instantiatingArg, typeArgs, methodArgs);
             return FindExistingOrAllocateThunk(callConversionInfo);
@@ -267,7 +267,7 @@ namespace Internal.Runtime.TypeLoader
             genericTypeDefHandle = RuntimeAugments.GetGenericInstantiation(delegateType, out typeArgs);
             Debug.Assert(typeArgs != null && typeArgs.Length > 0);
 
-            RuntimeMethodSignature invokeMethodSignature;
+            RuntimeSignature invokeMethodSignature;
             bool gotInvokeMethodSignature = TypeBuilder.TryGetDelegateInvokeMethodSignature(delegateType, out invokeMethodSignature);
 
             if (!gotInvokeMethodSignature)

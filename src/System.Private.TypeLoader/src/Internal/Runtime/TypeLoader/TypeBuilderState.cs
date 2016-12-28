@@ -36,7 +36,7 @@ namespace Internal.Runtime.TypeLoader
         internal class VTableLayoutInfo
         {
             public uint VTableSlot;
-            public IntPtr MethodSignature;
+            public RuntimeSignature MethodSignature;
             public bool IsSealedVTableSlot;
         }
 
@@ -238,9 +238,9 @@ namespace Internal.Runtime.TypeLoader
                 return default(NativeParser);
         }
 
-        public NativeParser GetParserForUniversalNativeLayoutInfo(out NativeLayoutInfoLoadContext universalLayoutLoadContext)
+        public NativeParser GetParserForUniversalNativeLayoutInfo(out NativeLayoutInfoLoadContext universalLayoutLoadContext, out NativeLayoutInfo universalLayoutInfo)
         {
-            NativeLayoutInfo universalLayoutInfo = new NativeLayoutInfo();
+            universalLayoutInfo = new NativeLayoutInfo();
             universalLayoutLoadContext = null;
             TypeDesc universalTemplate = TypeBeingBuilt.Context.TemplateLookup.TryGetUniversalTypeTemplate(TypeBeingBuilt, ref universalLayoutInfo);
             if (universalTemplate == null)

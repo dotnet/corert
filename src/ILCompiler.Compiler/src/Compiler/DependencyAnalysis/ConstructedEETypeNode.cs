@@ -89,6 +89,12 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor");
             }
 
+            DependencyList gvmDependencies = ComputeGenericVirtualMethodEntries(factory);
+            if (gvmDependencies.Count > 0)
+            {
+                dependencyList.AddRange(gvmDependencies);
+            }
+
             return dependencyList;
         }
 

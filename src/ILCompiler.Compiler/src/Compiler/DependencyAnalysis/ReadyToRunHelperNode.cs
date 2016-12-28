@@ -162,6 +162,35 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.TypeThreadStaticsSymbol((MetadataType)_target), "ReadyToRun Thread Static Storage");
                 return dependencyList;
             }
+            else if (_id == ReadyToRunHelperId.ResolveGenericVirtualMethod)
+            {
+                MethodDesc method = _target as MethodDesc;
+                Debug.Assert(method != null && method.HasInstantiation);
+
+                DependencyList dependencyList = new DependencyList();
+
+                if (factory.MetadataManager.GetExactMethodInstantiationsNode().AddNativeLayoutExactMethodInstantiationHashTableEntry(factory, method))
+                {
+                    // Ensure dependency nodes used by the signature are added to the graph
+                    if (dependencyList == null)
+                        dependencyList = new DependencyList();
+
+                    bool getUnboxingStub = (method.OwningType.IsValueType || method.OwningType.IsEnum) && !method.Signature.IsStatic;
+                    dependencyList.Add(new DependencyListEntry(factory.MethodEntrypoint(method, getUnboxingStub), "Exact method instantiation signature"));
+
+                    dependencyList.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(method.OwningType), "Exact method instantiation signature"));
+
+                    foreach (var arg in method.Instantiation)
+                        dependencyList.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(arg), "Exact method instantiation signature"));
+
+                    dependencyList.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(method.Signature.ReturnType), "Exact method instantiation signature"));
+
+                    for (int i = 0; i < method.Signature.Length; i++)
+                        dependencyList.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(method.Signature[i]), "Exact method instantiation signature"));
+                }
+
+                return dependencyList;
+            }
             else
             {
                 return null;

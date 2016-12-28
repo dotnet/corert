@@ -152,7 +152,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal MethodDesc GetMethod(ref NativeParser parser, out IntPtr methodNameSigPtr, out IntPtr methodSigPtr)
+        internal MethodDesc GetMethod(ref NativeParser parser, out RuntimeSignature methodNameSigPtr, out RuntimeSignature methodSigPtr)
         {
             MethodFlags flags = (MethodFlags)parser.GetUnsigned();
 
@@ -161,7 +161,7 @@ namespace Internal.Runtime.TypeLoader
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
 
             DefType containingType = (DefType)GetType(ref parser);
-            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, out methodNameSigPtr, out methodSigPtr);
+            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _moduleHandle, out methodNameSigPtr, out methodSigPtr);
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
 
@@ -189,8 +189,8 @@ namespace Internal.Runtime.TypeLoader
 
         internal MethodDesc GetMethod(ref NativeParser parser)
         {
-            IntPtr methodSigPtr;
-            IntPtr methodNameSigPtr;
+            RuntimeSignature methodSigPtr;
+            RuntimeSignature methodNameSigPtr;
             return GetMethod(ref parser, out methodNameSigPtr, out methodSigPtr);
         }
 

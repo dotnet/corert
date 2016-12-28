@@ -852,7 +852,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!entryType.Equals(definitionType))
                     continue;
 
-                uint nameAndSigPointerToken = externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
+                uint nameAndSigPointerToken = externalReferences.GetNativeLayoutInfoTokenFromIndex(entryParser.GetUnsigned());
 
                 MethodNameAndSignature nameAndSig;
                 if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, nameAndSigPointerToken, out nameAndSig))
@@ -861,7 +861,7 @@ namespace Internal.Runtime.TypeLoader
                     continue;
                 }
 
-                if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature.NativeLayoutSignature))
+                if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature))
                 {
                     continue;
                 }
@@ -885,8 +885,8 @@ namespace Internal.Runtime.TypeLoader
 
                 if (isGenericVirtualMethod)
                 {
-                    IntPtr methodName;
-                    IntPtr methodSignature;
+                    RuntimeSignature methodName;
+                    RuntimeSignature methodSignature;
 
                     if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignaturePointersFromNativeLayoutSignature(moduleHandle, nameAndSigPointerToken, out methodName, out methodSignature))
                     {
@@ -895,7 +895,7 @@ namespace Internal.Runtime.TypeLoader
                     }
 
                     RuntimeMethodHandle gvmSlot;
-                    if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(declaringTypeOfVirtualInvoke, methodName, RuntimeMethodSignature.CreateFromNativeLayoutSignature(methodSignature), genericArgs, out gvmSlot))
+                    if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(declaringTypeOfVirtualInvoke, methodName.NativeLayoutSignature(), methodSignature, genericArgs, out gvmSlot))
                     {
                         return false;
                     }
@@ -995,7 +995,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!entryType.Equals(definitionType))
                     continue;
 
-                uint nameAndSigPointerToken = externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
+                uint nameAndSigPointerToken = externalReferences.GetNativeLayoutInfoTokenFromIndex(entryParser.GetUnsigned());
 
                 uint parentHierarchyAndFlag = entryParser.GetUnsigned();
                 bool isGenericVirtualMethod = ((parentHierarchyAndFlag & VirtualInvokeTableEntry.FlagsMask) == VirtualInvokeTableEntry.GenericVirtualMethod);
@@ -1576,7 +1576,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else
                 {
-                    uint nameAndSigToken = extRefTable.GetRvaFromIndex(entryParser.GetUnsigned());
+                    uint nameAndSigToken = extRefTable.GetNativeLayoutInfoTokenFromIndex(entryParser.GetUnsigned());
                     MethodNameAndSignature nameAndSig;
                     if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigToken, out nameAndSig))
                     {
@@ -1584,7 +1584,7 @@ namespace Internal.Runtime.TypeLoader
                         return;
                     }
                     Debug.Assert(nameAndSig.Signature.IsNativeLayoutSignature);
-                    if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature.NativeLayoutSignature))
+                    if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature))
                         return;
                 }
 
@@ -1608,7 +1608,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     Debug.Assert((_hasEntryPoint || ((_flags & InvokeTableFlags.HasVirtualInvoke) != 0)) && ((_flags & InvokeTableFlags.RequiresInstArg) != 0));
 
-                    uint nameAndSigPointerToken = extRefTable.GetRvaFromIndex(entryParser.GetUnsigned());
+                    uint nameAndSigPointerToken = extRefTable.GetNativeLayoutInfoTokenFromIndex(entryParser.GetUnsigned());
                     if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigPointerToken, out _nameAndSignature))
                     {
                         Debug.Assert(false);    //Error
