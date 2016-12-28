@@ -115,9 +115,8 @@ namespace Internal.Runtime.TypeLoader
                         RuntimeTypeHandle currentIfaceTypeHandle = default(RuntimeTypeHandle);
 
                         NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, extRefs.GetRvaFromIndex(entryParser.GetUnsigned()));
-                        IntPtr currentIfaceSigPtr = ifaceSigParser.Reader.OffsetToAddress(ifaceSigParser.Offset);
 
-                        if (TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(currentIfaceSigPtr, targetTypeInstantiation, null, out currentIfaceTypeHandle, out currentIfaceSigPtr))
+                        if (TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref ifaceSigParser, moduleHandle, targetTypeInstantiation, null, out currentIfaceTypeHandle))
                         {
                             Debug.Assert(!currentIfaceTypeHandle.IsNull());
 
