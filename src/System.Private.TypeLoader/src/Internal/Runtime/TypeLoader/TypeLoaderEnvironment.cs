@@ -74,6 +74,13 @@ namespace Internal.Runtime.TypeLoader
         }
     }
 
+    // TODO: unify with the RuntimeMethodSignature structure (and change the name to RuntimeSignature)
+    public struct NativeLayoutInfoSignature
+    {
+        public IntPtr ModuleHandle;
+        public int NativeLayoutInfoOffset;
+    }
+
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.TypeLoaderEnvironment)]
     public sealed partial class TypeLoaderEnvironment
     {
@@ -190,13 +197,25 @@ namespace Internal.Runtime.TypeLoader
         // "typeArgs" and "methodArgs" for generic type parameter substitution.  The first field in "signature"
         // must be an encoded type but any data beyond that is user-defined and returned in "remainingSignature"
         //
-        public bool GetTypeFromSignatureAndContext(IntPtr signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out IntPtr remainingSignature)
+        internal bool GetTypeFromSignatureAndContext(ref NativeLayoutInfoSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out NativeLayoutInfoSignature remainingSignature)
         {
+            NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
+            NativeParser parser = new NativeParser(reader, (uint)signature.NativeLayoutInfoOffset);
+
+            bool result = GetTypeFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType);
+
             remainingSignature = signature;
+            remainingSignature.NativeLayoutInfoOffset = (int)parser.Offset;
+
+            return result;
+        }
+
+        internal bool GetTypeFromSignatureAndContext(ref NativeParser parser, IntPtr moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType)
+        {
             createdType = default(RuntimeTypeHandle);
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
-            TypeDesc parsedType = TryParseNativeSignature(context, ref remainingSignature, typeArgs, methodArgs, false) as TypeDesc;
+            TypeDesc parsedType = TryParseNativeSignatureWorker(context, moduleHandle, ref parser, typeArgs, methodArgs, false) as TypeDesc;
             if (parsedType == null)
                 return false;
 
@@ -214,15 +233,28 @@ namespace Internal.Runtime.TypeLoader
         // "typeArgs" and "methodArgs" for generic type parameter substitution.  The first field in "signature"
         // must be an encoded method but any data beyond that is user-defined and returned in "remainingSignature"
         //
-        public bool GetMethodFromSignatureAndContext(IntPtr signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles, out IntPtr remainingSignature)
+        public bool GetMethodFromSignatureAndContext(ref NativeLayoutInfoSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles, out NativeLayoutInfoSignature remainingSignature)
         {
+            NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
+            NativeParser parser = new NativeParser(reader, (uint)signature.NativeLayoutInfoOffset);
+
+            bool result = GetMethodFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType, out nameAndSignature, out genericMethodTypeArgumentHandles);
+
             remainingSignature = signature;
+            remainingSignature.NativeLayoutInfoOffset = (int)parser.Offset;
+
+            return result;
+        }
+
+        internal bool GetMethodFromSignatureAndContext(ref NativeParser parser, IntPtr moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        {
             createdType = default(RuntimeTypeHandle);
             nameAndSignature = null;
             genericMethodTypeArgumentHandles = null;
+
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
-            MethodDesc parsedMethod = TryParseNativeSignature(context, ref remainingSignature, typeArgs, methodArgs, true) as MethodDesc;
+            MethodDesc parsedMethod = TryParseNativeSignatureWorker(context, moduleHandle, ref parser, typeArgs, methodArgs, true) as MethodDesc;
             if (parsedMethod == null)
                 return false;
 
@@ -388,19 +420,6 @@ namespace Internal.Runtime.TypeLoader
                 return nativeLayoutContext.GetMethod(ref parser);
             else
                 return nativeLayoutContext.GetType(ref parser);
-        }
-
-        // Parse a native layout info blob into a type / method given a signature pointer in the executable image
-        private object TryParseNativeSignature(TypeSystemContext typeSystemContext, ref IntPtr signature, RuntimeTypeHandle[] typeGenericArgumentHandles, RuntimeTypeHandle[] methodGenericArgumentHandles, bool isMethodSignature)
-        {
-            IntPtr moduleHandle = RuntimeAugments.GetModuleFromPointer(signature);
-            NativeReader reader = GetNativeLayoutInfoReader(moduleHandle);
-            uint offset = reader.AddressToOffset(signature);
-            NativeParser parser = new NativeParser(reader, offset);
-
-            object retObject = TryParseNativeSignatureWorker(typeSystemContext, moduleHandle, ref parser, typeGenericArgumentHandles, methodGenericArgumentHandles, isMethodSignature);
-            signature = reader.OffsetToAddress(parser.Offset);
-            return retObject;
         }
 
         public bool TryGetGenericMethodDictionaryForComponents(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodArgHandles, MethodNameAndSignature nameAndSignature, out IntPtr methodDictionary)

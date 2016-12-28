@@ -18,14 +18,14 @@ namespace Internal.Runtime.TypeLoader
     {
         public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, uint offset)
         {
-            IntPtr remainingSignature;
             RuntimeTypeHandle typeHandle;
 
             IntPtr signatureAddress = parser.Reader.OffsetToAddress(offset);
-            bool success = TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(signatureAddress, null, null, out typeHandle, out remainingSignature);
+            // TODO: get rid of GetModuleFromPointer call
+            IntPtr moduleHandle = RuntimeAugments.GetModuleFromPointer(signatureAddress);
 
-            // Reset the parser to after the type
-            parser = new NativeParser(parser.Reader, parser.Reader.AddressToOffset(remainingSignature));
+            parser.Offset = offset;
+            TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref parser, moduleHandle, null, null, out typeHandle);
 
             return typeHandle;
         }
