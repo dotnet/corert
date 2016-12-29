@@ -130,10 +130,9 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal static unsafe int strlen(byte* pString)
         {
-            int length = 0;
-            for (; *pString != 0; pString++)
-                length++;
-            return length;
+            byte* p = pString;
+            while (*p != 0) p++;
+            return checked((int)(p - pString));
         }
 
         [StructLayout(LayoutKind.Sequential)]

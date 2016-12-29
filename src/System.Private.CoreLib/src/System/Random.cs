@@ -158,9 +158,11 @@ namespace System
         **Action:  Creates a number to use as global seed.
         **Returns: An integer that is safe to use as seed values for thread-local seed generators.
         ==========================================================================================*/
-        private static int GenerateGlobalSeed()
+        private static unsafe int GenerateGlobalSeed()
         {
-            return Guid.NewGuid().GetHashCode();
+            int result;
+            Interop.GetRandomBytes((byte*)&result, sizeof(int));
+            return result;
         }
 
         //
