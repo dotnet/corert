@@ -59,15 +59,15 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
             TypeDesc openImplementationType = implementationType.GetTypeDefinition();
 
-            Vertex openCallingMethodSignature = factory.MetadataManager.GetNativeLayoutInfoNode().GetNativeLayoutInfoSignatureForPlacedNameAndSignature(
+            Vertex openCallingMethodSignature = factory.MetadataManager.NativeLayoutInfo.GetNativeLayoutInfoSignatureForPlacedNameAndSignature(
                 factory,
                 openCallingMethod.Name,
-                factory.MetadataManager.GetNativeLayoutInfoNode().GetNativeLayoutInfoSignatureForMethodSignature(factory, openCallingMethod));
+                factory.MetadataManager.NativeLayoutInfo.GetNativeLayoutInfoSignatureForMethodSignature(factory, openCallingMethod));
 
-            Vertex openImplementationMethodSignature = factory.MetadataManager.GetNativeLayoutInfoNode().GetNativeLayoutInfoSignatureForPlacedNameAndSignature(
+            Vertex openImplementationMethodSignature = factory.MetadataManager.NativeLayoutInfo.GetNativeLayoutInfoSignatureForPlacedNameAndSignature(
                 factory,
                 openImplementationMethod.Name,
-                factory.MetadataManager.GetNativeLayoutInfoNode().GetNativeLayoutInfoSignatureForMethodSignature(factory, openImplementationMethod));
+                factory.MetadataManager.NativeLayoutInfo.GetNativeLayoutInfoSignatureForMethodSignature(factory, openImplementationMethod));
 
             _methodDescToNativeLayoutInfoToken[openCallingMethod] = factory.NativeLayoutInfoToken(openCallingMethodSignature);
             _methodDescToNativeLayoutInfoToken[openImplementationMethod] = factory.NativeLayoutInfoToken(openImplementationMethodSignature);

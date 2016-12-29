@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
 
-            Vertex nativeSignature = factory.MetadataManager.GetNativeLayoutInfoNode().GetNativeLayoutInfoSignatureForLdToken(factory, targetMethod);
+            Vertex nativeSignature = factory.MetadataManager.NativeLayoutInfo.GetNativeLayoutInfoSignatureForLdToken(factory, targetMethod);
 
             _targetMethod = targetMethod;
             _nativeSignatureNode = factory.NativeLayoutInfoSignature(nativeSignature);

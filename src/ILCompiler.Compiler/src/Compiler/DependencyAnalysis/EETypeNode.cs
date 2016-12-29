@@ -149,7 +149,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (relocsOnly && _type.HasInstantiation && !_type.IsGenericDefinition)
             {
-                factory.MetadataManager.GetGenericsHashtableNode().AddInstantiatedTypeEntry(factory, _type);
+                factory.MetadataManager.GenericsHashtable.AddInstantiatedTypeEntry(factory, _type);
             }
 
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
@@ -536,7 +536,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (method != slotDecl)
                             instantiatedMethodDecl = slotDecl;
 
-                        DependencyList newDependencies = factory.MetadataManager.GetGenericVirtualMethodTableNode().AddGenericVirtualMethodImplementation(
+                        DependencyList newDependencies = factory.MetadataManager.GenericVirtualMethodTable.AddGenericVirtualMethodImplementation(
                             factory,
                             instantiatedMethodDecl,
                             _type,
@@ -559,7 +559,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         MethodDesc slotDecl = _type.ResolveInterfaceMethodToVirtualMethodOnType(method);
 
-                        DependencyList newDependencies = factory.MetadataManager.GetInterfaceGenericVirtualMethodTableNode().AddGenericVirtualMethodImplementation(
+                        DependencyList newDependencies = factory.MetadataManager.InterfaceGenericVirtualMethodTable.AddGenericVirtualMethodImplementation(
                             factory,
                             method,
                             _type,

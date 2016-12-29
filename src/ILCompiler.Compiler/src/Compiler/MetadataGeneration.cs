@@ -44,13 +44,13 @@ namespace ILCompiler
         private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
 
-        private NativeLayoutInfoNode _nativeLayoutInfoNode;
-        private ExactMethodInstantiationsNode _exactMethodInstantiationsNode;
-        private GenericVirtualMethodTableNode _genericVirtualMethodTableNode;
-        private InterfaceGenericVirtualMethodTableNode _interfaceGenericVirtualMethodTableNode;
-        private GenericsHashtableNode _genericsHashtable;
-
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
+
+        internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
+        internal ExactMethodInstantiationsNode ExactMethodInstantiations { get; private set; }
+        internal GenericVirtualMethodTableNode GenericVirtualMethodTable { get; private set; }
+        internal InterfaceGenericVirtualMethodTableNode InterfaceGenericVirtualMethodTable { get; private set; }
+        internal GenericsHashtableNode GenericsHashtable { get; private set; }
 
         public MetadataGeneration(NodeFactory factory)
         {
@@ -94,20 +94,20 @@ namespace ILCompiler
             var externalNativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), externalNativeReferencesTableNode, externalNativeReferencesTableNode, externalNativeReferencesTableNode.EndSymbol);
 
-            _nativeLayoutInfoNode = new NativeLayoutInfoNode(externalNativeReferencesTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), _nativeLayoutInfoNode, _nativeLayoutInfoNode, _nativeLayoutInfoNode.EndSymbol);
+            NativeLayoutInfo = new NativeLayoutInfoNode(externalNativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), NativeLayoutInfo, NativeLayoutInfo, NativeLayoutInfo.EndSymbol);
 
-            _exactMethodInstantiationsNode = new ExactMethodInstantiationsNode(externalNativeReferencesTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), _exactMethodInstantiationsNode, _exactMethodInstantiationsNode, _exactMethodInstantiationsNode.EndSymbol);
+            ExactMethodInstantiations = new ExactMethodInstantiationsNode(externalNativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), ExactMethodInstantiations, ExactMethodInstantiations, ExactMethodInstantiations.EndSymbol);
 
-            _genericVirtualMethodTableNode = new GenericVirtualMethodTableNode(commonFixupsTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericVirtualMethodTable), _genericVirtualMethodTableNode, _genericVirtualMethodTableNode, _genericVirtualMethodTableNode.EndSymbol);
+            GenericVirtualMethodTable = new GenericVirtualMethodTableNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericVirtualMethodTable), GenericVirtualMethodTable, GenericVirtualMethodTable, GenericVirtualMethodTable.EndSymbol);
 
-            _interfaceGenericVirtualMethodTableNode = new InterfaceGenericVirtualMethodTableNode(commonFixupsTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InterfaceGenericVirtualMethodTable), _interfaceGenericVirtualMethodTableNode, _interfaceGenericVirtualMethodTableNode, _interfaceGenericVirtualMethodTableNode.EndSymbol);
+            InterfaceGenericVirtualMethodTable = new InterfaceGenericVirtualMethodTableNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InterfaceGenericVirtualMethodTable), InterfaceGenericVirtualMethodTable, InterfaceGenericVirtualMethodTable, InterfaceGenericVirtualMethodTable.EndSymbol);
 
-            _genericsHashtable = new GenericsHashtableNode(externalNativeReferencesTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), _genericsHashtable, _genericsHashtable, _genericsHashtable.EndSymbol);
+            GenericsHashtable = new GenericsHashtableNode(externalNativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), GenericsHashtable, GenericsHashtable, GenericsHashtable.EndSymbol);
 
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
@@ -379,31 +379,6 @@ namespace ILCompiler
         internal IEnumerable<ArrayType> GetArrayTypeMapping()
         {
             return _arrayTypesGenerated;
-        }
-
-        internal NativeLayoutInfoNode GetNativeLayoutInfoNode()
-        {
-            return _nativeLayoutInfoNode;
-        }
-
-        internal ExactMethodInstantiationsNode GetExactMethodInstantiationsNode()
-        {
-            return _exactMethodInstantiationsNode;
-        }
-
-        internal GenericVirtualMethodTableNode GetGenericVirtualMethodTableNode()
-        {
-            return _genericVirtualMethodTableNode;
-        }
-
-        internal InterfaceGenericVirtualMethodTableNode GetInterfaceGenericVirtualMethodTableNode()
-        {
-            return _interfaceGenericVirtualMethodTableNode;
-        }
-
-        internal GenericsHashtableNode GetGenericsHashtableNode()
-        {
-            return _genericsHashtable;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)

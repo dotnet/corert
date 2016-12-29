@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
-            factory.MetadataManager.GetNativeLayoutInfoNode().SaveNativeLayoutInfoWriter();
+            factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter();
 
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
 

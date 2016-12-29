@@ -101,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_method.HasInstantiation)
             {
-                if (factory.MetadataManager.GetExactMethodInstantiationsNode().AddNativeLayoutExactMethodInstantiationHashTableEntry(factory, _method))
+                if (factory.MetadataManager.ExactMethodInstantiations.AddExactMethodInstantiationEntry(factory, _method))
                 {
                     // Ensure dependency nodes used by the signature are added to the graph
                     if (dependencies == null)

@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
         }
 
-        public bool AddNativeLayoutExactMethodInstantiationHashTableEntry(NodeFactory factory, MethodDesc method)
+        public bool AddExactMethodInstantiationEntry(NodeFactory factory, MethodDesc method)
         {
             _exactMethodInsantiationsList = _exactMethodInsantiationsList ?? new HashSet<MethodDesc>();
 
@@ -91,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis
             bool getUnboxingStub = (method.OwningType.IsValueType || method.OwningType.IsEnum) && !method.Signature.IsStatic;
             IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
 
-            Vertex methodSignature = factory.MetadataManager.GetNativeLayoutInfoNode().GetNativeLayoutInfoSignatureForMethod(factory, method, _nativeWriter);
+            Vertex methodSignature = factory.MetadataManager.NativeLayoutInfo.GetNativeLayoutInfoSignatureForMethod(factory, method, _nativeWriter);
             Vertex methodPointer = _nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(methodEntryPointNode));
 
             // Make the generic method entry vertex

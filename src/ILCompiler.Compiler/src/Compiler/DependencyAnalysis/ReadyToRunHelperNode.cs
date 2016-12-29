@@ -169,7 +169,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 DependencyList dependencyList = new DependencyList();
 
-                if (factory.MetadataManager.GetExactMethodInstantiationsNode().AddNativeLayoutExactMethodInstantiationHashTableEntry(factory, method))
+                if (factory.MetadataManager.ExactMethodInstantiations.AddExactMethodInstantiationEntry(factory, method))
                 {
                     // Ensure dependency nodes used by the signature are added to the graph
                     if (dependencyList == null)
