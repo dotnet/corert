@@ -36,6 +36,8 @@ namespace ILCompiler.DependencyAnalysis
             _hashtable = new VertexHashtable();
             _nativeSection = _nativeWriter.NewSection();
             _nativeSection.Place(_hashtable);
+
+            _exactMethodInsantiationsList = new HashSet<MethodDesc>();
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -56,6 +58,9 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
+            // Zero out the hashset so that we AV if someone tries to insert after we're done.
+            _exactMethodInsantiationsList = null;
+
             MemoryStream stream = new MemoryStream();
             _nativeWriter.Save(stream);
 
@@ -68,13 +73,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool AddExactMethodInstantiationEntry(NodeFactory factory, MethodDesc method)
         {
-            _exactMethodInsantiationsList = _exactMethodInsantiationsList ?? new HashSet<MethodDesc>();
-
             // Check if we already wrote this method to the hashtable
-            if (_exactMethodInsantiationsList.Contains(method))
+            if (!_exactMethodInsantiationsList.Add(method))
                 return false;
-
-            _exactMethodInsantiationsList.Add(method);
 
             // Nothing to add for interface methods because they have no implementations of their own...
             if (method.OwningType.IsInterface)

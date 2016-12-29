@@ -25,6 +25,8 @@ namespace ILCompiler.DependencyAnalysis
         private Section _tableSection;
         private VertexHashtable _hashtable;
 
+        private HashSet<TypeDesc> _genericTypeInstantiations;
+
         public GenericsHashtableNode(ExternalReferencesTableNode externalReferences)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__generics_hashtable_End", true);
@@ -34,6 +36,8 @@ namespace ILCompiler.DependencyAnalysis
             _hashtable = new VertexHashtable();
             _tableSection = _writer.NewSection();
             _tableSection.Place(_hashtable);
+
+            _genericTypeInstantiations = new HashSet<TypeDesc>();
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -52,6 +56,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(type.HasInstantiation && !type.IsGenericDefinition);
 
+            if (!_genericTypeInstantiations.Add(type))
+                return;
+
             var typeSymbol = factory.NecessaryTypeSymbol(type);
             uint instantiationId = _externalReferences.GetIndex(typeSymbol);
             Vertex hashtableEntry = _writer.GetUnsignedConstant(instantiationId);
@@ -64,6 +71,9 @@ namespace ILCompiler.DependencyAnalysis
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+
+            // Zero out the hashset so that we AV if someone tries to insert after we're done.
+            _genericTypeInstantiations = null;
 
             MemoryStream stream = new MemoryStream();
             _writer.Save(stream);

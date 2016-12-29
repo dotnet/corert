@@ -81,12 +81,9 @@ namespace ILCompiler.DependencyAnalysis
             dependencyNodes.Add(new DependencyListEntry(factory.NativeLayoutInfoToken(openImplementationMethodSignature), "gvm table needed signature"));
 
             // Add the entry to the interface GVM slots mapping table
-            {
-                if (!_interfaceGvmSlots.ContainsKey(openCallingMethod))
-                    _interfaceGvmSlots[openCallingMethod] = new HashSet<MethodDesc>();
-
-                _interfaceGvmSlots[openCallingMethod].Add(openImplementationMethod);
-            }
+            if (!_interfaceGvmSlots.ContainsKey(openCallingMethod))
+                _interfaceGvmSlots[openCallingMethod] = new HashSet<MethodDesc>();
+            _interfaceGvmSlots[openCallingMethod].Add(openImplementationMethod);
 
             // If the implementation method is implementing some interface method, compute which
             // interface explicitly implemented on the type that the current method implements an interface method for.
@@ -196,6 +193,9 @@ namespace ILCompiler.DependencyAnalysis
                 int hashCode = gvm.Key.OwningType.GetHashCode();
                 gvmHashtable.Append((uint)hashCode, gvmHashtableSection.Place(vertex));
             }
+
+            // Zero out the dictionary so that we AV if someone tries to insert after we're done.
+            _interfaceGvmSlots = null;
 
             MemoryStream stream = new MemoryStream();
             nativeFormatWriter.Save(stream);

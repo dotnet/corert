@@ -125,6 +125,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            // Zero out the dictionary so that we AV if someone tries to insert after we're done.
+            _gvmImplemenations = null;
+
             MemoryStream stream = new MemoryStream();
             nativeFormatWriter.Save(stream);
             byte[] streamBytes = stream.ToArray();
