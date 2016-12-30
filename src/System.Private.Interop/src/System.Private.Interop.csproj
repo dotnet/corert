@@ -26,7 +26,9 @@
     </ReferencePath>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Handles.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" >
+      <Aliases>CoreFX_IO</Aliases>
+    </ReferencePath>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" >
       <Aliases>CoreFX_Collections</Aliases>
     </ReferencePath>
@@ -280,6 +282,9 @@
   -->
 
   <ItemGroup Condition="'$(TargetsUnix)'=='true' and '$(IsProjectKLibrary)' != 'true'">
+    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
+      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
     </Compile>
@@ -288,9 +293,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocWithZeroInitializeNoThrow.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

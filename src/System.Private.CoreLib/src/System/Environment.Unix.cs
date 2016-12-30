@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -53,22 +54,24 @@ namespace System
 
         public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
 
+        private static int ComputeExecutionId()
+        {
+            int executionId = Interop.Sys.SchedGetCpu();
+
+            // sched_getcpu doesn't exist on all platforms. On those it doesn't exist on, the shim
+            // returns -1.  As a fallback in that case and to spread the threads across the buckets
+            // by default, we use the current managed thread ID as a proxy.
+            if (executionId < 0) executionId = Environment.CurrentManagedThreadId;
+
+            return executionId;
+        }
+
         public static unsafe String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));
 
-            IntPtr result;
-            int size = Interop.Sys.GetEnvironmentVariable(variable, out result);
-
-            // The size can be -1 if the environment variable's size overflows an integer
-            if (size == -1)
-                throw new OverflowException();
-
-            if (result == IntPtr.Zero)
-                return null;
-
-            return Encoding.UTF8.GetString((byte*)result, size);
+            return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
         }
     }
 }

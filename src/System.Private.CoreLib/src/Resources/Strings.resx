@@ -393,6 +393,9 @@
   <data name="Arg_Path2IsRooted" xml:space="preserve">
     <value>Second path fragment must not be a drive or UNC name.</value>
   </data>
+  <data name="Arg_PathIllegal" xml:space="preserve">
+    <value>The path is not of a legal form.</value>
+  </data>
   <data name="Arg_PathIllegalUNC" xml:space="preserve">
     <value>The UNC path should be of the form \\\\server\\share.</value>
   </data>
@@ -788,7 +791,7 @@
   </data>
   <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
     <value>Must be less than or equal to the size of the collection.</value>
-  </data>  
+  </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
   </data>
@@ -1891,9 +1894,6 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
-  <data name="Argument_InvalidOffLength" xml:space="preserve">
-    <value>The offset and length provided do not fit within the bounds of the array</value>
-  </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
     <value>The specified Type must not be a generic type definition.</value>
   </data>
@@ -1906,9 +1906,6 @@
   <data name="ArgumentOutOfRange_AddressSpace" xml:space="preserve">
     <value>The number of bytes cannot exceed the virtual address space on a 32 bit machine.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="ArgumentOutOfRange_UIntPtrMaxMinusOne" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
   </data>
@@ -1917,5 +1914,86 @@
   </data>
   <data name="InvalidOperation_MustCallInitialize" xml:space="preserve">
     <value>You must call Initialize on this object instance before using it.</value>
+  </data>
+  <data name="ArgumentException_BufferNotFromPool" xml:space="preserve">
+    <value>The buffer is not associated with this pool and may not be returned to it.</value>
+  </data>
+  <data name="Argument_InvalidSafeBufferOffLen" xml:space="preserve">
+    <value>Offset and length were greater than the size of the SafeBuffer.</value>
+  </data>
+  <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
+    <value>Invalid seek origin.</value>
+  </data>
+  <data name="Argument_NotEnoughBytesToRead" xml:space="preserve">
+    <value>There are not enough bytes remaining in the accessor to read at this position.</value>
+  </data>
+  <data name="Argument_NotEnoughBytesToWrite" xml:space="preserve">
+    <value>There are not enough bytes remaining in the accessor to write at this position.</value>
+  </data>
+  <data name="Argument_OffsetAndCapacityOutOfBounds" xml:space="preserve">
+    <value>Offset and capacity were greater than the size of the view.</value>
+  </data>
+  <data name="Argument_UnmanagedMemAccessorWrapAround" xml:space="preserve">
+    <value>The UnmanagedMemoryAccessor capacity and offset would wrap around the high end of the address space.</value>
+  </data>
+  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
+    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
+  </data>
+  <data name="ArgumentOutOfRange_UnmanagedMemStreamWrapAround" xml:space="preserve">
+    <value>The UnmanagedMemoryStream capacity would wrap around the high end of the address space.</value>
+  </data>
+  <data name="InvalidOperation_CalledTwice" xml:space="preserve">
+    <value>The method cannot be called twice on the same instance.</value>
+  </data>
+  <data name="IO_FixedCapacity" xml:space="preserve">
+    <value>Unable to expand length of this stream beyond its capacity.</value>
+  </data>
+  <data name="IO_SeekBeforeBegin" xml:space="preserve">
+    <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="IO_StreamTooLong" xml:space="preserve">
+    <value>Stream was too long.</value>
+  </data>
+  <data name="Arg_BadDecimal" xml:space="preserve">
+    <value>Read an invalid decimal value from the buffer.</value>
+  </data>
+  <data name="NotSupported_Reading" xml:space="preserve">
+    <value>Accessor does not support reading.</value>
+  </data>
+  <data name="NotSupported_UmsSafeBuffer" xml:space="preserve">
+    <value>This operation is not supported for an UnmanagedMemoryStream created from a SafeBuffer.</value>
+  </data>
+  <data name="NotSupported_Writing" xml:space="preserve">
+    <value>Accessor does not support writing.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
+    <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
+  </data>
+  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
+  <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
+    <value>Cannot access a closed accessor.</value>
+  </data>
+  <data name="ArgumentOutOfRange_PositionLessThanCapacityRequired" xml:space="preserve">
+    <value>The position may not be greater or equal to the capacity of the accessor.</value>
+  </data>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+  <data name="Arg_EndOfStreamException" xml:space="preserve">
+    <value>Attempted to read past the end of the stream.</value>
+  </data>
+  <data name="ObjectDisposed_FileClosed" xml:space="preserve">
+    <value>Cannot access a closed file.</value>
+  </data>
+  <data name="Arg_InvalidSearchPattern" xml:space="preserve">
+    <value>Search pattern cannot contain \"..\" to move up directories and can be contained only internally in file/directory names, as in \"a..b\".</value>
+  </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
   </data>
 </root>

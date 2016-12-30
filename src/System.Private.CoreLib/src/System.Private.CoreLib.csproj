@@ -132,9 +132,6 @@
     <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
     <Compile Include="System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
     <Compile Include="System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
-    <Compile Include="System\IO\SeekOrigin.cs" />
-    <Compile Include="System\IO\Stream.cs" />
-    <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
@@ -218,6 +215,11 @@
     <Compile Include="System\Char.cs" />
     <Compile Include="System\CharEnumerator.cs" />
     <Compile Include="System\CLSCompliantAttribute.cs" />
+    <Compile Include="System\Buffers\ArrayPool.cs" />
+    <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
+    <Compile Include="System\Buffers\ConfigurableArrayPool.cs" />
+    <Compile Include="System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
+    <Compile Include="System\Buffers\Utilities.cs" />
     <Compile Include="System\Collections\DictionaryEntry.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
@@ -287,10 +289,23 @@
     <Compile Include="System\ICloneable.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.cs" />
+    <Compile Include="System\IO\EndOfStreamException.cs" />
+    <Compile Include="System\IO\Error.cs" />
+    <Compile Include="System\IO\FileAccess.cs" />
     <Compile Include="System\IO\FileLoadException.cs" />
+    <Compile Include="System\IO\FileMode.cs" />
     <Compile Include="System\IO\FileNotFoundException.cs" />
+    <Compile Include="System\IO\FileShare.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\PathTooLongException.cs" />
+    <!-- TODO: Enable System.Path in ProjectN TFS build -->
+    <Compile Include="System\IO\Path.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\PathInternal.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\SeekOrigin.cs" />
+    <Compile Include="System\IO\Stream.cs" />
+    <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
+    <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
+    <Compile Include="System\IO\UnmanagedMemoryStream.cs" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\DateTime.cs" />
@@ -654,7 +669,7 @@
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">  
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
@@ -667,9 +682,6 @@
     <Compile Include="Microsoft\Win32\RegistryView.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
     <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegistryOptions.cs">
       <Link>Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
     </Compile>
@@ -749,6 +761,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs">
+      <Link>Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs</Link>
+    </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.Uap.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
@@ -767,6 +782,30 @@
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
+    </Compile>
+    <Compile Include="System\IO\Path.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\PathHelper.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\PathInternal.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\PathInternal.Windows.StringBuffer.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\StringBuffer.cs" />
+    <Compile Include="System\IO\Win32Marshal.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTempPathW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -810,7 +849,7 @@
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
     <Compile Include="System\Globalization\CultureData.Unix.cs" />
-    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
+    <Compile Include="System\Globalization\TextInfo.Unix.cs" />
     <Compile Include="System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
@@ -818,22 +857,39 @@
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\IO\Path.Unix.cs" />
+    <Compile Include="System\IO\PathInternal.Unix.cs" />
     <Compile Include="System\Threading\ThreadPool.Unix.cs" />
     <Compile Include="System\Threading\Timer.Unix.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
+      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Errors.cs">
+      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\Interop.IOErrors.cs">
+      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SchedGetCpu.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs</Link>
@@ -843,6 +899,21 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetCwd.cs">
+      <Link>Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetUnixName.cs">
+      <Link>Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.MksTemps.cs">
+      <Link>Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.PathConf.cs">
+      <Link>Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Dummy globalization implementation -->

@@ -83,61 +83,22 @@ namespace System
             return (AdjustmentRule[])_adjustmentRules.Clone();
         }
 
-        //
-        // GetSystemTimeZones -
-        //
-        // returns a ReadOnlyCollection<TimeZoneInfo> containing all valid TimeZone's
-        // from the local machine.  The entries in the collection are sorted by
-        // 'DisplayName'.
-        //
-        // This method does *not* throw TimeZoneNotFoundException or
-        // InvalidTimeZoneException.
-        //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <Asserts Name="Imperative: System.Security.PermissionSet" />
-        // </SecurityKernel>
-        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones()
+        private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
-            CachedData cachedData = s_cachedData;
+            Debug.Assert(Monitor.IsEntered(cachedData));
 
-            lock (cachedData)
+            using (RegistryKey reg = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(c_timeZonesRegistryHive, writable: false))
             {
-                if (cachedData._readOnlySystemTimeZones == null)
+                if (reg != null)
                 {
-                    using (RegistryKey reg = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(
-                                        c_timeZonesRegistryHive,
-                                        false
-                                        ))
+                    foreach (string keyName in reg.GetSubKeyNames())
                     {
-                        if (reg != null)
-                        {
-                            foreach (string keyName in reg.GetSubKeyNames())
-                            {
-                                TimeZoneInfo value;
-                                Exception ex;
-                                TryGetTimeZone(keyName, false, out value, out ex, cachedData);  // populate the cache
-                            }
-                        }
-                        cachedData._allSystemTimeZonesRead = true;
+                        TimeZoneInfo value;
+                        Exception ex;
+                        TryGetTimeZone(keyName, false, out value, out ex, cachedData);  // populate the cache
                     }
-
-                    List<TimeZoneInfo> list = new List<TimeZoneInfo>();
-                    if (cachedData._systemTimeZones != null)
-                    {
-                        // return a collection of the cached system time zones
-                        foreach (var pair in cachedData._systemTimeZones)
-                        {
-                            list.Add(pair.Value);
-                        }
-                    }
-
-                    // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                    list.Sort(new TimeZoneInfoComparer());
-
-                    cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(list);
                 }
             }
-            return cachedData._readOnlySystemTimeZones;
         }
 
         // -------- SECTION: constructors -----------------*

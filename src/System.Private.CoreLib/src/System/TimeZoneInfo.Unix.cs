@@ -15,9 +15,11 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System
 {
@@ -142,11 +144,10 @@ namespace System
             throw new NotImplementedException();
         }
 
-        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones()
+        private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
+            Debug.Assert(Monitor.IsEntered(cachedData));
             // UNIXTODO
-            if (s_cachedData._allSystemTimeZonesRead)
-                s_cachedData._allSystemTimeZonesRead = true;
             throw new NotImplementedException();
         }
 
