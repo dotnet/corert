@@ -187,6 +187,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new FatFunctionPointerNode(method);
             });
 
+            _methodLdtokenNodes = new NodeCache<MethodDesc, MethodLdtokenNode>(method =>
+            {
+                return new MethodLdtokenNode(method);
+            });
+
             _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
                 return new ShadowConcreteMethodNode<MethodCodeNode>(method,
@@ -523,6 +528,13 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode FatFunctionPointer(MethodDesc method)
         {
             return _fatFunctionPointers.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, MethodLdtokenNode> _methodLdtokenNodes;
+
+        internal MethodLdtokenNode MethodLdtoken(MethodDesc method)
+        {
+            return _methodLdtokenNodes.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, IMethodNode> _shadowConcreteMethods;

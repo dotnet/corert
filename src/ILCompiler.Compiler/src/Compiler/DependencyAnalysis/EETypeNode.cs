@@ -149,8 +149,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_type.Category == TypeFlags.Class && _type.HasGenericVirtualMethod() && !_type.IsRuntimeDeterminedSubtype)
-                    return !_type.HasInstantiation || !Type.IsGenericDefinition;
+                if (_type.Category == TypeFlags.Interface || _type.Category == TypeFlags.Class || _type.Category == TypeFlags.ValueType)
+                {
+                    if (!_type.IsRuntimeDeterminedSubtype && _type.HasGenericVirtualMethod())
+                        return !_type.HasInstantiation || !Type.IsGenericDefinition;
+                }
 
                 return false;
             }

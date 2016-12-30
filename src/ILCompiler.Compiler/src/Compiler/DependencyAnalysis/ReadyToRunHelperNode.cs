@@ -165,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
             else if (_id == ReadyToRunHelperId.ResolveGenericVirtualMethod)
             {
                 MethodDesc method = _target as MethodDesc;
-                Debug.Assert(method != null && method.HasInstantiation);
+                Debug.Assert(method != null && method.HasInstantiation && method.IsVirtual);
 
                 DependencyList dependencyList = new DependencyList();
 
@@ -188,6 +188,9 @@ namespace ILCompiler.DependencyAnalysis
                     for (int i = 0; i < method.Signature.Length; i++)
                         dependencyList.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(method.Signature[i]), "Exact method instantiation signature"));
                 }
+
+                // GVM dependency tracking
+                dependencyList.Add(new DependencyListEntry(factory.MethodLdtoken(method), "GVM LDToken Support"));
 
                 return dependencyList;
             }
