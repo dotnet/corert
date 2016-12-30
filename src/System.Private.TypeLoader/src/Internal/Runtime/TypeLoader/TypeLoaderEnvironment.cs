@@ -209,18 +209,6 @@ namespace Internal.Runtime.TypeLoader
 
             bool result = GetTypeFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType);
 
-            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature.ModuleHandle, (int)parser.Offset);
-
-            return result;
-        }
-
-        internal bool GetTypeFromSignatureAndContext(ref NativeParser parser, IntPtr moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType)
-        {
-            NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
-            NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
-
-            bool result = GetTypeFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType);
-
             remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature.ModuleHandle, parser.Offset);
 
             return result;
@@ -228,6 +216,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal bool GetTypeFromSignatureAndContext(ref NativeParser parser, IntPtr moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType)
         {
+
             createdType = default(RuntimeTypeHandle);
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
@@ -253,18 +242,6 @@ namespace Internal.Runtime.TypeLoader
         {
             NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
             NativeParser parser = new NativeParser(reader, (uint)signature.Token);
-
-            bool result = GetMethodFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType, out nameAndSignature, out genericMethodTypeArgumentHandles);
-
-            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature.ModuleHandle, (int)parser.Offset);
-
-            return result;
-        }
-
-        internal bool GetMethodFromSignatureAndContext(ref NativeParser parser, IntPtr moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
-        {
-            NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
-            NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
 
             bool result = GetMethodFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType, out nameAndSignature, out genericMethodTypeArgumentHandles);
 
@@ -653,11 +630,11 @@ namespace Internal.Runtime.TypeLoader
                     Environment.FailFast("Failed to resolve metadata token " +
                         ((uint)metadataToken).LowLevelToString() + ": " + ex.Message);
 #else
-                    Environment.FailFast("Failed to resolve metadata token " +
-                        ((uint)metadataToken).LowLevelToString());
+            Environment.FailFast("Failed to resolve metadata token " +
+                ((uint)metadataToken).LowLevelToString());
 #endif
-                    fixupResolution = IntPtr.Zero;
-                    return false;
+            fixupResolution = IntPtr.Zero;
+            return false;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
                 }
             }
