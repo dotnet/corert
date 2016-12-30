@@ -20,9 +20,6 @@
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>    
-    
-    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\System.Private.Threading\src\System.Private.Threading.csproj" />
 
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" >
       <Aliases>CoreFX_Runtime</Aliases>
@@ -41,6 +38,10 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Threading.Tasks.dll" />    
   </ItemGroup>
  
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+
   <!-- TODO  We should not include anything from CompilerServices directly -->
   <ItemGroup>
     <Compile Include="TypeForwarders.cs" />
