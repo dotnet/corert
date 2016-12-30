@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -121,6 +122,156 @@ namespace ILCompiler.DependencyAnalysis
 
 
             return dependencies;
+        }
+
+        public override bool HasDynamicDependencies
+        {
+            get
+            {
+                // Only generic virtual methods work have dynamic dependencies
+                if (_method.HasInstantiation && _method.IsVirtual)
+                {
+                    if (_method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Specific))
+                        return false;
+
+                    if (_method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Universal) && 
+                        _method.OwningType != _method.OwningType.ConvertToCanonForm(CanonicalFormKind.Universal))
+                        return false;
+
+                    if (_method.OwningType.IsRuntimeDeterminedSubtype)
+                        return false;
+
+                    if (_method.OwningType.ContainsGenericVariables)
+                        return false;
+
+                    // Check to see if the method instantiation has shared runtime components, or canon components. Those are not actually added to the various vtables, so 
+                    // are not examined for dynamic dependencies
+                    foreach(var type in _method.Instantiation)
+                    {
+                        if (type.IsRuntimeDeterminedSubtype || type.IsCanonicalSubtype(CanonicalFormKind.Specific) || type.IsGenericParameter)
+                            return false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
+        {
+            Debug.Assert(_method.IsVirtual && _method.HasInstantiation);
+
+            List<CombinedDependencyListEntry> dynamicDependencies = new List<CombinedDependencyListEntry>();
+
+            for (int i = firstNode; i < markedNodes.Count; i++)
+            {
+                DependencyNodeCore<NodeFactory> entry = markedNodes[i];
+                EETypeNode entryAsEETypeNode = entry as EETypeNode;
+
+                // TODO: Variance expansion
+
+                if (entryAsEETypeNode == null)
+                    continue;
+
+                TypeDesc potentialOverrideType = entryAsEETypeNode.Type;
+                if (!(potentialOverrideType is DefType))
+                    continue;
+
+                // Open generic types are not interesting.
+                if (potentialOverrideType.ContainsGenericVariables)
+                    continue;
+
+                // If this is an interface gvm, look for types that implement the interface
+                // and other instantantiations that have the same canonical form.
+                // This ensure the various slot numbers remain equivalent across all types where there is an equivalence
+                // relationship in the vtable.
+                if (_method.OwningType.IsInterface)
+                {
+                    if (potentialOverrideType.IsInterface)
+                        continue;
+
+                    foreach (DefType interfaceImpl in potentialOverrideType.RuntimeInterfaces)
+                    {
+                        if (interfaceImpl.ConvertToCanonForm(CanonicalFormKind.Specific) == _method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific))
+                        {
+                            // Find if the type implements this method. (Note, do this comparision against the generic definition of the method, not the
+                            // specific method instantiation that is "method"
+                            MethodDesc genericDefinition =interfaceImpl.GetMethod(_method.Name, _method.GetTypicalMethodDefinition().Signature);
+                            // TODO
+                            //if (interfaceImpl.HasOverrideSlot(genericDefinition))
+                            //{
+                            //    CreateDependencyForMethodSlotAndInstantiation(potentialOverrideType, interfaceImpl.GetOverrideSlot(genericDefinition), method->Instantiation(), dynamicDependencies, _nodeFactory, NutcReductionNode::node_type::proposed_gvm_method_template);
+                            //    CreateDependencyForMethodSlotDeclAndInstantiation(potentialOverrideType, interfaceImpl.GetOverrideSlot(genericDefinition), method->Instantiation(), dynamicDependencies, _nodeFactory, NutcReductionNode::node_type::proposed_gvm_method_template);
+                            //}
+                        }
+                    }
+                }
+                else
+                {
+                    // TODO: Ensure GVM Canon Target
+
+                    TypeDesc overrideTypeCanonCur = potentialOverrideType;
+                    TypeDesc methodCanonContainingType = _method.OwningType;
+                    while (overrideTypeCanonCur != null)
+                    {
+                        if (overrideTypeCanonCur.ConvertToCanonForm(CanonicalFormKind.Specific) == methodCanonContainingType.ConvertToCanonForm(CanonicalFormKind.Specific))
+                        {
+                            CreateDependencyForMethodSlotAndInstantiation((DefType)potentialOverrideType, dynamicDependencies, factory);
+                            CreateDependencyForMethodSlotDeclAndInstantiation((DefType)potentialOverrideType, dynamicDependencies, factory);
+                        }
+
+                        overrideTypeCanonCur = overrideTypeCanonCur.BaseType;
+                    }
+                }
+            }
+            return dynamicDependencies;
+        }
+
+        private void CreateDependencyForMethodSlotAndInstantiation(DefType potentialOverrideType, List<CombinedDependencyListEntry> dynamicDependencies, NodeFactory factory)
+        {
+            Debug.Assert(!potentialOverrideType.ContainsGenericVariables);
+            MethodDesc methodDefInDerivedType = potentialOverrideType.GetMethod(_method.Name, _method.GetTypicalMethodDefinition().Signature);
+            if (methodDefInDerivedType == null)
+                return;
+            MethodDesc derivedMethodInstantiation = _method.Context.GetInstantiatedMethod(methodDefInDerivedType, _method.Instantiation);
+
+
+            // Universal canonical instantiations should be entirely universal canon
+            if (derivedMethodInstantiation.IsCanonicalMethod(CanonicalFormKind.Universal))
+            {
+                derivedMethodInstantiation = derivedMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Universal);
+            }
+
+            if (true /* TODO: derivedMethodInstantiation.CheckConstraints()*/)
+            {
+                dynamicDependencies.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(derivedMethodInstantiation, false), null, "DerivedMethodInstantiation"));
+            }
+            else
+            {
+                // TODO
+            }
+        }
+
+        private void CreateDependencyForMethodSlotDeclAndInstantiation(DefType potentialOverrideType, List<CombinedDependencyListEntry> dynamicDependencies, NodeFactory factory)
+        {
+            Debug.Assert(!potentialOverrideType.ContainsGenericVariables);
+            MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(_method.GetTypicalMethodDefinition());
+            MethodDesc declMethodInstantiation = _method.Context.GetInstantiatedMethod(slotDecl, _method.Instantiation);
+
+            // Universal canonical instantiations should be entirely universal canon
+            if (declMethodInstantiation.IsCanonicalMethod(CanonicalFormKind.Universal))
+            {
+                declMethodInstantiation = declMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Universal);
+            }
+
+            if (true /* TODO: declMethodInstantiation.CheckConstraints()*/)
+            {
+                dynamicDependencies.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(declMethodInstantiation, false), null, "DeclMethodInstantiation"));
+            }
+            else
+            {
+                // TODO
+            }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

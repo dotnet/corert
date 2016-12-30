@@ -145,6 +145,17 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
+        public override bool InterestingForDynamicDependencyAnalysis
+        {
+            get
+            {
+                if (_type.Category == TypeFlags.Class && _type.HasGenericVirtualMethod() && !_type.IsRuntimeDeterminedSubtype)
+                    return !_type.HasInstantiation || !Type.IsGenericDefinition;
+
+                return false;
+            }
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             if (relocsOnly && _type.HasInstantiation && !_type.IsGenericDefinition)
@@ -515,40 +526,35 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencyNodes = new DependencyList();
 
-            bool typeHasGenericVirtualMethods = false;
-            if (_type.Category == TypeFlags.Class || _type.Category == TypeFlags.ValueType)
+            if ((_type.Category != TypeFlags.Class && _type.Category != TypeFlags.ValueType) || _type.IsGenericDefinition)
+                return dependencyNodes;
+
+            Debug.Assert(!_type.HasInstantiation || !Type.IsGenericDefinition);
+            Debug.Assert(!_type.IsInterface);
+
+            foreach (var method in _type.GetMethods())
             {
-                Debug.Assert(!_type.IsInterface);
+                if (!method.IsVirtual || !method.HasInstantiation)
+                    continue;
 
-                if (!_type.HasInstantiation || Type.IsGenericDefinition)
-                {
-                    foreach (var method in _type.GetMethods())
-                    {
-                        if (!method.IsVirtual || !method.HasInstantiation)
-                            continue;
+                MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
 
-                        typeHasGenericVirtualMethods = true;
+                MethodDesc instantiatedMethodDecl = method;
 
-                        MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                if (method != slotDecl)
+                    instantiatedMethodDecl = slotDecl;
 
-                        MethodDesc instantiatedMethodDecl = method;
+                DependencyList newDependencies = factory.MetadataManager.GenericVirtualMethodTable.AddGenericVirtualMethodImplementation(
+                    factory,
+                    instantiatedMethodDecl,
+                    _type,
+                    method);
 
-                        if (method != slotDecl)
-                            instantiatedMethodDecl = slotDecl;
-
-                        DependencyList newDependencies = factory.MetadataManager.GenericVirtualMethodTable.AddGenericVirtualMethodImplementation(
-                            factory,
-                            instantiatedMethodDecl,
-                            _type,
-                            method);
-
-                        if (newDependencies != null)
-                            dependencyNodes.AddRange(newDependencies);
-                    }
-                }
+                if (newDependencies != null)
+                    dependencyNodes.AddRange(newDependencies);
             }
 
-            if (typeHasGenericVirtualMethods)
+            if (_type.HasGenericVirtualMethod())
             {
                 foreach (var iface in _type.RuntimeInterfaces)
                 {

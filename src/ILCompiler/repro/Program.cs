@@ -44,6 +44,8 @@ internal class Program
         Base b = new Base();
         Test(b);
 
+        Console.WriteLine("====================");
+
         Base c = new Derived();
         Test(c);
     }
