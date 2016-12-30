@@ -102,7 +102,7 @@ namespace System
                 if (!cache._allSystemTimeZonesRead)
                 {
                     PopulateAllSystemTimeZones(cache);
-                    cachedData._allSystemTimeZonesRead = true;
+                    cache._allSystemTimeZonesRead = true;
                     if (cache._systemTimeZones != null && cache._systemTimeZones.TryGetValue(id, out value))
                     {
                         return value;
