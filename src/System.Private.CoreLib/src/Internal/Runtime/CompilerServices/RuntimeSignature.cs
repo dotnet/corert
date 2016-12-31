@@ -56,6 +56,7 @@ namespace Internal.Runtime.CompilerServices
             }
         }
 
+        [CLSCompliant(false)]
         public uint NativeLayoutOffset
         {
             get
