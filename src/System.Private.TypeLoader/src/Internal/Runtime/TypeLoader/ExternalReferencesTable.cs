@@ -137,5 +137,17 @@ namespace Internal.Runtime.TypeLoader
         {
             return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
         }
+
+        unsafe public uint GetNativeLayoutOffsetFromIndex(uint index)
+        {
+            if (index >= _elementsCount)
+                throw new BadImageFormatException();
+
+#if CORERT
+            return *(uint*)(((IntPtr*)_elements)[index]);
+#else
+            return ((TableElement*)_elements)[index];
+#endif
+        }
     }
 }

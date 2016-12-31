@@ -165,7 +165,7 @@ namespace Internal.Runtime.TypeLoader
             internal TypeDesc ConstraintType;
             internal MethodDesc ConstrainedMethod;
             internal IntPtr MethodName;
-            internal RuntimeMethodSignature MethodSignature;
+            internal RuntimeSignature MethodSignature;
 
             override internal void Prepare(TypeBuilder builder)
             {
@@ -304,7 +304,7 @@ namespace Internal.Runtime.TypeLoader
         {
             internal MethodDesc Method;
             internal IntPtr MethodName;
-            internal RuntimeMethodSignature MethodSignature;
+            internal RuntimeSignature MethodSignature;
 
             internal unsafe override void Prepare(TypeBuilder builder)
             {
@@ -503,7 +503,7 @@ namespace Internal.Runtime.TypeLoader
         private class MethodCell : GenericDictionaryCell
         {
             internal MethodDesc Method;
-            internal RuntimeMethodSignature MethodSignature;
+            internal RuntimeSignature MethodSignature;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             internal bool ExactCallableAddressNeeded;
 #endif
@@ -774,7 +774,7 @@ namespace Internal.Runtime.TypeLoader
 
                 methodArgs = builder.GetRuntimeTypeHandles(_methodToUseForInstantiatingParameters.Instantiation);
 
-                Debug.Assert(!MethodSignature.IsNativeLayoutSignature || (MethodSignature.NativeLayoutSignature != IntPtr.Zero));
+                Debug.Assert(!MethodSignature.IsNativeLayoutSignature || (MethodSignature.NativeLayoutSignature() != IntPtr.Zero));
 
                 CallConverterThunk.ThunkKind thunkKind;
                 if (usgConverter)
@@ -890,7 +890,7 @@ namespace Internal.Runtime.TypeLoader
         private class CallingConventionConverterCell : GenericDictionaryCell
         {
             internal NativeFormat.CallingConventionConverterKind Flags;
-            internal RuntimeMethodSignature Signature;
+            internal RuntimeSignature Signature;
             internal Instantiation MethodArgs;
             internal Instantiation TypeArgs;
 
@@ -1064,7 +1064,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 ExactCallableAddressNeeded = exactCallableAddressNeeded,
                 Method = method,
-                MethodSignature = RuntimeMethodSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
+                MethodSignature = RuntimeSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
             };
 #else
             Environment.FailFast("Creating a methodcell from a MethodDesc only supported in the presence of metadata based type loading.");
@@ -1205,7 +1205,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             Method = method,
                             MethodName = IntPtr.Zero,
-                            MethodSignature = RuntimeMethodSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
+                            MethodSignature = RuntimeSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
                         };
                     }
                     break;
@@ -1279,7 +1279,7 @@ namespace Internal.Runtime.TypeLoader
                         cell = new MethodCell
                         {
                             Method = method,
-                            MethodSignature = RuntimeMethodSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
+                            MethodSignature = RuntimeSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
                         };
                     }
                     break;
@@ -1293,7 +1293,7 @@ namespace Internal.Runtime.TypeLoader
                         cell = new MethodCell
                         {
                             Method = method,
-                            MethodSignature = RuntimeMethodSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
+                            MethodSignature = RuntimeSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
                         };
                     }
                     break;
@@ -1308,7 +1308,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             ExactCallableAddressNeeded = true,
                             Method = method,
-                            MethodSignature = RuntimeMethodSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
+                            MethodSignature = RuntimeSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
                         };
                     }
                     break;
@@ -1363,7 +1363,7 @@ namespace Internal.Runtime.TypeLoader
                             ConstraintType = constraintType,
                             ConstrainedMethod = method,
                             MethodName = IntPtr.Zero,
-                            MethodSignature = RuntimeMethodSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
+                            MethodSignature = RuntimeSignature.CreateFromMethodHandle(nativeFormatMethod.MetadataUnit.RuntimeModule, nativeFormatMethod.Handle.ToInt())
                         };
                     }
                     break;
@@ -1521,16 +1521,16 @@ namespace Internal.Runtime.TypeLoader
                     {
                         NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
 
-                        IntPtr methodNameSigPtr;
-                        IntPtr methodSigPtr;
-                        var method = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser, out methodNameSigPtr, out methodSigPtr);
+                        RuntimeSignature methodNameSig;
+                        RuntimeSignature methodSig;
+                        var method = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser, out methodNameSig, out methodSig);
                         TypeLoaderLogger.WriteLine("LdToken on: " + method.OwningType.ToString() + "::" + method.NameAndSignature.Name);
 
                         cell = new MethodLdTokenCell
                         {
                             Method = method,
-                            MethodName = methodNameSigPtr,
-                            MethodSignature = RuntimeMethodSignature.CreateFromNativeLayoutSignature(methodSigPtr)
+                            MethodName = methodNameSig.NativeLayoutSignature(),
+                            MethodSignature = methodSig
                         };
                     }
                     break;
@@ -1602,15 +1602,15 @@ namespace Internal.Runtime.TypeLoader
 
                 case FixupSignatureKind.Method:
                     {
-                        IntPtr methodSigPtr;
-                        IntPtr methodNameSigPtr;
-                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser, out methodNameSigPtr, out methodSigPtr);
+                        RuntimeSignature methodSig;
+                        RuntimeSignature methodNameSig;
+                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser, out methodNameSig, out methodSig);
                         TypeLoaderLogger.WriteLine("Method: " + method.ToString());
 
                         cell = new MethodCell
                         {
                             Method = method,
-                            MethodSignature = RuntimeMethodSignature.CreateFromNativeLayoutSignature(methodSigPtr)
+                            MethodSignature = methodSig
                         };
                     }
                     break;
@@ -1652,9 +1652,9 @@ namespace Internal.Runtime.TypeLoader
                         var constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
 
                         NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
-                        IntPtr methodNameSigPtr;
-                        IntPtr methodSigPtr;
-                        var method = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser, out methodNameSigPtr, out methodSigPtr);
+                        RuntimeSignature methodNameSig;
+                        RuntimeSignature methodSig;
+                        var method = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser, out methodNameSig, out methodSig);
 
                         TypeLoaderLogger.WriteLine("GenericConstrainedMethod: " + constraintType.ToString() + " Method " + method.OwningType.ToString() + "::" + method.NameAndSignature.Name);
 
@@ -1662,8 +1662,8 @@ namespace Internal.Runtime.TypeLoader
                         {
                             ConstraintType = constraintType,
                             ConstrainedMethod = method,
-                            MethodName = methodNameSigPtr,
-                            MethodSignature = RuntimeMethodSignature.CreateFromNativeLayoutSignature(methodSigPtr)
+                            MethodName = methodNameSig.NativeLayoutSignature(),
+                            MethodSignature = methodSig
                         };
                     }
                     break;
@@ -1701,14 +1701,14 @@ namespace Internal.Runtime.TypeLoader
 
                 case FixupSignatureKind.CallingConventionConverter:
                     {
-                        NativeFormat.CallingConventionConverterKind flags = (NativeFormat.CallingConventionConverterKind)parser.GetUnsigned();
+                        CallingConventionConverterKind flags = (CallingConventionConverterKind)parser.GetUnsigned();
                         NativeParser sigParser = parser.GetParserFromRelativeOffset();
-                        IntPtr signature = sigParser.Reader.OffsetToAddress(sigParser.Offset);
+                        RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._moduleHandle, sigParser.Offset);
 
 #if TYPE_LOADER_TRACE
                         TypeLoaderLogger.WriteLine("CallingConventionConverter on: ");
                         TypeLoaderLogger.WriteLine("     -> Flags: " + ((int)flags).LowLevelToString());
-                        TypeLoaderLogger.WriteLine("     -> Signature: " + signature.LowLevelToString());
+                        TypeLoaderLogger.WriteLine("     -> Signature: " + signature.NativeLayoutSignature().LowLevelToString());
                         for (int i = 0; !nativeLayoutInfoLoadContext._typeArgumentHandles.IsNull && i < nativeLayoutInfoLoadContext._typeArgumentHandles.Length; i++)
                             TypeLoaderLogger.WriteLine("     -> TypeArg[" + i.LowLevelToString() + "]: " + nativeLayoutInfoLoadContext._typeArgumentHandles[i]);
                         for (int i = 0; !nativeLayoutInfoLoadContext._methodArgumentHandles.IsNull && i < nativeLayoutInfoLoadContext._methodArgumentHandles.Length; i++)
@@ -1718,7 +1718,7 @@ namespace Internal.Runtime.TypeLoader
                         cell = new CallingConventionConverterCell
                         {
                             Flags = flags,
-                            Signature = RuntimeMethodSignature.CreateFromNativeLayoutSignature(signature),
+                            Signature = signature,
                             MethodArgs = nativeLayoutInfoLoadContext._methodArgumentHandles,
                             TypeArgs = nativeLayoutInfoLoadContext._typeArgumentHandles
                         };

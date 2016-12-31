@@ -370,7 +370,7 @@ namespace Internal.Runtime.TypeLoader
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
             TemplateLocator templateLocator = new TemplateLocator();
             NativeLayoutInfo nativeLayoutInfo = new NativeLayoutInfo();
-            InstantiatedMethod templateMethod = templateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Token);
+            InstantiatedMethod templateMethod = templateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
             if (templateMethod == null)
                 return false;
 
