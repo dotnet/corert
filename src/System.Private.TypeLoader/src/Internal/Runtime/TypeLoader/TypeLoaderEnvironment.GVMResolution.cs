@@ -21,7 +21,7 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
-        public bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeMethodSignature methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
+        public bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
         {
             MethodNameAndSignature methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
 
@@ -47,7 +47,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, uint nativeLayoutOffset)
+        private MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, IntPtr moduleHandle, uint nativeLayoutOffset)
         {
             NativeParser parser = new NativeParser(nativeLayoutReader, nativeLayoutOffset);
 
@@ -57,9 +57,9 @@ namespace Internal.Runtime.TypeLoader
             // when not comparing signatures (parsing them requires resolving types and is tremendously 
             // expensive).
             NativeParser sigParser = parser.GetParserFromRelativeOffset();
-            IntPtr methodSigPtr = sigParser.Reader.OffsetToAddress(sigParser.Offset);
+            RuntimeSignature methodSig = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, sigParser.Offset);
 
-            return new MethodNameAndSignature(methodName, RuntimeMethodSignature.CreateFromNativeLayoutSignature(methodSigPtr));
+            return new MethodNameAndSignature(methodName, methodSig);
         }
 
         private RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
@@ -85,8 +85,8 @@ namespace Internal.Runtime.TypeLoader
 
             for (uint j = 0; j < numTargetImplementations; j++)
             {
-                uint nameAndSigToken = extRefs.GetRvaFromIndex(entryParser.GetUnsigned());
-                MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, nameAndSigToken);
+                uint nameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, nameAndSigToken);
                 RuntimeTypeHandle targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
 #if REFLECTION_EXECUTION_TRACE
@@ -114,7 +114,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         RuntimeTypeHandle currentIfaceTypeHandle = default(RuntimeTypeHandle);
 
-                        NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, extRefs.GetRvaFromIndex(entryParser.GetUnsigned()));
+                        NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned()));
 
                         if (TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref ifaceSigParser, moduleHandle, targetTypeInstantiation, null, out currentIfaceTypeHandle))
                         {
@@ -226,8 +226,8 @@ namespace Internal.Runtime.TypeLoader
                     if (!openCallingTypeHandle.Equals(interfaceTypeHandle))
                         continue;
 
-                    uint nameAndSigToken = extRefs.GetRvaFromIndex(entryParser.GetUnsigned());
-                    MethodNameAndSignature interfaceMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, nameAndSigToken);
+                    uint nameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                    MethodNameAndSignature interfaceMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, nameAndSigToken);
 
                     if (!interfaceMethodNameAndSignature.Equals(methodNameAndSignature))
                         continue;
@@ -459,14 +459,14 @@ namespace Internal.Runtime.TypeLoader
                     if (!parsedTargetTypeHandle.Equals(openTargetTypeHandle))
                         continue;
 
-                    uint parsedCallingNameAndSigToken = extRefs.GetRvaFromIndex(entryParser.GetUnsigned());
-                    MethodNameAndSignature parsedCallingNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, parsedCallingNameAndSigToken);
+                    uint parsedCallingNameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                    MethodNameAndSignature parsedCallingNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, parsedCallingNameAndSigToken);
 
                     if (!parsedCallingNameAndSignature.Equals(callingMethodNameAndSignature))
                         continue;
 
-                    uint parsedTargetMethodNameAndSigToken = extRefs.GetRvaFromIndex(entryParser.GetUnsigned());
-                    MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, parsedTargetMethodNameAndSigToken);
+                    uint parsedTargetMethodNameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                    MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, parsedTargetMethodNameAndSigToken);
 
                     Debug.Assert(targetMethodNameAndSignature != null);
 

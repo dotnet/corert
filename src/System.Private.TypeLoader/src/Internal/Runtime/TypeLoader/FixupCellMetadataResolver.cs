@@ -81,7 +81,7 @@ namespace Internal.Runtime.TypeLoader
             return instantiatedField;
         }
 
-        public RuntimeMethodSignature GetSignature(Internal.Metadata.NativeFormat.Handle token)
+        public RuntimeSignature GetSignature(Internal.Metadata.NativeFormat.Handle token)
         {
             switch (token.HandleType)
             {
@@ -97,7 +97,7 @@ namespace Internal.Runtime.TypeLoader
                     Environment.FailFast("Unknown and invalid handle type");
                     break;
             }
-            return RuntimeMethodSignature.CreateFromMethodHandle(_metadataUnit.RuntimeModule, token.ToInt());
+            return RuntimeSignature.CreateFromMethodHandle(_metadataUnit.RuntimeModule, token.ToInt());
         }
 
         public Instantiation TypeInstantiation

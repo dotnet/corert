@@ -516,8 +516,8 @@ namespace Internal.Reflection.Execution
                 uint index = cookie >> 1;
 
                 MethodNameAndSignature nameAndSignature;
-                IntPtr nameAndSigSignature = (IntPtr)(pNativeLayoutInfoBlob + pBlob[index]);
-                success = TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutSignature(ref nameAndSigSignature, out nameAndSignature);
+                RuntimeSignature nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, pBlob[index]);
+                success = TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutSignature(nameAndSigSignature, out nameAndSignature);
                 Debug.Assert(success);
 
                 success = TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(declaringTypeHandle, argHandles, nameAndSignature, out dynamicInvokeMethodGenericDictionary);
@@ -1075,7 +1075,7 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                uint nameAndSigOffset = externalReferences.GetRvaFromIndex(entryMethodHandleOrNameAndSigRaw);
+                uint nameAndSigOffset = externalReferences.GetNativeLayoutOffsetFromIndex(entryMethodHandleOrNameAndSigRaw);
                 MethodNameAndSignature nameAndSig;
                 if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule, nameAndSigOffset, out nameAndSig))
                 {
@@ -1195,7 +1195,7 @@ namespace Internal.Reflection.Execution
             TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
 
             Debug.Assert(nameAndSignature.Signature.IsNativeLayoutSignature);
-            IntPtr nativeLayoutSignature = nameAndSignature.Signature.NativeLayoutSignature;
+            RuntimeSignature nativeLayoutSignature = nameAndSignature.Signature;
 
             foreach (MethodHandle mh in typeDefinition.Methods)
             {
