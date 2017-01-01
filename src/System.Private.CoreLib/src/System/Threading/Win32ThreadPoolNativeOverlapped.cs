@@ -64,7 +64,7 @@ namespace System.Threading
             }
 
             // None are free; allocate a new one.
-            overlapped = (Win32ThreadPoolNativeOverlapped*)Marshal.AllocHGlobal(sizeof(Win32ThreadPoolNativeOverlapped));
+            overlapped = (Win32ThreadPoolNativeOverlapped*)Interop.MemAlloc((UIntPtr)sizeof(Win32ThreadPoolNativeOverlapped));
             *overlapped = default(Win32ThreadPoolNativeOverlapped);
 
             // Allocate a OverlappedData object, and an index at which to store it in _dataArray.

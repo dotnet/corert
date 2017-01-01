@@ -80,7 +80,7 @@ namespace System.IO
             uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
             try
             {
-                SafeFileHandle fileHandle = Interop.mincore.SafeCreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                SafeFileHandle fileHandle = Interop.mincore.CreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
                 fileHandle.IsAsync = _useAsyncIO;
 
                 if (fileHandle.IsInvalid)
@@ -92,10 +92,17 @@ namespace System.IO
                     // probably be consistent w/ every other directory.
                     int errorCode = Marshal.GetLastWin32Error();
 
-                    if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && _path.Equals(Directory.InternalGetDirectoryRoot(_path)))
+                    if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && _path.Length == PathInternal.GetRootLength(_path))
                         errorCode = Interop.mincore.Errors.ERROR_ACCESS_DENIED;
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                }
+
+                int fileType = Interop.mincore.GetFileType(fileHandle);
+                if (fileType != Interop.mincore.FileTypes.FILE_TYPE_DISK)
+                {
+                    fileHandle.Dispose();
+                    throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
                 }
 
                 return fileHandle;
@@ -271,11 +278,11 @@ namespace System.IO
             get { return _canSeek; }
         }
 
-        private long GetLengthInternal()
+        private unsafe long GetLengthInternal()
         {
             Interop.mincore.FILE_STANDARD_INFO info = new Interop.mincore.FILE_STANDARD_INFO();
 
-            if (!Interop.mincore.GetFileInformationByHandleEx(_fileHandle, Interop.mincore.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.mincore.FILE_STANDARD_INFO>()))
+            if (!Interop.mincore.GetFileInformationByHandleEx(_fileHandle, Interop.mincore.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)sizeof(Interop.mincore.FILE_STANDARD_INFO)))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             long len = info.EndOfFile;
             // If we're writing near the end of the file, we must include our

@@ -11,7 +11,6 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.CoreFile_L1, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool FlushFileBuffers(SafeHandle hHandle);
     }
 }

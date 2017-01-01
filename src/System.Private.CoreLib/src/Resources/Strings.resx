@@ -1996,4 +1996,61 @@
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>
+  <data name="Argument_InvalidHandle" xml:space="preserve">
+    <value>'handle' has been disposed or is an invalid handle.</value>
+  </data>
+  <data name="Argument_AlreadyBoundOrSyncHandle" xml:space="preserve">
+    <value>'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.</value>
+  </data>
+  <data name="Argument_PreAllocatedAlreadyAllocated" xml:space="preserve">
+    <value>'preAllocated' is already in use.</value>
+  </data>
+  <data name="Argument_NativeOverlappedAlreadyFree" xml:space="preserve">
+    <value>'overlapped' has already been freed.</value>
+  </data>
+  <data name="Argument_NativeOverlappedWrongBoundHandle" xml:space="preserve">
+    <value>'overlapped' was not allocated by this ThreadPoolBoundHandle instance.</value>
+  </data>
+  <data name="Arg_HandleNotAsync" xml:space="preserve">
+    <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
+  </data>
+  <data name="ArgumentNull_Path" xml:space="preserve">
+    <value>Path cannot be null.</value>
+  </data>
+  <data name="Argument_EmptyPath" xml:space="preserve">
+    <value>Empty path name is not legal.</value>
+  </data>
+  <data name="Argument_InvalidFileModeAndAccessCombo" xml:space="preserve">
+    <value>Combining FileMode: {0} with FileAccess: {1} is invalid.</value>
+  </data>
+  <data name="Argument_InvalidAppendMode" xml:space="preserve">
+    <value>Append access can be requested only in write-only mode.</value>
+  </data>
+  <data name="IO_UnknownFileName" xml:space="preserve">
+    <value>[Unknown]</value>
+  </data>
+  <data name="IO_FileStreamHandlePosition" xml:space="preserve">
+    <value>The OS handle's position is not what FileStream expected. Do not use a handle simultaneously in one FileStream and in Win32 code or another FileStream. This may cause data loss.</value>
+  </data>
+  <data name="NotSupported_FileStreamOnNonFiles" xml:space="preserve">
+    <value>FileStream was asked to open a device that was not a file. For support for devices like 'com1:' or 'lpt1:', call CreateFile, then use the FileStream constructors that take an OS handle as an IntPtr.</value>
+  </data>
+  <data name="IO_BindHandleFailed" xml:space="preserve">
+    <value>BindHandle for ThreadPool failed on this handle.</value>
+  </data>
+  <data name="Arg_HandleNotSync" xml:space="preserve">
+    <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
+  </data>
+  <data name="IO_SetLengthAppendTruncate" xml:space="preserve">
+    <value>Unable to truncate data that previously existed in a file opened in Append mode.</value>
+  </data>
+  <data name="IO_SeekAppendOverwrite" xml:space="preserve">
+    <value>Unable seek backward to overwrite data that previously existed in a file opened in Append mode.</value>
+  </data>
+  <data name="IO_FileTooLongOrHandleNotSync" xml:space="preserve">
+    <value>IO operation will not work. Most likely the file will become too long or the handle was not opened to support synchronous IO operations.</value>
+  </data>
+  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
+    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
+  </data>
 </root>

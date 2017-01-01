@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -14,7 +15,6 @@ namespace System.Threading
     //
     public sealed class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
     {
-        private static Interop.NativeIoCompletionCallback s_nativeIoCompletionCallback;
         private readonly SafeHandle _handle;
         private readonly SafeThreadPoolIOHandle _threadPoolHandle;
         private DeferredDisposableLifetime<ThreadPoolBoundHandle> _lifetime;
@@ -38,23 +38,18 @@ namespace System.Threading
             if (handle.IsClosed || handle.IsInvalid)
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
-            // Make sure we use a statically-rooted completion callback, 
-            // so it doesn't get collected while the I/O is in progress.
-            Interop.NativeIoCompletionCallback callback = s_nativeIoCompletionCallback;
-            if (callback == null)
-                s_nativeIoCompletionCallback = callback = new Interop.NativeIoCompletionCallback(OnNativeIOCompleted);
-
-            SafeThreadPoolIOHandle threadPoolHandle = Interop.mincore.CreateThreadpoolIo(handle, s_nativeIoCompletionCallback, IntPtr.Zero, IntPtr.Zero);
+            IntPtr callback = AddrofIntrinsics.AddrOf<Action<IntPtr, IntPtr, IntPtr, uint, UIntPtr, IntPtr>>(OnNativeIOCompleted);
+            SafeThreadPoolIOHandle threadPoolHandle = Interop.mincore.CreateThreadpoolIo(handle, callback, IntPtr.Zero, IntPtr.Zero);
             if (threadPoolHandle.IsInvalid)
             {
-                int hr = Marshal.GetHRForLastWin32Error();
-                if (hr == System.HResults.E_HANDLE)         // Bad handle
+                int errorCode = Marshal.GetLastWin32Error();
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)         // Bad handle
                     throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
-                if (hr == System.HResults.E_INVALIDARG)     // Handle already bound or sync handle
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)     // Handle already bound or sync handle
                     throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, nameof(handle));
 
-                throw Marshal.GetExceptionForHR(hr, new IntPtr(-1));
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
 
             return new ThreadPoolBoundHandle(handle, threadPoolHandle);
@@ -165,6 +160,7 @@ namespace System.Threading
             return data;
         }
 
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static unsafe void OnNativeIOCompleted(IntPtr instance, IntPtr context, IntPtr overlappedPtr, uint ioResult, UIntPtr numberOfBytesTransferred, IntPtr ioPtr)
         {
             Win32ThreadPoolNativeOverlapped* overlapped = (Win32ThreadPoolNativeOverlapped*)overlappedPtr;

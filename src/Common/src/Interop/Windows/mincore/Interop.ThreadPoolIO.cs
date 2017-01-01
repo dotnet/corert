@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class mincore
     {
         [DllImport(Libraries.ThreadPool, SetLastError = true)]
-        internal static unsafe extern SafeThreadPoolIOHandle CreateThreadpoolIo(SafeHandle fl, [MarshalAs(UnmanagedType.FunctionPtr)] NativeIoCompletionCallback pfnio, IntPtr context, IntPtr pcbe);
+        internal static unsafe extern SafeThreadPoolIOHandle CreateThreadpoolIo(SafeHandle fl, IntPtr pfnio, IntPtr context, IntPtr pcbe);
 
         [DllImport(Libraries.ThreadPool)]
         internal static unsafe extern void CloseThreadpoolIo(IntPtr pio);
