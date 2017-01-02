@@ -412,15 +412,15 @@ namespace System.Threading
 
                 if (yieldsoFar % SLEEP_ONE_FREQUENCY == 0)
                 {
-                    Interop.mincore.Sleep(1);
+                    RuntimeThread.Sleep(1);
                 }
                 else if (yieldsoFar % SLEEP_ZERO_FREQUENCY == 0)
                 {
-                    Interop.mincore.Sleep(0);
+                    RuntimeThread.Sleep(0);
                 }
                 else
                 {
-                    SpinWait.Yield();
+                    RuntimeThread.Yield();
                 }
 
                 if (yieldsoFar % TIMEOUT_CHECK_FREQUENCY == 0)

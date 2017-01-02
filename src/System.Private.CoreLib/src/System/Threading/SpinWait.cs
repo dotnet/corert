@@ -130,11 +130,11 @@ namespace System.Threading
 
                 if ((yieldsSoFar % SLEEP_1_EVERY_HOW_MANY_TIMES) == (SLEEP_1_EVERY_HOW_MANY_TIMES - 1))
                 {
-                    Interop.mincore.Sleep(1);
+                    RuntimeThread.Sleep(1);
                 }
                 else if ((yieldsSoFar % SLEEP_0_EVERY_HOW_MANY_TIMES) == (SLEEP_0_EVERY_HOW_MANY_TIMES - 1))
                 {
-                    Interop.mincore.Sleep(0);
+                    RuntimeThread.Sleep(0);
                 }
                 else
                 {
@@ -267,11 +267,6 @@ namespace System.Threading
         public static void Spin(int spins)
         {
             RuntimeImports.RhSpinWait(spins);
-        }
-
-        public static void Yield()
-        {
-            RuntimeImports.RhYield();
         }
         #endregion
 

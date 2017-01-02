@@ -2879,7 +2879,7 @@ namespace System.Threading.Tasks
 
                 if (i == spinCount / 2)
                 {
-                    System.Threading.SpinWait.Yield();
+                    System.Threading.RuntimeThread.Yield();
                 }
                 else
                 {

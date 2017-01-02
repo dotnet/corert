@@ -6,6 +6,8 @@ using System.Diagnostics; // for TraceInformation
 using System.Threading;
 using System.Runtime.CompilerServices;
 
+// TODO: Delete this and use the implementation from CoreFX
+
 namespace System.Threading
 {
     public enum LockRecursionPolicy
@@ -1060,11 +1062,11 @@ namespace System.Threading
                 }
                 else if (i < (LockSpinCount + LockSleep0Count))
                 {
-                    Interop.mincore.Sleep(0);   // Give up my quantum.  
+                    RuntimeThread.Sleep(0);   // Give up my quantum.  
                 }
                 else
                 {
-                    Interop.mincore.Sleep(1);   // Give up my quantum.  
+                    RuntimeThread.Sleep(1);   // Give up my quantum.  
                 }
 
                 if (_myLock == 0 && Interlocked.CompareExchange(ref _myLock, 1, 0) == 0)
@@ -1091,11 +1093,11 @@ namespace System.Threading
             }
             else if (SpinCount < MaxSpinCount - 3)
             {
-                Interop.mincore.Sleep(0);
+                RuntimeThread.Sleep(0);
             }
             else
             {
-                Interop.mincore.Sleep(1);
+                RuntimeThread.Sleep(1);
             }
         }
 

@@ -587,7 +587,7 @@ namespace System.Threading
                     {
                         if (i == HOW_MANY_SPIN_BEFORE_YIELD / 2)
                         {
-                            SpinWait.Yield();
+                            RuntimeThread.Yield();
                         }
                         else
                         {
@@ -596,15 +596,15 @@ namespace System.Threading
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_1 == 0)
                     {
-                        Interop.mincore.Sleep(1);
+                        RuntimeThread.Sleep(1);
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_0 == 0)
                     {
-                        Interop.mincore.Sleep(0);
+                        RuntimeThread.Sleep(0);
                     }
                     else
                     {
-                        SpinWait.Yield();
+                        RuntimeThread.Yield();
                     }
 
                     if (i >= 100 && i % 10 == 0) // check the cancellation token if the user passed a very large spin count

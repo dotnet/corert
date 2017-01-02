@@ -1165,7 +1165,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             System.Threading.SpinWait.Spin(20);    // Wait a few dozen instructions to let another processor release lock.
 
                         else
-                            System.Threading.SpinWait.Yield();
+                            System.Threading.RuntimeThread.Yield();
 
                         if (Interlocked.CompareExchange(ref myLock, 1, 0) == 0)
                             return;

@@ -18,22 +18,16 @@ namespace System.Threading
 {
     internal static class LowLevelThread
     {
-        internal const int WAIT_OBJECT_0 = (int)Interop.Constants.WaitObject0;
-        internal const int WAIT_ABANDONED = (int)Interop.Constants.WaitAbandoned0;
-        internal const int MAX_WAITHANDLES = 64;
-        internal const int WAIT_TIMEOUT = (int)Interop.Constants.WaitTimeout;
-        internal const int WAIT_FAILED = unchecked((int)Interop.Constants.WaitFailed);
-
         internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
         {
             return WaitForMultipleObjects(&handle, 1, false, millisecondsTimeout);
         }
 
-        internal static unsafe int WaitForMultipleObjects(IntPtr[] handles, bool waitAll, int millisecondsTimeout)
+        internal static unsafe int WaitForMultipleObjects(IntPtr[] handles, int numHandles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = handles)
             {
-                return WaitForMultipleObjects(pHandles, handles.Length, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjects(pHandles, numHandles, waitAll, millisecondsTimeout);
             }
         }
 
@@ -53,6 +47,9 @@ namespace System.Threading
                     throw new NotSupportedException(SR.NotSupported_WaitAllSTAThread);
             }
 
+            RuntimeThread currentThread = RuntimeThread.CurrentThread;
+            currentThread.SetWaitSleepJoinState();
+
             int result;
             if (ReentrantWaitsEnabled)
             {
@@ -64,28 +61,75 @@ namespace System.Threading
                 result = (int)Interop.mincore.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
             }
 
-            if (result == WAIT_FAILED)
+            currentThread.ClearWaitSleepJoinState();
+
+            if (result == WaitHandle.WaitFailed)
             {
-                int error = (int)Interop.mincore.GetLastError();
-                switch (error)
+                int errorCode = Interop.mincore.GetLastError();
+                if (waitAll && errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
                 {
-                    case Interop.mincore.Errors.ERROR_INVALID_PARAMETER:
-                        throw new ArgumentException();
-
-                    case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
-                        throw new UnauthorizedAccessException();
-
-                    case Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                        throw new OutOfMemoryException();
-
-                    default:
-                        Exception ex = new Exception();
-                        ex.SetErrorCode(error);
-                        throw ex;
+                    /// Check for duplicate handles. This is a brute force O(n^2) search, which is intended since the typical
+                    /// array length is short enough that this would actually be faster than using a hash set. Also, the worst
+                    /// case is not so bad considering that the array length is limited by
+                    /// <see cref="WaitHandle.MaxWaitHandles"/>.
+                    for (int i = 1; i < numHandles; ++i)
+                    {
+                        IntPtr handle = pHandles[i];
+                        for (int j = 0; j < i; ++j)
+                        {
+                            if (pHandles[j] == handle)
+                            {
+                                throw new DuplicateWaitObjectException("waitHandles[" + i + ']');
+                            }
+                        }
+                    }
                 }
+
+                ThrowWaitFailedException(errorCode);
             }
 
             return result;
+        }
+
+        internal static void ThrowWaitFailedException(int errorCode)
+        {
+            switch (errorCode)
+            {
+                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                    throw InvalidOperationException.NewInvalidHandle();
+
+                case Interop.mincore.Errors.ERROR_INVALID_PARAMETER:
+                    throw new ArgumentException();
+
+                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                    throw new UnauthorizedAccessException();
+
+                case Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY:
+                    throw new OutOfMemoryException();
+
+                case Interop.mincore.Errors.ERROR_TOO_MANY_POSTS:
+                    /// Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/>. Note however, that
+                    /// if the semahpore already has the maximum signal count, the Windows SignalObjectAndWait function does not
+                    /// return an error, but this code is kept for historical reasons and to convey the intent, since ideally,
+                    /// that should be an error.
+                    throw new InvalidOperationException(SR.Threading_SemaphoreFullException);
+
+                case Interop.mincore.Errors.ERROR_NOT_OWNER:
+                    /// Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/> when signaling a mutex
+                    /// that is locked by a different thread. Note that if the mutex is already unlocked, the Windows
+                    /// SignalObjectAndWait function does not return an error.
+                    throw new SynchronizationLockException();
+                    // TODO: netstandard2.0 - After switching to ns2.0 contracts, use the below instead for compatibility
+                    //throw new ApplicationException(SR.Arg_SynchronizationLockException);
+
+                case Interop.mincore.Errors.ERROR_MUTANT_LIMIT_EXCEEDED:
+                    throw new OverflowException(SR.Overflow_MutexReacquireCount);
+
+                default:
+                    Exception ex = new Exception();
+                    ex.SetErrorCode(errorCode);
+                    throw ex;
+            }
         }
 
         internal enum ApartmentType
