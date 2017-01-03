@@ -10,6 +10,7 @@ using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
@@ -144,8 +145,27 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
+        public override bool InterestingForDynamicDependencyAnalysis
+        {
+            get
+            {
+                if (_type.Category == TypeFlags.Interface || _type.Category == TypeFlags.Class || _type.Category == TypeFlags.ValueType)
+                {
+                    if (!_type.IsRuntimeDeterminedSubtype && _type.HasGenericVirtualMethod())
+                        return !_type.HasInstantiation || !Type.IsGenericDefinition;
+                }
+
+                return false;
+            }
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
+            if (relocsOnly && _type.HasInstantiation && !_type.IsGenericDefinition)
+            {
+                factory.MetadataManager.GenericsHashtable.AddInstantiatedTypeEntry(factory, _type);
+            }
+
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
             objData.Alignment = objData.TargetPointerSize;
             objData.DefinedSymbols.Add(this);
@@ -503,6 +523,64 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
+        }
+
+        protected DependencyList ComputeGenericVirtualMethodEntries(NodeFactory factory)
+        {
+            DependencyList dependencyNodes = new DependencyList();
+
+            if ((_type.Category != TypeFlags.Class && _type.Category != TypeFlags.ValueType) || _type.IsGenericDefinition)
+                return dependencyNodes;
+
+            Debug.Assert(!_type.HasInstantiation || !Type.IsGenericDefinition);
+            Debug.Assert(!_type.IsInterface);
+
+            foreach (var method in _type.GetMethods())
+            {
+                if (!method.IsVirtual || !method.HasInstantiation)
+                    continue;
+
+                MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+
+                MethodDesc instantiatedMethodDecl = method;
+
+                if (method != slotDecl)
+                    instantiatedMethodDecl = slotDecl;
+
+                DependencyList newDependencies = factory.MetadataManager.GenericVirtualMethodTable.AddGenericVirtualMethodImplementation(
+                    factory,
+                    instantiatedMethodDecl,
+                    _type,
+                    method);
+
+                if (newDependencies != null)
+                    dependencyNodes.AddRange(newDependencies);
+            }
+
+            if (_type.HasGenericVirtualMethod())
+            {
+                foreach (var iface in _type.RuntimeInterfaces)
+                {
+                    foreach (var method in iface.GetMethods())
+                    {
+                        if (!method.HasInstantiation)
+                            continue;
+
+                        MethodDesc slotDecl = _type.ResolveInterfaceMethodToVirtualMethodOnType(method);
+
+                        DependencyList newDependencies = factory.MetadataManager.InterfaceGenericVirtualMethodTable.AddGenericVirtualMethodImplementation(
+                            factory,
+                            method,
+                            _type,
+                            slotDecl);
+
+                        if (newDependencies != null)
+                            dependencyNodes.AddRange(newDependencies);
+                    }
+                }
+            }
+
+            return dependencyNodes;
         }
 
         protected override void OnMarked(NodeFactory context)

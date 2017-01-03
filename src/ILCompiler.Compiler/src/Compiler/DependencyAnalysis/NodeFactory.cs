@@ -13,6 +13,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
+using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -186,6 +187,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new FatFunctionPointerNode(method);
             });
 
+            _methodLdtokenNodes = new NodeCache<MethodDesc, MethodLdtokenNode>(method =>
+            {
+                return new MethodLdtokenNode(method);
+            });
+
             _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
                 return new ShadowConcreteMethodNode<MethodCodeNode>(method,
@@ -228,6 +234,21 @@ namespace ILCompiler.DependencyAnalysis
             _interfaceDispatchCells = new NodeCache<MethodDesc, InterfaceDispatchCellNode>((MethodDesc method) =>
             {
                 return new InterfaceDispatchCellNode(method);
+            });
+
+            _runtimeMethodHandles = new NodeCache<MethodDesc, RuntimeMethodHandleNode>((MethodDesc method) =>
+            {
+                return new RuntimeMethodHandleNode(this, method);
+            });
+
+            _nativeLayoutInfoSignatureNodes = new NodeCache<Vertex, NativeLayoutSignatureNode>((Vertex signature) =>
+            {
+                return new NativeLayoutSignatureNode(signature);
+            });
+            
+            _nativeLayoutInfoTokenNodes = new NodeCache<Vertex, NativeLayoutOffsetNode>((Vertex nativeVertex) =>
+            {
+                return new NativeLayoutOffsetNode(nativeVertex);
             });
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
@@ -368,6 +389,27 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchCells.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;
+
+        internal RuntimeMethodHandleNode RuntimeMethodHandle(MethodDesc method)
+        {
+            return _runtimeMethodHandles.GetOrAdd(method);
+        }
+
+        private NodeCache<Vertex, NativeLayoutSignatureNode> _nativeLayoutInfoSignatureNodes;
+        
+        internal NativeLayoutSignatureNode NativeLayoutInfoSignature(Vertex signature)
+        {
+            return _nativeLayoutInfoSignatureNodes.GetOrAdd(signature);
+        }
+        
+        private NodeCache<Vertex, NativeLayoutOffsetNode> _nativeLayoutInfoTokenNodes;
+        
+        internal NativeLayoutOffsetNode NativeLayoutInfoToken(Vertex nativeVertex)
+        {
+            return _nativeLayoutInfoTokenNodes.GetOrAdd(nativeVertex);
+        }
+
         private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<Utf8String, byte[], int>>
         {
             bool IEqualityComparer<Tuple<Utf8String, byte[], int>>.Equals(Tuple<Utf8String, byte[], int> x, Tuple<Utf8String, byte[], int> y)
@@ -488,6 +530,13 @@ namespace ILCompiler.DependencyAnalysis
             return _fatFunctionPointers.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, MethodLdtokenNode> _methodLdtokenNodes;
+
+        internal MethodLdtokenNode MethodLdtoken(MethodDesc method)
+        {
+            return _methodLdtokenNodes.GetOrAdd(method);
+        }
+
         private NodeCache<MethodDesc, IMethodNode> _shadowConcreteMethods;
 
         public IMethodNode ShadowConcreteMethod(MethodDesc method)
@@ -506,7 +555,8 @@ namespace ILCompiler.DependencyAnalysis
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnThreadStaticBase" },
-            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" }
+            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" },
+            new string[] { "System.Runtime", "TypeLoaderExports", "GVMLookupForSlot" }
         };
 
         private ISymbolNode[] _helperEntrypointSymbols;
@@ -720,5 +770,7 @@ namespace ILCompiler.DependencyAnalysis
         EnsureClassConstructorRunAndReturnNonGCStaticBase,
         EnsureClassConstructorRunAndReturnThreadStaticBase,
         GetThreadStaticBaseForType,
+        GVMLookupForSlot,
+
     }
 }

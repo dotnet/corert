@@ -32,12 +32,12 @@ namespace Internal.Runtime
         DynamicInvokeTemplateData                   = 23,
 
         //Native layout blobs:
-        NativeLayoutInfo                            = 30, // Created by MDIL binder
-        NativeReferences                            = 31, // Created by MDIL binder
-        GenericsHashtable                           = 32, // Created by MDIL binder
-        NativeStatics                               = 33, // Created by MDIL binder
-        StaticsInfoHashtable                        = 34, // Created by MDIL binder
-        GenericMethodsHashtable                     = 35, // Created by MDIL binder
-        ExactMethodInstantiationsHashtable          = 36, // Created by MDIL binder
+        NativeLayoutInfo                            = 30,
+        NativeReferences                            = 31,
+        GenericsHashtable                           = 32,
+        NativeStatics                               = 33,
+        StaticsInfoHashtable                        = 34,
+        GenericMethodsHashtable                     = 35,
+        ExactMethodInstantiationsHashtable          = 36,
     }
 }

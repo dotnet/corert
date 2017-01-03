@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -98,6 +99,33 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
             }
+
+            if (_method.HasInstantiation)
+            {
+                if (factory.MetadataManager.ExactMethodInstantiations.AddExactMethodInstantiationEntry(factory, _method))
+                {
+                    // Ensure dependency nodes used by the signature are added to the graph
+                    if (dependencies == null)
+                        dependencies = new DependencyList();
+
+                    dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(_method.OwningType), "Exact method instantiation signature"));
+
+                    foreach(var arg in _method.Instantiation)
+                        dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(arg), "Exact method instantiation signature"));
+
+                    dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(_method.Signature.ReturnType), "Exact method instantiation signature"));
+
+                    for(int i = 0; i < _method.Signature.Length; i++)
+                        dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(_method.Signature[i]), "Exact method instantiation signature"));
+                }
+
+                if (_method.IsVirtual && !_method.IsRuntimeDeterminedExactMethod)
+                {
+                    // GVM dependency tracking
+                    dependencies.Add(new DependencyListEntry(factory.MethodLdtoken(_method), "GVM LDToken Support"));
+                }
+            }
+
 
             return dependencies;
         }
