@@ -21,12 +21,51 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
+#if GVM_RESOLUTION_TRACE
+        private string GetTypeNameDebug(RuntimeTypeHandle rtth)
+        {
+            string result;
+
+            if (RuntimeAugments.IsGenericType(rtth))
+            {
+                RuntimeTypeHandle[] typeArgumentsHandles;
+                RuntimeTypeHandle openTypeDef = RuntimeAugments.GetGenericInstantiation(rtth, out typeArgumentsHandles); ;
+                result = GetTypeNameDebug(openTypeDef) + "<";
+                for (int i = 0; i < typeArgumentsHandles.Length; i++)
+                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(typeArgumentsHandles[i]);
+                return result + ">";
+            }
+            else
+            {
+                Metadata.NativeFormat.MetadataReader reader;
+                Metadata.NativeFormat.TypeDefinitionHandle typeDefHandle;
+
+                // Check if we have metadata.
+                if (Instance.TryGetMetadataForNamedType(rtth, out reader, out typeDefHandle))
+                    return typeDefHandle.GetFullName(reader);
+            }
+
+            result = "EEType:0x";
+            ulong num = (ulong)RuntimeAugments.GetPointerFromTypeHandle(rtth);
+
+            int shift = IntPtr.Size * 8;
+            const string HexDigits = "0123456789ABCDEF";
+            while (shift > 0)
+            {
+                shift -= 4;
+                int digit = (int)((num >> shift) & 0xF);
+                result += HexDigits[digit];
+            }
+            return result;
+        }
+#endif
+
         public bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
         {
             MethodNameAndSignature methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
 
-#if REFLECTION_EXECUTION_TRACE
-            ReflectionExecutionLogger.WriteLine("GVM resolution starting for " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name + "(...)  on a target of type " + GetTypeNameDebug(targetHandle) + " ...");
+#if GVM_RESOLUTION_TRACE
+            Debug.WriteLine("GVM resolution starting for " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name + "(...)  on a target of type " + GetTypeNameDebug(targetHandle) + " ...");
 #endif
 
             if (RuntimeAugments.IsInterface(declaringType))
@@ -83,14 +122,19 @@ namespace Internal.Runtime.TypeLoader
         {
             uint numTargetImplementations = entryParser.GetUnsigned();
 
+#if GVM_RESOLUTION_TRACE
+            Debug.WriteLine(" :: Declaring type = " + GetTypeNameDebug(declaringType));
+            Debug.WriteLine(" :: Target type = " + GetTypeNameDebug(openTargetTypeHandle));
+#endif
+
             for (uint j = 0; j < numTargetImplementations; j++)
             {
                 uint nameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
                 MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, nameAndSigToken);
                 RuntimeTypeHandle targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
-#if REFLECTION_EXECUTION_TRACE
-                ReflectionExecutionLogger.WriteLine("    Searching for GVM implementation on targe type = " + GetTypeNameDebug(targetTypeHandle));
+#if GVM_RESOLUTION_TRACE
+                Debug.WriteLine("    Searching for GVM implementation on targe type = " + GetTypeNameDebug(targetTypeHandle));
 #endif
 
                 uint numIfaceImpls = entryParser.GetUnsigned();
@@ -98,6 +142,10 @@ namespace Internal.Runtime.TypeLoader
                 for (uint k = 0; k < numIfaceImpls; k++)
                 {
                     RuntimeTypeHandle implementingTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+
+#if GVM_RESOLUTION_TRACE
+                    Debug.WriteLine("      -> Current implementing type = " + GetTypeNameDebug(implementingTypeHandle));
+#endif
 
                     uint numIfaceSigs = entryParser.GetUnsigned();
 
@@ -118,13 +166,16 @@ namespace Internal.Runtime.TypeLoader
 
                         if (TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref ifaceSigParser, moduleHandle, targetTypeInstantiation, null, out currentIfaceTypeHandle))
                         {
+#if GVM_RESOLUTION_TRACE
+                            Debug.WriteLine("         -> Current interface on type = " + GetTypeNameDebug(currentIfaceTypeHandle));
+#endif
                             Debug.Assert(!currentIfaceTypeHandle.IsNull());
 
                             if ((!variantDispatch && declaringType.Equals(currentIfaceTypeHandle)) ||
                                 (variantDispatch && RuntimeAugments.IsAssignableFrom(declaringType, currentIfaceTypeHandle)))
                             {
-#if REFLECTION_EXECUTION_TRACE
-                                ReflectionExecutionLogger.WriteLine("    " + (declaringType.Equals(currentIfaceTypeHandle) ? "Exact" : "Variant-compatible") + " match found on this target type!");
+#if GVM_RESOLUTION_TRACE
+                                Debug.WriteLine("    " + (declaringType.Equals(currentIfaceTypeHandle) ? "Exact" : "Variant-compatible") + " match found on this target type!");
 #endif
                                 // We found the GVM slot target for the input interface GVM call, so let's update the interface GVM slot and return success to the caller
                                 declaringType = targetTypeHandle;
@@ -197,8 +248,8 @@ namespace Internal.Runtime.TypeLoader
             RuntimeTypeHandle[] targetTypeInstantiation;
             openTargetTypeHandle = GetOpenTypeDefinition(targetTypeHandle, out targetTypeInstantiation);
 
-#if REFLECTION_EXECUTION_TRACE
-            ReflectionExecutionLogger.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name);
+#if GVM_RESOLUTION_TRACE
+            Debug.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name);
 #endif
 
             foreach (IntPtr moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
@@ -427,8 +478,8 @@ namespace Internal.Runtime.TypeLoader
             int hashCode = openCallingTypeHandle.GetHashCode();
             hashCode = ((hashCode << 13) ^ hashCode) ^ openTargetTypeHandle.GetHashCode();
 
-#if REFLECTION_EXECUTION_TRACE
-            ReflectionExecutionLogger.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetTypeHandle) + "." + callingMethodNameAndSignature.Name);
+#if GVM_RESOLUTION_TRACE
+            Debug.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetTypeHandle) + "." + callingMethodNameAndSignature.Name);
 #endif
 
             foreach (IntPtr moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))

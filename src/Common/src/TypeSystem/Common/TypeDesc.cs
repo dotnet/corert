@@ -601,5 +601,19 @@ namespace Internal.TypeSystem
                 return HasInstantiation && IsTypeDefinition;
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether this type has any generic virtual methods.
+        /// </summary>
+        public bool HasGenericVirtualMethod()
+        {
+            foreach (var method in GetMethods())
+            {
+                if (method.IsVirtual && method.HasInstantiation)
+                    return true;
+            }
+
+            return false;
+        }
     }
 }
