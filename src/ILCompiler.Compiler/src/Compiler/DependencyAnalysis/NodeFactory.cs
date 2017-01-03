@@ -241,14 +241,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new RuntimeMethodHandleNode(this, method);
             });
 
-            _nativeLayoutInfoSignatureNodes = new NodeCache<Vertex, NativeLayoutInfoSignatureNode>((Vertex signature) =>
+            _nativeLayoutInfoSignatureNodes = new NodeCache<Vertex, NativeLayoutSignatureNode>((Vertex signature) =>
             {
-                return new NativeLayoutInfoSignatureNode(signature);
+                return new NativeLayoutSignatureNode(signature);
             });
             
-            _nativeLayoutInfoTokenNodes = new NodeCache<Vertex, NativeLayoutInfoTokenNode>((Vertex nativeVertex) =>
+            _nativeLayoutInfoTokenNodes = new NodeCache<Vertex, NativeLayoutOffsetNode>((Vertex nativeVertex) =>
             {
-                return new NativeLayoutInfoTokenNode(nativeVertex);
+                return new NativeLayoutOffsetNode(nativeVertex);
             });
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
@@ -396,16 +396,16 @@ namespace ILCompiler.DependencyAnalysis
             return _runtimeMethodHandles.GetOrAdd(method);
         }
 
-        private NodeCache<Vertex, NativeLayoutInfoSignatureNode> _nativeLayoutInfoSignatureNodes;
+        private NodeCache<Vertex, NativeLayoutSignatureNode> _nativeLayoutInfoSignatureNodes;
         
-        internal NativeLayoutInfoSignatureNode NativeLayoutInfoSignature(Vertex signature)
+        internal NativeLayoutSignatureNode NativeLayoutInfoSignature(Vertex signature)
         {
             return _nativeLayoutInfoSignatureNodes.GetOrAdd(signature);
         }
         
-        private NodeCache<Vertex, NativeLayoutInfoTokenNode> _nativeLayoutInfoTokenNodes;
+        private NodeCache<Vertex, NativeLayoutOffsetNode> _nativeLayoutInfoTokenNodes;
         
-        internal NativeLayoutInfoTokenNode NativeLayoutInfoToken(Vertex nativeVertex)
+        internal NativeLayoutOffsetNode NativeLayoutInfoToken(Vertex nativeVertex)
         {
             return _nativeLayoutInfoTokenNodes.GetOrAdd(nativeVertex);
         }

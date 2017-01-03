@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         private ExternalReferencesTableNode _externalReferences;
 
         private Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>> _gvmImplemenations;
-        private Dictionary<MethodDesc, NativeLayoutInfoTokenNode> _methodDescToNativeLayoutInfoToken;
+        private Dictionary<MethodDesc, NativeLayoutOffsetNode> _methodDescToNativeLayoutInfoToken;
 
         public GenericVirtualMethodTableNode(ExternalReferencesTableNode externalReferences)
         {
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             _externalReferences = externalReferences;
 
             _gvmImplemenations = new Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>>();
-            _methodDescToNativeLayoutInfoToken = new Dictionary<MethodDesc, NativeLayoutInfoTokenNode>();
+            _methodDescToNativeLayoutInfoToken = new Dictionary<MethodDesc, NativeLayoutOffsetNode>();
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

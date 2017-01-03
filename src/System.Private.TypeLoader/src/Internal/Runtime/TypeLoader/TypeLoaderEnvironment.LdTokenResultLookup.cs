@@ -128,8 +128,8 @@ namespace Internal.Runtime.TypeLoader
 
 #if CORERT
             // The native layout info signature is a pair. 
-            // The first is a pointer that points to a module handle indirection cell (TypeManager indirection cell in CoreRT).
-            // The second is the offset into the native layout info blob in that module, where the native signature is encoded.
+            // The first is a pointer that points to the TypeManager indirection cell.
+            // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
             IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)fieldData->NativeLayoutInfoSignature;
 
             RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
@@ -259,8 +259,8 @@ namespace Internal.Runtime.TypeLoader
 
 #if CORERT
             // The native layout info signature is a pair. 
-            // The first is a pointer that points to a module handle indirection cell (TypeManager indirection cell in CoreRT).
-            // The second is the offset into the native layout info blob in that module, where the native signature is encoded.
+            // The first is a pointer that points to the TypeManager indirection cell.
+            // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
             IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)methodData->NativeLayoutInfoSignature;
 
             RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(

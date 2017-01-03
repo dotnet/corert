@@ -11,14 +11,19 @@ using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class NativeLayoutInfoSignatureNode : ObjectNode, ISymbolNode
+    /// <summary>
+    /// Represents a native layout signature. A signature is a pair where the first item is a pointer
+    /// to the TypeManager that contains the native layout info blob of interest, and the second item
+    /// is an offset into that native layout info blob
+    /// </summary>
+    class NativeLayoutSignatureNode : ObjectNode, ISymbolNode
     {
         private static int s_counter = 0;
 
         private int _id;
         private Vertex _nativeSignature;
 
-        public NativeLayoutInfoSignatureNode(Vertex nativeSignature)
+        public NativeLayoutSignatureNode(Vertex nativeSignature)
         {
             _nativeSignature = nativeSignature;
             _id = s_counter++;

@@ -24,8 +24,8 @@ namespace ILCompiler.DependencyAnalysis
         private Dictionary<MethodDesc, HashSet<MethodDesc>> _interfaceGvmSlots;
         private Dictionary<MethodDesc, Dictionary<TypeDesc, HashSet<int>>> _interfaceImpls;
 
-        private Dictionary<MethodDesc, NativeLayoutInfoTokenNode> _methodDescToNativeLayoutInfoToken;
-        private Dictionary<TypeDesc, NativeLayoutInfoTokenNode> _typeDescToNativeLayoutInfoToken;
+        private Dictionary<MethodDesc, NativeLayoutOffsetNode> _methodDescToNativeLayoutInfoToken;
+        private Dictionary<TypeDesc, NativeLayoutOffsetNode> _typeDescToNativeLayoutInfoToken;
 
         public InterfaceGenericVirtualMethodTableNode(ExternalReferencesTableNode externalReferences)
         {
@@ -34,8 +34,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _interfaceGvmSlots = new Dictionary<MethodDesc, HashSet<MethodDesc>>();
             _interfaceImpls = new Dictionary<MethodDesc, Dictionary<TypeDesc, HashSet<int>>>();
-            _methodDescToNativeLayoutInfoToken = new Dictionary<MethodDesc, NativeLayoutInfoTokenNode>();
-            _typeDescToNativeLayoutInfoToken = new Dictionary<TypeDesc, NativeLayoutInfoTokenNode>();
+            _methodDescToNativeLayoutInfoToken = new Dictionary<MethodDesc, NativeLayoutOffsetNode>();
+            _typeDescToNativeLayoutInfoToken = new Dictionary<TypeDesc, NativeLayoutOffsetNode>();
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

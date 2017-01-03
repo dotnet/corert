@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     class RuntimeMethodHandleNode : ObjectNode, ISymbolNode
     {
         MethodDesc _targetMethod;
-        NativeLayoutInfoSignatureNode _nativeSignatureNode;
+        NativeLayoutSignatureNode _nativeSignatureNode;
 
         public RuntimeMethodHandleNode(NodeFactory factory, MethodDesc targetMethod)
         {

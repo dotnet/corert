@@ -12,6 +12,10 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    /// <summary>
+    /// This method node is used for dependency tracking, like in the case of GVMs for example.
+    /// This node does NOT generate any data or any relocs.
+    /// </summary>
     internal class MethodLdtokenNode : ObjectNode, IMethodNode
     {
         private MethodDesc _method;
@@ -167,7 +171,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                // TODO
+                // TODO: universal generics
             }
         }
 

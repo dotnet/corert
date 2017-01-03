@@ -16,14 +16,14 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents an offset into the native layout info blob.
     /// </summary>
-    internal sealed class NativeLayoutInfoTokenNode : ObjectNode, ISymbolNode
+    internal sealed class NativeLayoutOffsetNode : ObjectNode, ISymbolNode
     {
         private static int s_counter = 0;
 
         private int _id;
         private Vertex _nativeVertex;
 
-        public NativeLayoutInfoTokenNode(Vertex nativeVertex)
+        public NativeLayoutOffsetNode(Vertex nativeVertex)
         {
             _nativeVertex = nativeVertex;
             _id = s_counter++;
