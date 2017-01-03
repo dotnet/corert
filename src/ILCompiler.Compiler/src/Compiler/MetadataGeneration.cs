@@ -46,6 +46,8 @@ namespace ILCompiler
 
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
+        internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
+
         public MetadataGeneration(NodeFactory factory)
         {
             _nodeFactory = factory;
@@ -68,26 +70,32 @@ namespace ILCompiler
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var externalReferencesTableNode = new ExternalReferencesTableNode();
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
 
-            var typeMapNode = new TypeMetadataMapNode(externalReferencesTableNode);
+            var typeMapNode = new TypeMetadataMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
 
-            var cctorContextMapNode = new ClassConstructorContextMap(externalReferencesTableNode);
+            var cctorContextMapNode = new ClassConstructorContextMap(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
 
-            var invokeMapNode = new ReflectionInvokeMapNode(externalReferencesTableNode);
+            var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
 
-            var arrayMapNode = new ArrayMapNode(externalReferencesTableNode);
+            var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
 
-            var fieldMapNode = new ReflectionFieldMapNode(externalReferencesTableNode);
+            var fieldMapNode = new ReflectionFieldMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FieldAccessMap), fieldMapNode, fieldMapNode, fieldMapNode.EndSymbol);
+
+            var externalNativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), externalNativeReferencesTableNode, externalNativeReferencesTableNode, externalNativeReferencesTableNode.EndSymbol);
+
+            NativeLayoutInfo = new NativeLayoutInfoNode(externalNativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), NativeLayoutInfo, NativeLayoutInfo, NativeLayoutInfo.EndSymbol);
 
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
-                externalReferencesTableNode, externalReferencesTableNode, externalReferencesTableNode.EndSymbol);
+                commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
         }
 
         private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
