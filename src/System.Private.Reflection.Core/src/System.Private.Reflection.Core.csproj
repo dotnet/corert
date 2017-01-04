@@ -24,7 +24,7 @@
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
   </ItemGroup>
