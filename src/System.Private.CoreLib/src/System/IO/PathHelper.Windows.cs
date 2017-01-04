@@ -11,7 +11,7 @@ namespace System.IO
     /// <summary>
     /// Wrapper to help with path normalization.
     /// </summary>
-    unsafe internal class PathHelper
+    internal class PathHelper
     {
         // Can't be over 8.3 and be a short name
         private const int MaxShortName = 12;
@@ -186,7 +186,7 @@ namespace System.IO
             return !PathInternal.IsDevice(ref buffer) && buffer.Length > 1 && buffer[0] == '\\' && buffer[1] == '\\';
         }
 
-        private static void GetFullPathName(string path, ref StringBuffer fullPath)
+        private static unsafe void GetFullPathName(string path, ref StringBuffer fullPath)
         {
             // If the string starts with an extended prefix we would need to remove it from the path before we call GetFullPathName as
             // it doesn't root extended paths correctly. We don't currently resolve extended paths, so we'll just assert here.
@@ -354,7 +354,7 @@ namespace System.IO
                 }
 
                 // Strip out the prefix and return the string
-                StringBuffer bufferToUse = success ? outputBuffer : inputBuffer;
+                ref StringBuffer bufferToUse = ref Choose(success, ref outputBuffer, ref inputBuffer);
 
                 // Switch back from \\?\ to \\.\ if necessary
                 if (wasDotDevice)
@@ -386,6 +386,13 @@ namespace System.IO
             {
                 inputBuffer.Free();
             }
+        }
+
+        // Helper method to workaround lack of operator ? support for ref values
+        private static ref StringBuffer Choose(bool condition, ref StringBuffer s1, ref StringBuffer s2)
+        {
+            if (condition) return ref s1;
+            else return ref s2;
         }
     }
 }
