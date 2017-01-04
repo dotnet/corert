@@ -89,8 +89,6 @@
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationBuilder.cs" />
@@ -101,6 +99,9 @@
     <Compile Include="Compiler\CppCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NativeLayoutInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfFrozenObjectsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
