@@ -2474,8 +2474,11 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
         { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
-        private CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_** ppIndirection)
-        { throw new NotImplementedException("getJustMyCodeHandle"); }
+        private CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
+        {
+            ppIndirection = null;
+            return null;
+        }
         private void GetProfilingHandle([MarshalAs(UnmanagedType.Bool)] ref bool pbHookFunction, ref void* pProfilerHandle, [MarshalAs(UnmanagedType.Bool)] ref bool pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
 
