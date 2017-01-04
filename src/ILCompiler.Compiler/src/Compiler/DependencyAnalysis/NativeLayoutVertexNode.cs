@@ -56,6 +56,22 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    /// <summary>
+    /// Any NativeLayoutVertexNode that needs to expose the native layout Vertex after it has been saved
+    /// needs to derive from this NativeLayoutSavedVertexNode class.
+    /// 
+    /// A nativelayout Vertex should typically only be exposed for Vertex offset fetching purposes, after the native
+    /// writer is saved (Vertex offsets get generated when the native writer gets saved).
+    /// 
+    /// It is important for whoever derives from this class to produce unified Vertices. Calling the WriteVertex method
+    /// multiple times should always produce the same exact unified Vertex each time (hence the assert in SetSavedVertex).
+    /// All nativewriter.Getxyz methods return unified Vertices.
+    /// 
+    /// When exposing a saved Vertex that is a result of a section placement operation (Section.Place(...)), always make 
+    /// sure a unified Vertex is being placed in the section (Section.Place creates a PlacedVertex structure that wraps the 
+    /// Vertex to be placed, so if the Vertex to be placed is unified, there will only be a single unified PlacedVertex 
+    /// structure created for that placed Vertex).
+    /// </summary>
     internal abstract class NativeLayoutSavedVertexNode : NativeLayoutVertexNode
     {
         public Vertex SavedVertex { get; private set; }
@@ -67,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutVertexNode
+    internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutSavedVertexNode
     {
         private MethodDesc _method;
         private NativeLayoutTypeSignatureVertexNode _containingTypeSig;
@@ -120,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             Vertex signature = GetNativeWriter(factory).GetMethodSignature((uint)flags, 0, containingType, methodNameAndSig, args);
-            return factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(signature);
+            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(signature));
         }
     }
 
