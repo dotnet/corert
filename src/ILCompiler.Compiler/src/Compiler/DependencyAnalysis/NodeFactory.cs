@@ -283,6 +283,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new StringAllocatorMethodNode(constructor);
             });
+
+            NativeLayout = new NativeLayoutHelper(this);
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);

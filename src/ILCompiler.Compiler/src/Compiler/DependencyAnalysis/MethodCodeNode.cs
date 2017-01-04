@@ -99,6 +99,16 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
             }
 
+            if (_method.HasInstantiation)
+            {
+                var exactMethodInstantiationDependencies = ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(factory, _method);
+                if (exactMethodInstantiationDependencies != null)
+                {
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.AddRange(exactMethodInstantiationDependencies);
+                }
+            }
+
             return dependencies;
         }
 
