@@ -102,6 +102,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericsHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfFrozenObjectsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
