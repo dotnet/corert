@@ -47,6 +47,7 @@ namespace ILCompiler
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
+        internal GenericsHashtableNode GenericsHashtable { get; private set; }
 
         public MetadataGeneration(NodeFactory factory)
         {
@@ -93,6 +94,9 @@ namespace ILCompiler
             NativeLayoutInfo = new NativeLayoutInfoNode(externalNativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), NativeLayoutInfo, NativeLayoutInfo, NativeLayoutInfo.EndSymbol);
 
+            GenericsHashtable = new GenericsHashtableNode(externalNativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), GenericsHashtable, GenericsHashtable, GenericsHashtable.EndSymbol);
+
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
                 commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
@@ -105,6 +109,14 @@ namespace ILCompiler
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
                 AddGeneratedType(eetypeNode.Type);
+
+                // If this is an instantiated non-canonical generic type, add it to the generic instantiations hashtable
+                if (eetypeNode.Type.HasInstantiation && !eetypeNode.Type.IsGenericDefinition)
+                {
+                    if (!eetypeNode.Type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        GenericsHashtable.AddInstantiatedTypeEntry(_nodeFactory, eetypeNode.Type);
+                }
+
                 return;
             }
 
