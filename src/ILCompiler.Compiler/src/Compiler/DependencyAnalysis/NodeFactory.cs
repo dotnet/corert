@@ -13,6 +13,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
+using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -235,6 +236,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new InterfaceDispatchMapNode(type);
             });
 
+            _runtimeMethodHandles = new NodeCache<MethodDesc, RuntimeMethodHandleNode>((MethodDesc method) =>
+            {
+                return new RuntimeMethodHandleNode(this, method);
+            });
+
             _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
             {
                 var dispatchMap = InterfaceDispatchMap(type);
@@ -368,6 +374,13 @@ namespace ILCompiler.DependencyAnalysis
         internal InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method)
         {
             return _interfaceDispatchCells.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;
+
+        internal RuntimeMethodHandleNode RuntimeMethodHandle(MethodDesc method)
+        {
+            return _runtimeMethodHandles.GetOrAdd(method);
         }
 
         private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<Utf8String, byte[], int>>
