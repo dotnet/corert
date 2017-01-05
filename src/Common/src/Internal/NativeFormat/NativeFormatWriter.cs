@@ -456,6 +456,12 @@ namespace Internal.NativeFormat
             InstantiationTypeSignature sig = new InstantiationTypeSignature(typeDef, arguments);
             return Unify(sig);
         }
+
+        public Vertex GetMDArrayTypeSignature(Vertex elementType, uint rank, uint[] bounds, uint[] lowerBounds)
+        {
+            MDArrayTypeSignature sig = new MDArrayTypeSignature(elementType, rank, bounds, lowerBounds);
+            return Unify(sig);
+        }
     }
 
     class PlacedVertex : Vertex
@@ -1062,6 +1068,87 @@ namespace Internal.NativeFormat
             for (uint iArg = 0; iArg < _args.Length; iArg++)
                 if (!Object.Equals(_args[iArg], other._args[iArg]))
                     return false;
+
+            return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class MDArrayTypeSignature : Vertex
+    {
+        private Vertex _arrayElementType;
+        private uint _rank;
+        private uint[] _bounds;
+        private uint[] _lowerBounds;
+
+        public MDArrayTypeSignature(Vertex arrayElementType, uint rank, uint[] bounds, uint[] lowerBounds)
+        {
+            Debug.Assert(bounds != null && lowerBounds != null);
+
+            _arrayElementType = arrayElementType;
+            _rank = rank;
+            _bounds = bounds;
+            _lowerBounds = lowerBounds;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            NativeWriter.TypeSignatureCompressor compressor = new NativeWriter.TypeSignatureCompressor(writer);
+
+            writer.WriteUnsigned((uint)TypeSignatureKind.MultiDimArray | ((uint)_rank << 4));
+            _arrayElementType.Save(writer);
+
+            writer.WriteUnsigned((uint)_bounds.Length);
+            foreach (uint b in _bounds)
+                writer.WriteUnsigned(b);
+
+            writer.WriteUnsigned((uint)_lowerBounds.Length);
+            foreach (uint b in _lowerBounds)
+                writer.WriteUnsigned(b);
+
+            compressor.Pack(this);
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 79 + 971 * (int)_rank + 83 * _arrayElementType.GetHashCode();
+
+            foreach (uint b in _bounds)
+                hash += (hash << 5) + (int)b * 19;
+
+            foreach (uint b in _lowerBounds)
+                hash += (hash << 5) + (int)b * 19;
+
+            return hash;
+        }
+
+        public override bool Equals(object obj)
+        {
+            MDArrayTypeSignature other = obj as MDArrayTypeSignature;
+            if (other == null)
+                return false;
+
+            if (!Object.Equals(_arrayElementType, other._arrayElementType) ||
+                _rank != other._rank ||
+                _bounds.Length != other._bounds.Length ||
+                _lowerBounds.Length != other._lowerBounds.Length)
+            {
+                return false;
+            }
+            for (int i = 0; i < _bounds.Length; i++)
+            {
+                if (_bounds[i] != other._bounds[i])
+                    return false;
+            }
+            for (int i = 0; i < _lowerBounds.Length; i++)
+            {
+                if (_lowerBounds[i] != other._lowerBounds[i])
+                    return false;
+            }
 
             return true;
         }
