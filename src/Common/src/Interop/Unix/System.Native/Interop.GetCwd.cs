@@ -58,7 +58,7 @@ internal static partial class Interop
             // If it returned non-null, the null-terminated path is in the buffer
             if (result != null)
             {
-                return PInvokeMarshal.PtrToStringAnsi((IntPtr)ptr);
+                return Marshal.PtrToStringAnsi((IntPtr)ptr);
             }
 
             // Otherwise, if it failed due to the buffer being too small, return null;

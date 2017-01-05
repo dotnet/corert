@@ -217,3 +217,21 @@ internal partial class Interop
 #endif
     }
 }
+
+namespace System.Runtime.InteropServices
+{
+    internal class Marshal
+    {
+        public static int GetLastWin32Error()
+        {
+            return PInvokeMarshal.GetLastWin32Error();
+        }
+
+#if PLATFORM_UNIX
+        public static unsafe String PtrToStringAnsi(IntPtr ptr)
+        {
+            return PInvokeMarshal.PtrToStringAnsi(ptr);
+        }
+#endif
+    }
+}
