@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32;
@@ -14,6 +15,7 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll")]
         internal static extern IntPtr GetProcAddress(IntPtr hModule, byte* lpProcName);
 
+        [PInvokeStaticResolution]
         [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", EntryPoint = "LoadLibraryExW")]
         internal static extern IntPtr LoadLibraryEx(char* lpFileName, IntPtr hFile, int dwFlags);
 
