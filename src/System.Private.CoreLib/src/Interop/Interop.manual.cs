@@ -124,6 +124,9 @@ internal partial class Interop
         [DllImport("api-ms-win-core-synch-l1-1-0.dll")]
         internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 
+        [DllImport("api-ms-win-core-synch-l1-2-0.dll", EntryPoint = "Sleep")]
+        internal extern static void _Sleep(uint milliseconds);
+
         //
         // Wrapper for calling RaiseFailFastException
         //
@@ -169,13 +172,12 @@ internal partial class Interop
                     IntPtr pContextRecord,
                     uint dwFlags);
 
-        private static readonly System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
         internal static void Sleep(uint milliseconds)
         {
             if (milliseconds == 0)
                 System.Threading.SpinWait.Yield();
             else
-                s_sleepHandle.WaitOne((int)milliseconds);
+                _Sleep(milliseconds);
         }
     }
     internal unsafe partial class WinRT
