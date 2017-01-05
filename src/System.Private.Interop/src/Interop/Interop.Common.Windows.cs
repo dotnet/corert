@@ -28,10 +28,8 @@ namespace System.Runtime.InteropServices
         {
 #if TARGET_CORE_API_SET
             internal const string CORE_DEBUG = "api-ms-win-core-debug-l1-1-0.dll";
-            internal const string CORE_ERRORHANDLING = "api-ms-win-core-errorhandling-l1-1-0.dll";
 #else
         internal const string CORE_DEBUG = "kernel32.dll";
-        internal const string CORE_ERRORHANDLING = "kernel32.dll";
 #endif //TARGET_CORE_API_SET
         }
 #if CORECLR
@@ -53,17 +51,6 @@ namespace System.Runtime.InteropServices
                 OutputDebugString(pOutputString);
             }
         }
-
-
-        [DllImport(Libraries.CORE_ERRORHANDLING, EntryPoint = "GetLastError")]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static extern int GetLastWin32Error();
-
-        [DllImport(Libraries.CORE_ERRORHANDLING, EntryPoint = "SetLastError")]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static extern void SetLastWin32Error(int errorCode);
 #endif 
     }
 }

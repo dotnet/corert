@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices
 #pragma warning restore 0649
         }
 
-        [DllImport(Libraries.CORE_LOCALIZATION, EntryPoint = "FormatMessageW")]
+        [DllImport(Libraries.CORE_LOCALIZATION, EntryPoint = "FormatMessageW", SetLastError = true)]
         [McgGeneratedNativeCallCodeAttribute]
         internal static extern unsafe int FormatMessage(
             int dwFlags,
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                if (ExternalInterop.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER) return false;
+                if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER) return false;
                 return true;
             }
         }
