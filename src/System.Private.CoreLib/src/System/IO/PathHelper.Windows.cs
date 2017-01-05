@@ -207,7 +207,7 @@ namespace System.IO
                 if (result == 0)
                 {
                     // Failure, get the error and throw
-                    int errorCode = Marshal.GetLastWin32Error();
+                    int errorCode = PInvokeMarshal.GetLastWin32Error();
                     if (errorCode == 0)
                         errorCode = Interop.mincore.Errors.ERROR_BAD_PATHNAME;
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
@@ -312,7 +312,7 @@ namespace System.IO
                     if (result == 0)
                     {
                         // Look to see if we couldn't find the file
-                        int error = Marshal.GetLastWin32Error();
+                        int error = PInvokeMarshal.GetLastWin32Error();
                         if (error != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND && error != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
                         {
                             // Some other failure, give up

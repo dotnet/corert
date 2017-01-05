@@ -18,7 +18,7 @@ namespace System.IO
         /// </summary>
         internal static Exception GetExceptionForLastWin32Error()
         {
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = PInvokeMarshal.GetLastWin32Error();
             return GetExceptionForWin32Error(errorCode, string.Empty);
         }
 
@@ -28,7 +28,7 @@ namespace System.IO
         /// </summary>
         internal static Exception GetExceptionForLastWin32Error(string path)
         {
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = PInvokeMarshal.GetLastWin32Error();
             return GetExceptionForWin32Error(errorCode, path);
         }
 

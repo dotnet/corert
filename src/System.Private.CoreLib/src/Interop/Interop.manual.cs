@@ -217,34 +217,3 @@ internal partial class Interop
 #endif
     }
 }
-
-namespace System.Runtime.InteropServices
-{
-    internal class Marshal
-    {
-        // https://github.com/dotnet/corert/issues/2419
-        // TODO: Need to have access to Marshal.GetLastWin32Error in CoreLib. Add stubbed out implementation for now.
-        public static int GetLastWin32Error()
-        {
-            return -1;
-        }
-
-#if PLATFORM_UNIX
-        public static unsafe String PtrToStringAnsi(IntPtr ptr)
-        {
-            if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-
-            int len = Internal.Runtime.CompilerHelpers.InteropHelpers.strlen((byte*)ptr);
-            if (len == 0)
-            {
-                return string.Empty;
-            }
-
-            return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
-        }
-#endif
-    }
-}

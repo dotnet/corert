@@ -11,12 +11,12 @@ namespace System.Runtime.InteropServices
     {
         public static int GetLastWin32Error()
         {
-            return McgMarshal.s_lastWin32Error;
+            return PInvokeMarshal.GetLastWin32Error();
         }
 
         internal static void SetLastWin32Error(int errorCode)
         {
-            McgMarshal.s_lastWin32Error = errorCode;
+            PInvokeMarshal.SetLastWin32Error(errorCode);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]

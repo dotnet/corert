@@ -44,16 +44,13 @@ namespace System.Runtime.InteropServices
     [CLSCompliant(false)]
     public static partial class McgMarshal
     {
-        [ThreadStatic]
-        internal static int s_lastWin32Error;
-
 #if ENABLE_WINRT
         private static object s_thunkPoolHeap;
 #endif
 
         public static void SaveLastWin32Error()
         {
-            s_lastWin32Error = ExternalInterop.GetLastWin32Error();
+            PInvokeMarshal.SaveLastWin32Error();
         }
 
         public static bool GuidEquals(ref Guid left, ref Guid right)
