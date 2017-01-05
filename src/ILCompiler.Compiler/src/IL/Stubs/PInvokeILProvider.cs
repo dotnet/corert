@@ -30,7 +30,7 @@ namespace Internal.IL
 
         public bool IsStubRequired(MethodDesc method)
         {
-            return PInvokeILEmitter.IsStubRequired(method, _pInvokeILEmitterConfiguration);
+            return Internal.TypeSystem.Interop.MarshalHelpers.IsStubRequired(method, _pInvokeILEmitterConfiguration);
         }
     }
 }

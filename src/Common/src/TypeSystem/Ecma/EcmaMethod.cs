@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
@@ -414,6 +415,31 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
 
             return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes);
+        }
+
+        public override ParameterMetadata[] GetParameterMetadata()
+        {
+            MetadataReader metadataReader = MetadataReader;
+            
+            // Spot check the enums match
+            Debug.Assert((int)ParameterAttributes.In == (int)ParameterAttributes.In);
+            Debug.Assert((int)ParameterAttributes.Out == (int)ParameterAttributes.Out);
+            Debug.Assert((int)ParameterAttributes.Optional == (int)ParameterAttributes.Optional);
+            Debug.Assert((int)ParameterAttributes.HasDefault == (int)ParameterAttributes.HasDefault);
+            Debug.Assert((int)ParameterAttributes.HasFieldMarshal == (int)ParameterAttributes.HasFieldMarshal);
+
+
+            ParameterHandleCollection parameterHandles = metadataReader.GetMethodDefinition(_handle).GetParameters();
+            ParameterMetadata[] parameterMetadataArray = new ParameterMetadata[parameterHandles.Count];
+            int index = 0;
+            foreach (ParameterHandle parameterHandle in parameterHandles)
+            {
+                Parameter parameter = metadataReader.GetParameter(parameterHandle);
+                TypeDesc marshalAs = null; // TODO: read marshalAs argument;
+                ParameterMetadata data = new ParameterMetadata(parameter.SequenceNumber, (ParameterAttributes)parameter.Attributes, marshalAs);
+                parameterMetadataArray[index++] = data;
+            }
+            return parameterMetadataArray;
         }
     }
 }
