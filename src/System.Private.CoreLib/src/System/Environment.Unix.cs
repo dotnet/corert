@@ -71,7 +71,7 @@ namespace System
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));
 
-            return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
+            return PInvokeMarshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
         }
     }
 }
