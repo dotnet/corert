@@ -98,6 +98,7 @@
     <Compile Include="System\Runtime\CompilerServices\IsVolatile.cs" />
     <Compile Include="System\Runtime\CompilerServices\ManuallyManagedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\MethodImplAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\PInvokeStaticResolutionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />

@@ -131,6 +131,12 @@ namespace Internal.IL.Stubs
             // TODO: Test and make this work on non-Windows
             if (!method.Context.Target.IsWindows)
                 return false;
+            
+            // Some PInvokes must resolved statically if they're called as part of startup and we can't reflect on types yet
+            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "PInvokeStaticResolutionAttribute"))
+            {
+                return false;
+            }
 
             if (configuration.ForceLazyResolution)
                 return true;

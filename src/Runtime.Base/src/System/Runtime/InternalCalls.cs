@@ -397,12 +397,15 @@ namespace System.Runtime
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void RhpSignalFinalizationComplete();
 
+        [PInvokeStaticResolution]
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void RhpAcquireCastCacheLock();
 
+        [PInvokeStaticResolution]
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void RhpReleaseCastCacheLock();
 
+        [PInvokeStaticResolution]
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal extern static long PalGetTickCount64();
 
