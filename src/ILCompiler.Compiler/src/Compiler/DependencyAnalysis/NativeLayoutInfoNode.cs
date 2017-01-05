@@ -242,7 +242,20 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
-                // TODO case Internal.TypeSystem.TypeFlags.Array:
+                case Internal.TypeSystem.TypeFlags.Array:
+                    {
+                        ArrayType arrayType = type as ArrayType;
+
+                        Vertex elementType = GetNativeLayoutInfoSignatureForTypeSignature(factory, arrayType.ElementType);
+
+                        // Skip bounds and lobounds (TODO)
+                        var bounds = Array.Empty<uint>();
+                        var lobounds = Array.Empty<uint>();
+
+                        signature = _writer.GetMDArrayTypeSignature(elementType, (uint)arrayType.Rank, bounds, lobounds);
+                    }
+                    break;
+
                 // TODO case Internal.TypeSystem.TypeFlags.FunctionPointer:
 
                 default:
