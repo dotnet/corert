@@ -74,9 +74,6 @@ internal partial class Interop
 #pragma warning restore 649
     internal partial class mincore
     {
-        [DllImport("api-ms-win-core-handle-l1-1-0.dll", EntryPoint = "CloseHandle", CharSet = CharSet.Unicode)]
-        internal extern static bool CloseHandle(IntPtr hObject);
-
         [DllImport("api-ms-win-core-com-l1-1-0.dll")]
         internal extern static int CoGetApartmentType(out _APTTYPE pAptType, out _APTTYPEQUALIFIER pAptQualifier);
 

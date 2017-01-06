@@ -132,11 +132,17 @@ namespace Internal.Runtime.TypeLoader
                         // Skip encoded bounds and lobounds
                         uint boundsCount = parser.GetUnsigned();
                         while (boundsCount > 0)
+                        {
                             parser.GetUnsigned();
+                            boundsCount--;
+                        }
 
                         uint loBoundsCount = parser.GetUnsigned();
                         while (loBoundsCount > 0)
+                        {
                             parser.GetUnsigned();
+                            loBoundsCount--;
+                        }
 
                         return _typeSystemContext.GetArrayType(elementType, rank);
                     }

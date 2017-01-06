@@ -28,6 +28,7 @@ internal partial class Interop
             internal const int ERROR_MORE_DATA = 0xEA;
             internal const int ERROR_NO_MORE_ITEMS = 0x103;
             internal const int ERROR_OPERATION_ABORTED = 0x3E3;
+            internal const int ERROR_NOT_FOUND = 0x490;
             internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         }
     }

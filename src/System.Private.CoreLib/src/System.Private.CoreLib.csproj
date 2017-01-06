@@ -297,6 +297,8 @@
     <Compile Include="System\IO\FileMode.cs" />
     <Compile Include="System\IO\FileNotFoundException.cs" />
     <Compile Include="System\IO\FileShare.cs" />
+    <Compile Include="System\IO\FileOptions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\FileStream.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\PathTooLongException.cs" />
     <!-- TODO: Enable System.Path in ProjectN TFS build -->
@@ -672,8 +674,8 @@
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\RegistryHive.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
@@ -716,6 +718,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
@@ -785,14 +789,42 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
+    <Compile Include="System\IO\FileStream.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\FileStreamCompletionSource.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\IO\Path.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\IO\PathHelper.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\IO\PathInternal.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\IO\PathInternal.Windows.StringBuffer.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\StringBuffer.cs" />
     <Compile Include="System\IO\Win32Marshal.cs" />
+    <Compile Include="System\Threading\DeferredDisposableLifetime.cs" />
+    <Compile Include="System\Threading\IOCompletionCallback.cs" />
+    <Compile Include="System\Threading\NativeOverlapped.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CancelIoEx.cs">
+      <Link>Interop\Windows\mincore\Interop.CancelIoEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CreateFile.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>Interop\Windows\mincore\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FileTypes.cs">
+      <Link>Interop\Windows\mincore\Interop.FileTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FlushFileBuffers.cs">
+      <Link>Interop\Windows\mincore\Interop.FlushFileBuffers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs">
+      <Link>Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
       <Link>Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
@@ -805,6 +837,39 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTempPathW.cs">
       <Link>Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.LockFile.cs">
+      <Link>Interop\Windows\mincore\Interop.LockFile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs">
+      <Link>Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SecurityOptions.cs">
+      <Link>Interop\Windows\mincore\Interop.SecurityOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetEndOfFile.cs">
+      <Link>Interop\Windows\mincore\Interop.SetEndOfFile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetErrorMode.cs">
+      <Link>Interop\Windows\mincore\Interop.SetErrorMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetFileInformationByHandle.cs">
+      <Link>Interop\Windows\mincore\Interop.SetFileInformationByHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetFilePointerEx.cs">
+      <Link>Interop\Windows\mincore\Interop.SetFilePointerEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPoolIO.cs">
+      <Link>Interop\Windows\mincore\Interop.ThreadPoolIO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs">
+      <Link>Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
@@ -820,6 +885,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CloseHandle.cs">
+      <Link>Interop\Windows\mincore\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
       <Link>Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
@@ -844,6 +912,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="System\TimeZoneInfo.Unix.cs" />
     <!--
     <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
@@ -859,6 +928,7 @@
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\Path.Unix.cs" />
     <Compile Include="System\IO\PathInternal.Unix.cs" />
     <Compile Include="System\Threading\ThreadPool.Unix.cs" />
@@ -905,17 +975,56 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.FLock.cs">
+      <Link>Interop\Unix\System.Native\Interop.FLock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.FSync.cs">
+      <Link>Interop\Unix\System.Native\Interop.FSync.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.FTruncate.cs">
+      <Link>Interop\Unix\System.Native\Interop.FTruncate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetUnixName.cs">
       <Link>Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.LSeek.cs">
+      <Link>Interop\Unix\System.Native\Interop.LSeek.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.MksTemps.cs">
       <Link>Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Open.cs">
+      <Link>Interop\Unix\System.Native\Interop.Open.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.OpenFlags.cs">
+      <Link>Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Interop\Unix\System.Native\Interop.PathConf.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Permissions.cs">
+      <Link>Interop\Unix\System.Native\Interop.Permissions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
+      <Link>Interop\Unix\System.Native\Interop.PosixFAdvise.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Read.cs">
+      <Link>Interop\Unix\System.Native\Interop.Read.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Stat.cs">
+      <Link>Interop\Unix\System.Native\Interop.Stat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Unlink.cs">
+      <Link>Interop\Unix\System.Native\Interop.Unlink.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Write.cs">
+      <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Dummy globalization implementation -->

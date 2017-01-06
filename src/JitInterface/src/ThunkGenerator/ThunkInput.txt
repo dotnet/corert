@@ -100,7 +100,7 @@ const CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC,const void*
 int*,ref int
 unsigned int*,ref uint
 
-CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_**,void**
+CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_*,void**
 
 ICorJitInfo::ProfileBuffer**,ref ProfileBuffer*,void**
 

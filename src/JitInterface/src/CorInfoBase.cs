@@ -270,7 +270,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __canGetCookieForPInvokeCalliSig(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* szMetaSig);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        delegate CORINFO_JUST_MY_CODE_HANDLE_* __getJustMyCodeHandle(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_** ppIndirection);
+        delegate CORINFO_JUST_MY_CODE_HANDLE_* __getJustMyCodeHandle(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate void __GetProfilingHandle(IntPtr _this, IntPtr* ppException, [MarshalAs(UnmanagedType.Bool)] ref bool pbHookFunction, ref void* pProfilerHandle, [MarshalAs(UnmanagedType.Bool)] ref bool pbIndirectedHandles);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
@@ -2118,7 +2118,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static CORINFO_JUST_MY_CODE_HANDLE_* _getJustMyCodeHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_** ppIndirection)
+        static CORINFO_JUST_MY_CODE_HANDLE_* _getJustMyCodeHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
         {
             var _this = GetThis(thisHandle);
             try

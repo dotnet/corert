@@ -10,16 +10,9 @@ namespace System.IO
 {
     public static partial class Path
     {
-        public static readonly char DirectorySeparatorChar = '/';
-        public static readonly char VolumeSeparatorChar = '/';
-        public static readonly char PathSeparator = ':';
-
-        private const string DirectorySeparatorCharAsString = "/";
-
         public static char[] GetInvalidFileNameChars() => new char[] { '\0', '/' };
 
-        internal static readonly int MaxPath = Interop.Sys.MaxPath;
-        private static readonly int MaxLongPath = MaxPath;
+        public static char[] GetInvalidPathChars() => new char[] { '\0' };
 
         private static readonly bool s_isMac = Interop.Sys.GetUnixName() == "OSX";
 
@@ -47,12 +40,12 @@ namespace System.IO
             Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,
                 "Either we've removed characters, or the string should be unmodified from the input path.");
 
-            if (collapsedString.Length > MaxPath)
+            if (collapsedString.Length > Interop.Sys.MaxPath)
             {
                 throw new PathTooLongException(SR.IO_PathTooLong);
             }
 
-            string result = collapsedString.Length == 0 ? DirectorySeparatorCharAsString : collapsedString;
+            string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
 
             return result;
         }
@@ -125,15 +118,15 @@ namespace System.IO
                     }
                 }
 
-                if (++componentCharCount > PathInternal.MaxComponentLength)
+                if (++componentCharCount > Interop.Sys.MaxName)
                 {
                     throw new PathTooLongException(SR.IO_PathTooLong);
                 }
 
                 // Normalize the directory separator if needed
-                if (c != Path.DirectorySeparatorChar && c == Path.AltDirectorySeparatorChar)
+                if (c != PathInternal.DirectorySeparatorChar && c == PathInternal.AltDirectorySeparatorChar)
                 {
-                    c = Path.DirectorySeparatorChar;
+                    c = PathInternal.DirectorySeparatorChar;
                     flippedSeparator = true;
                 }
 
@@ -169,7 +162,7 @@ namespace System.IO
             return
                 string.IsNullOrEmpty(path) ? DefaultTempPath :
                 PathInternal.IsDirectorySeparator(path[path.Length - 1]) ? path :
-                path + DirectorySeparatorChar;
+                path + PathInternal.DirectorySeparatorChar;
         }
 
         public static string GetTempFileName()
@@ -197,13 +190,13 @@ namespace System.IO
                 return false;
 
             PathInternal.CheckInvalidPathChars(path);
-            return path.Length > 0 && path[0] == DirectorySeparatorChar;
+            return path.Length > 0 && path[0] == PathInternal.DirectorySeparatorChar;
         }
 
         public static string GetPathRoot(string path)
         {
             if (path == null) return null;
-            return IsPathRooted(path) ? DirectorySeparatorCharAsString : String.Empty;
+            return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : String.Empty;
         }
 
         /// <summary>Gets whether the system is case-sensitive.</summary>
