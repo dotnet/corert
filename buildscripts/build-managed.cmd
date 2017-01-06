@@ -45,7 +45,7 @@ dir /b "%__DotNetCliPath%\sdk"
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% %__ExtraMsBuildParams% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:NuPkgRid=win7-x64 /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
+%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% %__ExtraMsBuildParams% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:NuPkgRid=win7-x64 /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__BuildLog%"
 IF NOT ERRORLEVEL 1 (
   findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__BuildLog%"
   goto AfterILCompilerBuild
