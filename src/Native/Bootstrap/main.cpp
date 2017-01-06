@@ -217,12 +217,9 @@ void* RtRHeaderWrapper();
 extern "C" void __fail_fast()
 {
     // TODO: FailFast
-    throw "__fail_fast";
-}
-
-extern "C" void RhpEtwExceptionThrown()
-{
-    throw "RhpEtwExceptionThrown";
+    printf("Call to an unimplemented runtime method; execution cannot continue.\n");
+    printf("Method: __fail_fast\n");
+    exit(-1);
 }
 
 extern "C" bool REDHAWK_PALAPI PalInit();
