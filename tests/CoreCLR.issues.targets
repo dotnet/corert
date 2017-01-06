@@ -1244,12 +1244,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b423721\b423721\b423721.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_403582\dev10_403582\dev10_403582.*" />
 
-    <!-- Incompatible exception name generated for generic exceptions -->
-    <!-- https://github.com/dotnet/corert/issues/2290 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\general_class_static01\general_class_static01.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\general_struct_instance01\general_struct_instance01.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\general_struct_static01\general_struct_static01.*" />
-
     <!-- Metadata generation failure due to garbage fields due to bad base class libraries -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\throwisfirstinstruction\throwisfirstinstruction.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nestedTryRegionsWithSameOffset1\nestedTryRegionsWithSameOffset1.*" />
