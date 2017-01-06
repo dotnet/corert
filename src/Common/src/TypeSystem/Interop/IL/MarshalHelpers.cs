@@ -99,8 +99,9 @@ namespace Internal.TypeSystem.Interop
             if (!method.Context.Target.IsWindows)
                 return false;
 
-            if (configuration.ForceLazyResolution)
-                return true;
+            bool? forceLazyResolution = configuration.ForceLazyResolution;
+            if (forceLazyResolution.HasValue)
+                return forceLazyResolution.Value;
 
             // Determine whether this call should be made through a lazy resolution or a static reference
             // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).

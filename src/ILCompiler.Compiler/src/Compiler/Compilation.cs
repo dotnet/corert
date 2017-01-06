@@ -58,7 +58,13 @@ namespace ILCompiler
 
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType());
 
-            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(!nodeFactory.CompilationModuleGroup.IsSingleFileCompilation));
+            bool? forceLazyPInvokeResolution = null;
+            // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
+            if (this is CppCodegenCompilation) forceLazyPInvokeResolution = false;
+            // TODO: Workaround missing PInvokes with multifile compilation
+            if (!nodeFactory.CompilationModuleGroup.IsSingleFileCompilation) forceLazyPInvokeResolution = true;
+            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution));
+
             _methodILCache = new ILProvider(PInvokeILProvider);
         }
 
