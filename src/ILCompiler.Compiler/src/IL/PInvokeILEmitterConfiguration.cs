@@ -9,9 +9,9 @@ namespace Internal.IL
     public class PInvokeILEmitterConfiguration
     {
         private int _nativeMethodIdCounter = 0;
-        public bool ForceLazyResolution { get; private set; }
+        public bool? ForceLazyResolution { get; private set; }
 
-        public PInvokeILEmitterConfiguration(bool forceLazyResolution)
+        public PInvokeILEmitterConfiguration(bool? forceLazyResolution)
         {
             ForceLazyResolution = forceLazyResolution;
         }
