@@ -2407,7 +2407,7 @@ namespace System
         private unsafe Object GetValue(int* pIndices, int rank)
         {
             if (this.Rank != rank)
-                throw new ArgumentException(SR.Arg_RankIndices);
+                throw new ArgumentException(SR.Arg_RankIndices, nameof(rank));
 
             Debug.Assert(!IsSzArray);
 
@@ -2543,7 +2543,7 @@ namespace System
         private unsafe void SetValue(Object value, int* pIndices, int rank)
         {
             if (this.Rank != rank)
-                throw new ArgumentException(SR.Arg_RankIndices);
+                throw new ArgumentException(SR.Arg_RankIndices, nameof(rank));
 
             Debug.Assert(!IsSzArray);
 

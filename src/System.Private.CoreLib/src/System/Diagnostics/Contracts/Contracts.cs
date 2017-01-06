@@ -629,7 +629,7 @@ namespace System.Diagnostics.Contracts
 #if INSIDE_CLR
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
 #else
-                throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
+                throw new ArgumentException($"{nameof(fromInclusive)} must be less than or equal to {nameof(toExclusive)}.");
 #endif
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
@@ -691,7 +691,7 @@ namespace System.Diagnostics.Contracts
 #if INSIDE_CLR
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
 #else
-                throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
+                throw new ArgumentException($"{nameof(fromInclusive)} must be less than or equal to {nameof(toExclusive)}.");
 #endif
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));

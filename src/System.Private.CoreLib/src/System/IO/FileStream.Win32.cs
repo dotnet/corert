@@ -558,7 +558,7 @@ namespace System.IO
                 else
                 {
                     if (errorCode == ERROR_INVALID_PARAMETER)
-                        throw new ArgumentException(SR.Arg_HandleNotSync, "_fileHandle");
+                        throw new ArgumentException(SR.Arg_HandleNotSync, nameof(_fileHandle));
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }

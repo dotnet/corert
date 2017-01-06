@@ -172,7 +172,7 @@ namespace System.Globalization
             if (ticks < MinSupportedDateTime.Ticks || ticks > MaxSupportedDateTime.Ticks)
             {
                 throw new ArgumentOutOfRangeException(
-                                "time",
+                                nameof(ticks),
                                 String.Format(CultureInfo.InvariantCulture, SR.ArgumentOutOfRange_CalendarRange,
                                 MinSupportedDateTime, MaxSupportedDateTime));
             }

@@ -48,7 +48,7 @@ namespace System
             }
             if (!(value is Byte))
             {
-                throw new ArgumentException(SR.Arg_MustBeByte);
+                throw new ArgumentException(SR.Arg_MustBeByte, nameof(value));
             }
 
             return _value - (((Byte)value)._value);

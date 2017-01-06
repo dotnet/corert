@@ -56,7 +56,7 @@ internal static partial class Interop
                 //
                 if (bytes == null || bytes.Length != 44)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidREG_TZI_FORMAT, "bytes");
+                    throw new ArgumentException(SR.Argument_InvalidREG_TZI_FORMAT, nameof(bytes));
                 }
                 Bias = ToInt32(bytes, 0);
                 StandardBias = ToInt32(bytes, 4);

@@ -648,7 +648,7 @@ namespace System.Runtime.InteropServices
         public static unsafe HSTRING StringToHString(string sourceString)
         {
             if (sourceString == null)
-                throw new ArgumentNullException("sourceString", SR.Null_HString);
+                throw new ArgumentNullException(nameof(sourceString), SR.Null_HString);
 
             return StringToHStringInternal(sourceString);
         }

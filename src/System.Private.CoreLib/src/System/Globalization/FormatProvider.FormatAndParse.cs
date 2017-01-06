@@ -493,7 +493,7 @@ namespace System.Globalization
             {
                 if (str == null)
                 {
-                    throw new ArgumentNullException("String");
+                    throw new ArgumentNullException(nameof(str));
                 }
                 Contract.EndContractBlock();
                 Debug.Assert(info != null, "");

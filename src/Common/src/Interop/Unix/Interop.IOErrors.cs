@@ -149,7 +149,7 @@ internal static partial class Interop
                 return new OperationCanceledException();
 
             case Error.EFBIG:
-                return new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_FileLengthTooBig);
+                return new ArgumentOutOfRangeException(nameof(path), SR.ArgumentOutOfRange_FileLengthTooBig);
 
             case Error.EEXIST:
                 if (!string.IsNullOrEmpty(path))

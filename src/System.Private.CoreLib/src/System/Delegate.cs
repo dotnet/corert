@@ -135,7 +135,7 @@ namespace System
         protected void InitializeClosedInstance(object firstParameter, IntPtr functionPointer)
         {
             if (firstParameter == null)
-                throw new ArgumentException(SR.Arg_DlgtNullInst);
+                throw new ArgumentException(SR.Arg_DlgtNullInst, nameof(firstParameter));
 
             m_functionPointer = functionPointer;
             m_firstParameter = firstParameter;
@@ -147,7 +147,7 @@ namespace System
             // This method is like InitializeClosedInstance, but it handles ALL cases. In particular, it handles generic method with fun function pointers.
 
             if (firstParameter == null)
-                throw new ArgumentException(SR.Arg_DlgtNullInst);
+                throw new ArgumentException(SR.Arg_DlgtNullInst, nameof(firstParameter));
 
             if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
             {
@@ -331,7 +331,7 @@ namespace System
                 return source;
 
             if (!InternalEqualTypes(source, value))
-                throw new ArgumentException("The types of 'source' and 'value' should match.");
+                throw new ArgumentException($"The types of '{nameof(source)}' and '{nameof(value)}' should match.");
 
             return source.RemoveImpl(value);
         }

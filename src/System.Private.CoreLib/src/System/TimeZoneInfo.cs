@@ -1091,11 +1091,11 @@ namespace System
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             if (source.Length == 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidSerializedString, "source");
+                throw new ArgumentException(SR.Argument_InvalidSerializedString, nameof(source));
             }
             Contract.EndContractBlock();
 
@@ -1960,7 +1960,7 @@ namespace System
         {
             if (info == null)
             {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 
@@ -1977,7 +1977,7 @@ namespace System
         {
             if (info == null)
             {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
 
             _id = (String)info.GetValue("Id", typeof(String));
@@ -2862,7 +2862,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
                 Contract.EndContractBlock();
 
@@ -2878,7 +2878,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
 
                 _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime));
@@ -3135,7 +3135,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
                 Contract.EndContractBlock();
 
@@ -3151,7 +3151,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
 
                 _timeOfDay = (DateTime)info.GetValue("TimeOfDay", typeof(DateTime));

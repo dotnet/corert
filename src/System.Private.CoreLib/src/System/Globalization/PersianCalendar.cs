@@ -123,7 +123,7 @@ namespace System.Globalization
             if (ticks < minDate.Ticks || ticks > maxDate.Ticks)
             {
                 throw new ArgumentOutOfRangeException(
-                            "time",
+                            nameof(ticks),
                             String.Format(
                                 CultureInfo.InvariantCulture,
                                 SR.ArgumentOutOfRange_CalendarRange,

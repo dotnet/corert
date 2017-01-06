@@ -57,7 +57,7 @@ namespace System.Collections
         public static int GetPrime(int min)
         {
             if (min < 0)
-                throw new ArgumentException(SR.Arg_HTCapacityOverflow);
+                throw new ArgumentException(SR.Arg_HTCapacityOverflow, nameof(min));
             Contract.EndContractBlock();
 
             for (int i = 0; i < primes.Length; i++)

@@ -337,7 +337,7 @@ namespace System.Text
                                 }
                                 else
                                 {
-                                    throw new ArgumentOutOfRangeException("chunkCount", SR.ArgumentOutOfRange_Index);
+                                    throw new ArgumentOutOfRangeException(nameof(chunkCount), SR.ArgumentOutOfRange_Index);
                                 }
                             }
                         }
@@ -506,7 +506,7 @@ namespace System.Text
             }
             if (charCount < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
             }
 
             if (value == null)
@@ -519,7 +519,7 @@ namespace System.Text
             }
             if (charCount > value.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_Index);
             }
 
             if (charCount == 0)
@@ -1262,7 +1262,7 @@ namespace System.Text
 
             if (charCount < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
             }
 
             if (startIndex > value.Length - charCount)
@@ -2060,7 +2060,7 @@ namespace System.Text
         private void ExpandByABlock(int minBlockCharCount)
         {
             if ((minBlockCharCount + Length) > m_MaxCapacity)
-                throw new ArgumentOutOfRangeException("requiredLength", SR.ArgumentOutOfRange_SmallCapacity);
+                throw new ArgumentOutOfRangeException(nameof(minBlockCharCount), SR.ArgumentOutOfRange_SmallCapacity);
 
             // Compute the length of the new block we need 
             // We make the new chunk at least big enough for the current need (minBlockCharCount)
@@ -2113,7 +2113,7 @@ namespace System.Text
         private void MakeRoom(int index, int count, out StringBuilder chunk, out int indexInChunk, bool doneMoveFollowingChars)
         {
             if (count + Length > m_MaxCapacity)
-                throw new ArgumentOutOfRangeException("requiredLength", SR.ArgumentOutOfRange_SmallCapacity);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_SmallCapacity);
 
             chunk = this;
             while (chunk.m_ChunkOffset > index)
