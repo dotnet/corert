@@ -45,7 +45,7 @@ namespace Internal.IL.Stubs
                 if (parameterIndex == parameterMetadataArray.Length || i < parameterMetadataArray[parameterIndex].Index)
                 {
                     // if we don't have metadata for the parameter, create a dummy one
-                    parameterMetadata = new ParameterMetadata(i, ParameterAttributes.None, null);
+                    parameterMetadata = new ParameterMetadata(i, ParameterMetadataAttributes.None, null);
                 }
                 else if (i == parameterMetadataArray[parameterIndex].Index)
                 {
@@ -97,6 +97,13 @@ namespace Internal.IL.Stubs
             PInvokeMetadata importMetadata = _methodData.ImportMetadata;
             PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration = _methodData.PInvokeILEmitterConfiguration;
 
+            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke 
+            if ((importMetadata.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
+            {
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                            _methodData.PInvokeMarshal.GetKnownMethod("ClearLastWin32Error", null)));
+            }
+
             if (MarshalHelpers.UseLazyResolution(targetMethod, importMetadata.Module, pinvokeILEmitterConfiguration))
             {
                 MetadataType lazyHelperType = targetMethod.Context.GetHelperType("InteropHelpers");
@@ -127,6 +134,14 @@ namespace Internal.IL.Stubs
                     new PInvokeTargetNativeMethod(targetMethod.OwningType, nativeSig, nativeImportMetadata, pinvokeILEmitterConfiguration.GetNextNativeMethodId());
 
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(nativeMethod));
+            }
+            
+            // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.SaveLastWin32Error so that last error can be used later 
+            // by calling PInvokeMarshal.GetLastWin32Error
+            if ((importMetadata.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
+            {
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                            _methodData.PInvokeMarshal.GetKnownMethod("SaveLastWin32Error", null)));
             }
 
             unmarshallingCodestream.Emit(ILOpcode.ret);

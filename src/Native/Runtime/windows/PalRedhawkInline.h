@@ -88,7 +88,20 @@ FORCEINLINE void * PalInterlockedCompareExchangePointer(_Inout_ _Interlocked_ope
 
 #endif // BIT64
 
-#if defined(_X86_) || defined(_AMD64_)
+EXTERN_C __declspec(dllimport) unsigned long __stdcall GetLastError();
+FORCEINLINE int PalGetLastError()
+{
+    return (int)GetLastError();
+}
+
+EXTERN_C __declspec(dllimport) void  __stdcall SetLastError(unsigned long error);
+FORCEINLINE void PalSetLastError(int error)
+{
+    SetLastError((unsigned long)error);
+}
+
+
+#if defined(_X86_) || defined(_AMD64_)	
 
 // fxsave/fxrstor instruction support, CpuIdEx Function: 1, EDX:24
 #define X86_FXSR    (1<<24)
