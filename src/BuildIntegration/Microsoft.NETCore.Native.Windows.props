@@ -49,8 +49,7 @@ See the LICENSE file in the project root for more information.
     <AdditionalNativeLibrary Include="ole32.lib" />
     <AdditionalNativeLibrary Include="oleaut32.lib" />
     <AdditionalNativeLibrary Include="uuid.lib" />
-    <AdditionalNativeLibrary Include="odbc32.lib" />
-    <AdditionalNativeLibrary Include="odbccp32.lib" />
+    <AdditionalNativeLibrary Include="bcrypt.lib" />
   </ItemGroup>
 
   <ItemGroup>
