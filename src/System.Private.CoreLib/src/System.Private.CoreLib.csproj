@@ -474,6 +474,7 @@
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
+    <Compile Include="System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionAttributes.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
