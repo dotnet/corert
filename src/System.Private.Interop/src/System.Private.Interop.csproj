@@ -32,7 +32,7 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" >
       <Aliases>CoreFX_Collections</Aliases>
     </ReferencePath>
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Contracts.dll" />

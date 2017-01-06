@@ -18,7 +18,7 @@
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
   <PropertyGroup>
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <SkipCommonResourcesIncludes Condition="'$(IsProjectNLibrary)' == 'true'">true</SkipCommonResourcesIncludes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Augments\TypeForwarders.cs" />
