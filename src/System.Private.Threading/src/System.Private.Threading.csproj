@@ -18,13 +18,17 @@
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Internal\Threading\SpinLockTraceCallbacksImplementation.cs" />
     <Compile Include="Internal\Threading\TaskTraceCallbacksImplementation.cs" />
