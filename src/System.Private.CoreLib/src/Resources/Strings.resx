@@ -2053,4 +2053,46 @@
   <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
     <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
   </data>
+  <data name="Argument_StreamNotSeekable" xml:space="preserve">
+    <value>Stream was not seekable.</value>
+  </data>
+  <data name="Arg_ResourceFileUnsupportedVersion" xml:space="preserve">
+    <value>The ResourceReader class does not know how to read this version of .resources files.</value>
+  </data>
+  <data name="Resources_StreamNotValid" xml:space="preserve">
+    <value>Stream is not a valid resource file.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesHeaderCorrupted" xml:space="preserve">
+    <value>Corrupt .resources file. Unable to read resources from this file because of invalid header information. Try regenerating the .resources file.</value>
+  </data>
+  <data name="Argument_StreamNotReadable" xml:space="preserve">
+    <value>Stream was not readable.</value>
+  </data>
+  <data name="BadImageFormat_NegativeStringLength" xml:space="preserve">
+    <value>Corrupt .resources file. String length must be non-negative.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesNameInvalidOffset" xml:space="preserve">
+    <value>Corrupt .resources file. The Invalid offset into name section is .</value>
+  </data>
+  <data name="BadImageFormat_TypeMismatch" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified type doesn't match the available data in the stream.</value>
+  </data>
+  <data name="BadImageFormat_ResourceNameCorrupted_NameIndex" xml:space="preserve">
+    <value>Corrupt .resources file. The resource name for name index that extends past the end of the stream is </value>
+  </data>
+  <data name="BadImageFormat_ResourcesDataInvalidOffset" xml:space="preserve">
+    <value>Corrupt .resources file. Invalid offset  into data section is </value>
+  </data>
+  <data name="Format_Bad7BitInt32" xml:space="preserve">
+    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
+  </data>
+  <data name="BadImageFormat_InvalidType" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified type doesn't exist.</value>
+  </data>
+  <data name="ResourceReaderIsClosed" xml:space="preserve">
+    <value>ResourceReader is closed.</value>
+  </data>
+  <data name="Arg_MissingManifestResourceException" xml:space="preserve">
+    <value>Unable to find manifest resource.</value>
+  </data>
 </root>

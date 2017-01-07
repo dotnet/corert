@@ -17,7 +17,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm'" />
   <PropertyGroup>
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <SkipCommonResourcesIncludes Condition="'$(IsProjectNLibrary)' == 'true'">true</SkipCommonResourcesIncludes>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <UseSyncTable>true</UseSyncTable>
@@ -50,7 +50,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\SR.Core.cs">
+    <Compile Include="..\..\Common\src\System\SR.Core.cs" Condition="'$(IsProjectNLibrary)' == 'true'">
       <Link>Resources\Common</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Threading\Tasks\TaskToApm.cs">
@@ -196,6 +196,12 @@
     <Compile Include="System\Reflection\TypeInfo.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
+    <!-- TODO: Enable ResourceManager in ProjectN TFS build -->
+    <Compile Include="System\Resources\MissingManifestResourceException.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Resources\NeutralResourcesLanguageAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Resources\ResourceManager.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Resources\ResourceReader.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Action.cs" />
@@ -468,6 +474,7 @@
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
+    <Compile Include="System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionAttributes.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
