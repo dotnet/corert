@@ -2,22 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.InteropServices;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
-using global::Internal.IO;
+using Internal.Runtime;
+using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
 
-using global::Internal.Runtime.Augments;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Metadata.NativeFormat;
-
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Execution.MethodInvokers;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Execution.MethodInvokers;
+using Internal.NativeFormat;
 
 namespace Internal.Reflection.Execution
 {
@@ -47,23 +48,47 @@ namespace Internal.Reflection.Execution
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            Stream resultFromFile = ReadFileFromAppPackage(name);
+#if ENABLE_WINRT
+            Stream resultFromFile = ReadFileFromAppDirectory(name);
             if (resultFromFile != null)
                 return resultFromFile;
+#endif // ENABLE_WINRT
 
-            // If that didn't work, this was an embedded resource. The toolchain should have extracted the resource
-            // to an external file under a _Resources directory inside the app package. Go retrieve it now.
+            // If that didn't work, this was an embedded resource. The toolchain should have embedded the
+            // resource in an assembly. Go retrieve it now.
             LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
             for (int i = 0; i < resourceInfos.Count; i++)
             {
                 ResourceInfo resourceInfo = resourceInfos[i];
                 if (name == resourceInfo.Name)
                 {
-                    String extractedResourceFile = ExtractedResourcesDirectory + @"\" + resourceInfo.Index + ".rsrc";
-                    return ReadFileFromAppPackage(extractedResourceFile);
+                    return ReadResourceFromBlob(resourceInfo);
                 }
             }
             return null;
+        }
+
+        private unsafe Stream ReadResourceFromBlob(ResourceInfo resourceInfo)
+        {
+            byte* pBlob;
+            uint cbBlob;
+
+            if (!RuntimeAugments.FindBlob(resourceInfo.ModuleHandle, (int)ReflectionMapBlob.BlobIdResourceData, (IntPtr)(&pBlob), (IntPtr)(&cbBlob)))
+            {
+                throw new BadImageFormatException();
+            }
+
+            checked
+            {
+                if (resourceInfo.Index > cbBlob || resourceInfo.Index + resourceInfo.Length > cbBlob)
+                {
+                    throw new BadImageFormatException();
+                }
+            }
+
+            UnmanagedMemoryStream stream = new UnmanagedMemoryStream(pBlob + resourceInfo.Index, resourceInfo.Length);
+
+            return stream;
         }
 
         private LowLevelList<ResourceInfo> GetExtractedResources(Assembly assembly)
@@ -87,54 +112,48 @@ namespace Internal.Reflection.Execution
 
                     LowLevelDictionary<String, LowLevelList<ResourceInfo>> dict = new LowLevelDictionary<String, LowLevelList<ResourceInfo>>();
 
-                    String extractedResourcesIndexFile = ExtractedResourcesDirectory + @"\index.txt";
+                    foreach (IntPtr module in ModuleList.Enumerate())
                     {
-                        // Open _Resources\index.txt which is a file created by the toolchain and contains a list of entries like this:
-                        //
-                        //    <Fusion-style assemblyname1>
-                        //       <ResourceName0>     (contents live in _Resources\0.rsrc)
-                        //       <ResourceName1>     (contents live in _Resources\1.rsrc)
-                        //    <Fusion-style assemblyname2>
-                        //       <ResourceName2>     (contents live in _Resources\2.rsrc)
-                        //       <ResourceName3>     (contents live in _Resources\3.rsrc)
-                        //     
-
-                        using (Stream s = ReadFileFromAppPackage(extractedResourcesIndexFile))
+                        NativeReader reader;
+                        if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out reader))
                         {
-                            LowLevelStreamReader sr = new LowLevelStreamReader(s);
+                            continue;
+                        }
+                        NativeParser indexParser = new NativeParser(reader, 0);
+                        NativeHashtable indexHashTable = new NativeHashtable(indexParser);
 
-                            int index = 0;
-                            String line;
-                            LowLevelList<ResourceInfo> resourceInfos = null;
-                            while ((line = sr.ReadLine()) != null)
+                        var entryEnumerator = indexHashTable.EnumerateAllEntries();
+                        NativeParser entryParser;
+                        while (!(entryParser = entryEnumerator.GetNext()).IsNull)
+                        {
+                            string assemblyName = entryParser.GetString();
+                            string resourceName = entryParser.GetString();
+                            int resourceOffset = (int)entryParser.GetUnsigned();
+                            int resourceLength = (int)entryParser.GetUnsigned();
+
+                            ResourceInfo resourceInfo = new ResourceInfo(resourceName, resourceOffset, resourceLength, module);
+
+                            LowLevelList<ResourceInfo> assemblyResources;
+                            if(!dict.TryGetValue(assemblyName, out assemblyResources))
                             {
-                                if (line.Trim().Length == 0)
-                                    continue;
-
-                                // If indented, the line is a resource name - if not indented, it's an assembly name.
-                                if (!line.StartsWith(" "))
-                                {
-                                    // Roundtrip the assembly name from index.txt through our own AssemblyName class to remove any variances
-                                    // between the CCI-created assembly name and ours.
-                                    String normalizedAssemblyName = new AssemblyName(line).FullName;
-                                    resourceInfos = new LowLevelList<ResourceInfo>();
-                                    dict.Add(normalizedAssemblyName, resourceInfos);
-                                }
-                                else
-                                {
-                                    String resourceName = line.TrimStart();
-                                    resourceInfos.Add(new ResourceInfo(resourceName, index++));
-                                }
+                                assemblyResources = new LowLevelList<ResourceInfo>();
+                                dict[assemblyName] = assemblyResources;
                             }
+
+                            assemblyResources.Add(resourceInfo);                            
                         }
                     }
+
                     s_extractedResourceDictionary = dict;
                 }
                 return s_extractedResourceDictionary;
             }
         }
 
-        private Stream ReadFileFromAppPackage(String name)
+        /// <summary>
+        /// Reads linked resources from the app directory
+        /// </summary>
+        private Stream ReadFileFromAppDirectory(String name)
         {
 #if ENABLE_WINRT
             if (WinRTInterop.Callbacks.IsAppxModel())
@@ -147,31 +166,29 @@ namespace Internal.Reflection.Execution
             return (Stream)RuntimeAugments.OpenFileIfExists(fullName);
         }
 
-        private const String ExtractedResourcesDirectory = "_Resources";
-
-        //
-        // This dictionary gets us from assembly + resource name to the name of a _Resources\<nnn>.rsrc file which contains the
-        // extracted resource.
-        //
-        // The dictionary's key is a Fusion-style assembly name.
-        // The dictionary's value is a list of <resourcename,index> tuples.
-        //
-        // To get to the extract resource, we construct the local file path _Resources\<index>.rsrc.
-        //
+        /// <summary>
+        /// This dictionary gets us from assembly + resource name to the offset of a resource
+        /// inside the resource data blob
+        ///
+        /// The dictionary's key is a Fusion-style assembly name.
+        /// The dictionary's value is a list of <resourcename,index> tuples.
+        /// </summary>
         private static volatile LowLevelDictionary<String, LowLevelList<ResourceInfo>> s_extractedResourceDictionary;
 
         private struct ResourceInfo
         {
-            public ResourceInfo(String name, int index)
+            public ResourceInfo(String name, int index, int length, IntPtr moduleHandle)
             {
-                _name = name;
-                _index = index;
+                Name = name;
+                Index = index;
+                Length = length;
+                ModuleHandle = moduleHandle;
             }
 
-            public String Name { get { return _name; } }
-            public int Index { get { return _index; } }
-            private String _name;
-            private int _index;
+            public String Name { get; }
+            public int Index { get; }
+            public int Length { get; }
+            public IntPtr ModuleHandle { get; }
         }
     }
 }
