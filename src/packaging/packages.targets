@@ -149,12 +149,13 @@
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Console/4.4.0-beta-24906-01/runtimes/unix/lib/netstandard1.7/System.Console.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.win.Microsoft.Win32.Primitives/4.4.0-beta-24906-01/runtimes/win/lib/netstandard1.7/Microsoft.Win32.Primitives.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.unix.Microsoft.Win32.Primitives/4.4.0-beta-24906-01/runtimes/unix/lib/netstandard1.7/Microsoft.Win32.Primitives.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.win.System.IO.FileSystem/4.4.0-beta-24906-01/runtimes/win/lib/netstandard1.3/System.IO.FileSystem.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.unix.System.IO.FileSystem/4.4.0-beta-24906-01/runtimes/unix/lib/netstandard1.3/System.IO.FileSystem.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.win.System.IO.FileSystem/4.4.0-beta-24906-01/runtimes/win/lib/netstandard1.7/System.IO.FileSystem.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.IO.FileSystem/4.4.0-beta-24906-01/runtimes/unix/lib/netstandard1.7/System.IO.FileSystem.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
+            <ILCompilerFrameworkFiles Include="System.Threading.Overlapped/4.4.0-beta-24906-01/runtimes/win/lib/netstandard1.7/System.Threading.Overlapped.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="System.Threading.Overlapped/4.4.0-beta-24906-01/runtimes/unix/lib/netstandard1.7/System.Threading.Overlapped.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="System.Threading.Thread/4.4.0-beta-24906-01/runtimes/win/lib/netstandard1.7/System.Threading.Thread.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="System.Threading.Thread/4.4.0-beta-24906-01/runtimes/unix/lib/netstandard1.7/System.Threading.Thread.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
-
             <ILCompilerFrameworkFiles Include="System.Runtime.InteropServices.RuntimeInformation/4.4.0-beta-24906-01/runtimes/win/lib/netstandard1.1/System.Runtime.InteropServices.RuntimeInformation.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="System.Runtime.InteropServices.RuntimeInformation/4.4.0-beta-24906-01/runtimes/unix/lib/netstandard1.1/System.Runtime.InteropServices.RuntimeInformation.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
 
