@@ -30,6 +30,8 @@ namespace Internal.Runtime
         TypeTemplateMap                             = 21,
         GenericMethodsTemplateMap                   = 22,
         DynamicInvokeTemplateData                   = 23,
+        BlobIdResourceIndex                         = 24,
+        BlobIdResourceData                          = 25,
 
         //Native layout blobs:
         NativeLayoutInfo                            = 30,
