@@ -67,7 +67,6 @@ namespace Internal.TypeSystem.Interop
             Debug.Assert(method.IsPInvoke);
 
             // TODO: true if there are any custom marshalling rules on the parameters
-            // TODO: true if SetLastError is true
 
             TypeDesc returnType = method.Signature.ReturnType;
             if (!MarshalHelpers.IsBlittableType(returnType) && !returnType.IsVoid)
@@ -81,7 +80,12 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            if (UseLazyResolution(method, method.GetPInvokeMethodMetadata().Module, configuration))
+            PInvokeMetadata methodData = method.GetPInvokeMethodMetadata();    
+            if (UseLazyResolution(method, methodData.Module, configuration))
+            {
+                return true;
+            }
+            if ((methodData.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
             {
                 return true;
             }

@@ -880,38 +880,33 @@ EXTERN_C void FASTCALL RhpUnsuppressGcStress()
 // Standard calling convention variant and actual implementation for RhpWaitForSuspend
 EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
 {
-#ifdef _DEBUG
-    // PInvoke must not trash win32 last error.  The wait operations below never should trash the last error,
-    // but we keep some debug-time checks around to guard against future changes to the code.  In general, the
-    // wait operations will call out to Win32 to do the waiting, but the API used will only modify the last
-    // error in an error condition, in which case we will fail fast.
-    UInt32 uLastErrorOnEntry = PalGetLastError();
-#endif // _DEBUG
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    Int32 lastErrorOnEntry = PalGetLastError();
 
     ThreadStore::GetCurrentThread()->WaitForSuspend();
-
-    ASSERT_MSG(uLastErrorOnEntry == PalGetLastError(), "Unexpectedly trashed last error on PInvoke path!");
+    
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
-#ifdef _DEBUG
-    // PInvoke must not trash win32 last error.  The wait operations below never should trash the last error,
-    // but we keep some debug-time checks around to guard against future changes to the code.  In general, the
-    // wait operations will call out to Win32 to do the waiting, but the API used will only modify the last
-    // error in an error condition, in which case we will fail fast.
-    UInt32 uLastErrorOnEntry = PalGetLastError();
-#endif // _DEBUG
 
     Thread * pThread = pFrame->m_pThread;
 
     if (pThread->IsDoNotTriggerGcSet())
         return;
 
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    Int32 lastErrorOnEntry = PalGetLastError();
+
     pThread->WaitForGC(pFrame);
 
-    ASSERT_MSG(uLastErrorOnEntry == PalGetLastError(), "Unexpectedly trashed last error on PInvoke path!");
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 
 void Thread::PushExInfo(ExInfo * pExInfo)

@@ -39,7 +39,7 @@ namespace Internal.TypeSystem
     }
 
     [Flags]
-    public enum ParameterAttributes
+    public enum ParameterMetadataAttributes
     {
         None = 0,
         In = 1,
@@ -51,19 +51,19 @@ namespace Internal.TypeSystem
 
     public struct ParameterMetadata
     {
-        private  readonly ParameterAttributes _attributes;
+        private  readonly ParameterMetadataAttributes _attributes;
         public readonly TypeDesc MarshalAs;
         public readonly int Index;
 
-        public bool In { get { return (_attributes & ParameterAttributes.In) == ParameterAttributes.In; } }
-        public bool Out { get { return (_attributes & ParameterAttributes.Out) == ParameterAttributes.Out; } }
+        public bool In { get { return (_attributes & ParameterMetadataAttributes.In) == ParameterMetadataAttributes.In; } }
+        public bool Out { get { return (_attributes & ParameterMetadataAttributes.Out) == ParameterMetadataAttributes.Out; } }
         public bool Return { get { return Index == 0;  } }
-        public bool Optional { get { return (_attributes & ParameterAttributes.Optional) == ParameterAttributes.Optional;  } }
-        public bool HasDefault { get { return (_attributes & ParameterAttributes.HasDefault) == ParameterAttributes.HasDefault; } }
-        public bool HasFieldMarshal { get { return (_attributes & ParameterAttributes.HasFieldMarshal) == ParameterAttributes.HasFieldMarshal; } }
+        public bool Optional { get { return (_attributes & ParameterMetadataAttributes.Optional) == ParameterMetadataAttributes.Optional;  } }
+        public bool HasDefault { get { return (_attributes & ParameterMetadataAttributes.HasDefault) == ParameterMetadataAttributes.HasDefault; } }
+        public bool HasFieldMarshal { get { return (_attributes & ParameterMetadataAttributes.HasFieldMarshal) == ParameterMetadataAttributes.HasFieldMarshal; } }
 
 
-        public ParameterMetadata(int index, ParameterAttributes attributes, TypeDesc marshalAs)
+        public ParameterMetadata(int index, ParameterMetadataAttributes attributes, TypeDesc marshalAs)
         {
             Index = index;
             _attributes = attributes;

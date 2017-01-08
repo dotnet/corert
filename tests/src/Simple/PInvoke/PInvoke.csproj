@@ -13,6 +13,8 @@
     <NativeObjectExt Condition="'$(OS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(OS)' != 'Windows_NT'">.o</NativeObjectExt>
     <PInvokeNativeObject>$(IntermediateOutputPath)$(OutputName)$(NativeObjectExt)</PInvokeNativeObject>
+    <DefineConstants>$(DefineConstants);$(OS)</DefineConstants>
+    <UseDebugCrt Condition="'$(Configuration)' == 'Debug'">true</UseDebugCrt>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +32,7 @@
       <PInvokeCompilerArg Include="/Fo$(PInvokeNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
       <PInvokeCompilerArg Include="-o $(PInvokeNativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
       <PInvokeCompilerArg Include="@(CppCompilerAndLinkerArg)" />
+      <PInvokeCompilerArg Include="-D $(OS)" />
     </ItemGroup>
 
     <MakeDir Directories="$(IntermediateOutputPath)" />

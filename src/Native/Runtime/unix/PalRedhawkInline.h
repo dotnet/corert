@@ -4,6 +4,8 @@
 
 // Implementation of Redhawk PAL inline functions
 
+#include <errno.h>
+
 FORCEINLINE Int32 PalInterlockedIncrement(_Inout_ _Interlocked_operand_ Int32 volatile *pDst)
 {
     return __sync_add_and_fetch(pDst, 1);
@@ -89,3 +91,13 @@ FORCEINLINE void PalMemoryBarrier()
 }
 
 #define PalDebugBreak() __builtin_trap()
+
+FORCEINLINE Int32 PalGetLastError()
+{
+    return errno;
+}
+
+FORCEINLINE void PalSetLastError(Int32 error)
+{
+    errno = error;
+}
