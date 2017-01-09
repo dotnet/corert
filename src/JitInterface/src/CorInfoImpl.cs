@@ -822,8 +822,11 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("isInstantiationOfVerifiedGeneric"); }
         private void initConstraintsForVerification(CORINFO_METHOD_STRUCT_* method, ref bool pfHasCircularClassConstraints, ref bool pfHasCircularMethodConstraint)
         { throw new NotImplementedException("isInstantiationOfVerifiedGeneric"); }
+
         private CorInfoCanSkipVerificationResult canSkipMethodVerification(CORINFO_METHOD_STRUCT_* ftnHandle)
-        { throw new NotImplementedException("canSkipMethodVerification"); }
+        {
+            return CorInfoCanSkipVerificationResult.CORINFO_VERIFICATION_CAN_SKIP;
+        }
 
         private void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_STRUCT_* method)
         {
@@ -963,7 +966,10 @@ namespace Internal.JitInterface
         }
 
         private CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_STRUCT_* module)
-        { throw new NotImplementedException("canSkipVerification"); }
+        {
+            return CorInfoCanSkipVerificationResult.CORINFO_VERIFICATION_CAN_SKIP;
+        }
+
         private bool isValidToken(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidToken"); }
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)

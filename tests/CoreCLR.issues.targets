@@ -1119,10 +1119,6 @@
     <!-- https://github.com/dotnet/corert/issues/2355 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedObject\PinnedObject.*" />
 
-    <!-- System.NotImplementedException: canSkipMethodVerification -->
-    <!-- https://github.com/dotnet/corert/issues/2462 -->
-    <ExcludeList Include="$(XunitTestBinBase)\Regressions\common\AboveStackLimit\AboveStackLimit.*" />
-
     <!-- Main method missing in textual stacktrace -->
     <!-- https://github.com/dotnet/corert/issues/2463 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowexcept_d\trythrowexcept_d.*" />
