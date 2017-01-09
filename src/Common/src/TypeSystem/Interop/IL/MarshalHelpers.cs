@@ -99,10 +99,6 @@ namespace Internal.TypeSystem.Interop
         /// </summary>
         public static bool UseLazyResolution(MethodDesc method, string importModule, PInvokeILEmitterConfiguration configuration)
         {
-            // TODO: Test and make this work on non-Windows
-            if (!method.Context.Target.IsWindows)
-                return false;
-
             bool? forceLazyResolution = configuration.ForceLazyResolution;
             if (forceLazyResolution.HasValue)
                 return forceLazyResolution.Value;
@@ -113,9 +109,14 @@ namespace Internal.TypeSystem.Interop
                 return false;
 
             if (method.Context.Target.IsWindows)
+            {
                 return !importModule.StartsWith("api-ms-win-");
-            else
-                return !importModule.StartsWith("System.Private.");
+            }
+            else 
+            {
+                // Account for System.Private.CoreLib.Native / System.Globalization.Native / System.Native / etc
+                return !importModule.StartsWith("System.");
+            }
         }
     }
 }
