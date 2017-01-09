@@ -51,6 +51,25 @@
 
 #include "holder.h"
 
+#ifdef FEATURE_ETW
+    #ifndef _INC_WINDOWS
+        typedef void* LPVOID;
+        typedef uint32_t UINT;
+        typedef void* PVOID;
+        typedef uint64_t ULONGLONG;
+        typedef uint32_t ULONG;
+        typedef int64_t LONGLONG;
+        typedef uint8_t BYTE;
+        typedef uint16_t UINT16;
+    #endif // _INC_WINDOWS
+
+    #include "etwevents.h"
+    #include "eventtrace.h"
+#else // FEATURE_ETW
+    #include "etmdummy.h"
+    #define ETW_EVENT_ENABLED(e,f) false
+#endif // FEATURE_ETW
+
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
 #define USE_CLR_CACHE_SIZE_BEHAVIOR
@@ -1146,6 +1165,180 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
 
     ASSERT(threadStubArgs.m_pThread != NULL);
     return threadStubArgs.m_pThread;
+}
+
+void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
+{
+#ifdef GC_PROFILING
+    DiagUpdateGenerationBounds();
+    GarbageCollectionStartedCallback(gen, isInduced);
+    {
+        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        size_t context = 0;
+
+        // When we're walking objects allocated by class, then we don't want to walk the large
+        // object heap because then it would count things that may have been around for a while.
+        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, FALSE);
+
+        // Notify that we've reached the end of the Gen 0 scan
+        g_profControlBlock.pProfInterface->EndAllocByClass(&context);
+        END_PIN_PROFILER();
+    }
+
+#endif // GC_PROFILING
+}
+
+void GCToEEInterface::DiagUpdateGenerationBounds()
+{
+#ifdef GC_PROFILING
+    if (CORProfilerTrackGC())
+        UpdateGenerationBounds();
+#endif // GC_PROFILING
+}
+
+void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
+{
+#ifdef GC_PROFILING
+    if (!fConcurrent)
+    {
+        GCProfileWalkHeap();
+        DiagUpdateGenerationBounds();
+        GarbageCollectionFinishedCallback();
+    }
+#endif // GC_PROFILING
+}
+
+void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
+{
+#ifdef GC_PROFILING
+    if (CORProfilerTrackGC())
+    {
+        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        GCHeapUtilities::GetGCHeap()->DiagWalkFinalizeQueue(gcContext, g_FQWalkFn);
+        END_PIN_PROFILER();
+    }
+#endif //GC_PROFILING
+}
+
+// Note on last parameter: when calling this for bgc, only ETW
+// should be sending these events so that existing profapi profilers
+// don't get confused.
+void WalkMovedReferences(uint8_t* begin, uint8_t* end, 
+                         ptrdiff_t reloc,
+                         size_t context, 
+                         BOOL fCompacting,
+                         BOOL fBGC)
+{
+#ifdef GC_PROFILING
+    ETW::GCLog::MovedReference(begin, end,
+                               (fCompacting ? reloc : 0),
+                               context,
+                               fCompacting,
+                               !fBGC);
+#endif
+}
+
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+{
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_gc);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#endif //GC_PROFILING || FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+{
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_loh);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#endif //GC_PROFILING || FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
+{
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_bgc);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#endif //GC_PROFILING || FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+{
+    // CoreRT doesn't patch the write barrier like CoreCLR does, but it
+    // still needs to record the changes in the GC heap.
+    assert(args != nullptr);
+    switch (args->operation)
+    {
+    case WriteBarrierOp::StompResize:
+        // StompResize requires a new card table, a new lowest address, and
+        // a new highest address
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        g_card_table = args->card_table;
+
+        // We need to make sure that other threads executing checked write barriers
+        // will see the g_card_table update before g_lowest/highest_address updates.
+        // Otherwise, the checked write barrier may AV accessing the old card table
+        // with address that it does not cover. Write barriers access card table
+        // without memory barriers for performance reasons, so we need to flush
+        // the store buffers here.
+        FlushProcessWriteBuffers();
+
+        g_lowest_address = args->lowest_address;
+        VolatileStore(&g_highest_address, args->highest_address);
+        return;
+    case WriteBarrierOp::StompEphemeral:
+        // StompEphemeral requires a new ephemeral low and a new ephemeral high
+        assert(args->ephemeral_low != nullptr);
+        assert(args->ephemeral_high != nullptr);
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+        return;
+    case WriteBarrierOp::Initialize:
+        // This operation should only be invoked once, upon initialization.
+        assert(g_card_table == nullptr);
+        assert(g_lowest_address == nullptr);
+        assert(g_highest_address == nullptr);
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        assert(args->ephemeral_low != nullptr);
+        assert(args->ephemeral_high != nullptr);
+        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
+        assert(!args->requires_upper_bounds_check && "the ephemeral generation must be at the top of the heap!");
+
+        g_card_table = args->card_table;
+        FlushProcessWriteBuffers();
+        g_lowest_address = args->lowest_address;
+        VolatileStore(&g_highest_address, args->highest_address);
+
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+        return;
+    case WriteBarrierOp::SwitchToWriteWatch:
+    case WriteBarrierOp::SwitchToNonWriteWatch:
+        assert(!"CoreRT does not have an implementation of non-OS WriteWatch");
+        return;
+    default:
+        assert(!"Unknokwn WriteBarrierOp enum");
+        return;
+    }
 }
 
 #endif // !DACCESS_COMPILE
