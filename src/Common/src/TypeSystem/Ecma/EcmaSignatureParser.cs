@@ -288,5 +288,27 @@ namespace Internal.TypeSystem.Ecma
             }
             return arguments;
         }
+
+        public MarshalAsDescriptor ParseMarshalAsDescriptor()
+        {
+            NativeType type = (NativeType)_reader.ReadByte();
+            NativeType arraySubType = NativeType.Invalid;
+            uint paramNum = 0, numElem = 0;
+            if (type == NativeType.Array)
+            {
+                arraySubType = (NativeType)_reader.ReadByte();
+                if (_reader.RemainingBytes != 0)
+                {
+                    paramNum = (uint)_reader.ReadCompressedInteger();
+
+                    if (_reader.RemainingBytes != 0)
+                        numElem = (uint)_reader.ReadCompressedInteger();
+                }
+            }
+
+            Debug.Assert(_reader.RemainingBytes == 0);
+
+            return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem);
+        }
     }
 }

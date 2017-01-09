@@ -52,7 +52,7 @@ namespace Internal.TypeSystem
     public struct ParameterMetadata
     {
         private  readonly ParameterMetadataAttributes _attributes;
-        public readonly TypeDesc MarshalAs;
+        public readonly MarshalAsDescriptor MarshalAsDescriptor;
         public readonly int Index;
 
         public bool In { get { return (_attributes & ParameterMetadataAttributes.In) == ParameterMetadataAttributes.In; } }
@@ -63,11 +63,11 @@ namespace Internal.TypeSystem
         public bool HasFieldMarshal { get { return (_attributes & ParameterMetadataAttributes.HasFieldMarshal) == ParameterMetadataAttributes.HasFieldMarshal; } }
 
 
-        public ParameterMetadata(int index, ParameterMetadataAttributes attributes, TypeDesc marshalAs)
+        public ParameterMetadata(int index, ParameterMetadataAttributes attributes, MarshalAsDescriptor marshalAsDescriptor)
         {
             Index = index;
             _attributes = attributes;
-            MarshalAs = marshalAs;       
+            MarshalAsDescriptor = marshalAsDescriptor;
         }
     }
 
