@@ -1625,33 +1625,10 @@ namespace System.Threading.Tasks
         /// of <see cref="System.Threading.Tasks.TaskFactory"/>, as would result from using
         /// the default constructor on TaskFactory.
         /// </remarks>
-        public static TaskFactory Factory
-        {
-            get
-            {
-                if (s_defaultTaskFactory == null)
-                    Interlocked.CompareExchange(ref s_defaultTaskFactory, new TaskFactory(), null);
-                return s_defaultTaskFactory;
-            }
-        }
-
-        private static TaskFactory s_defaultTaskFactory;
-
-        /// <summary>A task that's already been completed successfully.</summary>
-        private static Task s_completedTask;
+        public static TaskFactory Factory { get; } = new TaskFactory();
 
         /// <summary>Gets a task that's already been completed successfully.</summary>
-        /// <remarks>May not always return the same instance.</remarks>        
-        public static Task CompletedTask
-        {
-            get
-            {
-                var completedTask = s_completedTask;
-                if (completedTask == null)
-                    s_completedTask = completedTask = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken)); // benign initialization race condition
-                return completedTask;
-            }
-        }
+        public static Task CompletedTask { get; } = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
 
         /// <summary>
         /// Provides an event that can be used to wait for completion.
