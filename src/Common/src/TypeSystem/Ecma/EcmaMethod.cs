@@ -429,18 +429,29 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)ParameterAttributes.HasDefault == (int)ParameterMetadataAttributes.HasDefault);
             Debug.Assert((int)ParameterAttributes.HasFieldMarshal == (int)ParameterMetadataAttributes.HasFieldMarshal);
 
-
             ParameterHandleCollection parameterHandles = metadataReader.GetMethodDefinition(_handle).GetParameters();
             ParameterMetadata[] parameterMetadataArray = new ParameterMetadata[parameterHandles.Count];
             int index = 0;
             foreach (ParameterHandle parameterHandle in parameterHandles)
             {
                 Parameter parameter = metadataReader.GetParameter(parameterHandle);
-                TypeDesc marshalAs = null; // TODO: read marshalAs argument;
-                ParameterMetadata data = new ParameterMetadata(parameter.SequenceNumber, (ParameterMetadataAttributes)parameter.Attributes, marshalAs);
+                MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(parameter);
+                ParameterMetadata data = new ParameterMetadata(parameter.SequenceNumber, (ParameterMetadataAttributes)parameter.Attributes, marshalAsDescriptor);
                 parameterMetadataArray[index++] = data;
             }
             return parameterMetadataArray;
+        }
+
+        private MarshalAsDescriptor GetMarshalAsDescriptor(Parameter parameter)
+        {
+            if ((parameter.Attributes & ParameterAttributes.HasFieldMarshal) == ParameterAttributes.HasFieldMarshal)
+            {
+                MetadataReader metadataReader = MetadataReader;
+                BlobReader marshalAsReader = metadataReader.GetBlobReader(parameter.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(Module, marshalAsReader);
+                return parser.ParseMarshalAsDescriptor();
+            }
+            return null;
         }
     }
 }
