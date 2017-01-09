@@ -1119,11 +1119,6 @@
     <!-- https://github.com/dotnet/corert/issues/2355 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedObject\PinnedObject.*" />
 
-    <!-- Main method missing in textual stacktrace -->
-    <!-- https://github.com/dotnet/corert/issues/2463 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowexcept_d\trythrowexcept_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowexcept_r\trythrowexcept_r.*" />
-
     <!-- Pay for play reflection -->
     <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\system\delegate\miscellaneous\ClosedStatic\ClosedStatic.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\14610\TestObjectGetTypeVirtual\TestObjectGetTypeVirtual.*" />
@@ -1157,6 +1152,8 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b423721\b423721\b423721.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_403582\dev10_403582\dev10_403582.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHCompaction\lohcompactapi\lohcompactapi.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowexcept_d\trythrowexcept_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowexcept_r\trythrowexcept_r.*" />
 
     <!-- Metadata generation failure due to garbage fields due to bad base class libraries -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\throwisfirstinstruction\throwisfirstinstruction.*" />
