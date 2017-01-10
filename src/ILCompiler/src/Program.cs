@@ -173,6 +173,9 @@ namespace ILCompiler
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
             typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
+            
+            ExplicitClassConstructors explicitClassConstructors = new ExplicitClassConstructors(typeSystemContext, _isCppCodegen);
+            typeSystemContext.SetExplicitClassConstructors(explicitClassConstructors);
 
             //
             // Initialize compilation group and compilation roots
@@ -209,7 +212,7 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule));
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, explicitClassConstructors.TypesWithExplicitCctors));
                 }
 
                 if (_multiFile)

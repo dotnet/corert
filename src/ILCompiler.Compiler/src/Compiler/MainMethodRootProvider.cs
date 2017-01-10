@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -21,10 +22,12 @@ namespace ILCompiler
         public const string ManagedEntryPointMethodName = "__managed__Main";
 
         private EcmaModule _module;
+        private IList<TypeDesc> _explicitlyRunCctors;
 
-        public MainMethodRootProvider(EcmaModule module)
+        public MainMethodRootProvider(EcmaModule module, IList<TypeDesc> explicitlyRunCctors)
         {
             _module = module;
+            _explicitlyRunCctors = explicitlyRunCctors;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -34,7 +37,7 @@ namespace ILCompiler
                 throw new Exception("No managed entrypoint defined for executable module");
 
             TypeDesc owningType = _module.GetGlobalModuleType();
-            var startupCodeMain = new StartupCodeMainMethod(owningType, mainMethod);
+            var startupCodeMain = new StartupCodeMainMethod(owningType, mainMethod, _explicitlyRunCctors);
 
             rootProvider.AddCompilationRoot(startupCodeMain, "Startup Code Main Method", ManagedEntryPointMethodName);
         }

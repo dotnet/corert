@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
@@ -20,11 +21,13 @@ namespace Internal.IL.Stubs.StartupCode
         private TypeDesc _owningType;
         private MainMethodWrapper _mainMethod;
         private MethodSignature _signature;
+        private IList<TypeDesc> _explicitlyRunCctors;
 
-        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod)
+        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod, IList<TypeDesc> explicitlyRunCctors)
         {
             _owningType = owningType;
             _mainMethod = new MainMethodWrapper(owningType, mainMethod);
+            _explicitlyRunCctors = explicitlyRunCctors;
         }
 
         public override TypeSystemContext Context
@@ -56,6 +59,16 @@ namespace Internal.IL.Stubs.StartupCode
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
+            // Allow the class library to run explicitly ordered class constructors first thing in start-up.
+            if (_explicitlyRunCctors != null)
+            {
+                foreach (TypeDesc type in _explicitlyRunCctors)
+                {
+                    MethodDesc cctor = type.GetMethod(".cctor", null);
+                    codeStream.Emit(ILOpcode.call, emitter.NewToken(cctor));
+                }
+            }
+            
             ModuleDesc developerExperience = Context.ResolveAssembly(new AssemblyName("System.Private.DeveloperExperience.Console"), false);
             if (developerExperience != null)
             {

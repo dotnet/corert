@@ -657,7 +657,7 @@ namespace ILCompiler.DependencyAnalysis
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             "__EagerCctorStart",
             "__EagerCctorEnd",
-            new EagerConstructorComparer());
+            null);
 
         public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
             "__DispatchMapTableStart",
