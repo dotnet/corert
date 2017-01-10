@@ -633,17 +633,6 @@ namespace ILCompiler.DependencyAnalysis
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
 
-        public ISymbolNode ConstantUtf16String(string str)
-        {
-            int stringBytesCount = Encoding.Unicode.GetByteCount(str);
-            byte[] stringBytes = new byte[stringBytesCount + 2];
-            Encoding.Unicode.GetBytes(str, 0, str.Length, stringBytes, 0);
-
-            string symbolName = "__utf16str_" + NameMangler.GetMangledStringName(str);
-
-            return ReadOnlyDataBlob(symbolName, stringBytes, 2);
-        }
-
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.

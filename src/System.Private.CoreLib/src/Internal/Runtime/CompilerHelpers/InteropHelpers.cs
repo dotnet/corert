@@ -4,7 +4,6 @@
 
 using System;
 using System.Text;
-using Internal.Text;
 using System.Runtime.InteropServices;
 
 using Interlocked = System.Threading.Interlocked;
@@ -72,15 +71,6 @@ namespace Internal.Runtime.CompilerHelpers
             return pCell->Target;
         }
 
-        #if PLATFORM_UNIX
-            const string PAL_SHLIB_PREFIX = "lib";
-            #if PLATFORM_OSX
-                const string PAL_SHLIB_SUFFIX = ".dylib";
-            #else
-                const string PAL_SHLIB_SUFFIX = ".so";
-            #endif
-        #endif
-        
         internal static unsafe IntPtr TryResolveModule(string moduleName)
         {
             IntPtr hModule = IntPtr.Zero;
@@ -90,7 +80,14 @@ namespace Internal.Runtime.CompilerHelpers
             if (hModule != IntPtr.Zero) return hModule;
 
 #if PLATFORM_UNIX
-            // Try prefix+name+suffix
+            const string PAL_SHLIB_PREFIX = "lib";
+    #if PLATFORM_OSX
+            const string PAL_SHLIB_SUFFIX = ".dylib";
+    #else
+            const string PAL_SHLIB_SUFFIX = ".so";
+    #endif
+
+             // Try prefix+name+suffix
             hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName + PAL_SHLIB_SUFFIX);
             if (hModule != IntPtr.Zero) return hModule;
 
@@ -110,12 +107,9 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr hModule;
 
 #if !PLATFORM_UNIX
-            fixed (char *name = moduleName)
-                hModule = Interop.mincore.LoadLibraryEx(name, IntPtr.Zero, 0);
+            hModule = Interop.mincore.LoadLibraryEx(moduleName, IntPtr.Zero, 0);
 #else
-            Utf8String utf8ModuleName = new Utf8String(moduleName);
-            fixed (byte *name = utf8ModuleName.UnderlyingArray)
-                hModule = Interop.Sys.LoadLibrary(name);
+            hModule = Interop.Sys.LoadLibrary(moduleName);
 #endif
 
             return hModule;
