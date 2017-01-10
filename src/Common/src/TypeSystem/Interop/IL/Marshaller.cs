@@ -55,8 +55,7 @@ namespace Internal.TypeSystem.Interop
         /// <returns>The  created Marshaller</returns>
         public static Marshaller CreateMarshaller(TypeDesc parameterType, PInvokeMethodData pInvokeMethodData, ParameterMetadata pInvokeParameterdata)
         {
-
-            MarshallerKind marshallerKind = GetMarshallerKind(parameterType, pInvokeParameterdata.MarshalAs, pInvokeMethodData, pInvokeParameterdata.Return);
+            MarshallerKind marshallerKind = GetMarshallerKind(parameterType, pInvokeParameterdata.MarshalAsDescriptor, pInvokeMethodData, pInvokeParameterdata.Return);
             
             // Create the marshaller based on MarshallerKind
             Marshaller marshaller = Marshaller.CreateMarshallerInternal(marshallerKind);
@@ -93,7 +92,7 @@ namespace Internal.TypeSystem.Interop
                     throw new NotSupportedException();
             }
         }
-        private static MarshallerKind GetMarshallerKind(TypeDesc type, TypeDesc marshalAs, PInvokeMethodData PInvokeMethodData, bool isReturn)
+        private static MarshallerKind GetMarshallerKind(TypeDesc type, MarshalAsDescriptor marshalAs, PInvokeMethodData PInvokeMethodData, bool isReturn)
         {
             if (isReturn)
             {
