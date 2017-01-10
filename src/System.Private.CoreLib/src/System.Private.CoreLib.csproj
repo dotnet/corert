@@ -1005,9 +1005,6 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetUnixName.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Interop\Unix\System.Native\Interop.LSeek.cs</Link>
     </Compile>
