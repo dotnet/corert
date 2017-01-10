@@ -17,7 +17,24 @@ namespace System
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemPreallocatedOutOfMemoryException)]
     internal class PreallocatedOutOfMemoryException
     {
-        public static readonly OutOfMemoryException Instance = new OutOfMemoryException(message: null);  // Cannot call the nullary constructor as that triggers non-trivial resource manager logic.
+        public static OutOfMemoryException Instance { get; private set; }
+
+        //
+        // CoreRT calls Initialize directly for all types its needs that typically have EagerOrderedStaticConstructor
+        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
+        // added to Initialize.
+        //
+#if !CORERT
+        static PreallocatedOutOfMemoryException()
+        {
+            Initialize();
+        }
+#endif
+
+        internal static void Initialize()
+        {
+             Instance = new OutOfMemoryException(message: null);  // Cannot call the nullary constructor as that triggers non-trivial resource manager logic.
+        }
     }
 
     public class RuntimeExceptionHelpers

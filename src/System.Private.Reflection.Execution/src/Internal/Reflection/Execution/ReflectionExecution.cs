@@ -38,12 +38,24 @@ namespace Internal.Reflection.Execution
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.ReflectionExecution)]
     public static class ReflectionExecution
     {
+        //
+        // CoreRT calls Initialize directly for all types its needs that typically have EagerOrderedStaticConstructor
+        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
+        // added to Initialize.
+        //
+#if !CORERT
         /// <summary>
         /// This eager constructor initializes runtime reflection support. As part of ExecutionEnvironmentImplementation
         /// initialization it enumerates the modules and registers the ones containing EmbeddedMetadata reflection blobs
         /// in its _moduleToMetadataReader map.
         /// </summary>
         static ReflectionExecution()
+        {
+            Initialize();
+        }
+#endif
+
+        internal static void Initialize()
         {
             // Initialize Reflection.Core's one and only ExecutionDomain.
             ExecutionEnvironmentImplementation executionEnvironment = new ExecutionEnvironmentImplementation();
@@ -85,7 +97,7 @@ namespace Internal.Reflection.Execution
             return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
-        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; }
+        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
 
         internal static IList<string> DefaultAssemblyNamesForGetType;
     }
