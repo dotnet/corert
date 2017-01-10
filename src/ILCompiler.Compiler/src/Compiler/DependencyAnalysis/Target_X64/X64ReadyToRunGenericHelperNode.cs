@@ -99,6 +99,35 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    {
+                        MetadataType target = (MetadataType)_target;
+
+                        // Look up the TLS slot index
+                        EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
+
+                        ISymbolNode helperEntrypoint;
+                        if (factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        {
+                            // There is a lazy class constructor. We need the non-GC static base because that's where the
+                            // class constructor context lives.
+                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
+                            EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
+
+                            helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase);
+                        }
+                        else
+                        {
+                            helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
+                        }
+
+                        // Load the type manager indirection (this clobbers the generic context in Arg0)
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeManagerIndirection);
+
+                        encoder.EmitJMP(helperEntrypoint);
+                    }
+                    break;
+
                 // These are all simple: just get the thing from the dictionary and we're done
                 case ReadyToRunHelperId.TypeHandle:
                 case ReadyToRunHelperId.MethodDictionary:

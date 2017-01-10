@@ -36,6 +36,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.TypeGCStaticBase((TypeDesc)target);
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     return factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)target);
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    return factory.GenericLookup.TypeThreadStaticBaseIndex((TypeDesc)target);
                 case ReadyToRunHelperId.MethodDictionary:
                     return factory.GenericLookup.MethodDictionary((MethodDesc)target);
                 case ReadyToRunHelperId.VirtualCall:

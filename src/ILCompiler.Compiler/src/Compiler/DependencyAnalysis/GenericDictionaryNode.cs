@@ -69,11 +69,17 @@ namespace ILCompiler.DependencyAnalysis
             Instantiation typeInst = this.TypeInstantiation;
             Instantiation methodInst = this.MethodInstantiation;
 
-            foreach (var entry in layout.Entries)
+            foreach (GenericLookupResult lookupResult in layout.Entries)
             {
-                ISymbolNode targetNode = entry.GetTarget(factory, typeInst, methodInst);
-                int targetDelta = entry.TargetDelta;
-                builder.EmitPointerReloc(targetNode, targetDelta);
+#if DEBUG
+                int offsetBefore = builder.CountBytes;
+#endif
+
+                lookupResult.EmitDictionaryEntry(ref builder, factory, typeInst, methodInst);
+
+#if DEBUG
+                Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
+#endif
             }
         }
 
