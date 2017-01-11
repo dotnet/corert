@@ -27,6 +27,8 @@
 
             <JitPackageVersion>1.2.0-beta-24911-02</JitPackageVersion>
 
+            <MicrosoftNetCoreNativePackageVersion>1.2.0-beta-24911-02</MicrosoftNetCoreNativePackageVersion>
+
             <ObjectWriterPackageVersion>1.0.13-prerelease-00001</ObjectWriterPackageVersion>
             <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
             <ObjectWriterNuPkgRid Condition="'$(ObjectWriterNuPkgRid)'==''">$(NuPkgRid)</ObjectWriterNuPkgRid>
@@ -172,6 +174,7 @@
             <ILCompilerFrameworkFiles Include="System.Runtime.CompilerServices.Unsafe/$(CoreFxPackageVersion)/lib/netstandard1.0/System.Runtime.CompilerServices.Unsafe.dll" />
 
             <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).runtime.native.System/$(CoreFxPackageVersion)/runtimes/$(NuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).Microsoft.NETCore.Native/$(MicrosoftNetCoreNativePackageVersion)/runtimes/$(NuPkgRid)/native/libSystem.Globalization.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerFrameworkFiles)">
                 <Text><![CDATA[        <file src="packages/%(Identity)" target="runtimes/$(NuPkgRid)/native/framework/%(Filename)%(Extension)" /> ]]></Text>

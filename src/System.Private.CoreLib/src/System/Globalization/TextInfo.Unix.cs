@@ -49,29 +49,7 @@ namespace System.Globalization
             {
                 fixed (char* pResult = result)
                 {
-                    if (IsAsciiCasingSameAsInvariant && s.IsAscii())
-                    {
-                        int length = s.Length;
-                        char* a = pSource, b = pResult;
-                        if (toUpper)
-                        {
-                            while (length-- != 0)
-                            {
-                                *b++ = ToUpperAsciiInvariant(*a++);
-                            }
-                        }
-                        else
-                        {
-                            while (length-- != 0)
-                            {
-                                *b++ = ToLowerAsciiInvariant(*a++);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        ChangeCase(pSource, s.Length, pResult, result.Length, toUpper);
-                    }
+                    ChangeCase(pSource, s.Length, pResult, result.Length, toUpper);
                 }
             }
 

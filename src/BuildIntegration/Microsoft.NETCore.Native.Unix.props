@@ -40,6 +40,7 @@ See the LICENSE file in the project root for more information.
   <ItemGroup>
     <AdditionalNativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a" />
     <AdditionalNativeLibrary Include="$(IlcPath)/framework/System.Native.a" />
+    <AdditionalNativeLibrary Include="$(IlcPath)/framework/libSystem.Globalization.Native.a" />
   </ItemGroup>
 
   <ItemGroup>
