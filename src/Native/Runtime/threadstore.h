@@ -39,7 +39,7 @@ public:
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
-    static void             DetachCurrentThread();
+    static void             DetachCurrentThread(Thread* pDetachingThread);
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
 #else

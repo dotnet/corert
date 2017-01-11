@@ -154,10 +154,13 @@ void ThreadStore::AttachCurrentThread()
     AttachCurrentThread(true);
 }
 
-void ThreadStore::DetachCurrentThread()
+void ThreadStore::DetachCurrentThread(Thread* pDetachingThread)
 {
-    // The thread may not have been initialized because it may never have run managed code before.
-    Thread * pDetachingThread = RawGetCurrentThread();
+    if (pDetachingThread == NULL)
+    {
+        // This thread has not run any managed code yet
+        return;
+    }
 
     // The thread was not initialized yet, so it was not attached
     if (!pDetachingThread->IsInitialized())
