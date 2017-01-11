@@ -158,9 +158,6 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-// Key for the thread local storage of the attached thread pointer
-static pthread_key_t g_threadKey;
-
 extern bool PalQueryProcessorTopology();
 bool InitializeFlushProcessWriteBuffers();
 
@@ -413,15 +410,6 @@ public:
 
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
-// Destructor of the thread local object represented by the g_threadKey,
-// called when a thread is shut down
-void TlsObjectDestructor(void* data)
-{
-    ASSERT(data == pthread_getspecific(g_threadKey));
-
-    RuntimeThreadShutdown(data);
-}
-
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
@@ -449,11 +437,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
         return false;
     }
 #endif // !USE_PORTABLE_HELPERS
-    int status = pthread_key_create(&g_threadKey, TlsObjectDestructor);
-    if (status != 0)
-    {
-        return false;
-    }
 
     return true;
 }
@@ -464,6 +447,28 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
     return (g_dwPALCapabilities & (uint32_t)capability) == (uint32_t)capability;
 }
 
+struct TlsDestructionMonitor
+{
+    void* m_thread = nullptr;
+
+    void SetThread(void* thread)
+    {
+        m_thread = thread;
+    }
+
+    ~TlsDestructionMonitor()
+    {
+        if (m_thread != nullptr)
+        {
+            RuntimeThreadShutdown(m_thread);
+        }
+    }
+};
+
+// This thread local object is used to detect thread shutdown. Its destructor
+// is called when a thread is being shut down.
+thread_local TlsDestructionMonitor tls_destructionMonitor;
+
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
 // It fails fast if a different thread was already registered.
@@ -471,16 +476,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
-    void* attachedThread = pthread_getspecific(g_threadKey);
-
-    ASSERT_MSG(attachedThread == NULL, "PalAttachThread called multiple times for the same thread");
-
-    int status = pthread_setspecific(g_threadKey, thread);
-    if (status != 0)
-    {
-        ASSERT_UNCONDITIONALLY("PalAttachThread failed to store thread pointer in thread local storage");
-        RhFailFast();
-    }
+    tls_destructionMonitor.SetThread(thread);
 }
 
 // Detach thread from PAL.
@@ -491,26 +487,8 @@ extern "C" void PalAttachThread(void* thread)
 //  true if the thread was detached, false if there was no attached thread
 extern "C" bool PalDetachThread(void* thread)
 {
-    void* attachedThread = pthread_getspecific(g_threadKey);
-
-    if (attachedThread == thread)
-    {
-        int status = pthread_setspecific(g_threadKey, NULL);
-        if (status != 0)
-        {
-            ASSERT_UNCONDITIONALLY("PalDetachThread failed to clear thread pointer in thread local storage");
-            RhFailFast();
-        }
-        return true;
-    }
-
-    if (attachedThread != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("PalDetachThread called with different thread pointer than PalAttachThread");
-        RhFailFast();
-    }
-
-    return false;
+    UNREFERENCED_PARAMETER(thread);
+    return true;
 }
 
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
