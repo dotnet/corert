@@ -73,6 +73,12 @@ namespace ILCompiler
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
 
+            var resourceDataNode = new ResourceDataNode(_modulesSeen);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
+
+            var resourceIndexNode = new ResourceIndexNode(resourceDataNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceIndex), resourceIndexNode, resourceIndexNode, resourceIndexNode.EndSymbol);
+
             var typeMapNode = new TypeMetadataMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
 

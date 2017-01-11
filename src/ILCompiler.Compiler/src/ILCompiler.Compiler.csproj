@@ -90,6 +90,8 @@
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ResourceIndexNode.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationBuilder.cs" />
@@ -266,7 +268,7 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeMethodData.cs">
       <Link>TypeSystem\Interop\IL\PInvokeMethodData.cs</Link>
-    </Compile>	
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
     </Compile>
