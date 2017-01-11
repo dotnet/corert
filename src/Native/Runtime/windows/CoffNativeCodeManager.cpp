@@ -321,12 +321,20 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
             p += sizeof(int32_t);
 
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
-        // @TODO: CORERT: Encode reverse PInvoke frame slot in GCInfo: https://github.com/dotnet/corert/issues/2115
-        // INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
-        // assert(slot != NO_REVERSE_PINVOKE_FRAME);
-
-        *ppPreviousTransitionFrame = (PTR_VOID)-1;
+        TADDR basePointer = NULL;
+        UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
+        if (stackBasedRegister == NO_STACK_BASE_REGISTER)
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetSP());
+        }
+        else
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
+        }
+        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
         return true;
     }
 
