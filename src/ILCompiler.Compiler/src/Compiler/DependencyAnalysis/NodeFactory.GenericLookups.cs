@@ -47,6 +47,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new VirtualResolveGenericLookupResult(method);
                 });
 
+                _typeThreadStaticBaseIndexSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new TypeThreadStaticBaseIndexGenericLookupResult(type);
+                });
+
                 _typeGCStaticBaseSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new TypeGCStaticBaseGenericLookupResult(type);
@@ -63,6 +68,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult Type(TypeDesc type)
             {
                 return _typeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _typeThreadStaticBaseIndexSymbols;
+
+            public GenericLookupResult TypeThreadStaticBaseIndex(TypeDesc type)
+            {
+                return _typeThreadStaticBaseIndexSymbols.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeGCStaticBaseSymbols;

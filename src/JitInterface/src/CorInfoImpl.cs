@@ -1661,7 +1661,7 @@ namespace Internal.JitInterface
                         // Find out what kind of base do we need to look up.
                         if (field.IsThreadStatic)
                         {
-                            throw new NotImplementedException();
+                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         }
                         else if (field.HasGCStaticBase)
                         {
