@@ -1169,64 +1169,25 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
 
 void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
 {
-#ifdef GC_PROFILING
-    DiagUpdateGenerationBounds();
-    GarbageCollectionStartedCallback(gen, isInduced);
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        size_t context = 0;
-
-        // When we're walking objects allocated by class, then we don't want to walk the large
-        // object heap because then it would count things that may have been around for a while.
-        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, FALSE);
-
-        // Notify that we've reached the end of the Gen 0 scan
-        g_profControlBlock.pProfInterface->EndAllocByClass(&context);
-        END_PIN_PROFILER();
-    }
-#else
     UNREFERENCED_PARAMETER(gen);
     UNREFERENCED_PARAMETER(isInduced);
-#endif // GC_PROFILING
 }
 
 void GCToEEInterface::DiagUpdateGenerationBounds()
 {
-#ifdef GC_PROFILING
-    if (CORProfilerTrackGC())
-        UpdateGenerationBounds();
-#endif // GC_PROFILING
 }
 
 void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
 {
-#ifdef GC_PROFILING
-    if (!fConcurrent)
-    {
-        GCProfileWalkHeap();
-        DiagUpdateGenerationBounds();
-        GarbageCollectionFinishedCallback();
-    }
-#else
     UNREFERENCED_PARAMETER(gcContext);
-#endif // GC_PROFILING
 }
 
 void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
 {
-#ifdef GC_PROFILING
-    if (CORProfilerTrackGC())
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCHeapUtilities::GetGCHeap()->DiagWalkFinalizeQueue(gcContext, g_FQWalkFn);
-        END_PIN_PROFILER();
-    }
-#else
     UNREFERENCED_PARAMETER(index);
     UNREFERENCED_PARAMETER(gen);
     UNREFERENCED_PARAMETER(reason);
     UNREFERENCED_PARAMETER(fConcurrent);
-#endif //GC_PROFILING
 }
 
 // Note on last parameter: when calling this for bgc, only ETW
@@ -1238,20 +1199,12 @@ void WalkMovedReferences(uint8_t* begin, uint8_t* end,
                          BOOL fCompacting,
                          BOOL fBGC)
 {
-#ifdef GC_PROFILING
-    ETW::GCLog::MovedReference(begin, end,
-                               (fCompacting ? reloc : 0),
-                               context,
-                               fCompacting,
-                               !fBGC);
-#else
     UNREFERENCED_PARAMETER(begin);
     UNREFERENCED_PARAMETER(end);
     UNREFERENCED_PARAMETER(reloc);
     UNREFERENCED_PARAMETER(context);
     UNREFERENCED_PARAMETER(fCompacting);
     UNREFERENCED_PARAMETER(fBGC);
-#endif
 }
 
 //
