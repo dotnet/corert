@@ -186,6 +186,9 @@
   <data name="Arg_DlgtNullInst" xml:space="preserve">
     <value>Delegate to an instance method cannot have null 'this'.</value>
   </data>
+  <data name="Arg_DlgtTypeMis" xml:space="preserve">
+    <value>Delegates must be of the same type.</value>
+  </data>
   <data name="Arg_DuplicateWaitObjectException" xml:space="preserve">
     <value>Duplicate objects in argument.</value>
   </data>

@@ -331,7 +331,7 @@ namespace System
                 return source;
 
             if (!InternalEqualTypes(source, value))
-                throw new ArgumentException($"The types of '{nameof(source)}' and '{nameof(value)}' should match.");
+                throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             return source.RemoveImpl(value);
         }
