@@ -213,7 +213,7 @@ namespace System.Globalization
             if (ticks < calendarMinValue.Ticks || ticks > calendarMaxValue.Ticks)
             {
                 throw new ArgumentOutOfRangeException(
-                            nameof(ticks),
+                            "time",
                             String.Format(
                                 CultureInfo.InvariantCulture,
                                 SR.ArgumentOutOfRange_CalendarRange,

@@ -425,7 +425,7 @@ namespace System.Globalization
             if (ticks < calendarMinValue.Ticks || ticks > calendarMaxValue.Ticks)
             {
                 throw new ArgumentOutOfRangeException(
-                            nameof(ticks),
+                            "time",
                             // Print out the date in Gregorian using InvariantCulture since the DateTime is based on GreograinCalendar.
                             String.Format(
                                 CultureInfo.InvariantCulture,

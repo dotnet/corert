@@ -667,7 +667,7 @@ namespace System.Threading.Tasks
                 throw new ArgumentNullException(nameof(asyncResult));
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException(nameof(endFunction));
+                throw new ArgumentNullException("endMethod");
 
             Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
@@ -774,7 +774,7 @@ namespace System.Threading.Tasks
                 throw new ArgumentNullException(nameof(beginMethod));
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException(nameof(endFunction));
+                throw new ArgumentNullException("endMethod");
 
             Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
@@ -1006,7 +1006,7 @@ namespace System.Threading.Tasks
                 throw new ArgumentNullException(nameof(beginMethod));
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException(nameof(endFunction));
+                throw new ArgumentNullException("endMethod");
 
             Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
@@ -1134,7 +1134,7 @@ namespace System.Threading.Tasks
                 throw new ArgumentNullException(nameof(beginMethod));
 
             if (endFunction == null && endAction == null)
-                throw new ArgumentNullException(nameof(endFunction));
+                throw new ArgumentNullException("endMethod");
 
             Debug.Assert((endFunction != null) != (endAction != null), "Both endFunction and endAction were non-null");
 
