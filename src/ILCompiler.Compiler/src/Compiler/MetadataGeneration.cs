@@ -46,8 +46,6 @@ namespace ILCompiler
 
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
-        private GenericsHashtableNode _genericsHashtable;
-
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataGeneration(NodeFactory factory)
@@ -103,8 +101,8 @@ namespace ILCompiler
             var exactMethodInstantiations = new ExactMethodInstantiationsNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), exactMethodInstantiations, exactMethodInstantiations, exactMethodInstantiations.EndSymbol);
 
-            _genericsHashtable = new GenericsHashtableNode(nativeReferencesTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), _genericsHashtable, _genericsHashtable, _genericsHashtable.EndSymbol);
+            var genericsHashtable = new GenericsHashtableNode(nativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), genericsHashtable, genericsHashtable, genericsHashtable.EndSymbol);
 
             // This one should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
@@ -118,7 +116,6 @@ namespace ILCompiler
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
                 AddGeneratedType(eetypeNode.Type);
-                _genericsHashtable.AddEntryIfEligible(_nodeFactory, eetypeNode.Type);
                 return;
             }
 
@@ -395,6 +392,11 @@ namespace ILCompiler
         internal bool TypeGeneratesEEType(TypeDesc type)
         {
             return _typesWithEETypesGenerated.Contains(type);
+        }
+
+        internal IEnumerable<TypeDesc> GetTypesWithEETypes()
+        {
+            return _typesWithEETypesGenerated;
         }
 
         private struct DummyMetadataPolicy : IMetadataPolicy
