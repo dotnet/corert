@@ -47,7 +47,6 @@ namespace ILCompiler
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
         private GenericsHashtableNode _genericsHashtable;
-        private ExactMethodInstantiationsNode _exactMethodInstantiations;
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
@@ -101,8 +100,8 @@ namespace ILCompiler
             NativeLayoutInfo = new NativeLayoutInfoNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), NativeLayoutInfo, NativeLayoutInfo, NativeLayoutInfo.EndSymbol);
 
-            _exactMethodInstantiations = new ExactMethodInstantiationsNode(nativeReferencesTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), _exactMethodInstantiations, _exactMethodInstantiations, _exactMethodInstantiations.EndSymbol);
+            var exactMethodInstantiations = new ExactMethodInstantiationsNode(nativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), exactMethodInstantiations, exactMethodInstantiations, exactMethodInstantiations.EndSymbol);
 
             _genericsHashtable = new GenericsHashtableNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), _genericsHashtable, _genericsHashtable, _genericsHashtable.EndSymbol);
@@ -137,7 +136,6 @@ namespace ILCompiler
                 }
 
                 AddGeneratedType(method.OwningType);
-                _exactMethodInstantiations.AddEntryIfEligible(_nodeFactory, method);
                 _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
                 _methodsGenerated.Add(method);
                 return;
@@ -387,6 +385,11 @@ namespace ILCompiler
         internal IEnumerable<ArrayType> GetArrayTypeMapping()
         {
             return _arrayTypesGenerated;
+        }
+
+        internal IEnumerable<MethodDesc> GetCompiledMethods()
+        {
+            return _methodsGenerated;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)
