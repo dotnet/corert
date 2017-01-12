@@ -30,9 +30,9 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
             // Calculate the build commands
             if (os == 'Windows_NT') {
                 buildString = "build.cmd ${lowercaseConfiguration}"
+                testScriptString = "tests\\runtest.cmd /coreclr "
             }
             else {
-                // On other OS's we skipmscorlib but run the pal tests
                 buildString = "./build.sh ${lowercaseConfiguration}"
             }
 
@@ -46,8 +46,15 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
                         batchFile(buildString)
 
                         if (configuration == 'Debug') {
-                            prJobDescription += " + CoreCLR tests"
-                            batchFile("tests\\runtest.cmd /coreclr Top200")
+                            if (isPR) {
+                                prJobDescription += " and CoreCLR tests"
+                                // Run a small set of BVTs during PR validation
+                                batchFile(testScriptString + "Top200")
+                            }
+                            else {
+                                // Run the full set of known passing tests in the post-commit job
+                                batchFile(testScriptString + "KnownGood")
+                            }
                         }
                     }
                     else {
