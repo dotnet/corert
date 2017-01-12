@@ -4,8 +4,6 @@
 
 using System;
 using System.IO;
-using System.Diagnostics;
-using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -21,23 +19,10 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
 
-        private NativeWriter _writer;
-        private Section _tableSection;
-        private VertexHashtable _hashtable;
-
-        private HashSet<TypeDesc> _genericTypeInstantiations;
-
         public GenericsHashtableNode(ExternalReferencesTableNode externalReferences)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__generics_hashtable_End", true);
             _externalReferences = externalReferences;
-
-            _writer = new NativeWriter();
-            _hashtable = new VertexHashtable();
-            _tableSection = _writer.NewSection();
-            _tableSection.Place(_hashtable);
-
-            _genericTypeInstantiations = new HashSet<TypeDesc>();
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -52,34 +37,32 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName() => this.GetMangledName();
 
-        public void AddEntryIfEligible(NodeFactory factory, TypeDesc type)
-        {
-            // If this is an instantiated non-canonical generic type, add it to the generic instantiations hashtable
-            if (!type.HasInstantiation || type.IsGenericDefinition || type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                return;
-
-            // Already added?
-            if (!_genericTypeInstantiations.Add(type))
-                return;
-
-            var typeSymbol = factory.NecessaryTypeSymbol(type);
-            uint instantiationId = _externalReferences.GetIndex(typeSymbol);
-            Vertex hashtableEntry = _writer.GetUnsignedConstant(instantiationId);
-
-            _hashtable.Append((uint)type.GetHashCode(), _tableSection.Place(hashtableEntry));
-        }
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
-            // Zero out the hashset so that we AV if someone tries to insert after we're done.
-            _genericTypeInstantiations = null;
+            NativeWriter nativeWriter = new NativeWriter();
+            VertexHashtable hashtable = new VertexHashtable();
+            Section nativeSection = nativeWriter.NewSection();
+            nativeSection.Place(hashtable);
+
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
+            {
+                // If this is an instantiated non-canonical generic type, add it to the generic instantiations hashtable
+                if (!type.HasInstantiation || type.IsGenericDefinition || type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    continue;
+
+                var typeSymbol = factory.NecessaryTypeSymbol(type);
+                uint instantiationId = _externalReferences.GetIndex(typeSymbol);
+                Vertex hashtableEntry = nativeWriter.GetUnsignedConstant(instantiationId);
+
+                hashtable.Append((uint)type.GetHashCode(), nativeSection.Place(hashtableEntry));
+            }
 
             MemoryStream stream = new MemoryStream();
-            _writer.Save(stream);
+            nativeWriter.Save(stream);
             byte[] streamBytes = stream.ToArray();
 
             _endSymbol.SetSymbolOffset(streamBytes.Length);
