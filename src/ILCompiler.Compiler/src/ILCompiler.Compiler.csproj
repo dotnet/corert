@@ -128,7 +128,9 @@
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />    
+    <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ResourceIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
