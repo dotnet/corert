@@ -46,9 +46,6 @@ namespace ILCompiler
 
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
-        private ExternalReferencesTableNode _commonFixupsTableNode;
-        private ExternalReferencesTableNode _nativeReferencesTableNode;
-
         private GenericsHashtableNode _genericsHashtable;
         private ExactMethodInstantiationsNode _exactMethodInstantiations;
 
@@ -76,8 +73,8 @@ namespace ILCompiler
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            _commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
-            _nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
+            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
 
             var resourceDataNode = new ResourceDataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
@@ -85,34 +82,34 @@ namespace ILCompiler
             var resourceIndexNode = new ResourceIndexNode(resourceDataNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceIndex), resourceIndexNode, resourceIndexNode, resourceIndexNode.EndSymbol);
           
-            var typeMapNode = new TypeMetadataMapNode(_commonFixupsTableNode);
+            var typeMapNode = new TypeMetadataMapNode(commonFixupsTableNode);
 
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
 
-            var cctorContextMapNode = new ClassConstructorContextMap(_commonFixupsTableNode);
+            var cctorContextMapNode = new ClassConstructorContextMap(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
 
-            var invokeMapNode = new ReflectionInvokeMapNode(_commonFixupsTableNode);
+            var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
 
-            var arrayMapNode = new ArrayMapNode(_commonFixupsTableNode);
+            var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
 
-            var fieldMapNode = new ReflectionFieldMapNode(_commonFixupsTableNode);
+            var fieldMapNode = new ReflectionFieldMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FieldAccessMap), fieldMapNode, fieldMapNode, fieldMapNode.EndSymbol);
 
-            NativeLayoutInfo = new NativeLayoutInfoNode(_nativeReferencesTableNode);
+            NativeLayoutInfo = new NativeLayoutInfoNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), NativeLayoutInfo, NativeLayoutInfo, NativeLayoutInfo.EndSymbol);
 
-            _exactMethodInstantiations = new ExactMethodInstantiationsNode(_nativeReferencesTableNode);
+            _exactMethodInstantiations = new ExactMethodInstantiationsNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), _exactMethodInstantiations, _exactMethodInstantiations, _exactMethodInstantiations.EndSymbol);
 
-            _genericsHashtable = new GenericsHashtableNode(_nativeReferencesTableNode);
+            _genericsHashtable = new GenericsHashtableNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), _genericsHashtable, _genericsHashtable, _genericsHashtable.EndSymbol);
 
             // This one should go last
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), _commonFixupsTableNode, _commonFixupsTableNode, _commonFixupsTableNode.EndSymbol);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), _nativeReferencesTableNode, _nativeReferencesTableNode, _nativeReferencesTableNode.EndSymbol);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
         }
 
         private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
