@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Text;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
@@ -25,8 +23,8 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Resource index information generated while extracting resources into the data blob
         /// </summary>
-        private List<ResourceIndexData> IndexData { get; set; }
-        private int TotalLength { get; set; }
+        private List<ResourceIndexData> _indexData;
+        private int _totalLength;
 
         public ResourceDataNode()
         {
@@ -64,20 +62,20 @@ namespace ILCompiler.DependencyAnalysis
                 1,
                 new ISymbolNode[]
                 {
-                                this,
-                                EndSymbol
+                    this,
+                    EndSymbol
                 });
         }
 
-        public List<ResourceIndexData> GetOrCreateIndexData(NodeFactory factory)
+        public IReadOnlyList<ResourceIndexData> GetOrCreateIndexData(NodeFactory factory)
         {
-            if (IndexData != null)
+            if (_indexData != null)
             {
-                return IndexData;
+                return _indexData;
             }
 
-            TotalLength = 0;
-            IndexData = new List<ResourceIndexData>();
+            _totalLength = 0;
+            _indexData = new List<ResourceIndexData>();
             // Build up index information
             foreach (EcmaAssembly module in factory.MetadataManager.GetModulesWithMetadata().OfType<EcmaAssembly>())
             {
@@ -101,9 +99,9 @@ namespace ILCompiler.DependencyAnalysis
                             string assemblyName = module.GetName().FullName;
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             int length = (int)reader.ReadUInt32();
-                            ResourceIndexData indexData = new ResourceIndexData(assemblyName, resourceName, TotalLength, (int)resource.Offset + sizeof(Int32), module, length);
-                            IndexData.Add(indexData);
-                            TotalLength += length;
+                            ResourceIndexData indexData = new ResourceIndexData(assemblyName, resourceName, _totalLength, (int)resource.Offset + sizeof(Int32), module, length);
+                            _indexData.Add(indexData);
+                            _totalLength += length;
                         }
                     }
                 }
@@ -113,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            return IndexData;
+            return _indexData;
         }
 
         /// <summary>
@@ -125,9 +123,9 @@ namespace ILCompiler.DependencyAnalysis
             GetOrCreateIndexData(factory);
 
             // Read resources into the blob
-            byte[] resourceBlob = new byte[TotalLength];
+            byte[] resourceBlob = new byte[_totalLength];
             int currentPos = 0;
-            foreach (ResourceIndexData indexData in IndexData)
+            foreach (ResourceIndexData indexData in _indexData)
             {
                 EcmaModule module = indexData.EcmaModule;
                 PEMemoryBlock resourceDirectory = module.PEReader.GetSectionData(module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);

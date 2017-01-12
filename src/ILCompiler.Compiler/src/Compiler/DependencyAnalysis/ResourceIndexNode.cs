@@ -54,8 +54,8 @@ namespace ILCompiler.DependencyAnalysis
                 1,
                 new ISymbolNode[]
                 {
-                                this,
-                                EndSymbol
+                    this,
+                    EndSymbol
                 });
         }
 
