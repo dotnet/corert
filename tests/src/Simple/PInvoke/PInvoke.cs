@@ -34,7 +34,10 @@ namespace PInvoke
         private static extern int VerifyStringBuilder(StringBuilder sb);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
-        public static extern bool SafeHandleTest(SafeFileHandle sh1, Int32 sh1Value);
+        public static extern bool SafeHandleTest(SafeMemoryHandle sh1, Int64 sh1Value);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
+        public static extern bool LastErrorTest();
 
         public static int Main(string[] args)
         {
@@ -43,8 +46,8 @@ namespace PInvoke
             TestArrays();
             TestByRef();
             TestString();
+            TestLastError();
             TestSafeHandle();
-            
             return 100;
         }
 
@@ -97,45 +100,35 @@ namespace PInvoke
             ThrowIfNotEquals(1, VerifyUnicodeString("Hello World"), "Unicode String marshalling failed.");
         }
 
+        private static void TestLastError()
+        {
+            Console.WriteLine("Testing last error");
+            ThrowIfNotEquals(true, LastErrorTest(), "GetLastWin32Error is not zero");
+            ThrowIfNotEquals(12345, Marshal.GetLastWin32Error(), "Last Error test failed");
+        }
+
         private static void TestSafeHandle()
         {
             Console.WriteLine("Testing marshalling SafeHandle");
-            String lpFileName = "A.txt";
-            uint dwDesiredAccess = 0x40000000; // GENERIC_WRITE
-            uint dwShareMode = 0x00000002; // FILE_SHARE_WRITE
-            IntPtr lpSecurityAttributes = IntPtr.Zero;
-            uint dwCreationDisposition = 2;// CREATE_ALWAYS;
-            uint dwFlagsAndAttributes = 0x04000000; //FILE_FLAG_DELETE_ON_CLOSE
-            IntPtr hTemplateFile = IntPtr.Zero;
 
-            //create the handle
-            SafeFileHandle hnd = SafeFileHandle.CreateFile(lpFileName, dwDesiredAccess, dwShareMode,
-                lpSecurityAttributes, dwCreationDisposition,
-                dwFlagsAndAttributes, hTemplateFile);
+            SafeMemoryHandle hnd = SafeMemoryHandle.AllocateMemory(1000);
 
             IntPtr hndIntPtr = hnd.DangerousGetHandle(); //get the IntPtr associated with hnd
-            int intVal =  hndIntPtr.ToInt32(); //return the 32-bit value associated with hnd
+            long val =  hndIntPtr.ToInt64(); //return the 64-bit value associated with hnd
 
-            ThrowIfNotEquals(true, SafeHandleTest(hnd, intVal), "Ansi String marshalling failed.");
+            ThrowIfNotEquals(true, SafeHandleTest(hnd, val), "SafeHandle marshalling failed.");
         }
     }
 
-    public class SafeFileHandle : SafeHandle //SafeHandle subclass
+    public class SafeMemoryHandle : SafeHandle //SafeHandle subclass
     {
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        public static extern SafeMemoryHandle AllocateMemory(int size);
 
-        [DllImport("kernel32", SetLastError = true)]
-        private static extern bool CloseHandle(IntPtr handle);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool ReleaseMemory(IntPtr handle);
 
-
-        //each SafeHandle subclass will expose a static method for instance creation
-        [DllImport("kernel32", EntryPoint = "CreateFileW", SetLastError = true, CharSet =CharSet.Unicode)]
-        public static extern SafeFileHandle CreateFile(String lpFileName,
-                                                uint dwDesiredAccess, uint dwShareMode,
-                                                IntPtr lpSecurityAttributes, uint dwCreationDisposition,
-                                                uint dwFlagsAndAttributes, IntPtr hTemplateFile);
-
-        //default constructor which just calls the base class constructor
-        public SafeFileHandle()
+        public SafeMemoryHandle()
             : base(IntPtr.Zero, true)
         {
         }
@@ -149,8 +142,8 @@ namespace PInvoke
 
         override protected bool ReleaseHandle()
         {
-            return CloseHandle(handle);
+            return ReleaseMemory(handle);
         }
-    } //end of SafeFileHandle class
+    } //end of SafeMemoryHandle class
 
 }

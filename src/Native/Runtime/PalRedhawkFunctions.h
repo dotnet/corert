@@ -94,12 +94,6 @@ inline UInt32 PalGetEnvironmentVariable(__in_z_opt LPCSTR arg1, __out_z_opt LPST
 }
 #endif
 
-extern "C" UInt32 __stdcall GetLastError();
-inline UInt32 PalGetLastError()
-{
-    return GetLastError();
-}
-
 extern "C" void * __stdcall GetProcAddress(HANDLE, const char *);
 inline void * PalGetProcAddress(HANDLE arg1, const char * arg2)
 {

@@ -32,7 +32,15 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public  bool IsSafeHandle(TypeDesc type)
+        public MetadataType PInvokeMarshal
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "PInvokeMarshal");
+            }
+        }
+
+        public bool IsSafeHandle(TypeDesc type)
         {
             var safeHandleType = this.SafeHandleType;
             while (type != null)

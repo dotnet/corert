@@ -67,7 +67,6 @@ namespace Internal.TypeSystem.Interop
             Debug.Assert(method.IsPInvoke);
 
             // TODO: true if there are any custom marshalling rules on the parameters
-            // TODO: true if SetLastError is true
 
             TypeDesc returnType = method.Signature.ReturnType;
             if (!MarshalHelpers.IsBlittableType(returnType) && !returnType.IsVoid)
@@ -81,7 +80,12 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            if (UseLazyResolution(method, method.GetPInvokeMethodMetadata().Module, configuration))
+            PInvokeMetadata methodData = method.GetPInvokeMethodMetadata();    
+            if (UseLazyResolution(method, methodData.Module, configuration))
+            {
+                return true;
+            }
+            if ((methodData.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
             {
                 return true;
             }
@@ -95,10 +99,6 @@ namespace Internal.TypeSystem.Interop
         /// </summary>
         public static bool UseLazyResolution(MethodDesc method, string importModule, PInvokeILEmitterConfiguration configuration)
         {
-            // TODO: Test and make this work on non-Windows
-            if (!method.Context.Target.IsWindows)
-                return false;
-
             bool? forceLazyResolution = configuration.ForceLazyResolution;
             if (forceLazyResolution.HasValue)
                 return forceLazyResolution.Value;
@@ -109,9 +109,14 @@ namespace Internal.TypeSystem.Interop
                 return false;
 
             if (method.Context.Target.IsWindows)
+            {
                 return !importModule.StartsWith("api-ms-win-");
-            else
-                return !importModule.StartsWith("System.Private.");
+            }
+            else 
+            {
+                // Account for System.Private.CoreLib.Native / System.Globalization.Native / System.Native / etc
+                return !importModule.StartsWith("System.");
+            }
         }
     }
 }

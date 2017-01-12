@@ -398,6 +398,7 @@ namespace System
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
                 // CORERT-TODO: RhpEtwExceptionThrown
+                // https://github.com/dotnet/corert/issues/2457
 #if !CORERT
                 if (isFirstFrame)
                 {

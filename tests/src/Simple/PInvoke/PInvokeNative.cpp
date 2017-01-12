@@ -4,22 +4,32 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#ifdef Windows_NT
 #include <windows.h>
+#define DLL_EXPORT extern "C" __declspec(dllexport)
+#else
+#include<errno.h>
+#define HANDLE size_t
+#define DLL_EXPORT extern "C" __attribute((visibility("default")))
+#endif
 
+#if !defined(__stdcall)
+#define __stdcall
+#endif
 
-extern "C" __declspec(dllexport) int __stdcall Square(int intValue)
+DLL_EXPORT int __stdcall Square(int intValue)
 {
     return intValue * intValue;
 }
 
-extern "C" __declspec(dllexport) int __stdcall IsTrue(bool value)
+DLL_EXPORT int __stdcall IsTrue(bool value)
 {
     if (value == true)
         return 1;
     return 0;
 }
 
-extern "C" __declspec(dllexport) int __stdcall CheckIncremental(int *array, int sz)
+DLL_EXPORT int __stdcall CheckIncremental(int *array, int sz)
 {
     if (array == NULL)
         return 1;
@@ -32,7 +42,7 @@ extern "C" __declspec(dllexport) int __stdcall CheckIncremental(int *array, int 
     return 0;
 }
 
-extern "C" __declspec(dllexport) int __stdcall Inc(int *val)
+DLL_EXPORT int __stdcall Inc(int *val)
 {
     if (val == NULL)
         return -1;
@@ -41,7 +51,7 @@ extern "C" __declspec(dllexport) int __stdcall Inc(int *val)
     return 0;
 }
 
-extern "C" __declspec(dllexport) int __stdcall VerifyAnsiString(char *val)
+DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
 {
     if (val == NULL)
         return 1;
@@ -56,17 +66,17 @@ extern "C" __declspec(dllexport) int __stdcall VerifyAnsiString(char *val)
         q++;
     }
 
-    return *p == NULL  &&  *q == NULL;
+    return *p == 0  &&  *q == 0;
 }
 
-extern "C" __declspec(dllexport) int __stdcall VerifyUnicodeString(wchar_t *val)
+DLL_EXPORT int __stdcall VerifyUnicodeString(unsigned short *val)
 {
     if (val == NULL)
         return 1;
 
-    wchar_t expected[] = L"Hello World";
-    wchar_t *p = expected;
-    wchar_t *q = val;
+    unsigned short expected[] = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0};
+    unsigned short *p = expected;
+    unsigned short *q = val;
 
     while (*p  && *q && *p == *q)
     {
@@ -74,11 +84,35 @@ extern "C" __declspec(dllexport) int __stdcall VerifyUnicodeString(wchar_t *val)
         q++;
     }
 
-    return *p == NULL  &&  *q == NULL;
+    return *p == 0  &&  *q == 0;
 }
 
-extern "C" __declspec(dllexport) bool __stdcall SafeHandleTest(HANDLE sh, int shValue)
+DLL_EXPORT bool __stdcall LastErrorTest()
 {
-    return (int)sh == shValue;
+    int lasterror;
+#ifdef Windows_NT
+    lasterror = GetLastError();
+    SetLastError(12345);
+#else
+    lasterror = errno;
+    errno = 12345;
+#endif
+    return lasterror == 0;
 }
 
+DLL_EXPORT void* __stdcall AllocateMemory(int bytes)
+{
+    void *mem = malloc(bytes);
+    return mem;
+}
+
+DLL_EXPORT bool __stdcall ReleaseMemory(void *mem)
+{
+   free(mem);
+   return true;
+}
+
+DLL_EXPORT bool __stdcall SafeHandleTest(HANDLE sh, long shValue)
+{
+    return (long)((size_t)(sh)) == shValue;
+}

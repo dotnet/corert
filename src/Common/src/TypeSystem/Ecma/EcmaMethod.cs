@@ -413,6 +413,7 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)MethodImportAttributes.CallingConventionStdCall == (int)PInvokeAttributes.CallingConventionStdCall);
             Debug.Assert((int)MethodImportAttributes.CharSetAuto == (int)PInvokeAttributes.CharSetAuto);
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
+            Debug.Assert((int)MethodImportAttributes.SetLastError == (int)PInvokeAttributes.SetLastError);
 
             return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes);
         }
@@ -422,12 +423,11 @@ namespace Internal.TypeSystem.Ecma
             MetadataReader metadataReader = MetadataReader;
             
             // Spot check the enums match
-            Debug.Assert((int)ParameterAttributes.In == (int)ParameterAttributes.In);
-            Debug.Assert((int)ParameterAttributes.Out == (int)ParameterAttributes.Out);
-            Debug.Assert((int)ParameterAttributes.Optional == (int)ParameterAttributes.Optional);
-            Debug.Assert((int)ParameterAttributes.HasDefault == (int)ParameterAttributes.HasDefault);
-            Debug.Assert((int)ParameterAttributes.HasFieldMarshal == (int)ParameterAttributes.HasFieldMarshal);
-
+            Debug.Assert((int)ParameterAttributes.In == (int)ParameterMetadataAttributes.In);
+            Debug.Assert((int)ParameterAttributes.Out == (int)ParameterMetadataAttributes.Out);
+            Debug.Assert((int)ParameterAttributes.Optional == (int)ParameterMetadataAttributes.Optional);
+            Debug.Assert((int)ParameterAttributes.HasDefault == (int)ParameterMetadataAttributes.HasDefault);
+            Debug.Assert((int)ParameterAttributes.HasFieldMarshal == (int)ParameterMetadataAttributes.HasFieldMarshal);
 
             ParameterHandleCollection parameterHandles = metadataReader.GetMethodDefinition(_handle).GetParameters();
             ParameterMetadata[] parameterMetadataArray = new ParameterMetadata[parameterHandles.Count];
@@ -435,11 +435,23 @@ namespace Internal.TypeSystem.Ecma
             foreach (ParameterHandle parameterHandle in parameterHandles)
             {
                 Parameter parameter = metadataReader.GetParameter(parameterHandle);
-                TypeDesc marshalAs = null; // TODO: read marshalAs argument;
-                ParameterMetadata data = new ParameterMetadata(parameter.SequenceNumber, (ParameterAttributes)parameter.Attributes, marshalAs);
+                MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(parameter);
+                ParameterMetadata data = new ParameterMetadata(parameter.SequenceNumber, (ParameterMetadataAttributes)parameter.Attributes, marshalAsDescriptor);
                 parameterMetadataArray[index++] = data;
             }
             return parameterMetadataArray;
+        }
+
+        private MarshalAsDescriptor GetMarshalAsDescriptor(Parameter parameter)
+        {
+            if ((parameter.Attributes & ParameterAttributes.HasFieldMarshal) == ParameterAttributes.HasFieldMarshal)
+            {
+                MetadataReader metadataReader = MetadataReader;
+                BlobReader marshalAsReader = metadataReader.GetBlobReader(parameter.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(Module, marshalAsReader);
+                return parser.ParseMarshalAsDescriptor();
+            }
+            return null;
         }
     }
 }
