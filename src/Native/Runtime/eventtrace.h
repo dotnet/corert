@@ -29,7 +29,18 @@
 #define _VMEVENTTRACE_H_
 
 #include "eventtracebase.h"
+#include "gcinterface.h"
 
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+struct ProfilingScanContext : ScanContext
+{
+    BOOL fProfilerPinned;
+    void * pvEtwContext;
+    void *pHeapId;
+    
+    ProfilingScanContext(BOOL fProfilerPinnedParam);
+};
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 namespace ETW
 {

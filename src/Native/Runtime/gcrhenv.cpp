@@ -138,7 +138,7 @@ UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
         FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
                           GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
                           GCHeapUtilities::IsServerHeap());
-        GCHeapUtilities::GetGCHeap()->TraceGCSegments();
+        GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -706,7 +706,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
 void RedhawkGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
 {
 #if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
-    GCHeapUtilities::GetGCHeap()->WalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
+    GCHeapUtilities::GetGCHeap()->DiagWalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
 #else
     UNREFERENCED_PARAMETER(pObject);
     UNREFERENCED_PARAMETER(pfnScanCallback);
@@ -1184,7 +1184,9 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         g_profControlBlock.pProfInterface->EndAllocByClass(&context);
         END_PIN_PROFILER();
     }
-
+#else
+    UNREFERENCED_PARAMETER(gen);
+    UNREFERENCED_PARAMETER(isInduced);
 #endif // GC_PROFILING
 }
 
@@ -1205,6 +1207,8 @@ void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
         DiagUpdateGenerationBounds();
         GarbageCollectionFinishedCallback();
     }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
 #endif // GC_PROFILING
 }
 
@@ -1217,6 +1221,11 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
         GCHeapUtilities::GetGCHeap()->DiagWalkFinalizeQueue(gcContext, g_FQWalkFn);
         END_PIN_PROFILER();
     }
+#else
+    UNREFERENCED_PARAMETER(index);
+    UNREFERENCED_PARAMETER(gen);
+    UNREFERENCED_PARAMETER(reason);
+    UNREFERENCED_PARAMETER(fConcurrent);
 #endif //GC_PROFILING
 }
 
@@ -1235,8 +1244,36 @@ void WalkMovedReferences(uint8_t* begin, uint8_t* end,
                                context,
                                fCompacting,
                                !fBGC);
+#else
+    UNREFERENCED_PARAMETER(begin);
+    UNREFERENCED_PARAMETER(end);
+    UNREFERENCED_PARAMETER(reloc);
+    UNREFERENCED_PARAMETER(context);
+    UNREFERENCED_PARAMETER(fCompacting);
+    UNREFERENCED_PARAMETER(fBGC);
 #endif
 }
+
+//
+// Diagnostics code
+//
+
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+inline BOOL ShouldTrackMovementForProfilerOrEtw()
+{
+#ifdef GC_PROFILING
+    if (CORProfilerTrackGC())
+        return true;
+#endif
+
+#ifdef FEATURE_EVENT_TRACE
+    if (ETW::GCLog::ShouldTrackMovementForEtw())
+        return true;
+#endif
+
+    return false;
+}
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
 {
@@ -1248,6 +1285,8 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
         GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_gc);
         ETW::GCLog::EndMovedReferences(context);
     }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
 }
 
@@ -1261,6 +1300,8 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
         GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_loh);
         ETW::GCLog::EndMovedReferences(context);
     }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
 }
 
@@ -1274,6 +1315,8 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
         GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_bgc);
         ETW::GCLog::EndMovedReferences(context);
     }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
 }
 
@@ -1532,14 +1575,6 @@ MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
 bool g_fFinalizerRunOnShutDown;
 
-void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
-{
-}
-
-void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoundsCheck*/)
-{
-}
-
 bool IsGCThread()
 {
     return false;
@@ -1618,3 +1653,17 @@ void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t 
 {
     ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
 }
+
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
+    : ScanContext()
+{
+    pHeapId = NULL;
+    fProfilerPinned = fProfilerPinnedParam;
+    pvEtwContext = NULL;
+#ifdef FEATURE_CONSERVATIVE_GC
+    // To not confuse GCScan::GcScanRoots
+    promotion = g_pConfig->GetGCConservative();
+#endif
+}
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
