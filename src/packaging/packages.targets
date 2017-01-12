@@ -112,7 +112,6 @@
 
             <!-- Repackage the CoreCLR framework -->
             <!-- TODO: Obtain this via nuget once the framework is properly packaged -->
-            <ILCompilerAnyFrameworkFiles Include="System.Runtime" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization.Calendars" />
             <ILCompilerAnyFrameworkFiles Include="System.IO" />
@@ -126,6 +125,7 @@
             <ILCompilerSdkBinPlace Include="@(ILCompilerAnyFrameworkFiles)">
               <Text><![CDATA[        <file src="packages/runtime.any.%(Identity)/$(CoreFxPackageVersion)/lib/netstandard1.7/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
+
 
             <ILCompilerFrameworkFiles Include="runtime.aot.System.Reflection.Primitives/$(CoreFxPackageVersion)/runtimes/aot/lib/uap10.1/System.Reflection.Primitives.dll" />
             <ILCompilerFrameworkFiles Include="runtime.aot.System.Runtime.InteropServices/$(CoreFxPackageVersion)/runtimes/aot/lib/uap10.1/System.Runtime.InteropServices.dll" />
@@ -144,6 +144,7 @@
 
             <ILCompilerFrameworkFiles Include="runtime.win7.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.any.System.Runtime/$(CoreFXPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Runtime.dll" />
             <ILCompilerFrameworkFiles Include="runtime.win.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
