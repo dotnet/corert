@@ -5,7 +5,6 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -21,16 +20,10 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
 
-        private HashSet<MethodDesc> _visitedMethods;
-        private List<MethodDesc> _exactMethodInstantiationsList;
-
         public ExactMethodInstantiationsNode(ExternalReferencesTableNode externalReferences)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__exact_method_instantiations_End", true);
             _externalReferences = externalReferences;
-
-            _visitedMethods = new HashSet<MethodDesc>();
-            _exactMethodInstantiationsList = new List<MethodDesc>();
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -51,12 +44,8 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
-            // Zero out the hashset so that we AV if someone tries to insert after we're done.
-            _visitedMethods = null;
-
             // Ensure the native layout data has been saved, in order to get valid Vertex offsets for the signature Vertices
             factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);
-
 
             NativeWriter nativeWriter = new NativeWriter();
             VertexHashtable hashtable = new VertexHashtable();
@@ -64,8 +53,11 @@ namespace ILCompiler.DependencyAnalysis
             nativeSection.Place(hashtable);
 
 
-            foreach (MethodDesc method in _exactMethodInstantiationsList)
+            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
             {
+                if (!IsMethodEligibleForTracking(method))
+                    continue;
+
                 // Get the method pointer vertex
 
                 bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
@@ -141,18 +133,6 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(nameAndSig), "Exact method instantiation entry"));
 
             return dependencies;
-        }
-
-        public void AddEntryIfEligible(NodeFactory factory, MethodDesc method)
-        {
-            // Check if we already saw this method
-            if (!_visitedMethods.Add(method))
-                return;
-
-            if (!IsMethodEligibleForTracking(method))
-                return;
-
-            _exactMethodInstantiationsList.Add(method);
         }
 
         private static bool IsMethodEligibleForTracking(MethodDesc method)
