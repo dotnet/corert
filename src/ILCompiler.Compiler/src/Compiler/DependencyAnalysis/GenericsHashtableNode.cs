@@ -52,10 +52,13 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName() => this.GetMangledName();
 
-        public void AddInstantiatedTypeEntry(NodeFactory factory, TypeDesc type)
+        public void AddEntryIfEligible(NodeFactory factory, TypeDesc type)
         {
-            Debug.Assert(type.HasInstantiation && !type.IsGenericDefinition);
+            // If this is an instantiated non-canonical generic type, add it to the generic instantiations hashtable
+            if (!type.HasInstantiation || type.IsGenericDefinition || type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return;
 
+            // Already added?
             if (!_genericTypeInstantiations.Add(type))
                 return;
 
