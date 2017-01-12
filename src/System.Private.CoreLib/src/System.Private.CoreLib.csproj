@@ -31,6 +31,9 @@
   <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
     <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsOSX)'=='true'">
+    <DefineConstants>PLATFORM_OSX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -1001,9 +1004,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetUnixName.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Interop\Unix\System.Native\Interop.LSeek.cs</Link>

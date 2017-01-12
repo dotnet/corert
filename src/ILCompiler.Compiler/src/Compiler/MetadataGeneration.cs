@@ -46,8 +46,13 @@ namespace ILCompiler
 
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
+        private ExternalReferencesTableNode _commonFixupsTableNode;
+        private ExternalReferencesTableNode _nativeReferencesTableNode;
+
+        private GenericsHashtableNode _genericsHashtable;
+        private ExactMethodInstantiationsNode _exactMethodInstantiations;
+
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
-        internal GenericsHashtableNode GenericsHashtable { get; private set; }
 
         public MetadataGeneration(NodeFactory factory)
         {
@@ -71,41 +76,43 @@ namespace ILCompiler
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
+            _commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
+            _nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
 
             var resourceDataNode = new ResourceDataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
 
             var resourceIndexNode = new ResourceIndexNode(resourceDataNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceIndex), resourceIndexNode, resourceIndexNode, resourceIndexNode.EndSymbol);
+          
+            var typeMapNode = new TypeMetadataMapNode(_commonFixupsTableNode);
 
-            var typeMapNode = new TypeMetadataMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
 
-            var cctorContextMapNode = new ClassConstructorContextMap(commonFixupsTableNode);
+            var cctorContextMapNode = new ClassConstructorContextMap(_commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
 
-            var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
+            var invokeMapNode = new ReflectionInvokeMapNode(_commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
 
-            var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
+            var arrayMapNode = new ArrayMapNode(_commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
 
-            var fieldMapNode = new ReflectionFieldMapNode(commonFixupsTableNode);
+            var fieldMapNode = new ReflectionFieldMapNode(_commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FieldAccessMap), fieldMapNode, fieldMapNode, fieldMapNode.EndSymbol);
 
-            var externalNativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), externalNativeReferencesTableNode, externalNativeReferencesTableNode, externalNativeReferencesTableNode.EndSymbol);
-
-            NativeLayoutInfo = new NativeLayoutInfoNode(externalNativeReferencesTableNode);
+            NativeLayoutInfo = new NativeLayoutInfoNode(_nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), NativeLayoutInfo, NativeLayoutInfo, NativeLayoutInfo.EndSymbol);
 
-            GenericsHashtable = new GenericsHashtableNode(externalNativeReferencesTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), GenericsHashtable, GenericsHashtable, GenericsHashtable.EndSymbol);
+            _exactMethodInstantiations = new ExactMethodInstantiationsNode(_nativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), _exactMethodInstantiations, _exactMethodInstantiations, _exactMethodInstantiations.EndSymbol);
+
+            _genericsHashtable = new GenericsHashtableNode(_nativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), _genericsHashtable, _genericsHashtable, _genericsHashtable.EndSymbol);
 
             // This one should go last
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable),
-                commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), _commonFixupsTableNode, _commonFixupsTableNode, _commonFixupsTableNode.EndSymbol);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), _nativeReferencesTableNode, _nativeReferencesTableNode, _nativeReferencesTableNode.EndSymbol);
         }
 
         private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -115,14 +122,7 @@ namespace ILCompiler
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
                 AddGeneratedType(eetypeNode.Type);
-
-                // If this is an instantiated non-canonical generic type, add it to the generic instantiations hashtable
-                if (eetypeNode.Type.HasInstantiation && !eetypeNode.Type.IsGenericDefinition)
-                {
-                    if (!eetypeNode.Type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        GenericsHashtable.AddInstantiatedTypeEntry(_nodeFactory, eetypeNode.Type);
-                }
-
+                _genericsHashtable.AddEntryIfEligible(_nodeFactory, eetypeNode.Type);
                 return;
             }
 
@@ -140,6 +140,7 @@ namespace ILCompiler
                 }
 
                 AddGeneratedType(method.OwningType);
+                _exactMethodInstantiations.AddEntryIfEligible(_nodeFactory, method);
                 _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
                 _methodsGenerated.Add(method);
                 return;

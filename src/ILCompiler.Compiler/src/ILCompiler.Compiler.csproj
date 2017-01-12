@@ -103,7 +103,9 @@
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NativeLayoutVertexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericsHashtableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfFrozenObjectsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
@@ -125,7 +127,6 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />    
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
@@ -160,6 +161,8 @@
     <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NodeFactory.NativeLayout.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />

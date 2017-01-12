@@ -11,7 +11,7 @@ internal static partial class Interop
     internal unsafe partial class Sys
     {
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_LoadLibrary")]
-        internal static extern IntPtr LoadLibrary(byte* filename);
+        internal static extern IntPtr LoadLibrary(string filename);
 
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetProcAddress")]
         internal static extern IntPtr GetProcAddress(IntPtr handle, byte* symbol);
