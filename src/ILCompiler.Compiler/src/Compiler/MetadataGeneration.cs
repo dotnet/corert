@@ -79,7 +79,14 @@ namespace ILCompiler
             _commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
             _nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
 
+            var resourceDataNode = new ResourceDataNode();
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
+
+            var resourceIndexNode = new ResourceIndexNode(resourceDataNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceIndex), resourceIndexNode, resourceIndexNode, resourceIndexNode.EndSymbol);
+          
             var typeMapNode = new TypeMetadataMapNode(_commonFixupsTableNode);
+
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
 
             var cctorContextMapNode = new ClassConstructorContextMap(_commonFixupsTableNode);
@@ -341,6 +348,14 @@ namespace ILCompiler
                         _fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns a set of modules that will get some metadata emitted into the output module
+        /// </summary>
+        public HashSet<ModuleDesc> GetModulesWithMetadata()
+        {
+            return _modulesSeen;
         }
 
         public byte[] GetMetadataBlob()
