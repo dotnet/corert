@@ -90,8 +90,6 @@
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ResourceIndexNode.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationBuilder.cs" />
@@ -129,7 +127,9 @@
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />    
+    <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ResourceIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />

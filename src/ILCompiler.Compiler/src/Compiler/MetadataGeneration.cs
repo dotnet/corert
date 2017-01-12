@@ -73,7 +73,7 @@ namespace ILCompiler
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
 
-            var resourceDataNode = new ResourceDataNode(_modulesSeen);
+            var resourceDataNode = new ResourceDataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
 
             var resourceIndexNode = new ResourceIndexNode(resourceDataNode);
@@ -347,6 +347,14 @@ namespace ILCompiler
                         _fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns a set of modules that will get some metadata emitted into the output module
+        /// </summary>
+        public HashSet<ModuleDesc> GetModulesWithMetadata()
+        {
+            return _modulesSeen;
         }
 
         public byte[] GetMetadataBlob()

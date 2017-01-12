@@ -1,4 +1,8 @@
-﻿using Internal.NativeFormat;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Internal.NativeFormat;
 using Internal.Text;
 using System;
 using System.IO;
@@ -17,7 +21,6 @@ namespace ILCompiler.DependencyAnalysis
             _resourceDataNode = resourceDataNode;
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_resourceindex_End", true);
         }
-
 
         private ObjectAndOffsetSymbolNode _endSymbol;
 
@@ -44,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
-            byte[] blob = GenerateIndexBlob();
+            byte[] blob = GenerateIndexBlob(factory);
             return new ObjectData(
                 blob,
                 Array.Empty<Relocation>(),
@@ -60,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Builds a native hashtable containing data about each manifest resource
         /// </summary>
         /// <returns></returns>
-        private byte[] GenerateIndexBlob()
+        private byte[] GenerateIndexBlob(NodeFactory factory)
         {
             NativeWriter nativeWriter = new NativeWriter();
             Section indexHashtableSection = nativeWriter.NewSection();
@@ -72,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
             // This generates a hashtable for the convenience of managed code since there's
             // a reader for VertexHashtable, but not for VertexSequence.
 
-            foreach (ResourceIndexData indexData in _resourceDataNode.IndexData)
+            foreach (ResourceIndexData indexData in _resourceDataNode.GetOrCreateIndexData(factory))
             {
                 Vertex asmName = nativeWriter.GetStringConstant(indexData.AssemblyName);
                 Vertex resourceName = nativeWriter.GetStringConstant(indexData.ResourceName);
