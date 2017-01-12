@@ -26,12 +26,11 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(targetMethod.IsPInvoke);
 
-            _methodData = new PInvokeMethodData(targetMethod, pinvokeILEmitterConfiguration);
-
+            _methodData = new PInvokeMethodData(targetMethod, pinvokeILEmitterConfiguration, MarshalDirection.Forward);
             _marshallers = InitializeMarshallers(_methodData);
         }
 
-       private static Marshaller[] InitializeMarshallers(PInvokeMethodData pInvokeMethodData)
+        private static Marshaller[] InitializeMarshallers(PInvokeMethodData pInvokeMethodData)
         {
             MethodDesc targetMethod = pInvokeMethodData.TargetMethod;
             MethodSignature methodSig = targetMethod.Signature;
@@ -60,37 +59,25 @@ namespace Internal.IL.Stubs
 
         private MethodIL EmitIL()
         {
-            // We have 4 code streams:
-            // - _marshallingCodeStream is used to convert each argument into a native type and 
-            // store that into the local
-            // - callsiteSetupCodeStream is used to used to load each previously generated local
-            // and call the actual target native method.
-            // - _returnValueMarshallingCodeStream is used to convert the native return value 
-            // to managed one.
-            // - _unmarshallingCodestream is used to propagate [out] native arguments values to 
-            // managed ones.
-
-            ILEmitter emitter = new ILEmitter();
-            ILCodeStream fnptrLoadStream = emitter.NewCodeStream();
-            ILCodeStream marshallingCodeStream = emitter.NewCodeStream();
-            ILCodeStream callsiteSetupCodeStream = emitter.NewCodeStream();
-            ILCodeStream returnValueMarshallingCodeStream = emitter.NewCodeStream();
-            ILCodeStream unmarshallingCodestream = emitter.NewCodeStream();
+            PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();
+            ILEmitter emitter = pInvokeILCodeStreams.Emitter;
+            ILCodeStream fnptrLoadStream = pInvokeILCodeStreams.FunctionPointerLoadStream;
+            ILCodeStream callsiteSetupCodeStream = pInvokeILCodeStreams.CallsiteSetupCodeStream;
+            ILCodeStream unmarshallingCodestream = pInvokeILCodeStreams.UnmarshallingCodestream;
 
             // Marshal the arguments
             for (int i = 0; i < _marshallers.Length; i++)
             {
-                Marshaller marshaller = _marshallers[i];
-                marshaller.EmitMarshallingIL(emitter, marshallingCodeStream, callsiteSetupCodeStream, unmarshallingCodestream, returnValueMarshallingCodeStream);
+                _marshallers[i].EmitMarshallingIL(pInvokeILCodeStreams);
             }
 
             // make the call
-            TypeDesc nativeReturnType = _marshallers[0].NativeType;
+            TypeDesc nativeReturnType = _marshallers[0].NativeParameterType;
             TypeDesc[] nativeParameterTypes = new TypeDesc[_marshallers.Length - 1];
 
             for (int i = 1; i < _marshallers.Length; i++)
             {
-                nativeParameterTypes[i - 1] = _marshallers[i].NativeType;
+                nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
             }
 
             MethodDesc targetMethod = _methodData.TargetMethod;
@@ -146,7 +133,7 @@ namespace Internal.IL.Stubs
 
             unmarshallingCodestream.Emit(ILOpcode.ret);
 
-            return emitter.Link(targetMethod);
+            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(targetMethod), IsStubRequired());
         }
 
         public static MethodIL EmitIL(MethodDesc method, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration)
@@ -172,11 +159,61 @@ namespace Internal.IL.Stubs
                 codeStream.Emit(ILOpcode.throw_);
                 codeStream.Emit(ILOpcode.ret);
 
-                return emitter.Link(method);
+                return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), true);
             }
+        }
+
+        private bool IsStubRequired()
+        {
+            MethodDesc method = _methodData.TargetMethod;
+            Debug.Assert(method.IsPInvoke);
+
+            if (MarshalHelpers.UseLazyResolution(method, _methodData.ImportMetadata.Module, _methodData.PInvokeILEmitterConfiguration))
+            {
+                return true;
+            }
+            if ((_methodData.ImportMetadata.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < _marshallers.Length; i++)
+            {
+                if (_marshallers[i].IsMarshallingRequired())
+                    return true;
+            }
+            return false;
         }
     }
 
+    internal sealed class PInvokeILCodeStreams
+    {
+        public ILEmitter Emitter { get; }
+        public ILCodeStream FunctionPointerLoadStream { get; }
+        public ILCodeStream MarshallingCodeStream { get; }
+        public ILCodeStream CallsiteSetupCodeStream { get; }
+        public ILCodeStream ReturnValueMarshallingCodeStream { get; }
+        public ILCodeStream UnmarshallingCodestream { get; }
+        public PInvokeILCodeStreams()
+        {
+            Emitter = new ILEmitter();
+
+            // We have 4 code streams:
+            // - _marshallingCodeStream is used to convert each argument into a native type and 
+            // store that into the local
+            // - callsiteSetupCodeStream is used to used to load each previously generated local
+            // and call the actual target native method.
+            // - _returnValueMarshallingCodeStream is used to convert the native return value 
+            // to managed one.
+            // - _unmarshallingCodestream is used to propagate [out] native arguments values to 
+            // managed ones.
+            FunctionPointerLoadStream = Emitter.NewCodeStream();
+            MarshallingCodeStream = Emitter.NewCodeStream();
+            CallsiteSetupCodeStream = Emitter.NewCodeStream();
+            ReturnValueMarshallingCodeStream = Emitter.NewCodeStream();
+            UnmarshallingCodestream = Emitter.NewCodeStream();
+        }
+    }
     /// <summary>
     /// Synthetic method that represents the actual PInvoke target method.
     /// All parameters are simple types. There will be no code
@@ -344,6 +381,15 @@ namespace Internal.IL.Stubs
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;
+        }
+    }
+
+    internal sealed class PInvokeILStubMethodIL : ILStubMethodIL
+    {
+        public bool IsStubRequired { get; }
+        public PInvokeILStubMethodIL(ILStubMethodIL methodIL, bool isStubRequired) : base(methodIL)
+        {
+            IsStubRequired = isStubRequired;
         }
     }
 }

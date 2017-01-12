@@ -244,6 +244,14 @@ namespace Internal.IL.Stubs
             _method = owningMethod;
         }
 
+        public ILStubMethodIL(ILStubMethodIL methodIL)
+        {
+            _ilBytes = methodIL._ilBytes;
+            _locals = methodIL._locals;
+            _tokens = methodIL._tokens;
+            _method = methodIL._method;
+        }
+
         public override MethodDesc OwningMethod
         {
             get

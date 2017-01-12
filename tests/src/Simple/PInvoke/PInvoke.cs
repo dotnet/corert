@@ -24,6 +24,9 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int Inc(ref int value);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern bool GetNextChar(ref char c);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiString(string str);
 
@@ -46,6 +49,7 @@ namespace PInvokeTests
         {
             TestBlittableType();
             TestBoolean();
+            TestUnichar();
             TestArrays();
             TestByRef();
             TestString();
@@ -80,6 +84,14 @@ namespace PInvokeTests
            Console.WriteLine("Testing marshalling boolean");
            ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
            ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
+        }
+
+        private static void TestUnichar()
+        {
+            Console.WriteLine("Testing Unichar");
+            char c = 'a';
+            ThrowIfNotEquals(true, GetNextChar(ref c), "Unichar marshalling failed.");
+            ThrowIfNotEquals('b', c, "Unichar marshalling failed.");
         }
 
         private static void TestArrays()
