@@ -705,7 +705,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
 // static
 void RedhawkGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
 {
-#if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
     GCHeapUtilities::GetGCHeap()->DiagWalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
 #else
     UNREFERENCED_PARAMETER(pObject);
@@ -778,7 +778,7 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
 // static
 void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
 {
-#if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
     ScanRootsContext sContext;
     sContext.m_pfnCallback = pfnScanCallback;
     sContext.m_pContext = pContext;
@@ -1211,26 +1211,19 @@ void WalkMovedReferences(uint8_t* begin, uint8_t* end,
 // Diagnostics code
 //
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_EVENT_TRACE
 inline BOOL ShouldTrackMovementForProfilerOrEtw()
 {
-#ifdef GC_PROFILING
-    if (CORProfilerTrackGC())
-        return true;
-#endif
-
-#ifdef FEATURE_EVENT_TRACE
     if (ETW::GCLog::ShouldTrackMovementForEtw())
         return true;
-#endif
 
     return false;
 }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#endif // FEATURE_EVENT_TRACE
 
 void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
 {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_EVENT_TRACE
     if (ShouldTrackMovementForProfilerOrEtw())
     {
         size_t context = 0;
@@ -1240,12 +1233,12 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
     }
 #else
     UNREFERENCED_PARAMETER(gcContext);
-#endif //GC_PROFILING || FEATURE_EVENT_TRACE
+#endif FEATURE_EVENT_TRACE
 }
 
 void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
 {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_EVENT_TRACE
     if (ShouldTrackMovementForProfilerOrEtw())
     {
         size_t context = 0;
@@ -1255,12 +1248,12 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
     }
 #else
     UNREFERENCED_PARAMETER(gcContext);
-#endif //GC_PROFILING || FEATURE_EVENT_TRACE
+#endif FEATURE_EVENT_TRACE
 }
 
 void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_EVENT_TRACE
     if (ShouldTrackMovementForProfilerOrEtw())
     {
         size_t context = 0;
@@ -1270,7 +1263,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
     }
 #else
     UNREFERENCED_PARAMETER(gcContext);
-#endif //GC_PROFILING || FEATURE_EVENT_TRACE
+#endif // FEATURE_EVENT_TRACE
 }
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
@@ -1317,13 +1310,10 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->ephemeral_low != nullptr);
         assert(args->ephemeral_high != nullptr);
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        assert(!args->requires_upper_bounds_check && "the ephemeral generation must be at the top of the heap!");
 
         g_card_table = args->card_table;
-        FlushProcessWriteBuffers();
         g_lowest_address = args->lowest_address;
-        VolatileStore(&g_highest_address, args->highest_address);
-
+        g_highest_address = args->highest_address;
         g_ephemeral_low = args->ephemeral_low;
         g_ephemeral_high = args->ephemeral_high;
         return;
@@ -1607,7 +1597,7 @@ void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t 
     ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_EVENT_TRACE
 ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
     : ScanContext()
 {
@@ -1619,4 +1609,4 @@ ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
     promotion = g_pConfig->GetGCConservative();
 #endif
 }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#endif // FEATURE_EVENT_TRACE
