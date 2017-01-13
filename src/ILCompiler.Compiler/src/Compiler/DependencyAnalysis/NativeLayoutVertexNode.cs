@@ -237,34 +237,19 @@ namespace ILCompiler.DependencyAnalysis
                 case Internal.TypeSystem.TypeFlags.SignatureMethodVariable:
                     return new NativeLayoutGenericVarSignatureVertexNode(factory, type);
 
-                case Internal.TypeSystem.TypeFlags.Void:
-                case Internal.TypeSystem.TypeFlags.Boolean:
-                case Internal.TypeSystem.TypeFlags.Char:
-                case Internal.TypeSystem.TypeFlags.SByte:
-                case Internal.TypeSystem.TypeFlags.Byte:
-                case Internal.TypeSystem.TypeFlags.Int16:
-                case Internal.TypeSystem.TypeFlags.UInt16:
-                case Internal.TypeSystem.TypeFlags.Int32:
-                case Internal.TypeSystem.TypeFlags.UInt32:
-                case Internal.TypeSystem.TypeFlags.Int64:
-                case Internal.TypeSystem.TypeFlags.UInt64:
-                case Internal.TypeSystem.TypeFlags.Single:
-                case Internal.TypeSystem.TypeFlags.Double:
-                case Internal.TypeSystem.TypeFlags.IntPtr:
-                case Internal.TypeSystem.TypeFlags.UIntPtr:
-                case Internal.TypeSystem.TypeFlags.Enum:
-                case Internal.TypeSystem.TypeFlags.Class:
-                case Internal.TypeSystem.TypeFlags.ValueType:
-                case Internal.TypeSystem.TypeFlags.Interface:
-                    if (type.HasInstantiation && !type.IsGenericDefinition)
-                        return new NativeLayoutInstantiatedTypeSignatureVertexNode(factory, type);
-                    else
-                        return new NativeLayoutEETypeSignatureVertexNode(factory, type);
-
-                // TODO case Internal.TypeSystem.TypeFlags.FunctionPointer:
+                // TODO Internal.TypeSystem.TypeFlags.FunctionPointer (Runtime parsing also not yet implemented)
+                case Internal.TypeSystem.TypeFlags.FunctionPointer:
+                    throw new NotImplementedException("FunctionPointer signature");
 
                 default:
-                    throw new NotImplementedException("NYI");
+                    {
+                        Debug.Assert(type.IsDefType);
+
+                        if (type.HasInstantiation && !type.IsGenericDefinition)
+                            return new NativeLayoutInstantiatedTypeSignatureVertexNode(factory, type);
+                        else
+                            return new NativeLayoutEETypeSignatureVertexNode(factory, type);
+                    }
             }
         }
 
