@@ -1457,13 +1457,12 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 
 // Reserve virtual memory range.
 // Parameters:
-//  address   - starting virtual address, it can be NULL to let the function choose the starting address
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignment, uint32_t flags)
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
 {
     ASSERT_MSG(!(flags & VirtualReserveFlags::WriteWatch), "WriteWatch not supported on Unix");
 
@@ -1474,7 +1473,7 @@ void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignme
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
 
-    void * pRetVal = mmap(address, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
 
     if (pRetVal != NULL)
     {

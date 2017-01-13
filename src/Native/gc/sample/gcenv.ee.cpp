@@ -9,6 +9,12 @@
 #include "gcenv.h"
 #include "gc.h"
 
+MethodTable * g_pFreeObjectMethodTable;
+
+int32_t g_TrapReturningThreads;
+
+bool g_fFinalizerRunOnShutDown;
+
 EEConfig * g_pConfig;
 
 bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState)
@@ -221,6 +227,38 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
     return NULL;
 }
 
+void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
+{
+}
+
+void GCToEEInterface::DiagUpdateGenerationBounds()
+{
+}
+
+void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
+{
+}
+
+void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
+{
+}
+
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+{
+}
+
+void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+{
+}
+
+void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
+{
+}
+
+void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+{
+}
+
 void FinalizerThread::EnableFinalization()
 {
     // Signal to finalizer thread that there are objects to finalize
@@ -236,14 +274,6 @@ bool IsGCSpecialThread()
 {
     // TODO: Implement for background GC
     return false;
-}
-
-void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
-{
-}
-
-void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoundsCheck*/)
-{
 }
 
 bool IsGCThread()
