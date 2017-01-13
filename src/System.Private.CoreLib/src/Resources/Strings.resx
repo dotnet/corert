@@ -687,6 +687,9 @@
   <data name="Argument_OutOfOrderDateTimes" xml:space="preserve">
     <value>The DateStart property must come before the DateEnd property.</value>
   </data>
+  <data name="ArgumentOutOfRange_HugeArrayNotSupported" xml:space="preserve">
+    <value>Arrays larger than 2GB are not supported.</value>
+  </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
