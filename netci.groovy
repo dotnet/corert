@@ -71,6 +71,8 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
                 Utilities.addGithubPRTriggerForBranch(newJob, branch, prJobDescription)
             }
             else {
+                // Set a large timeout since the default (2 hours) is insufficient
+                Utilities.setJobTimeout(newJob, 1440)
                 Utilities.addGithubPushTrigger(newJob)
             }
         }
