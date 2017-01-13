@@ -76,7 +76,11 @@ namespace System
         {
             get
             {
+#if CORERT
                 return ManagedThreadId.Current;
+#else
+                return unchecked((int)Interop.mincore.GetCurrentThreadId());
+#endif
             }
         }
 

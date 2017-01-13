@@ -585,7 +585,8 @@
     <Compile Include="System\Threading\CancellationToken.cs" />
     <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="System\Threading\CancellationTokenSource.cs" />
-    <Compile Include="System\Threading\ManagedThreadId.cs" />
+    <!--In ProjectN, 32 bit native thread id is used-->
+    <Compile Include="System\Threading\ManagedThreadId.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Threading\LowLevelThread.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />

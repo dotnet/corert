@@ -12,7 +12,7 @@ namespace Internal.Runtime.Augments
     /// <summary>For internal use only.  Exposes runtime functionality to the Environments implementation in corefx.</summary>
     public static class EnvironmentAugments
     {
-        public static int CurrentManagedThreadId => System.Threading.ManagedThreadId.Current;
+        public static int CurrentManagedThreadId => System.Environment.CurrentManagedThreadId;
         public static void FailFast(string message, Exception error) => RuntimeExceptionHelpers.FailFast(message, error);
 
         public static void Exit(int exitCode)
