@@ -92,7 +92,7 @@ namespace Internal.Runtime.TypeLoader
                     if (typeDesc == canonForm)
                     {
                         TypeLoaderLogger.WriteLine("Found metadata template for type " + concreteType.ToString() + ": " + typeDesc.ToString());
-                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
                         if (nativeLayoutInfoToken == BadTokenFixupValue)
                         {
                             throw new BadImageFormatException();
@@ -150,7 +150,7 @@ namespace Internal.Runtime.TypeLoader
                     if (methodDesc == canonForm)
                     {
                         TypeLoaderLogger.WriteLine("Found metadata template for method " + concreteMethod.ToString() + ": " + methodDesc.ToString());
-                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
                         if (nativeLayoutInfoToken == BadTokenFixupValue)
                         {
                             throw new BadImageFormatException();
@@ -197,7 +197,7 @@ namespace Internal.Runtime.TypeLoader
                     if (canonForm == candidateTemplate.ConvertToCanonForm(kind))
                     {
                         TypeLoaderLogger.WriteLine("Found template for type " + concreteType.ToString() + ": " + candidateTemplate.ToString());
-                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
                         if (nativeLayoutInfoToken == BadTokenFixupValue)
                         {
                             // TODO: once multifile gets fixed up, make this throw a BadImageFormatException
@@ -269,7 +269,7 @@ namespace Internal.Runtime.TypeLoader
                 NativeParser entryParser;
                 while (!(entryParser = enumerator.GetNext()).IsNull)
                 {
-                    var methodSignatureParser = new NativeParser(nativeLayoutReader, externalFixupsTable.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned()));
+                    var methodSignatureParser = new NativeParser(nativeLayoutReader, externalFixupsTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned()));
 
                     // Get the unified generic method holder and convert it to its canonical form
                     var candidateTemplate = (InstantiatedMethod)context.GetMethod(ref methodSignatureParser);
@@ -279,7 +279,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         TypeLoaderLogger.WriteLine("Found template for generic method " + concreteMethod.ToString() + ": " + candidateTemplate.ToString());
                         nativeLayoutInfoModule = moduleHandle;
-                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                        nativeLayoutInfoToken = (uint)externalFixupsTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
                         if (nativeLayoutInfoToken == BadTokenFixupValue)
                         {
                             // TODO: once multifile gets fixed up, make this throw a BadImageFormatException

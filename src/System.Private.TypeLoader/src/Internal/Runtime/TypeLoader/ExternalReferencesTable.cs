@@ -137,16 +137,29 @@ namespace Internal.Runtime.TypeLoader
         {
             return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
         }
+    }
 
-        unsafe public uint GetNativeLayoutOffsetFromIndex(uint index)
+    public static class ExternalReferencesTableExtentions
+    {
+        public static uint GetExternalNativeLayoutOffset(this ExternalReferencesTable extRefs, uint index)
         {
-            if (index >= _elementsCount)
-                throw new BadImageFormatException();
-
+            // CoreRT is a bit more optimized than ProjectN. In ProjectN, some tables that reference data
+            // in the native layout are constructed at NUTC compilation time, but the native layout is only 
+            // generated at binder time, so we use the external references table to link the nutc-built
+            // tables with their native layout dependencies.
+            // 
+            // In ProjectN, the nutc-built tables will be emitted with indices into the external references 
+            // table, and the entries in the external references table will contain the offsets into the
+            // native layout blob.
+            //
+            // In CoreRT, since all tables and native layout blob are built together at the same time, we can
+            // optimize by writing the native layout offsets directly into the table, without requiring the extra
+            // lookup in the external references table.
+            //
 #if CORERT
-            return *(uint*)(((IntPtr*)_elements)[index]);
+            return index;
 #else
-            return ((TableElement*)_elements)[index];
+            return extRefs.GetRvaFromIndex(index);
 #endif
         }
     }

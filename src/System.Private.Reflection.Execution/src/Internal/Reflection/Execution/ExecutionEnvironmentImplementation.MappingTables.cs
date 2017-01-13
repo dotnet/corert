@@ -1075,7 +1075,7 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                uint nameAndSigOffset = externalReferences.GetNativeLayoutOffsetFromIndex(entryMethodHandleOrNameAndSigRaw);
+                uint nameAndSigOffset = externalReferences.GetExternalNativeLayoutOffset(entryMethodHandleOrNameAndSigRaw);
                 MethodNameAndSignature nameAndSig;
                 if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule, nameAndSigOffset, out nameAndSig))
                 {
