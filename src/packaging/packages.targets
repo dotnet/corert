@@ -22,7 +22,7 @@
             <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
-            <CoreFxPackageVersion>4.4.0-beta-24906-01</CoreFxPackageVersion>
+            <CoreFxPackageVersion>4.4.0-beta-24913-02</CoreFxPackageVersion>
 
             <JitPackageVersion>1.2.0-beta-24815-03</JitPackageVersion>
           
@@ -127,12 +127,20 @@
             </ILCompilerSdkBinPlace>
 
 
-            <ILCompilerFrameworkFiles Include="runtime.aot.System.Reflection.Primitives/$(CoreFxPackageVersion)/runtimes/aot/lib/uap10.1/System.Reflection.Primitives.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.aot.System.Runtime.InteropServices/$(CoreFxPackageVersion)/runtimes/aot/lib/uap10.1/System.Runtime.InteropServices.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.aot.System.Threading.Tasks/$(CoreFxPackageVersion)/runtimes/aot/lib/uap10.1/System.Threading.Tasks.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.aot.System.Collections/$(CoreFxPackageVersion)/runtimes/aot/lib/uap10.1/System.Collections.dll" />
+            <!-- Libraries with netcoreapp1.2corert configuration -->
+            <ILCompilerFrameworkFiles Include="runtime.win7.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.any.System.Runtime/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Runtime.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.win.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.any.System.Reflection.Primitives/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Reflection.Primitives.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.any.System.Runtime.InteropServices/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Runtime.InteropServices.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.any.System.Threading.Tasks/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Threading.Tasks.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.any.System.Collections/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Collections.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.win.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.unix.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'!='Windows_NT'"/>
 
-            <ILCompilerFrameworkFiles Include="runtime.win.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/aot/lib/netcore50/System.Diagnostics.Debug.dll" />
+            <!-- End: Libraries with netcoreapp1.2corert configuration -->
 
             <ILCompilerFrameworkFiles Include="runtime.aot.System.Diagnostics.Tracing/$(CoreFxPackageVersion)/runtimes/aot/lib/netcore50/System.Diagnostics.Tracing.dll" />
 
@@ -142,11 +150,6 @@
 
             <ILCompilerFrameworkFiles Include="Microsoft.NETCore.Portable.Compatibility/1.0.2/runtimes/aot/lib/netcore50/mscorlib.dll" />
 
-            <ILCompilerFrameworkFiles Include="runtime.win7.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.unix.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.any.System.Runtime/$(CoreFXPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Runtime.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.win.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.unix.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
             <ILCompilerFrameworkFiles Include="runtime.win.System.Console/$(CoreFxPackageVersion)/runtimes/win/lib/netstandard1.7/System.Console.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Console/$(CoreFxPackageVersion)/runtimes/unix/lib/netstandard1.7/System.Console.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
