@@ -90,7 +90,7 @@
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
-    <Compile Include="Compiler\ExplicitClassConstructors.cs" />
+    <Compile Include="Compiler\ModuleClassConstructors.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationBuilder.cs" />

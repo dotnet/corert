@@ -13,7 +13,7 @@ using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime.CompilerServices
 {
-    // Marked [EagerStaticClassConstruction] because Cctor.GetCctor
+    // Marked [EagerOrderedStaticConstructor] because Cctor.GetCctor
     // uses _cctorGlobalLock
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.CompilerServicesClassConstructorRunner)]
     internal static partial class ClassConstructorRunner
@@ -262,10 +262,8 @@ namespace System.Runtime.CompilerServices
         //==============================================================================================================
         // These structs are allocated on demand whenever the runtime tries to run a class constructor. Once the
         // the class constructor has been successfully initialized, we reclaim this structure. The structure is long-
-        // lived only if the class constructor threw an exception. This must be marked [EagerStaticClassConstruction] to 
-        // avoid infinite mutual recursion in GetCctor.
+        // lived only if the class constructor threw an exception.
         //==============================================================================================================
-        [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.CompilerServicesClassConstructorRunnerCctor)]
         private unsafe struct Cctor
         {
             public Lock Lock;
@@ -273,14 +271,7 @@ namespace System.Runtime.CompilerServices
             public int HoldingThread;
             private int _refCount;
             private StaticClassConstructionContext* _pContext;
-
-            // Because Cctor's are mutable structs, we have to give our callers raw references to the underlying arrays 
-            // for this collection to be usable.  This also means once we place a Cctor in an array, we can't grow or 
-            // reallocate the array.
-            private static Cctor[][] s_cctorArrays = new Cctor[10][];
-            private static int s_cctorArraysCount = 0;
-            private static int s_count;
-
+            
             //==========================================================================================================
             // Gets the Cctor entry associated with a specific class constructor context (creating it if necessary.)
             //==========================================================================================================
@@ -479,8 +470,35 @@ namespace System.Runtime.CompilerServices
             private static int s_nextBlockingRecordIndex;
         }
 
-        private static Lock s_cctorGlobalLock = new Lock();
+        private static Lock s_cctorGlobalLock;
 
+        // These three  statics are used by ClassConstructorRunner.Cctor but moved out to avoid an unnecessary 
+        // extra class constructor call.
+        //
+        // Because Cctor's are mutable structs, we have to give our callers raw references to the underlying arrays 
+        // for this collection to be usable.  This also means once we place a Cctor in an array, we can't grow or 
+        // reallocate the array.
+        private static Cctor[][] s_cctorArrays;
+        private static int s_cctorArraysCount;
+        private static int s_count;
+
+        //
+        // CoreRT calls ILC_cctor directly for all types its needs that typically have EagerOrderedStaticConstructor
+        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
+        // added to ILC_cctor.
+        //
+#if !CORERT
+        static ClassConstructorRunner()
+        {
+            ILT_cctor();
+        }
+#endif
+        internal static void ILT_cctor()
+        {
+            s_cctorArrays = new Cctor[10][];
+            s_cctorGlobalLock = new Lock();
+        }
+        
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]
         private static void NoisyLog(string format, IntPtr cctorMethod, int threadId)
         {

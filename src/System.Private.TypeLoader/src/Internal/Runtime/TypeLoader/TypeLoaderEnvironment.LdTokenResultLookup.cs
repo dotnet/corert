@@ -83,7 +83,7 @@ namespace Internal.Runtime.TypeLoader
             return Encoding.UTF8.GetString(dataStream, checked((int)stringLen));
         }
 
-        private static LowLevelDictionary<string, IntPtr> s_nativeFormatStrings = new LowLevelDictionary<string, IntPtr>();
+        private static LowLevelDictionary<string, IntPtr> s_nativeFormatStrings;
 
         /// <summary>
         /// From a string, get a pointer to an allocated memory location that holds a NativeFormat encoded string.

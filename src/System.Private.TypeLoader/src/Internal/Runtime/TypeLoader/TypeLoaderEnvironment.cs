@@ -92,7 +92,7 @@ namespace Internal.Runtime.TypeLoader
         [ThreadStatic]
         private static bool t_isReentrant;
 
-        public static readonly TypeLoaderEnvironment Instance;
+        public static TypeLoaderEnvironment Instance { get; private set; }
 
         /// <summary>
         /// List of loaded binary modules is typically used to locate / process various metadata blobs
@@ -107,10 +107,24 @@ namespace Internal.Runtime.TypeLoader
         [ThreadStatic]
         private static LowLevelDictionary<IntPtr, NativeReader> t_moduleNativeReaders;
 
+        //
+        // CoreRT calls ILC_cctor directly for all types its needs that typically have EagerOrderedStaticConstructor
+        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
+        // added to ILC_cctor.
+        //
+#if !CORERT
         static TypeLoaderEnvironment()
+        {
+            ILT_cctor();
+        }
+#endif
+
+        internal static void ILT_cctor()
         {
             Instance = new TypeLoaderEnvironment();
             RuntimeAugments.InitializeLookups(new Callbacks());
+            s_nativeFormatStrings = new LowLevelDictionary<string, IntPtr>();
+            NoStaticsData = (IntPtr)1;
         }
 
         public TypeLoaderEnvironment()

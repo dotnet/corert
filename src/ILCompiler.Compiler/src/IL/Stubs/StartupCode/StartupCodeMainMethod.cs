@@ -21,13 +21,13 @@ namespace Internal.IL.Stubs.StartupCode
         private TypeDesc _owningType;
         private MainMethodWrapper _mainMethod;
         private MethodSignature _signature;
-        private IList<TypeDesc> _explicitlyRunCctors;
+        private IList<MethodDesc> _moduleCctors;
 
-        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod, IList<TypeDesc> explicitlyRunCctors)
+        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod, IList<MethodDesc> moduleCctors)
         {
             _owningType = owningType;
             _mainMethod = new MainMethodWrapper(owningType, mainMethod);
-            _explicitlyRunCctors = explicitlyRunCctors;
+            _moduleCctors = moduleCctors;
         }
 
         public override TypeSystemContext Context
@@ -60,12 +60,11 @@ namespace Internal.IL.Stubs.StartupCode
             ILCodeStream codeStream = emitter.NewCodeStream();
 
             // Allow the class library to run explicitly ordered class constructors first thing in start-up.
-            if (_explicitlyRunCctors != null)
+            if (_moduleCctors != null)
             {
-                foreach (TypeDesc type in _explicitlyRunCctors)
+                foreach (MethodDesc method in _moduleCctors)
                 {
-                    MethodDesc cctor = type.GetMethod(".cctor", null);
-                    codeStream.Emit(ILOpcode.call, emitter.NewToken(cctor));
+                    codeStream.Emit(ILOpcode.call, emitter.NewToken(method));
                 }
             }
             

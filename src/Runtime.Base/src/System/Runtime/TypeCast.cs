@@ -1027,7 +1027,7 @@ namespace System.Runtime
 
         // source type + target type + assignment variation -> true/false
         [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-        private static class CastCache
+        internal static class CastCache
         {
             //
             // Cache size parameters
@@ -1042,12 +1042,29 @@ namespace System.Runtime
             //
             // Cache state
             //
-            private static Entry[] s_cache = new Entry[InitialCacheSize];   // Initialize the cache eagerly to avoid null checks.
+            private static Entry[] s_cache;
             private static UnsafeGCHandle s_previousCache;
-            private static long s_tickCountOfLastOverflow = InternalCalls.PalGetTickCount64();
+            private static long s_tickCountOfLastOverflow;
             private static int s_entries;
             private static bool s_roundRobinFlushing;
 
+            //
+            // CoreRT calls ILC_cctor directly for all types its needs that typically have EagerOrderedStaticConstructor
+            // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
+            // added to ILC_cctor.
+            //
+#if !CORERT
+            static CastCache()
+            {
+                ILT_cctor();
+            }
+#endif
+
+            internal static void ILT_cctor()
+            {
+                s_cache = new Entry[InitialCacheSize]; // Initialize the cache eagerly to avoid null checks.
+                s_tickCountOfLastOverflow = InternalCalls.PalGetTickCount64();
+            }
 
             private sealed class Entry
             {

@@ -173,9 +173,6 @@ namespace ILCompiler
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
             typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
-            
-            ExplicitClassConstructors explicitClassConstructors = new ExplicitClassConstructors(typeSystemContext, _isCppCodegen);
-            typeSystemContext.SetExplicitClassConstructors(explicitClassConstructors);
 
             //
             // Initialize compilation group and compilation roots
@@ -212,7 +209,9 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, explicitClassConstructors.TypesWithExplicitCctors));
+                    ModuleClassConstructors moduleClassConstructors =
+                        new ModuleClassConstructors(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, moduleClassConstructors.ModuleCctorMethods));
                 }
 
                 if (_multiFile)
@@ -242,20 +241,6 @@ namespace ILCompiler
                         throw new Exception("No entrypoint module");
 
                     compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
-
-                    // System.Private.Reflection.Execution needs to establish a communication channel with System.Private.CoreLib
-                    // at process startup. This is done through an eager constructor that calls into CoreLib and passes it
-                    // a callback object.
-                    //
-                    // Since CoreLib cannot reference anything, the type and it's eager constructor won't be added to the compilation
-                    // unless we explictly add it.
-
-                    var refExec = typeSystemContext.GetModuleForSimpleName("System.Private.Reflection.Execution", false);
-                    if (refExec != null)
-                    {
-                        var exec = refExec.GetType("Internal.Reflection.Execution", "ReflectionExecution");
-                        compilationRoots.Add(new SingleMethodRootProvider(exec.GetStaticConstructor()));
-                    }
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }

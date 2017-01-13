@@ -15,13 +15,6 @@ namespace ILCompiler
     // Manages policies around static constructors (.cctors) and static data initialization.
     partial class CompilerTypeSystemContext
     {
-        private ExplicitClassConstructors _explicitClassConstructors;
-
-        public void SetExplicitClassConstructors(ExplicitClassConstructors explicitClassConstructors)
-        {
-            _explicitClassConstructors = explicitClassConstructors;
-        }
-
         // Eventually, this will also manage preinitialization (interpreting cctors at compile
         // time and converting them to blobs of preinitialized data), and the various
         // System.Runtime.CompilerServices.PreInitializedAttribute/InitDataBlobAttribute/etc. placed on
@@ -33,7 +26,7 @@ namespace ILCompiler
         /// </summary>
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
-            return type.HasStaticConstructor && !HasEagerConstructorAttribute(type) && !HasExplicitClassConstructor(type);
+            return type.HasStaticConstructor && !HasEagerConstructorAttribute(type);
         }
 
         /// <summary>
@@ -42,7 +35,7 @@ namespace ILCompiler
         /// </summary>
         public bool HasEagerStaticConstructor(TypeDesc type)
         {
-            return type.HasStaticConstructor && HasEagerConstructorAttribute(type) && !HasExplicitClassConstructor(type);
+            return type.HasStaticConstructor && HasEagerConstructorAttribute(type);
         }
 
         private static bool HasEagerConstructorAttribute(TypeDesc type)
@@ -50,14 +43,6 @@ namespace ILCompiler
             MetadataType mdType = type as MetadataType;
             return mdType != null && 
                 mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute");
-        }
-
-        private bool HasExplicitClassConstructor(TypeDesc type)
-        {
-            if (_explicitClassConstructors == null)
-                return false;
-
-            return _explicitClassConstructors.TypeHasExplicitClassConstructor(type);
         }
     }
 }
