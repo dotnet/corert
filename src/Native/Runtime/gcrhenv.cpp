@@ -1233,7 +1233,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
     }
 #else
     UNREFERENCED_PARAMETER(gcContext);
-#endif FEATURE_EVENT_TRACE
+#endif // FEATURE_EVENT_TRACE
 }
 
 void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
@@ -1248,7 +1248,7 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
     }
 #else
     UNREFERENCED_PARAMETER(gcContext);
-#endif FEATURE_EVENT_TRACE
+#endif // FEATURE_EVENT_TRACE
 }
 
 void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
