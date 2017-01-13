@@ -51,6 +51,25 @@
 
 #include "holder.h"
 
+#ifdef FEATURE_ETW
+    #ifndef _INC_WINDOWS
+        typedef void* LPVOID;
+        typedef uint32_t UINT;
+        typedef void* PVOID;
+        typedef uint64_t ULONGLONG;
+        typedef uint32_t ULONG;
+        typedef int64_t LONGLONG;
+        typedef uint8_t BYTE;
+        typedef uint16_t UINT16;
+    #endif // _INC_WINDOWS
+
+    #include "etwevents.h"
+    #include "eventtrace.h"
+#else // FEATURE_ETW
+    #include "etmdummy.h"
+    #define ETW_EVENT_ENABLED(e,f) false
+#endif // FEATURE_ETW
+
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
 #define USE_CLR_CACHE_SIZE_BEHAVIOR
@@ -119,7 +138,7 @@ UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
         FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
                           GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
                           GCHeapUtilities::IsServerHeap());
-        GCHeapUtilities::GetGCHeap()->TraceGCSegments();
+        GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -686,8 +705,8 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
 // static
 void RedhawkGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
 {
-#if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
-    GCHeapUtilities::GetGCHeap()->WalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
+    GCHeapUtilities::GetGCHeap()->DiagWalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
 #else
     UNREFERENCED_PARAMETER(pObject);
     UNREFERENCED_PARAMETER(pfnScanCallback);
@@ -759,7 +778,7 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
 // static
 void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
 {
-#if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
     ScanRootsContext sContext;
     sContext.m_pfnCallback = pfnScanCallback;
     sContext.m_pContext = pContext;
@@ -1148,6 +1167,166 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
     return threadStubArgs.m_pThread;
 }
 
+void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
+{
+    UNREFERENCED_PARAMETER(gen);
+    UNREFERENCED_PARAMETER(isInduced);
+}
+
+void GCToEEInterface::DiagUpdateGenerationBounds()
+{
+}
+
+void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
+{
+    UNREFERENCED_PARAMETER(gcContext);
+}
+
+void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
+{
+    UNREFERENCED_PARAMETER(index);
+    UNREFERENCED_PARAMETER(gen);
+    UNREFERENCED_PARAMETER(reason);
+    UNREFERENCED_PARAMETER(fConcurrent);
+}
+
+// Note on last parameter: when calling this for bgc, only ETW
+// should be sending these events so that existing profapi profilers
+// don't get confused.
+void WalkMovedReferences(uint8_t* begin, uint8_t* end, 
+                         ptrdiff_t reloc,
+                         size_t context, 
+                         BOOL fCompacting,
+                         BOOL fBGC)
+{
+    UNREFERENCED_PARAMETER(begin);
+    UNREFERENCED_PARAMETER(end);
+    UNREFERENCED_PARAMETER(reloc);
+    UNREFERENCED_PARAMETER(context);
+    UNREFERENCED_PARAMETER(fCompacting);
+    UNREFERENCED_PARAMETER(fBGC);
+}
+
+//
+// Diagnostics code
+//
+
+#ifdef FEATURE_EVENT_TRACE
+inline BOOL ShouldTrackMovementForProfilerOrEtw()
+{
+    if (ETW::GCLog::ShouldTrackMovementForEtw())
+        return true;
+
+    return false;
+}
+#endif // FEATURE_EVENT_TRACE
+
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+{
+#ifdef FEATURE_EVENT_TRACE
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_gc);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
+#endif // FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+{
+#ifdef FEATURE_EVENT_TRACE
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_loh);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
+#endif // FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
+{
+#ifdef FEATURE_EVENT_TRACE
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_bgc);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
+#endif // FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+{
+    // CoreRT doesn't patch the write barrier like CoreCLR does, but it
+    // still needs to record the changes in the GC heap.
+    assert(args != nullptr);
+    switch (args->operation)
+    {
+    case WriteBarrierOp::StompResize:
+        // StompResize requires a new card table, a new lowest address, and
+        // a new highest address
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        g_card_table = args->card_table;
+
+        // We need to make sure that other threads executing checked write barriers
+        // will see the g_card_table update before g_lowest/highest_address updates.
+        // Otherwise, the checked write barrier may AV accessing the old card table
+        // with address that it does not cover. Write barriers access card table
+        // without memory barriers for performance reasons, so we need to flush
+        // the store buffers here.
+        FlushProcessWriteBuffers();
+
+        g_lowest_address = args->lowest_address;
+        VolatileStore(&g_highest_address, args->highest_address);
+        return;
+    case WriteBarrierOp::StompEphemeral:
+        // StompEphemeral requires a new ephemeral low and a new ephemeral high
+        assert(args->ephemeral_low != nullptr);
+        assert(args->ephemeral_high != nullptr);
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+        return;
+    case WriteBarrierOp::Initialize:
+        // This operation should only be invoked once, upon initialization.
+        assert(g_card_table == nullptr);
+        assert(g_lowest_address == nullptr);
+        assert(g_highest_address == nullptr);
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        assert(args->ephemeral_low != nullptr);
+        assert(args->ephemeral_high != nullptr);
+        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
+
+        g_card_table = args->card_table;
+        g_lowest_address = args->lowest_address;
+        g_highest_address = args->highest_address;
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+        return;
+    case WriteBarrierOp::SwitchToWriteWatch:
+    case WriteBarrierOp::SwitchToNonWriteWatch:
+        assert(!"CoreRT does not have an implementation of non-OS WriteWatch");
+        return;
+    default:
+        assert(!"Unknokwn WriteBarrierOp enum");
+        return;
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
@@ -1339,14 +1518,6 @@ MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
 bool g_fFinalizerRunOnShutDown;
 
-void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
-{
-}
-
-void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoundsCheck*/)
-{
-}
-
 bool IsGCThread()
 {
     return false;
@@ -1425,3 +1596,17 @@ void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t 
 {
     ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
 }
+
+#ifdef FEATURE_EVENT_TRACE
+ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
+    : ScanContext()
+{
+    pHeapId = NULL;
+    fProfilerPinned = fProfilerPinnedParam;
+    pvEtwContext = NULL;
+#ifdef FEATURE_CONSERVATIVE_GC
+    // To not confuse GCScan::GcScanRoots
+    promotion = g_pConfig->GetGCConservative();
+#endif
+}
+#endif // FEATURE_EVENT_TRACE
