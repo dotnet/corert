@@ -33,6 +33,7 @@
   <ItemGroup>
     <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConnector.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConsole.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
