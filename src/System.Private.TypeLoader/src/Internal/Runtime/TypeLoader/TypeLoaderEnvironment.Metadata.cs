@@ -852,7 +852,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!entryType.Equals(definitionType))
                     continue;
 
-                uint nameAndSigPointerToken = externalReferences.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                uint nameAndSigPointerToken = externalReferences.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
 
                 MethodNameAndSignature nameAndSig;
                 if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, nameAndSigPointerToken, out nameAndSig))
@@ -995,7 +995,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!entryType.Equals(definitionType))
                     continue;
 
-                uint nameAndSigPointerToken = externalReferences.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                uint nameAndSigPointerToken = externalReferences.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
 
                 uint parentHierarchyAndFlag = entryParser.GetUnsigned();
                 bool isGenericVirtualMethod = ((parentHierarchyAndFlag & VirtualInvokeTableEntry.FlagsMask) == VirtualInvokeTableEntry.GenericVirtualMethod);
@@ -1576,7 +1576,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else
                 {
-                    uint nameAndSigToken = extRefTable.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                    uint nameAndSigToken = extRefTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
                     MethodNameAndSignature nameAndSig;
                     if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigToken, out nameAndSig))
                     {
@@ -1608,7 +1608,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     Debug.Assert((_hasEntryPoint || ((_flags & InvokeTableFlags.HasVirtualInvoke) != 0)) && ((_flags & InvokeTableFlags.RequiresInstArg) != 0));
 
-                    uint nameAndSigPointerToken = extRefTable.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
+                    uint nameAndSigPointerToken = extRefTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
                     if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigPointerToken, out _nameAndSignature))
                     {
                         Debug.Assert(false);    //Error
