@@ -153,6 +153,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ThreadStaticsNode(type, this);
             });
 
+            _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
+            {
+                return new TypeThreadStaticIndexNode(type);
+            });
+
             _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
             {
                 return new GCStaticEETypeNode(Target, gcMap);
@@ -357,15 +362,27 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MetadataType, ThreadStaticsNode> _threadStatics;
 
-        public ISymbolNode TypeThreadStaticsSymbol(MetadataType type)
+        public ThreadStaticsNode TypeThreadStaticsSymbol(MetadataType type)
+        {
+            // This node is always used in the context of its index within the region.
+            // We should never ask for this if the current compilation doesn't contain the
+            // associated type.
+            Debug.Assert(_compilationModuleGroup.ContainsType(type));
+            return _threadStatics.GetOrAdd(type);
+        }
+
+
+        private NodeCache<MetadataType, TypeThreadStaticIndexNode> _typeThreadStaticIndices;
+
+        public ISymbolNode TypeThreadStaticIndex(MetadataType type)
         {
             if (_compilationModuleGroup.ContainsType(type))
             {
-                return _threadStatics.GetOrAdd(type);
+                return _typeThreadStaticIndices.GetOrAdd(type);
             }
             else
             {
-                return ExternSymbol("__ThreadStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+                return ExternSymbol("__TypeThreadStaticIndex_" + NameMangler.GetMangledTypeName(type));
             }
         }
 
