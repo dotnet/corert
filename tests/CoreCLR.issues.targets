@@ -903,6 +903,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\ServerModel\servermodel\servermodel.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Dynamo\dynamo\dynamo.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b16294\b16294\b16294.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Regressions\common\AboveStackLimit\AboveStackLimit.*" /> 
 
     <!-- System.Diagnostics.Process -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect_Default_1\Collect_Default_1.*" />
