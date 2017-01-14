@@ -585,8 +585,6 @@
     <Compile Include="System\Threading\CancellationToken.cs" />
     <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="System\Threading\CancellationTokenSource.cs" />
-    <!--In ProjectN, 32 bit native thread id is used-->
-    <Compile Include="System\Threading\ManagedThreadId.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Threading\LowLevelThread.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
@@ -940,6 +938,7 @@
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\Path.Unix.cs" />
     <Compile Include="System\IO\PathInternal.Unix.cs" />
