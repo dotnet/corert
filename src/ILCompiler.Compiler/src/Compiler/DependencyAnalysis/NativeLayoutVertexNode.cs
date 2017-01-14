@@ -56,6 +56,22 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    /// <summary>
+    /// Any NativeLayoutVertexNode that needs to expose the native layout Vertex after it has been saved
+    /// needs to derive from this NativeLayoutSavedVertexNode class.
+    /// 
+    /// A nativelayout Vertex should typically only be exposed for Vertex offset fetching purposes, after the native
+    /// writer is saved (Vertex offsets get generated when the native writer gets saved).
+    /// 
+    /// It is important for whoever derives from this class to produce unified Vertices. Calling the WriteVertex method
+    /// multiple times should always produce the same exact unified Vertex each time (hence the assert in SetSavedVertex).
+    /// All nativewriter.Getxyz methods return unified Vertices.
+    /// 
+    /// When exposing a saved Vertex that is a result of a section placement operation (Section.Place(...)), always make 
+    /// sure a unified Vertex is being placed in the section (Section.Place creates a PlacedVertex structure that wraps the 
+    /// Vertex to be placed, so if the Vertex to be placed is unified, there will only be a single unified PlacedVertex 
+    /// structure created for that placed Vertex).
+    /// </summary>
     internal abstract class NativeLayoutSavedVertexNode : NativeLayoutVertexNode
     {
         public Vertex SavedVertex { get; private set; }
@@ -67,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutVertexNode
+    internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutSavedVertexNode
     {
         private MethodDesc _method;
         private NativeLayoutTypeSignatureVertexNode _containingTypeSig;
@@ -120,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             Vertex signature = GetNativeWriter(factory).GetMethodSignature((uint)flags, 0, containingType, methodNameAndSig, args);
-            return factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(signature);
+            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(signature));
         }
     }
 
@@ -221,34 +237,19 @@ namespace ILCompiler.DependencyAnalysis
                 case Internal.TypeSystem.TypeFlags.SignatureMethodVariable:
                     return new NativeLayoutGenericVarSignatureVertexNode(factory, type);
 
-                case Internal.TypeSystem.TypeFlags.Void:
-                case Internal.TypeSystem.TypeFlags.Boolean:
-                case Internal.TypeSystem.TypeFlags.Char:
-                case Internal.TypeSystem.TypeFlags.SByte:
-                case Internal.TypeSystem.TypeFlags.Byte:
-                case Internal.TypeSystem.TypeFlags.Int16:
-                case Internal.TypeSystem.TypeFlags.UInt16:
-                case Internal.TypeSystem.TypeFlags.Int32:
-                case Internal.TypeSystem.TypeFlags.UInt32:
-                case Internal.TypeSystem.TypeFlags.Int64:
-                case Internal.TypeSystem.TypeFlags.UInt64:
-                case Internal.TypeSystem.TypeFlags.Single:
-                case Internal.TypeSystem.TypeFlags.Double:
-                case Internal.TypeSystem.TypeFlags.IntPtr:
-                case Internal.TypeSystem.TypeFlags.UIntPtr:
-                case Internal.TypeSystem.TypeFlags.Enum:
-                case Internal.TypeSystem.TypeFlags.Class:
-                case Internal.TypeSystem.TypeFlags.ValueType:
-                case Internal.TypeSystem.TypeFlags.Interface:
-                    if (type.HasInstantiation && !type.IsGenericDefinition)
-                        return new NativeLayoutInstantiatedTypeSignatureVertexNode(factory, type);
-                    else
-                        return new NativeLayoutEETypeSignatureVertexNode(factory, type);
-
-                // TODO case Internal.TypeSystem.TypeFlags.FunctionPointer:
+                // TODO Internal.TypeSystem.TypeFlags.FunctionPointer (Runtime parsing also not yet implemented)
+                case Internal.TypeSystem.TypeFlags.FunctionPointer:
+                    throw new NotImplementedException("FunctionPointer signature");
 
                 default:
-                    throw new NotImplementedException("NYI");
+                    {
+                        Debug.Assert(type.IsDefType);
+
+                        if (type.HasInstantiation && !type.IsGenericDefinition)
+                            return new NativeLayoutInstantiatedTypeSignatureVertexNode(factory, type);
+                        else
+                            return new NativeLayoutEETypeSignatureVertexNode(factory, type);
+                    }
             }
         }
 

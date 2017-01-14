@@ -48,6 +48,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new NativeLayoutMethodLdTokenVertexNode(_factory, method);
                 });
+
+                _nativeLayoutSignatureNodes = new NodeCache<NativeLayoutSavedVertexNode, NativeLayoutSignatureNode>(signature =>
+                {
+                    return new NativeLayoutSignatureNode(signature);
+                });
             }
 
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
@@ -80,6 +85,11 @@ namespace ILCompiler.DependencyAnalysis
                 return _methodLdTokenSignatures.GetOrAdd(method);
             }
 
+            private NodeCache<NativeLayoutSavedVertexNode, NativeLayoutSignatureNode> _nativeLayoutSignatureNodes;
+            internal NativeLayoutSignatureNode NativeLayoutSignature(NativeLayoutSavedVertexNode signature)
+            {
+                return _nativeLayoutSignatureNodes.GetOrAdd(signature);
+            }
         }
 
         public NativeLayoutHelper NativeLayout;

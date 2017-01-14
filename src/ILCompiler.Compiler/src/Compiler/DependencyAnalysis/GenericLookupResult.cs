@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 
 using Internal.Text;
@@ -24,11 +25,10 @@ namespace ILCompiler.DependencyAnalysis
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract override string ToString();
 
-        /// <summary>
-        /// Gets the offset to be applied to the symbol returned by
-        /// <see cref="GetTarget(NodeFactory, Instantiation, Instantiation)"/> to get the actual target.
-        /// </summary>
-        public virtual int TargetDelta => 0;
+        public virtual void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            builder.EmitPointerReloc(GetTarget(factory, typeInstantiation, methodInstantiation));
+        }
     }
 
     /// <summary>
@@ -101,12 +101,15 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
-        public override int TargetDelta => FatFunctionPointerConstants.Offset;
-
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
             return factory.FatFunctionPointer(instantiatedMethod);
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            builder.EmitPointerReloc(GetTarget(factory, typeInstantiation, methodInstantiation), FatFunctionPointerConstants.Offset);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -214,6 +217,42 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"NonGCStaticBase: {_type}";
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to the threadstatic base index of a type.
+    /// </summary>
+    internal sealed class TypeThreadStaticBaseIndexGenericLookupResult : GenericLookupResult
+    {
+        private MetadataType _type;
+
+        public TypeThreadStaticBaseIndexGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete static base in a generic dictionary?");
+            Debug.Assert(type is MetadataType);
+            _type = (MetadataType)type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.TypeThreadStaticsSymbol(instantiatedType);
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            ThreadStaticsNode targetNode = (ThreadStaticsNode)GetTarget(factory, typeInstantiation, methodInstantiation);
+            int typeTlsIndex = factory.ThreadStaticsRegion.IndexOfEmbeddedObject(targetNode);
+            builder.EmitNaturalInt(typeTlsIndex);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("ThreadStaticBase_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"ThreadStaticBase: {_type}";
     }
 
     /// <summary>
