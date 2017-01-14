@@ -16,6 +16,10 @@ internal static partial class Interop
 
         [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
         internal static extern void ExitProcess(int exitCode);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(Interop.Libraries.Kernel32, "GetCurrentThreadId")]
+        internal static extern int GetCurrentThreadId();
     }
 
     internal static void ExitProcess(int exitCode)

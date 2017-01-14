@@ -35,6 +35,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private const int ManagedThreadIdNone =0;
+        private const int ManagedThreadIdNone = 0;
     }
 }
