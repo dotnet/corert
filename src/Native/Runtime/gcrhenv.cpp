@@ -1597,7 +1597,7 @@ void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t 
     ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
 }
 
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
 ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
     : ScanContext()
 {
@@ -1609,4 +1609,4 @@ ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
     promotion = g_pConfig->GetGCConservative();
 #endif
 }
-#endif // FEATURE_EVENT_TRACE
+#endif // defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
