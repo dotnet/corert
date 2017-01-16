@@ -2060,7 +2060,7 @@ namespace System.Text
         private void ExpandByABlock(int minBlockCharCount)
         {
             if ((minBlockCharCount + Length) > m_MaxCapacity)
-                throw new ArgumentOutOfRangeException(nameof(minBlockCharCount), SR.ArgumentOutOfRange_SmallCapacity);
+                throw new ArgumentOutOfRangeException("requiredLength", SR.ArgumentOutOfRange_SmallCapacity);
 
             // Compute the length of the new block we need 
             // We make the new chunk at least big enough for the current need (minBlockCharCount)
@@ -2113,7 +2113,7 @@ namespace System.Text
         private void MakeRoom(int index, int count, out StringBuilder chunk, out int indexInChunk, bool doneMoveFollowingChars)
         {
             if (count + Length > m_MaxCapacity)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_SmallCapacity);
+                throw new ArgumentOutOfRangeException("requiredLength", SR.ArgumentOutOfRange_SmallCapacity);
 
             chunk = this;
             while (chunk.m_ChunkOffset > index)

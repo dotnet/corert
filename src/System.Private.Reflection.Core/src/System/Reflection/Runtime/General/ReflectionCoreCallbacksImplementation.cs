@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.General
         public sealed override Assembly Load(AssemblyName refName)
         {
             if (refName == null)
-                throw new ArgumentNullException(nameof(refName));
+                throw new ArgumentNullException("assemblyRef");
             return RuntimeAssembly.GetRuntimeAssembly(refName.ToRuntimeAssemblyName());
         }
 

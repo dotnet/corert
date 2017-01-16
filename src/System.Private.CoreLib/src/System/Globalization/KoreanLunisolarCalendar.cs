@@ -1256,7 +1256,7 @@ namespace System.Globalization
             if ((lunarYear < MIN_LUNISOLAR_YEAR) || (lunarYear > MAX_LUNISOLAR_YEAR))
             {
                 throw new ArgumentOutOfRangeException(
-                            nameof(lunarYear),
+                            "year",
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
@@ -1280,7 +1280,7 @@ namespace System.Globalization
             if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR)
             {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
