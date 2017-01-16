@@ -59,6 +59,7 @@
       <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env;..\..\Native\Bootstrap</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -79,6 +80,7 @@
       <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>/bigobj</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -87,14 +87,14 @@ namespace ILCompiler
                 sb.Append("_");
             }
 
-            string santizedName = (sb != null) ? sb.ToString() : s;
+            string sanitizedName = (sb != null) ? sb.ToString() : s;
 
             // The character sequences denoting generic instantiations, arrays, byrefs, or pointers must be
             // restricted to that use only. Replace them if they happened to be used in any identifiers in 
             // the compilation input.
             return _mangleForCplusPlus
-                ? santizedName.Replace(EnterNameScopeSequence, "_AA_").Replace(ExitNameScopeSequence, "_VV_")
-                : santizedName;
+                ? sanitizedName.Replace(EnterNameScopeSequence, "_AA_").Replace(ExitNameScopeSequence, "_VV_")
+                : sanitizedName;
         }
 
         /// <summary>
