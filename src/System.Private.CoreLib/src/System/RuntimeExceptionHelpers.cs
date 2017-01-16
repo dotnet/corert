@@ -13,24 +13,11 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    // Eagerly preallocate instance of out of memory exception to avoid infinite recursion once we run out of memory
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemPreallocatedOutOfMemoryException)]
     internal class PreallocatedOutOfMemoryException
     {
         public static OutOfMemoryException Instance { get; private set; }
 
-        //
-        // CoreRT calls Initialize directly for all types its needs that typically have EagerOrderedStaticConstructor
-        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
-        // added to Initialize.
-        //
-#if !CORERT
-        static PreallocatedOutOfMemoryException()
-        {
-            Initialize();
-        }
-#endif
-
+        // Eagerly preallocate instance of out of memory exception to avoid infinite recursion once we run out of memory
         internal static void Initialize()
         {
              Instance = new OutOfMemoryException(message: null);  // Cannot call the nullary constructor as that triggers non-trivial resource manager logic.

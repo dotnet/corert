@@ -22,19 +22,6 @@ namespace System.Runtime.CompilerServices
 
     public enum EagerStaticConstructorOrder : int
     {
-        // System.Private.CoreLib
-        SystemString,
-        SystemPreallocatedOutOfMemoryException,
-        SystemEnvironment, // ClassConstructorRunner.Cctor.GetCctor use Lock which inturn use current threadID , so System.Environment
-                           // should come before CompilerServicesClassConstructorRunnerCctor
-        CompilerServicesClassConstructorRunnerCctor,
-        CompilerServicesClassConstructorRunner,
-
-        // System.Private.TypeLoader  
-        RuntimeTypeHandleEqualityComparer,
-        TypeLoaderEnvironment,
-        SystemRuntimeTypeLoaderExports,
-
         // Interop
         InteropHeap,
         VtableIUnknown,
