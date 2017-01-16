@@ -13,9 +13,6 @@ using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime.CompilerServices
 {
-    // Marked [EagerOrderedStaticConstructor] because Cctor.GetCctor
-    // uses _cctorGlobalLock
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.CompilerServicesClassConstructorRunner)]
     internal static partial class ClassConstructorRunner
     {
         //==============================================================================================================
@@ -482,17 +479,7 @@ namespace System.Runtime.CompilerServices
         private static int s_cctorArraysCount;
         private static int s_count;
 
-        //
-        // CoreRT calls Initialize directly for all types its needs that typically have EagerOrderedStaticConstructor
-        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
-        // added to Initialize.
-        //
-#if !CORERT
-        static ClassConstructorRunner()
-        {
-            Initialize();
-        }
-#endif
+        // Eager construction called from LibraryInitialize Cctor.GetCctor uses _cctorGlobalLock.
         internal static void Initialize()
         {
             s_cctorArrays = new Cctor[10][];
