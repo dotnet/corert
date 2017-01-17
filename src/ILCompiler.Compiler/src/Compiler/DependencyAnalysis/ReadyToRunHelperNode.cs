@@ -156,6 +156,16 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
                 return dependencyList;
             }
+            else if (_id == ReadyToRunHelperId.ResolveGenericVirtualMethod)
+            {
+                MethodDesc method = _target as MethodDesc;
+                Debug.Assert(method != null && method.HasInstantiation && method.IsVirtual);
+
+                // GVM dependency tracking
+                DependencyList dependencyList = new DependencyList();
+                dependencyList.Add(new DependencyListEntry(factory.GVMDependencies(method), "R2R GVM dependency tracking"));
+                return dependencyList;
+            }
             else
             {
                 return null;

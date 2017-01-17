@@ -91,8 +91,7 @@ namespace Internal.Runtime.TypeLoader
             nameAndSignature = null;
 
             NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
-            uint offset = signature.NativeLayoutOffset;
-            NativeParser parser = new NativeParser(reader, offset);
+            NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
             if (parser.IsNull)
                 return false;
 
@@ -109,8 +108,7 @@ namespace Internal.Runtime.TypeLoader
             methodSig = default(RuntimeSignature);
 
             NativeReader reader = GetNativeLayoutInfoReader(module);
-            uint offset = methodNameAndSigToken;
-            NativeParser parser = new NativeParser(reader, offset);
+            NativeParser parser = new NativeParser(reader, methodNameAndSigToken);
             if (parser.IsNull)
                 return false;
 
