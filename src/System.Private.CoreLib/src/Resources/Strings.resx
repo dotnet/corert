@@ -729,6 +729,9 @@
   <data name="Argument_TimeZoneInfoInvalidTZif" xml:space="preserve">
     <value>The TZif data structure is corrupt.</value>
   </data>
+  <data name="Argument_ToExclusiveLessThanFromExclusive" xml:space="preserve">
+    <value>fromInclusive must be less than or equal to toExclusive.</value>
+  </data>
   <data name="Argument_TransitionTimesAreIdentical" xml:space="preserve">
     <value>The DaylightTransitionStart property must not equal the DaylightTransitionEnd property.</value>
   </data>
