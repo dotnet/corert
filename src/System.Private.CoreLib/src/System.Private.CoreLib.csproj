@@ -222,6 +222,7 @@
     <Compile Include="System\BadImageFormatException.cs" />
     <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
+    <Compile Include="System\ByReference.cs" />
     <Compile Include="System\Byte.cs" />
     <Compile Include="System\Char.cs" />
     <Compile Include="System\CharEnumerator.cs" />

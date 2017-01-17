@@ -21,21 +21,4 @@ namespace System.Runtime.CompilerServices
 
     [AttributeUsage(AttributeTargets.Struct)]
     public sealed class StackOnlyAttribute : Attribute { }
-
-#if false // Unused right now. It is likely going to be useful for Span<T> implementation.
-    // This is a dummy class to be replaced by the compiler with a ref T
-    // It has to be a dummy class to avoid complicated type substitution
-    // and other complications in the compiler.
-    public sealed class ByReference<T>
-    {
-        //
-        // Managed pointer creation
-        //
-        [Intrinsic]
-        public static extern ByReference<T> FromRef(ref T source);
-
-        [Intrinsic]
-        public static extern ref T ToRef(ByReference<T> source);
-    }
-#endif
 }
