@@ -196,20 +196,13 @@ namespace ILCompiler
 
             public void AddCompilationRoot(TypeDesc type, string reason)
             {
-                if (type.IsGenericDefinition)
+                if (!ConstructedEETypeNode.CreationAllowed(type))
                 {
                     _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
                 }
                 else
                 {
                     _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
-
-                    // If the type has a thread static field then we should eagerly create a helper
-                    // to access such fields at runtime. This is required for multi-module compilation.
-                    if (type.IsDefType && (((DefType)type).ThreadStaticFieldSize > 0))
-                    {
-                        _graph.AddRoot(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetThreadStaticBase, (MetadataType)type), reason);
-                    }
                 }
             }
         }

@@ -49,19 +49,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
         {
-            ReadyToRunHelperNode node = new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
-
-            if ((node.Id != ReadyToRunHelperId.GetThreadStaticBase) ||
-                CompilationModuleGroup.ContainsType((TypeDesc)node.Target))
-            {
-                return node;
-            }
-            else
-            {
-                // The ReadyToRun helper for a type with thread static fields resides in the same module as the target type.
-                // Other modules should use an extern symbol node to access it.
-                return ExternSymbol(node.GetMangledName());
-            }
+            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
     }
 }

@@ -110,27 +110,18 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        ThreadStaticsNode targetNode = factory.TypeThreadStaticsSymbol(target) as ThreadStaticsNode;
-                        int typeTlsIndex = 0;
 
-                        // The GetThreadStaticBase helper should be generated only in the compilation module group
-                        // that contains the thread static field because the helper needs the index of the type
-                        // in Thread Static section of the containing module.
-                        // TODO: This needs to be fixed this for the multi-module compilation
-                        Debug.Assert(targetNode != null);
-
-                        if (!relocsOnly)
-                        {
-                            // Get index of the targetNode in the Thread Static region
-                            typeTlsIndex = factory.ThreadStaticsRegion.IndexOfEmbeddedObject(targetNode);
-                        }
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
                         // First arg: address of the TypeManager slot that provides the helper with
                         // information about module index and the type manager instance (which is used
                         // for initialization on first access).
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeManagerIndirection);
+                        AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2);
+
                         // Second arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitMOV(encoder.TargetRegister.Arg1, typeTlsIndex);
+                        AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2AndDelta);
 
                         if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
                         {

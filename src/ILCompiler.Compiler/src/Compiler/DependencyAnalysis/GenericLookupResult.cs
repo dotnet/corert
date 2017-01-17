@@ -236,14 +236,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return factory.TypeThreadStaticsSymbol(instantiatedType);
-        }
-
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
-        {
-            ThreadStaticsNode targetNode = (ThreadStaticsNode)GetTarget(factory, typeInstantiation, methodInstantiation);
-            int typeTlsIndex = factory.ThreadStaticsRegion.IndexOfEmbeddedObject(targetNode);
-            builder.EmitNaturalInt(typeTlsIndex);
+            return factory.TypeThreadStaticIndex(instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

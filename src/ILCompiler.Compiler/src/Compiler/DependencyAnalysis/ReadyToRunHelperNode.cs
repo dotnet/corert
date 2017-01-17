@@ -156,12 +156,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
                 return dependencyList;
             }
-            else if (_id == ReadyToRunHelperId.GetThreadStaticBase)
-            {
-                DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(factory.TypeThreadStaticsSymbol((MetadataType)_target), "ReadyToRun Thread Static Storage");
-                return dependencyList;
-            }
             else
             {
                 return null;
