@@ -1115,6 +1115,8 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakGen\leakgen\leakgen.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime1\lifetime1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleak\dlbigleak.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\nstructtun\nstructtun.*" />
 
     <!-- InteropExtensions.MightBeBlittable is only an approximation -->
     <!-- https://github.com/dotnet/corert/issues/2355 -->
