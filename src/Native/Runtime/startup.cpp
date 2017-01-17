@@ -268,12 +268,13 @@ void __stdcall RuntimeThreadShutdown(void* thread)
     // that is made for the single thread that runs the final stages of orderly process
     // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
     // process is being torn down via an ExitProcess call).
-    UNREFERENCED_PARAMETER(thread);
+#ifndef PLATFORM_UNIX
+    // On UNIX, the ThreadStore::GetCurrentThread() is not valid at this point
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
-
+#endif
     if (!g_processShutdownHasStarted)
     {
-        ThreadStore::DetachCurrentThread();
+        ThreadStore::DetachCurrentThread((Thread*)thread);
     }
 }
 

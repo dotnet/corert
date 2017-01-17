@@ -414,11 +414,11 @@ public:
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
 // Destructor of the thread local object represented by the g_threadKey,
-// called when a thread is shut down
+// called when a thread is shut down.
+// The parameter is the value that was set using the pthread_setspecific.
+// Please note that the pthread_getspecific now returns NULL!
 void TlsObjectDestructor(void* data)
 {
-    ASSERT(data == pthread_getspecific(g_threadKey));
-
     RuntimeThreadShutdown(data);
 }
 
@@ -491,26 +491,8 @@ extern "C" void PalAttachThread(void* thread)
 //  true if the thread was detached, false if there was no attached thread
 extern "C" bool PalDetachThread(void* thread)
 {
-    void* attachedThread = pthread_getspecific(g_threadKey);
-
-    if (attachedThread == thread)
-    {
-        int status = pthread_setspecific(g_threadKey, NULL);
-        if (status != 0)
-        {
-            ASSERT_UNCONDITIONALLY("PalDetachThread failed to clear thread pointer in thread local storage");
-            RhFailFast();
-        }
-        return true;
-    }
-
-    if (attachedThread != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("PalDetachThread called with different thread pointer than PalAttachThread");
-        RhFailFast();
-    }
-
-    return false;
+    UNREFERENCED_PARAMETER(thread);
+    return true;
 }
 
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
