@@ -42,11 +42,11 @@ namespace ILCompiler
             // We should not care which code-gen is being used, however currently CppCodeGen cannot
             // handle code pulled in by all explicit cctors.
             //
-            // See https://github.com/dotnet/corert/issues/2486
+            // See https://github.com/dotnet/corert/issues/2518
             //
             _isCppCodeGen = isCppCodeGen;
         }
-        
+
         public IList<MethodDesc> LibraryInitializerMethods
         {
             get
