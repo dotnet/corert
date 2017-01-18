@@ -148,27 +148,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Download nuget",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "inlineScript",
-        "scriptName": "",
-        "arguments": "https://dotnet.myget.org/F/dotnet-buildtools/api/v2/package/NuGet.CommandLine/3.5.0-rc-1256 $(CustomNuGetDownloadPath) $(CustomNuGetPath)",
-        "inlineScript": "param($packageUrl, $packageDestDir, $nugetDestPath)\n$downloadPath=\"$packageDestDir\\NuGet.CommandLine.nupkg\"\n$extract = \"$packageDestDir\\extracted\"\n$t = mkdir $packageDestDir -ea Ignore\n(New-Object Net.WebClient).DownloadFile($packageUrl, $downloadPath)\nAdd-Type -Assembly 'System.IO.Compression.FileSystem'\nRemove-Item $extract -Recurse -ea Ignore\n[System.IO.Compression.ZipFile]::ExtractToDirectory($downloadPath, $extract)\nCopy-Item $packageDestDir\\extracted\\tools\\NuGet.exe $nugetDestPath",
-        "workingFolder": "",
-        "failOnStandardError": "true"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Publish packages to MyGet",
+      "displayName": "Publish packages",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -176,8 +156,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(CustomNuGetPath)",
-        "arguments": "push bin\\Product\\pkg\\*.nupkg $(MyGetApiKey) -Source $(MyGetFeedUrl) -Timeout 3600",
+        "filename": "$(Build.SourcesDirectory)\\$(SourceFolder)\\buildscripts\\publish-packages.cmd",
+        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=\"$(CloudDropAccessToken)\" -Container=$(Label)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -236,7 +216,7 @@
       "inputs": {
         "symbolServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
         "requestName": "$(system.teamProject)/$(Build.BuildNumber)/$(Build.BuildId)",
-        "sourcePath": "$(Build.SourcesDirectory)\\corefx\\bin",
+        "sourcePath": "$(Build.SourcesDirectory)\\corert\\bin",
         "assemblyPath": "",
         "toLowerCase": "true",
         "detailedLog": "true",
@@ -408,8 +388,12 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
+    "BuildTag": {
+      "value": "corert-alpha",
+      "allowOverride": true
+    },
     "Label": {
-      "value": "$(Build.BuildNumber)",
+      "value": "$(BuildTag)-$(Build.BuildNumber)",
       "allowOverride": true
     },
     "SourceVersion": {
@@ -444,6 +428,25 @@
     "SourceFolder": {
       "value": "corert_$(Build.BuildId)",
       "allowOverride": false
+    },
+    "CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
+    },
+    "CloudDropAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "UpdatePublishedVersions.AuthToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "VersionsRepoOwner": {
+      "value": "crummel",
+      "allowOverride": true
+    },
+    "VersionsRepo": {
+      "value": "dotnet_versions",
+      "allowOverride": true
     }
   },
   "demands": [
