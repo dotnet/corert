@@ -181,9 +181,9 @@ goto :eof
         )
     )
 
-    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
+    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" !extraArgs! !__SourceFile!.csproj
     echo.
-    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
+    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" !extraArgs! !__SourceFile!.csproj
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
@@ -271,7 +271,7 @@ goto :eof
     echo CORE_ROOT IS NOW %CORE_ROOT%
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
  
-    msbuild src\TestWrappersConfig\XUnitTooling.depproj
+    msbuild "/p:RepoLocalBuild=true" src\TestWrappersConfig\XUnitTooling.depproj
     if errorlevel 1 (
         exit /b 1
     )

@@ -34,8 +34,8 @@ run_test_dir()
     rm -rf ${__dir_path}/bin ${__dir_path}/obj
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
-    echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} ${__extra_args} ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} ${__extra_args} ${__dir_path}/${__filename}.csproj
+    echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:RepoLocalBuild=true ${__extra_args} ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:RepoLocalBuild=true ${__extra_args} ${__dir_path}/${__filename}.csproj
 
     runtest ${__dir_path} ${__filename}
     local __exitcode=$?
