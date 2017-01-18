@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
     internal partial class mincore
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(Interop.Libraries.ErrorHandling, "GetLastError")]
+        [DllImport("api-ms-win-core-errorhandling-l1-1-0.dll")]
         internal extern static int GetLastError();
     }
 }
