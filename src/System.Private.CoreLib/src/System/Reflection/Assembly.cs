@@ -5,7 +5,9 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Configuration.Assemblies;
 using System.Runtime.Serialization;
+using System.Security;
 
 using Internal.Reflection.Augments;
 
@@ -76,6 +78,8 @@ namespace System.Reflection
         public virtual Stream GetManifestResourceStream(string name) { throw NotImplemented.ByDesign; }
         public virtual Stream GetManifestResourceStream(Type type, string name) { throw NotImplemented.ByDesign; }
 
+        public bool IsFullyTrusted => true;
+
         public virtual AssemblyName GetName() => GetName(copiedName: false);
         public virtual AssemblyName GetName(bool copiedName) { throw NotImplemented.ByDesign; }
 
@@ -90,6 +94,8 @@ namespace System.Reflection
 
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
+
+        public virtual String EscapedCodeBase => AssemblyName.EscapeCodeBase(CodeBase);
 
         public object CreateInstance(string typeName) => CreateInstance(typeName, false, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
         public object CreateInstance(string typeName, bool ignoreCase) => CreateInstance(typeName, ignoreCase, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
@@ -129,6 +135,12 @@ namespace System.Reflection
             else
                 return displayName;
         }
+
+        /*
+          Returns true if the assembly was loaded from the global assembly cache.
+        */
+        public virtual bool GlobalAssemblyCache { get { throw NotImplemented.ByDesign; } }
+        public virtual Int64 HostContext { get { throw NotImplemented.ByDesign; } }
 
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
@@ -180,8 +192,28 @@ namespace System.Reflection
             return Load(name);
         }
 
+        public static Assembly LoadFile(String path) { throw new PlatformNotSupportedException(); }
+        public static Assembly LoadFrom(String assemblyFile) { throw new PlatformNotSupportedException(); }
+        public static Assembly LoadFrom(String assemblyFile, byte[] hashValue, AssemblyHashAlgorithm hashAlgorithm) { throw new PlatformNotSupportedException(); }
+
+        [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static Assembly LoadWithPartialName(String partialName)
+        {
+            if (partialName == null)
+                throw new ArgumentNullException(nameof(partialName));
+
+            return Load(partialName);
+        }
+
+        public static Assembly UnsafeLoadFrom(string assemblyFile) => LoadFrom(assemblyFile);
+
+        public Module LoadModule(String moduleName, byte[] rawModule) => LoadModule(moduleName, rawModule, null);
+        public virtual Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw NotImplemented.ByDesign; }
+
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
         public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
         public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+
+        public virtual SecurityRuleSet SecurityRuleSet => SecurityRuleSet.None;
     }
 }

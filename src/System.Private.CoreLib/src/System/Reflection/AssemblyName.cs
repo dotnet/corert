@@ -129,6 +129,18 @@ namespace System.Reflection
         public string CodeBase { get; set; }
         public AssemblyHashAlgorithm HashAlgorithm { get; set; }
         public AssemblyVersionCompatibility VersionCompatibility { get; set; }
+        public StrongNameKeyPair KeyPair { get; set; }
+
+        public String EscapedCodeBase
+        {
+            get
+            {
+                if (CodeBase == null)
+                    return null;
+                else
+                    return EscapeCodeBase(CodeBase);
+            }
+        }
 
         public byte[] GetPublicKey()
         {
@@ -171,6 +183,8 @@ namespace System.Reflection
 
         public static AssemblyName GetAssemblyName(String assemblyFile) { throw new NotImplementedException(); }
         public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition) { throw new NotImplementedException(); }
+
+        internal static String EscapeCodeBase(String codebase) { throw new PlatformNotSupportedException(); }
 
         private AssemblyNameFlags _flags;
         private byte[] _publicKey;
