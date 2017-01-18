@@ -2,7 +2,7 @@ _Please ensure that [pre-requisites](prerequisites-for-building.md) are installe
 
 _Note_:
 
-* Instructions below assume `~/corert` is the repo root.
+* Instructions below assume ```~/corert``` is the repo root.
 
 # Setting up #
 
@@ -12,7 +12,7 @@ This guide assumes that your VS code workspace is set to the root of the repo.
 
 # Running VS Code
 
-We've checked-in reasonable default launch.json and tasks.json under corert/.vscode directory. You only need to run vscode form corert root:
+We've checked-in reasonable default ```launch.json``` and ```tasks.json``` under ```corert/.vscode``` directory. You only need to run vscode form corert root:
 
 ```
 code ~/corert
@@ -20,7 +20,7 @@ code ~/corert
 
 And then press SHIFT+COMMAND+B to start the build.
 
-# Debugging of ILC.exe #
+# Debugging ILC.exe using .NET Core Debugger #
 
 Go to the debug pane and click Debug, choose .NET Core as the environment. If needed, you can change program property in launch.json (the gear button) to point to a different flavor of ilc:
 
@@ -33,21 +33,26 @@ Go to the debug pane and click Debug, choose .NET Core as the environment. If ne
             },
 ```
 
-By default we've disabled automatic build before debug. If you want to change that, you can change the preLaunchTask property to "build". But this is not currently recommended.
+By default we've disabled automatic build before debug. If you want to change that, you can change the ```preLaunchTask``` property to ```"build"```. But this is not currently recommended.
+
+The magic to make this work are two changes (automated in the building/packaging process):
+* We need to make a copy of ILC.exe named ```ILC.dll```. It turns out .NET Core Debugger only likes .dll extensions
+* ```ilc.runtimeconfig.json``` file that directs .NET Core debugger which version of .NET Core to use. Also, the fact that there is no .deps.json file instructs .NET Core to run everything locally (including .NET Core assemblies) from that location (instead of using shared assemblies).
+
 # Getting ILC response files
 
-A .ilc.rsp file path can be easily obtained from a .NET core project that you want to debug by following command:
+A ```.ilc.rsp``` file path can be easily obtained from a .NET core project that you want to debug by following command:
 
 ```
 dotnet build /t:LinkNative /t:Rebuild /v:Detailed | grep ".ilc.rsp"
 ```
 
-Once you have the ilc path, you can change launch.json accordingly:
+Once you have the ilc path, you can change ```launch.json``` accordingly:
 
 ```json
             "args": ["@obj/Debug/netcoreapp1.0/native/<netcore_app_name>.ilc.rsp"],
             "cwd": "<netcore_app_root_folder>",
 ```
 
-* args - the argument to ILC
-* cwd - the current directory where ILC is running. You can set it to the .NET Core project root. 
+* ```args``` - the argument to ILC
+* ```cwd``` - the current directory where ILC is running. You can set it to the .NET Core project root. 
