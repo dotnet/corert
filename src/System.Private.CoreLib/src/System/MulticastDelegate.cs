@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    public abstract class MulticastDelegate : Delegate
+    public abstract class MulticastDelegate : Delegate, ISerializable
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
         // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
@@ -113,6 +114,11 @@ namespace System
         public override sealed Delegate[] GetInvocationList()
         {
             return base.GetInvocationList();
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            throw new NotImplementedException();
         }
     }
 }
