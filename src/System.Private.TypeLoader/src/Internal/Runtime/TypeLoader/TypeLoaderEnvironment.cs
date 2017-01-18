@@ -86,7 +86,6 @@ namespace Internal.Runtime.TypeLoader
         }
     }
 
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.TypeLoaderEnvironment)]
     public sealed partial class TypeLoaderEnvironment
     {
         [ThreadStatic]
@@ -107,18 +106,7 @@ namespace Internal.Runtime.TypeLoader
         [ThreadStatic]
         private static LowLevelDictionary<IntPtr, NativeReader> t_moduleNativeReaders;
 
-        //
-        // CoreRT calls Initialize directly for all types its needs that typically have EagerOrderedStaticConstructor
-        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
-        // added to Initialize.
-        //
-#if !CORERT
-        static TypeLoaderEnvironment()
-        {
-            Initialize();
-        }
-#endif
-
+        // Eager initialization called from LibraryInitializer for the assembly.
         internal static void Initialize()
         {
             Instance = new TypeLoaderEnvironment();

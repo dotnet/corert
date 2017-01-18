@@ -11,8 +11,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
-    // Initialize the cache eagerly to avoid null checks
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemRuntimeTypeLoaderExports)]
     public static class TypeLoaderExports
     {
         [RuntimeExport("GetThreadStaticsForDynamicType")]
@@ -79,18 +77,6 @@ namespace System.Runtime
         private static GCHandle s_previousCache;
         private volatile static IntPtr[] s_resolutionFunctionPointers;
         private static int s_nextResolutionFunctionPointerIndex;
-
-        //
-        // CoreRT calls Initialize directly for all types its needs that typically have EagerOrderedStaticConstructor
-        // attributes. To retain compatibility, please ensure static initialization is not done inline, and instead
-        // added to Initialize.
-        //
-#if !CORERT
-        static TypeLoaderExports()
-        {
-            Initialize();
-        }
-#endif
 
         internal static void Initialize()
         {
