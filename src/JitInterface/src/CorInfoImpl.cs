@@ -2659,7 +2659,11 @@ namespace Internal.JitInterface
                     // to abort the inlining attempt if the inlinee does any generic lookups.
                     bool inlining = contextMethod != MethodBeingCompiled;
 
-                    if (targetMethod.IsSharedByGenericInstantiations && !inlining)
+                    // If we resolved a constrained call, calling GetRuntimeDeterminedObjectForToken below would
+                    // result in getting back the unresolved target. Don't capture runtime determined dependencies
+                    // in that case and rely on the dependency analysis computing them based on seeing a call to the
+                    // canonical method body.
+                    if (targetMethod.IsSharedByGenericInstantiations && !inlining && !resolvedConstraint)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
@@ -2667,6 +2671,7 @@ namespace Internal.JitInterface
                     }
                     else
                     {
+                        Debug.Assert(!forceUseRuntimeLookup);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod));
                     }

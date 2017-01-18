@@ -18,6 +18,7 @@ class Program
         TestDelegateVirtualMethod.Run();
         TestDelegateInterfaceMethod.Run();
         TestThreadStaticFieldAccess.Run();
+        TestConstrainedMethodCalls.Run();
         TestNameManglingCollisionRegression.Run();
         TestUnusedGVMsDoNotCrashCompiler.Run();
 
@@ -379,6 +380,34 @@ class Program
 
             // Make sure we run the cctor
             if (ReadFromBeforeFieldInitType<object>() != 1985)
+                throw new Exception();
+        }
+    }
+
+    class TestConstrainedMethodCalls
+    {
+        interface IFoo<T>
+        {
+            int Frob();
+        }
+
+        struct Foo<T> : IFoo<T>
+        {
+            public int Frob()
+            {
+                return 12345;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int DoFrob<T, U>(T t) where T : IFoo<U>
+        {
+            return t.Frob();
+        }
+
+        public static void Run()
+        {
+            if (DoFrob<Foo<object>, object>(new Foo<object>()) != 12345)
                 throw new Exception();
         }
     }
