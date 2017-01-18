@@ -388,26 +388,34 @@ class Program
     {
         interface IFoo<T>
         {
-            int Frob();
+            void Frob();
         }
 
         struct Foo<T> : IFoo<T>
         {
-            public int Frob()
+            public int FrobbedValue;
+
+            public void Frob()
             {
-                return 12345;
+                FrobbedValue = 12345;
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int DoFrob<T, U>(T t) where T : IFoo<U>
+        static void DoFrob<T, U>(ref T t) where T : IFoo<U>
         {
-            return t.Frob();
+            // Perform a constrained interface call from shared code.
+            // This should have been resolved to a direct call at compile time.
+            t.Frob();
         }
 
         public static void Run()
         {
-            if (DoFrob<Foo<object>, object>(new Foo<object>()) != 12345)
+            var foo = new Foo<object>();
+            DoFrob<Foo<object>, object>(ref foo);
+
+            // If the FrobbedValue doesn't change when we frob, we must have done box+interface call.
+            if (foo.FrobbedValue != 12345)
                 throw new Exception();
         }
     }
