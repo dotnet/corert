@@ -8,6 +8,10 @@ def project = GithubProject
 // The input branch name (e.g. master)
 def branch = GithubBranchName
 
+def imageVersionMap = ['Windows_NT':'latest-or-auto',
+                       'OSX':'latest-or-auto',
+                       'Ubuntu':'20170118']
+ 
 // Innerloop build OS's
 def osList = ['Ubuntu', 'OSX', 'Windows_NT']
 
@@ -65,7 +69,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
 
             // This call performs test run checks for the CI.
             Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
-            Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
+            Utilities.setMachineAffinity(newJob, os, imageVersionMap[os])
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             if (isPR) {
                 Utilities.addGithubPRTriggerForBranch(newJob, branch, prJobDescription)
