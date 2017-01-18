@@ -336,8 +336,12 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
+    "BuildTag": {
+      "value": "corert-alpha",
+      "allowOverride": true
+    },
     "Label": {
-      "value": "corert-alpha-$(Build.BuildNumber)",
+      "value": "$(BuildTag)-$(Build.BuildNumber)",
       "allowOverride": true
     },
     "MyGetFeedUrl": {
