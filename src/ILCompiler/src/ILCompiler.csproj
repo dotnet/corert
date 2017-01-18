@@ -44,6 +44,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+    <!-- This is needed for VS Code debugging for ILC -->
+    <Content Include="ilc.runtimeconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj">
@@ -56,4 +60,8 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="AfterBuild">
+    <!-- This is needed for VS Code debugging for ILC - it only likes DLL extension -->
+    <Copy SourceFiles="$(OutputPath)/ilc.exe" DestinationFiles="$(OutputPath)/ilc.dll" ContinueOnError="true" />
+  </Target>
 </Project>

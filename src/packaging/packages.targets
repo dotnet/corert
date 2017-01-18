@@ -38,6 +38,8 @@
             <ILCompilerFiles Include="ILCompiler.MetadataTransform.dll" />
             <ILCompilerFiles Include="ILCompiler.MetadataWriter.dll" />
             <ILCompilerFiles Include="ILCompiler.TypeSystem.dll" />
+            <!-- This is needed for VS Code debugging for ILC - it only likes dll extension -->
+            <ILCompilerFiles Include="ilc.dll" />
             <ILCompilerBinPlace Include="@(ILCompilerFiles)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/ILCompiler/%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
@@ -73,8 +75,14 @@
             <ILCompilerBinPlace Include="@(ILCompilerContentFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerBinPlace>
+ 
+            <!-- This is needed for VS Code debugging for ILC -->
+            <ILCompilerJsonContentFiles Include="ilc.runtimeconfig.json" />
+            <ILCompilerBinPlace Include="@(ILCompilerJsonContentFiles)">
+                <Text><![CDATA[        <file src="src/ILCompiler/src/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)%(Extension)" /> ]]></Text>
+            </ILCompilerBinPlace>
 
-            <!-- IL.Compiler.SDK target files -->
+           <!-- IL.Compiler.SDK target files -->
             <ILCompilerSdkFiles Include="Runtime" />
             <ILCompilerSdkFiles Include="PortableRuntime" />
             <ILCompilerSdkFiles Include="bootstrapper" />
