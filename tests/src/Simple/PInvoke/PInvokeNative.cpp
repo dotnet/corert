@@ -116,3 +116,12 @@ DLL_EXPORT bool __stdcall SafeHandleTest(HANDLE sh, long shValue)
 {
     return (long)((size_t)(sh)) == shValue;
 }
+
+DLL_EXPORT long __stdcall SafeHandleOutTest(HANDLE **sh)
+{
+    if (sh == NULL) 
+        return -1;
+
+    *sh = (HANDLE *)malloc(100);
+    return (long)((size_t)(*sh));
+}
