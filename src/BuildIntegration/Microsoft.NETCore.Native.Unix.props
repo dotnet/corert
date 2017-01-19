@@ -17,7 +17,7 @@ See the LICENSE file in the project root for more information.
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.5</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.9</CppCompilerAndLinker>
     <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
   </PropertyGroup>
