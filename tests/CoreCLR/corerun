@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# This is the Unix equivalent of build-and-run-test.cmd
+# It is invoked by each test's bash script. The reason it's called corerun is that
+# the unix CoreCLR tests don't have a custom runner override environment variable.
+# See issue https://github.com/dotnet/coreclr/issues/9007
+
+export TestExecutable=$1
+export TestFileName=${TestExecutable%.*}
+
+cp $CoreRT_TestRoot/CoreCLR/Test.csproj .
+
+__msbuild_dir=${CoreRT_TestRoot}/../Tools
+echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
+${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
+
+# Some tests (interop) have native artifacts they depend on. Copy all DLLs to be sure we have them.
+cp *.dll native/ 2>/dev/null
+
+# Remove the test executable from the arg list so it isn't passed to test execution
+shift
+
+native/${TestFileName} $*
+
+testScriptExitCode=$?
+
+# Clean up test binary artifacts to save space
+rm -r native 2>/dev/null
+
+exit $testScriptExitCode

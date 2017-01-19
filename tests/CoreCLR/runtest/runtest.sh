@@ -792,6 +792,12 @@ function finish_remaining_tests {
 function prep_test {
     local scriptFilePath=$1
 
+    # Skip any test that's not in the current playlist, if a playlist was
+    # given to us.
+    if [ -n "$playlistFile" ] && ! is_playlist_test "$scriptFilePath"; then
+        return
+    fi
+
     test "$verbose" == 1 && echo "Preparing $scriptFilePath"
 
     if [ ! "$noLFConversion" == "ON" ]; then
@@ -1178,7 +1184,10 @@ fi
 if [ "$ARCH" == "x64" ]
 then
     scriptPath=$(dirname $0)
-    ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
+    # Disabled for CoreRT
+    # This is how CoreCLR sets up GCStress. We will probably go the .NET Native route
+    # when we get to GC Stress though.
+    #${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
 else
     echo "Skip preparing for GC stress test. Dependent package is not supported on this architecture."
 fi

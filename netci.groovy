@@ -69,7 +69,6 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
 
                         if (configuration == 'Debug') {
                             if (isPR) {
-                                prJobDescription += " and CoreCLR tests"
                                 // Run a small set of BVTs during PR validation
                                 shell(testScriptString + "top200")
                             }
