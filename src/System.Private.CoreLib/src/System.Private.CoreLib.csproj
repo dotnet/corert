@@ -194,6 +194,7 @@
     <Compile Include="System\Reflection\ReflectionContext.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadException.cs" />
     <Compile Include="System\Reflection\ResourceLocation.cs" />
+    <Compile Include="System\Reflection\StrongNameKeyPair.cs" />
     <Compile Include="System\Reflection\TargetException.cs" />
     <Compile Include="System\Reflection\TypeAttributes.cs" />
     <Compile Include="System\Reflection\TypeFilter.cs" />
