@@ -86,9 +86,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "CreateSemaphoreExW", CharSet = CharSet.Unicode)]
         internal static extern IntPtr CreateSemaphoreEx(IntPtr lpSemaphoreAttributes, int lInitialCount, int lMaximumCount, string lpName, uint dwFlags, uint dwDesiredAccess);
 
-        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
-        internal extern static uint GetCurrentThreadId();
-
         [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "IsDebuggerPresent", CharSet = CharSet.Unicode)]
         internal extern static bool IsDebuggerPresent();
 
