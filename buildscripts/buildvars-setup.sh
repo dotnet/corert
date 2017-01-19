@@ -190,10 +190,6 @@ while [ "$1" != "" ]; do
         verbose)
             export __VerboseBuild=1
             ;;
-        clang3.5)
-            export __ClangMajorVersion=3
-            export __ClangMinorVersion=5
-            ;;
         clang3.6)
             export __ClangMajorVersion=3
             export __ClangMinorVersion=6
