@@ -36,6 +36,9 @@ namespace PInvoke
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SafeHandleTest(SafeMemoryHandle sh1, Int64 sh1Value);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        public static extern int SafeHandleOutTest(out SafeMemoryHandle sh1);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         public static extern bool LastErrorTest();
 
@@ -117,6 +120,12 @@ namespace PInvoke
             long val =  hndIntPtr.ToInt64(); //return the 64-bit value associated with hnd
 
             ThrowIfNotEquals(true, SafeHandleTest(hnd, val), "SafeHandle marshalling failed.");
+
+            Console.WriteLine("Testing marshalling out SafeHandle");
+            SafeMemoryHandle hnd2;
+            val = SafeHandleOutTest(out hnd2);
+            int val2 = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
+            ThrowIfNotEquals(val, val2, "SafeHandle out marshalling failed");
         }
     }
 
