@@ -141,6 +141,11 @@ namespace System.Reflection.Runtime.TypeInfos
             return object.ReferenceEquals(this, obj);
         }
 
+        public sealed override bool Equals(Type o)
+        {
+            return object.ReferenceEquals(this, o);
+        }
+
         public sealed override int GetHashCode()
         {
             return InternalGetHashCode();
@@ -299,6 +304,14 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return false;
+            }
+        }
+
+        public sealed override bool IsEnum
+        {
+            get
+            {
+                return 0 != (Classification & TypeClassification.IsEnum);
             }
         }
 
