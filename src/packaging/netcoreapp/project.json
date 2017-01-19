@@ -1,42 +1,12 @@
 {
   "frameworks": {
-    "netcoreapp1.2": {
+    "netcoreapp2.0": {
       "dependencies": {
-        "System.Buffers": "4.4.0-beta-24913-02",
-        "System.Console": "4.4.0-beta-24913-02",
-        "System.Collections": "4.4.0-beta-24913-02",
-        "System.Collections.Concurrent": "4.4.0-beta-24913-02",
-        "System.Collections.NonGeneric": "4.4.0-beta-24913-02",
-        "System.Diagnostics.Debug": "4.4.0-beta-24913-02",
-        "System.Diagnostics.Tracing": "4.4.0-beta-24913-02",
-        "System.Diagnostics.Tools": "4.4.0-beta-24913-02",
-        "System.Globalization": "4.4.0-beta-24913-02",
-        "System.Globalization.Calendars": "4.4.0-beta-24913-02",
-        "System.IO": "4.4.0-beta-24913-02",
-        "System.IO.FileSystem": "4.4.0-beta-24913-02",
-        "System.IO.FileSystem.Primitives": "4.4.0-beta-24913-02",
-        "System.Linq": "4.4.0-beta-24913-02",
-        "System.Reflection": "4.4.0-beta-24913-02",
-        "System.Reflection.Primitives": "4.4.0-beta-24913-02",
-        "System.Reflection.Extensions": "4.4.0-beta-24913-02",
-        "System.Reflection.TypeExtensions": "4.4.0-beta-24913-02",
-        "System.Resources.ResourceManager": "4.4.0-beta-24913-02",
-        "System.Runtime": "4.4.0-beta-24913-02",
-        "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-24913-02",
-        "System.Runtime.Extensions": "4.4.0-beta-24913-02",
-        "System.Runtime.InteropServices": "4.4.0-beta-24913-02",
-        "System.Runtime.InteropServices.RuntimeInformation": "4.4.0-beta-24913-02",
-        "System.Runtime.Handles": "4.4.0-beta-24913-02",
-        "System.Runtime.Numerics": "4.4.0-beta-24913-02",
-        "System.Security.Principal": "4.4.0-beta-24913-02",
-        "System.Text.Encoding": "4.4.0-beta-24913-02",
-        "System.Text.Encoding.Extensions": "4.4.0-beta-24913-02",
+        "Microsoft.NETCore.App": "2.0.0-beta-001368-00",
+
         "System.Threading": "4.4.0-beta-24913-02",
-        "System.Threading.Overlapped": "4.4.0-beta-24913-02",
-        "System.Threading.Tasks": "4.4.0-beta-24913-02",
-        "System.Threading.Thread": "4.4.0-beta-24913-02",
-        "System.Threading.Timer": "4.4.0-beta-24913-02",
-        "Microsoft.Win32.Primitives": "4.4.0-beta-24913-02",
+        "System.Linq": "4.4.0-beta-24913-02",
+        "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-24913-02",
 
         "runtime.native.System": "4.4.0-beta-24913-02"
       }
