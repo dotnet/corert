@@ -15,6 +15,7 @@ internal static partial class Interop
         internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
         internal const string Memory = "api-ms-win-core-memory-l1-1-0.dll";
         internal const string ProcessEnvironment = "api-ms-win-core-processenvironment-l1-1-0.dll";
+        internal const string ProcessThreads = "api-ms-win-core-processthreads-l1-1-0.dll";
         internal const string RealTime = "api-ms-win-core-realtime-l1-1-0.dll";
         internal const string SysInfo = "api-ms-win-core-sysinfo-l1-2-0.dll";
         internal const string Kernel32 = "api-ms-win-core-kernel32-legacy-l1-1-0.dll";
