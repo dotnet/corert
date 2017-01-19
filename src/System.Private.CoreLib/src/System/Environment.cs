@@ -69,14 +69,6 @@ namespace System
             RuntimeExceptionHelpers.FailFast(message, exception);
         }
 
-        public static int CurrentManagedThreadId
-        {
-            get
-            {
-                return ManagedThreadId.Current;
-            }
-        }
-
         // The upper bits of t_executionIdCache are the executionId. The lower bits of
         // the t_executionIdCache are counting down to get it periodically refreshed.
         // TODO: Consider flushing the executionIdCache on Wait operations or similar 

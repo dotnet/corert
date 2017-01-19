@@ -31,10 +31,10 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                return ManagedThreadId.Current;
+                return Environment.CurrentManagedThreadId;
             }
         }
 
-        private const int ManagedThreadIdNone = ManagedThreadId.ManagedThreadIdNone;
+        private const int ManagedThreadIdNone = 0;
     }
 }
