@@ -105,4 +105,13 @@ int main()
   exit(ret);
 }" HAVE_MACH_ABSOLUTE_TIME)
 
+check_cxx_source_compiles("
+thread_local int x;
+
+int main(int argc, char **argv)
+{
+    x = 1;
+    return 0;
+}" HAVE_THREAD_LOCAL)
+
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

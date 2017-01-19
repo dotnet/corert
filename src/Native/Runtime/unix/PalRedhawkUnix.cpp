@@ -410,6 +410,11 @@ public:
 
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
+#if !HAVE_THREAD_LOCAL
+extern "C" int __cxa_thread_atexit(void (*)(void*), void*, void *);
+extern "C" void *__dso_handle;
+#endif
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
@@ -438,6 +443,10 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     }
 #endif // !USE_PORTABLE_HELPERS
 
+#if !HAVE_THREAD_LOCAL
+    __cxa_thread_atexit(RuntimeThreadShutdown, NULL, &__dso_handle);
+#endif
+
     return true;
 }
 
@@ -446,6 +455,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 {
     return (g_dwPALCapabilities & (uint32_t)capability) == (uint32_t)capability;
 }
+
+#if HAVE_THREAD_LOCAL
 
 struct TlsDestructionMonitor
 {
@@ -469,6 +480,8 @@ struct TlsDestructionMonitor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
 
+#endif // HAVE_THREAD_LOCAL
+
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
 // It fails fast if a different thread was already registered.
@@ -476,7 +489,9 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
+#if HAVE_THREAD_LOCAL
     tls_destructionMonitor.SetThread(thread);
+#endif
 }
 
 // Detach thread from PAL.
