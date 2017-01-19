@@ -18,6 +18,7 @@ class Program
         TestDelegateVirtualMethod.Run();
         TestDelegateInterfaceMethod.Run();
         TestThreadStaticFieldAccess.Run();
+        TestConstrainedMethodCalls.Run();
         TestNameManglingCollisionRegression.Run();
         TestUnusedGVMsDoNotCrashCompiler.Run();
 
@@ -379,6 +380,42 @@ class Program
 
             // Make sure we run the cctor
             if (ReadFromBeforeFieldInitType<object>() != 1985)
+                throw new Exception();
+        }
+    }
+
+    class TestConstrainedMethodCalls
+    {
+        interface IFoo<T>
+        {
+            void Frob();
+        }
+
+        struct Foo<T> : IFoo<T>
+        {
+            public int FrobbedValue;
+
+            public void Frob()
+            {
+                FrobbedValue = 12345;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void DoFrob<T, U>(ref T t) where T : IFoo<U>
+        {
+            // Perform a constrained interface call from shared code.
+            // This should have been resolved to a direct call at compile time.
+            t.Frob();
+        }
+
+        public static void Run()
+        {
+            var foo = new Foo<object>();
+            DoFrob<Foo<object>, object>(ref foo);
+
+            // If the FrobbedValue doesn't change when we frob, we must have done box+interface call.
+            if (foo.FrobbedValue != 12345)
                 throw new Exception();
         }
     }
