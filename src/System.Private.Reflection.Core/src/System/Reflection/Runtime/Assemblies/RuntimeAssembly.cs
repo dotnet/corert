@@ -19,6 +19,7 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Reflection.Tracing;
+using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -178,6 +179,35 @@ namespace System.Reflection.Runtime.Assemblies
             get
             {
                 return _lazyCaseSensitiveTypeTable ?? (_lazyCaseSensitiveTypeTable = new CaseSensitiveTypeCache(this));
+            }
+        }
+
+        public sealed override bool GlobalAssemblyCache
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public sealed override long HostContext
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
+        public sealed override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override SecurityRuleSet SecurityRuleSet
+        {
+            get
+            {
+                return SecurityRuleSet.None;
             }
         }
 
