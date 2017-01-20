@@ -112,8 +112,8 @@ run_coreclr_tests()
         CoreRT_TestSelectionArg=
     fi
 
-    echo ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg}
-    ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg}
+    echo ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir
+    ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir
 }
 
 CoreRT_TestRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -180,19 +180,23 @@ done
 
 source "$CoreRT_TestRoot/testenv.sh"
 
-if [ ${CoreRT_RunCoreCLRTests} ]; then
-    run_coreclr_tests
-    exit $?
-fi
-
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
 __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
 __LogDir=${CoreRT_TestRoot}/../bin/Logs/${__BuildStr}/tests
 __build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 
+if [ ! -d $__LogDir ]; then
+    mkdir -p $__LogDir
+fi
+
 if [ ! -d ${CoreRT_ToolchainDir} ]; then
     echo "Toolchain not found in ${CoreRT_ToolchainDir}"
     exit -1
+fi
+
+if [ ${CoreRT_RunCoreCLRTests} ]; then
+    run_coreclr_tests
+    exit $?
 fi
 
 __CppTotalTests=0
