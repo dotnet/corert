@@ -33,7 +33,7 @@
         </PropertyGroup>
         <ItemGroup>
             <!-- IL.Compiler target files -->
-            <ILCompilerFiles Include="ilc.exe" />
+            <ILCompilerFiles Include="ilc.dll" />
             <ILCompilerFiles Include="ILCompiler.Compiler.dll" />
             <ILCompilerFiles Include="ILCompiler.DependencyAnalysisFramework.dll" />
             <ILCompilerFiles Include="ILCompiler.MetadataTransform.dll" />
@@ -73,6 +73,12 @@
             <ILCompilerContentFiles Include="BuildIntegration/Microsoft.NETCore.Native.Unix.props" />
             <ILCompilerBinPlace Include="@(ILCompilerContentFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)%(Extension)" /> ]]></Text>
+            </ILCompilerBinPlace>
+ 
+            <!-- This is needed for VS Code debugging for ILC -->
+            <ILCompilerJsonContentFiles Include="ilc.runtimeconfig.json" />
+            <ILCompilerBinPlace Include="@(ILCompilerJsonContentFiles)">
+                <Text><![CDATA[        <file src="src/ILCompiler/src/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <!-- IL.Compiler.SDK target files -->
