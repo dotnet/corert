@@ -406,14 +406,14 @@ namespace Internal.TypeSystem.Interop
                 TypeDesc resolvedType = ((ByRefType)managedType).ParameterType;
 
                 var nativeType = PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr).MakeByRefType();
-                var vPinnedOutValue = emitter.NewLocal(nativeType, true);
+                var vOutValue = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr));
                 var vSafeHandle = emitter.NewLocal(resolvedType);
                 marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(resolvedType.GetDefaultConstructor()));
                 marshallingCodeStream.EmitStLoc(vSafeHandle);
-                marshallingCodeStream.EmitLdLoca(vPinnedOutValue);
+                marshallingCodeStream.EmitLdLoca(vOutValue);
 
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                unmarshallingCodeStream.EmitLdLoc(vPinnedOutValue);
+                unmarshallingCodeStream.EmitLdLoc(vOutValue);
                 unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                     PInvokeMethodData.SafeHandleType.GetKnownMethod("SetHandle", null)));
 

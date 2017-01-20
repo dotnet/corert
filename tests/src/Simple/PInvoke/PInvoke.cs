@@ -8,7 +8,7 @@ using System.Text;
 
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
-namespace PInvoke
+namespace PInvokeTests
 {
     internal class Program
     {
@@ -54,14 +54,19 @@ namespace PInvoke
             return 100;
         }
 
-        public static void ThrowIfNotEquals<T>(T expected, T actual, string message)
+        public static void ThrowIfNotEquals(int expected, int actual, string message)
         {
-            if (!Object.Equals(expected, actual))
+            if (expected != actual)
             {
                 message += "\nExpected: " + expected + "\n";
                 message += "Actual: " + actual + "\n";
                 throw new Exception(message);
             }
+        }
+
+        public static void ThrowIfNotEquals(bool expected, bool actual, string message)
+        {
+           ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
         }
 
         private static void TestBlittableType()
@@ -123,9 +128,9 @@ namespace PInvoke
 
             Console.WriteLine("Testing marshalling out SafeHandle");
             SafeMemoryHandle hnd2;
-            val = SafeHandleOutTest(out hnd2);
-            int val2 = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
-            ThrowIfNotEquals(val, val2, "SafeHandle out marshalling failed");
+            int actual = SafeHandleOutTest(out hnd2);
+            int expected = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
+            ThrowIfNotEquals(actual, expected, "SafeHandle out marshalling failed");
         }
     }
 
