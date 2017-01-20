@@ -35,10 +35,6 @@ Go to the debug pane and click Debug, choose .NET Core as the environment. If ne
 
 By default we've disabled automatic build before debug. If you want to change that, you can change the ```preLaunchTask``` property to ```"build"```. But this is not currently recommended.
 
-The magic to make this work are two changes (automated in the building/packaging process):
-* We need to make a copy of ILC.exe named ```ILC.dll```. It turns out .NET Core Debugger only likes .dll extensions
-* ```ilc.runtimeconfig.json``` file that directs .NET Core debugger which version of .NET Core to use. Also, the fact that there is no .deps.json file instructs .NET Core to run everything locally (including .NET Core assemblies) from that location (instead of using shared assemblies).
-
 # Getting ILC response files
 
 A ```.ilc.rsp``` file path can be easily obtained from a .NET core project that you want to debug by following command:

@@ -7,6 +7,10 @@
     <ProjectGuid>{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>ILCompiler</RootNamespace>
+    <!-- This is needed for VS Code debugging for ILC - it only likes DLL extension -->
+    <!-- This also aligns with .NET Core applications model -->
+    <!-- Note that we can't change the OutputType to be library - there is no entry point -->
+    <TargetExt>.dll</TargetExt>
     <AssemblyName>ilc</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
@@ -60,8 +64,4 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Target Name="AfterBuild">
-    <!-- This is needed for VS Code debugging for ILC - it only likes DLL extension -->
-    <Copy SourceFiles="$(OutputPath)/ilc.exe" DestinationFiles="$(OutputPath)/ilc.dll" ContinueOnError="true" />
-  </Target>
 </Project>
