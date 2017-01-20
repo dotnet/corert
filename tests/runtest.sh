@@ -105,6 +105,11 @@ while [ "$1" != "" ]; do
             shift
             CoreRT_CliBinDir=$1
             ;;
+        -coreclr)
+            shift
+            echo "Tests will run here. For now, early out."
+            exit 0
+            ;;
         *)
             ;;
     esac
