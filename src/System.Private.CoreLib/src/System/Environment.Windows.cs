@@ -6,6 +6,8 @@ namespace System
 {
     public static partial class Environment
     {
+        internal static int CurrentNativeThreadId => unchecked((int)Interop.mincore.GetCurrentThreadId());
+
         internal static long TickCount64 => (long)Interop.mincore.GetTickCount64();
 
         public static int ProcessorCount

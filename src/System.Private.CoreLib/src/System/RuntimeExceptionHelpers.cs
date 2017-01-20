@@ -402,7 +402,7 @@ namespace System
             LowLevelList<Exception> exceptions = new LowLevelList<Exception>(curThreadExceptions);
             LowLevelList<Exception> nonThrownInnerExceptions = new LowLevelList<Exception>();
 
-            uint currentThreadId = Interop.mincore.GetCurrentThreadId();
+            uint currentThreadId = (uint)Environment.CurrentNativeThreadId;
 
             // Reset nesting levels for exceptions on this thread that might not be currently in flight
             foreach (ExceptionData exceptionData in s_exceptionDataTable.GetValues())
