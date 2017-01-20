@@ -87,7 +87,13 @@
         <!-- System.TimeSpan is well known to the serializers and must not be explicitly specified to sg.exe -->
         <Type Name="TimeSpan" DataContractJsonSerializer="Excluded" DataContractSerializer="Excluded"/>
       </Namespace>
+      <Namespace Name="System.Reflection">
+        <Type Name="MethodInfo">
+          <Method Name="CreateDelegate">
+            <TypeParameter Name="delegateType" Activate="Public"/>
+          </Method>
+        </Type>
+      </Namespace>
     </Assembly>
   </Library>
 </Directives>
-
