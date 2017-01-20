@@ -292,7 +292,7 @@ namespace Internal.IL
         private void AppendCastIfNecessary(TypeDesc destType, StackEntry srcEntry)
         {
             ConstantEntry constant = srcEntry as ConstantEntry;
-            if ((constant != null) && (constant.IsCastNecessary(destType)) || !destType.IsValueType)
+            if ((constant != null) && (constant.IsCastNecessary(destType)) || !destType.IsValueType || destType != srcEntry.Type)
             {
                 Append("(");
                 Append(GetSignatureTypeNameAndAddReference(destType));
