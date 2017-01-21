@@ -111,7 +111,7 @@ namespace System.Collections.Generic
             // We can't do anything with the keys and values until the entire graph has been deserialized
             // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
             // we'll just cache this.  The graph is not valid until OnDeserialization has been called.
-            HashHelpers.SerializationInfoTable.Add(this, info);
+            DictionaryHashHelpers.SerializationInfoTable.Add(this, info);
         }
 
         public IEqualityComparer<TKey> Comparer
@@ -312,7 +312,7 @@ namespace System.Collections.Generic
             }
 
             info.AddValue(VersionName, version);
-            info.AddValue(ComparerName, HashHelpers.GetEqualityComparerForSerialization(comparer), typeof(IEqualityComparer<TKey>));
+            info.AddValue(ComparerName, comparer, typeof(IEqualityComparer<TKey>));
             info.AddValue(HashSizeName, buckets == null ? 0 : buckets.Length); // This is the length of the bucket array
 
             if (buckets != null)
@@ -419,7 +419,7 @@ namespace System.Collections.Generic
         public virtual void OnDeserialization(object sender)
         {
             SerializationInfo siInfo;
-            HashHelpers.SerializationInfoTable.TryGetValue(this, out siInfo);
+            DictionaryHashHelpers.SerializationInfoTable.TryGetValue(this, out siInfo);
             if (siInfo == null)
             {
                 // We can return immediately if this function is called twice. 
@@ -461,7 +461,7 @@ namespace System.Collections.Generic
             }
 
             version = realVersion;
-            HashHelpers.SerializationInfoTable.Remove(this);
+            DictionaryHashHelpers.SerializationInfoTable.Remove(this);
         }
 
         private void Resize()
@@ -1378,5 +1378,10 @@ namespace System.Collections.Generic
                 }
             }
         }
+    }
+
+    internal class DictionaryHashHelpers
+    {
+        internal static ConditionalWeakTable<object, SerializationInfo> SerializationInfoTable { get; } = new ConditionalWeakTable<object, SerializationInfo>();
     }
 }
