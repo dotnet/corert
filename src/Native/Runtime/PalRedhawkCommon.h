@@ -118,7 +118,7 @@ struct PAL_LIMITED_CONTEXT
 #endif // _TARGET_ARM_
 };
 
-void __stdcall RuntimeThreadShutdown(void* thread);
+void RuntimeThreadShutdown(void* thread);
 
 #ifdef PLATFORM_UNIX
 typedef Int32 (*PHARDWARE_EXCEPTION_HANDLER)(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
