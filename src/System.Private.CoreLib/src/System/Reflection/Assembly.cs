@@ -40,11 +40,10 @@ namespace System.Reflection
         {
             Module[] m = GetModules(false);
 
-            int numModules = m.Length;
             int finalLength = 0;
-            Type[][] moduleTypes = new Type[numModules][];
+            Type[][] moduleTypes = new Type[m.Length][];
 
-            for (int i = 0; i < numModules; i++)
+            for (int i = 0; i < moduleTypes.Length; i++)
             {
                 moduleTypes[i] = m[i].GetTypes();
                 finalLength += moduleTypes[i].Length;
@@ -52,7 +51,7 @@ namespace System.Reflection
 
             int current = 0;
             Type[] ret = new Type[finalLength];
-            for (int i = 0; i < numModules; i++)
+            for (int i = 0; i < moduleTypes.Length; i++)
             {
                 int length = moduleTypes[i].Length;
                 Array.Copy(moduleTypes[i], 0, ret, current, length);

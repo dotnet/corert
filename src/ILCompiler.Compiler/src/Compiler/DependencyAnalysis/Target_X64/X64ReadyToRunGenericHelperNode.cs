@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)_target;
 
-                        // Look up the TLS slot index
+                        // Look up the index cell
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
 
                         ISymbolNode helperEntrypoint;
@@ -121,8 +121,15 @@ namespace ILCompiler.DependencyAnalysis
                             helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
                         }
 
-                        // Load the type manager indirection (this clobbers the generic context in Arg0)
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeManagerIndirection);
+                        // First arg: address of the TypeManager slot that provides the helper with
+                        // information about module index and the type manager instance (which is used
+                        // for initialization on first access).
+                        AddrMode loadFromArg1 = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg1);
+
+                        // Second arg: index of the type in the ThreadStatic section of the modules
+                        AddrMode loadFromArg1AndDelta = new AddrMode(encoder.TargetRegister.Arg1, null, factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg1AndDelta);
 
                         encoder.EmitJMP(helperEntrypoint);
                     }

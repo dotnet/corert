@@ -14,12 +14,12 @@ namespace System.Runtime.InteropServices
     {
         public static void SaveLastWin32Error()
         {
-            s_lastWin32Error = Interop.Sys.GetLastErrNo();
+            s_lastWin32Error = Interop.Sys.GetErrNo();
         }
 
         internal static void ClearLastWin32Error()
         {
-            Interop.Sys.SetLastErrNo(0);
+            Interop.Sys.ClearErrNo();
         }
 
         public static unsafe String PtrToStringAnsi(IntPtr ptr)

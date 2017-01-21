@@ -7,6 +7,10 @@
     <ProjectGuid>{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>ILCompiler</RootNamespace>
+    <!-- This is needed for VS Code debugging for ILC - it only likes DLL extension -->
+    <!-- This also aligns with .NET Core applications model -->
+    <!-- Note that we can't change the OutputType to be library - there is no entry point -->
+    <TargetExt>.dll</TargetExt>
     <AssemblyName>ilc</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
@@ -44,6 +48,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+    <!-- This is needed for VS Code debugging for ILC -->
+    <Content Include="ilc.runtimeconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj">

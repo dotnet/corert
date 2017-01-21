@@ -268,7 +268,7 @@ namespace ILCompiler.CppCodeGen
         /// <returns>C++ declaration name for <param name="methodName"/>.</returns>
         public string GetCppMethodDeclarationName(TypeDesc owningType, string methodName)
         {
-            var s = GetCppTypeName(owningType);
+            var s = _compilation.NameMangler.GetMangledTypeName(owningType);
             if (s.StartsWith("::"))
             {
                 // For a Method declaration we do not need the starting ::
@@ -297,10 +297,10 @@ namespace ILCompiler.CppCodeGen
         public string SanitizeCppVarName(string varName)
         {
             // TODO: name mangling robustness
-            if (varName == "errno") // some names collide with CRT headers
-                varName += "_";
+            if (varName == "errno" || varName == "environ" || varName == "template" || varName == "typename") // some names collide with CRT headers
+                return "_" + varName + "_";
 
-            return varName;
+            return _compilation.NameMangler.SanitizeName(varName);
         }
 
         private void CompileExternMethod(CppMethodCodeNode methodCodeNodeNeedingCode, string importName)
@@ -1023,15 +1023,14 @@ namespace ILCompiler.CppCodeGen
             {
                 _emittedTypes = new HashSet<TypeDesc>();
             }
-            TypeDesc nodeType = typeNode.Type;
-            if (nodeType.IsPointer || nodeType.IsByRef || _emittedTypes.Contains(nodeType))
-                return;
 
+            TypeDesc nodeType = typeNode.Type;
+            if (_emittedTypes.Contains(nodeType))
+                return;
             _emittedTypes.Add(nodeType);
 
-
             // Create Namespaces
-            string mangledName = GetCppTypeName(nodeType);
+            string mangledName = _compilation.NameMangler.GetMangledTypeName(nodeType);
 
             int nesting = 0;
             int current = 0;
@@ -1074,7 +1073,6 @@ namespace ILCompiler.CppCodeGen
 
             // TODO: Enable once the dependencies are tracked for arrays
             // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
-            if (!nodeType.IsPointer && !nodeType.IsByRef)
             {
                 typeDefinitions.AppendLine();
                 typeDefinitions.Append("static MethodTable * __getMethodTable();");
@@ -1140,11 +1138,8 @@ namespace ILCompiler.CppCodeGen
             typeDefinitions.AppendEmptyLine();
 
             // declare method table
-            if (!nodeType.IsPointer && !nodeType.IsByRef)
-            {
-                methodTable.Append(GetCodeForObjectNode(typeNode as ObjectNode, factory));
-                methodTable.AppendEmptyLine();
-            }
+            methodTable.Append(GetCodeForObjectNode(typeNode as ObjectNode, factory));
+            methodTable.AppendEmptyLine();
         }
 
         private String GetCodeForReadyToRunHeader(ReadyToRunHeaderNode headerNode, NodeFactory factory)

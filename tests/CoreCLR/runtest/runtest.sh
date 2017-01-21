@@ -61,6 +61,7 @@ function print_usage {
     echo '  --build-overlay-only             : Exit after overlay directory is populated'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
+    echo '  --logdir=<log folder>            : Specifies a folder to emit logs to. Default is test root folder.'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -126,7 +127,7 @@ fi
 find . -type f -name "local_dumplings.txt" -exec rm {} \;
 
 function xunit_output_begin {
-    xunitOutputPath=$testRootDir/coreclrtests.xml
+    xunitOutputPath=$__LogDir/testResults.xml
     xunitTestOutputPath=${xunitOutputPath}.test
     if [ -e "$xunitOutputPath" ]; then
         rm -f -r "$xunitOutputPath"
@@ -792,6 +793,12 @@ function finish_remaining_tests {
 function prep_test {
     local scriptFilePath=$1
 
+    # Skip any test that's not in the current playlist, if a playlist was
+    # given to us.
+    if [ -n "$playlistFile" ] && ! is_playlist_test "$scriptFilePath"; then
+        return
+    fi
+
     test "$verbose" == 1 && echo "Preparing $scriptFilePath"
 
     if [ ! "$noLFConversion" == "ON" ]; then
@@ -1076,6 +1083,9 @@ do
         --limitedDumpGeneration)
             limitedCoreDumps=ON
             ;;
+        --logdir=*)
+            __LogDir=${i#*=}
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -1103,6 +1113,10 @@ fi
 if [ ! -d "$testRootDir" ]; then
     echo "Directory specified by --testRootDir does not exist: $testRootDir"
     exit $EXIT_CODE_EXCEPTION
+fi
+
+if [ -z "$__LogDir" ]; then
+    __LogDir=$testRootDir
 fi
 
 # Copy native interop test libraries over to the mscorlib path in
@@ -1178,7 +1192,10 @@ fi
 if [ "$ARCH" == "x64" ]
 then
     scriptPath=$(dirname $0)
-    ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
+    # Disabled for CoreRT
+    # This is how CoreCLR sets up GCStress. We will probably go the .NET Native route
+    # when we get to GC Stress though.
+    #${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
 else
     echo "Skip preparing for GC stress test. Dependent package is not supported on this architecture."
 fi

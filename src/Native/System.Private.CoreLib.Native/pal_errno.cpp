@@ -5,12 +5,12 @@
 #include <stdint.h>
 #include <errno.h>
 
-extern "C" int32_t CoreLibNative_GetLastErrNo()
+extern "C" int32_t CoreLibNative_GetErrNo()
 {
     return errno;
 }
 
-extern "C" void CoreLibNative_SetLastErrNo(int32_t error)
+extern "C" void CoreLibNative_ClearErrNo()
 {
-    errno = error;
+    errno = 0;
 }

@@ -55,7 +55,10 @@ namespace Internal.TypeSystem.Interop
         /// <returns>The  created Marshaller</returns>
         public static Marshaller CreateMarshaller(TypeDesc parameterType, PInvokeMethodData pInvokeMethodData, ParameterMetadata pInvokeParameterdata)
         {
-            MarshallerKind marshallerKind = GetMarshallerKind(parameterType, pInvokeParameterdata.MarshalAsDescriptor, pInvokeMethodData, pInvokeParameterdata.Return);
+            MarshallerKind marshallerKind = GetMarshallerKind(parameterType, 
+                                                pInvokeParameterdata.MarshalAsDescriptor, 
+                                                pInvokeMethodData, 
+                                                pInvokeParameterdata);
             
             // Create the marshaller based on MarshallerKind
             Marshaller marshaller = Marshaller.CreateMarshallerInternal(marshallerKind);
@@ -92,9 +95,9 @@ namespace Internal.TypeSystem.Interop
                     throw new NotSupportedException();
             }
         }
-        private static MarshallerKind GetMarshallerKind(TypeDesc type, MarshalAsDescriptor marshalAs, PInvokeMethodData PInvokeMethodData, bool isReturn)
+        private static MarshallerKind GetMarshallerKind(TypeDesc type, MarshalAsDescriptor marshalAs, PInvokeMethodData PInvokeMethodData, ParameterMetadata paramMetadata)
         {
-            if (isReturn)
+            if (paramMetadata.Return)
             {
                 if (type.IsVoid)
                 {
@@ -184,6 +187,21 @@ namespace Internal.TypeSystem.Interop
             {
                 return MarshallerKind.SafeHandle;
             }
+
+            // Temporary fix for out SafeHandle scenario
+            // TODO: handle in,out,ref properly
+            if (paramMetadata.Out && !paramMetadata.In)
+            {
+                ByRefType byRefType = type as ByRefType;
+                if (byRefType != null)
+                {
+                    if (PInvokeMethodData.IsSafeHandle(byRefType.ParameterType))
+                    {
+                        return MarshallerKind.SafeHandle;
+                    }
+                }
+            }
+
             throw new NotSupportedException();
         }
         #endregion
@@ -366,28 +384,68 @@ namespace Internal.TypeSystem.Interop
     {
         protected override TypeDesc MarshalArgument(TypeDesc managedType, ILEmitter emitter, ILCodeStream marshallingCodeStream, ILCodeStream unmarshallingCodeStream)
         {
+            // we don't support [IN,OUT] together yet, either IN or OUT
+            Debug.Assert(!(PInvokeParameterMetadata.Out && PInvokeParameterMetadata.In));
+
             var safeHandleType = PInvokeMethodData.SafeHandleType;
 
-            var vAddRefed = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Boolean));
-            var vSafeHandle = emitter.NewLocal(managedType);
+            if (PInvokeParameterMetadata.Out)
+            {
+                // 1) If this is an output parameter we need to preallocate a SafeHandle to wrap the new native handle value. We
+                //    must allocate this before the native call to avoid a failure point when we already have a native resource
+                //    allocated. We must allocate a new SafeHandle even if we have one on input since both input and output native
+                //    handles need to be tracked and released by a SafeHandle.
+                // 2) Initialize a local IntPtr that will be passed to the native call. 
+                // 3) After the native call, the new handle value is written into the output SafeHandle and that SafeHandle
+                //    is propagated back to the caller.
 
-            marshallingCodeStream.EmitStLoc(vSafeHandle);
+                Debug.Assert(managedType is ByRefType);
+                var vOutArg = emitter.NewLocal(managedType);
+                marshallingCodeStream.EmitStLoc(vOutArg);
 
-            marshallingCodeStream.EmitLdLoc(vSafeHandle);
-            marshallingCodeStream.EmitLdLoca(vAddRefed);
-            marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                safeHandleType.GetKnownMethod("DangerousAddRef", null)));
+                TypeDesc resolvedType = ((ByRefType)managedType).ParameterType;
 
-            marshallingCodeStream.EmitLdLoc(vSafeHandle);
-            marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                safeHandleType.GetKnownMethod("DangerousGetHandle", null)));
+                var nativeType = PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr).MakeByRefType();
+                var vOutValue = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr));
+                var vSafeHandle = emitter.NewLocal(resolvedType);
+                marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(resolvedType.GetDefaultConstructor()));
+                marshallingCodeStream.EmitStLoc(vSafeHandle);
+                marshallingCodeStream.EmitLdLoca(vOutValue);
 
-            // TODO: This should be inside finally block and only executed it the handle was addrefed
-            unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-            unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                safeHandleType.GetKnownMethod("DangerousRelease", null)));
+                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
+                unmarshallingCodeStream.EmitLdLoc(vOutValue);
+                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    PInvokeMethodData.SafeHandleType.GetKnownMethod("SetHandle", null)));
 
-            return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr);
+                unmarshallingCodeStream.EmitLdLoc(vOutArg);
+                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
+                unmarshallingCodeStream.Emit(ILOpcode.stind_i);
+
+                return nativeType;
+            }
+            else
+            {
+                var vAddRefed = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Boolean));
+                var vSafeHandle = emitter.NewLocal(managedType);
+
+                marshallingCodeStream.EmitStLoc(vSafeHandle);
+
+                marshallingCodeStream.EmitLdLoc(vSafeHandle);
+                marshallingCodeStream.EmitLdLoca(vAddRefed);
+                marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    safeHandleType.GetKnownMethod("DangerousAddRef", null)));
+
+                marshallingCodeStream.EmitLdLoc(vSafeHandle);
+                marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    safeHandleType.GetKnownMethod("DangerousGetHandle", null)));
+
+                // TODO: This should be inside finally block and only executed it the handle was addrefed
+                unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
+                unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    safeHandleType.GetKnownMethod("DangerousRelease", null)));
+
+                return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr);
+            }
         }
 
         protected override TypeDesc MarshalReturn(TypeDesc managedType, ILEmitter emitter, ILCodeStream marshallingCodeStream, ILCodeStream returnValueMarshallingCodeStream )

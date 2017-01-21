@@ -449,7 +449,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Remove container",
@@ -462,6 +462,42 @@
       "inputs": {
         "filename": "docker",
         "arguments": "rm $(DockerContainerName)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish packages",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/publish-packages.sh -AzureAccount $(CloudDropAccountName) -AzureToken $(CloudDropAccessToken) -Container $(Label)",
+        "workingFolder": "$(SourceFolder)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Commit changes",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "commit $(DockerContainerName) $(DockerModifiedImageName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -533,60 +569,6 @@
         "filename": "docker",
         "arguments": "rm $(DockerContainerName)",
         "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Download nuget",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "curl",
-        "arguments": "-L -k -o $(SourceFolder)/nuget.zip https://dotnet.myget.org/F/dotnet-buildtools/api/v2/package/NuGet.CommandLine/3.5.0-rc-1256",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Unzip nuget",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "unzip",
-        "arguments": "$(SourceFolder)/nuget.zip -d $(SourceFolder)/nuget",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Publish packages",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "mono",
-        "arguments": "nuget/tools/NuGet.exe push bin/Product/pkg/*.nupkg $(MyGetApiKey) -Source $(MyGetFeedUrl) -Timeout 3600",
-        "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
     },
@@ -720,8 +702,12 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
+    "BuildTag": {
+      "value": "corert-alpha",
+      "allowOverride": true
+    },
     "Label": {
-      "value": "$(Build.BuildNumber)",
+      "value": "$(BuildTag)-$(Build.BuildNumber)",
       "allowOverride": true
     },
     "SourceVersion": {
@@ -770,6 +756,25 @@
     "MyGetApiKey": {
       "value": null,
       "isSecret": true,
+      "allowOverride": true
+    },
+    "CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
+    },
+    "CloudDropAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "UpdatePublishedVersions.AuthToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "VersionsRepoOwner": {
+      "value": "crummel",
+      "allowOverride": true
+    },
+    "VersionsRepo": {
+      "value": "dotnet_versions",
       "allowOverride": true
     }
   },

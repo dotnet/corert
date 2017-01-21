@@ -11,12 +11,10 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(Interop.Libraries.CoreLibNative, "CoreLibNative_GetLastErrNo")]
-        internal static extern int GetLastErrNo();
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetErrNo")]
+        internal static extern int GetErrNo();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(Interop.Libraries.CoreLibNative, "CoreLibNative_SetLastErrNo")]
-        internal static extern void SetLastErrNo(int error);
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_ClearErrNo")]
+        internal static extern void ClearErrNo();
     }
 }

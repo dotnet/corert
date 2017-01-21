@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "",
+            "osx": {
+                "program": "${workspaceRoot}/bin/Product/OSX.x64.Debug/packaging/publish1/ilc.dll"
+            },
+            "linux": {
+                "program": "${workspaceRoot}/bin/Product/Linux.x64.Debug/packaging/publish1/ilc.dll"
+            },
+            "args": [],
+            "cwd": "${workspaceRoot}",
+            "stopAtEntry": false,
+            "externalConsole": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command.pickProcess}"
+        }
+    ]
+}
