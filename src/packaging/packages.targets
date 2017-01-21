@@ -122,6 +122,7 @@
             <ILCompilerAnyFrameworkFiles Include="Microsoft.Win32.Primitives" />
             <ILCompilerAnyFrameworkFiles Include="mscorlib" />
             <ILCompilerAnyFrameworkFiles Include="System.Buffers" />
+            <ILCompilerAnyFrameworkFiles Include="System.Collections" />
             <ILCompilerAnyFrameworkFiles Include="System.Collections.Concurrent" />
             <ILCompilerAnyFrameworkFiles Include="System.Collections.NonGeneric" />
             <ILCompilerAnyFrameworkFiles Include="System.Console" />
@@ -157,7 +158,6 @@
             <ILCompilerFrameworkFiles Include="runtime.any.System.Reflection.Primitives/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Reflection.Primitives.dll" />
             <ILCompilerFrameworkFiles Include="runtime.any.System.Runtime.InteropServices/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Runtime.InteropServices.dll" />
             <ILCompilerFrameworkFiles Include="runtime.any.System.Threading.Tasks/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Threading.Tasks.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.any.System.Collections/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Collections.dll" />
             <ILCompilerFrameworkFiles Include="runtime.win.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'!='Windows_NT'"/>
 
