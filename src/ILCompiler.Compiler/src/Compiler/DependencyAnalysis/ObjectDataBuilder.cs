@@ -227,12 +227,20 @@ namespace ILCompiler.DependencyAnalysis
             switch (relocType)
             {
                 case RelocType.IMAGE_REL_BASED_REL32:
+                case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_SECREL:
                     EmitInt(delta);
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     EmitLong(delta);
                     break;
+                case RelocType.IMAGE_REL_THUMB_BRANCH24:
+                case RelocType.IMAGE_REL_THUMB_MOV32:
+                    // Do not vacate space for this kind of relocation, because
+                    // the space is embedded in the instruction.
+                    break;                    
                 default:
                     throw new NotImplementedException();
             }

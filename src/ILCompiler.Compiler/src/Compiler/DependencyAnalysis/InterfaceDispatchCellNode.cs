@@ -42,9 +42,16 @@ namespace ILCompiler.DependencyAnalysis
             // synchronization mechanism of the two values in the runtime.
             objData.Alignment = _targetMethod.Context.Target.PointerSize * 2;
             objData.DefinedSymbols.Add(this);
-            
-            objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
-            
+
+            if (factory.Target.Architecture == TargetArchitecture.ARM)
+            {
+                objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
+            }
+            else
+            {
+                objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
+            }
+
             // The second cell field uses the two lower-order bits to communicate the contents.
             // We add 1 to signal IDC_CachePointerIsInterfacePointer. See src\Native\Runtime\inc\rhbinder.h.
             objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), 1);
