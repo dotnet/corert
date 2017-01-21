@@ -25,8 +25,8 @@ namespace ILCompiler
         private static readonly LibraryInitializerInfo[] s_assembliesWithLibraryInitializers =
             {
                 new LibraryInitializerInfo(ClassLibraryPlaceHolderString),
-                new LibraryInitializerInfo("System.Private.TypeLoader", false),
-                new LibraryInitializerInfo("System.Private.Reflection.Execution", false),
+                new LibraryInitializerInfo("System.Private.TypeLoader"),
+                new LibraryInitializerInfo("System.Private.Reflection.Execution"),
                 new LibraryInitializerInfo("System.Private.DeveloperExperience.Console"),
             };
 
@@ -39,10 +39,8 @@ namespace ILCompiler
         {
             _context = context;
             //
-            // We should not care which code-gen is being used, however currently CppCodeGen cannot
-            // handle code pulled in by all explicit cctors.
-            //
-            // See https://github.com/dotnet/corert/issues/2518
+            // We should not care which code-gen is being used but for the time being
+            // this can be useful to workaround CppCodeGen bugs.
             //
             _isCppCodeGen = isCppCodeGen;
         }

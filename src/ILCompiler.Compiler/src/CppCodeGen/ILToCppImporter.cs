@@ -2164,6 +2164,8 @@ namespace Internal.IL
 
         private void ImportEndFinally()
         {
+            _stack.Clear();
+
             int finallyIndex = FindNearestFinally(_currentOffset - 1);
 
             AppendLine();
