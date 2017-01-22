@@ -61,13 +61,14 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return SP; }
     UIntNative GetFp() const { return R7; }
+    UIntNative GetLr() const { return LR; }
 #elif defined(_TARGET_ARM64_)
     // @TODO: Add ARM64 registers
     UIntNative IP;
     UIntNative GetIp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
     UIntNative GetSp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
     UIntNative GetFp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
-
+    UIntNative GetLr() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
 #elif defined(UNIX_AMD64_ABI)
     // Param regs: rdi, rsi, rdx, rcx, r8, r9, scratch: rax, rdx (both return val), preserved: rbp, rbx, r12-r15
     UIntNative  IP;
