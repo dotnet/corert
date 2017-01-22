@@ -152,6 +152,7 @@ namespace System.Runtime
             FailFast = 1,
             // UnhandledExceptionHandler = 2, // unused
             AppendExceptionStackFrame = 3,
+            CheckStaticClassConstruction = 4,
         }
 
         // Given an address pointing somewhere into a managed module, get the classlib-defined fail-fast 
