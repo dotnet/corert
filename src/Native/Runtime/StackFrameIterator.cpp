@@ -441,7 +441,7 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
         CalculateCurrentMethodState();
         ASSERT(IsValid());
 
-        if ((pExInfo->m_kind == EK_HardwareFault) && (curFlags & RemapHardwareFaultsToSafePoint))
+        if ((pExInfo->m_kind & EK_HardwareFault) && (curFlags & RemapHardwareFaultsToSafePoint))
             m_effectiveSafePointAddress = GetCodeManager()->RemapHardwareFaultToGCSafePoint(&m_methodInfo, m_ControlPC);
     }
     else
