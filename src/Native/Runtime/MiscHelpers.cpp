@@ -203,17 +203,13 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (HANDLE hOsModule, UInt32 blobId, UInt8
 // to code in the caller's module and can be used in the lookup.
 COOP_PINVOKE_HELPER(void *, GetClasslibCCtorCheck, (void * pReturnAddress))
 {
-    // Locate the calling module from the context structure address (which is in writeable memory in the
+    // Locate the calling module from the context structure address (which is in writable memory in the
     // module image).
-    Module * pModule = GetRuntimeInstance()->FindModuleByCodeAddress(pReturnAddress);
-    ASSERT(pModule);
-
-    // Locate the classlib module from the calling module.
-    Module * pClasslibModule = pModule->GetClasslibModule();
-    ASSERT(pClasslibModule);
+    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress(pReturnAddress);
+    ASSERT(pCodeManager);
 
     // Lookup the callback registered by the classlib.
-    void * pCallback = pClasslibModule->GetClasslibCheckStaticClassConstruction();
+    void * pCallback = pCodeManager->GetClasslibFunction(ClasslibFunctionId::CheckStaticClassConstruction);
 
     // We have no fallback path if we got here but the classlib doesn't implement the callback.
     if (pCallback == NULL)
