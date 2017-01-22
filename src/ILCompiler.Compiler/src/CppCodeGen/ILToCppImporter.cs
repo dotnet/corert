@@ -1944,6 +1944,7 @@ namespace Internal.IL
 
             PushTemp(GetStackValueKind(type), type);
 
+            AppendCastIfNecessary(GetStackValueKind(type), type);
             Append("*(");
             Append(_writer.GetCppSignatureTypeName(type));
             Append("*)");
