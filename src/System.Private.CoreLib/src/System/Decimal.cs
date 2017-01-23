@@ -312,7 +312,7 @@ namespace System
             if (value == null)
                 return 1;
             if (!(value is Decimal))
-                throw new ArgumentException(SR.Arg_MustBeDecimal, nameof(value));
+                throw new ArgumentException(SR.Arg_MustBeDecimal);
 
             Decimal other = (Decimal)value;
             return DecCalc.VarDecCmp(ref this, ref other);
