@@ -43,6 +43,7 @@ namespace ILCompiler
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
+        private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
 
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
@@ -102,8 +103,11 @@ namespace ILCompiler
             var exactMethodInstantiations = new ExactMethodInstantiationsNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ExactMethodInstantiationsHashtable), exactMethodInstantiations, exactMethodInstantiations, exactMethodInstantiations.EndSymbol);
 
-            var genericsHashtable = new GenericsHashtableNode(nativeReferencesTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), genericsHashtable, genericsHashtable, genericsHashtable.EndSymbol);
+            var genericsTypesHashtableNode = new GenericTypesHashtableNode(nativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), genericsTypesHashtableNode, genericsTypesHashtableNode, genericsTypesHashtableNode.EndSymbol);
+
+            var genericMethodsHashtableNode = new GenericMethodsHashtableNode(nativeReferencesTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericMethodsHashtable), genericMethodsHashtableNode, genericMethodsHashtableNode, genericMethodsHashtableNode.EndSymbol);
 
             var genericVirtualMethodTableNode = new GenericVirtualMethodTableNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericVirtualMethodTable), genericVirtualMethodTableNode, genericVirtualMethodTableNode, genericVirtualMethodTableNode.EndSymbol);
@@ -155,6 +159,12 @@ namespace ILCompiler
             if (gvmEntryNode != null)
             {
                 _typeGVMEntries.Add(gvmEntryNode);
+            }
+
+            var dictionaryNode = obj as GenericDictionaryNode;
+            if (dictionaryNode != null)
+            {
+                _genericDictionariesGenerated.Add(dictionaryNode);
             }
         }
 
@@ -400,6 +410,11 @@ namespace ILCompiler
         internal IEnumerable<TypeGVMEntriesNode> GetTypeGVMEntries()
         {
             return _typeGVMEntries;
+        }
+
+        internal IEnumerable<GenericDictionaryNode> GetCompiledGenericDictionaries()
+        {
+            return _genericDictionariesGenerated;
         }
 
         internal IEnumerable<MethodDesc> GetCompiledMethods()
