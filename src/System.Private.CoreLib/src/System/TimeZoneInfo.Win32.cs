@@ -368,7 +368,7 @@ namespace System
 
             if (id == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             }
             if (id.Length == 0 || id.Length > c_maxKeyLength || id.Contains("\0"))
             {

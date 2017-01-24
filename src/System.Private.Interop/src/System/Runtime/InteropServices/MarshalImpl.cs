@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(o));
 
             if (t == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(t));
 
             return McgMarshal.ObjectToComInterface(o, t.TypeHandle);
         }

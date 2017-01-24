@@ -626,11 +626,7 @@ namespace System.Diagnostics.Contracts
         public static bool ForAll(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
             if (fromInclusive > toExclusive)
-#if INSIDE_CLR
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-#else
-                throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
-#endif
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
             Contract.EndContractBlock();
@@ -688,11 +684,7 @@ namespace System.Diagnostics.Contracts
         public static bool Exists(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
             if (fromInclusive > toExclusive)
-#if INSIDE_CLR
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-#else
-                throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
-#endif
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
             Contract.EndContractBlock();

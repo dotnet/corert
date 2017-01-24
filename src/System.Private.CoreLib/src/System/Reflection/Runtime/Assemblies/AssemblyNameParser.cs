@@ -20,7 +20,7 @@ namespace System.Reflection.Runtime.Assemblies
         public static void Parse(AssemblyName blank, String s)
         {
             if (s == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(s));
             RuntimeAssemblyName runtimeAssemblyName = Parse(s);
             runtimeAssemblyName.CopyToAssemblyName(blank);
         }

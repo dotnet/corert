@@ -337,7 +337,7 @@ namespace System.Text
                                 }
                                 else
                                 {
-                                    throw new ArgumentOutOfRangeException("chunkCount", SR.ArgumentOutOfRange_Index);
+                                    throw new ArgumentOutOfRangeException(nameof(chunkCount), SR.ArgumentOutOfRange_Index);
                                 }
                             }
                         }
@@ -506,7 +506,7 @@ namespace System.Text
             }
             if (charCount < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
             }
 
             if (value == null)
@@ -519,7 +519,7 @@ namespace System.Text
             }
             if (charCount > value.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_Index);
             }
 
             if (charCount == 0)
@@ -1262,7 +1262,7 @@ namespace System.Text
 
             if (charCount < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
             }
 
             if (startIndex > value.Length - charCount)

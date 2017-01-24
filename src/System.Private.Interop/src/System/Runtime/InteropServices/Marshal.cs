@@ -1382,7 +1382,7 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             if (pDstNativeVariant == IntPtr.Zero)
-                throw new ArgumentNullException("pSrcNativeVariant");
+                throw new ArgumentNullException(nameof(pDstNativeVariant));
 
             if (obj != null && (obj.GetType().TypeHandle.IsGenericType() || obj.GetType().TypeHandle.IsGenericTypeDefinition()))
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(obj));

@@ -138,7 +138,7 @@ namespace System.Globalization
                         break;
 
                     default:
-                        throw new ArgumentOutOfRangeException("m_type", SR.ArgumentOutOfRange_Enum);
+                        throw new ArgumentOutOfRangeException(nameof(m_type), SR.ArgumentOutOfRange_Enum);
                 }
             }
         }

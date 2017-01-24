@@ -28,9 +28,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                                               T handler)
         {
             if (addMethod == null)
-                throw new ArgumentNullException("addMethod");
+                throw new ArgumentNullException(nameof(addMethod));
             if (removeMethod == null)
-                throw new ArgumentNullException("removeMethod");
+                throw new ArgumentNullException(nameof(removeMethod));
             Contract.EndContractBlock();
 
             // Managed code allows adding a null event handler, the effect is a no-op.  To match this behavior
@@ -62,7 +62,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static void RemoveEventHandler<T>(Action<EventRegistrationToken> removeMethod, T handler)
         {
             if (removeMethod == null)
-                throw new ArgumentNullException("removeMethod");
+                throw new ArgumentNullException(nameof(removeMethod));
             Contract.EndContractBlock();
 
             // Managed code allows removing a null event handler, the effect is a no-op.  To match this behavior
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static void RemoveAllEventHandlers(Action<EventRegistrationToken> removeMethod)
         {
             if (removeMethod == null)
-                throw new ArgumentNullException("removeMethod");
+                throw new ArgumentNullException(nameof(removeMethod));
             Contract.EndContractBlock();
 
             // Delegate to managed event registration implementation or native event registration implementation
@@ -1233,7 +1233,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static IActivationFactory GetActivationFactory(Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             __ComObject factory = FactoryCache.Get().GetActivationFactory(
                 type.FullName,

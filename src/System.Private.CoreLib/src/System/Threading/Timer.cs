@@ -468,7 +468,7 @@ namespace System.Threading
                                 UInt32 period)
         {
             if (callback == null)
-                throw new ArgumentNullException("TimerCallback");
+                throw new ArgumentNullException(nameof(TimerCallback));
             Contract.EndContractBlock();
 
             _timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period));
