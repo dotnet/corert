@@ -3140,10 +3140,14 @@ namespace Internal.JitInterface
 
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
+            // Read the user-defined configuration options.
+            foreach (var flag in _jitConfig.Flags)
+                flags.Set(flag);
+
+            // Set the rest of the flags that don't make sense to expose publically.
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
-            flags.Set(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 

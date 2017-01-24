@@ -29,6 +29,15 @@ namespace ILCompiler
             Options = options;
         }
 
+        protected override bool GenerateDebugInfo
+        {
+            get
+            {
+                /// Some degree of control exposed by <see cref="CppCodegenConfigProvider.NoLineNumbersString"/>.
+                return true;
+            }
+        }
+
         private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
         {
             yield return new CppCodegenCompilationRootProvider(factory.TypeSystemContext);
