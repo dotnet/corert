@@ -136,6 +136,8 @@ endif()
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/CallDescrWorker.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/CallingConventionConverterHelpers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
