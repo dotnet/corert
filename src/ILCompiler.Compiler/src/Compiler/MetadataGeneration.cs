@@ -115,6 +115,9 @@ namespace ILCompiler
             var interfaceGenericVirtualMethodTableNode = new InterfaceGenericVirtualMethodTableNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InterfaceGenericVirtualMethodTable), interfaceGenericVirtualMethodTableNode, interfaceGenericVirtualMethodTableNode, interfaceGenericVirtualMethodTableNode.EndSymbol);
 
+            var genericMethodsTemplatesMapNode = new GenericMethodsTemplateMap(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericMethodsTemplateMap), genericMethodsTemplatesMapNode, genericMethodsTemplatesMapNode, genericMethodsTemplatesMapNode.EndSymbol);
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
@@ -137,11 +140,6 @@ namespace ILCompiler
             if (methodNode != null)
             {
                 MethodDesc method = methodNode.Method;
-                if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
-                {
-                    // Canonical methods are not interesting.
-                    return;
-                }
 
                 AddGeneratedType(method.OwningType);
                 _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
@@ -339,6 +337,12 @@ namespace ILCompiler
 
             foreach (var method in _methodsGenerated)
             {
+                if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
+                {
+                    // Canonical methods are not interesting.
+                    continue;
+                }
+
                 MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
 
                 if (record != null)

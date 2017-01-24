@@ -16,15 +16,15 @@ namespace ILCompiler.DependencyAnalysis
     {
         public ConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
+            Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             CheckCanGenerateConstructedEEType(factory, type);
         }
 
         protected override string GetName() => this.GetMangledName() + " constructed";
 
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
-        {
-            return false;
-        }
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
+
+        protected override bool EmitVirtualSlotsAndInterfaces => true;
 
         public override bool InterestingForDynamicDependencyAnalysis
         {
@@ -181,73 +181,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override void OutputGCDesc(ref ObjectDataBuilder builder)
         {
             GCDescEncoder.EncodeGCDesc(ref builder, _type);
-        }
-
-        protected override void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType)
-        {
-            declType = declType.GetClosestDefType();
-
-            var baseType = declType.BaseType;
-            if (baseType != null)
-                OutputVirtualSlots(factory, ref objData, implType, baseType);
-
-            // The generic dictionary pointer occupies the first slot of each type vtable slice
-            if (declType.HasGenericDictionarySlot())
-            {
-                objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
-            }
-
-            // Actual vtable slots follow
-            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
-
-            for (int i = 0; i < virtualSlots.Count; i++)
-            {
-                MethodDesc declMethod = virtualSlots[i];
-
-                if (declMethod.HasInstantiation)
-                {
-                    // Generic virtual methods will "compile", but will fail to link. Check for it here.
-                    throw new NotImplementedException("VTable for " + _type + " has generic virtual methods.");
-                }
-
-                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
-                
-                if (!implMethod.IsAbstract)
-                {
-                    MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType));
-                }
-                else
-                {
-                    objData.EmitZeroPointer();
-                }
-            }
-        }
-
-        protected override void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
-        {
-            foreach (var itf in _type.RuntimeInterfaces)
-            {
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(itf));
-            }
-        }
-
-        protected override void OutputVirtualSlotAndInterfaceCount(NodeFactory factory, ref ObjectDataBuilder objData)
-        {
-            int virtualSlotCount = 0;
-            TypeDesc currentTypeSlice = _type.GetClosestDefType();
-
-            while (currentTypeSlice != null)
-            {
-                if (currentTypeSlice.HasGenericDictionarySlot())
-                    virtualSlotCount++;
-
-                virtualSlotCount += factory.VTable(currentTypeSlice).Slots.Count;
-                currentTypeSlice = currentTypeSlice.BaseType;
-            }
-
-            objData.EmitShort(checked((short)virtualSlotCount));
-            objData.EmitShort(checked((short)_type.RuntimeInterfaces.Length));
         }
 
         public static bool CreationAllowed(TypeDesc type)

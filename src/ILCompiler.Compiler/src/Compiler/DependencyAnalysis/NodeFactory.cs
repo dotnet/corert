@@ -101,6 +101,14 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         return new GenericDefinitionEETypeNode(this, type);
                     }
+                    else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        return new CanonicalDefinitionEETypeNode(this, type);
+                    }
+                    else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        return new CanonicalEETypeNode(this, type);
+                    }
                     else
                     {
                         return new EETypeNode(this, type);
@@ -116,7 +124,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    return new ConstructedEETypeNode(this, type);
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        return new CanonicalEETypeNode(this, type);
+                    }
+                    else
+                    {
+                        return new ConstructedEETypeNode(this, type);
+                    }
                 }
                 else
                 {
