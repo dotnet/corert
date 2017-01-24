@@ -43,6 +43,7 @@ namespace ILCompiler
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
+        private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
 
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
@@ -104,7 +105,13 @@ namespace ILCompiler
             var genericsHashtable = new GenericsHashtableNode(nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericsHashtable), genericsHashtable, genericsHashtable, genericsHashtable.EndSymbol);
 
-            // This one should go last
+            var genericVirtualMethodTableNode = new GenericVirtualMethodTableNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericVirtualMethodTable), genericVirtualMethodTableNode, genericVirtualMethodTableNode, genericVirtualMethodTableNode.EndSymbol);
+
+            var interfaceGenericVirtualMethodTableNode = new InterfaceGenericVirtualMethodTableNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InterfaceGenericVirtualMethodTable), interfaceGenericVirtualMethodTableNode, interfaceGenericVirtualMethodTableNode, interfaceGenericVirtualMethodTableNode.EndSymbol);
+
+            // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
         }
@@ -142,6 +149,12 @@ namespace ILCompiler
             if (nonGcStaticSectionNode != null && _nodeFactory.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
+            }
+
+            var gvmEntryNode = obj as TypeGVMEntriesNode;
+            if (gvmEntryNode != null)
+            {
+                _typeGVMEntries.Add(gvmEntryNode);
             }
         }
 
@@ -382,6 +395,11 @@ namespace ILCompiler
         internal IEnumerable<ArrayType> GetArrayTypeMapping()
         {
             return _arrayTypesGenerated;
+        }
+
+        internal IEnumerable<TypeGVMEntriesNode> GetTypeGVMEntries()
+        {
+            return _typeGVMEntries;
         }
 
         internal IEnumerable<MethodDesc> GetCompiledMethods()
