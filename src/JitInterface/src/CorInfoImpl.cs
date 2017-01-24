@@ -499,7 +499,7 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method.Signature, out sig);
 
             // Does the method have a hidden parameter?
-            if (method.RequiresInstArg() && !isFatFunctionPointer)
+            if (method.RequiresInstArg() && !isFatFunctionPointer && !_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }

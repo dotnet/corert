@@ -266,11 +266,16 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Given Foo&lt;T&gt;, returns Foo&lt;!0&gt;.
+        /// Creates an open instantiation of a type. Given Foo&lt;T&gt;, returns Foo&lt;!0&gt;.
+        /// If the type is not generic, returns the <paramref name="type"/>.
         /// </summary>
-        private static InstantiatedType InstantiateAsOpen(this MetadataType type)
+        public static TypeDesc InstantiateAsOpen(this TypeDesc type)
         {
-            Debug.Assert(type.IsGenericDefinition);
+            if (!type.IsGenericDefinition)
+            {
+                Debug.Assert(!type.HasInstantiation);
+                return type;
+            }
 
             TypeSystemContext context = type.Context;
 
@@ -280,7 +285,26 @@ namespace Internal.TypeSystem
                 inst[i] = context.GetSignatureVariable(i, false);
             }
 
-            return context.GetInstantiatedType(type, new Instantiation(inst));
+            return context.GetInstantiatedType((MetadataType)type, new Instantiation(inst));
+        }
+
+        /// <summary>
+        /// Creates an open instantiation of a field. Given Foo&lt;T&gt;.Field, returns
+        /// Foo&lt;!0&gt;.Field. If the owning type is not generic, returns the <paramref name="field"/>.
+        /// </summary>
+        public static FieldDesc InstantiateAsOpen(this FieldDesc field)
+        {
+            Debug.Assert(field.GetTypicalFieldDefinition() == field);
+
+            TypeDesc owner = field.OwningType;
+
+            if (owner.HasInstantiation)
+            {
+                var instantiatedOwner = (InstantiatedType)owner.InstantiateAsOpen();
+                return field.Context.GetFieldForInstantiatedType(field, instantiatedOwner);
+            }
+
+            return field;
         }
 
         /// <summary>
@@ -295,7 +319,7 @@ namespace Internal.TypeSystem
 
             if (owner.HasInstantiation)
             {
-                MetadataType instantiatedOwner = ((MetadataType)owner).InstantiateAsOpen();
+                MetadataType instantiatedOwner = (MetadataType)owner.InstantiateAsOpen();
                 return method.Context.GetMethodForInstantiatedType(method, (InstantiatedType)instantiatedOwner);
             }
 

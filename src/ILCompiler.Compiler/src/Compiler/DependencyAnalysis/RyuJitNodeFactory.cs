@@ -34,7 +34,14 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.ContainsMethod(method))
             {
-                return new MethodCodeNode(method);
+                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+                {
+                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
+                }
+                else
+                {
+                    return new MethodCodeNode(method);
+                }
             }
             else
             {
@@ -44,7 +51,15 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            return new UnboxingStubNode(method);
+            if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
+            {
+                // We need an unboxing and instantiating stub.
+                return new MethodCodeNode(TypeSystemContext.GetSpecialUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
+            }
+            else
+            {
+                return new UnboxingStubNode(method);
+            }
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
