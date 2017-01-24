@@ -61,8 +61,12 @@ namespace ILCompiler
                     jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_SIZE_OPT);
                     break;
 
-                default:
+                case OptimizationMode.PreferSpeed:
                     jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_SPEED_OPT);
+                    break;
+
+                default:
+                    // Not setting a flag results in BLENDED_CODE.
                     break;
             }
 

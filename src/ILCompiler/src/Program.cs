@@ -142,7 +142,7 @@ namespace ILCompiler
                 Console.ReadLine();
             }
 
-            _optimizationMode = optimize ? OptimizationMode.PreferSpeed : OptimizationMode.None;
+            _optimizationMode = optimize ? OptimizationMode.Blended : OptimizationMode.None;
 
             foreach (var input in inputFiles)
                 Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
