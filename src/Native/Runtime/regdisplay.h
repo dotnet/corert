@@ -49,6 +49,36 @@ struct REGDISPLAY
 
 #elif defined(_TARGET_ARM_)
 
+typedef struct _ArmVolatileContextPointer
+{
+    PTR_UIntNative R0;
+    PTR_UIntNative R1;
+    PTR_UIntNative R2;
+    PTR_UIntNative R3;
+    PTR_UIntNative R12;
+} ArmVolatileContextPointer;
+
+typedef struct _ArmNonVolatileContextPointer {
+    PTR_UIntNative R4;
+    PTR_UIntNative R5;
+    PTR_UIntNative R6;
+    PTR_UIntNative R7;
+    PTR_UIntNative R8;
+    PTR_UIntNative R9;
+    PTR_UIntNative R10;
+    PTR_UIntNative R11;
+    PTR_UIntNative Lr;
+
+    PTR_UInt64 D8;
+    PTR_UInt64 D9;
+    PTR_UInt64 D10;
+    PTR_UInt64 D11;
+    PTR_UInt64 D12;
+    PTR_UInt64 D13;
+    PTR_UInt64 D14;
+    PTR_UInt64 D15;
+} ArmNonVolatileContextPointer;
+
 struct REGDISPLAY 
 {
     PTR_UIntNative pR0;
@@ -74,6 +104,9 @@ struct REGDISPLAY
                           // these need to be unwound during a stack walk
                           // for EH, but not adjusted, so we only need
                           // their values, not their addresses
+
+    ArmNonVolatileContextPointer *pCurrentContextPointers;
+    ArmVolatileContextPointer     volatileCurrContextPointers;
 
     inline PCODE GetIP() { return IP; }
     inline PTR_PCODE GetAddrOfIP() { return pIP; }

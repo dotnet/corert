@@ -1476,7 +1476,11 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 14);
     _ASSERTE(regNum != 13);  // sp
 
+#ifdef FEATURE_REDHAWK
+    PTR_UIntNative *ppReg;
+#else
     DWORD **ppReg;
+#endif
 
     if(regNum <= 3)
     {
