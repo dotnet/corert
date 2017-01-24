@@ -140,7 +140,7 @@ namespace System
             }
             if (!(value is Char))
             {
-                throw new ArgumentException(SR.Arg_MustBeChar, nameof(value));
+                throw new ArgumentException(SR.Arg_MustBeChar);
             }
 
             return (m_value - ((Char)value).m_value);

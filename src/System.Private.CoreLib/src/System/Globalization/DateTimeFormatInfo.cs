@@ -1291,7 +1291,7 @@ namespace System.Globalization
             {
                 if (values[i] == null)
                 {
-                    throw new ArgumentNullException("values[" + i + "]",
+                    throw new ArgumentNullException("value",
                         SR.ArgumentNull_ArrayValue);
                 }
             }
