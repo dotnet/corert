@@ -29,6 +29,8 @@ namespace ILCompiler
 
         private TargetArchitecture _targetArchitecture;
         private TargetOS _targetOS;
+        private OptimizationMode _optimizationMode;
+        private bool _enableDebugInfo;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
@@ -100,6 +102,8 @@ namespace ILCompiler
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
+            bool optimize = false;
+
             bool waitForDebugger = false;
             AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
@@ -113,6 +117,8 @@ namespace ILCompiler
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
                 syntax.DefineOption("o|out", ref _outputFilePath, "Output file path");
+                syntax.DefineOption("O", ref optimize, "Enable optimizations");
+                syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
@@ -135,6 +141,9 @@ namespace ILCompiler
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
             }
+
+            _optimizationMode = optimize ? OptimizationMode.PreferSpeed : OptimizationMode.None;
+
             foreach (var input in inputFiles)
                 Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
 
@@ -271,6 +280,8 @@ namespace ILCompiler
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
+                .UseOptimizationMode(_optimizationMode)
+                .UseDebugInfo(_enableDebugInfo)
                 .ToCompilation();
 
             compilation.Compile(_outputFilePath);

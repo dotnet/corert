@@ -32,6 +32,8 @@ namespace ILCompiler
         internal Logger Logger => _logger;
         internal PInvokeILProvider PInvokeILProvider { get; }
 
+        protected abstract bool GenerateDebugInfo { get; }
+
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
 
         protected Compilation(
@@ -118,6 +120,9 @@ namespace ILCompiler
 
         public MethodDebugInformation GetDebugInfo(MethodIL methodIL)
         {
+            if (!GenerateDebugInfo)
+                return MethodDebugInformation.None;
+
             // This method looks odd right now, but it's an extensibility point that lets us generate
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
