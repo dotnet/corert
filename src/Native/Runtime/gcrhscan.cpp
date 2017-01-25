@@ -94,14 +94,11 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)
 {
-    if (GCHeapUtilities::UseAllocationContexts())
+    FOREACH_THREAD(thread)
     {
-        FOREACH_THREAD(thread)
-        {
-            (*fn) (thread->GetAllocContext(), param);
-        }
-        END_FOREACH_THREAD
+        (*fn) (thread->GetAllocContext(), param);
     }
+    END_FOREACH_THREAD
 }
 
 #endif //!DACCESS_COMPILE

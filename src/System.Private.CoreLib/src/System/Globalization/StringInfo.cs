@@ -76,7 +76,7 @@ namespace System.Globalization
             {
                 if (null == value)
                 {
-                    throw new ArgumentNullException("String",
+                    throw new ArgumentNullException(nameof(String),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();

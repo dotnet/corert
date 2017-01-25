@@ -14,20 +14,20 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable of all compiled generic type instantiations
     /// </summary>
-    internal sealed class GenericsHashtableNode : ObjectNode, ISymbolNode
+    internal sealed class GenericTypesHashtableNode : ObjectNode, ISymbolNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
 
-        public GenericsHashtableNode(ExternalReferencesTableNode externalReferences)
+        public GenericTypesHashtableNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__generics_hashtable_End", true);
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__generic_types_hashtable_End", true);
             _externalReferences = externalReferences;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__generics_hashtable");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__generic_types_hashtable");
         }
 
         public ISymbolNode EndSymbol => _endSymbol;

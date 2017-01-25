@@ -60,6 +60,10 @@ namespace ILCompiler.DependencyAnalysis
                 if (!method.IsVirtual)
                     continue;
 
+                // GVMs are not emitted in the type's vtable.
+                if (method.HasInstantiation)
+                    continue;
+
                 slots.Add(method);
             }
 
@@ -121,6 +125,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AddEntry(NodeFactory factory, MethodDesc virtualMethod)
         {
+            // GVMs are not emitted in the type's vtable.
+            Debug.Assert(!virtualMethod.HasInstantiation);
             Debug.Assert(virtualMethod.IsVirtual);
 #if DEBUG
             Debug.Assert(!_slotsCommitted);

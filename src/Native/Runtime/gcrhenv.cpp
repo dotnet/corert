@@ -72,30 +72,13 @@
 
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
-#define USE_CLR_CACHE_SIZE_BEHAVIOR
-
-
-#ifndef DACCESS_COMPILE
-bool StartFinalizerThread();
-
-// Undo the definitions of any macros set up for GC code which conflict with our usage of PAL APIs below.
-#undef GetCurrentThreadId
-#undef DebugBreak
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Various global data cells the GC and/or HandleTable rely on. Some are just here to enable easy compilation:
-// their value doesn't matter since it won't be consumed at runtime. Others we may have to initialize to some
-// reasonable value. A few we might have to manage through the lifetime of the runtime. Each is considered on
-// a case by case basis.
-//
-
-#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 
-//
+bool RhInitializeFinalization();
+bool RhStartFinalizerThread();
+void RhEnableFinalization();
+
 // Simplified EEConfig -- It is just a static member, which statically initializes to the default values and
 // has no dynamic initialization.  Some settings may change at runtime, however.  (Example: gcstress is
 // enabled via a compiled-in call from a given managed module, not through snooping an environment setting.)
@@ -241,7 +224,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     if (FAILED(hr))
         return false;
 
-    if (!FinalizerThread::Initialize())
+    if (!RhInitializeFinalization())
         return false;
 
     // Initialize HandleTable.
@@ -265,7 +248,6 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
 
     pThread->SetCurrentThreadPInvokeTunnelForGcAlloc(pTransitionFrame);
 
-    ASSERT(GCHeapUtilities::UseAllocationContexts());
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
 #if BIT64
@@ -323,8 +305,6 @@ void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 // static 
 void RedhawkGCInterface::WaitForGCCompletion()
 {
-    ASSERT(GCHeapUtilities::IsGCHeapInitialized());
-
     GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 }
 
@@ -642,64 +622,6 @@ COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
 // Support for scanning the GC heap, objects and roots.
 //
 
-// The value of the following globals determines whether a callback is made for every live object at the end
-// of a garbage collection. Only one callback/context pair can be active for any given collection, so setting
-// these has to be co-ordinated carefully, see RedhawkGCInterface::ScanHeap below.
-GcScanObjectFunction g_pfnHeapScan = NULL;  // Function to call for every live object at the end of a GC
-void * g_pvHeapScanContext = NULL;          // User context passed on each call to the function above
-
-//
-// Initiate a full garbage collection and call the speficied function with the given context for each object
-// that remians alive on the heap at the end of the collection (note that the function will be called while
-// the GC still has cooperative threads suspended).
-//
-// If a GC is in progress (or another caller is in the process of scheduling a similar scan) we'll wait our
-// turn and then initiate a further collection.
-//
-// static
-void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pContext)
-{
-#ifndef DACCESS_COMPILE
-    // Carefully attempt to set the global callback function (careful in that we won't overwrite another scan
-    // that's being scheduled or in-progress). If someone beat us to it back off and wait for the
-    // corresponding GC to complete.
-    while (Interlocked::CompareExchangePointer(&g_pfnHeapScan, pfnScanCallback, NULL) != NULL)
-    {
-        // Wait in pre-emptive mode to avoid stalling another thread that's attempting a collection.
-        Thread * pCurThread = GetThread();
-        ASSERT(pCurThread->IsCurrentThreadInCooperativeMode());
-        pCurThread->EnablePreemptiveMode();
-
-        // Give the other thread some time to get the collection going.
-        if (PalSwitchToThread() == 0)
-            PalSleep(1);
-
-        // Wait for the collection to complete (if the other thread didn't manage to schedule it yet we'll
-        // just end up going round the loop again).
-        WaitForGCCompletion();
-
-        // Come back into co-operative mode.
-        pCurThread->DisablePreemptiveMode();
-    }
-
-    // We should never end up overwriting someone else's callback context when we won the race to set the
-    // callback function pointer.
-    ASSERT(g_pvHeapScanContext == NULL);
-    g_pvHeapScanContext = pContext;
-
-    // Initiate a full garbage collection
-    GCHeapUtilities::GetGCHeap()->GarbageCollect();
-    WaitForGCCompletion();
-
-    // Release our hold on the global scanning pointers.
-    g_pvHeapScanContext = NULL;
-    Interlocked::ExchangePointer(&g_pfnHeapScan, NULL);
-#else
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-#endif // DACCESS_COMPILE
-}
-
 // Enumerate every reference field in an object, calling back to the specified function with the given context
 // for each such reference found.
 // static
@@ -790,36 +712,6 @@ void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback
 }
 
 #ifndef DACCESS_COMPILE
-
-// This may only be called from a point at which the runtime is suspended. Currently, this
-// is used by the VSD infrastructure on a SyncClean::CleanUp callback from the GC when
-// a collection is complete.
-bool RedhawkGCInterface::IsScanInProgress()
-{
-    // Only allow callers that have no RH thread or are in cooperative mode; i.e., don't
-    // call this in preemptive mode, as the result would not be reliable in multi-threaded
-    // environments.
-    ASSERT(GetThread() == NULL || GetThread()->IsCurrentThreadInCooperativeMode());
-    return g_pfnHeapScan != NULL;
-}
-
-// This may only be called from a point at which the runtime is suspended. Currently, this
-// is used by the VSD infrastructure on a SyncClean::CleanUp callback from the GC when
-// a collection is complete.
-GcScanObjectFunction RedhawkGCInterface::GetCurrentScanCallbackFunction()
-{
-    ASSERT(IsScanInProgress());
-    return g_pfnHeapScan;
-}
-
-// This may only be called from a point at which the runtime is suspended. Currently, this
-// is used by the VSD infrastructure on a SyncClean::CleanUp callback from the GC when
-// a collection is complete.
-void* RedhawkGCInterface::GetCurrentScanContext()
-{
-    ASSERT(IsScanInProgress());
-    return g_pvHeapScanContext;
-}
 
 UInt32 RedhawkGCInterface::GetGCDescSize(void * pType)
 {
@@ -1006,7 +898,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
 #ifdef APP_LOCAL_RUNTIME
     // now is a good opportunity to retry starting the finalizer thread
-    StartFinalizerThread();
+    RhStartFinalizerThread();
 #endif
 }
 
@@ -1327,6 +1219,12 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     }
 }
 
+void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+{
+    if (foundFinalizers)
+        RhEnableFinalization();
+}
+
 #endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
@@ -1342,163 +1240,8 @@ bool IsGCSpecialThread()
     return false;
 }
 
-#ifdef FEATURE_PREMORTEM_FINALIZATION
 GPTR_IMPL(Thread, g_pFinalizerThread);
 GPTR_IMPL(Thread, g_pGcThread);
-
-CLREventStatic g_FinalizerEvent;
-CLREventStatic g_FinalizerDoneEvent;
-
-#ifndef DACCESS_COMPILE
-// Finalizer method implemented by redhawkm.
-extern "C" void __cdecl ProcessFinalizers();
-
-// Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we're still executing the DllMain for RedhawkU. At that point we can't run managed code
-// successfully (in particular module initialization code has not run for RedhawkM). Instead this method waits
-// for the first finalization request (by which time everything must be up and running) and kicks off the
-// managed portion of the thread at that point.
-UInt32 WINAPI FinalizerStart(void* pContext)
-{
-    HANDLE hFinalizerEvent = (HANDLE)pContext;
-
-    ThreadStore::AttachCurrentThread();
-    Thread * pThread = GetThread();
-
-    // Disallow gcstress on this thread to work around the current implementation's limitation that it will 
-    // get into an infinite loop if performed on the finalizer thread.
-    pThread->SetSuppressGcStress();
-
-    FinalizerThread::SetFinalizerThread(pThread);
-
-    // Wait for a finalization request.
-    UInt32 uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
-    ASSERT(uResult == WAIT_OBJECT_0);
-
-    // Since we just consumed the request (and the event is auto-reset) we must set the event again so the
-    // managed finalizer code will immediately start processing the queue when we run it.
-    UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
-    ASSERT(fResult);
-
-    // Run the managed portion of the finalizer. Until we implement (non-process) shutdown this call will
-    // never return.
-
-    ProcessFinalizers();
-
-    ASSERT(!"Finalizer thread should never return");
-    return 0;
-}
-
-bool StartFinalizerThread()
-{
-#ifdef APP_LOCAL_RUNTIME
-
-    //
-    // On app-local runtimes, if we're running with the fallback PAL code (meaning we don't have IManagedRuntimeServices)
-    // then we use the WinRT ThreadPool to create the finalizer thread.  This might fail at startup, if the current thread
-    // hasn't been CoInitialized.  So we need to retry this later.  We use fFinalizerThreadCreated to track whether we've
-    // successfully created the finalizer thread yet, and also as a sort of lock to make sure two threads don't try
-    // to create the finalizer thread at the same time.
-    //
-    static volatile Int32 fFinalizerThreadCreated;
-
-    if (Interlocked::Exchange(&fFinalizerThreadCreated, 1) != 1)
-    {
-        if (!PalStartFinalizerThread(FinalizerStart, (void*)FinalizerThread::GetFinalizerEvent()))
-        {
-            // Need to try again another time...
-            Interlocked::Exchange(&fFinalizerThreadCreated, 0);
-        }
-    }
-
-    // We always return true, so the GC can start even if we failed. 
-    return true;
-
-#else // APP_LOCAL_RUNTIME
-
-    //
-    // If this isn't an app-local runtime, then the PAL will just call CreateThread directly, which should succeed
-    // under normal circumstances.
-    //
-    if (PalStartFinalizerThread(FinalizerStart, (void*)FinalizerThread::GetFinalizerEvent()))
-        return true;
-    else
-        return false;
-
-#endif // APP_LOCAL_RUNTIME
-}
-
-bool FinalizerThread::Initialize()
-{
-    // Allocate the events the GC expects the finalizer thread to have. The g_FinalizerEvent event is signalled
-    // by the GC whenever it completes a collection where it found otherwise unreachable finalizable objects.
-    // The g_FinalizerDoneEvent is set by the finalizer thread every time it wakes up and drains the
-    // queue of finalizable objects. It's mainly used by GC.WaitForPendingFinalizers().
-    if (!g_FinalizerEvent.CreateAutoEventNoThrow(false))
-        return false;
-    if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
-        return false;
-
-    // Create the finalizer thread itself.
-    if (!StartFinalizerThread())
-        return false;
-
-    return true;
-}
-
-void FinalizerThread::SetFinalizerThread(Thread * pThread)
-{
-    g_pFinalizerThread = PTR_Thread(pThread);
-}
-
-void FinalizerThread::EnableFinalization()
-{
-    // Signal to finalizer thread that there are objects to finalize
-    g_FinalizerEvent.Set();
-}
-
-void FinalizerThread::SignalFinalizationDone(bool /*fFinalizer*/)
-{
-    g_FinalizerDoneEvent.Set();
-}
-
-bool FinalizerThread::HaveExtraWorkForFinalizer()
-{
-    return false; // Nothing to do
-}
-
-bool FinalizerThread::IsCurrentThreadFinalizer()
-{
-    return GetThread() == g_pFinalizerThread;
-}
-
-HANDLE FinalizerThread::GetFinalizerEvent()
-{
-    return g_FinalizerEvent.GetOSEvent();
-}
-
-void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
-{
-    // Can't call this from the finalizer thread itself.
-    if (!IsCurrentThreadFinalizer())
-    {
-        // Clear any current indication that a finalization pass is finished and wake the finalizer thread up
-        // (if there's no work to do it'll set the done event immediately).
-        g_FinalizerDoneEvent.Reset();
-        EnableFinalization();
-
-#ifdef APP_LOCAL_RUNTIME
-        // We may have failed to create the finalizer thread at startup.  
-        // Try again now.
-        StartFinalizerThread();
-#endif
-
-        // Wait for the finalizer thread to get back to us.
-        g_FinalizerDoneEvent.Wait(timeout, false, allowReentrantWait);
-    }
-}
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_PREMORTEM_FINALIZATION
 
 #ifndef DACCESS_COMPILE
 
@@ -1516,7 +1259,6 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
 
 MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
-bool g_fFinalizerRunOnShutDown;
 
 bool IsGCThread()
 {

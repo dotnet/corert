@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices
             HSTRING* phString)
         {
             if (sourceString == null)
-                throw new ArgumentNullException("sourceString", SR.Null_HString);
+                throw new ArgumentNullException(nameof(sourceString), SR.Null_HString);
 
             int hr = ExternalInterop.WindowsCreateStringReference(
                 pchPinnedSourceString,

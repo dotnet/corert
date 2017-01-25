@@ -25,15 +25,6 @@
 #include "threadstore.inl"
 #include "thread.inl"
 
-EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
-{
-    // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
-    // called in cooperative mode.
-    ASSERT(!GetThread()->IsCurrentThreadInCooperativeMode());
-
-    FinalizerThread::Wait(INFINITE, allowReentrantWait);
-}
-
 EXTERN_C REDHAWK_API void __cdecl RhpCollect(UInt32 uGeneration, UInt32 uMode)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.

@@ -192,6 +192,16 @@ namespace ILCompiler.DependencyAnalysis
                 return new FatFunctionPointerNode(method);
             });
 
+            _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
+            {
+                return new GVMDependenciesNode(method);
+            });
+
+            _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
+            {
+                return new TypeGVMEntriesNode(type);
+            });
+
             _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
                 return new ShadowConcreteMethodNode<MethodCodeNode>(method,
@@ -518,6 +528,18 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode FatFunctionPointer(MethodDesc method)
         {
             return _fatFunctionPointers.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
+        internal GVMDependenciesNode GVMDependencies(MethodDesc method)
+        {
+            return _gvmDependenciesNode.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
+        internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
+        {
+            return _gvmTableEntries.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, IMethodNode> _shadowConcreteMethods;

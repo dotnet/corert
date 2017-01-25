@@ -30,6 +30,14 @@ namespace ILCompiler
             _jitConfigProvider = configProvider;
         }
 
+        protected override bool GenerateDebugInfo
+        {
+            get
+            {
+                return _jitConfigProvider.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+            }
+        }
+
         protected override void CompileInternal(string outputFile)
         {
             _corInfo = new CorInfoImpl(this, _jitConfigProvider);

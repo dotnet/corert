@@ -294,7 +294,7 @@ namespace Internal.TypeSystem.Ecma
             NativeType type = (NativeType)_reader.ReadByte();
             NativeType arraySubType = NativeType.Invalid;
             uint paramNum = 0, numElem = 0;
-            if (type == NativeType.Array)
+            if (_reader.RemainingBytes != 0)
             {
                 arraySubType = (NativeType)_reader.ReadByte();
                 if (_reader.RemainingBytes != 0)

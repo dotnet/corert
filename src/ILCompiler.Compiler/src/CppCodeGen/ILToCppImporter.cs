@@ -1944,6 +1944,7 @@ namespace Internal.IL
 
             PushTemp(GetStackValueKind(type), type);
 
+            AppendCastIfNecessary(GetStackValueKind(type), type);
             Append("*(");
             Append(_writer.GetCppSignatureTypeName(type));
             Append("*)");
@@ -2164,6 +2165,8 @@ namespace Internal.IL
 
         private void ImportEndFinally()
         {
+            _stack.Clear();
+
             int finallyIndex = FindNearestFinally(_currentOffset - 1);
 
             AppendLine();

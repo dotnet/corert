@@ -26,6 +26,14 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
+        public override bool InterestingForDynamicDependencyAnalysis
+        {
+            get
+            {
+                return _type.IsDefType && _type.HasGenericVirtualMethod();
+            }
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DefType closestDefType = _type.GetClosestDefType();
@@ -87,6 +95,12 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
             {
                 dependencyList.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor");
+            }
+
+            // Generated type contains generic virtual methods that will get added to the GVM tables
+            if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
+            {
+                dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
             }
 
             return dependencyList;

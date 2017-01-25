@@ -59,40 +59,6 @@ namespace Internal.TypeSystem.Interop
             return false;
         }
 
-        /// <summary>
-        /// Returns true if <paramref name="method"/> requires a stub to be generated.
-        /// </summary>
-        public static bool IsStubRequired(MethodDesc method, PInvokeILEmitterConfiguration configuration)
-        {
-            Debug.Assert(method.IsPInvoke);
-
-            // TODO: true if there are any custom marshalling rules on the parameters
-
-            TypeDesc returnType = method.Signature.ReturnType;
-            if (!MarshalHelpers.IsBlittableType(returnType) && !returnType.IsVoid)
-                return true;
-
-            for (int i = 0; i < method.Signature.Length; i++)
-            {
-                if (!MarshalHelpers.IsBlittableType(method.Signature[i]))
-                {
-                    return true;
-                }
-            }
-
-            PInvokeMetadata methodData = method.GetPInvokeMethodMetadata();    
-            if (UseLazyResolution(method, methodData.Module, configuration))
-            {
-                return true;
-            }
-            if ((methodData.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
 
         /// <summary>
         /// Returns true if the PInvoke target should be resolved lazily.
