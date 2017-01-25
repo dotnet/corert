@@ -517,7 +517,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
     // ExInfos hold exception objects that are not reported by anyone else.  In fact, sometimes they are in
     // logically dead parts of the stack that the typical GC stackwalk skips.  (This happens in the case where 
-    // one exception dispatch supersceded a previous one.)  We keep them alive as long as they are in the 
+    // one exception dispatch superseded a previous one.)  We keep them alive as long as they are in the 
     // ExInfo chain to aid in post-mortem debugging.  SOS will access them through the DAC and the exported 
     // API, RhGetExceptionsForCurrentThread, will access them at runtime to gather additional information to
     // add to a dump file during FailFast.
@@ -926,7 +926,7 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 
     while (pExInfo && pExInfo < limitSP)
     {
-        ASSERT_MSG(pExInfo->m_kind & EK_SuperscededFlag, "popping a non-supersceded ExInfo");
+        ASSERT_MSG(pExInfo->m_kind & EK_SupersededFlag, "popping a non-superseded ExInfo");
         pExInfo = pExInfo->m_pPrevExInfo;
     }
 #else
