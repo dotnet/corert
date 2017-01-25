@@ -30,7 +30,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct DynamicMethodHandleInfo
+        internal struct DynamicMethodHandleInfo
         {
             public IntPtr DeclaringType;
             public IntPtr MethodName;
@@ -166,6 +166,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         internal unsafe IntPtr TryGetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
         {
+            // TODO! Consider interning these!, but if we do remember this function is called from code which isn't under the type builder lock 
             int sizeToAllocate = sizeof(DynamicMethodHandleInfo);
             // Use checked arithmetics to ensure there aren't any overflows/truncations
             sizeToAllocate = checked(sizeToAllocate + (genericMethodArgs.Length > 0 ? sizeof(IntPtr) * (genericMethodArgs.Length - 1) : 0));
@@ -236,12 +237,29 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                // method signature is NativeFormat
-                var metadataReader = ModuleList.Instance.GetMetadataReaderForModule(methodData->MethodSignature.ModuleHandle);
-                var methodHandle = methodData->MethodSignature.Token.AsHandle().ToMethodHandle(metadataReader);
+                ModuleInfo moduleInfo = methodData->MethodSignature.GetModuleInfo();
 
-                var method = methodHandle.GetMethod(metadataReader);
-                nameAndSignature = new MethodNameAndSignature(metadataReader.GetConstantStringValue(method.Name).Value, methodData->MethodSignature);
+                string name;
+#if ECMA_METADATA_SUPPORT
+                if (moduleInfo.MetadataReader != null)
+#endif            
+                {
+                    var metadataReader = moduleInfo.MetadataReader;
+                    var methodHandle = methodData->MethodSignature.Token.AsHandle().ToMethodHandle(metadataReader);
+                    var method = methodHandle.GetMethod(metadataReader);
+                    name = metadataReader.GetConstantStringValue(method.Name).Value;
+                }
+#if ECMA_METADATA_SUPPORT
+                else
+                {
+                    var ecmaReader = moduleInfo.EcmaPEInfo.Reader;
+                    var ecmaHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(methodData->MethodSignature.Token);
+                    var ecmaMethodHandle = (System.Reflection.Metadata.MethodDefinitionHandle)ecmaHandle;
+                    var ecmaMethod = ecmaReader.GetMethodDefinition(ecmaMethodHandle);
+                    name = ecmaReader.GetString(ecmaMethod.Name);
+                }
+#endif
+                nameAndSignature = new MethodNameAndSignature(name, methodData->MethodSignature);
             }
 
             return true;

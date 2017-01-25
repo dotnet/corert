@@ -54,9 +54,9 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a type from a ReadyToRun image. 
         /// </summary>
-        public bool TryGetMetadataNativeLayout(TypeDesc concreteType, out IntPtr nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public bool TryGetMetadataNativeLayout(TypeDesc concreteType, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
-            nativeLayoutInfoModule = default(IntPtr);
+            nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             var nativeMetadataType = concreteType.GetTypeDefinition() as TypeSystem.NativeFormat.NativeFormatType;
@@ -66,22 +66,20 @@ namespace Internal.Runtime.TypeLoader
             var canonForm = concreteType.ConvertToCanonForm(CanonicalFormKind.Specific);
             var hashCode = canonForm.GetHashCode();
 
-            var loadedModulesCount = RuntimeAugments.GetLoadedModules(null);
-            var loadedModuleHandles = new IntPtr[loadedModulesCount];
-            var loadedModules = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
-            Debug.Assert(loadedModulesCount == loadedModules);
-
 #if SUPPORTS_R2R_LOADING
-            foreach (var moduleHandle in loadedModuleHandles)
+            foreach (var moduleInfo in ModuleList.EnumerateModules())
             {
+                if (moduleInfo.MetadataReader == null)
+                    continue;
+                
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleHandle, ReflectionMapBlob.MetadataBasedTypeTemplateMap, out externalFixupsTable);
+                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.MetadataBasedTypeTemplateMap, out externalFixupsTable);
 
                 if (typeTemplatesHashtable.IsNull)
                     continue;
 
                 var enumerator = typeTemplatesHashtable.Lookup(hashCode);
-                var nativeMetadataUnit = nativeMetadataType.Context.ResolveMetadataUnit(moduleHandle);
+                var nativeMetadataUnit = nativeMetadataType.Context.ResolveMetadataUnit(moduleInfo);
 
                 NativeParser entryParser;
                 while (!(entryParser = enumerator.GetNext()).IsNull)
@@ -112,9 +110,9 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a method from a ReadyToRun image. 
         /// </summary>
-        public bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out IntPtr nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
-            nativeLayoutInfoModule = default(IntPtr);
+            nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             var nativeMetadataType = concreteMethod.GetTypicalMethodDefinition() as TypeSystem.NativeFormat.NativeFormatMethod;
@@ -124,22 +122,20 @@ namespace Internal.Runtime.TypeLoader
             var canonForm = concreteMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
             var hashCode = canonForm.GetHashCode();
 
-            var loadedModulesCount = RuntimeAugments.GetLoadedModules(null);
-            var loadedModuleHandles = new IntPtr[loadedModulesCount];
-            var loadedModules = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
-            Debug.Assert(loadedModulesCount == loadedModules);
-
 #if SUPPORTS_R2R_LOADING
-            foreach (var moduleHandle in loadedModuleHandles)
+            foreach (var moduleInfo in ModuleList.EnumerateModules())
             {
+                if (moduleInfo.MetadataReader == null)
+                    continue;
+
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable methodTemplatesHashtable = LoadHashtable(moduleHandle, ReflectionMapBlob.MetadataBasedGenericMethodsTemplateMap, out externalFixupsTable);
+                NativeHashtable methodTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.MetadataBasedGenericMethodsTemplateMap, out externalFixupsTable);
 
                 if (methodTemplatesHashtable.IsNull)
                     continue;
 
                 var enumerator = methodTemplatesHashtable.Lookup(hashCode);
-                var nativeMetadataUnit = nativeMetadataType.Context.ResolveMetadataUnit(moduleHandle);
+                var nativeMetadataUnit = nativeMetadataType.Context.ResolveMetadataUnit(moduleInfo);
 
                 NativeParser entryParser;
                 while (!(entryParser = enumerator.GetNext()).IsNull)
@@ -156,7 +152,7 @@ namespace Internal.Runtime.TypeLoader
                             throw new BadImageFormatException();
                         }
 
-                        nativeLayoutInfoModule = moduleHandle;
+                        nativeLayoutInfoModule = moduleInfo;
                         return true;
                     }
                 }
@@ -166,22 +162,20 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out IntPtr nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
-            nativeLayoutInfoModule = default(IntPtr);
+            nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
             var canonForm = concreteType.ConvertToCanonForm(kind);
             var hashCode = canonForm.GetHashCode();
 
-            var loadedModulesCount = RuntimeAugments.GetLoadedModules(null);
-            var loadedModuleHandles = new IntPtr[loadedModulesCount];
-            var loadedModules = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
-            Debug.Assert(loadedModulesCount == loadedModules);
-
-            foreach (var moduleHandle in loadedModuleHandles)
+            foreach (var moduleInfo in ModuleList.EnumerateModules())
             {
+                if (moduleInfo.MetadataReader == null)
+                    continue;
+
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleHandle, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
+                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
 
                 if (typeTemplatesHashtable.IsNull)
                     continue;
@@ -209,7 +203,7 @@ namespace Internal.Runtime.TypeLoader
                             (kind != CanonicalFormKind.Universal && candidateTemplate != candidateTemplate.ConvertToCanonForm(kind)) ||
                             (kind == CanonicalFormKind.Universal && candidateTemplate == candidateTemplate.ConvertToCanonForm(kind)));
 
-                        nativeLayoutInfoModule = moduleHandle;
+                        nativeLayoutInfoModule = moduleInfo;
                         return candidateTemplate;
                     }
                 }
@@ -222,7 +216,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the template method for a generic method instantation
         //
-        public InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out IntPtr nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             // First, see if there is a specific canonical template
             InstantiatedMethod result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
@@ -233,25 +227,24 @@ namespace Internal.Runtime.TypeLoader
 
             return result;
         }
-        private InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out IntPtr nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
-            nativeLayoutInfoModule = default(IntPtr);
+            nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
             var canonForm = concreteMethod.GetCanonMethodTarget(kind);
             var hashCode = canonForm.GetHashCode();
-            var loadedModulesCount = RuntimeAugments.GetLoadedModules(null);
-            var loadedModuleHandles = new IntPtr[loadedModulesCount];
-            var loadedModules = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
-            Debug.Assert(loadedModulesCount == loadedModules);
 
-            foreach (var moduleHandle in loadedModuleHandles)
+            foreach (var moduleInfo in ModuleList.EnumerateModules())
             {
-                NativeReader nativeLayoutReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(moduleHandle);
+                if (moduleInfo.MetadataReader == null)
+                    continue;
+
+                NativeReader nativeLayoutReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(moduleInfo.Handle);
                 if (nativeLayoutReader == null)
                     continue;
 
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleHandle, ReflectionMapBlob.GenericMethodsTemplateMap, out externalFixupsTable);
+                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.GenericMethodsTemplateMap, out externalFixupsTable);
 
                 if (genericMethodTemplatesHashtable.IsNull)
                     continue;
@@ -261,7 +254,7 @@ namespace Internal.Runtime.TypeLoader
                     _typeSystemContext = concreteMethod.Context,
                     _typeArgumentHandles = concreteMethod.OwningType.Instantiation,
                     _methodArgumentHandles = concreteMethod.Instantiation,
-                    _moduleHandle = moduleHandle
+                    _module = moduleInfo
                 };
 
                 var enumerator = genericMethodTemplatesHashtable.Lookup(hashCode);
@@ -278,7 +271,7 @@ namespace Internal.Runtime.TypeLoader
                     if (canonForm == candidateTemplate.GetCanonMethodTarget(kind))
                     {
                         TypeLoaderLogger.WriteLine("Found template for generic method " + concreteMethod.ToString() + ": " + candidateTemplate.ToString());
-                        nativeLayoutInfoModule = moduleHandle;
+                        nativeLayoutInfoModule = moduleInfo;
                         nativeLayoutInfoToken = (uint)externalFixupsTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
                         if (nativeLayoutInfoToken == BadTokenFixupValue)
                         {

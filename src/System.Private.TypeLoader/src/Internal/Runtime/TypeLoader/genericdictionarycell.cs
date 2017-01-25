@@ -1703,7 +1703,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         CallingConventionConverterKind flags = (CallingConventionConverterKind)parser.GetUnsigned();
                         NativeParser sigParser = parser.GetParserFromRelativeOffset();
-                        RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._moduleHandle, sigParser.Offset);
+                        RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._module.Handle, sigParser.Offset);
 
 #if TYPE_LOADER_TRACE
                         TypeLoaderLogger.WriteLine("CallingConventionConverter on: ");

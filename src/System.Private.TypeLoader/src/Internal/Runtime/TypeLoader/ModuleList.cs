@@ -11,13 +11,15 @@ using System.Text;
 using System.Threading;
 using Internal.Runtime.Augments;
 using Internal.Metadata.NativeFormat;
+using Internal.Reflection.Execution;
 
 namespace Internal.Runtime.TypeLoader
 {
     public enum ModuleType
     {
         Eager,
-        ReadyToRun
+        ReadyToRun,
+        Ecma
     }
 
     /// <summary>
@@ -33,7 +35,7 @@ namespace Internal.Runtime.TypeLoader
         public IntPtr Handle { get; private set; }
 
         /// <summary>
-        /// Module metadata reader.
+        /// Module metadata reader for NativeFormat metadata
         /// </summary>
         public MetadataReader MetadataReader { get; private set; }
 
@@ -47,11 +49,18 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         internal ModuleType ModuleType { get; private set; }
 
+#if ECMA_METADATA_SUPPORT
+        /// <summary>
+        /// Ecma PE data for this module.
+        /// </summary>
+        public PEInfo EcmaPEInfo { get; private set; }
+#endif
+
         /// <summary>
         /// Initialize module info and construct per-module metadata reader.
         /// </summary>
         /// <param name="moduleHandle">Handle (address) of module to initialize</param>
-        internal ModuleInfo(IntPtr moduleHandle, ModuleType moduleType)
+        internal ModuleInfo(IntPtr moduleHandle, ModuleType moduleType, object peinfo)
         {
             Handle = moduleHandle;
             ModuleType = moduleType;
@@ -59,24 +68,31 @@ namespace Internal.Runtime.TypeLoader
             byte* pBlob;
             uint cbBlob;
 
-            if (RuntimeAugments.FindBlob(moduleHandle, (int)ReflectionMapBlob.EmbeddedMetadata, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+            if (moduleType != ModuleType.Ecma)
             {
-                MetadataReader = new MetadataReader((IntPtr)pBlob, (int)cbBlob);
+                if (RuntimeAugments.FindBlob(moduleHandle, (int)ReflectionMapBlob.EmbeddedMetadata, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+                {
+                    MetadataReader = new MetadataReader((IntPtr)pBlob, (int)cbBlob);
+                }
             }
+#if ECMA_METADATA_SUPPORT
+            else
+            {
+                EcmaPEInfo = (PEInfo)peinfo;
+            }
+#endif
 
             DynamicModule* dynamicModulePtr = (DynamicModule*)MemoryHelpers.AllocateMemory(sizeof(DynamicModule));
             dynamicModulePtr->CbSize = DynamicModule.DynamicModuleSize;
             Debug.Assert(sizeof(DynamicModule) >= dynamicModulePtr->CbSize);
 
-#if SUPPORTS_R2R_LOADING                
-            if (moduleType == ModuleType.ReadyToRun)
+            if ((moduleType == ModuleType.ReadyToRun) || (moduleType == ModuleType.Ecma))
             {
-                // ReadyToRun modules utilize dynamic type resolution
+                // Dynamic type load modules utilize dynamic type resolution
                 dynamicModulePtr->DynamicTypeSlotDispatchResolve = Intrinsics.AddrOf(
-                    (Func<IntPtr, IntPtr, ushort, IntPtr>)ReadyToRunCallbacks.ResolveTypeSlotDispatch);
+                    (Func<IntPtr, IntPtr, ushort, IntPtr>)ResolveTypeSlotDispatch);
             }
             else
-#endif
             {
                 Debug.Assert(moduleType == ModuleType.Eager);
                 // Pre-generated modules do not
@@ -88,6 +104,16 @@ namespace Internal.Runtime.TypeLoader
 
             DynamicModulePtr = dynamicModulePtr;
         }
+
+        internal unsafe static IntPtr ResolveTypeSlotDispatch(IntPtr targetTypeAsIntPtr, IntPtr interfaceTypeAsIntPtr, ushort slot)
+        {
+            IntPtr methodAddress;
+            if (!TypeLoaderEnvironment.Instance.TryResolveTypeSlotDispatch(targetTypeAsIntPtr, interfaceTypeAsIntPtr, slot, out methodAddress))
+            {
+                throw new BadImageFormatException();
+            }
+            return methodAddress;
+        }        
     }
 
     /// <summary>
@@ -114,7 +140,9 @@ namespace Internal.Runtime.TypeLoader
             HandleToModuleIndex = new LowLevelDictionary<IntPtr, int>();
             for (int moduleIndex = 0; moduleIndex < Modules.Length; moduleIndex++)
             {
-                HandleToModuleIndex.Add(Modules[moduleIndex].Handle, moduleIndex);
+                // Ecma modules don't go in the reverse lookup hash because they share a module index with the system module
+                if (Modules[moduleIndex].ModuleType != ModuleType.Ecma)
+                    HandleToModuleIndex.Add(Modules[moduleIndex].Handle, moduleIndex);
             }
         }
     }
@@ -307,7 +335,18 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public bool MoveNext()
         {
-            return _moduleInfoEnumerator.MoveNext();
+            bool result;
+            do
+            {
+                result = _moduleInfoEnumerator.MoveNext();
+                // Ecma module shouldn't be reported as they should not be enumerated by ModuleHandle (as its always the System module)
+                if (!result || (_moduleInfoEnumerator.Current.ModuleType != ModuleType.Ecma))
+                {
+                    break;
+                }
+            } while(true);
+
+            return result;
         }
 
         /// <summary>
@@ -516,7 +555,7 @@ namespace Internal.Runtime.TypeLoader
 
                 for (int newModuleIndex = 0; newModuleIndex < newModuleHandles.Count; newModuleIndex++)
                 {
-                    ModuleInfo newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType);
+                    ModuleInfo newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType, null);
 
                     updatedModules[oldModuleCount + newModuleIndex] = newModuleInfo;
 
@@ -524,6 +563,29 @@ namespace Internal.Runtime.TypeLoader
                     {
                         _moduleRegistrationCallbacks(newModuleInfo);
                     }
+                }
+
+                // Atomically update the module map
+                _loadedModuleMap = new ModuleMap(updatedModules);
+            }
+        }
+
+        public void RegisterModule(ModuleInfo newModuleInfo)
+        {
+            // prevent multiple threads from registering modules concurrently
+            using (LockHolder.Hold(_moduleRegistrationLock))
+            {
+                // Copy existing modules to new dictionary
+                int oldModuleCount = _loadedModuleMap.Modules.Length;
+                ModuleInfo[] updatedModules = new ModuleInfo[oldModuleCount + 1];
+                if (oldModuleCount > 0)
+                {
+                    Array.Copy(_loadedModuleMap.Modules, 0, updatedModules, 0, oldModuleCount);
+                }
+                updatedModules[oldModuleCount] = newModuleInfo;
+                if (_moduleRegistrationCallbacks != null)
+                {
+                    _moduleRegistrationCallbacks(newModuleInfo);
                 }
 
                 // Atomically update the module map
@@ -575,6 +637,70 @@ namespace Internal.Runtime.TypeLoader
             }
             return null;
         }
+
+        /// <summary>
+        /// Given dynamic module handle, locate the moduleinfo
+        /// </summary>
+        /// <param name="moduleHandle">Handle of module to look up</param>
+        /// <returns>fails if not found</returns>
+        public unsafe ModuleInfo GetModuleInfoForDynamicModule(IntPtr dynamicModuleHandle)
+        {
+            foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
+            {
+                if (new IntPtr(moduleInfo.DynamicModulePtr) == dynamicModuleHandle)
+                    return moduleInfo;
+            }
+
+            // We should never have a dynamic module that is not associated with a module (where does it come from?!)
+            Debug.Assert(false);
+            return null;
+        }        
+
+
+        /// <summary>
+        /// Locate the containing module for a given metadata reader. Assert when not found.
+        /// </summary>
+        /// <param name="reader">Metadata reader to look up</param>
+        /// <returns>Module handle of the module containing the given reader</returns>
+        public ModuleInfo GetModuleInfoForMetadataReader(MetadataReader reader)
+        {
+            foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
+            {
+                if (moduleInfo.MetadataReader == reader)
+                {
+                    return moduleInfo;
+                }
+            }
+
+            // We should never have a reader that is not associated with a module (where does it come from?!)
+            Debug.Assert(false);
+            return null;
+        }
+
+#if ECMA_METADATA_SUPPORT
+        /// <summary>
+        /// Locate the containing module for a given metadata reader. Assert when not found.
+        /// </summary>
+        /// <param name="reader">Metadata reader to look up</param>
+        /// <returns>Module handle of the module containing the given reader</returns>
+        public ModuleInfo GetModuleInfoForMetadataReader(System.Reflection.Metadata.MetadataReader reader)
+        {
+            foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
+            {
+                if (moduleInfo.EcmaPEInfo == null)
+                    continue;
+                
+                if (moduleInfo.EcmaPEInfo.Reader == reader)
+                {
+                    return moduleInfo;
+                }
+            }
+
+            // We should never have a reader that is not associated with a module (where does it come from?!)
+            Debug.Assert(false);
+            return null;
+        }
+#endif
 
         /// <summary>
         /// Locate the containing module for a given metadata reader. Assert when not found.
@@ -635,6 +761,26 @@ namespace Internal.Runtime.TypeLoader
         public static ModuleHandleEnumerable Enumerate(IntPtr preferredModule = default(IntPtr))
         {
             return new ModuleHandleEnumerable(Instance._loadedModuleMap, preferredModule);
+        }
+    }
+
+    public static partial class RuntimeSignatureHelper
+    {
+        public static ModuleInfo GetModuleInfo(this Internal.Runtime.CompilerServices.RuntimeSignature methodSignature)
+        {
+            if (methodSignature.IsNativeLayoutSignature)
+            {
+                return ModuleList.Instance.GetModuleInfoByHandle(methodSignature.ModuleHandle);
+            }
+            else
+            {
+                ModuleInfo moduleInfo;
+                if (!ModuleList.Instance.TryGetModuleInfoByHandle(methodSignature.ModuleHandle, out moduleInfo))
+                {
+                    moduleInfo = ModuleList.Instance.GetModuleInfoForDynamicModule(methodSignature.ModuleHandle);
+                }
+                return moduleInfo;
+            }
         }
     }
 }

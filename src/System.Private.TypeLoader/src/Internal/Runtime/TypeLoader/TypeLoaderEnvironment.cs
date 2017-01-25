@@ -8,6 +8,7 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Reflection.Runtime.General;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -416,7 +417,7 @@ namespace Internal.Runtime.TypeLoader
             Instantiation methodGenericArguments = typeSystemContext.ResolveRuntimeTypeHandles(methodGenericArgumentHandles ?? Array.Empty<RuntimeTypeHandle>());
 
             NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-            nativeLayoutContext._moduleHandle = moduleHandle;
+            nativeLayoutContext._module = ModuleList.GetModuleInfoByHandle(moduleHandle);
             nativeLayoutContext._typeSystemContext = typeSystemContext;
             nativeLayoutContext._typeArgumentHandles = typeGenericArguments;
             nativeLayoutContext._methodArgumentHandles = methodGenericArguments;
@@ -617,7 +618,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        public bool TryResolveSingleMetadataFixup(IntPtr module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
+        public bool TryResolveSingleMetadataFixup(ModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             using (LockHolder.Hold(_typeLoaderLock))
@@ -642,7 +643,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
         }
 
-        public bool TryDispatchMethodOnTarget(IntPtr module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
+        public bool TryDispatchMethodOnTarget(ModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
         {
             using (LockHolder.Hold(_typeLoaderLock))
             {
@@ -655,7 +656,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        internal DispatchCellInfo ConvertDispatchCellInfo(IntPtr module, DispatchCellInfo cellInfo)
+        internal DispatchCellInfo ConvertDispatchCellInfo(ModuleInfo module, DispatchCellInfo cellInfo)
         {
             using (LockHolder.Hold(_typeLoaderLock))
             {
@@ -675,20 +676,26 @@ namespace Internal.Runtime.TypeLoader
         }
 
         public unsafe bool TryGetOrCreateNamedTypeForMetadata(
-            MetadataReader metadataReader,
-            TypeDefinitionHandle typeDefHandle,
+            QTypeDefinition qTypeDefinition,
             out RuntimeTypeHandle runtimeTypeHandle)
         {
-            if (TryGetNamedTypeForMetadata(metadataReader, typeDefHandle, out runtimeTypeHandle))
+            if (TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle))
             {
                 return true;
             }
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
+            ModuleInfo module = null;
+            
+            if (qTypeDefinition.IsNativeFormatMetadataBased)
+                module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.NativeFormatReader);
+#if ECMA_METADATA_SUPPORT
+            else
+                module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.EcmaFormatReader);
+#endif
             IntPtr runtimeTypeHandleAsIntPtr;
             if (TryResolveSingleMetadataFixup(
-                moduleHandle,
-                typeDefHandle.ToHandle(metadataReader).ToInt(),
+                module,
+                qTypeDefinition.Token,
                 MetadataFixupKind.TypeHandle,
                 out runtimeTypeHandleAsIntPtr))
             {

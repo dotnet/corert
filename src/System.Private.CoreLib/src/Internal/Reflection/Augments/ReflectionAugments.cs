@@ -114,6 +114,7 @@ namespace Internal.Reflection.Augments
     public abstract class ReflectionCoreCallbacks
     {
         public abstract Assembly Load(AssemblyName refName);
+        public abstract Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore);
 
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle);
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);

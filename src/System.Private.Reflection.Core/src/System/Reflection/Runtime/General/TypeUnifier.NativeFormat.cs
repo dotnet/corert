@@ -70,7 +70,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             RuntimeTypeHandle typeHandle = precomputedTypeHandle;
             if (typeHandle.IsNull())
             {
-                if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForMetadata(metadataReader, typeDefHandle, out typeHandle))
+                if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForMetadata(new QTypeDefinition(metadataReader, typeDefHandle), out typeHandle))
                     typeHandle = default(RuntimeTypeHandle);
             }
             UnificationKey key = new UnificationKey(metadataReader, typeDefHandle, typeHandle);

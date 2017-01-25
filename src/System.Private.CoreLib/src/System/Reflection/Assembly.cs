@@ -180,7 +180,7 @@ namespace System.Reflection
 
         public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef);
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
-        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw new PlatformNotSupportedException(); }
+        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) => ReflectionAugments.ReflectionCoreCallbacks.Load(rawAssembly, rawSymbolStore);
 
         public static Assembly Load(string assemblyString)
         {

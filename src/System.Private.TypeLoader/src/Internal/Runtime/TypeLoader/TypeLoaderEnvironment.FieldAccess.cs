@@ -10,6 +10,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -164,15 +166,16 @@ namespace Internal.Runtime.TypeLoader
                     {
                         if (fieldName == null)
                         {
-                            MetadataReader mdReader;
-                            TypeDefinitionHandle typeDefHandleUnused;
+                            QTypeDefinition qTypeDefinition;
+
                             bool success = Instance.TryGetMetadataForNamedType(
                                 declaringTypeHandleDefinition,
-                                out mdReader,
-                                out typeDefHandleUnused);
+                                out qTypeDefinition);
                             Debug.Assert(success);
 
-                            fieldName = mdReader.GetString(fieldHandle.GetField(mdReader).Name);
+                            MetadataReader nativeFormatMetadataReader = qTypeDefinition.NativeFormatReader;
+
+                            fieldName = nativeFormatMetadataReader.GetString(fieldHandle.GetField(nativeFormatMetadataReader).Name);
                         }
 
                         string entryFieldName = entryParser.GetString();

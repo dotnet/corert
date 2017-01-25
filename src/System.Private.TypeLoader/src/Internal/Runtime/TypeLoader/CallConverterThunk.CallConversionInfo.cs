@@ -179,7 +179,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
 
-                    nativeLayoutContext._moduleHandle = _methodSignature.ModuleHandle;
+                    nativeLayoutContext._module = _methodSignature.GetModuleInfo();
                     nativeLayoutContext._typeSystemContext = context;
                     nativeLayoutContext._typeArgumentHandles = Instantiation.Empty;
                     nativeLayoutContext._methodArgumentHandles = Instantiation.Empty;
