@@ -10,7 +10,6 @@ namespace Internal.TypeSystem
     [Flags]
     public enum NativeType : byte
     {
-        Invalid = 0x0,
         Boolean = 0x2,
         I1 = 0x3,
         U1 = 0x4,
@@ -24,12 +23,14 @@ namespace Internal.TypeSystem
         R8 = 0xc,
         LPStr = 0x14,
         LPWStr = 0x15,
+        Struct = 0x1b,
+        ByValArray = 0x1e,
         Int = 0x1f,
         UInt = 0x20,
         Func = 0x26,
         Array = 0x2a,
         LPStruct = 0x2b,    // This is not  defined in Ecma-335(II.23.4)
-        Max = 0x50,         // The value is of this not defined in Ecma-335(II.23.4) either, the one defined in CoreCLR is used here
+        Invalid = 0x50,      // This is the default value
     }
 
     public class MarshalAsDescriptor

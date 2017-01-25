@@ -51,6 +51,15 @@ DLL_EXPORT int __stdcall Inc(int *val)
     return 0;
 }
 
+DLL_EXPORT bool __stdcall GetNextChar(short *value)
+{
+    if (value == NULL)
+        return false;
+
+    *value = *value + 1;
+    return true;
+}
+
 DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
 {
     if (val == NULL)

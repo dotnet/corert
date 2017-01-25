@@ -11,17 +11,19 @@ namespace Internal.TypeSystem.Interop
 {
     public class PInvokeMethodData
     {
-        public MethodDesc TargetMethod { get; private set; }
-        public PInvokeILEmitterConfiguration PInvokeILEmitterConfiguration { get; private set; }
-        public TypeSystemContext Context { get; private set; }
-        public PInvokeMetadata ImportMetadata { get; private set; }
+        public MethodDesc TargetMethod { get; }
+        public PInvokeILEmitterConfiguration PInvokeILEmitterConfiguration { get;  }
+        public TypeSystemContext Context { get; }
+        public PInvokeMetadata ImportMetadata { get; }
+        public MarshalDirection Direction { get; }
 
-        public PInvokeMethodData(MethodDesc method, PInvokeILEmitterConfiguration config)
+        public PInvokeMethodData(MethodDesc method, PInvokeILEmitterConfiguration config, MarshalDirection direction)
         {
             TargetMethod = method;
             PInvokeILEmitterConfiguration = config;
             Context = method.Context;
             ImportMetadata = method.GetPInvokeMethodMetadata();
+            Direction = direction;
         }
 
         public MetadataType SafeHandleType
@@ -40,17 +42,123 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+/*      
+        TODO: Bring CriticalHandle to CoreLib
+        https://github.com/dotnet/corert/issues/2570
+
+        public MetadataType CriticalHandle
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
+            }
+        }
+
+
+        TODO: Bring HandleRef to CoreLib
+        https://github.com/dotnet/corert/issues/2570
+
+        public MetadataType HandleRef
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
+            }
+        }
+*/
+        public MetadataType StringBuilder
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System.Text", "StringBuilder");
+            }
+        }
+        public MetadataType SystemArray
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System", "Array");
+            }
+        }
+
+        public MetadataType SystemDateTime
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System", "DateTime");
+            }
+        }
+        public MetadataType SystemDecimal
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System", "Decimal");
+            }
+        }
+        public MetadataType SystemGuid
+        {
+            get
+            {
+                return Context.SystemModule.GetKnownType("System", "Guid");
+            }
+        }
+
         public bool IsSafeHandle(TypeDesc type)
         {
-            var safeHandleType = this.SafeHandleType;
+            return IsOfType(type, this.SafeHandleType);
+        }
+
+/*      
+       TODO: Bring CriticalHandle to CoreLib
+       https://github.com/dotnet/corert/issues/2570
+
+       public bool IsCriticalHandle(TypeDesc type)
+        {
+            return IsOfType(type, this.CriticalHandle);
+        }
+
+        TODO: Bring HandleRef to CoreLib
+        public bool IsHandleRef(TypeDesc type)
+        {
+            return IsOfType(type, this.HandleRef);
+        }
+*/
+
+        public bool IsSystemArray(TypeDesc type)
+        {
+            return type == SystemArray;
+        }
+
+        public bool IsSystemDateTime(TypeDesc type)
+        {
+            return type == SystemDateTime;
+        }
+
+        public bool IsStringBuilder(TypeDesc type)
+        {
+            return type == StringBuilder;
+        }
+        public bool IsSystemDecimal(TypeDesc type)
+        {
+            return type == SystemDecimal;
+        }
+
+        public bool IsSystemGuid(TypeDesc type)
+        {
+            return type == SystemGuid;
+        }
+
+        public static bool IsOfType(TypeDesc type, MetadataType targetType)
+        {
             while (type != null)
             {
-                if (type == safeHandleType)
+                if (type == targetType)
                     return true;
                 type = type.BaseType;
             }
             return false;
         }
+
 
         /// <summary>
         /// Charset for marshalling strings
