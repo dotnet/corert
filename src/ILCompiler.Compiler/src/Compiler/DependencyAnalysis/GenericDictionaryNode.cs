@@ -99,10 +99,11 @@ namespace ILCompiler.DependencyAnalysis
         }
         public override int Offset => 0;
         public override bool IsShareable => false;
-
         protected override Instantiation TypeInstantiation => _owningType.Instantiation;
         protected override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
+
+        public TypeDesc OwningType => _owningType;
 
         protected override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
@@ -155,10 +156,16 @@ namespace ILCompiler.DependencyAnalysis
         }
         public override int Offset => _owningMethod.Context.Target.PointerSize;
         public override bool IsShareable => false;
-
         protected override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         protected override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
+
+        public MethodDesc OwningMethod => _owningMethod;
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            return GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(factory, _owningMethod);
+        }
 
         protected override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
