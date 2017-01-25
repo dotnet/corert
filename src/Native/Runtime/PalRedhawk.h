@@ -498,9 +498,10 @@ typedef enum _EXCEPTION_DISPOSITION {
     ExceptionCollidedUnwind
 } EXCEPTION_DISPOSITION;
 
-#define STATUS_ACCESS_VIOLATION          ((UInt32   )0xC0000005L)    
-#define STATUS_STACK_OVERFLOW            ((UInt32   )0xC00000FDL)    
-#define STATUS_REDHAWK_NULL_REFERENCE    ((UInt32   )0x00000000L)    
+#define STATUS_ACCESS_VIOLATION                     ((UInt32   )0xC0000005L)
+#define STATUS_STACK_OVERFLOW                       ((UInt32   )0xC00000FDL)
+#define STATUS_REDHAWK_NULL_REFERENCE               ((UInt32   )0x00000000L)
+#define STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE ((UInt32   )0x00000042L)
 
 #ifdef PLATFORM_UNIX
 #define NULL_AREA_SIZE                   (4*1024)

@@ -271,10 +271,18 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
 
 #ifndef DACCESS_COMPILE
 
-void StackFrameIterator::InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx)
+void StackFrameIterator::InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ EH ]\n");
     InternalInit(pThreadToWalk, pCtx, EHStackWalkFlags);
+
+    // Counteract m_ControlPC adjustment that will be done by PrepareToYieldFrame
+    // We treat the IP as a return-address and adjust backward when doing EH-related things.  The faulting
+    // instruction IP here will be the start of the faulting instruction and so we have the right IP for
+    // EH-related things already.
+    if (instructionFault)
+        m_ControlPC = AdjustReturnAddressForward(m_ControlPC);
+
     PrepareToYieldFrame();
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -433,7 +441,7 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
         CalculateCurrentMethodState();
         ASSERT(IsValid());
 
-        if ((pExInfo->m_kind == EK_HardwareFault) && (curFlags & RemapHardwareFaultsToSafePoint))
+        if ((pExInfo->m_kind & EK_HardwareFault) && (curFlags & RemapHardwareFaultsToSafePoint))
             m_effectiveSafePointAddress = GetCodeManager()->RemapHardwareFaultToGCSafePoint(&m_methodInfo, m_ControlPC);
     }
     else
@@ -1505,7 +1513,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressForward(PTR_VOID controlPC)
 #ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 2);
 #elif defined(_TARGET_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    return (PTR_VOID)(((PTR_UInt8)controlPC) + 4);
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 1);
 #endif
@@ -1515,7 +1523,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 #ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 2);
 #elif defined(_TARGET_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    return (PTR_VOID)(((PTR_UInt8)controlPC) - 4);
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 1);
 #endif
@@ -1572,7 +1580,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
 #ifndef DACCESS_COMPILE
 
-COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx))
+COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, Boolean instructionFault))
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
@@ -1586,7 +1594,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED
     if (pStackwalkCtx == NULL)
         pThis->InternalInitForStackTrace();
     else
-        pThis->InternalInitForEH(pCurThread, pStackwalkCtx);
+        pThis->InternalInitForEH(pCurThread, pStackwalkCtx, instructionFault);
 
     bool isValid = pThis->IsValid();
     if (isValid)

@@ -929,11 +929,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfilter_d\throwinfilter_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfilter_r\throwinfilter_r.*" />
 
-    <!-- Windows x64 unwinder gets consused by IP in the middle of instruction -->
-    <!-- https://github.com/dotnet/corert/issues/2535 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30126\b30126\b30126.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30128\b30128\b30128.*" />
-
     <!-- Arrays with non-zero lower bounds -->
     <!-- https://github.com/dotnet/corert/issues/2245 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\huge\_il_dbghuge_b\_il_dbghuge_b.*" />

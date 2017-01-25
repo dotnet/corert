@@ -28,9 +28,9 @@ namespace System.Runtime
         internal UIntPtr SP { get { return _regDisplay.SP; } }
         internal UIntPtr FramePointer { get { return _framePointer; } }
 
-        internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx)
+        internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false)
         {
-            return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx);
+            return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault);
         }
 
         internal bool Next()

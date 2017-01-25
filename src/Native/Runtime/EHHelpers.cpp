@@ -367,14 +367,11 @@ static UIntNative UnwindWriteBarrierToCaller(
 #endif
 #if defined(_AMD64_) || defined(_X86_)
     // simulate a ret instruction
-    UIntNative sp = pContext->GetSp();      // get the stack pointer
-    UIntNative adjustedFaultingIP = *(UIntNative *)sp - 5;   // call instruction will be 6 bytes - act as if start of call instruction + 1 were the faulting IP
+    UIntNative sp = pContext->GetSp();
+    UIntNative adjustedFaultingIP = *(UIntNative *)sp;
     pContext->SetSp(sp+sizeof(UIntNative)); // pop the stack
-#elif defined(_ARM_)
-    UIntNative adjustedFaultingIP = pContext->GetLr() - 2;   // bl instruction will be 4 bytes - act as if start of call instruction + 2 were the faulting IP
-#elif defined(_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
-    UIntNative adjustedFaultingIP = -1;
+#elif defined(_ARM_) || defined(_ARM64_)
+    UIntNative adjustedFaultingIP = pContext->GetLr();
 #else
 #error "Unknown Architecture"
 #endif
@@ -390,11 +387,14 @@ Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative fau
     ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress((PTR_VOID)faultingIP);
     if ((pCodeManager != NULL) || (faultCode == STATUS_ACCESS_VIOLATION && InWriteBarrierHelper(faultingIP)))
     {
+        // Make sure that the OS does not use our internal fault codes
+        ASSERT(faultCode != STATUS_REDHAWK_NULL_REFERENCE && faultCode != STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE);
+
         if (faultCode == STATUS_ACCESS_VIOLATION)
         {
             if (faultAddress < NULL_AREA_SIZE)
             {
-                faultCode = STATUS_REDHAWK_NULL_REFERENCE;
+                faultCode = pCodeManager ? STATUS_REDHAWK_NULL_REFERENCE : STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE;
             }
 
             if (pCodeManager == NULL)
@@ -429,10 +429,16 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
     UIntNative faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
     if ((pCodeManager != NULL) || (faultCode == STATUS_ACCESS_VIOLATION && InWriteBarrierHelper(faultingIP)))
     {
+        // Make sure that the OS does not use our internal fault codes
+        ASSERT(faultCode != STATUS_REDHAWK_NULL_REFERENCE && faultCode != STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE);
+
         if (faultCode == STATUS_ACCESS_VIOLATION)
         {
             if (pExPtrs->ExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
-                faultCode = STATUS_REDHAWK_NULL_REFERENCE;
+            {
+                faultCode = pCodeManager ? STATUS_REDHAWK_NULL_REFERENCE : STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE;
+            }
+
             if (pCodeManager == NULL)
             {
                 // we were AV-ing in a write barrier helper - unwind our way to our caller
