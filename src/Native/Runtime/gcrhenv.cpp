@@ -76,6 +76,7 @@ GPTR_IMPL(EEType, g_pFreeObjectEEType);
 #ifndef DACCESS_COMPILE
 
 bool RhInitializeFinalization();
+bool RhStartFinalizerThread();
 void RhEnableFinalization();
 
 // Simplified EEConfig -- It is just a static member, which statically initializes to the default values and
@@ -897,7 +898,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
 #ifdef APP_LOCAL_RUNTIME
     // now is a good opportunity to retry starting the finalizer thread
-    StartFinalizerThread();
+    RhStartFinalizerThread();
 #endif
 }
 

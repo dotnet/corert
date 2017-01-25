@@ -68,7 +68,7 @@ UInt32 WINAPI FinalizerStart(void* pContext)
     return 0;
 }
 
-static bool StartFinalizerThread()
+bool RhStartFinalizerThread()
 {
 #ifdef APP_LOCAL_RUNTIME
 
@@ -119,7 +119,7 @@ bool RhInitializeFinalization()
         return false;
 
     // Create the finalizer thread itself.
-    if (!StartFinalizerThread())
+    if (!RhStartFinalizerThread())
         return false;
 
     return true;
@@ -147,7 +147,7 @@ EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowRe
 #ifdef APP_LOCAL_RUNTIME
         // We may have failed to create the finalizer thread at startup.  
         // Try again now.
-        StartFinalizerThread();
+        RhStartFinalizerThread();
 #endif
 
         // Wait for the finalizer thread to get back to us.
