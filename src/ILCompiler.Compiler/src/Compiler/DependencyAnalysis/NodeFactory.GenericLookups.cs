@@ -27,6 +27,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new TypeHandleGenericLookupResult(type);
                 });
 
+                _methodHandles = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                {
+                    return new MethodHandleGenericLookupResult(method);
+                });
+
                 _methodDictionaries = new NodeCache<MethodDesc, GenericLookupResult>(method =>
                 {
                     return new MethodDictionaryGenericLookupResult(method);
@@ -68,6 +73,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult Type(TypeDesc type)
             {
                 return _typeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<MethodDesc, GenericLookupResult> _methodHandles;
+
+            public GenericLookupResult MethodHandle(MethodDesc method)
+            {
+                return _methodHandles.GetOrAdd(method);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeThreadStaticBaseIndexSymbols;
