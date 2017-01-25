@@ -52,6 +52,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
                     if (os == 'Windows_NT') {
                         // Indicates that a batch script should be run with the build string (see above)
                         batchFile(buildString)
+                        batchFile("tests\\runtest.cmd /multimodule")
 
                         if (configuration == 'Debug') {
                             if (isPR) {
