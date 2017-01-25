@@ -40,14 +40,6 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT
         ; Tell the unwinder that the frame is there now
         .pushframe
 
-        add     rdx, 1  ;; 'faulting IP' += 1, we do this because everywhere else we treat the faulting IP as
-                        ;; a return-address and optionally subtract one when doing EH-related things (but not
-                        ;; subtracting 1 when doing GC-related things).  The fault IP here will be the start
-                        ;; of the faulting instruction, so +1 will point to either the next instruction or the
-                        ;; middle of this instruction.  Either way, when the dispatch / stackwalk code deals
-                        ;; with this address it'll apply a -1 for EH range checks and the GC-related operations
-                        ;; don't need to be precise here because the fault location isn't a GC safe point 
-
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         push_vol_reg    r8                      ;; padding
         push_nonvol_reg r15
