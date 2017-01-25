@@ -198,12 +198,6 @@ namespace System.Runtime
         {
         }
 
-#if ARM
-        private const int c_IPAdjustForHardwareFault = 2;
-#else
-        private const int c_IPAdjustForHardwareFault = 1;
-#endif
-
         internal static unsafe void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
@@ -234,13 +228,6 @@ namespace System.Runtime
             const int contextAlignment = 16;
             byte* pbBuffer = stackalloc byte[sizeof(OSCONTEXT) + contextAlignment];
             void* pContext = PointerAlign(pbBuffer, contextAlignment);
-
-            // We 'normalized' the faulting IP of hardware faults to behave like return addresses.  Undo this
-            // normalization here so that we report the correct thing in the exception context record.
-            if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
-            {
-                exInfo._pExContext->IP = (IntPtr)(((byte*)exInfo._pExContext->IP) - c_IPAdjustForHardwareFault);
-            }
 
             InternalCalls.RhpCopyContextFromExInfo(pContext, sizeof(OSCONTEXT), exInfo._pExContext);
 
@@ -387,6 +374,7 @@ namespace System.Runtime
         private enum HwExceptionCode : uint
         {
             STATUS_REDHAWK_NULL_REFERENCE = 0x00000000u,
+            STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE = 0x00000042u,
 
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
@@ -410,19 +398,20 @@ namespace System.Runtime
             None = 0,
             Throw = 1,
             HardwareFault = 2,
-            // unused: 3
             KindMask = 3,
 
             RethrowFlag = 4,
-            Rethrow = 5,        // RethrowFlag | Throw
-            RethrowFault = 6,   // RethrowFlag | HardwareFault
+
+            SupersededFlag = 8,
+
+            InstructionFaultFlag = 0x10
         }
 
         [StackOnly]
         [StructLayout(LayoutKind.Explicit)]
         public struct ExInfo
         {
-            internal void Init(object exceptionObj)
+            internal void Init(object exceptionObj, bool instructionFault = false)
             {
                 // _pPrevExInfo    -- set by asm helper
                 // _pExContext     -- set by asm helper
@@ -432,6 +421,8 @@ namespace System.Runtime
                 // _frameIter      -- initialized explicitly during dispatch
 
                 _exception = exceptionObj;
+                if (instructionFault)
+                    _kind |= ExKind.InstructionFaultFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
             }
 
@@ -496,11 +487,20 @@ namespace System.Runtime
             InternalCalls.RhpValidateExInfoStack();
 
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
+            bool instructionFault = true;
 
             ExceptionIDs exceptionId;
             switch (exceptionCode)
             {
                 case (uint)HwExceptionCode.STATUS_REDHAWK_NULL_REFERENCE:
+                    exceptionId = ExceptionIDs.NullReference;
+                    break;
+
+                case (uint)HwExceptionCode.STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE:
+                    // The write barrier where the actual fault happened has been unwound already.
+                    // The IP of this fault needs to be treated as return address, not as IP of 
+                    // faulting instruction.
+                    instructionFault = false;
                     exceptionId = ExceptionIDs.NullReference;
                     break;
 
@@ -533,7 +533,7 @@ namespace System.Runtime
 
             Exception exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
 
-            exInfo.Init(exceptionToThrow);
+            exInfo.Init(exceptionToThrow, instructionFault);
             DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
@@ -598,7 +598,7 @@ namespace System.Runtime
             UIntPtr prevFramePtr = UIntPtr.Zero;
             bool unwoundReversePInvoke = false;
 
-            bool isValid = frameIter.Init(exInfo._pExContext);
+            bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
             DebuggerNotify.BeginFirstPass(exceptionObj, frameIter.ControlPC, frameIter.SP);
             for (; isValid; isValid = frameIter.Next(out startIdx, out unwoundReversePInvoke))

@@ -8,7 +8,7 @@ using System.Text;
 
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
-namespace PInvoke
+namespace PInvokeTests
 {
     internal class Program
     {
@@ -24,6 +24,9 @@ namespace PInvoke
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int Inc(ref int value);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern bool GetNextChar(ref char c);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiString(string str);
 
@@ -36,6 +39,9 @@ namespace PInvoke
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SafeHandleTest(SafeMemoryHandle sh1, Int64 sh1Value);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        public static extern int SafeHandleOutTest(out SafeMemoryHandle sh1);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         public static extern bool LastErrorTest();
 
@@ -43,6 +49,7 @@ namespace PInvoke
         {
             TestBlittableType();
             TestBoolean();
+            TestUnichar();
             TestArrays();
             TestByRef();
             TestString();
@@ -51,14 +58,19 @@ namespace PInvoke
             return 100;
         }
 
-        public static void ThrowIfNotEquals<T>(T expected, T actual, string message)
+        public static void ThrowIfNotEquals(int expected, int actual, string message)
         {
-            if (!Object.Equals(expected, actual))
+            if (expected != actual)
             {
                 message += "\nExpected: " + expected + "\n";
                 message += "Actual: " + actual + "\n";
                 throw new Exception(message);
             }
+        }
+
+        public static void ThrowIfNotEquals(bool expected, bool actual, string message)
+        {
+           ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
         }
 
         private static void TestBlittableType()
@@ -72,6 +84,14 @@ namespace PInvoke
            Console.WriteLine("Testing marshalling boolean");
            ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
            ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
+        }
+
+        private static void TestUnichar()
+        {
+            Console.WriteLine("Testing Unichar");
+            char c = 'a';
+            ThrowIfNotEquals(true, GetNextChar(ref c), "Unichar marshalling failed.");
+            ThrowIfNotEquals('b', c, "Unichar marshalling failed.");
         }
 
         private static void TestArrays()
@@ -117,6 +137,12 @@ namespace PInvoke
             long val =  hndIntPtr.ToInt64(); //return the 64-bit value associated with hnd
 
             ThrowIfNotEquals(true, SafeHandleTest(hnd, val), "SafeHandle marshalling failed.");
+
+            Console.WriteLine("Testing marshalling out SafeHandle");
+            SafeMemoryHandle hnd2;
+            int actual = SafeHandleOutTest(out hnd2);
+            int expected = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
+            ThrowIfNotEquals(actual, expected, "SafeHandle out marshalling failed");
         }
     }
 

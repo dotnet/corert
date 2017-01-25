@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetName>$(TestFileName)</TargetName>
-    <TargetExt>.Exe</TargetExt>
+    <TargetExt>.exe</TargetExt>
     <OutputType>Exe</OutputType>
     <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>

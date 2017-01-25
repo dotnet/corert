@@ -761,6 +761,9 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
     case ClasslibFunctionId::UnhandledExceptionHandler:
         pMethod = m_pModuleHeader->Get_UnhandledExceptionHandler();
         break;
+    case ClasslibFunctionId::CheckStaticClassConstruction:
+        pMethod = m_pModuleHeader->Get_CheckStaticClassConstruction();
+        break;
     }
 
     return pMethod;

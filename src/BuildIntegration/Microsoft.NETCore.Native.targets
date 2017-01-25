@@ -79,6 +79,8 @@ See the LICENSE file in the project root for more information.
       <IlcArg Include="@(IlcReference->'-r:%(Identity)')" />
       <IlcArg Condition="$(NativeCodeGen) != ''" Include="--$(NativeCodeGen)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
+      <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
+      <IlcArg Condition="$(DebugSymbols) == 'true'" Include="-g" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
@@ -91,7 +93,7 @@ See the LICENSE file in the project root for more information.
       <TestHost Condition="'$(OS)' != 'Windows_NT'">corerun</TestHost>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(IlcPath)\$(TestHost)&quot; &quot;$(IlcPath)\ilc.exe&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;">
+    <Exec Command="&quot;$(IlcPath)\$(TestHost)&quot; &quot;$(IlcPath)\ilc.dll&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;">
     </Exec>
 
   </Target>

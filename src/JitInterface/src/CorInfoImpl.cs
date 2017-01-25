@@ -805,7 +805,7 @@ namespace Internal.JitInterface
             // transitions in inlined methods today (impCheckForPInvokeCall is not called for inlinees and number of other places
             // depend on it). To get a decent code with this limitation, we mirror CoreCLR behavior: Check
             // whether PInvoke stub is required here, and disable inlining of PInvoke methods in getMethodAttribsInternal.
-            return _compilation.PInvokeILProvider.IsStubRequired(method);
+            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method)).IsStubRequired;
         }
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
@@ -2659,7 +2659,11 @@ namespace Internal.JitInterface
                     // to abort the inlining attempt if the inlinee does any generic lookups.
                     bool inlining = contextMethod != MethodBeingCompiled;
 
-                    if (targetMethod.IsSharedByGenericInstantiations && !inlining)
+                    // If we resolved a constrained call, calling GetRuntimeDeterminedObjectForToken below would
+                    // result in getting back the unresolved target. Don't capture runtime determined dependencies
+                    // in that case and rely on the dependency analysis computing them based on seeing a call to the
+                    // canonical method body.
+                    if (targetMethod.IsSharedByGenericInstantiations && !inlining && !resolvedConstraint)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
@@ -2667,6 +2671,7 @@ namespace Internal.JitInterface
                     }
                     else
                     {
+                        Debug.Assert(!forceUseRuntimeLookup);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                             _compilation.NodeFactory.MethodEntrypoint(targetMethod));
                     }
@@ -3135,10 +3140,14 @@ namespace Internal.JitInterface
 
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
+            // Read the user-defined configuration options.
+            foreach (var flag in _jitConfig.Flags)
+                flags.Set(flag);
+
+            // Set the rest of the flags that don't make sense to expose publically.
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
-            flags.Set(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 

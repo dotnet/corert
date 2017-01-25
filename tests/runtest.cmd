@@ -15,6 +15,7 @@ set CoreRT_CoreCLRTargetsFile=
 :ArgLoop
 if "%1" == "" goto :ArgsDone
 if /i "%1" == "/?" goto :Usage
+if /i "%1" == "/multimodule"    (exit /b 0)
 if /i "%1" == "x64"    (set CoreRT_BuildArch=x64&&shift&goto ArgLoop)
 if /i "%1" == "x86"    (set CoreRT_BuildArch=x86&&shift&goto ArgLoop)
 if /i "%1" == "arm"    (set CoreRT_BuildArch=arm&&shift&goto ArgLoop)
@@ -181,9 +182,9 @@ goto :eof
         )
     )
 
-    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
+    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" !extraArgs! !__SourceFile!.csproj
     echo.
-    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" !extraArgs! !__SourceFile!.csproj
+    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" !extraArgs! !__SourceFile!.csproj
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
@@ -271,7 +272,7 @@ goto :eof
     echo CORE_ROOT IS NOW %CORE_ROOT%
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
  
-    msbuild src\TestWrappersConfig\XUnitTooling.depproj
+    msbuild "/p:RepoLocalBuild=true" src\TestWrappersConfig\XUnitTooling.depproj
     if errorlevel 1 (
         exit /b 1
     )

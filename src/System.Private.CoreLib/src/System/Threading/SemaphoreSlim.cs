@@ -312,7 +312,7 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "totalMilliSeconds", millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -607,7 +607,7 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "totalMilliSeconds", millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
             // Bail early for cancellation

@@ -325,5 +325,25 @@ namespace Internal.TypeSystem
 
             return method;
         }
+
+        /// <summary>
+        /// Scan the type and its base types for an implementation of an interface method. Returns null if no 
+        /// implementation is found.
+        /// </summary>
+        public static MethodDesc ResolveInterfaceMethodTarget(this TypeDesc thisType, MethodDesc interfaceMethodToResolve)
+        {
+            Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
+
+            MethodDesc result = null;
+            TypeDesc currentType = thisType;
+            do
+            {
+                result = currentType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodToResolve);
+                currentType = currentType.BaseType;
+            }
+            while (result == null && currentType != null);
+
+            return result;
+        }
     }
 }

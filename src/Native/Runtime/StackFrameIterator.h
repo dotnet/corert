@@ -8,7 +8,7 @@ typedef DPTR(ExInfo) PTR_ExInfo;
 enum ExKind : UInt8
 {
     EK_HardwareFault = 2,
-    EK_SuperscededFlag  = 8,
+    EK_SupersededFlag  = 8,
 };
 
 struct EHEnum
@@ -17,7 +17,7 @@ struct EHEnum
     EHEnumState m_state;
 };
 
-EXTERN_C Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx);
+EXTERN_C Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, Boolean instructionFault);
 EXTERN_C Boolean FASTCALL RhpSfiNext(StackFrameIterator* pThis, UInt32* puExCollideClauseIdx, Boolean* pfUnwoundReversePInvoke);
 
 struct PInvokeTransitionFrame;
@@ -27,7 +27,7 @@ typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 class StackFrameIterator
 {
     friend class AsmOffsets;
-    friend Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx);
+    friend Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, Boolean instructionFault);
     friend Boolean FASTCALL RhpSfiNext(StackFrameIterator* pThis, UInt32* puExCollideClauseIdx, Boolean* pfUnwoundReversePInvoke);
 
 public:
@@ -76,7 +76,7 @@ private:
 
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, UInt32 dwFlags); // GC stackwalk
     void InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx, UInt32 dwFlags);  // EH and hijack stackwalk, and collided unwind
-    void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx);             // EH stackwalk
+    void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault); // EH stackwalk
     void InternalInitForStackTrace();  // Environment.StackTrace
 
     PTR_VOID HandleExCollide(PTR_ExInfo pExInfo);

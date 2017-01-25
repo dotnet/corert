@@ -34,11 +34,28 @@ namespace ILCompiler.DependencyAnalysis
                     x64Emitter.Builder.Alignment = factory.Target.MinimumFunctionAlignment;
                     x64Emitter.Builder.DefinedSymbols.Add(this);
                     return x64Emitter.Builder.ToObjectData();
+
+                case TargetArchitecture.X86:
+                    X86.X86Emitter x86Emitter = new X86.X86Emitter(factory);
+                    EmitCode(factory, ref x86Emitter, relocsOnly);
+                    x86Emitter.Builder.Alignment = factory.Target.MinimumFunctionAlignment;
+                    x86Emitter.Builder.DefinedSymbols.Add(this);
+                    return x86Emitter.Builder.ToObjectData();
+
+                case TargetArchitecture.ARM:
+                    ARM.ARMEmitter armEmitter = new ARM.ARMEmitter(factory);
+                    EmitCode(factory, ref armEmitter, relocsOnly);
+                    armEmitter.Builder.Alignment = factory.Target.MinimumFunctionAlignment;
+                    armEmitter.Builder.DefinedSymbols.Add(this);
+                    return armEmitter.Builder.ToObjectData();
+
                 default:
                     throw new NotImplementedException();
             }
         }
 
         protected abstract void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly);
+        protected abstract void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly);
+        protected abstract void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly);
     }
 }

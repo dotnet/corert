@@ -107,6 +107,13 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies = dependencies ?? new DependencyList();
                     dependencies.AddRange(exactMethodInstantiationDependencies);
                 }
+
+                if (_method.IsVirtual)
+                {
+                    // Generic virtual methods dependency tracking
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_method), "GVM Dependencies Support"));
+                }
             }
 
             return dependencies;

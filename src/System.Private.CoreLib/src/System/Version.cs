@@ -256,7 +256,7 @@ namespace System
                 return false;
             }
 
-            String[] parsedComponents = version.Split(new char[] { '.' });
+            String[] parsedComponents = version.Split('.');
             int parsedComponentsLength = parsedComponents.Length;
             if ((parsedComponentsLength < 2) || (parsedComponentsLength > 4))
             {

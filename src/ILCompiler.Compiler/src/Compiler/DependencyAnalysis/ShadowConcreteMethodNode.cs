@@ -88,6 +88,9 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     yield return new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
             }
+
+            if (Method.HasInstantiation && Method.IsVirtual)
+                yield return new DependencyListEntry(factory.GVMDependencies(Method), "GVM Dependencies Support for method dictinoary");
         }
 
         protected override string GetName() => $"{Method.ToString()} backed by {CanonicalMethodNode.GetMangledName()}";

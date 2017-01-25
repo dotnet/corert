@@ -12,6 +12,7 @@ namespace Internal.JitInterface
 {
     internal sealed class JitConfigProvider
     {
+        private CorJitFlag[] _jitFlags;
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
 
@@ -20,29 +21,36 @@ namespace Internal.JitInterface
             get;
         }
 
+        public IEnumerable<CorJitFlag> Flags => _jitFlags;
+
         /// <summary>
         /// Creates a new instance of <see cref="JitConfigProvider"/>.
         /// </summary>
         /// <param name="parameters">Name-value pairs separated by an equals sign.</param>
-        public JitConfigProvider(IEnumerable<string> parameters)
+        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
         {
             foreach (var param in parameters)
             {
-                int indexOfEquals = param.IndexOf('=');
-
-                // We're skipping bad parameters without reporting.
-                // This is not a mainstream feature that would need to be friendly.
-                // Besides, to really validate this, we would also need to check that the config name is known.
-                if (indexOfEquals < 1)
-                    continue;
-
-                string name = param.Substring(0, indexOfEquals);
-                string value = param.Substring(indexOfEquals + 1);
-
-                _config[name] = value;
+                _config[param.Key] = param.Value;
             }
 
+            ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
+            foreach (CorJitFlag jitFlag in jitFlags)
+            {
+                jitFlagBuilder.Add(jitFlag);
+            }
+            _jitFlags = jitFlagBuilder.ToArray();
+
             UnmanagedInstance = CreateUnmanagedInstance();
+        }
+
+        public bool HasFlag(CorJitFlag flag)
+        {
+            foreach (CorJitFlag definedFlag in _jitFlags)
+                if (definedFlag == flag)
+                    return true;
+
+            return false;
         }
 
         public int GetIntConfigValue(string name, int defaultValue)

@@ -51,6 +51,15 @@ DLL_EXPORT int __stdcall Inc(int *val)
     return 0;
 }
 
+DLL_EXPORT bool __stdcall GetNextChar(short *value)
+{
+    if (value == NULL)
+        return false;
+
+    *value = *value + 1;
+    return true;
+}
+
 DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
 {
     if (val == NULL)
@@ -115,4 +124,13 @@ DLL_EXPORT bool __stdcall ReleaseMemory(void *mem)
 DLL_EXPORT bool __stdcall SafeHandleTest(HANDLE sh, long shValue)
 {
     return (long)((size_t)(sh)) == shValue;
+}
+
+DLL_EXPORT long __stdcall SafeHandleOutTest(HANDLE **sh)
+{
+    if (sh == NULL) 
+        return -1;
+
+    *sh = (HANDLE *)malloc(100);
+    return (long)((size_t)(*sh));
 }

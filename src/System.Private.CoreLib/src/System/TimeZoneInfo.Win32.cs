@@ -368,7 +368,7 @@ namespace System
 
             if (id == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             }
             if (id.Length == 0 || id.Length > c_maxKeyLength || id.Contains("\0"))
             {
@@ -830,7 +830,7 @@ namespace System
             // filePath   = "C:\Windows\System32\tzres.dll"
             // resourceId = -100
             //
-            string[] resources = resource.Split(new char[] { ',' }, StringSplitOptions.None);
+            string[] resources = resource.Split(',');
             if (resources.Length != 2)
             {
                 return String.Empty;

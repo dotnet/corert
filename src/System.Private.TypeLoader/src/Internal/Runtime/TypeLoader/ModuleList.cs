@@ -608,23 +608,39 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
-        /// Enumerate modules. Optionally specify a module that should be enumerated first
+        /// Enumerate modules.
+        /// </summary>
+        public static ModuleInfoEnumerable EnumerateModules()
+        {
+            return new ModuleInfoEnumerable(Instance._loadedModuleMap, IntPtr.Zero);
+        }
+
+        /// <summary>
+        /// Enumerate modules. Specify a module that should be enumerated first
         /// - this is used as an optimization in cases when a certain binary module is more probable
         /// to contain a certain information.
         /// </summary>
-        /// <param name="preferredModule">Optional handle to the module which should be enumerated first</param>
-        public static ModuleInfoEnumerable EnumerateModules(IntPtr preferredModule = default(IntPtr))
+        /// <param name="preferredModule">Handle to the module which should be enumerated first</param>
+        public static ModuleInfoEnumerable EnumerateModules(IntPtr preferredModule)
         {
             return new ModuleInfoEnumerable(Instance._loadedModuleMap, preferredModule);
         }
 
         /// <summary>
-        /// Enumerate metadata readers. Optionally specify a module that should be enumerated first
+        /// Enumerate metadata readers.
+        /// </summary>
+        public static MetadataReaderEnumerable EnumerateMetadataReaders()
+        {
+            return new MetadataReaderEnumerable(Instance._loadedModuleMap, IntPtr.Zero);
+        }
+
+        /// <summary>
+        /// Enumerate metadata readers. Specify a module that should be enumerated first
         /// - this is used as an optimization in cases when a certain binary module is more probable
         /// to contain a certain information.
         /// </summary>
-        /// <param name="preferredModule">Optional handle to the module which should be enumerated first</param>
-        public static MetadataReaderEnumerable EnumerateMetadataReaders(IntPtr preferredModule = default(IntPtr))
+        /// <param name="preferredModule">Handle to the module which should be enumerated first</param>
+        public static MetadataReaderEnumerable EnumerateMetadataReaders(IntPtr preferredModule)
         {
             return new MetadataReaderEnumerable(Instance._loadedModuleMap, preferredModule);
         }
@@ -632,7 +648,19 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Enumerate module handles (simplified version for code that only needs the module addresses).
         /// </summary>
-        public static ModuleHandleEnumerable Enumerate(IntPtr preferredModule = default(IntPtr))
+        public static ModuleHandleEnumerable Enumerate()
+        {
+            return new ModuleHandleEnumerable(Instance._loadedModuleMap, IntPtr.Zero);
+        }
+
+        /// <summary>
+        /// Enumerate module handles (simplified version for code that only needs the module addresses).
+        /// Specify a module that should be enumerated first
+        /// - this is used as an optimization in cases when a certain binary module is more probable
+        /// to contain a certain information.
+        /// </summary>
+        /// <param name="preferredModule">Handle to the module which should be enumerated first</param>
+        public static ModuleHandleEnumerable Enumerate(IntPtr preferredModule)
         {
             return new ModuleHandleEnumerable(Instance._loadedModuleMap, preferredModule);
         }

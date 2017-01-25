@@ -877,7 +877,7 @@ namespace Internal.Runtime.TypeLoader
             public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
             {
                 if (bitfield == null)
-                    throw new ArgumentNullException("bitfield");
+                    throw new ArgumentNullException(nameof(bitfield));
 
                 if (IsNone)
                     return;

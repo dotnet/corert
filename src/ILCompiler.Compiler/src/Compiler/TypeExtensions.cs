@@ -84,5 +84,20 @@ namespace ILCompiler
                 !method.Signature.IsStatic &&
                 !method.ImplementationType.IsValueType;
         }
+
+
+        /// <summary>
+        /// Gets a value indicating whether this type has any generic virtual methods.
+        /// </summary>
+        public static bool HasGenericVirtualMethod(this TypeDesc type)
+        {
+            foreach (var method in type.GetAllMethods())
+            {
+                if (method.IsVirtual && method.HasInstantiation)
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

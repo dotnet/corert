@@ -16,6 +16,15 @@
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;AMD64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <DefineConstants Condition="'$(METADATA_TYPE_LOADER)' != ''">SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
+    <DefineConstants>FEATURE_INTERPRETER;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(CCCONVERTER_TRACE)' != ''">CCCONVERTER_TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TYPE_LOADER_TRACE)' != ''">TYPE_LOADER_TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TYPE_SYSTEM_SINGLE_THREADED;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
   <!-- Setup the right references -->
   <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
@@ -27,6 +36,8 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
   </ItemGroup>

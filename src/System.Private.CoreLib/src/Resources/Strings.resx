@@ -186,6 +186,9 @@
   <data name="Arg_DlgtNullInst" xml:space="preserve">
     <value>Delegate to an instance method cannot have null 'this'.</value>
   </data>
+  <data name="Arg_DlgtTypeMis" xml:space="preserve">
+    <value>Delegates must be of the same type.</value>
+  </data>
   <data name="Arg_DuplicateWaitObjectException" xml:space="preserve">
     <value>Duplicate objects in argument.</value>
   </data>
@@ -728,6 +731,9 @@
   </data>
   <data name="Argument_TimeZoneInfoInvalidTZif" xml:space="preserve">
     <value>The TZif data structure is corrupt.</value>
+  </data>
+  <data name="Argument_ToExclusiveLessThanFromExclusive" xml:space="preserve">
+    <value>fromInclusive must be less than or equal to toExclusive.</value>
   </data>
   <data name="Argument_TransitionTimesAreIdentical" xml:space="preserve">
     <value>The DaylightTransitionStart property must not equal the DaylightTransitionEnd property.</value>
@@ -2097,5 +2103,38 @@
   </data>
   <data name="Arg_MissingManifestResourceException" xml:space="preserve">
     <value>Unable to find manifest resource.</value>
+  </data>
+  <data name="Serialization_MissingKeys" xml:space="preserve">
+    <value>The keys for this dictionary are missing.</value>
+  </data>
+  <data name="Serialization_NullKey" xml:space="preserve"> 
+    <value>One of the serialized keys is null.</value>
+  </data> 
+  <data name="NotSupported_KeyCollectionSet" xml:space="preserve">
+    <value>Mutating a key collection derived from a dictionary is not allowed.</value>
+  </data>
+  <data name="NotSupported_ValueCollectionSet" xml:space="preserve">
+    <value>Mutating a value collection derived from a dictionary is not allowed.</value>
+  </data>
+  <data name="IO_IO_StreamTooLong" xml:space="preserve">
+    <value>Stream was too long.</value>
+  </data>
+  <data name="UnauthorizedAccess_MemStreamBuffer" xml:space="preserve">
+    <value>MemoryStream's internal buffer cannot be accessed.</value>
+  </data>
+  <data name="NotSupported_MemStreamNotExpandable" xml:space="preserve">
+    <value>Memory stream is not expandable.</value>
+  </data>
+  <data name="IO_IO_SeekBeforeBegin" xml:space="preserve">
+    <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="ArgumentNull_Stream" xml:space="preserve">
+    <value>Stream cannot be null.</value>
+  </data>
+  <data name="IO_IO_InvalidStringLen_Len" xml:space="preserve">
+    <value>BinaryReader encountered an invalid string length of {0} characters.</value>
+  </data>
+  <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
+    <value>The number of bytes requested does not fit into BinaryReader's internal buffer.</value>
   </data>
 </root>

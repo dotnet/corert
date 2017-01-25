@@ -2,11 +2,15 @@
 
 usage()
 {
-    echo "Usage: $0 [OS] [arch] [flavor] [-extrepo] [-buildextrepo] [-mode] [-runtest]"
+    echo "Usage: $0 [OS] [arch] [flavor] [-mode] [-runtest] [-coreclr <subset>]"
     echo "    -mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit"
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
-    echo "    -extrepo      : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests"
-    echo "    -buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true"
+    echo "    -coreclr      : Download and run the CoreCLR repo tests"
+    echo ""
+    echo "    --- CoreCLR Subset ---"
+    echo "       top200     : Runs broad coverage / CI validation (~200 tests)."
+    echo "       knowngood  : Runs tests known to pass on CoreRT (~6000 tests)."
+    echo "       all        : Runs all tests. There will be many failures (~7000 tests)."
     exit 1
 }
 
@@ -34,8 +38,8 @@ run_test_dir()
     rm -rf ${__dir_path}/bin ${__dir_path}/obj
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
-    echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} ${__extra_args} ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} ${__extra_args} ${__dir_path}/${__filename}.csproj
+    echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:RepoLocalBuild=true ${__extra_args} ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:RepoLocalBuild=true ${__extra_args} ${__dir_path}/${__filename}.csproj
 
     runtest ${__dir_path} ${__filename}
     local __exitcode=$?
@@ -55,14 +59,69 @@ run_test_dir()
     return $?
 }
 
+restore_coreclr_tests()
+{
+    CoreRT_Test_Download_Semaphore=${CoreRT_TestExtRepo}/init-tests.completed
+
+    if [ -e ${CoreRT_Test_Download_Semaphore} ]; then
+        echo "Tests are already initialized."
+        return 0
+    fi
+
+    if [ -d ${CoreRT_TestExtRepo} ]; then
+        rm -r ${CoreRT_TestExtRepo}
+    fi
+    mkdir -p ${CoreRT_TestExtRepo}
+    
+    echo "Restoring tests (this may take a few minutes).."
+    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/../CoreCLRTestsURL.txt)
+    TESTS_LOCAL_ZIP=${CoreRT_TestExtRepo}/tests.zip
+    curl --retry 10 --retry-delay 5 -sSL -o ${TESTS_LOCAL_ZIP} ${TESTS_REMOTE_URL}
+
+    unzip -q ${TESTS_LOCAL_ZIP} -d ${CoreRT_TestExtRepo}
+
+    echo "CoreCLR tests restored from ${TESTS_REMOTE_URL}" >> ${CoreRT_Test_Download_Semaphore}
+}
+
+run_coreclr_tests()
+{
+    if [ -z ${CoreRT_TestExtRepo} ]; then
+        CoreRT_TestExtRepo=${CoreRT_TestRoot}/../tests_downloaded/CoreCLR
+    fi
+
+    restore_coreclr_tests
+
+    if [ ! -d ${CoreRT_TestExtRepo} ]; then
+        echo "Error: ${CoreRT_TestExtRepo} does not exist."
+        exit -1
+    fi
+
+    XunitTestBinBase=${CoreRT_TestExtRepo}
+    CORE_ROOT=${CoreRT_TestRoot}/CoreCLR/runtest
+    pushd ${CoreRT_TestRoot}/CoreCLR/runtest
+
+    export CoreRT_TestRoot
+
+    CoreRT_TestSelectionArg=
+    if [ "$SelectedTests" = "top200" ]; then
+        CoreRT_TestSelectionArg="--playlist=${CoreRT_TestRoot}/Top200.unix.txt"
+    elif [ "$SelectedTests" = "knowngood" ]; then
+        # Todo: Build the list of tests that pass
+        CoreRT_TestSelectionArg=
+    elif [ "$SelectedTests" = "all" ]; then
+        CoreRT_TestSelectionArg=
+    fi
+
+    echo ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir
+    ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir
+}
+
 CoreRT_TestRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CoreRT_CliBinDir=${CoreRT_TestRoot}/../Tools/dotnetcli
 CoreRT_BuildArch=x64
 CoreRT_BuildType=Debug
 CoreRT_TestRun=true
 CoreRT_TestCompileMode=ryujit
-CoreRT_TestExtRepo=
-CoreRT_BuildExtRepo=
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -89,10 +148,6 @@ while [ "$1" != "" ]; do
         release)
             CoreRT_BuildType=Release
             ;;
-        -extrepo)
-            shift
-            CoreRT_TestExtRepo=$1
-            ;;
         -mode)
             shift
             CoreRT_TestCompileMode=$1
@@ -104,6 +159,18 @@ while [ "$1" != "" ]; do
         -dotnetclipath) 
             shift
             CoreRT_CliBinDir=$1
+            ;;
+        -coreclr)
+            CoreRT_RunCoreCLRTests=true;
+            shift
+            SelectedTests=$1
+
+            if [ -z ${SelectedTests} ]; then
+                SelectedTests=top200
+            elif [ "${SelectedTests}" != "all" ] && [ "${SelectedTests}" != "top200" ] && [ "${SelectedTests}" != "knowngood" ]; then
+                echo "Error: Invalid CoreCLR test selection."
+                exit -1
+            fi
             ;;
         *)
             ;;
@@ -118,9 +185,18 @@ __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
 __LogDir=${CoreRT_TestRoot}/../bin/Logs/${__BuildStr}/tests
 __build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 
+if [ ! -d $__LogDir ]; then
+    mkdir -p $__LogDir
+fi
+
 if [ ! -d ${CoreRT_ToolchainDir} ]; then
     echo "Toolchain not found in ${CoreRT_ToolchainDir}"
     exit -1
+fi
+
+if [ ${CoreRT_RunCoreCLRTests} ]; then
+    run_coreclr_tests
+    exit $?
 fi
 
 __CppTotalTests=0

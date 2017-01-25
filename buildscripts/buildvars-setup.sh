@@ -149,7 +149,7 @@ export __UnprocessedBuildArgs=
 export __CleanBuild=0
 export __VerboseBuild=0
 export __ClangMajorVersion=3
-export __ClangMinorVersion=5
+export __ClangMinorVersion=9
 export __CrossBuild=0
 
 
@@ -190,10 +190,6 @@ while [ "$1" != "" ]; do
         verbose)
             export __VerboseBuild=1
             ;;
-        clang3.5)
-            export __ClangMajorVersion=3
-            export __ClangMinorVersion=5
-            ;;
         clang3.6)
             export __ClangMajorVersion=3
             export __ClangMinorVersion=6
@@ -201,6 +197,14 @@ while [ "$1" != "" ]; do
         clang3.7)
             export __ClangMajorVersion=3
             export __ClangMinorVersion=7
+            ;;
+        clang3.8)
+            export __ClangMajorVersion=3
+            export __ClangMinorVersion=8
+            ;;
+        clang3.9)
+            export __ClangMajorVersion=3
+            export __ClangMinorVersion=9
             ;;
         cross)
             export __CrossBuild=1

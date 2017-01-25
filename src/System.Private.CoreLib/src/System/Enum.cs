@@ -888,7 +888,7 @@ namespace System
 
             if (value == null)
             {
-                exception = new ArgumentNullException("null");
+                exception = new ArgumentNullException(nameof(value));
                 return false;
             }
 

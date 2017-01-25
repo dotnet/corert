@@ -45,43 +45,7 @@ public:
     // is in progress, false otherwise.
     inline static BOOL IsGCInProgress(BOOL bConsiderGCStart = FALSE)
     {
-        WRAPPER_NO_CONTRACT;
-
-        return (IsGCHeapInitialized() ? GetGCHeap()->IsGCInProgressHelper(bConsiderGCStart) : false);
-    }
-
-    // Returns true if we should be competing marking for statics. This
-    // influences the behavior of `GCToEEInterface::GcScanRoots`.
-    inline static BOOL MarkShouldCompeteForStatics()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return IsServerHeap() && g_SystemInfo.dwNumberOfProcessors >= 2;
-    }
-
-    // Waits until a GC is complete, if the heap has been initialized.
-    inline static void WaitForGCCompletion(BOOL bConsiderGCStart = FALSE)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (IsGCHeapInitialized())
-            GetGCHeap()->WaitUntilGCComplete(bConsiderGCStart);
-    }
-
-    // Returns true if we should be using allocation contexts, false otherwise.
-    inline static bool UseAllocationContexts()
-    {
-        WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_REDHAWK
-        // SIMPLIFY:  only use allocation contexts
-        return true;
-#else
-#if defined(_TARGET_ARM_) || defined(FEATURE_PAL)
-        return true;
-#else
-        return ((IsServerHeap() ? true : (g_SystemInfo.dwNumberOfProcessors >= 2)));
-#endif 
-#endif 
+        return GetGCHeap()->IsGCInProgressHelper(bConsiderGCStart);
     }
 
     // Returns true if the held GC heap is a Server GC heap, false otherwise.

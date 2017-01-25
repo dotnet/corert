@@ -37,8 +37,8 @@ if "%CoreRT_BuildArch%" == "x64" (
     call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"
 )
 
-echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" %TestFolder%\Test.csproj
-msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" %TestFolder%\Test.csproj
+echo msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" %TestFolder%\Test.csproj
+msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" %TestFolder%\Test.csproj
 if errorlevel 1 (
     set TestExitCode=!ERRORLEVEL!
     goto :Cleanup
