@@ -36,8 +36,10 @@ namespace Internal.Runtime.TypeLoader
 #endif
         private delegate IntPtr RuntimeCacheFuncSignatureDel(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult);
 
+#if !CORERT
         [DllImport("*", ExactSpelling = true, EntryPoint = "ConstrainedCallSupport_GetStubs")]
         private extern static unsafe void ConstrainedCallSupport_GetStubs(out IntPtr constrainedCallSupport_DerefThisAndCall_CommonCallingStub, out IntPtr constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
+#endif
 
         private static IntPtr s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub;
         private static IntPtr s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub;

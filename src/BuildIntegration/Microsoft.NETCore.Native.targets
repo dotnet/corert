@@ -46,9 +46,12 @@ See the LICENSE file in the project root for more information.
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == ''">IlcCompile</LinkNativeDependsOn>
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'cpp'">CppCompile</LinkNativeDependsOn>
+
+    <FrameworkLibPath Condition="'$(FrameworkLibPath)' == ''">$(NativeOutputPath)</FrameworkLibPath>
+    <FrameworkObjPath Condition="'$(FrameworkObjPath)' == ''">$(NativeIntermediateOutputPath)</FrameworkObjPath>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="$(BuildingFrameworkLibrary) != 'true'">
     <ManagedBinary Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
   </ItemGroup>
 
@@ -57,25 +60,36 @@ See the LICENSE file in the project root for more information.
     <IlcReference Include="$(IlcPath)\framework\*.dll" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <IlcCompileDependsOn Condition="'$(IlcCompileDependsOn)'==''">Compile</IlcCompileDependsOn>
+  <PropertyGroup Condition="'$(IlcCompileDependsOn)'==''">
+    <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile</IlcCompileDependsOn>
+    <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
   </PropertyGroup>
 
-  <Target Name="IlcFramework">
+  <!--
+    BuildFrameworkLib is invoked before IlcCompile in multi-module builds to 
+    produce the shared framework library on demand
+  -->
+  <Target Name="BuildFrameworkLib">
     <ItemGroup>
-      <ManagedBinary Include="@(IlcReference)" />
+      <ProjectToBuild Include="$(MSBuildThisFileDirectory)\BuildFrameworkNativeObjects.proj">
+        <AdditionalProperties>
+          IntermediateOutputPath=$(IntermediateOutputPath);
+          FrameworkLibPath=$(FrameworkLibPath);
+          FrameworkObjPath=$(FrameworkObjPath)
+        </AdditionalProperties>
+      </ProjectToBuild>
     </ItemGroup>
-
+    <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="true" />
   </Target>
 
   <Target Name="IlcCompile" 
       Inputs="@(ManagedBinary)"
-      Outputs="$(NativeIntermediateOutputPath)%(Filename)$(IlcOutputFileExt)"
+      Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
     <ItemGroup>
       <IlcArg Include="@(ManagedBinary)" />
-      <IlcArg Include="-o:$(NativeIntermediateOutputPath)%(Filename)$(IlcOutputFileExt)" />
+      <IlcArg Include="-o:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)" />
       <IlcArg Include="@(IlcReference->'-r:%(Identity)')" />
       <IlcArg Condition="$(NativeCodeGen) != ''" Include="--$(NativeCodeGen)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
@@ -120,7 +134,7 @@ See the LICENSE file in the project root for more information.
   </Target>
 
   <Target Name="LinkNative"
-      Inputs="$(NativeObject)"
+      Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(NativeBinary)"
       DependsOnTargets="$(LinkNativeDependsOn)">
 
@@ -135,5 +149,19 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
     <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  </Target>
+
+  <Target Name="CreateLib"
+    Inputs="@(LibInputs)"
+    Outputs="$(SharedLibrary)"
+    DependsOnTargets="$(CreateLibDependsOn)">
+
+    <ItemGroup>
+      <CustomLibArg Include="@(LibInputs->'%(Identity)')" />
+      <CustomLibArg Include="/out:$(SharedLibrary)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="$(CppLibCreator) @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
 </Project>

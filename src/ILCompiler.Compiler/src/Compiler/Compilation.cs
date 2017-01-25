@@ -65,9 +65,6 @@ namespace ILCompiler
             // https://github.com/dotnet/corert/issues/2454
             // https://github.com/dotnet/corert/issues/2149
             if (this is CppCodegenCompilation) forceLazyPInvokeResolution = false;
-            // TODO: Workaround missing PInvokes with multifile compilation
-            // https://github.com/dotnet/corert/issues/2454
-            if (!nodeFactory.CompilationModuleGroup.IsSingleFileCompilation) forceLazyPInvokeResolution = true;
             PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution));
 
             _methodILCache = new ILProvider(PInvokeILProvider);

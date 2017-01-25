@@ -772,7 +772,8 @@ namespace ILCompiler.DependencyAnalysis
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
 
                     // Build CFI map (Unix) or publish unwind blob (Windows).
-                    objectWriter.BuildCFIMap(factory, node);
+                    if (!objectWriter.ShouldShareSymbol(node))
+                        objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);

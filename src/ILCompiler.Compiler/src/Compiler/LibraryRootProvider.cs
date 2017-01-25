@@ -53,7 +53,7 @@ namespace ILCompiler
             foreach (MethodDesc method in type.GetMethods())
             {
                 // Skip methods with no IL and uninstantiated generic methods
-                if (method.IsIntrinsic || method.IsAbstract || method.HasInstantiation)
+                if (method.IsAbstract || method.HasInstantiation)
                     continue;
 
                 if (method.IsInternalCall)
