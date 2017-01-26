@@ -62,6 +62,7 @@ namespace ILCompiler
         {
             Debug.Assert(targetMethod.IsSharedByGenericInstantiations);
             Debug.Assert(!targetMethod.Signature.IsStatic);
+            Debug.Assert(!targetMethod.HasInstantiation);
 
             TypeDesc owningType = targetMethod.OwningType;
             Debug.Assert(owningType.IsValueType);

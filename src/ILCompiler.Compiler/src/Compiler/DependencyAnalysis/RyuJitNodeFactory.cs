@@ -51,13 +51,19 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
+            Debug.Assert(!method.Signature.IsStatic);
+
+            if (method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
             {
-                // We need an unboxing and instantiating stub.
+                // Unboxing stubs to canonical instance methods need a special unboxing stub that unboxes
+                // 'this' and also provides an instantiation argument (we do a calling convention conversion).
+                // We don't do this for generic instance methods though because they don't use the EEType
+                // for the generic context anyway.
                 return new MethodCodeNode(TypeSystemContext.GetSpecialUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
             }
             else
             {
+                // Otherwise we just unbox 'this' and don't touch anything else.
                 return new UnboxingStubNode(method);
             }
         }
