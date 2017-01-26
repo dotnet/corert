@@ -4,32 +4,81 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
 
 using Debug = System.Diagnostics.Debug;
-using System.Text;
+
+//
+// Functionality related to instantiating unboxing thunks
+//
+// To support calling canonical interface methods on generic valuetypes,
+// the compiler needs to generate unboxing+instantiating thunks that bridge
+// the difference between the two calling conventions.
+//
+// As a refresher:
+// * Instance methods on shared generic valuetypes expect two arguments
+//   (aside from the arguments declared in the signature): a ByRef to the
+//   first byte of the value of the valuetype (this), and a generic context
+//   argument (EEType)
+// * Interface calls expect 'this' to be a reference type (with the generic
+//   context to be inferred from 'this' by the callee).
+//
+// Instantiating and unboxing stubs bridge this by extracting a managed
+// pointer out of a boxed valuetype, along with the EEType of the boxed
+// valuetype (to provide the generic context) before dispatching to the
+// instance method with the different calling convention.
+//
+// We compile them by:
+// * Pretending the unboxing stub is an instance method on a reference type
+//   with the same layout as a boxed valuetype (this matches the calling
+//   convention expected by the caller).
+// * Having the unboxing stub load the m_pEEType field (to get generic
+//   context) and a byref to the actual value (to get a 'this' expected by
+//   valuetype methods)
+// * Generating a call to a fake instance method on the valuetype that has
+//   the hidden (generic context) argument explicitly present in the
+//   signature. We need a fake method to be able to refer to the hidden parameter
+//   from IL.
+//
+// At a later stage (once codegen is done), we replace the references to the
+// fake instance method with the real instance method. Their signatures after
+// compilation is identical.
+//
 
 namespace ILCompiler
-
 {
     // Contains functionality related to pseudotypes representing boxed instances of value types
     partial class CompilerTypeSystemContext
     {
+        /// <summary>
+        /// For a shared (canonical) instance method on a generic valuetype, gets a method that can be used to call the
+        /// method given a boxed version of the generic valuetype as 'this' pointer.
+        /// </summary>
         public MethodDesc GetSpecialUnboxingThunk(MethodDesc targetMethod, ModuleDesc ownerModuleOfThunk)
         {
+            Debug.Assert(targetMethod.IsSharedByGenericInstantiations);
+            Debug.Assert(!targetMethod.Signature.IsStatic);
+
             TypeDesc owningType = targetMethod.OwningType;
+            Debug.Assert(owningType.IsValueType);
+
             var owningTypeDefinition = (MetadataType)owningType.GetTypeDefinition();
 
+            // Get a reference type that has the same layout as the boxed valuetype.
             var typeKey = new BoxedValuetypeHashtableKey(owningTypeDefinition, ownerModuleOfThunk);
             BoxedValueType boxedTypeDefinition = _boxedValuetypeHashtable.GetOrCreateValue(typeKey);
 
+            // Get a method on the reference type with the same signature as the target method (but different
+            // calling convention, since 'this' will be a reference type).
             var targetMethodDefinition = targetMethod.GetTypicalMethodDefinition();
             var methodKey = new UnboxingThunkHashtableKey(targetMethodDefinition, boxedTypeDefinition);
             GenericUnboxingThunk thunkDefinition = _unboxingThunkHashtable.GetOrCreateValue(methodKey);
 
+            // Find the thunk on the instantiated version of the reference type.
             Debug.Assert(owningType != owningTypeDefinition);
             InstantiatedType boxedType = boxedTypeDefinition.MakeInstantiatedType(owningType.Instantiation);
 
@@ -39,11 +88,17 @@ namespace ILCompiler
             return thunk;
         }
 
+        /// <summary>
+        /// Returns true of <paramref name="method"/> is a standin method for unboxing thunk target.
+        /// </summary>
         public bool IsSpecialUnboxingThunkTargetMethod(MethodDesc method)
         {
             return method.GetTypicalMethodDefinition().GetType() == typeof(ValueTypeInstanceMethodWithHiddenParameter);
         }
 
+        /// <summary>
+        /// Returns the real target method of an unboxing stub.
+        /// </summary>
         public MethodDesc GetRealSpecialUnboxingThunkTargetMethod(MethodDesc method)
         {
             MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
@@ -132,6 +187,7 @@ namespace ILCompiler
 
         /// <summary>
         /// A type with an identical layout to the layout of a boxed value type.
+        /// The type has a single field of the type of the valuetype it represents.
         /// </summary>
         private class BoxedValueType : MetadataType
         {
@@ -149,6 +205,8 @@ namespace ILCompiler
             {
                 get
                 {
+                    // Mangle the namespace in the hopes that it won't conflict with anything else.
+
                     StringBuilder sb = new StringBuilder();
 
                     ArrayBuilder<string> prefixes = new ArrayBuilder<string>();
@@ -259,6 +317,9 @@ namespace ILCompiler
                 yield return BoxedValue;
             }
 
+            /// <summary>
+            /// Synthetic field on <see cref="BoxedValueType"/>.
+            /// </summary>
             private class BoxedValueField : FieldDesc
             {
                 private BoxedValueType _owningType;
@@ -281,6 +342,9 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// Represents a thunk to call shared instance method on boxed valuetypes.
+        /// </summary>
         private class GenericUnboxingThunk : ILStubMethod
         {
             private MethodDesc _targetMethod;
@@ -321,23 +385,24 @@ namespace ILCompiler
                 FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
                 FieldDesc boxedValueField = _owningType.BoxedValue.InstantiateAsOpen();
 
+                // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldflda, emit.NewToken(boxedValueField));
 
+                // Load the EEType of the boxed valuetype (this is the hidden generic context parameter expected
+                // by the (canonical) instance method, but normally not part of the signature in IL).
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(eeTypeField));
 
+                // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
                 {
                     codeStream.EmitLdArg(i + 1);
                 }
 
-                TypeDesc[] targetTypeInstantiation = new TypeDesc[OwningType.Instantiation.Length];
-                for (int i = 0; i < OwningType.Instantiation.Length; i++)
-                    targetTypeInstantiation[i] = Context.GetSignatureVariable(i, false);
-
-                InstantiatedType targetType = Context.GetInstantiatedType((MetadataType)_nakedTargetMethod.OwningType, new Instantiation(targetTypeInstantiation));
-
+                // Call an instance method on the target valuetype that has a fake instantiation parameter
+                // in it's signature. This will be swapped by the actual instance method after codegen is done.
+                InstantiatedType targetType = (InstantiatedType)_nakedTargetMethod.OwningType.InstantiateAsOpen();
                 MethodDesc targetMethod = Context.GetMethodForInstantiatedType(_nakedTargetMethod, targetType);
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(targetMethod));
@@ -347,6 +412,11 @@ namespace ILCompiler
             }
         }
 
+        /// <summary>
+        /// Represents an instance method on a generic valuetype with an explicit instantiation parameter in the
+        /// signature. This is so that we can refer to the parameter from IL. References to this method will
+        /// be replaced by the actual instance method after codegen is done.
+        /// </summary>
         internal class ValueTypeInstanceMethodWithHiddenParameter : MethodDesc
         {
             private MethodDesc _methodRepresented;
@@ -362,7 +432,9 @@ namespace ILCompiler
 
             public MethodDesc MethodRepresented => _methodRepresented;
 
+            // We really don't want this method to be inlined.
             public override bool IsNoInlining => true;
+
             public override TypeSystemContext Context => _methodRepresented.Context;
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
@@ -376,9 +448,11 @@ namespace ILCompiler
                     {
                         TypeDesc[] parameters = new TypeDesc[_methodRepresented.Signature.Length + 1];
 
+                        // Shared instance methods on generic valuetypes have a hidden parameter with the generic context.
+                        // We add it to the signature so that we can refer to it from IL.
                         parameters[0] = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType").FieldType;
                         for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                            parameters[i + 1] = _methodRepresented.Signature[0];
+                            parameters[i + 1] = _methodRepresented.Signature[i];
 
                         _signature = new MethodSignature(_methodRepresented.Signature.Flags,
                             _methodRepresented.Signature.GenericParameterCount,
