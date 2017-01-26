@@ -61,6 +61,34 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// Generic lookup result that points to a RuntimeMethodHandle.
+    /// </summary>
+    internal sealed class MethodHandleGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public MethodHandleGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod, "Concrete method in a generic dictionary?");
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.RuntimeMethodHandle(instantiatedMethod);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("MethodHandle_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"MethodHandle: {_method}";
+    }
+
+    /// <summary>
     /// Generic lookup result that points to a method dictionary.
     /// </summary>
     internal sealed class MethodDictionaryGenericLookupResult : GenericLookupResult
@@ -81,11 +109,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("MethodHandle_");
+            sb.Append("MethodDictionary_");
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
-        public override string ToString() => $"MethodHandle: {_method}";
+        public override string ToString() => $"MethodDictionary: {_method}";
     }
 
     /// <summary>

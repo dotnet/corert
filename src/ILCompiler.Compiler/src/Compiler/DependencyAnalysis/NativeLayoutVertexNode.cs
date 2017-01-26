@@ -111,8 +111,11 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(new DependencyListEntry(_containingTypeSig, "NativeLayoutLdTokenVertexNode containing type signature"));
             dependencies.Add(new DependencyListEntry(_methodSig, "NativeLayoutLdTokenVertexNode method signature"));
-            foreach (var arg in _instantiationArgsSig)
-                dependencies.Add(new DependencyListEntry(arg, "NativeLayoutLdTokenVertexNode instantiation argument signature"));
+            if (_method.HasInstantiation)
+            {
+                foreach (var arg in _instantiationArgsSig)
+                    dependencies.Add(new DependencyListEntry(arg, "NativeLayoutLdTokenVertexNode instantiation argument signature"));
+            }
 
             return dependencies;
         }

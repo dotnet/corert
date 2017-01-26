@@ -2332,11 +2332,19 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    throw new NotImplementedException("LDTOKEN Method");
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
+                        pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeMethodHandle(md));
+                    else
+                        throw new NotImplementedException();
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
+                        pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                    else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method)
+                        pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
+                    else
+                        throw new NotImplementedException();
                 }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
