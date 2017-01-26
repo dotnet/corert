@@ -660,6 +660,48 @@ namespace System
             return (TEnum)result;
         }
 
+        //
+        // Non-boxing overloads for Enum.ToObject().
+        //
+        // The underlying integer type of the enum does not have to match the type of "value." If
+        // the enum type is larger, this api does a value-preserving widening if possible (or a 2's complement
+        // conversion if not.) If the enum type is smaller, the api discards the higher order bits.
+        // Either way, no exception is thrown upon overflow.
+        //
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, sbyte value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, byte value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, ushort value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, short value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, uint value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, int value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, ulong value) => ToObjectWorker(enumType, (long)value);
+        public static object ToObject(Type enumType, long value) => ToObjectWorker(enumType, value);
+
+        // Common helper for the non-boxing Enum.ToObject() overloads.
+        private static object ToObjectWorker(Type enumType, long value)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+
+            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
+            if (!enumEEType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+
+            unsafe
+            {
+                byte* pValue = (byte*)&value;
+                AdjustForEndianness(ref pValue, enumEEType);
+                return RuntimeImports.RhBox(enumEEType, &pValue);
+            }
+        }
+
         public static unsafe Object ToObject(Type enumType, Object value)
         {
             if (enumType == null)
@@ -1086,6 +1128,40 @@ namespace System
             }
         }
 
+        [Conditional("BIGENDIAN")]
+        private static unsafe void AdjustForEndianness(ref byte* pValue, EETypePtr enumEEType)
+        {
+            // On Debug builds, include the big-endian code to help deter bitrot (the "Conditional("BIGENDIAN")" will prevent it from executing on little-endian). 
+            // On Release builds, exclude code to deter IL bloat and toolchain work.
+#if BIGENDIAN || DEBUG
+            RuntimeImports.RhCorElementType corElementType = enumEEType.CorElementType;
+            switch (corElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    pValue += sizeof(long) - sizeof(byte);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    pValue += sizeof(long) - sizeof(short);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    pValue += sizeof(long) - sizeof(int);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    break;
+
+                default:
+                    throw new NotSupportedException();
+            }
+#endif //BIGENDIAN || DEBUG
+        }
+
         //
         // Sort comparer for NamesAndValues
         //
@@ -1140,7 +1216,7 @@ namespace System
         private static EnumInfoUnifier s_enumInfoCache = new EnumInfoUnifier();
 
 
-        #region IConvertible
+#region IConvertible
         TypeCode IConvertible.GetTypeCode()
         {
             Type enumType = this.GetType();
@@ -1289,7 +1365,7 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
-        #endregion
+#endregion
     }
 }
 
