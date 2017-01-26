@@ -32,4 +32,5 @@ namespace Internal.Runtime.TypeLoader
         public uint MetadataToken;
         public uint VTableOffset;
     }
+#endif
 }
