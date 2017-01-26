@@ -662,7 +662,7 @@ namespace System.Runtime
 
             exInfo._passNumber = 2;
             startIdx = MaxTryRegionIdx;
-            isValid = frameIter.Init(exInfo._pExContext);
+            isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
             for (; isValid && ((byte*)frameIter.SP <= (byte*)handlingFrameSP); isValid = frameIter.Next(out startIdx))
             {
                 Debug.Assert(isValid, "second-pass EH unwind failed unexpectedly");
