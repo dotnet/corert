@@ -26,7 +26,7 @@ namespace Internal.Runtime.TypeLoader
     /// This class represents basic information about a native binary module including its
     /// metadata.
     /// </summary>
-    public sealed unsafe class ModuleInfo
+    public unsafe class ModuleInfo
     {
         /// <summary>
         /// Module handle is equal to its starting virtual address in memory (i.e. it points
@@ -49,18 +49,11 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         internal ModuleType ModuleType { get; private set; }
 
-#if ECMA_METADATA_SUPPORT
-        /// <summary>
-        /// Ecma PE data for this module.
-        /// </summary>
-        public PEInfo EcmaPEInfo { get; private set; }
-#endif
-
         /// <summary>
         /// Initialize module info and construct per-module metadata reader.
         /// </summary>
         /// <param name="moduleHandle">Handle (address) of module to initialize</param>
-        internal ModuleInfo(IntPtr moduleHandle, ModuleType moduleType, object peinfo)
+        internal ModuleInfo(IntPtr moduleHandle, ModuleType moduleType)
         {
             Handle = moduleHandle;
             ModuleType = moduleType;
@@ -75,12 +68,6 @@ namespace Internal.Runtime.TypeLoader
                     MetadataReader = new MetadataReader((IntPtr)pBlob, (int)cbBlob);
                 }
             }
-#if ECMA_METADATA_SUPPORT
-            else
-            {
-                EcmaPEInfo = (PEInfo)peinfo;
-            }
-#endif
 
             DynamicModule* dynamicModulePtr = (DynamicModule*)MemoryHelpers.AllocateMemory(sizeof(DynamicModule));
             dynamicModulePtr->CbSize = DynamicModule.DynamicModuleSize;
@@ -454,6 +441,8 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         private volatile ModuleMap _loadedModuleMap;
 
+        internal ModuleMap GetLoadedModuleMapInternal() { return _loadedModuleMap; }
+
         /// <summary>
         /// List of callbacks to execute when a module gets registered.
         /// </summary>
@@ -555,7 +544,7 @@ namespace Internal.Runtime.TypeLoader
 
                 for (int newModuleIndex = 0; newModuleIndex < newModuleHandles.Count; newModuleIndex++)
                 {
-                    ModuleInfo newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType, null);
+                    ModuleInfo newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType);
 
                     updatedModules[oldModuleCount + newModuleIndex] = newModuleInfo;
 
@@ -676,31 +665,6 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(false);
             return null;
         }
-
-#if ECMA_METADATA_SUPPORT
-        /// <summary>
-        /// Locate the containing module for a given metadata reader. Assert when not found.
-        /// </summary>
-        /// <param name="reader">Metadata reader to look up</param>
-        /// <returns>Module handle of the module containing the given reader</returns>
-        public ModuleInfo GetModuleInfoForMetadataReader(System.Reflection.Metadata.MetadataReader reader)
-        {
-            foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
-            {
-                if (moduleInfo.EcmaPEInfo == null)
-                    continue;
-                
-                if (moduleInfo.EcmaPEInfo.Reader == reader)
-                {
-                    return moduleInfo;
-                }
-            }
-
-            // We should never have a reader that is not associated with a module (where does it come from?!)
-            Debug.Assert(false);
-            return null;
-        }
-#endif
 
         /// <summary>
         /// Locate the containing module for a given metadata reader. Assert when not found.

@@ -252,7 +252,7 @@ namespace Internal.Runtime.TypeLoader
 #if ECMA_METADATA_SUPPORT
                 else
                 {
-                    var ecmaReader = moduleInfo.EcmaPEInfo.Reader;
+                    var ecmaReader = ((EcmaModuleInfo)moduleInfo).EcmaPEInfo.Reader;
                     var ecmaHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(methodData->MethodSignature.Token);
                     var ecmaMethodHandle = (System.Reflection.Metadata.MethodDefinitionHandle)ecmaHandle;
                     var ecmaMethod = ecmaReader.GetMethodDefinition(ecmaMethodHandle);

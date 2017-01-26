@@ -1798,7 +1798,7 @@ namespace Internal.Runtime.TypeLoader
 #if ECMA_METADATA_SUPPORT
                 else
                 {
-                    methodHandle = new QMethodDefinition(moduleInfo.EcmaPEInfo.Reader, (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(nameAndSignature.Signature.Token));
+                    methodHandle = new QMethodDefinition(((EcmaModuleInfo)moduleInfo).EcmaPEInfo.Reader, (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(nameAndSignature.Signature.Token));
                 }
 #endif
                 // When working with method signature that draw directly from metadata, just return the metadata token
