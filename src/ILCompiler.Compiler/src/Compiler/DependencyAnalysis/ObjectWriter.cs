@@ -703,6 +703,14 @@ namespace ILCompiler.DependencyAnalysis
             if (!_targetPlatform.IsWindows)
                 return false;
 
+            // Types and methods from the compiler generated assembly are always shareable
+            CompilerGeneratedType type = (node is EETypeNode ? ((EETypeNode)node).Type : (node as MethodCodeNode)?.Method.OwningType) as CompilerGeneratedType;
+            if (type != null &&
+                type.Module == _nodeFactory.CompilationModuleGroup.GeneratedAssembly)
+            {
+                return true;
+            }
+            
             return node.IsShareable;
         }
 

@@ -126,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static bool IsTypeNodeShareable(TypeDesc type)
         {
-            return type.IsParameterizedType || type.IsFunctionPointer || type is InstantiatedType || type is CompilerGeneratedType;
+            return type.IsParameterizedType || type.IsFunctionPointer || type is InstantiatedType;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

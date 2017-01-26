@@ -4,7 +4,6 @@
 
 using System;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 
@@ -70,7 +69,7 @@ namespace Internal.TypeSystem.Interop
             if (forceLazyResolution.HasValue)
                 return forceLazyResolution.Value;
 
-            string assemblySimpleName = ((EcmaAssembly)((MetadataType)method.OwningType).Module).GetName().Name;
+            string assemblySimpleName = ((IAssemblyDesc)((MetadataType)method.OwningType).Module).GetName().Name;
             if (assemblySimpleName == "System.Private.Interop")
             {
                 return true;
