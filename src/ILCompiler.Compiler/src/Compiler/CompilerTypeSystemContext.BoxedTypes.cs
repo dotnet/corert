@@ -379,6 +379,9 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
+                // Generate the unboxing stub. This loosely corresponds to following C#:
+                // return BoxedValue.InstanceMethod(this.m_pEEType, [rest of parameters])
+
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
