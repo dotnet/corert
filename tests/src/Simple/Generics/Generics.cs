@@ -19,6 +19,7 @@ class Program
         TestDelegateInterfaceMethod.Run();
         TestThreadStaticFieldAccess.Run();
         TestConstrainedMethodCalls.Run();
+        TestInstantiatingUnboxingStubs.Run();
         TestNameManglingCollisionRegression.Run();
         TestUnusedGVMsDoNotCrashCompiler.Run();
 
@@ -416,6 +417,52 @@ class Program
 
             // If the FrobbedValue doesn't change when we frob, we must have done box+interface call.
             if (foo.FrobbedValue != 12345)
+                throw new Exception();
+        }
+    }
+
+    class TestInstantiatingUnboxingStubs
+    {
+        static volatile IFoo s_foo;
+
+        interface IFoo
+        {
+            bool IsInst(object o);
+
+            void Set(int value);
+        }
+
+        struct Foo<T> : IFoo
+        {
+            public int Value;
+
+            public bool IsInst(object o)
+            {
+                return o is T;
+            }
+
+            public void Set(int value)
+            {
+                Value = value;
+            }
+        }
+
+        public static void Run()
+        {
+            s_foo = new Foo<string>();
+
+            // Make sure the instantiation argument is properly passed
+            if (!s_foo.IsInst("ab"))
+                throw new Exception();
+
+            if (s_foo.IsInst(new object()))
+                throw new Exception();
+
+            // Make sure the byref to 'this' is properly passed
+            s_foo.Set(42);
+
+            var foo = (Foo<string>)s_foo;
+            if (foo.Value != 42)
                 throw new Exception();
         }
     }
