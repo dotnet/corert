@@ -127,7 +127,7 @@ namespace Internal.Reflection.Core.Execution
 
             if (methodHandle.IsNativeFormatMetadataBased)
             {
-                var nativeFormatMethodHandle = methodHandle.NativeFormatHandle;
+                MethodHandle nativeFormatMethodHandle = methodHandle.NativeFormatHandle;
                 NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
                 MetadataReader reader = definingTypeInfo.Reader;
                 if (nativeFormatMethodHandle.IsConstructor(reader))
@@ -144,9 +144,9 @@ namespace Internal.Reflection.Core.Execution
 #if ECMA_METADATA_SUPPORT            
             else
             {
-                var ecmaFormatMethodHandle = methodHandle.EcmaFormatHandle;
-                var definingEcmaTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToEcmaFormatRuntimeNamedTypeInfo();
-                var reader = definingEcmaTypeInfo.Reader;
+                System.Reflection.Metadata.MethodDefinitionHandle ecmaFormatMethodHandle = methodHandle.EcmaFormatHandle;
+                EcmaFormatRuntimeNamedTypeInfo definingEcmaTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToEcmaFormatRuntimeNamedTypeInfo();
+                System.Reflection.Metadata.MetadataReader reader = definingEcmaTypeInfo.Reader;
                 if (ecmaFormatMethodHandle.IsConstructor(reader))
                 {
                     return RuntimePlainConstructorInfo<EcmaFormatMethodCommon>.GetRuntimePlainConstructorInfo(new EcmaFormatMethodCommon(ecmaFormatMethodHandle, definingEcmaTypeInfo, contextTypeInfo));
