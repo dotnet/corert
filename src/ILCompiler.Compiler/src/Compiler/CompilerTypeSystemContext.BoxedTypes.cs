@@ -405,10 +405,7 @@ namespace ILCompiler
 
                 // Call an instance method on the target valuetype that has a fake instantiation parameter
                 // in it's signature. This will be swapped by the actual instance method after codegen is done.
-                InstantiatedType targetType = (InstantiatedType)_nakedTargetMethod.OwningType.InstantiateAsOpen();
-                MethodDesc targetMethod = Context.GetMethodForInstantiatedType(_nakedTargetMethod, targetType);
-
-                codeStream.Emit(ILOpcode.call, emit.NewToken(targetMethod));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_nakedTargetMethod.InstantiateAsOpen()));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
