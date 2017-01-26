@@ -112,7 +112,7 @@ namespace System.Reflection.Runtime.General
         public object Reader { get { return _reader; } }
         public int Token { get { return _handle; } }
 
-        public bool IsNull { get { return _reader == null; } }
+        public bool IsValid { get { return _reader == null; } }
 
         public static readonly QMethodDefinition Null = default(QMethodDefinition);
 
@@ -125,7 +125,7 @@ namespace System.Reflection.Runtime.General
         public object Reader { get { return _reader; } }
         public int Token { get { return _handle; } }
 
-        public bool IsNull { get { return _reader == null; } }
+        public bool IsValid { get { return _reader == null; } }
 
         public static readonly QTypeDefinition Null = default(QTypeDefinition);
 
@@ -139,7 +139,7 @@ namespace System.Reflection.Runtime.General
         public object Reader { get { return _reader; } }
         public int Handle { get { return _handle; } }
 
-        public bool IsNull { get { return _reader == null; } }
+        public bool IsValid { get { return _reader == null; } }
 
         public static readonly QTypeDefRefOrSpec Null = default(QTypeDefRefOrSpec);
 

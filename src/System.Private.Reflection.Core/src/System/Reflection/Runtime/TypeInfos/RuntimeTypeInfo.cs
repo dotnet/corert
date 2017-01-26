@@ -833,7 +833,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 QTypeDefRefOrSpec baseTypeDefRefOrSpec = TypeRefDefOrSpecForBaseType;
                 RuntimeTypeInfo baseType = null;
-                if (!baseTypeDefRefOrSpec.IsNull)
+                if (!baseTypeDefRefOrSpec.IsValid)
                 {
                     baseType = baseTypeDefRefOrSpec.Resolve(this.TypeContext);
                 }
