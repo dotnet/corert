@@ -334,6 +334,7 @@ class Program
         {
             public int Value;
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public bool SetAndCheck<U>(int value, U check)
             {
                 Value = value;
