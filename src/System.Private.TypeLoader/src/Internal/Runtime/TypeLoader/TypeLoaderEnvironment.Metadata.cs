@@ -103,23 +103,6 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
-        /// Locate generic dictionary based on given module handle and RVA. If bit #31 is set
-        /// in the RVA, the RVA is indirect i.e. an indirection is performed through the indirection cell
-        /// specified by the RVA.
-        /// </summary>
-        /// <param name="moduleHandle">Handle (address) of module containing the RVA</param>
-        /// <param name="rva">Relative virtual address of generic dictionary or indirection cell (when bit 31 is set)</param>
-        /// <returns>Final address of generic dictionary</return>
-        private static unsafe IntPtr RvaToGenericDictionary(IntPtr moduleHandle, uint rva)
-        {
-            // Generic dictionaries may be imported as well. As with types, this is indicated by the high bit set
-            if ((rva & 0x80000000) != 0)
-                return *((IntPtr*)((byte*)moduleHandle + (rva & ~0x80000000)));
-            else
-                return (IntPtr)((byte*)moduleHandle + rva);
-        }
-
-        /// <summary>
         /// Compare two arrays sequentially.
         /// </summary>
         /// <param name="seq1">First array to compare</param>
@@ -1616,7 +1599,7 @@ namespace Internal.Runtime.TypeLoader
                     }
                 }
                 else if (((_flags & InvokeTableFlags.RequiresInstArg) != 0) && _hasEntryPoint)
-                    _entryDictionary = RvaToGenericDictionary(_moduleHandle, extRefTable.GetRvaFromIndex(entryParser.GetUnsigned()));
+                    _entryDictionary = extRefTable.GetGenericDictionaryFromIndex(entryParser.GetUnsigned());
                 else
                     _methodInstantiation = GetTypeSequence(ref extRefTable, ref entryParser);
             }
