@@ -45,6 +45,8 @@ namespace ILCompiler
                 // If this is not a generic definition, root all methods
                 if (!type.HasInstantiation)
                     RootMethods(type, "Library module method", rootProvider);
+
+                rootProvider.RootStaticBasesForType(type, "Library module type statics");
             }
         }
 
