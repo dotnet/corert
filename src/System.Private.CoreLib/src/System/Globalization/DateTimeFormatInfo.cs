@@ -2468,7 +2468,7 @@ namespace System.Globalization
                             case DateTimeFormatInfoScanner.IgnorableSymbolChar:
                                 String symbol = dateWords[i].Substring(1);
                                 InsertHash(temp, symbol, TokenType.IgnorableSymbol, 0);
-                                if (this.DateSeparator.Trim(null).Equals(symbol))
+                                if (this.DateSeparator.Trim().Equals(symbol))
                                 {
                                     // The date separator is the same as the ignorable symbol.
                                     useDateSepAsIgnorableSymbol = true;
@@ -2868,7 +2868,7 @@ namespace System.Globalization
             // DateTime.Parse().
             if (Char.IsWhiteSpace(str[0]) || Char.IsWhiteSpace(str[str.Length - 1]))
             {
-                str = str.Trim(null);   // Trim white space characters.
+                str = str.Trim();   // Trim white space characters.
                 // Could have space for separators
                 if (str.Length == 0)
                     return;
