@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.Assemblies
     internal partial class RuntimeAssembly
     {
         public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) { throw new NotImplementedException(); }
-//        public sealed override MethodInfo EntryPoint { get { throw new NotImplementedException(); } }
+        public sealed override MethodInfo EntryPoint { get { throw new NotImplementedException(); } }
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
     }
 }

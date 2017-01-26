@@ -37,7 +37,7 @@ namespace System.Reflection.Runtime.General
         public sealed override Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore)
         {
             if (rawAssembly == null)
-                throw new ArgumentNullException("rawAssembly");
+                throw new ArgumentNullException(nameof(rawAssembly));
 
             return RuntimeAssembly.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);
         }

@@ -17,7 +17,7 @@ namespace System.Reflection.Runtime.General
         public object Reader { get { return _reader; } }
         private object _reader;
 #if ECMA_METADATA_SUPPORT
-        readonly private global::System.Reflection.Metadata.BlobReader _blobReader;
+        private readonly global::System.Reflection.Metadata.BlobReader _blobReader;
 #endif
         private global::Internal.Metadata.NativeFormat.Handle _handle;
 

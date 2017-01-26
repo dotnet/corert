@@ -23,7 +23,7 @@ namespace Internal.Reflection.Execution
             _typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
         }
 
-        protected override KeyValuePair<String, ulong>[] ReadNamesAndValues()
+        protected sealed override KeyValuePair<String, ulong>[] ReadNamesAndValues()
         {
             LowLevelList<KeyValuePair<String, ulong>> namesAndUnboxedValues = new LowLevelList<KeyValuePair<String, ulong>>();
             MetadataReader reader = _reader;

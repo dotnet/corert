@@ -22,7 +22,7 @@ namespace Internal.Runtime.TypeLoader
         VTableOffset = 0x2,
     }
 
-#pragma warning disable 0649 // Disable warning about unused field. Some fields in struct below are only manipulated from native code
+    [StructLayout(StructLayoutKind.Sequential)]
     internal struct DispatchCellInfo
     {
         public DispatchCellType CellType;
@@ -32,5 +32,4 @@ namespace Internal.Runtime.TypeLoader
         public uint MetadataToken;
         public uint VTableOffset;
     }
-#endif
 }

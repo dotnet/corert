@@ -59,6 +59,11 @@ namespace System.Reflection.Runtime.Assemblies
             }
 
             RuntimeAssembly result = null;
+
+            GetNativeFormatRuntimeAssembly(bindResult, ref result);
+            if (result != null)
+                return result;
+
             GetEcmaRuntimeAssembly(bindResult, ref result);
             if (result != null)
                 return result;

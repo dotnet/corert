@@ -168,10 +168,10 @@ namespace Internal.Reflection.Execution
         /// <param name="runtimeTypeHandle">Runtime handle of the type in question</param>
         /// <param name="metadataReader">Metadata reader located for the type</param>
         /// <param name="typeDefHandle">TypeDef handle for the type</param>
-        public unsafe sealed override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qtypedefinition)
+        public unsafe sealed override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
             Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
-            return TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out qtypedefinition);
+            return TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition);
         }
 
         //
