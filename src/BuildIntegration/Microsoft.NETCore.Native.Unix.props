@@ -52,5 +52,6 @@ See the LICENSE file in the project root for more information.
     <LinkerArg Include="-ldl" />
     <LinkerArg Include="-lm" />
     <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
+    <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
   </ItemGroup>
 </Project>

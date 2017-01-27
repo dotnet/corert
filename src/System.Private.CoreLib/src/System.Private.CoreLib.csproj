@@ -935,9 +935,19 @@
       <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
-    <Compile Include="System\TimeZoneInfo.Unix.cs" />
+  <!-- Dummy globalization implementation -->
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' == 'true'">
+    <Compile Include="System\Globalization\HijriCalendar.Dummy.cs" />
+    <Compile Include="System\Globalization\JapaneseCalendar.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
+    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
+    <Compile Include="System\Text\Normalization.Dummy.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.Unix.cs" />
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
@@ -948,6 +958,10 @@
     <Compile Include="System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
+    <Compile Include="System\TimeZoneInfo.Unix.cs" />
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
@@ -1078,18 +1092,6 @@
       <Link>Interop\Unix\System.Globalization.Native\Interop.Utils.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Dummy globalization implementation 
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="System\Globalization\HijriCalendar.Dummy.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
-    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
-    <Compile Include="System\Text\Normalization.Dummy.cs" />
-  </ItemGroup>-->
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>

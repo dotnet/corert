@@ -174,7 +174,12 @@ namespace System.Globalization
             {
                 return IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
-
+#if CORECLR
+            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
+            {
+                return IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+            }
+#endif
             fixed (char* pSource = source)
             {
                 int index = Interop.GlobalizationInterop.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options);
@@ -199,6 +204,13 @@ namespace System.Globalization
                 return LastIndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
 
+#if CORECLR
+            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
+            {
+                return LastIndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+            }
+#endif
+
             // startIndex is the index into source where we start search backwards from. leftStartIndex is the index into source
             // of the start of the string that is count characters away from startIndex.
             int leftStartIndex = (startIndex - count + 1);
@@ -217,6 +229,13 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(prefix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if CORECLR
+            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && prefix.IsFastSort())
+            {
+                return IsPrefix(source, prefix, GetOrdinalCompareOptions(options));
+            }
+#endif
+
             return Interop.GlobalizationInterop.StartsWith(_sortHandle, prefix, prefix.Length, source, source.Length, options);
         }
 
@@ -225,6 +244,13 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(suffix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+#if CORECLR
+            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && suffix.IsFastSort())
+            {
+                return IsSuffix(source, suffix, GetOrdinalCompareOptions(options));
+            }
+#endif
 
             return Interop.GlobalizationInterop.EndsWith(_sortHandle, suffix, suffix.Length, source, source.Length, options);
         }
@@ -338,8 +364,6 @@ namespace System.Globalization
             }
             else
             {
-
-                // lifted from https://github.com/dotnet/coreclr/blob/master/src/vm/comutilnative.cpp#L3009-L3032
                 int hash1 = 5381;
                 int hash2 = hash1;
                 if (sortKeyLength == 0)
