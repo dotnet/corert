@@ -704,7 +704,7 @@ namespace ILCompiler.DependencyAnalysis
                 return false;
 
             // Types and methods from the compiler generated assembly are always shareable
-            CompilerGeneratedType type = (node is EETypeNode ? ((EETypeNode)node).Type : (node as MethodCodeNode)?.Method.OwningType) as CompilerGeneratedType;
+            MetadataType type = (node is EETypeNode ? ((EETypeNode)node).Type : (node as MethodCodeNode)?.Method.OwningType) as MetadataType;
             if (type != null &&
                 type.Module == _nodeFactory.CompilationModuleGroup.GeneratedAssembly)
             {
@@ -737,7 +737,7 @@ namespace ILCompiler.DependencyAnalysis
                                                             MethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
                     objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"));
-                    objectWriter.EmitIntValue(0, 1);
+                    objectWriter.EmitIntValue(1, 1);
                 }
                 else
                 {

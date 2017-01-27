@@ -23,6 +23,8 @@ public class ReflectionTest
     public static int TestStaticBases()
     {
         Console.WriteLine("Testing static bases in library code are available..");
+        MultiModuleLibrary.ReturnValue = 50;
+        MultiModuleLibrary.ThreadStaticInt = 50;
         
         MultiModuleLibrary.StaticString = MultiModuleLibrary.ReturnValue.ToString() + MultiModuleLibrary.ThreadStaticInt.ToString();
         if (MultiModuleLibrary.StaticString != "5050")

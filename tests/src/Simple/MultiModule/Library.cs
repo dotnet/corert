@@ -9,9 +9,10 @@ using System.Runtime.CompilerServices;
 
 public class MultiModuleLibrary
 {
-    public static int ReturnValue = 50;
+    // Do not reference these three (3) statics in this assembly.
+    // We're testing that statics in library code are rooted for use by consuming application code.
+    public static int ReturnValue;
     public static string StaticString;
     [ThreadStatic]
-    public static int ThreadStaticInt = 50;
-    
+    public static int ThreadStaticInt;
 }

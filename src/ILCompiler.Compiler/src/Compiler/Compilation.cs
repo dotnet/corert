@@ -210,15 +210,13 @@ namespace ILCompiler
 
             public void RootStaticBasesForType(TypeDesc type, string reason)
             {
-                if (type.IsGenericDefinition)
-                    return;
+                Debug.Assert(!type.IsGenericDefinition);
 
                 MetadataType metadataType = type as MetadataType;
                 if (metadataType != null)
                 {
                     if (metadataType.ThreadStaticFieldSize > 0)
                     {
-                        _graph.AddRoot(_factory.TypeThreadStaticsSymbol(metadataType), reason);
                         _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
                     }
 
@@ -232,6 +230,7 @@ namespace ILCompiler
                         _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
                     }
                 }
+
             }
         }
     }
