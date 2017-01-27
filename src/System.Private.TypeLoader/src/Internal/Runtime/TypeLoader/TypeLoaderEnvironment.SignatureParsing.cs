@@ -180,10 +180,10 @@ namespace Internal.Runtime.TypeLoader
             else
             {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(methodSig.ModuleHandle);
-                var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(metadataReader);
-                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(methodSig.ModuleHandle);
-                var parser = new Internal.TypeSystem.NativeFormat.NativeFormatSignatureParser(metadataUnit, metadataReader.GetMethod(methodHandle).Signature, metadataReader);
+                ModuleInfo module = methodSig.GetModuleInfo();
+                var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(module.MetadataReader);
+                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(module);
+                var parser = new Internal.TypeSystem.NativeFormat.NativeFormatSignatureParser(metadataUnit, module.MetadataReader.GetMethod(methodHandle).Signature, module.MetadataReader);
                 var signature = parser.ParseMethodSignature();
 
                 return GetCallingConverterDataFromMethodSignature_MethodSignature(signature, nativeLayoutContext, out hasThis, out parameters, out parametersWithGenericDependentLayout);
@@ -331,9 +331,10 @@ namespace Internal.Runtime.TypeLoader
             else
             {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(methodSig.ModuleHandle);
+                ModuleInfo module = methodSig.GetModuleInfo();
+                MetadataReader metadataReader = module.MetadataReader;
                 var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(metadataReader);
-                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(methodSig.ModuleHandle);
+                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(module);
                 var parser = new Internal.TypeSystem.NativeFormat.NativeFormatSignatureParser(metadataUnit, metadataReader.GetMethod(methodHandle).Signature, metadataReader);
                 var signature = parser.ParseMethodSignature();
 
@@ -540,7 +541,7 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContext context = TypeSystemContextFactory.Create();
             {
                 NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-                nativeLayoutContext._moduleHandle = moduleHandle;
+                nativeLayoutContext._module = ModuleList.GetModuleInfoByHandle(moduleHandle);
                 nativeLayoutContext._typeSystemContext = context;
 
                 TypeDesc type = nativeLayoutContext.GetExternalType(typeIndex);

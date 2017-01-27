@@ -12,6 +12,9 @@ using Internal.Runtime.Augments;
 using Internal.TypeSystem;
 using Internal.Reflection.Execution;
 using Internal.Reflection.Core;
+using Internal.Runtime.TypeLoader;
+
+using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 namespace Internal.TypeSystem.NativeFormat
 {
@@ -20,7 +23,7 @@ namespace Internal.TypeSystem.NativeFormat
     /// </summary>
     public sealed class NativeFormatMetadataUnit
     {
-        private IntPtr _moduleHandle;
+        private ModuleInfo _module;
         private MetadataReader _metadataReader;
         private TypeSystemContext _context;
 
@@ -204,10 +207,6 @@ namespace Internal.TypeSystem.NativeFormat
                         item = _metadataUnit.ResolveMethodInstantiation(handle.ToMethodInstantiationHandle(_metadataReader));
                         break;
 
-                    case HandleType.TypeForwarder:
-                        item = _metadataUnit.ResolveExportedType(handle.ToTypeForwarderHandle(_metadataReader));
-                        break;
-
                     // TODO: Resolve other tokens
                     default:
                         throw new BadImageFormatException("Unknown metadata token type: " + handle.HandleType);
@@ -229,9 +228,9 @@ namespace Internal.TypeSystem.NativeFormat
 
         private NativeFormatObjectLookupHashtable _resolvedTokens;
 
-        public NativeFormatMetadataUnit(TypeSystemContext context, IntPtr moduleHandle, MetadataReader metadataReader)
+        public NativeFormatMetadataUnit(TypeSystemContext context, ModuleInfo module, MetadataReader metadataReader)
         {
-            _moduleHandle = moduleHandle;
+            _module = module;
             _metadataReader = metadataReader;
             _context = context;
 
@@ -258,7 +257,15 @@ namespace Internal.TypeSystem.NativeFormat
         {
             get
             {
-                return _moduleHandle;
+                return _module.Handle;
+            }
+        }
+
+        public ModuleInfo RuntimeModuleInfo
+        {
+            get
+            {
+                return _module;
             }
         }
 
@@ -472,25 +479,6 @@ namespace Internal.TypeSystem.NativeFormat
             return Context.ResolveAssembly(an);
         }
 
-        private MetadataType ResolveExportedType(TypeForwarderHandle handle)
-        {
-            TypeForwarder typeForwarder = _metadataReader.GetTypeForwarder(handle);
-
-            var module = GetModule(typeForwarder.Scope);
-
-            string fullname = _metadataReader.GetString(typeForwarder.Name);
-            int lastDotIndex = fullname.LastIndexOf('.');
-            string nameSpace = null;
-            string name = fullname;
-            if (lastDotIndex != -1)
-            {
-                nameSpace = fullname.Substring(0, lastDotIndex);
-                name = fullname.Substring(lastDotIndex + 1);
-            }
-
-            return module.GetType(nameSpace, name);
-        }
-
         public NativeFormatModule GetModuleFromNamespaceDefinition(NamespaceDefinitionHandle handle)
         {
             while (true)
@@ -519,11 +507,11 @@ namespace Internal.TypeSystem.NativeFormat
             }
 
             var moduleList = Internal.Runtime.TypeLoader.ModuleList.Instance;
-            IntPtr primaryModuleHandle = moduleList.GetModuleForMetadataReader(bindResult.Reader);
+            ModuleInfo primaryModule = moduleList.GetModuleInfoForMetadataReader(bindResult.Reader);
             // If this isn't the primary module, defer to that module to load the MetadataUnit
-            if (primaryModuleHandle != _moduleHandle)
+            if (primaryModule != _module)
             {
-                return Context.ResolveMetadataUnit(primaryModuleHandle).GetModule(bindResult.ScopeDefinitionHandle);
+                return Context.ResolveMetadataUnit(primaryModule).GetModule(bindResult.ScopeDefinitionHandle);
             }
 
             // Setup arguments and allocate the NativeFormatModule
@@ -532,9 +520,9 @@ namespace Internal.TypeSystem.NativeFormat
 
             foreach (QScopeDefinition scope in bindResult.OverflowScopes)
             {
-                IntPtr moduleHandle = moduleList.GetModuleForMetadataReader(scope.Reader);
+                ModuleInfo module = moduleList.GetModuleInfoForMetadataReader(scope.Reader);
                 ScopeDefinitionHandle scopeHandle = scope.Handle;
-                NativeFormatMetadataUnit metadataUnit = Context.ResolveMetadataUnit(moduleHandle);
+                NativeFormatMetadataUnit metadataUnit = Context.ResolveMetadataUnit(module);
                 qualifiedScopes.Add(new NativeFormatModule.QualifiedScopeDefinition(metadataUnit, scopeHandle));
             }
 

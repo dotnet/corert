@@ -37,21 +37,21 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 
         public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(Reader, DeclaringType, MethodHandle, methodArguments, exceptionPertainant);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant);
         }
 
-        public QTypeDefRefOrSpec[] QualifiedMethodSignature
+        public QSignatureTypeHandle[] QualifiedMethodSignature
         {
             get
             {
                 MethodSignature methodSignature = this.MethodSignature;
 
-                QTypeDefRefOrSpec[] typeSignatures = new QTypeDefRefOrSpec[methodSignature.Parameters.Count + 1];
-                typeSignatures[0] = new QTypeDefRefOrSpec(_reader, methodSignature.ReturnType, true);
+                QSignatureTypeHandle[] typeSignatures = new QSignatureTypeHandle[methodSignature.Parameters.Count + 1];
+                typeSignatures[0] = new QSignatureTypeHandle(_reader, methodSignature.ReturnType, true);
                 int paramIndex = 1;
                 foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
                 {
-                    typeSignatures[paramIndex++] = new QTypeDefRefOrSpec(_reader, parameterTypeSignatureHandle, true);
+                    typeSignatures[paramIndex++] = new QSignatureTypeHandle(_reader, parameterTypeSignatureHandle, true);
                 }
 
                 return typeSignatures;
@@ -67,7 +67,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             }
         }
 
-        public void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QTypeDefRefOrSpec[] typeSignatures, MethodBase contextMethod, TypeContext typeContext)
+        public void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QSignatureTypeHandle[] typeSignatures, MethodBase contextMethod, TypeContext typeContext)
         {
             foreach (ParameterHandle parameterHandle in _method.Parameters)
             {
@@ -233,7 +233,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                         _methodHandle,
                         index - 1,
                         parameterHandle,
-                        new QTypeDefRefOrSpec(reader, typeSignatures[index]),
+                        new QSignatureTypeHandle(reader, typeSignatures[index]),
                         typeContext);
             }
             for (int i = 0; i < count; i++)
@@ -244,7 +244,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                         RuntimeThinMethodParameterInfo.GetRuntimeThinMethodParameterInfo(
                             contextMethod,
                             i - 1,
-                            new QTypeDefRefOrSpec(reader, typeSignatures[i]),
+                            new QSignatureTypeHandle(reader, typeSignatures[i]),
                             typeContext);
                 }
             }

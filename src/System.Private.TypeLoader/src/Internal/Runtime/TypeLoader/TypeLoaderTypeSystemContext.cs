@@ -20,7 +20,7 @@ namespace Internal.Runtime.TypeLoader
     /// TypeSystemContext that can interfact with the
     /// Redhawk runtime type system and native metadata
     /// </summary>
-    internal class TypeLoaderTypeSystemContext : TypeSystemContext
+    public partial class TypeLoaderTypeSystemContext : TypeSystemContext
     {
         private static readonly MetadataFieldLayoutAlgorithm s_metadataFieldLayoutAlgorithm = new MetadataFieldLayoutAlgorithm();
         private static readonly MetadataRuntimeInterfacesAlgorithm s_metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
@@ -32,7 +32,13 @@ namespace Internal.Runtime.TypeLoader
 
         public TypeLoaderTypeSystemContext(TargetDetails targetDetails) : base(targetDetails)
         {
-            InitializeSystemModule(null);
+            ModuleDesc systemModule = null;
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+            systemModule = ((MetadataType)GetWellKnownType(WellKnownType.Void)).Module;
+#endif
+
+            InitializeSystemModule(systemModule);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -191,9 +197,25 @@ namespace Internal.Runtime.TypeLoader
             }
 
             var moduleList = Internal.Runtime.TypeLoader.ModuleList.Instance;
-            IntPtr primaryModuleHandle = moduleList.GetModuleForMetadataReader(bindResult.Reader);
-            NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(primaryModuleHandle);
-            return metadataUnit.GetModule(bindResult.ScopeDefinitionHandle);
+
+            if (bindResult.Reader != null)
+            {
+                ModuleInfo primaryModule = moduleList.GetModuleInfoForMetadataReader(bindResult.Reader);
+                NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(primaryModule);
+                return metadataUnit.GetModule(bindResult.ScopeDefinitionHandle);
+            }
+#if ECMA_METADATA_SUPPORT
+            else if (bindResult.EcmaMetadataReader != null)
+            {
+                ModuleInfo ecmaModule = moduleList.GetModuleInfoForMetadataReader(bindResult.EcmaMetadataReader);
+                return ResolveEcmaModule(ecmaModule);
+            }
+#endif
+            else
+            {
+                // Should not be possible to reach here
+                throw new Exception();
+            }
 #else
             return null;
 #endif

@@ -26,7 +26,7 @@ namespace Internal.Reflection.Execution
     // native process. There is no support for probing for assemblies in directories, user-supplied files, GACs, NICs or any
     // other repository.
     //=============================================================================================================================
-    public sealed class AssemblyBinderImplementation : AssemblyBinder
+    public sealed partial class AssemblyBinderImplementation : AssemblyBinder
     {
         private sealed class AssemblyNameKey : IEquatable<AssemblyNameKey>
         {
@@ -76,6 +76,24 @@ namespace Internal.Reflection.Execution
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
+        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
+        partial void BindEcmaAssemblyName(AssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref bool resultBoolean);
+
+        public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
+        {
+            bool? result = null;
+            exception = null;
+            bindResult = default(AssemblyBindResult);
+
+            BindEcmaByteArray(rawAssembly, rawSymbolStore, ref bindResult, ref exception, ref result);
+
+            // If the Ecma assembly binder isn't linked in, simply throw PlatformNotSupportedException
+            if (!result.HasValue)
+                throw new PlatformNotSupportedException();
+            else
+                return result.Value;
+        }
+
         public sealed override bool Bind(AssemblyName refName, out AssemblyBindResult result, out Exception exception)
         {
             bool foundMatch = false;
@@ -120,6 +138,10 @@ namespace Internal.Reflection.Execution
                     result.OverflowScopes = scopeDefinitionGroup.OverflowScopes;
                 }
             }
+
+            BindEcmaAssemblyName(refName, ref result, ref exception, ref foundMatch);
+            if (exception != null)
+                return false;
 
             if (!foundMatch)
             {
@@ -214,7 +236,9 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleInfo">Module to register</param>
         private void RegisterModule(ModuleInfo moduleInfo)
         {
-            if (moduleInfo.MetadataReader == null)
+            NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
+
+            if (nativeFormatModuleInfo == null)
             {
                 return;
             }
@@ -224,7 +248,7 @@ namespace Internal.Reflection.Execution
             {
                 scopeGroups.Add(oldGroup.Key, oldGroup.Value);
             }
-            AddScopesFromReaderToGroups(scopeGroups, moduleInfo.MetadataReader);
+            AddScopesFromReaderToGroups(scopeGroups, nativeFormatModuleInfo.MetadataReader);
 
             // Update reader and scope list
             KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] scopeGroupsArray = new KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[scopeGroups.Count];

@@ -34,6 +34,14 @@ namespace System.Reflection.Runtime.General
             return RuntimeAssembly.GetRuntimeAssembly(refName.ToRuntimeAssemblyName());
         }
 
+        public sealed override Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore)
+        {
+            if (rawAssembly == null)
+                throw new ArgumentNullException(nameof(rawAssembly));
+
+            return RuntimeAssembly.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);
+        }
+
         //
         // This overload of GetMethodForHandle only accepts handles for methods declared on non-generic types (the method, however,
         // can be an instance of a generic method.) To resolve handles for methods declared on generic types, you must pass
@@ -44,7 +52,7 @@ namespace System.Reflection.Runtime.General
         public sealed override MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle)
         {
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodHandle methodHandle;
+            QMethodDefinition methodHandle;
             RuntimeTypeHandle declaringTypeHandle;
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
             if (!executionEnvironment.TryGetMethodFromHandle(runtimeMethodHandle, out declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
@@ -62,7 +70,7 @@ namespace System.Reflection.Runtime.General
         public sealed override MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle)
         {
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodHandle methodHandle;
+            QMethodDefinition methodHandle;
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
             if (!executionEnvironment.TryGetMethodFromHandleAndType(runtimeMethodHandle, declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
             {

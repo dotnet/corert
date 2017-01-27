@@ -5,6 +5,7 @@
 using global::System;
 using global::System.Threading;
 using global::System.Reflection;
+using System.Runtime.InteropServices;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 
@@ -52,7 +53,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             {
                 return RuntimeAugments.CreateDelegate(
                     delegateType,
-                    new OpenMethodResolver(_declaringTypeHandle, MethodInvokeInfo.LdFtnResult, 0).ToIntPtr(),
+                    new OpenMethodResolver(_declaringTypeHandle, MethodInvokeInfo.LdFtnResult, default(GCHandle), 0).ToIntPtr(),
                     target,
                     isStatic: isStatic,
                     isOpen: isOpen);

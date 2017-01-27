@@ -10,6 +10,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -18,6 +20,9 @@ using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.TypeSystem.NativeFormat;
+#if ECMA_METADATA_SUPPORT
+using Internal.TypeSystem.Ecma;
+#endif
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -1033,30 +1038,31 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="methodInvokeMetadata">Output - metadata information for method invoker construction</param>
         /// <returns>true when found, false otherwise</returns>
         public static bool TryGetMethodInvokeMetadata(
-            MetadataReader metadataReader,
             RuntimeTypeHandle declaringTypeHandle,
-            MethodHandle methodHandle,
+            QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
             ref MethodSignatureComparer methodSignatureComparer,
             CanonicalFormKind canonFormKind,
             out MethodInvokeMetadata methodInvokeMetadata)
         {
-            if (TryGetMethodInvokeMetadataFromInvokeMap(
-                metadataReader,
-                declaringTypeHandle,
-                methodHandle,
-                genericMethodTypeArgumentHandles,
-                ref methodSignatureComparer,
-                canonFormKind,
-                out methodInvokeMetadata))
+            if (methodHandle.IsNativeFormatMetadataBased)
             {
-                return true;
+                if (TryGetMethodInvokeMetadataFromInvokeMap(
+                    methodHandle.NativeFormatReader,
+                    declaringTypeHandle,
+                    methodHandle.NativeFormatHandle,
+                    genericMethodTypeArgumentHandles,
+                    ref methodSignatureComparer,
+                    canonFormKind,
+                    out methodInvokeMetadata))
+                {
+                    return true;
+                }
             }
 
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
             bool success = TryGetMethodInvokeMetadataFromNativeFormatMetadata(
-                metadataReader,
                 declaringTypeHandle,
                 methodHandle,
                 genericMethodTypeArgumentHandles,
@@ -1257,9 +1263,8 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="methodInvokeMetadata">Output - metadata information for method invoker construction</param>
         /// <returns>true when found, false otherwise</returns>
         private static bool TryGetMethodInvokeMetadataFromNativeFormatMetadata(
-            MetadataReader metadataReader,
             RuntimeTypeHandle declaringTypeHandle,
-            MethodHandle methodHandle,
+            QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
             ref MethodSignatureComparer methodSignatureComparer,
             TypeSystemContext typeSystemContext,
@@ -1270,20 +1275,33 @@ namespace Internal.Runtime.TypeLoader
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             TypeDesc declaringType = typeSystemContext.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            NativeFormatType nativeFormatType = declaringType.GetTypeDefinition() as NativeFormatType;
+            TypeDesc declaringTypeDefinition = declaringType.GetTypeDefinition();
 
-            if (nativeFormatType == null)
+            if (declaringTypeDefinition == null)
                 return false;
 
-            Debug.Assert(metadataReader == nativeFormatType.MetadataReader);
 
-            MethodDesc methodOnType = nativeFormatType.MetadataUnit.GetMethod(methodHandle, nativeFormatType);
+            MethodDesc methodOnType = null;
+            
+            if (declaringTypeDefinition is NativeFormatType)
+            {
+                NativeFormatType nativeFormatType = ((NativeFormatType)declaringTypeDefinition);
+                Debug.Assert(methodHandle.NativeFormatReader == nativeFormatType.MetadataReader);
+                methodOnType = nativeFormatType.MetadataUnit.GetMethod(methodHandle.NativeFormatHandle, nativeFormatType);
+            }
+            else
+            {
+                EcmaType ecmaType = ((EcmaType)declaringTypeDefinition);
+                Debug.Assert(methodHandle.EcmaFormatReader == ecmaType.MetadataReader);
+                methodOnType = ecmaType.EcmaModule.GetMethod(methodHandle.EcmaFormatHandle);
+            }
+
             if (methodOnType == null)
             {
                 return false;
             }
 
-            if (nativeFormatType != declaringType)
+            if (declaringTypeDefinition != declaringType)
             {
                 // If we reach here, then the method is on a generic type, and we just found the uninstantiated form
                 // Get the method on the instantiated type and continue
@@ -1300,10 +1318,11 @@ namespace Internal.Runtime.TypeLoader
             IntPtr unboxingStubAddress = IntPtr.Zero;
             MethodAddressType foundAddressType = MethodAddressType.None;
 #if SUPPORTS_R2R_LOADING
-            if (!TryGetCodeTableEntry(methodOnType, out entryPoint, out unboxingStubAddress, out foundAddressType))
-            {
-                return false;
-            }
+            TryGetCodeTableEntry(methodOnType, out entryPoint, out unboxingStubAddress, out foundAddressType);
+#endif
+#if SUPPORT_JIT
+            if (foundAddressType == MethodAddressType.None)
+                MethodEntrypointStubs.TryGetMethodEntrypoint(methodOnType, out entryPoint, out unboxingStubAddress, out foundAddressType);
 #endif
             if (foundAddressType == MethodAddressType.None)
                 return false;
@@ -1318,7 +1337,10 @@ namespace Internal.Runtime.TypeLoader
             // TODO: This will probably require additional work to smoothly use unboxing stubs
             // in vtables - for plain reflection invoke everything seems to work
             // without additional changes thanks to the "NeedsParameterInterpretation" flag.
-            methodInvokeMetadata.MappingTableModule = nativeFormatType.MetadataUnit.RuntimeModule;
+            if (methodHandle.IsNativeFormatMetadataBased)
+                methodInvokeMetadata.MappingTableModule = ((NativeFormatType)declaringTypeDefinition).MetadataUnit.RuntimeModule;
+            else
+                methodInvokeMetadata.MappingTableModule = IntPtr.Zero; // MappingTableModule is only used if NeedsParameterInterpretation isn't set
             methodInvokeMetadata.MethodEntryPoint = entryPoint;
             methodInvokeMetadata.RawMethodEntryPoint = entryPoint;
             // TODO: methodInvokeMetadata.DictionaryComponent
@@ -1725,10 +1747,16 @@ namespace Internal.Runtime.TypeLoader
                 if (nativeType != null)
                 {
                     MetadataReader metadataReader = nativeType.MetadataReader;
-                    IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
-                    ModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+                    ModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
 
                     return moduleInfo;
+                }
+#endif
+#if ECMA_METADATA_SUPPORT
+                Internal.TypeSystem.Ecma.EcmaType ecmaType = type as Internal.TypeSystem.Ecma.EcmaType;
+                if (ecmaType != null)
+                {
+                    return ecmaType.EcmaModule.RuntimeModuleInfo;
                 }
 #endif
                 ArrayType arrayType = type as ArrayType;
@@ -1751,6 +1779,61 @@ namespace Internal.Runtime.TypeLoader
                 // Unable to resolve the native type
                 return ModuleList.Instance.SystemModule;
             }
+        }
+
+        public bool TryGetMetadataForTypeMethodNameAndSignature(RuntimeTypeHandle declaringTypeHandle, MethodNameAndSignature nameAndSignature, out QMethodDefinition methodHandle)
+        {
+            if (!nameAndSignature.Signature.IsNativeLayoutSignature)
+            {
+                IntPtr module = nameAndSignature.Signature.ModuleHandle;
+
+                ModuleInfo moduleInfo = nameAndSignature.Signature.GetModuleInfo();
+
+#if ECMA_METADATA_SUPPORT
+                if (moduleInfo.MetadataReader != null)
+#endif
+                {
+                    methodHandle = new QMethodDefinition(((NativeFormatModuleInfo)moduleInfo).MetadataReader, nameAndSignature.Signature.Token.AsHandle().ToMethodHandle(null));
+                }
+#if ECMA_METADATA_SUPPORT
+                else
+                {
+                    methodHandle = new QMethodDefinition(((EcmaModuleInfo)moduleInfo).EcmaPEInfo.Reader, (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(nameAndSignature.Signature.Token));
+                }
+#endif
+                // When working with method signature that draw directly from metadata, just return the metadata token
+                return true;
+            }
+
+            QTypeDefinition qTypeDefinition;
+            RuntimeTypeHandle metadataLookupTypeHandle = GetTypeDefinition(declaringTypeHandle);
+            methodHandle = default(QMethodDefinition);
+
+            if (!TryGetMetadataForNamedType(metadataLookupTypeHandle, out qTypeDefinition))
+                return false;
+
+            MetadataReader reader = qTypeDefinition.NativeFormatReader;
+            TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
+
+            TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
+
+            Debug.Assert(nameAndSignature.Signature.IsNativeLayoutSignature);
+
+            foreach (MethodHandle mh in typeDefinition.Methods)
+            {
+                Method method = mh.GetMethod(reader);
+                if (method.Name.StringEquals(nameAndSignature.Name, reader))
+                {
+                    MethodSignatureComparer methodSignatureComparer = new MethodSignatureComparer(reader, mh);
+                    if (methodSignatureComparer.IsMatchingNativeLayoutMethodSignature(nameAndSignature.Signature))
+                    {
+                        methodHandle = new QMethodDefinition(reader, mh);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }

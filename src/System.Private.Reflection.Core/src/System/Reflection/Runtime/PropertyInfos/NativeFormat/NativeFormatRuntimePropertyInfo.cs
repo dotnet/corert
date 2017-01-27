@@ -134,11 +134,11 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        protected sealed override QTypeDefRefOrSpec PropertyTypeHandle
+        protected sealed override QSignatureTypeHandle PropertyTypeHandle
         {
             get
             {
-                return new QTypeDefRefOrSpec(_reader, _property.Signature.GetPropertySignature(_reader).Type);
+                return new QSignatureTypeHandle(_reader, _property.Signature.GetPropertySignature(_reader).Type);
             }
         }
 
