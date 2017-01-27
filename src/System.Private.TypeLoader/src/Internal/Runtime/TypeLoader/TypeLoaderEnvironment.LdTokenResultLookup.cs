@@ -244,7 +244,7 @@ namespace Internal.Runtime.TypeLoader
                 if (moduleInfo.MetadataReader != null)
 #endif            
                 {
-                    var metadataReader = moduleInfo.MetadataReader;
+                    var metadataReader = ((NativeFormatModuleInfo)moduleInfo).MetadataReader;
                     var methodHandle = methodData->MethodSignature.Token.AsHandle().ToMethodHandle(metadataReader);
                     var method = methodHandle.GetMethod(metadataReader);
                     name = metadataReader.GetConstantStringValue(method.Name).Value;

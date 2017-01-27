@@ -169,9 +169,10 @@ namespace Internal.Runtime.TypeLoader
             var canonForm = concreteType.ConvertToCanonForm(kind);
             var hashCode = canonForm.GetHashCode();
 
-            foreach (var moduleInfo in ModuleList.EnumerateModules())
+            foreach (ModuleInfo unknownModuleInfo in ModuleList.EnumerateModules())
             {
-                if (moduleInfo.MetadataReader == null)
+                NativeFormatModuleInfo moduleInfo = unknownModuleInfo as NativeFormatModuleInfo;
+                if (moduleInfo == null)
                     continue;
 
                 ExternalReferencesTable externalFixupsTable;
@@ -234,9 +235,11 @@ namespace Internal.Runtime.TypeLoader
             var canonForm = concreteMethod.GetCanonMethodTarget(kind);
             var hashCode = canonForm.GetHashCode();
 
-            foreach (var moduleInfo in ModuleList.EnumerateModules())
+            foreach (ModuleInfo unknownModuleInfo in ModuleList.EnumerateModules())
             {
-                if (moduleInfo.MetadataReader == null)
+                NativeFormatModuleInfo moduleInfo = unknownModuleInfo as NativeFormatModuleInfo;
+
+                if (moduleInfo == null)
                     continue;
 
                 NativeReader nativeLayoutReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(moduleInfo.Handle);

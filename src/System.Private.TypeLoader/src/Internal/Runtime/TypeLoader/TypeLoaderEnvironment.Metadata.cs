@@ -1793,7 +1793,7 @@ namespace Internal.Runtime.TypeLoader
                 if (moduleInfo.MetadataReader != null)
 #endif
                 {
-                    methodHandle = new QMethodDefinition(moduleInfo.MetadataReader, nameAndSignature.Signature.Token.AsHandle().ToMethodHandle(null));
+                    methodHandle = new QMethodDefinition(((NativeFormatModuleInfo)moduleInfo).MetadataReader, nameAndSignature.Signature.Token.AsHandle().ToMethodHandle(null));
                 }
 #if ECMA_METADATA_SUPPORT
                 else

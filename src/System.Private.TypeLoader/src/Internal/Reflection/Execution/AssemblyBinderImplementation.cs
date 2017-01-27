@@ -236,7 +236,9 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleInfo">Module to register</param>
         private void RegisterModule(ModuleInfo moduleInfo)
         {
-            if (moduleInfo.MetadataReader == null)
+            NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
+
+            if (nativeFormatModuleInfo == null)
             {
                 return;
             }
@@ -246,7 +248,7 @@ namespace Internal.Reflection.Execution
             {
                 scopeGroups.Add(oldGroup.Key, oldGroup.Value);
             }
-            AddScopesFromReaderToGroups(scopeGroups, moduleInfo.MetadataReader);
+            AddScopesFromReaderToGroups(scopeGroups, nativeFormatModuleInfo.MetadataReader);
 
             // Update reader and scope list
             KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] scopeGroupsArray = new KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[scopeGroups.Count];

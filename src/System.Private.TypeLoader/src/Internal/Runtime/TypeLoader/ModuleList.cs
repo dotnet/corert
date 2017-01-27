@@ -35,11 +35,6 @@ namespace Internal.Runtime.TypeLoader
         public IntPtr Handle { get; private set; }
 
         /// <summary>
-        /// Module metadata reader for NativeFormat metadata
-        /// </summary>
-        public MetadataReader MetadataReader { get; private set; }
-
-        /// <summary>
         /// A reference to the dynamic module is part of the EEType for dynamically allocated types.
         /// </summary>
         internal DynamicModule* DynamicModulePtr { get; private set; }
@@ -57,17 +52,6 @@ namespace Internal.Runtime.TypeLoader
         {
             Handle = moduleHandle;
             ModuleType = moduleType;
-
-            byte* pBlob;
-            uint cbBlob;
-
-            if (moduleType != ModuleType.Ecma)
-            {
-                if (RuntimeAugments.FindBlob(moduleHandle, (int)ReflectionMapBlob.EmbeddedMetadata, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
-                {
-                    MetadataReader = new MetadataReader((IntPtr)pBlob, (int)cbBlob);
-                }
-            }
 
             DynamicModule* dynamicModulePtr = (DynamicModule*)MemoryHelpers.AllocateMemory(sizeof(DynamicModule));
             dynamicModulePtr->CbSize = DynamicModule.DynamicModuleSize;
@@ -101,6 +85,23 @@ namespace Internal.Runtime.TypeLoader
             }
             return methodAddress;
         }        
+    }
+
+    public class NativeFormatModuleInfo : ModuleInfo
+    {
+        /// <summary>
+        /// Initialize module info and construct per-module metadata reader.
+        /// </summary>
+        /// <param name="moduleHandle">Handle (address) of module to initialize</param>
+        internal NativeFormatModuleInfo(IntPtr moduleHandle, ModuleType moduleType, IntPtr pBlob, int cbBlob) : base (moduleHandle, moduleType)
+        {
+            MetadataReader = new MetadataReader((IntPtr)pBlob, (int)cbBlob);
+        }
+        
+        /// <summary>
+        /// Module metadata reader for NativeFormat metadata
+        /// </summary>
+        public MetadataReader MetadataReader { get; private set; }
     }
 
     /// <summary>
@@ -411,7 +412,8 @@ namespace Internal.Runtime.TypeLoader
         {
             while (_moduleInfoEnumerator.MoveNext())
             {
-                if (_moduleInfoEnumerator.Current.MetadataReader != null)
+                NativeFormatModuleInfo moduleInfo = _moduleInfoEnumerator.Current as NativeFormatModuleInfo;
+                if (moduleInfo != null && moduleInfo.MetadataReader != null)
                 {
                     return true;
                 }
@@ -424,7 +426,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public MetadataReader Current
         {
-            get { return _moduleInfoEnumerator.Current.MetadataReader; }
+            get { return ((NativeFormatModuleInfo)_moduleInfoEnumerator.Current).MetadataReader; }
         }
     }
 
@@ -544,7 +546,22 @@ namespace Internal.Runtime.TypeLoader
 
                 for (int newModuleIndex = 0; newModuleIndex < newModuleHandles.Count; newModuleIndex++)
                 {
-                    ModuleInfo newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType);
+                    ModuleInfo newModuleInfo;
+
+                    unsafe
+                    {
+                        byte* pBlob;
+                        uint cbBlob;
+
+                        if (RuntimeAugments.FindBlob(newModuleHandles[newModuleIndex], (int)ReflectionMapBlob.EmbeddedMetadata, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+                        {
+                            newModuleInfo = new NativeFormatModuleInfo(newModuleHandles[newModuleIndex], moduleType, (IntPtr)pBlob, (int)cbBlob);
+                        }
+                        else
+                        {
+                            newModuleInfo = new ModuleInfo(newModuleHandles[newModuleIndex], moduleType);
+                        }
+                    }
 
                     updatedModules[oldModuleCount + newModuleIndex] = newModuleInfo;
 
@@ -622,7 +639,8 @@ namespace Internal.Runtime.TypeLoader
             int moduleIndex;
             if (moduleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out moduleIndex))
             {
-                return moduleMap.Modules[moduleIndex].MetadataReader;
+                NativeFormatModuleInfo moduleInfo = moduleMap.Modules[moduleIndex] as NativeFormatModuleInfo;
+                return moduleInfo.MetadataReader;
             }
             return null;
         }
@@ -655,7 +673,8 @@ namespace Internal.Runtime.TypeLoader
         {
             foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
             {
-                if (moduleInfo.MetadataReader == reader)
+                NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
+                if (nativeFormatModuleInfo != null && nativeFormatModuleInfo.MetadataReader == reader)
                 {
                     return moduleInfo;
                 }
@@ -675,7 +694,8 @@ namespace Internal.Runtime.TypeLoader
         {
             foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
             {
-                if (moduleInfo.MetadataReader == reader)
+                NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
+                if (nativeFormatModuleInfo != null && nativeFormatModuleInfo.MetadataReader == reader)
                 {
                     return moduleInfo.Handle;
                 }
