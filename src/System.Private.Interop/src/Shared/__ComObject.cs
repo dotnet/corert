@@ -155,7 +155,8 @@ namespace System
         private RCWFinalizer m_finalizer;
 
 #if !RHTESTCL && !CORECLR && !CORERT
-        private static readonly Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = new Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
+        private static readonly CoreFX_Collections::System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = 
+            new CoreFX_Collections::System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
 #endif
 
         #endregion
