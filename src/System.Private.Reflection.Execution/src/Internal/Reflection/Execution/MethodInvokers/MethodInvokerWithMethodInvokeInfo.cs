@@ -55,7 +55,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 var method = reader.GetMethodDefinition(methodHandle.EcmaFormatHandle);
                 var blobReader = reader.GetBlobReader(method.Signature);
                 byte sigByte = blobReader.ReadByte();
-                if ((sigByte & 0x20) == 0)
+                if ((sigByte & SignatureAttributes.Instance) == 0)
                     isStatic = true;
             }
 #endif

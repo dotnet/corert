@@ -110,8 +110,7 @@ namespace Internal.Reflection.Execution
 
             if (qTypeDefinition.IsNativeFormatMetadataBased)
             {
-                TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
-                return new NativeFormatEnumInfoImplementation(enumType, qTypeDefinition.NativeFormatReader, typeDefinitionHandle);
+                return new NativeFormatEnumInfoImplementation(enumType, qTypeDefinition.NativeFormatReader, qTypeDefinition.NativeFormatHandle);
             }
 #if ECMA_METADATA_SUPPORT
             if (qTypeDefinition.IsEcmaFormatMetadataBased)
