@@ -163,6 +163,7 @@
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Interop\Interop.Memory.cs" />
   </ItemGroup>
 

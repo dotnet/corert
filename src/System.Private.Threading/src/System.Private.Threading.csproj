@@ -30,9 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Threading\SpinLockTraceCallbacksImplementation.cs" />
     <Compile Include="Internal\Threading\TaskTraceCallbacksImplementation.cs" />
-    <Compile Include="Internal\Threading\ThreadingTracingInitializer.cs" />
     <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
