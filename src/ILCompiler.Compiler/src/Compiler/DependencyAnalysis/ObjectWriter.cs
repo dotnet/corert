@@ -703,6 +703,14 @@ namespace ILCompiler.DependencyAnalysis
             if (!_targetPlatform.IsWindows)
                 return false;
 
+            // Types and methods from the compiler generated assembly are always shareable
+            MetadataType type = (node is EETypeNode ? ((EETypeNode)node).Type : (node as MethodCodeNode)?.Method.OwningType) as MetadataType;
+            if (type != null &&
+                type.Module == _nodeFactory.CompilationModuleGroup.GeneratedAssembly)
+            {
+                return true;
+            }
+            
             return node.IsShareable;
         }
 
@@ -729,7 +737,7 @@ namespace ILCompiler.DependencyAnalysis
                                                             MethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
                     objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"));
-                    objectWriter.EmitIntValue(0, 1);
+                    objectWriter.EmitIntValue(1, 1);
                 }
                 else
                 {
@@ -772,7 +780,8 @@ namespace ILCompiler.DependencyAnalysis
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
 
                     // Build CFI map (Unix) or publish unwind blob (Windows).
-                    objectWriter.BuildCFIMap(factory, node);
+                    if (!objectWriter.ShouldShareSymbol(node))
+                        objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);

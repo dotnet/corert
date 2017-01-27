@@ -296,12 +296,6 @@ namespace ILCompiler
                     _modulesSeen.Add(mdType.Module);
                 }
             }
-            else if (type.HasInstantiation)
-            {
-                AddGeneratedType(type.GetTypeDefinition());
-                foreach (var argument in type.Instantiation)
-                    AddGeneratedType(argument);
-            }
             else if (type.IsArray)
             {
                 var arrayType = (ArrayType)type;

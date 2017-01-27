@@ -1,8 +1,11 @@
-<Project ToolsVersion="14.0" DefaultTargets="BuildAllFrameworkLibraries" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="CreateLib" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <IlcCompileDependsOn>BuildOneFrameworkLibrary</IlcCompileDependsOn>
+    <CreateLibDependsOn>BuildAllFrameworkLibrariesAsSingleLib</CreateLibDependsOn>
     <IlcMultiModule>true</IlcMultiModule>
+    <NativeIntermediateOutputPath Condition="'$(FrameworkObjPath)' != ''">$(FrameworkObjPath)\</NativeIntermediateOutputPath>
+    <BuildingFrameworkLibrary>true</BuildingFrameworkLibrary>
   </PropertyGroup>
   
   <Import Project="Microsoft.NETCore.Native.targets" />
@@ -16,6 +19,19 @@
       </ProjectToBuild>
     </ItemGroup>
     <MSBuild Projects="@(ProjectToBuild)" Targets="IlcCompile" BuildInParallel="true" />
+  </Target>
+
+  <Target Name="BuildAllFrameworkLibrariesAsSingleLib"
+    DependsOnTargets="BuildAllFrameworkLibraries">
+
+    <ItemGroup>
+      <LibInputs Include="$(NativeIntermediateOutputPath)\*.obj" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <SharedLibrary>$(FrameworkLibPath)\Framework.lib</SharedLibrary>
+    </PropertyGroup>
+
   </Target>
 
   <Target Name="BuildOneFrameworkLibrary">

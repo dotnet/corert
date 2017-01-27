@@ -11,11 +11,11 @@ set CoreRT_TestRun=true
 set CoreRT_TestCompileMode=
 set CoreRT_RunCoreCLRTests=
 set CoreRT_CoreCLRTargetsFile=
+set CoreRT_TestLogFileName=testresults.xml
 
 :ArgLoop
 if "%1" == "" goto :ArgsDone
 if /i "%1" == "/?" goto :Usage
-if /i "%1" == "/multimodule"    (exit /b 0)
 if /i "%1" == "x64"    (set CoreRT_BuildArch=x64&&shift&goto ArgLoop)
 if /i "%1" == "x86"    (set CoreRT_BuildArch=x86&&shift&goto ArgLoop)
 if /i "%1" == "arm"    (set CoreRT_BuildArch=arm&&shift&goto ArgLoop)
@@ -48,6 +48,7 @@ if /i "%1" == "/coreclr"  (
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
+if /i "%1" == "/multimodule" (set CoreRT_MultiFileConfiguration=MultiModule&shift&goto ArgLoop)
 
 echo Invalid command line argument: %1
 goto :Usage
@@ -59,6 +60,7 @@ echo     flavor        : debug / release
 echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit. Default: both
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
+echo     /multimodule  : Compile the framework as a .lib and link tests against it (only supports ryujit)
 echo.
 echo     --- CoreCLR Subset ---
 echo        Top200     : Runs broad coverage / CI validation (~200 tests).
@@ -68,12 +70,25 @@ exit /b 2
 
 :ArgsDone
 
+:: Cpp Codegen does not support multi-module compilation, so force Ryujit
+if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
+    set CoreRT_TestCompileMode=ryujit
+)
+
 call %CoreRT_TestRoot%testenv.cmd
 
 set CoreRT_RspTemplateDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
+
+:: Place test logs in a subfolder in multi-module mode so both single-file and
+:: multi-module test results are visible to the CI tooling
+if NOT "%CoreRT_MultiFileConfiguration%" == "" (
+    set CoreRT_TestLogFileName=%CoreRT_MultiFileConfiguration%\%CoreRT_TestLogFileName%
+    mkdir %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%
+)
+
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
 
 call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
@@ -117,14 +132,14 @@ set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%
 set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%
 set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%
 
-echo ^<?xml version="1.0" encoding="utf-8"?^> > %__CoreRTTestBinDir%\testResults.xml
-echo ^<assemblies^>  >> %__CoreRTTestBinDir%\testResults.xml
-echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\testResults.xml
-echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\testResults.xml
-type %__CoreRTTestBinDir%\testResults.tmp >> %__CoreRTTestBinDir%\testResults.xml
-echo ^</collection^>  >> %__CoreRTTestBinDir%\testResults.xml
-echo ^</assembly^>  >> %__CoreRTTestBinDir%\testResults.xml
-echo ^</assemblies^>  >> %__CoreRTTestBinDir%\testResults.xml
+echo ^<?xml version="1.0" encoding="utf-8"?^> > %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+echo ^<assemblies^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+type %__CoreRTTestBinDir%\testResults.tmp >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+echo ^</collection^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+echo ^</assembly^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+echo ^</assemblies^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 
 echo.
 set __JitStatusPassed=1
@@ -180,11 +195,15 @@ goto :eof
         if /i "%CoreRT_BuildType%" == "debug" (
             set extraArgs=!extraArgs! /p:UseDebugCrt=true
         )
+    ) else (
+        if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
+            set extraArgs=!extraArgs! "/p:IlcMultiModule=true"
+        )
     )
 
-    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" !extraArgs! !__SourceFile!.csproj
+    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0\..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0\..\bin\obj\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
     echo.
-    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" !extraArgs! !__SourceFile!.csproj
+    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0\..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0\..\bin\obj\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
