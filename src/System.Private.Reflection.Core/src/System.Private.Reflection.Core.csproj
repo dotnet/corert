@@ -10,10 +10,15 @@
     <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <DefineConstants>ENABLE_REFLECTION_TRACE;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
+    <DefineConstants>ECMA_METADATA_SUPPORT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -27,10 +32,12 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
+    <ReferencePath Include="e:\temp\facades\System.Reflection.Primitives.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <!-- TODO: We should always include this -->
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
   </ItemGroup>
@@ -38,8 +45,28 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\EcmaFormat\EcmaFormatCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\EventInfos\EcmaFormat\EcmaFormatRuntimeEventInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\FieldInfos\EcmaFormat\EcmaFormatRuntimeFieldInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\EcmaFormat\EcmaFormatMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\EcmaFormat\EcmaFormatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\PropertyInfos\EcmaFormat\EcmaFormatRuntimePropertyInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForMethods.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForMethods.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForTypes.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForTypes.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.CoreGetDeclared.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EcmaFormat\ReflectionTypeProvider.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EcmaFormat\DefaultValueProcessing.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Helpers.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeResolver.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeUnifier.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.Ecma.cs" />
   </ItemGroup>
   <ItemGroup>

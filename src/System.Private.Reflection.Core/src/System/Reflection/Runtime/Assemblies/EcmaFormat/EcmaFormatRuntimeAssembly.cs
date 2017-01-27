@@ -9,7 +9,10 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.EcmaFormat;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using System.Collections.Generic;
@@ -20,6 +23,10 @@ using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+
+using Internal.Runtime.TypeLoader;
 
 namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
@@ -39,16 +46,8 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Assembly_CustomAttributes(this);
 #endif
-                throw new NotImplementedException();
-                /*
-                                foreach (QScopeDefinition scope in AllScopes)
-                                {
-                                    foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.CustomAttributes))
-                                        yield return cad;
-
-                                    foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(scope.Reader, scope.Handle))
-                                        yield return cad;
-                                }*/
+                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(MetadataReader, MetadataReader.GetAssemblyDefinition().GetCustomAttributes()))
+                    yield return cad;
             }
         }
 
@@ -60,19 +59,18 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Assembly_DefinedTypes(this);
 #endif
-                throw new NotImplementedException();
-                /*
-                foreach (QScopeDefinition scope in AllScopes)
+                TypeDefinitionHandleCollection allTypes = MetadataReader.TypeDefinitions;
+
+                bool skipFirstType = true; // The first type is always the module type, which isn't returned by this api.
+                foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
                 {
-                    MetadataReader reader = scope.Reader;
-                    ScopeDefinition scopeDefinition = scope.ScopeDefinition;
-                    IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
-                    IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
-                    IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
-                    IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: false);
-                    foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return typeDefinitionHandle.GetNamedType(reader);
-                }*/
+                    if (skipFirstType)
+                    {
+                        skipFirstType = false;
+                        continue;
+                    }
+                    yield return typeDefinitionHandle.GetNamedType(MetadataReader);
+                }
             }
         }
 
@@ -139,7 +137,50 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             return MetadataReader.GetHashCode();
         }
 
+        public sealed override MethodInfo EntryPoint 
+        {
+            get 
+            {
+                 
+                CorHeader corHeader = PEReader.PEHeaders.CorHeader; 
+                if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0) 
+                { 
+                    // Entrypoint is an RVA to an unmanaged method 
+                    return null; 
+                } 
+
+                int entryPointToken = corHeader.EntryPointTokenOrRelativeVirtualAddress; 
+                if (entryPointToken == 0) 
+                { 
+                    // No entrypoint 
+                    return null; 
+                } 
+ 
+                Handle handle = MetadataTokens.Handle(entryPointToken); 
+
+                if (handle.Kind != HandleKind.MethodDefinition)
+                {
+                    return null;
+                }
+
+                MethodDefinitionHandle methodHandle = (MethodDefinitionHandle)handle;
+                TypeDefinitionHandle declaringType = MetadataReader.GetMethodDefinition(methodHandle).GetDeclaringType();
+                RuntimeTypeInfo runtimeType = declaringType.GetNamedType(MetadataReader);
+
+                return RuntimeNamedMethodInfo<EcmaFormatMethodCommon>.GetRuntimeNamedMethodInfo(new EcmaFormatMethodCommon(methodHandle, (EcmaFormatRuntimeNamedTypeInfo)runtimeType, runtimeType), runtimeType);
+            }
+        }
+
+
         internal AssemblyDefinition AssemblyDefinition { get; }
         internal MetadataReader MetadataReader { get; }
+        internal PEReader PEReader
+        {
+            get
+            {
+                var moduleInfo = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader);
+                return moduleInfo.EcmaPEInfo.PE;
+            }
+        }
     }
 }

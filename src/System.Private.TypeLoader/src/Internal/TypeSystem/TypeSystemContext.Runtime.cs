@@ -662,6 +662,58 @@ namespace Internal.TypeSystem
                 return _canonTypeArray;
             }
         }
+
+#if ECMA_METADATA_SUPPORT
+        public class ModuleToEcmaModuleHashtable : LockFreeReaderHashtable<ModuleInfo, Internal.TypeSystem.Ecma.EcmaModule>
+        {
+            private TypeSystemContext _context;
+
+            public ModuleToEcmaModuleHashtable(TypeSystemContext context)
+            {
+                _context = context;
+            }
+
+            protected override int GetKeyHashCode(ModuleInfo key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(Internal.TypeSystem.Ecma.EcmaModule value)
+            {
+                return value.RuntimeModuleInfo.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(ModuleInfo key, Internal.TypeSystem.Ecma.EcmaModule value)
+            {
+                return key == value.RuntimeModuleInfo;
+            }
+
+            protected override bool CompareValueToValue(Internal.TypeSystem.Ecma.EcmaModule value1, Internal.TypeSystem.Ecma.EcmaModule value2)
+            {
+                return value1.RuntimeModuleInfo == value2.RuntimeModuleInfo;
+            }
+
+            protected override Internal.TypeSystem.Ecma.EcmaModule CreateValueFromKey(ModuleInfo key)
+            {
+                Internal.TypeSystem.Ecma.EcmaModule result = new Internal.TypeSystem.Ecma.EcmaModule(_context, key.EcmaPEInfo.PE, key.EcmaPEInfo.Reader);
+                result.SetRuntimeModuleInfoUNSAFE(key);
+                return result;
+            }
+        }
+
+        private ModuleToEcmaModuleHashtable _ecmaModules = null;
+
+        internal Internal.TypeSystem.Ecma.EcmaModule ResolveEcmaModule(ModuleInfo module)
+        {
+            if (module.EcmaPEInfo == null)
+                return null;
+
+            if (_ecmaModules == null)
+                _ecmaModules = new ModuleToEcmaModuleHashtable(this);
+
+            return _ecmaModules.GetOrCreateValue(module);
+        }        
+#endif // ECMA_METADATA_SUPPORT        
     }
 
     internal static partial class TypeNameHelper

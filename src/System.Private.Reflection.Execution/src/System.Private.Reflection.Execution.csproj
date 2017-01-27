@@ -7,6 +7,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{306A4D48-0ACF-41C4-BBA0-BCDAD9253E2D}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EcmaMetadataSupport>true</EcmaMetadataSupport>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
@@ -15,6 +16,9 @@
 
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
+    <DefineConstants>ECMA_METADATA_SUPPORT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Setup the right references -->
@@ -25,8 +29,10 @@
 
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />  
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />  
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
+    <ReferencePath Include="e:\temp\facades\System.Reflection.Primitives.dll" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -34,6 +40,7 @@
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+    <ProjectReference Include="..\..\System.Private.Jit\src\System.Private.Jit.csproj" />
 
     <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
@@ -42,6 +49,10 @@
   <PropertyGroup>
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
   </PropertyGroup>
+  <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
+    <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\DiagnosticMappingTables.Ecma.cs" />
+    <Compile Include="Internal\Reflection\Execution\EcmaFormatEnumInfoImplementation.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />

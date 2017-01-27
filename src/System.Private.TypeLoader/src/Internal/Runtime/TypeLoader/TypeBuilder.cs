@@ -62,6 +62,13 @@ namespace Internal.Runtime.TypeLoader
         Statics = 2,
     }
 
+    public static class TypeBuilderApi
+    {
+        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
+        {
+            TypeBuilder.ResolveMultipleCells(cells, out fixups);
+        }
+    }
 
 
     internal class TypeBuilder
@@ -1925,6 +1932,23 @@ namespace Internal.Runtime.TypeLoader
             fixupResolution = cell.Create(this);
         }
 
+        private void ResolveMultipleCells_Worker(GenericDictionaryCell[] cells, out IntPtr[] fixups)
+        {
+            foreach (var cell in cells)
+            {
+                cell.Prepare(this);
+            }
+
+            // Process the pending types
+            ProcessTypesNeedingPreparation();
+            FinishTypeAndMethodBuilding();
+
+            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
+            fixups = new IntPtr[cells.Length];
+            for (int i = 0; i < fixups.Length; i++)
+                fixups[i] = cells[i].Create(this);
+        }
+
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         private void ResolveSingleMetadataFixup(NativeFormatMetadataUnit module, Handle token, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
@@ -1951,6 +1975,11 @@ namespace Internal.Runtime.TypeLoader
         internal static void ResolveSingleCell(GenericDictionaryCell cell, out IntPtr fixupResolution)
         {
             new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
+        }
+
+        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
+        {
+            new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }
 
         public static IntPtr BuildGenericLookupTarget(IntPtr typeContext, IntPtr signature, out IntPtr auxResult)

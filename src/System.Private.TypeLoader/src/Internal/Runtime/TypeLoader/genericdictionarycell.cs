@@ -19,7 +19,7 @@ using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal abstract class GenericDictionaryCell
+    public abstract class GenericDictionaryCell
     {
         abstract internal void Prepare(TypeBuilder builder);
         abstract internal IntPtr Create(TypeBuilder builder);
@@ -41,7 +41,7 @@ namespace Internal.Runtime.TypeLoader
             return th;
         }
 
-        private class TypeHandleCell : GenericDictionaryCell
+        public class TypeHandleCell : GenericDictionaryCell
         {
             internal TypeDesc Type;
 
@@ -500,12 +500,25 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private class MethodCell : GenericDictionaryCell
+        public class IntPtrCell : GenericDictionaryCell
         {
-            internal MethodDesc Method;
-            internal RuntimeSignature MethodSignature;
+            public IntPtr Value;
+            internal unsafe override void Prepare(TypeBuilder builder)
+            {
+            }
+
+            internal unsafe override IntPtr Create(TypeBuilder builder)
+            {
+                return Value;
+            }
+        }
+
+        public class MethodCell : GenericDictionaryCell
+        {
+            public MethodDesc Method;
+            public RuntimeSignature MethodSignature;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            internal bool ExactCallableAddressNeeded;
+            public bool ExactCallableAddressNeeded;
 #endif
             private bool _universalCanonImplementationOfCanonMethod;
             private MethodDesc _methodToUseForInstantiatingParameters;
