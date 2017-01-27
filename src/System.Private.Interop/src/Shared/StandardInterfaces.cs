@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     [CLSCompliant(false)]
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.VtableIUnknown)]
     public unsafe struct __vtable_IUnknown
     {
         // IUnknown
@@ -39,12 +38,22 @@ namespace System.Runtime.InteropServices
         internal IntPtr pfnRelease;
 
         public static IntPtr pNativeVtable;
-        private static __vtable_IUnknown s_theCcwVtable = new __vtable_IUnknown
+
+        private static __vtable_IUnknown s_theCcwVtable;
+
+        /// <summary>
+        /// Eager library initializer called from LibraryInitializer.cs for the module
+        /// </summary>
+        internal static void Initialize()
         {
-            pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(QueryInterface),
-            pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(AddRef),
-            pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(Release),
-        };
+            s_theCcwVtable = new __vtable_IUnknown
+            {
+                pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(QueryInterface),
+                pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(AddRef),
+                pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(Release),
+            };
+        }
+
         internal static IntPtr GetVtableFuncPtr()
         {
             return AddrOfIntrinsics.AddrOf<AddrOfGetCCWVtable>(GetCcwvtable_IUnknown);

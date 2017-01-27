@@ -35,7 +35,6 @@ namespace System.Runtime.InteropServices
     /// NOTE: Managed debugger depends on class full name: "System.Runtime.InteropServices.McgModuleManager"
     /// </summary>
     [CLSCompliant(false)]
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.McgModuleManager)]
     public static class McgModuleManager
     {
         internal const int NUM_BITS_FOR_MAX_MODULES = 3;
@@ -54,7 +53,10 @@ namespace System.Runtime.InteropServices
         private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToCollectionIndexMap;
         private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToBoxingIndexMap;
 
-        static McgModuleManager()
+        /// <summary>
+        /// Eager initialization code called from LibraryInitializer.
+        /// </summary>
+        internal static void Initialize()
         {
             UseDynamicInterop = false;
             
@@ -132,7 +134,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void Initialize()
+        public static void LateInitialize()
         {
             int totalInterfaces = 0;
             int totalCCWTemplates = 0;

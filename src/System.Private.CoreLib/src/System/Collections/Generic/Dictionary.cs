@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.CompilerServices;
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -11,11 +12,13 @@ using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
+    [RelocatedType("System.Collections")]
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
     {
+        [RelocatedType("System.Collections")]
         private struct Entry
         {
             public int hashCode;    // Lower 31 bits of hash code, -1 if unused
@@ -438,7 +441,7 @@ namespace System.Collections.Generic
                 entries = new Entry[hashsize];
                 freeList = -1;
 
-                KeyValuePair<TKey, TValue>[] array = 
+                KeyValuePair<TKey, TValue>[] array =
                     (KeyValuePair<TKey, TValue>[])siInfo.GetValue(KeyValuePairsName, typeof(KeyValuePair<TKey, TValue>[]));
 
                 if (array == null)
@@ -794,6 +797,7 @@ namespace System.Collections.Generic
             }
         }
 
+        [RelocatedType("System.Collections")]
         [Serializable]
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>,
             IDictionaryEnumerator
@@ -921,6 +925,7 @@ namespace System.Collections.Generic
             }
         }
 
+        [RelocatedType("System.Collections")]
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         [Serializable]
@@ -1075,6 +1080,7 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
+            [RelocatedType("System.Collections")]
             [Serializable]
             public struct Enumerator : IEnumerator<TKey>, System.Collections.IEnumerator
             {
@@ -1152,6 +1158,7 @@ namespace System.Collections.Generic
             }
         }
 
+        [RelocatedType("System.Collections")]
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         [Serializable]
@@ -1304,6 +1311,7 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
+            [RelocatedType("System.Collections")]
             [Serializable]
             public struct Enumerator : IEnumerator<TValue>, System.Collections.IEnumerator
             {

@@ -11,6 +11,7 @@ namespace Internal.Runtime.CompilerServices
     /// This supports fixing up references to those types when CoreFX doesn't yet have 
     /// forwarders for them.
     /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Delegate | AttributeTargets.Enum | AttributeTargets.Interface | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public class RelocatedTypeAttribute : Attribute
     {
         /// <summary>

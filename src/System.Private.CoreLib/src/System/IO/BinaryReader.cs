@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.CompilerServices;
 using System.Text;
 using System.Diagnostics;
 
 namespace System.IO
 {
+    [RelocatedType("System.IO")]
+    [RelocatedType("System.Runtime.Extensions")]
     public class BinaryReader : IDisposable
     {
         private const int MaxCharBytesSize = 128;
