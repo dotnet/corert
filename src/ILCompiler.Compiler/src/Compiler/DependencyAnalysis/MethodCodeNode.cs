@@ -101,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 if (_method.OwningType.IsValueType && !_method.Signature.IsStatic)
-                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(_method, true), "Reflection unboxing stub"));
+                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(_method, unboxingStub: true), "Reflection unboxing stub"));
             }
 
             if (_method.HasInstantiation)
