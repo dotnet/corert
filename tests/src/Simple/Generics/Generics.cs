@@ -350,7 +350,6 @@ class Program
                 // Make sure we compile this method body.
                 var tmp = new Foo<string>();
                 tmp.SetAndCheck<string>(0, null);
-                tmp.SetAndCheck<object>(0, null);
             }
 
             object o = new Foo<string>();
@@ -368,11 +367,12 @@ class Program
                     throw new Exception();
             }
 
-            {
+            // Uncomment when we have the type loader to buld invoke stub dictionaries.
+            /*{
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(object));
                 if ((bool)mi.Invoke(o, new object[] { 123, new object() }))
                     throw new Exception();
-            }
+            }*/
         }
     }
 
