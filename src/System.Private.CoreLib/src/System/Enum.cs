@@ -681,6 +681,10 @@ namespace System
         public static object ToObject(Type enumType, ulong value) => ToObjectWorker(enumType, (long)value);
         public static object ToObject(Type enumType, long value) => ToObjectWorker(enumType, value);
 
+        // These are needed to service ToObject(Type, Object).
+        private static object ToObject(Type enumType, char value) => ToObjectWorker(enumType, value);
+        private static object ToObject(Type enumType, bool value) => ToObjectWorker(enumType, value ? 1 : 0);
+
         // Common helper for the non-boxing Enum.ToObject() overloads.
         private static object ToObjectWorker(Type enumType, long value)
         {
@@ -698,31 +702,55 @@ namespace System
             {
                 byte* pValue = (byte*)&value;
                 AdjustForEndianness(ref pValue, enumEEType);
-                return RuntimeImports.RhBox(enumEEType, &pValue);
+                return RuntimeImports.RhBox(enumEEType, pValue);
             }
         }
 
-        public static unsafe Object ToObject(Type enumType, Object value)
+        public static Object ToObject(Type enumType, Object value)
         {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            if (!enumType.TypeHandle.ToEETypePtr().IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
+            Contract.EndContractBlock();
 
-            ulong rawValue;
-            bool success = TryGetUnboxedValueOfEnumOrInteger(value, out rawValue);
-            if (!success)
-                throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum);
+            // Delegate rest of error checking to the other functions
+            TypeCode typeCode = Convert.GetTypeCode(value);
 
-            if (value.EETypePtr.IsEnum && !ValueTypeMatchesEnumType(enumType, value))
-                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), enumType));
+            switch (typeCode)
+            {
+                case TypeCode.Int32:
+                    return ToObject(enumType, (int)value);
 
-            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
-            return RuntimeImports.RhBox(enumEEType, &rawValue);  //@todo: Not big-endian compatible.
+                case TypeCode.SByte:
+                    return ToObject(enumType, (sbyte)value);
+
+                case TypeCode.Int16:
+                    return ToObject(enumType, (short)value);
+
+                case TypeCode.Int64:
+                    return ToObject(enumType, (long)value);
+
+                case TypeCode.UInt32:
+                    return ToObject(enumType, (uint)value);
+
+                case TypeCode.Byte:
+                    return ToObject(enumType, (byte)value);
+
+                case TypeCode.UInt16:
+                    return ToObject(enumType, (ushort)value);
+
+                case TypeCode.UInt64:
+                    return ToObject(enumType, (ulong)value);
+
+                case TypeCode.Char:
+                    return ToObject(enumType, (char)value);
+
+                case TypeCode.Boolean:
+                    return ToObject(enumType, (bool)value);
+
+                default:
+                    // All unsigned types will be directly cast
+                    throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
+            }
         }
 
         public static bool TryParse(Type enumType, String value, bool ignoreCase, out Object result)
