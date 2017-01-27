@@ -5,6 +5,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -18,6 +19,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static void InitializeLibrary()
         {
+            Lock.Initialize();
             PreallocatedOutOfMemoryException.Initialize();
             ClassConstructorRunner.Initialize();
             TypeLoaderExports.Initialize();

@@ -14,8 +14,13 @@ namespace System.Threading
         // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
         // All static data in Lock must be pre-initialized.
         //
-        [PreInitialized]
-        private static int s_maxSpinCount = -1; // -1 means the spin count has not yet beeen determined.
+        private static int s_maxSpinCount;
+
+        // Eager construction called from LibraryInitialize
+        internal static void Initialize()
+        {
+            s_maxSpinCount = -1; // -1 means the spin count has not yet beeen determined.
+        }
 
         //
         // m_state layout:
