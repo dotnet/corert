@@ -243,10 +243,12 @@ namespace Internal.IL.Stubs
                 Context.GetWellKnownType(WellKnownType.Void);
 
             MethodSignature thisCallMethodSig = new MethodSignature(0, 0, returnType, targetMethodSignature);
-            thisCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(thisCallMethodSig));
+            CalliIntrinsic.EmitTransformedCalli(emitter, thisCallSiteSetupStream, thisCallMethodSig);
+            //thisCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(thisCallMethodSig));
 
             MethodSignature staticCallMethodSig = new MethodSignature(MethodSignatureFlags.Static, 0, returnType, targetMethodSignature);
-            staticCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(staticCallMethodSig));
+            CalliIntrinsic.EmitTransformedCalli(emitter, staticCallSiteSetupStream, staticCallMethodSig);
+            //staticCallSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(staticCallMethodSig));
 
             if (_targetSignature.HasReturnValue)
             {

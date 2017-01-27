@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 class Program
@@ -15,6 +16,7 @@ class Program
         TestDelegateFatFunctionPointers.Run();
         TestVirtualMethodUseTracking.Run();
         TestSlotsInHierarchy.Run();
+        TestReflectionInvoke.Run();
         TestDelegateVirtualMethod.Run();
         TestDelegateInterfaceMethod.Run();
         TestThreadStaticFieldAccess.Run();
@@ -323,6 +325,53 @@ class Program
 
             if (derived.Cast("Hello") != "Hello")
                 throw new Exception();
+        }
+    }
+
+    class TestReflectionInvoke
+    {
+        struct Foo<T>
+        {
+            public int Value;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public bool SetAndCheck<U>(int value, U check)
+            {
+                Value = value;
+                return check != null && typeof(T) == typeof(U);
+            }
+        }
+
+        public static void Run()
+        {
+            if (String.Empty.Length > 0)
+            {
+                // Make sure we compile this method body.
+                var tmp = new Foo<string>();
+                tmp.SetAndCheck<string>(0, null);
+                tmp.SetAndCheck<object>(0, null);
+            }
+
+            object o = new Foo<string>();
+
+            {
+                MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(string));
+                if (!(bool)mi.Invoke(o, new object[] { 123, "hello" }))
+                    throw new Exception();
+
+                var foo = (Foo<string>)o;
+                if (foo.Value != 123)
+                    throw new Exception();
+
+                if ((bool)mi.Invoke(o, new object[] { 123, null }))
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(object));
+                if ((bool)mi.Invoke(o, new object[] { 123, new object() }))
+                    throw new Exception();
+            }
         }
     }
 
