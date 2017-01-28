@@ -1046,14 +1046,14 @@ namespace System
             }
         }
 
-        public String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
+        public unsafe String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(separator, Int32.MaxValue, options);
+            return SplitInternal(&separator, 1, int.MaxValue, options);
         }
 
-        public String[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None)
+        public unsafe String[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(separator, count, options);
+            return SplitInternal(&separator, 1, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1094,11 +1094,6 @@ namespace System
         public String[] Split(char[] separator, int count, StringSplitOptions options)
         {
             return SplitInternal(separator, count, options);
-        }
-
-        private unsafe String[] SplitInternal(char separator, int count, StringSplitOptions options)
-        {
-            return SplitInternal(&separator, 1, count, options);
         }
 
         private unsafe String[] SplitInternal(char[] separator, int count, StringSplitOptions options)
