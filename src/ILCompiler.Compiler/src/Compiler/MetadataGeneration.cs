@@ -211,6 +211,7 @@ namespace ILCompiler
 
             TypeSystemContext context = method.Context;
             var sig = method.Signature;
+            ParameterMetadata[] paramMetadata = null;
 
             // Get a generic method that can be used to invoke method with this shape.
             MethodDesc thunk;
@@ -248,18 +249,27 @@ namespace ILCompiler
                     // For pointer typed parameters, instantiate the method over IntPtr
                     parameterType = context.GetWellKnownType(WellKnownType.IntPtr);
                 }
-                else if (parameterType.IsDefType)
+                else if (parameterType.IsEnum)
                 {
-                    // TODO: optimize enum types with no default value
-                    // DefType* paramDefType = parameterType->as<DefType> ();
-                    // // If the invoke method takes an enum as an input paramter and there is no default value for
-                    // // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
-                    // // on the underlying integral type of the enum.)
-                    // if (paramDefType && (!IsPdHasDefault(methodToInvoke->Parameters()[index].Attributes())) && paramDefType->IsEnum())
-                    // {
-                    //     CorElementType underlyingElemType = paramDefType->InternalElementType();
-                    //     parameterType = paramDefType->GetLoaderContext()->GetElementType(underlyingElemType);
-                    // }
+                    // If the invoke method takes an enum as an input parameter and there is no default value for
+                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // on the underlying integral type of the enum.)
+                    if (paramMetadata == null)
+                        paramMetadata = method.GetParameterMetadata();
+
+                    bool hasDefaultValue = false;
+                    foreach (var p in paramMetadata)
+                    {
+                        // Parameter metadata indexes are 1-based (0 is reserved for return "parameter")
+                        if (p.Index == (i + 1) && p.HasDefault)
+                        {
+                            hasDefaultValue = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasDefaultValue)
+                        parameterType = parameterType.UnderlyingType;
                 }
 
                 instantiation[i] = parameterType;
