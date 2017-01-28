@@ -26,6 +26,14 @@ namespace Internal.TypeSystem
             return Object.ReferenceEquals(this, o);
         }
 
+        public sealed override EntityKind EntityKind
+        {
+            get
+            {
+                return EntityKind.FieldDesc;
+            }
+        }
+
         public virtual string Name
         {
             get

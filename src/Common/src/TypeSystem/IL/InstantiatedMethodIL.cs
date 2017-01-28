@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 
 using Internal.TypeSystem;
 
@@ -92,32 +93,36 @@ namespace Internal.IL
 
         public override Object GetObject(int token)
         {
-            Object o = _methodIL.GetObject(token);
+            object o = _methodIL.GetObject(token);
+            var entity = o as TypeSystemEntity;
 
-            if (o is MethodDesc)
+            if (entity != null)
             {
-                o = ((MethodDesc)o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
-            }
-            else if (o is TypeDesc)
-            {
-                o = ((TypeDesc)o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
-            }
-            else if (o is FieldDesc)
-            {
-                o = ((FieldDesc)o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
-            }
-            else if (o is MethodSignature)
-            {
-                MethodSignature template = (MethodSignature)o;
-                MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
+                switch (entity.EntityKind)
+                {
+                    case EntityKind.MethodDesc:
+                        o = Unsafe.As<MethodDesc>(o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                        break;
+                    case EntityKind.TypeDesc:
+                        o = Unsafe.As<TypeDesc>(o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                        break;
+                    case EntityKind.FieldDesc:
+                        o = Unsafe.As<FieldDesc>(o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                        break;
+                    case EntityKind.MethodSignature:
+                        {
+                            MethodSignature template = Unsafe.As<MethodSignature>(o);
+                            MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
 
-                builder.ReturnType = template.ReturnType.InstantiateSignature(_typeInstantiation, _methodInstantiation);
-                for (int i = 0; i < template.Length; i++)
-                    builder[i] = template[i].InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                            builder.ReturnType = template.ReturnType.InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                            for (int i = 0; i < template.Length; i++)
+                                builder[i] = template[i].InstantiateSignature(_typeInstantiation, _methodInstantiation);
 
-                o = builder.ToSignature();
+                            o = builder.ToSignature();
+                        }
+                        break;
+                }
             }
-
 
             return o;
         }
