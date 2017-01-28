@@ -66,6 +66,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new TypeNonGCStaticBaseGenericLookupResult(type);
                 });
+
+                _objectAllocators = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new ObjectAllocatorGenericLookupResult(type);
+                });
+
+                _arrayAllocators = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new ArrayAllocatorGenericLookupResult(type);
+                });
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -129,6 +139,20 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult MethodEntry(MethodDesc method)
             {
                 return _methodEntrypoints.GetOrAdd(method);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _objectAllocators;
+
+            public GenericLookupResult ObjectAlloctor(TypeDesc type)
+            {
+                return _objectAllocators.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _arrayAllocators;
+
+            public GenericLookupResult ArrayAlloctor(TypeDesc type)
+            {
+                return _arrayAllocators.GetOrAdd(type);
             }
         }
 
