@@ -144,7 +144,6 @@
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalImpl.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalAsAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
     <Compile Include="System\Runtime\InteropServices\OptionalAttribute.cs" />
@@ -153,9 +152,7 @@
     <Compile Include="System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
     <Compile Include="System\Runtime\InteropServices\SEHException.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\UnmanagedType.cs" />
     <Compile Include="System\Runtime\InteropServices\UnknownWrapper.cs" />
-    <Compile Include="System\Runtime\InteropServices\VarEnum.cs" />
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\VariantWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />

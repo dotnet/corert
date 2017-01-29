@@ -49,6 +49,7 @@ namespace System.Globalization
             {
                 fixed (char* pResult = result)
                 {
+#if CORECLR
                     if (IsAsciiCasingSameAsInvariant && s.IsAscii())
                     {
                         int length = s.Length;
@@ -69,6 +70,7 @@ namespace System.Globalization
                         }
                     }
                     else
+#endif
                     {
                         ChangeCase(pSource, s.Length, pResult, result.Length, toUpper);
                     }
