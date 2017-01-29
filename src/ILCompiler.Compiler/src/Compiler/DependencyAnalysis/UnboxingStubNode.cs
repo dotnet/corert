@@ -35,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("unbox_").Append(NodeFactory.NameMangler.GetMangledMethodName(_target));
         }
 
+        public override bool IsShareable => true;
+
         protected override string GetName() => this.GetMangledName();
     }
 }

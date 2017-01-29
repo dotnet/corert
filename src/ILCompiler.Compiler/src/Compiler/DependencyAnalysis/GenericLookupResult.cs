@@ -61,6 +61,34 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// Generic lookup result that points to a RuntimeMethodHandle.
+    /// </summary>
+    internal sealed class MethodHandleGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public MethodHandleGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod, "Concrete method in a generic dictionary?");
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.RuntimeMethodHandle(instantiatedMethod);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("MethodHandle_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"MethodHandle: {_method}";
+    }
+
+    /// <summary>
     /// Generic lookup result that points to a method dictionary.
     /// </summary>
     internal sealed class MethodDictionaryGenericLookupResult : GenericLookupResult
@@ -81,11 +109,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("MethodHandle_");
+            sb.Append("MethodDictionary_");
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
-        public override string ToString() => $"MethodHandle: {_method}";
+        public override string ToString() => $"MethodDictionary: {_method}";
     }
 
     /// <summary>
@@ -275,5 +303,62 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"GCStaticBase: {_type}";
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to an object allocator.
+    /// </summary>
+    internal sealed class ObjectAllocatorGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public ObjectAllocatorGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("AllocObject_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"AllocObject: {_type}";
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to an array allocator.
+    /// </summary>
+    internal sealed class ArrayAllocatorGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public ArrayAllocatorGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            Debug.Assert(instantiatedType.IsArray);
+            return factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(instantiatedType));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("AllocArray_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"AllocArray: {_type}";
     }
 }

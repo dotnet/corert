@@ -18,7 +18,7 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal abstract class RuntimeMethodParameterInfo : RuntimeParameterInfo
     {
-        protected RuntimeMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
+        protected RuntimeMethodParameterInfo(MethodBase member, int position, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
             : base(member, position)
         {
             QualifiedParameterTypeHandle = qualifiedParameterTypeHandle;
@@ -41,7 +41,7 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        protected readonly QTypeDefRefOrSpec QualifiedParameterTypeHandle;
+        protected readonly QSignatureTypeHandle QualifiedParameterTypeHandle;
         private readonly TypeContext _typeContext;
         private volatile Type _lazyParameterType;
     }

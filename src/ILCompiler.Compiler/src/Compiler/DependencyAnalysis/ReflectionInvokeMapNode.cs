@@ -121,9 +121,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & InvokeTableFlags.HasEntrypoint) != 0)
                 {
+                    bool useUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
                     vertex = writer.GetTuple(vertex,
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
-                            factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)))));
+                            factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific), useUnboxingStub))));
                 }
 
                 // TODO: data to generate the generic dictionary with the type loader

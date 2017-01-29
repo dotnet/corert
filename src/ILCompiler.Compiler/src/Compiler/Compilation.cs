@@ -65,9 +65,6 @@ namespace ILCompiler
             // https://github.com/dotnet/corert/issues/2454
             // https://github.com/dotnet/corert/issues/2149
             if (this is CppCodegenCompilation) forceLazyPInvokeResolution = false;
-            // TODO: Workaround missing PInvokes with multifile compilation
-            // https://github.com/dotnet/corert/issues/2454
-            if (!nodeFactory.CompilationModuleGroup.IsSingleFileCompilation) forceLazyPInvokeResolution = true;
             PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution));
 
             _methodILCache = new ILProvider(PInvokeILProvider);
@@ -209,6 +206,31 @@ namespace ILCompiler
                 {
                     _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
                 }
+            }
+
+            public void RootStaticBasesForType(TypeDesc type, string reason)
+            {
+                Debug.Assert(!type.IsGenericDefinition);
+
+                MetadataType metadataType = type as MetadataType;
+                if (metadataType != null)
+                {
+                    if (metadataType.ThreadStaticFieldSize > 0)
+                    {
+                        _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
+                    }
+
+                    if (metadataType.GCStaticFieldSize > 0)
+                    {
+                        _graph.AddRoot(_factory.TypeGCStaticsSymbol(metadataType), reason);
+                    }
+
+                    if (metadataType.NonGCStaticFieldSize > 0)
+                    {
+                        _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
+                    }
+                }
+
             }
         }
     }

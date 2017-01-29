@@ -1364,7 +1364,7 @@ namespace System.Runtime.InteropServices
         
         #region "PInvoke Delegate"
 
-#if !CORECLR
+#if !CORECLR && !CORERT
         private static class AsmCode
         {
             private const MethodImplOptions InternalCall = (MethodImplOptions)0x1000;
@@ -1692,7 +1692,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
         {
-#if RHTESTCL || CORECLR
+#if RHTESTCL || CORECLR || CORERT
             throw new NotSupportedException();
 #else
             //
@@ -1720,7 +1720,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
         {
-#if RHTESTCL || CORECLR
+#if RHTESTCL || CORECLR || CORERT
             throw new NotSupportedException();
 #else
             //

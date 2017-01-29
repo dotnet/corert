@@ -499,7 +499,7 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method.Signature, out sig);
 
             // Does the method have a hidden parameter?
-            if (method.RequiresInstArg() && !isFatFunctionPointer)
+            if (method.RequiresInstArg() && !isFatFunctionPointer && !_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
@@ -1014,6 +1014,8 @@ namespace Internal.JitInterface
 
             CorInfoFlag result = (CorInfoFlag)0;
 
+            var metadataType = type as MetadataType;
+
             // The array flag is used to identify the faked-up methods on
             // array types, i.e. .ctor, Get, Set and Address
             if (type.IsArray)
@@ -1029,6 +1031,10 @@ namespace Internal.JitInterface
             {
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
 
+                // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
+                if (metadataType.IsExplicitLayout)
+                    result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
+
                 // TODO
                 // if (type.IsUnsafeValueType)
                 //    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
@@ -1043,7 +1049,6 @@ namespace Internal.JitInterface
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
-            var metadataType = type as MetadataType;
             if (metadataType != null)
             {
                 if (metadataType.ContainsGCPointers)
@@ -1054,6 +1059,10 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsSealed)
                     result |= CorInfoFlag.CORINFO_FLG_FINAL;
+
+                // Assume overlapping fields for explicit layout.
+                if (metadataType.IsExplicitLayout)
+                    result |= CorInfoFlag.CORINFO_FLG_OVERLAPPING_FIELDS;
             }
 
             return (uint)result;
@@ -2332,11 +2341,19 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    throw new NotImplementedException("LDTOKEN Method");
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
+                        pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeMethodHandle(md));
+                    else
+                        throw new NotImplementedException();
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
+                        pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                    else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method)
+                        pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
+                    else
+                        throw new NotImplementedException();
                 }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)

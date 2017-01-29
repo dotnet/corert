@@ -6,6 +6,8 @@
 using System;
 using System.Text;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
@@ -28,7 +30,7 @@ namespace Internal.Runtime.TypeLoader
     /// Calling regular ToString() on these types goes through a lot of the CultureInfo machinery
     /// which is not low level enough for the type loader purposes.
     /// </summary>
-    internal static class LowLevelStringConverter
+    internal static partial class LowLevelStringConverter
     {
         private const string HexDigits = "0123456789ABCDEF";
 
@@ -69,13 +71,21 @@ namespace Internal.Runtime.TypeLoader
 
         public static string LowLevelToString(this RuntimeTypeHandle rtth)
         {
-            MetadataReader reader;
-            TypeDefinitionHandle typeDefHandle;
             TypeReferenceHandle typeRefHandle;
+            QTypeDefinition qTypeDefinition;
+            MetadataReader reader;
 
             // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out reader, out typeDefHandle))
+            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
             {
+#if ECMA_METADATA_SUPPORT
+                string result = EcmaMetadataFullName(qTypeDefinition);
+                if (result != null)
+                    return result;
+#endif
+
+                reader = qTypeDefinition.NativeFormatReader;
+                TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
                 return typeDefHandle.GetFullName(reader);
             }
 

@@ -12,6 +12,8 @@ using global::Internal.NativeFormat;
 using global::Internal.Runtime.TypeLoader;
 using global::Internal.Runtime.Augments;
 
+using System.Reflection.Runtime.General;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.TypeLoader
@@ -60,6 +62,33 @@ namespace Internal.Runtime.TypeLoader
         /// true = this is a generic method
         /// </summary>
         private readonly bool _isGeneric;
+
+        public MethodSignatureComparer(
+            QMethodDefinition methodHandle)
+        {
+            if (methodHandle.IsNativeFormatMetadataBased)
+            {
+                _metadataReader = methodHandle.NativeFormatReader;
+                _methodHandle = methodHandle.NativeFormatHandle;
+
+                _method = _methodHandle.GetMethod(_metadataReader);
+
+                _methodSignature = _method.Signature.GetMethodSignature(_metadataReader);
+                _isGeneric = (_methodSignature.GenericParameterCount != 0);
+
+                // Precalculate initial method attributes used in signature queries
+                _isStatic = (_method.Flags & MethodAttributes.Static) != 0;
+            }
+            else
+            {
+                _metadataReader = null;
+                _methodHandle = default(MethodHandle);
+                _method = default(Method);
+                _methodSignature = default(MethodSignature);
+                _isGeneric = false;
+                _isStatic = false;
+            }
+        }
 
         /// <summary>
         /// Construct a comparer between NativeFormat metadata methods and native layouts
@@ -323,7 +352,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             case HandleType.TypeDefinition:
                                 if (!TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(
-                                    _metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader), out type2))
+                                    new QTypeDefinition(_metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader)), out type2))
                                 {
                                     return false;
                                 }

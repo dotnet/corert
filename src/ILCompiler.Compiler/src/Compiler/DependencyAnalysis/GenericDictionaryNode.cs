@@ -177,9 +177,9 @@ namespace ILCompiler.DependencyAnalysis
             // Method generic dictionaries get prefixed by the hash code of the owning method
             // to allow quick lookups of additional details by the type loader.
 
+            builder.EmitInt(_owningMethod.GetHashCode());
             if (builder.TargetPointerSize == 8)
                 builder.EmitInt(0);
-            builder.EmitInt(_owningMethod.GetHashCode());
 
             Debug.Assert(builder.CountBytes == Offset);
 

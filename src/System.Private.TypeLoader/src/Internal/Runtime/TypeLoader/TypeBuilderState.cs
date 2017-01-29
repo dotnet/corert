@@ -23,7 +23,7 @@ namespace Internal.Runtime.TypeLoader
     internal struct NativeLayoutInfo
     {
         public uint Offset;
-        public IntPtr Module;
+        public ModuleInfo Module;
         public NativeReader Reader;
         public NativeLayoutInfoLoadContext LoadContext;
     }
@@ -151,18 +151,18 @@ namespace Internal.Runtime.TypeLoader
                     {
                         TypeBeingBuilt.Context.TemplateLookup.TryGetMetadataNativeLayout(TypeBeingBuilt, out _r2rnativeLayoutInfo.Module, out _r2rnativeLayoutInfo.Offset);
 
-                        if (_r2rnativeLayoutInfo.Module != IntPtr.Zero)
+                        if (_r2rnativeLayoutInfo.Module != null)
                             _readyToRunNativeLayout = true;
                     }
                     _nativeLayoutTokenComputed = true;
                 }
 
-                if (_nativeLayoutInfo.Module != IntPtr.Zero)
+                if (_nativeLayoutInfo.Module != null)
                 {
                     FinishInitNativeLayoutInfo(TypeBeingBuilt, ref _nativeLayoutInfo);
                 }
 
-                if (_r2rnativeLayoutInfo.Module != IntPtr.Zero)
+                if (_r2rnativeLayoutInfo.Module != null)
                 {
                     FinishInitNativeLayoutInfo(TypeBeingBuilt, ref _r2rnativeLayoutInfo);
                 }
@@ -181,7 +181,7 @@ namespace Internal.Runtime.TypeLoader
             var nativeLayoutInfoLoadContext = new NativeLayoutInfoLoadContext();
 
             nativeLayoutInfoLoadContext._typeSystemContext = type.Context;
-            nativeLayoutInfoLoadContext._moduleHandle = nativeLayoutInfo.Module;
+            nativeLayoutInfoLoadContext._module = nativeLayoutInfo.Module;
 
             if (type is DefType)
             {
@@ -198,7 +198,7 @@ namespace Internal.Runtime.TypeLoader
 
             nativeLayoutInfoLoadContext._methodArgumentHandles = new Instantiation(null);
 
-            nativeLayoutInfo.Reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutInfo.Module);
+            nativeLayoutInfo.Reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutInfo.Module.Handle);
             nativeLayoutInfo.LoadContext = nativeLayoutInfoLoadContext;
         }
 

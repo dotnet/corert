@@ -43,6 +43,35 @@ namespace System.Reflection.Runtime.Assemblies
         }
 
         /// <summary>
+        /// Returns non-null or throws.
+        /// </summary>
+        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(byte[] rawAssembly, byte[] pdbSymbolStore)
+        {
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            AssemblyBindResult bindResult;
+            Exception exception;
+            if (!binder.Bind(rawAssembly, pdbSymbolStore, out bindResult, out exception))
+            {
+                if (exception != null)
+                    throw exception;
+                else
+                    throw new BadImageFormatException();
+            }
+
+            RuntimeAssembly result = null;
+
+            GetNativeFormatRuntimeAssembly(bindResult, ref result);
+            if (result != null)
+                return result;
+
+            GetEcmaRuntimeAssembly(bindResult, ref result);
+            if (result != null)
+                return result;
+            else
+                throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
         /// Returns null if no assembly matches the assemblyRefName. Throws for other error cases.
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
@@ -172,7 +201,7 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
+        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
         {
             return new RuntimeThinMethodParameterInfo(member, position, qualifiedParameterType, typeContext);
         }

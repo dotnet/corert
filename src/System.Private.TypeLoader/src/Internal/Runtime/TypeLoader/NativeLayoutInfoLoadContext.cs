@@ -24,7 +24,7 @@ namespace Internal.Runtime.TypeLoader
     internal class NativeLayoutInfoLoadContext
     {
         public TypeSystemContext _typeSystemContext;
-        public IntPtr _moduleHandle;
+        public ModuleInfo _module;
         private ExternalReferencesTable _staticInfoLookup;
         private ExternalReferencesTable _externalReferencesLookup;
         public Instantiation _typeArgumentHandles;
@@ -66,7 +66,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!_externalReferencesLookup.IsInitialized())
             {
-                bool success = _externalReferencesLookup.InitializeNativeReferences(_moduleHandle);
+                bool success = _externalReferencesLookup.InitializeNativeReferences(_module.Handle);
                 Debug.Assert(success);
             }
         }
@@ -88,7 +88,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!_staticInfoLookup.IsInitialized())
             {
-                bool success = _staticInfoLookup.InitializeNativeStatics(_moduleHandle);
+                bool success = _staticInfoLookup.InitializeNativeStatics(_module.Handle);
                 Debug.Assert(success);
             }
 
@@ -167,7 +167,7 @@ namespace Internal.Runtime.TypeLoader
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
 
             DefType containingType = (DefType)GetType(ref parser);
-            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _moduleHandle, out methodNameSig, out methodSig);
+            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
 

@@ -384,13 +384,13 @@ namespace Internal.Runtime.TypeLoader
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             uint r2rNativeLayoutInfoToken;
-            IntPtr r2rNativeLayoutModuleHandle;
             GenericDictionaryCell[] cells = null;
+            ModuleInfo r2rNativeLayoutModuleInfo;
 
-            if ((new TemplateLocator()).TryGetMetadataNativeLayout(nonTemplateMethod, out r2rNativeLayoutModuleHandle, out r2rNativeLayoutInfoToken))
+            if ((new TemplateLocator()).TryGetMetadataNativeLayout(nonTemplateMethod, out r2rNativeLayoutModuleInfo, out r2rNativeLayoutInfoToken))
             {
                 // ReadyToRun dictionary parsing
-                NativeReader readyToRunReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(r2rNativeLayoutModuleHandle);
+                NativeReader readyToRunReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(r2rNativeLayoutModuleInfo.Handle);
                 var readyToRunInfoParser = new NativeParser(readyToRunReader, r2rNativeLayoutInfoToken);
 
                 // A null readyToRunInfoParser is a valid situation to end up in
@@ -400,7 +400,7 @@ namespace Internal.Runtime.TypeLoader
                 // to put into the dictionary
                 if (!readyToRunInfoParser.IsNull)
                 {
-                    NativeFormatMetadataUnit nativeMetadataUnit = method.Context.ResolveMetadataUnit(r2rNativeLayoutModuleHandle);
+                    NativeFormatMetadataUnit nativeMetadataUnit = method.Context.ResolveMetadataUnit(r2rNativeLayoutModuleInfo);
                     FixupCellMetadataResolver resolver = new FixupCellMetadataResolver(nativeMetadataUnit, nonTemplateMethod);
                     cells = GenericDictionaryCell.BuildDictionaryFromMetadataTokensAndContext(this, readyToRunInfoParser, nativeMetadataUnit, resolver);
                 }
@@ -428,8 +428,8 @@ namespace Internal.Runtime.TypeLoader
             }
 
             uint nativeLayoutInfoToken;
-            IntPtr nativeLayoutModuleHandle;
-            MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModuleHandle, out nativeLayoutInfoToken);
+            ModuleInfo nativeLayoutModule;
+            MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
 
             // If the templateMethod found in the static image is missing or universal, see if the R2R layout
             // can provide something more specific.
@@ -457,7 +457,7 @@ namespace Internal.Runtime.TypeLoader
             // its template MUST be a universal canonical template method
             Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));
 
-            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModuleHandle);
+            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
             var methodInfoParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
             var context = new NativeLayoutInfoLoadContext
@@ -465,7 +465,7 @@ namespace Internal.Runtime.TypeLoader
                 _typeSystemContext = method.Context,
                 _typeArgumentHandles = method.OwningType.Instantiation,
                 _methodArgumentHandles = method.Instantiation,
-                _moduleHandle = nativeLayoutModuleHandle
+                _module = nativeLayoutModule
             };
 
             BagElementKind kind;
@@ -725,7 +725,7 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 NativeParser sigParser = methodSignaturesParser.GetParserFromRelativeOffset();
-                state.VTableMethodSignatures[i].MethodSignature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._moduleHandle, sigParser.Offset);
+                state.VTableMethodSignatures[i].MethodSignature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._module.Handle, sigParser.Offset);
             }
         }
 
@@ -1641,16 +1641,17 @@ namespace Internal.Runtime.TypeLoader
 
             GenericContextKind contextKind = (GenericContextKind)parser.GetUnsigned();
 
+            ModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+
             NativeLayoutInfoLoadContext nlilContext = new NativeLayoutInfoLoadContext();
-            nlilContext._moduleHandle = moduleHandle;
+            nlilContext._module = moduleInfo;
             nlilContext._typeSystemContext = typeSystemContext;
 
-            ModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             NativeFormatMetadataUnit metadataUnit = null;
 
             if (moduleInfo.ModuleType == ModuleType.ReadyToRun)
-                metadataUnit = typeSystemContext.ResolveMetadataUnit(moduleHandle);
+                metadataUnit = typeSystemContext.ResolveMetadataUnit(moduleInfo);
 #endif
 
             if ((contextKind & GenericContextKind.FromMethodHiddenArg) != 0)
@@ -2015,7 +2016,7 @@ namespace Internal.Runtime.TypeLoader
                 NativeParser sigParser = parser.GetParserForBagElementKind(BagElementKind.DelegateInvokeSignature);
                 if (!sigParser.IsNull)
                 {
-                    signature = RuntimeSignature.CreateFromNativeLayoutSignature(universalLayoutInfo.Module, sigParser.Offset);
+                    signature = RuntimeSignature.CreateFromNativeLayoutSignature(universalLayoutInfo.Module.Handle, sigParser.Offset);
                     success = true;
                 }
             }

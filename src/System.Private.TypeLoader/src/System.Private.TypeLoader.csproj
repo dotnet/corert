@@ -296,6 +296,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\GenericDictionary.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\genericdictionarycell.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LazyVtableResolverThunk.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\LockFreeObjectInterner.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\McgIntrinsics.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataFixupKind.cs" />
@@ -345,6 +346,7 @@
     <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\MetadataExtensions.cs">
       <Link>NativeFormat\MetadataExtensions.cs</Link>
     </Compile>

@@ -27,6 +27,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new TypeHandleGenericLookupResult(type);
                 });
 
+                _methodHandles = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                {
+                    return new MethodHandleGenericLookupResult(method);
+                });
+
                 _methodDictionaries = new NodeCache<MethodDesc, GenericLookupResult>(method =>
                 {
                     return new MethodDictionaryGenericLookupResult(method);
@@ -61,6 +66,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new TypeNonGCStaticBaseGenericLookupResult(type);
                 });
+
+                _objectAllocators = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new ObjectAllocatorGenericLookupResult(type);
+                });
+
+                _arrayAllocators = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new ArrayAllocatorGenericLookupResult(type);
+                });
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -68,6 +83,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult Type(TypeDesc type)
             {
                 return _typeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<MethodDesc, GenericLookupResult> _methodHandles;
+
+            public GenericLookupResult MethodHandle(MethodDesc method)
+            {
+                return _methodHandles.GetOrAdd(method);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeThreadStaticBaseIndexSymbols;
@@ -117,6 +139,20 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult MethodEntry(MethodDesc method)
             {
                 return _methodEntrypoints.GetOrAdd(method);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _objectAllocators;
+
+            public GenericLookupResult ObjectAlloctor(TypeDesc type)
+            {
+                return _objectAllocators.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _arrayAllocators;
+
+            public GenericLookupResult ArrayAlloctor(TypeDesc type)
+            {
+                return _arrayAllocators.GetOrAdd(type);
             }
         }
 

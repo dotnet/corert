@@ -345,7 +345,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         /// <summary>
         /// Return a qualified handle that can be used to get the type of the property.
         /// </summary>
-        protected abstract QTypeDefRefOrSpec PropertyTypeHandle { get; }
+        protected abstract QSignatureTypeHandle PropertyTypeHandle { get; }
 
         protected enum PropertyMethodSemantics
         {

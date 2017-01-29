@@ -845,7 +845,7 @@ namespace System
             string system32 = sb.ToString();
 
             // trim the string "@tzres.dll" => "tzres.dll"
-            string tzresDll = resources[0].TrimStart(new char[] { '@' });
+            string tzresDll = resources[0].TrimStart('@');
 
             try
             {

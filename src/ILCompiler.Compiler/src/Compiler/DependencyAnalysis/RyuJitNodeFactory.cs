@@ -34,7 +34,14 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.ContainsMethod(method))
             {
-                return new MethodCodeNode(method);
+                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+                {
+                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
+                }
+                else
+                {
+                    return new MethodCodeNode(method);
+                }
             }
             else
             {
@@ -44,7 +51,21 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            return new UnboxingStubNode(method);
+            Debug.Assert(!method.Signature.IsStatic);
+
+            if (method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
+            {
+                // Unboxing stubs to canonical instance methods need a special unboxing stub that unboxes
+                // 'this' and also provides an instantiation argument (we do a calling convention conversion).
+                // We don't do this for generic instance methods though because they don't use the EEType
+                // for the generic context anyway.
+                return new MethodCodeNode(TypeSystemContext.GetSpecialUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
+            }
+            else
+            {
+                // Otherwise we just unbox 'this' and don't touch anything else.
+                return new UnboxingStubNode(method);
+            }
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)

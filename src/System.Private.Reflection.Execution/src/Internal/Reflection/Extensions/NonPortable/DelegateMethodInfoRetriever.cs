@@ -12,6 +12,7 @@ using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
+using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
@@ -29,7 +30,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             if (originalLdFtnResult == (IntPtr)0)
                 return null;
 
-            MethodHandle methodHandle = default(MethodHandle);
+            QMethodDefinition methodHandle = default(QMethodDefinition);
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles = null;
 
             bool callTryGetMethod = true;
@@ -47,7 +48,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     else if (resolver->ResolverType == OpenMethodResolver.DispatchResolve)
                     {
                         callTryGetMethod = false;
-                        methodHandle = resolver->Handle.AsMethodHandle();
+                        methodHandle = QMethodDefinition.FromObjectAndInt(resolver->Reader, resolver->Handle);
                         genericMethodTypeArgumentHandles = null;
                     }
                     else
@@ -55,7 +56,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         System.Diagnostics.Debug.Assert(resolver->ResolverType == OpenMethodResolver.GVMResolve);
 
                         callTryGetMethod = false;
-                        methodHandle = resolver->Handle.AsMethodHandle();
+                        methodHandle = QMethodDefinition.FromObjectAndInt(resolver->Reader, resolver->Handle);
 
                         RuntimeTypeHandle declaringTypeHandleIgnored;
                         MethodNameAndSignature nameAndSignatureIgnored;

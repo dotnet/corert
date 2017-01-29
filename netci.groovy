@@ -37,11 +37,11 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
             // Calculate the build commands
             if (os == 'Windows_NT') {
                 buildString = "build.cmd ${lowercaseConfiguration}"
-                testScriptString = "tests\\runtest.cmd /coreclr "
+                testScriptString = "tests\\runtest.cmd ${configuration} /coreclr "
             }
             else {
                 buildString = "./build.sh ${lowercaseConfiguration}"
-                testScriptString = "tests/runtest.sh -coreclr "
+                testScriptString = "tests/runtest.sh ${configuration} -coreclr "
             }
 
             // Create a new job with the specified name.  The brace opens a new closure
@@ -52,6 +52,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
                     if (os == 'Windows_NT') {
                         // Indicates that a batch script should be run with the build string (see above)
                         batchFile(buildString)
+                        batchFile("tests\\runtest.cmd ${configuration} /multimodule")
 
                         if (configuration == 'Debug') {
                             if (isPR) {

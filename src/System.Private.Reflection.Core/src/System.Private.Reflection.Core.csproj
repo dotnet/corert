@@ -105,6 +105,8 @@
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />

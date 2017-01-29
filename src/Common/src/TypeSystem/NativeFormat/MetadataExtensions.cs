@@ -196,7 +196,7 @@ namespace Internal.TypeSystem.NativeFormat
             byte[] array = new byte[collection.Count];
             int i = 0;
             foreach (byte b in collection)
-                array[i] = b;
+                array[i++] = b;
 
             return array;
         }
