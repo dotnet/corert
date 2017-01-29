@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class MethodDesc
+    // Additional extensions to MethodDesc related to interop
+    partial class MethodDesc
     {
         /// <summary>
         /// Gets a value indicating whether this method is a (native unmanaged) platform invoke.
@@ -34,7 +34,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public virtual ParameterMetadata[] GetParameterMetadata()
         {
-            return default(ParameterMetadata[]);
+            return Array.Empty<ParameterMetadata>();
         }
     }
 
@@ -53,6 +53,11 @@ namespace Internal.TypeSystem
     {
         private  readonly ParameterMetadataAttributes _attributes;
         public readonly MarshalAsDescriptor MarshalAsDescriptor;
+
+        /// <summary>
+        /// Gets a 1-based index of the parameter within the signature the metadata refers to.
+        /// Index 0 is the return value.
+        /// </summary>
         public readonly int Index;
 
         public bool In { get { return (_attributes & ParameterMetadataAttributes.In) == ParameterMetadataAttributes.In; } }
@@ -132,6 +137,22 @@ namespace Internal.TypeSystem
                 default:
                     throw new BadImageFormatException();
             }
+        }
+    }
+
+    partial class InstantiatedMethod
+    {
+        public override ParameterMetadata[] GetParameterMetadata()
+        {
+            return _methodDef.GetParameterMetadata();
+        }
+    }
+
+    partial class MethodForInstantiatedType
+    {
+        public override ParameterMetadata[] GetParameterMetadata()
+        {
+            return _typicalMethodDef.GetParameterMetadata();
         }
     }
 }
