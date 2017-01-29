@@ -4,6 +4,7 @@ set(COMMON_RUNTIME_SOURCES
     CachedInterfaceDispatch.cpp
     Crst.cpp
     DebugEventSource.cpp
+    DebugFuncEval.cpp
     dllmain.cpp
     eetype.cpp
     EHHelpers.cpp
