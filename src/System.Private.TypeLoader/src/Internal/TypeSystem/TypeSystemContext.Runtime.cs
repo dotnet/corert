@@ -569,13 +569,8 @@ namespace Internal.TypeSystem
 
         private ModuleToMetadataUnitHashtable _metadataUnits = null;
 
-        internal NativeFormat.NativeFormatMetadataUnit ResolveMetadataUnit(ModuleInfo mod)
+        internal NativeFormat.NativeFormatMetadataUnit ResolveMetadataUnit(NativeFormatModuleInfo module)
         {
-            // TODO! Change function signature
-            NativeFormatModuleInfo module = mod as NativeFormatModuleInfo;
-            if (module == null)
-                return null;
-
             if (_metadataUnits == null)
                 _metadataUnits = new ModuleToMetadataUnitHashtable(this);
 

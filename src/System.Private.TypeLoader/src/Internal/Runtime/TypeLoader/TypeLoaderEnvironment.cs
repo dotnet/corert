@@ -643,7 +643,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
         }
 
-        public bool TryDispatchMethodOnTarget(ModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
+        public bool TryDispatchMethodOnTarget(NativeFormatModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
         {
             using (LockHolder.Hold(_typeLoaderLock))
             {
@@ -656,7 +656,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        internal DispatchCellInfo ConvertDispatchCellInfo(ModuleInfo module, DispatchCellInfo cellInfo)
+        internal DispatchCellInfo ConvertDispatchCellInfo(NativeFormatModuleInfo module, DispatchCellInfo cellInfo)
         {
             using (LockHolder.Hold(_typeLoaderLock))
             {

@@ -54,7 +54,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a type from a ReadyToRun image. 
         /// </summary>
-        public bool TryGetMetadataNativeLayout(TypeDesc concreteType, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public bool TryGetMetadataNativeLayout(TypeDesc concreteType, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -110,7 +110,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a method from a ReadyToRun image. 
         /// </summary>
-        public bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -162,7 +162,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -176,7 +176,7 @@ namespace Internal.Runtime.TypeLoader
                     continue;
 
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
+            NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
 
                 if (typeTemplatesHashtable.IsNull)
                     continue;
@@ -217,7 +217,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the template method for a generic method instantation
         //
-        public InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             // First, see if there is a specific canonical template
             InstantiatedMethod result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
@@ -228,7 +228,7 @@ namespace Internal.Runtime.TypeLoader
 
             return result;
         }
-        private InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;

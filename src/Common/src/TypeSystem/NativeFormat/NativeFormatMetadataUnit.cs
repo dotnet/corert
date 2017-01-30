@@ -23,7 +23,7 @@ namespace Internal.TypeSystem.NativeFormat
     /// </summary>
     public sealed class NativeFormatMetadataUnit
     {
-        private ModuleInfo _module;
+        private NativeFormatModuleInfo _module;
         private MetadataReader _metadataReader;
         private TypeSystemContext _context;
 
@@ -228,7 +228,7 @@ namespace Internal.TypeSystem.NativeFormat
 
         private NativeFormatObjectLookupHashtable _resolvedTokens;
 
-        public NativeFormatMetadataUnit(TypeSystemContext context, ModuleInfo module, MetadataReader metadataReader)
+        public NativeFormatMetadataUnit(TypeSystemContext context, NativeFormatModuleInfo module, MetadataReader metadataReader)
         {
             _module = module;
             _metadataReader = metadataReader;
@@ -261,7 +261,7 @@ namespace Internal.TypeSystem.NativeFormat
             }
         }
 
-        public ModuleInfo RuntimeModuleInfo
+        public NativeFormatModuleInfo RuntimeModuleInfo
         {
             get
             {
@@ -507,7 +507,7 @@ namespace Internal.TypeSystem.NativeFormat
             }
 
             var moduleList = Internal.Runtime.TypeLoader.ModuleList.Instance;
-            ModuleInfo primaryModule = moduleList.GetModuleInfoForMetadataReader(bindResult.Reader);
+            NativeFormatModuleInfo primaryModule = moduleList.GetModuleInfoForMetadataReader(bindResult.Reader);
             // If this isn't the primary module, defer to that module to load the MetadataUnit
             if (primaryModule != _module)
             {
@@ -520,7 +520,7 @@ namespace Internal.TypeSystem.NativeFormat
 
             foreach (QScopeDefinition scope in bindResult.OverflowScopes)
             {
-                ModuleInfo module = moduleList.GetModuleInfoForMetadataReader(scope.Reader);
+                NativeFormatModuleInfo module = moduleList.GetModuleInfoForMetadataReader(scope.Reader);
                 ScopeDefinitionHandle scopeHandle = scope.Handle;
                 NativeFormatMetadataUnit metadataUnit = Context.ResolveMetadataUnit(module);
                 qualifiedScopes.Add(new NativeFormatModule.QualifiedScopeDefinition(metadataUnit, scopeHandle));

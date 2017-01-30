@@ -394,7 +394,7 @@ namespace Internal.Runtime.TypeLoader
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             uint r2rNativeLayoutInfoToken;
             GenericDictionaryCell[] cells = null;
-            ModuleInfo r2rNativeLayoutModuleInfo;
+            NativeFormatModuleInfo r2rNativeLayoutModuleInfo;
 
             if ((new TemplateLocator()).TryGetMetadataNativeLayout(nonTemplateMethod, out r2rNativeLayoutModuleInfo, out r2rNativeLayoutInfoToken))
             {
@@ -437,7 +437,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             uint nativeLayoutInfoToken;
-            ModuleInfo nativeLayoutModule;
+            NativeFormatModuleInfo nativeLayoutModule;
             MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
 
             // If the templateMethod found in the static image is missing or universal, see if the R2R layout
@@ -1650,7 +1650,7 @@ namespace Internal.Runtime.TypeLoader
 
             GenericContextKind contextKind = (GenericContextKind)parser.GetUnsigned();
 
-            ModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+            NativeFormatModuleInfo moduleInfo = (NativeFormatModuleInfo)ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
 
             NativeLayoutInfoLoadContext nlilContext = new NativeLayoutInfoLoadContext();
             nlilContext._module = moduleInfo;
