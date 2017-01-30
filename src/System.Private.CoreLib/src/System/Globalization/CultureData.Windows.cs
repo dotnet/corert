@@ -250,7 +250,7 @@ namespace System.Globalization
             GCHandle contextHandle = GCHandle.Alloc(context);
             try
             {
-                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, Interop.BOOL>>(EnumSystemLocalesProc);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Interop.mincore.EnumLocalesProcEx>(EnumSystemLocalesProc);
                 Interop.mincore.EnumSystemLocalesEx(callback, LOCALE_SPECIFICDATA | LOCALE_SUPPLEMENTAL, (IntPtr)contextHandle, IntPtr.Zero);
             }
             finally
@@ -559,7 +559,7 @@ namespace System.Globalization
             try
             {
                 // Now call the enumeration API. Work is done by our callback function
-                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, IntPtr, Interop.BOOL>>(EnumTimeCallback);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Interop.mincore.EnumTimeFormatsProcEx>(EnumTimeCallback);
                 Interop.mincore.EnumTimeFormatsEx(callback, localeName, (uint)dwFlags, (IntPtr)dataHandle);
             }
             finally

@@ -38,7 +38,7 @@ namespace System.Threading
             if (handle.IsClosed || handle.IsInvalid)
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
-            IntPtr callback = AddrofIntrinsics.AddrOf<Action<IntPtr, IntPtr, IntPtr, uint, UIntPtr, IntPtr>>(OnNativeIOCompleted);
+            IntPtr callback = AddrofIntrinsics.AddrOf<Interop.NativeIoCompletionCallback>(OnNativeIOCompleted);
             SafeThreadPoolIOHandle threadPoolHandle = Interop.mincore.CreateThreadpoolIo(handle, callback, IntPtr.Zero, IntPtr.Zero);
             if (threadPoolHandle.IsInvalid)
             {
