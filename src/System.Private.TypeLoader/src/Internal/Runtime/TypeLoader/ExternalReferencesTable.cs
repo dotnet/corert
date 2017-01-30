@@ -23,13 +23,13 @@ namespace Internal.Runtime.TypeLoader
 
         public bool IsInitialized() { return (_moduleHandle != IntPtr.Zero); }
 
-        private unsafe bool Initialize(IntPtr moduleHandle, ReflectionMapBlob blobId)
+        private unsafe bool Initialize(NativeFormatModuleInfo module, ReflectionMapBlob blobId)
         {
-            _moduleHandle = moduleHandle;
+            _moduleHandle = module.Handle;
 
             byte* pBlob;
             uint cbBlob;
-            if (!RuntimeAugments.FindBlob(moduleHandle, (int)blobId, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+            if (!module.TryFindBlob(blobId, out pBlob, out cbBlob))
             {
                 _elements = IntPtr.Zero;
                 _elementsCount = 0;
@@ -46,9 +46,9 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="moduleHandle">Module handle is used to locate the NativeReferences blob</param>
         /// <returns>true when the NativeReferences blob was found in the given module, false when not</returns>
-        public bool InitializeNativeReferences(IntPtr moduleHandle)
+        public bool InitializeNativeReferences(NativeFormatModuleInfo module)
         {
-            return Initialize(moduleHandle, ReflectionMapBlob.NativeReferences);
+            return Initialize(module, ReflectionMapBlob.NativeReferences);
         }
 
         /// <summary>
@@ -56,9 +56,9 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="moduleHandle">Module handle is used to locate the NativeStatics blob</param>
         /// <returns>true when the NativeStatics blob was found in the given module, false when not</returns>
-        public bool InitializeNativeStatics(IntPtr moduleHandle)
+        public bool InitializeNativeStatics(NativeFormatModuleInfo module)
         {
-            return Initialize(moduleHandle, ReflectionMapBlob.NativeStatics);
+            return Initialize(module, ReflectionMapBlob.NativeStatics);
         }
 
         /// <summary>
@@ -66,9 +66,9 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="moduleHandle">Module handle is used to locate the CommonFixupsTable blob</param>
         /// <returns>true when the CommonFixupsTable blob was found in the given module, false when not</returns>
-        public bool InitializeCommonFixupsTable(IntPtr moduleHandle)
+        public bool InitializeCommonFixupsTable(NativeFormatModuleInfo module)
         {
-            return Initialize(moduleHandle, ReflectionMapBlob.CommonFixupsTable);
+            return Initialize(module, ReflectionMapBlob.CommonFixupsTable);
         }
 
         unsafe public uint GetRvaFromIndex(uint index)

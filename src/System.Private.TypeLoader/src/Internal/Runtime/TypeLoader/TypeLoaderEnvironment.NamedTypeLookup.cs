@@ -71,16 +71,16 @@ namespace Internal.Runtime.TypeLoader
                 int hashCode = GetKeyHashCode(key);
 
                 // Iterate over all modules, starting with the module that defines the EEType
-                foreach (IntPtr moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(key)))
+                foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(key)))
                 {
                     NativeReader typeMapReader;
-                    if (TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.TypeMap, out typeMapReader))
+                    if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
                     {
                         NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
                         NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
 
                         ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                        externalReferences.InitializeCommonFixupsTable(moduleHandle);
+                        externalReferences.InitializeCommonFixupsTable(module);
 
                         var lookup = typeHashtable.Lookup(hashCode);
                         NativeParser entryParser;
@@ -92,7 +92,7 @@ namespace Internal.Runtime.TypeLoader
                                 Handle entryMetadataHandle = entryParser.GetUnsigned().AsHandle();
                                 if (entryMetadataHandle.HandleType == HandleType.TypeDefinition)
                                 {
-                                    MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(moduleHandle);
+                                    MetadataReader metadataReader = module.MetadataReader;
                                     return new NamedTypeLookupResult()
                                     {
                                         QualifiedTypeDefinition = new QTypeDefinition(metadataReader, entryMetadataHandle.ToTypeDefinitionHandle(metadataReader)),
@@ -154,16 +154,16 @@ namespace Internal.Runtime.TypeLoader
                     TypeDefinitionHandle typeDefHandle = key.NativeFormatHandle;
                     int hashCode = typeDefHandle.ComputeHashCode(metadataReader);
 
-                    IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
+                    NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
 
                     NativeReader typeMapReader;
-                    if (TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.TypeMap, out typeMapReader))
+                    if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
                     {
                         NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
                         NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
 
                         ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                        externalReferences.InitializeCommonFixupsTable(moduleHandle);
+                        externalReferences.InitializeCommonFixupsTable(module);
 
                         var lookup = typeHashtable.Lookup(hashCode);
                         NativeParser entryParser;

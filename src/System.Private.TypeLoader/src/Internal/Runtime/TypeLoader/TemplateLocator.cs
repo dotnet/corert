@@ -169,14 +169,10 @@ namespace Internal.Runtime.TypeLoader
             var canonForm = concreteType.ConvertToCanonForm(kind);
             var hashCode = canonForm.GetHashCode();
 
-            foreach (ModuleInfo unknownModuleInfo in ModuleList.EnumerateModules())
+            foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
             {
-                NativeFormatModuleInfo moduleInfo = unknownModuleInfo as NativeFormatModuleInfo;
-                if (moduleInfo == null)
-                    continue;
-
                 ExternalReferencesTable externalFixupsTable;
-            NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
+                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
 
                 if (typeTemplatesHashtable.IsNull)
                     continue;
@@ -235,19 +231,14 @@ namespace Internal.Runtime.TypeLoader
             var canonForm = concreteMethod.GetCanonMethodTarget(kind);
             var hashCode = canonForm.GetHashCode();
 
-            foreach (ModuleInfo unknownModuleInfo in ModuleList.EnumerateModules())
+            foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
             {
-                NativeFormatModuleInfo moduleInfo = unknownModuleInfo as NativeFormatModuleInfo;
-
-                if (moduleInfo == null)
-                    continue;
-
                 NativeReader nativeLayoutReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(moduleInfo.Handle);
                 if (nativeLayoutReader == null)
                     continue;
 
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.GenericMethodsTemplateMap, out externalFixupsTable);
+                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleInfo, ReflectionMapBlob.GenericMethodsTemplateMap, out externalFixupsTable);
 
                 if (genericMethodTemplatesHashtable.IsNull)
                     continue;
@@ -297,17 +288,17 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // Lazy loadings of hashtables (load on-demand only)
-        private unsafe NativeHashtable LoadHashtable(IntPtr moduleHandle, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
+        private unsafe NativeHashtable LoadHashtable(NativeFormatModuleInfo module, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
         {
             // Load the common fixups table
             externalFixupsTable = default(ExternalReferencesTable);
-            if (!externalFixupsTable.InitializeCommonFixupsTable(moduleHandle))
+            if (!externalFixupsTable.InitializeCommonFixupsTable(module))
                 return default(NativeHashtable);
 
             // Load the hashtable
             byte* pBlob;
             uint cbBlob;
-            if (!RuntimeAugments.FindBlob(moduleHandle, (int)hashtableBlobId, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+            if (!module.TryFindBlob(hashtableBlobId, out pBlob, out cbBlob))
                 return default(NativeHashtable);
 
             NativeReader reader = new NativeReader(pBlob, cbBlob);

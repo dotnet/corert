@@ -102,6 +102,19 @@ namespace Internal.Runtime.TypeLoader
         /// Module metadata reader for NativeFormat metadata
         /// </summary>
         public MetadataReader MetadataReader { get; private set; }
+
+        internal unsafe bool TryFindBlob(ReflectionMapBlob blobId, out byte* pBlob, out uint cbBlob)
+        {
+            pBlob = null;
+            cbBlob = 0;
+            fixed (byte** ppBlob = &pBlob)
+            {
+                fixed (uint* pcbBlob = &cbBlob)
+                {
+                    return RuntimeAugments.FindBlob(Handle, (int)blobId, new IntPtr(ppBlob), new IntPtr(pcbBlob));
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -290,9 +303,9 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Construct the actual module info enumerator.
         /// </summary>
-        public ModuleInfoEnumerator GetEnumerator()
+        public NativeFormatModuleInfoEnumerator GetEnumerator()
         {
-            return new ModuleInfoEnumerator(_moduleMap, _preferredModuleHandle);
+            return new NativeFormatModuleInfoEnumerator(_moduleMap, _preferredModuleHandle);
         }
     }
 
