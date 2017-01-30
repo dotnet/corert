@@ -121,13 +121,10 @@ namespace System
         // @todo: Not an api but some NativeThreadPool code still depends on it.
         internal IntPtr GetNativeFunctionPointer()
         {
-            // CORERT-TODO: PInvoke delegate marshalling
-#if !CORERT
             if (GetThunk(ReversePinvokeThunk) != m_functionPointer)
             {
                 throw new InvalidOperationException("GetNativeFunctionPointer may only be used on a reverse pinvoke delegate");
             }
-#endif
 
             return m_extraFunctionPointerOrData;
         }

@@ -85,8 +85,25 @@ namespace ILCompiler
                 if (!closed)
                 {
                     // Open delegate to a static method
-                    invokeThunk = delegateInfo.Thunks[DelegateThunkKind.OpenStaticThunk];
-                    initMethod = systemDelegate.GetKnownMethod("InitializeOpenStaticThunk", null);
+                    if (targetMethod.IsNativeCallable)
+                    {
+                        // If target method is native callable, create a reverse PInvoke delegate
+                        initMethod = systemDelegate.GetKnownMethod("InitializeReversePInvokeThunk", null);
+                        invokeThunk = delegateInfo.Thunks[DelegateThunkKind.ReversePinvokeThunk];
+
+                        // You might hit this when the delegate is generic: you need to make the delegate non-generic.
+                        // If the code works on Project N, it's because the delegate is used in connection with
+                        // AddrOf intrinsic (please validate that). We don't have the necessary AddrOf expansion in
+                        // the codegen to make this work without actually constructing the delegate. You can't construct
+                        // the delegate if it's generic, even on Project N.
+                        // TODO: Make this throw something like "TypeSystemException.InvalidProgramException"?
+                        Debug.Assert(invokeThunk != null, "Delegate with a non-native signature for a NativeCallable method");
+                    }
+                    else
+                    {
+                        initMethod = systemDelegate.GetKnownMethod("InitializeOpenStaticThunk", null);
+                        invokeThunk = delegateInfo.Thunks[DelegateThunkKind.OpenStaticThunk];
+                    }
                 }
                 else
                 {

@@ -98,6 +98,7 @@ namespace Internal.IL
         private MethodDesc _closedStaticThunk;
         private MethodDesc _invokeThunk;
         private MethodDesc _closedInstanceOverGeneric;
+        private MethodDesc _reversePInvokeThunk;
 
         internal DelegateThunkCollection(DelegateInfo owningDelegate)
         {
@@ -106,7 +107,56 @@ namespace Internal.IL
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
             _invokeThunk = new DelegateDynamicInvokeThunk(owningDelegate);
             _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
+
+            if (!owningDelegate.Type.HasInstantiation && IsNativeCallingConventionCompatible(owningDelegate.Signature))
+                _reversePInvokeThunk = new DelegateReversePInvokeThunk(owningDelegate);
         }
+
+        #region Temporary interop logic
+        // TODO: interop should provide a way to query this
+        private static bool IsNativeCallingConventionCompatible(MethodSignature delegateSignature)
+        {
+            if (!IsNativeCallingConventionCompatible(delegateSignature.ReturnType))
+                return false;
+            else
+            {
+                for (int i = 0; i < delegateSignature.Length; i++)
+                {
+                    if (!IsNativeCallingConventionCompatible(delegateSignature[i]))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsNativeCallingConventionCompatible(TypeDesc type)
+        {
+            if (type.IsPointer || type.IsByRef)
+                return IsNativeCallingConventionCompatible(((ParameterizedType)type).ParameterType);
+
+            if (!type.IsValueType)
+                return false;
+
+            if (type.IsPrimitive)
+            {
+                if (type.IsWellKnownType(WellKnownType.Boolean))
+                    return false;
+
+                return true;
+            }
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (!field.IsStatic && !IsNativeCallingConventionCompatible(field.FieldType))
+                    return false;
+            }
+
+            return true;
+        }
+        #endregion
 
         public MethodDesc this[DelegateThunkKind kind]
         {
@@ -124,6 +174,8 @@ namespace Internal.IL
                         return _invokeThunk;
                     case DelegateThunkKind.ClosedInstanceThunkOverGenericMethod:
                         return _closedInstanceOverGeneric;
+                    case DelegateThunkKind.ReversePinvokeThunk:
+                        return _reversePInvokeThunk;
                     default:
                         return null;
                 }
