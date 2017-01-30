@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Execution;
+using System.Reflection.Metadata;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -39,7 +40,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="reader">Metadata reader to look up</param>
         /// <returns>Module handle of the module containing the given reader</returns>
-        public static ModuleInfo GetModuleInfoForMetadataReader(this ModuleList moduleList, MetadataReader reader)
+        public static EcmaModuleInfo GetModuleInfoForMetadataReader(this ModuleList moduleList, MetadataReader reader)
         {
             foreach (ModuleInfo moduleInfo in moduleList.GetLoadedModuleMapInternal().Modules)
             {
@@ -49,7 +50,7 @@ namespace Internal.Runtime.TypeLoader
                 
                 if (ecmaModuleInfo.EcmaPEInfo.Reader == reader)
                 {
-                    return moduleInfo;
+                    return ecmaModuleInfo;
                 }
             }
 

@@ -10,11 +10,9 @@
     <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
-    <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <DefineConstants>ENABLE_REFLECTION_TRACE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
@@ -30,9 +28,7 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
-    <ReferencePath Include="e:\temp\facades\System.Reflection.Primitives.dll" />
+    <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="e:\git\corefx\corefx\bin\obj\Windows_NT.AnyCPU.Debug\System.Private.Reflection.Metadata.Ecma335\netcoreapp\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <!-- TODO: We should always include this -->

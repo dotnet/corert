@@ -7,7 +7,6 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{306A4D48-0ACF-41C4-BBA0-BCDAD9253E2D}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EcmaMetadataSupport>true</EcmaMetadataSupport>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
@@ -30,9 +29,7 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />  
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
-    <ReferencePath Include="e:\temp\facades\System.Reflection.Primitives.dll" />
+    <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="e:\git\corefx\corefx\bin\obj\Windows_NT.AnyCPU.Debug\System.Private.Reflection.Metadata.Ecma335\netcoreapp\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -40,7 +37,6 @@
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
-    <ProjectReference Include="..\..\System.Private.Jit\src\System.Private.Jit.csproj" />
 
     <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />

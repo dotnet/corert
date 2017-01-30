@@ -68,8 +68,8 @@ namespace System.Reflection.Runtime.General
         private static RuntimeTypeInfo TryResolveTypeSignature(this TypeSpecificationHandle typeSpecHandle, MetadataReader reader, TypeContext typeContext, ref Exception exception)
         {
             TypeSpecification typeSpec = reader.GetTypeSpecification(typeSpecHandle);
-            ReflectionTypeProvider refTypeProvider = new ReflectionTypeProvider(false, typeContext);
-            RuntimeTypeInfo result = typeSpec.DecodeSignature(refTypeProvider);
+            ReflectionTypeProvider refTypeProvider = new ReflectionTypeProvider(false);
+            RuntimeTypeInfo result = typeSpec.DecodeSignature<RuntimeTypeInfo, TypeContext>(refTypeProvider, typeContext);
             exception = refTypeProvider.ExceptionResult;
             return result;
         }

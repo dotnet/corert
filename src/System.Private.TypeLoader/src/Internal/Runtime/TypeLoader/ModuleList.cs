@@ -669,14 +669,14 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="reader">Metadata reader to look up</param>
         /// <returns>Module handle of the module containing the given reader</returns>
-        public ModuleInfo GetModuleInfoForMetadataReader(MetadataReader reader)
+        public NativeFormatModuleInfo GetModuleInfoForMetadataReader(MetadataReader reader)
         {
             foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
             {
                 NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
                 if (nativeFormatModuleInfo != null && nativeFormatModuleInfo.MetadataReader == reader)
                 {
-                    return moduleInfo;
+                    return nativeFormatModuleInfo;
                 }
             }
 

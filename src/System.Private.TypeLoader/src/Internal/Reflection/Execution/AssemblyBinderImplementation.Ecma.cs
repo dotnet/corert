@@ -152,7 +152,7 @@ namespace Internal.Reflection.Execution
 
                 s_ecmaLoadedAssemblies.Add(peinfo);
                 ModuleList moduleList = ModuleList.Instance;
-                ModuleInfo newModuleInfo = new ModuleInfo(moduleList.SystemModule.Handle, ModuleType.Ecma, peinfo);
+                ModuleInfo newModuleInfo = new EcmaModuleInfo(moduleList.SystemModule.Handle, peinfo);
                 moduleList.RegisterModule(newModuleInfo);
 
                 // 5. Then try to load by name again. This load should always succeed

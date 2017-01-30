@@ -121,13 +121,12 @@ namespace System.Reflection.Runtime
             throw new BadImageFormatException();
         }
     }
-    class ReflectionTypeProvider : ICustomAttributeTypeProvider<RuntimeTypeInfo>, IPrimitiveTypeProvider<RuntimeTypeInfo>, ISZArrayTypeProvider<RuntimeTypeInfo>, ITypeProvider<RuntimeTypeInfo>, ISignatureTypeProvider<RuntimeTypeInfo>
+    class ReflectionTypeProvider : ICustomAttributeTypeProvider<RuntimeTypeInfo>, ISZArrayTypeProvider<RuntimeTypeInfo>, ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>
     {
         private static RuntimeTypeInfo s_systemType = (RuntimeTypeInfo)typeof(Type).GetTypeInfo();
         private static RuntimeTypeInfo s_intPtrType = (RuntimeTypeInfo)typeof(IntPtr).GetTypeInfo();
 
         private bool _throwOnError;
-        private TypeContext _typeContext;
         private Exception _exceptionResult;
         public bool ExceptionOccurred { get {return _exceptionResult != null; } }
         public Exception ExceptionResult
@@ -151,12 +150,6 @@ namespace System.Reflection.Runtime
         public ReflectionTypeProvider(bool throwOnError)
         {
             _throwOnError = throwOnError;
-        }
-
-        public ReflectionTypeProvider(bool throwOnError, TypeContext typeContext)
-        {
-            _throwOnError = throwOnError;
-            _typeContext = typeContext;
         }
 
         public RuntimeTypeInfo GetSystemType()
@@ -204,7 +197,7 @@ namespace System.Reflection.Runtime
         {
             // raw Type Kind is either 0, ELEMENT_TYPE_CLASS, or ELEMENT_TYPE_VALUETYPE
             Exception exception = null;
-            RuntimeTypeInfo result = ((Handle)handle).TryResolve(reader, _typeContext, ref exception);
+            RuntimeTypeInfo result = ((Handle)handle).TryResolve(reader, default(TypeContext), ref exception);
             if (result != null)
                 return result;
             else
@@ -218,7 +211,7 @@ namespace System.Reflection.Runtime
         {
             // raw Type Kind is either 0, ELEMENT_TYPE_CLASS, or ELEMENT_TYPE_VALUETYPE
             Exception exception = null;
-            RuntimeTypeInfo result = ((Handle)handle).TryResolve(reader, _typeContext, ref exception);
+            RuntimeTypeInfo result = ((Handle)handle).TryResolve(reader, default(TypeContext), ref exception);
             if (result != null)
                 return result;
             else
@@ -228,11 +221,11 @@ namespace System.Reflection.Runtime
             }
         }
 
-        public RuntimeTypeInfo GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, byte rawTypeKind)
+        public RuntimeTypeInfo GetTypeFromSpecification(MetadataReader reader, TypeContext typeContext, TypeSpecificationHandle handle, byte rawTypeKind)
         {
             // raw Type Kind is either 0, ELEMENT_TYPE_CLASS, or ELEMENT_TYPE_VALUETYPE
             Exception exception = null;
-            RuntimeTypeInfo result = ((Handle)handle).TryResolve(reader, _typeContext, ref exception);
+            RuntimeTypeInfo result = ((Handle)handle).TryResolve(reader, typeContext, ref exception);
             if (result != null)
                 return result;
             else
@@ -248,27 +241,27 @@ namespace System.Reflection.Runtime
             return s_intPtrType;
         }
 
-        public RuntimeTypeInfo GetGenericTypeParameter(int parameter)
+        public RuntimeTypeInfo GetGenericTypeParameter(TypeContext typeContext, int parameter)
         {
-            if ((_typeContext.GenericTypeArguments == null) ||
-                (_typeContext.GenericTypeArguments.Length < parameter) ||
+            if ((typeContext.GenericTypeArguments == null) ||
+                (typeContext.GenericTypeArguments.Length < parameter) ||
                 (parameter < 0))
                 ExceptionResult = new BadImageFormatException();
 
-            return _typeContext.GenericTypeArguments[parameter];
+            return typeContext.GenericTypeArguments[parameter];
         }
 
-        public RuntimeTypeInfo GetGenericMethodParameter(int parameter)
+        public RuntimeTypeInfo GetGenericMethodParameter(TypeContext typeContext, int parameter)
         {
-            if ((_typeContext.GenericMethodArguments == null) ||
-                (_typeContext.GenericMethodArguments.Length < parameter) ||
+            if ((typeContext.GenericMethodArguments == null) ||
+                (typeContext.GenericMethodArguments.Length < parameter) ||
                 (parameter < 0))
                 ExceptionResult = new BadImageFormatException();
 
-            return _typeContext.GenericMethodArguments[parameter];
+            return typeContext.GenericMethodArguments[parameter];
         }
         
-        public RuntimeTypeInfo GetModifiedType(MetadataReader reader, bool isRequired, RuntimeTypeInfo modifier, RuntimeTypeInfo unmodifiedType)
+        public RuntimeTypeInfo GetModifiedType(RuntimeTypeInfo modifier, RuntimeTypeInfo unmodifiedType, bool isRequired)
         {
             // Reflection doesn't really model custom modifiers...
             return unmodifiedType;
@@ -281,7 +274,7 @@ namespace System.Reflection.Runtime
         }
 
         // IConstructedTypeProvider
-        public RuntimeTypeInfo GetGenericInstance(RuntimeTypeInfo genericType, ImmutableArray<RuntimeTypeInfo> typeArguments)
+        public RuntimeTypeInfo GetGenericInstantiation(RuntimeTypeInfo genericType, ImmutableArray<RuntimeTypeInfo> typeArguments)
         {
             Type[] typeArgumentsAsType = new Type[typeArguments.Length];
             for (int i = 0 ; i < typeArgumentsAsType.Length; i++)

@@ -77,12 +77,36 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                var metadataReader = ModuleList.Instance.GetMetadataReaderForModule(signature.Signature.ModuleHandle);
-                var methodHandle = signature.Signature.Token.AsHandle().ToMethodHandle(metadataReader);
+                ModuleInfo module = signature.Signature.GetModuleInfo();
 
-                var method = methodHandle.GetMethod(metadataReader);
-                var methodSignature = method.Signature.GetMethodSignature(metadataReader);
-                return checked((uint)methodSignature.GenericParameterCount);
+#if ECMA_METADATA_SUPPORT
+                if (module is NativeFormatModuleInfo)
+#endif
+                {
+                    NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
+                    var metadataReader = nativeFormatModule.MetadataReader;
+                    var methodHandle = signature.Signature.Token.AsHandle().ToMethodHandle(metadataReader);
+
+                    var method = methodHandle.GetMethod(metadataReader);
+                    var methodSignature = method.Signature.GetMethodSignature(metadataReader);
+                    return checked((uint)methodSignature.GenericParameterCount);
+                }
+#if ECMA_METADATA_SUPPORT
+                else
+                {
+                    EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
+                    var metadataReader = ecmaModuleInfo.EcmaPEInfo.Reader;
+                    var ecmaHandle = (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(signature.Signature.Token);                
+                    var method = metadataReader.GetMethodDefinition(ecmaHandle);
+                    var blobHandle = method.Signature;
+                    var blobReader = metadataReader.GetBlobReader(blobHandle);
+                    byte sigByte = blobReader.ReadByte();
+                    if ((sigByte & (byte)System.Reflection.Metadata.SignatureAttributes.Generic) == 0)
+                        return 0;
+                    uint genArgCount = checked((uint)blobReader.ReadCompressedInteger());
+                    return genArgCount;
+                }
+#endif
             }
         }
 
@@ -165,13 +189,66 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                var metadataReader = ModuleList.Instance.GetMetadataReaderForModule(methodSig.ModuleHandle);
-                var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(metadataReader);
+                ModuleInfo module = methodSig.GetModuleInfo();
 
-                var method = methodHandle.GetMethod(metadataReader);
-                return (method.Flags & MethodAttributes.Static) != 0;
+#if ECMA_METADATA_SUPPORT
+                if (module is NativeFormatModuleInfo)
+#endif
+                {
+                    NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
+                    var metadataReader = nativeFormatModule.MetadataReader;
+                    var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(metadataReader);
+
+                    var method = methodHandle.GetMethod(metadataReader);
+                    return (method.Flags & MethodAttributes.Static) != 0;
+                }
+#if ECMA_METADATA_SUPPORT
+                else
+                {
+                    EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
+                    var metadataReader = ecmaModuleInfo.EcmaPEInfo.Reader;
+                    var ecmaHandle = (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(methodSig.Token);                
+                    var method = metadataReader.GetMethodDefinition(ecmaHandle);
+                    var blobHandle = method.Signature;
+                    var blobReader = metadataReader.GetBlobReader(blobHandle);
+                    byte sigByte = blobReader.ReadByte();
+                    return ((sigByte & (byte)System.Reflection.Metadata.SignatureAttributes.Instance) == 0);
+                }
+#endif
             }
         }
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        // Create a TypeSystem.MethodSignature object from a RuntimeSignature that isn't a NativeLayoutSignature
+        private TypeSystem.MethodSignature TypeSystemSigFromRuntimeSignature(TypeSystemContext context, RuntimeSignature signature)
+        {
+            Debug.Assert(!signature.IsNativeLayoutSignature);
+
+            ModuleInfo module = signature.GetModuleInfo();
+
+#if ECMA_METADATA_SUPPORT
+            if (module is NativeFormatModuleInfo)
+#endif
+            {
+                NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
+                var metadataReader = nativeFormatModule.MetadataReader;
+                var methodHandle = signature.Token.AsHandle().ToMethodHandle(metadataReader);
+                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(nativeFormatModule);
+                var parser = new Internal.TypeSystem.NativeFormat.NativeFormatSignatureParser(metadataUnit, metadataReader.GetMethod(methodHandle).Signature, metadataReader);
+                return parser.ParseMethodSignature();
+            }
+#if ECMA_METADATA_SUPPORT
+            else
+            {
+                EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
+                TypeSystem.Ecma.EcmaModule ecmaModule = context.ResolveEcmaModule(ecmaModuleInfo);
+                var ecmaHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(signature.Token);                
+                MethodDesc ecmaMethod = ecmaModule.GetMethod(ecmaHandle);
+                return ecmaMethod.Signature;
+            }
+#endif
+        }
+#endif
 
         internal bool GetCallingConverterDataFromMethodSignature(TypeSystemContext context, RuntimeSignature methodSig, NativeLayoutInfoLoadContext nativeLayoutContext, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout)
         {
@@ -180,13 +257,8 @@ namespace Internal.Runtime.TypeLoader
             else
             {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                ModuleInfo module = methodSig.GetModuleInfo();
-                var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(module.MetadataReader);
-                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(module);
-                var parser = new Internal.TypeSystem.NativeFormat.NativeFormatSignatureParser(metadataUnit, module.MetadataReader.GetMethod(methodHandle).Signature, module.MetadataReader);
-                var signature = parser.ParseMethodSignature();
-
-                return GetCallingConverterDataFromMethodSignature_MethodSignature(signature, nativeLayoutContext, out hasThis, out parameters, out parametersWithGenericDependentLayout);
+                var sig = TypeSystemSigFromRuntimeSignature(context, methodSig);
+                return GetCallingConverterDataFromMethodSignature_MethodSignature(sig, nativeLayoutContext, out hasThis, out parameters, out parametersWithGenericDependentLayout);
 #else
                 parametersWithGenericDependentLayout = null;
                 hasThis = false;
@@ -331,14 +403,8 @@ namespace Internal.Runtime.TypeLoader
             else
             {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                ModuleInfo module = methodSig.GetModuleInfo();
-                MetadataReader metadataReader = module.MetadataReader;
-                var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(metadataReader);
-                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(module);
-                var parser = new Internal.TypeSystem.NativeFormat.NativeFormatSignatureParser(metadataUnit, metadataReader.GetMethod(methodHandle).Signature, metadataReader);
-                var signature = parser.ParseMethodSignature();
-
-                return MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(signature);
+                var sig = TypeSystemSigFromRuntimeSignature(context, methodSig);
+                return MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(sig);
 #else
                 Environment.FailFast("Cannot parse signature");
                 return false;

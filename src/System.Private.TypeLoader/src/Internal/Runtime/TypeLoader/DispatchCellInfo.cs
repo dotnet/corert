@@ -22,7 +22,7 @@ namespace Internal.Runtime.TypeLoader
         VTableOffset = 0x2,
     }
 
-    [StructLayout(StructLayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct DispatchCellInfo
     {
         public DispatchCellType CellType;

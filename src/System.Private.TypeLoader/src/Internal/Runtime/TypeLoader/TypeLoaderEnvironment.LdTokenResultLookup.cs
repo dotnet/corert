@@ -241,7 +241,7 @@ namespace Internal.Runtime.TypeLoader
 
                 string name;
 #if ECMA_METADATA_SUPPORT
-                if (moduleInfo.MetadataReader != null)
+                if (moduleInfo is NativeFormatModuleInfo)
 #endif            
                 {
                     var metadataReader = ((NativeFormatModuleInfo)moduleInfo).MetadataReader;

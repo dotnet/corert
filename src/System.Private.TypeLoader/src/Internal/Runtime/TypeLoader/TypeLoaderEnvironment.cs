@@ -625,7 +625,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 try
                 {
-                    return TypeBuilder.TryResolveSingleMetadataFixup(module, metadataToken, fixupKind, out fixupResolution);
+                    return TypeBuilder.TryResolveSingleMetadataFixup((NativeFormatModuleInfo)module, metadataToken, fixupKind, out fixupResolution);
                 }
                 catch (Exception ex)
                 {
@@ -683,27 +683,18 @@ namespace Internal.Runtime.TypeLoader
             {
                 return true;
             }
+
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            ModuleInfo module = null;
-            
-            if (qTypeDefinition.IsNativeFormatMetadataBased)
-                module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.NativeFormatReader);
-#if ECMA_METADATA_SUPPORT
-            else
-                module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.EcmaFormatReader);
-#endif
-            IntPtr runtimeTypeHandleAsIntPtr;
-            if (TryResolveSingleMetadataFixup(
-                module,
-                qTypeDefinition.Token,
-                MetadataFixupKind.TypeHandle,
-                out runtimeTypeHandleAsIntPtr))
+            using (LockHolder.Hold(_typeLoaderLock))
             {
+                IntPtr runtimeTypeHandleAsIntPtr;
+                TypeBuilder.ResolveSingleTypeDefinition(qTypeDefinition, out runtimeTypeHandleAsIntPtr);
                 runtimeTypeHandle = *(RuntimeTypeHandle*)&runtimeTypeHandleAsIntPtr;
                 return true;
             }
-#endif
+#else
             return false;
+#endif
         }
     }
 }

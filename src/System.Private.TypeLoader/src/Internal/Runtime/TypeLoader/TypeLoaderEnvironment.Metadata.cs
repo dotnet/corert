@@ -1768,12 +1768,10 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!nameAndSignature.Signature.IsNativeLayoutSignature)
             {
-                IntPtr module = nameAndSignature.Signature.ModuleHandle;
-
                 ModuleInfo moduleInfo = nameAndSignature.Signature.GetModuleInfo();
 
 #if ECMA_METADATA_SUPPORT
-                if (moduleInfo.MetadataReader != null)
+                if (moduleInfo is NativeFormatModuleInfo)
 #endif
                 {
                     methodHandle = new QMethodDefinition(((NativeFormatModuleInfo)moduleInfo).MetadataReader, nameAndSignature.Signature.Token.AsHandle().ToMethodHandle(null));

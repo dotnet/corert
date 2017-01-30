@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -1959,7 +1961,7 @@ namespace Internal.Runtime.TypeLoader
             ResolveSingleCell_Worker(cell, out fixupResolution);
         }
 
-        public static bool TryResolveSingleMetadataFixup(IntPtr module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
+        public static bool TryResolveSingleMetadataFixup(NativeFormatModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
@@ -1969,6 +1971,19 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContextFactory.Recycle(context);
 
             return true;
+        }
+
+        public static void ResolveSingleTypeDefinition(QTypeDefinition qTypeDefinition, out IntPtr typeHandle)
+        {
+            TypeSystemContext context = TypeSystemContextFactory.Create();
+
+            TypeDesc type = context.GetTypeDescFromQHandle(qTypeDefinition);
+            GenericDictionaryCell.TypeHandleCell cell = new GenericDictionaryCell.TypeHandleCell();
+            cell.Type = type;
+
+            new TypeBuilder().ResolveSingleCell_Worker(cell, out typeHandle);
+
+            TypeSystemContextFactory.Recycle(context);
         }
 #endif
 
