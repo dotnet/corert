@@ -12,6 +12,6 @@ namespace Internal.TypeSystem.Ecma
     {
         public EcmaModuleInfo RuntimeModuleInfo { get; private set; }
 
-        public void SetRuntimeModuleInfoUNSAFE(ModuleInfo moduleInfo) { RuntimeModuleInfo = moduleInfo; }
+        public void SetRuntimeModuleInfoUNSAFE(EcmaModuleInfo moduleInfo) { RuntimeModuleInfo = moduleInfo; }
     }
 }

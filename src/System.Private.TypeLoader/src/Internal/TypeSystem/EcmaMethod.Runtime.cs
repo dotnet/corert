@@ -4,14 +4,11 @@
 
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
-using System.Threading;
 using Internal.Runtime.CompilerServices;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
 using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
@@ -30,7 +27,7 @@ namespace Internal.TypeSystem.Ecma
                     moduleHandle = new IntPtr(Module.RuntimeModuleInfo.DynamicModulePtr);
                 }
 
-                return new MethodNameAndSignature(Name, RuntimeMethodSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
+                return new MethodNameAndSignature(Name, RuntimeSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
             }
         }
     }
