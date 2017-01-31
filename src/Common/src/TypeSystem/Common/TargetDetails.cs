@@ -33,6 +33,22 @@ namespace Internal.TypeSystem
     }
 
     /// <summary>
+    /// Specifies 
+    /// </summary>
+    public enum TargetApplicationModel
+    {
+        Unknown,
+        /// <summary>
+        /// Cross-platform console model
+        /// </summary>
+        CoreRT,
+        /// <summary>
+        /// Windows-specific UWP model
+        /// </summary>
+        NetNative
+    }
+
+    /// <summary>
     /// Represents various details about the compilation target that affect
     /// layout, padding, allocations, or ABI.
     /// </summary>
@@ -52,6 +68,11 @@ namespace Internal.TypeSystem
         public TargetOS OperatingSystem
         {
             get;
+        }
+
+        public TargetApplicationModel ApplicationModel
+        {
+            get; private set;
         }
 
         /// <summary>
@@ -99,10 +120,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS)
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetApplicationModel appModel)
         {
             Architecture = architecture;
             OperatingSystem = targetOS;
+            ApplicationModel = appModel;
         }
 
         /// <summary>

@@ -30,7 +30,7 @@ namespace TypeSystemTests
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
 
         public TestTypeSystemContext(TargetArchitecture arch)
-            : base(new TargetDetails(arch, TargetOS.Unknown))
+            : base(new TargetDetails(arch, TargetOS.Unknown, TargetApplicationModel.Unknown))
         {
         }
 

@@ -13,27 +13,54 @@ namespace ILCompiler.DependencyAnalysis
     class InterfaceDispatchCellNode : ObjectNode, ISymbolNode
     {
         MethodDesc _targetMethod;
+        string _callSiteIdentifier;
 
-        public InterfaceDispatchCellNode(MethodDesc targetMethod)
+        public InterfaceDispatchCellNode(MethodDesc targetMethod, string callSiteIdentifier)
         {
             Debug.Assert(targetMethod.OwningType.IsInterface);
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
             _targetMethod = targetMethod;
+            _callSiteIdentifier = callSiteIdentifier;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__InterfaceDispatchCell_");
-            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_targetMethod));
+            sb.Append(GetMangledName(_targetMethod, _callSiteIdentifier));
         }
         public int Offset => 0;
-        public override bool IsShareable => true;
+
+        public override bool IsShareable => false;
+
+        public static string GetMangledName(MethodDesc method, string callSiteIdentifier)
+        {
+            string name = NodeFactory.NameMangler.CompilationUnitPrefix + "__InterfaceDispatchCell_" + NodeFactory.NameMangler.GetMangledMethodName(method);
+
+            if (!string.IsNullOrEmpty(callSiteIdentifier))
+            {
+                name += "_" + callSiteIdentifier;
+            }
+
+            return name;
+        }
 
         protected override string GetName() => this.GetMangledName();
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
+
+        // The second cell field uses the two lower-order bits to communicate the contents.
+        // See src\Native\Runtime\inc\rhbinder.h
+        private enum CachePointerType
+        {
+            // The low 2 bits of the m_pCache pointer are treated specially so that we can avoid the need for 
+            // extra fields on this type.
+            CachePointerIsInterfaceRelativePointer = 0x3,
+            CachePointerIsIndirectedInterfaceRelativePointer = 0x2,
+            CachePointerIsInterfacePointer = 0x1,
+            CachePointerPointsAtCache = 0x0,
+            CachePointerMask = 0x3,
+        };
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -52,10 +79,34 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
             }
 
-            // The second cell field uses the two lower-order bits to communicate the contents.
-            // We add 1 to signal IDC_CachePointerIsInterfacePointer. See src\Native\Runtime\inc\rhbinder.h.
-            objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), 1);
-            
+            if (factory.Target.ApplicationModel == TargetApplicationModel.CoreRT)
+            {
+                // TODO: Enable Indirect Pointer for Interface Dispatch Cell. See https://github.com/dotnet/corert/issues/2542
+                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType),
+                    (int)CachePointerType.CachePointerIsInterfacePointer);
+            }
+            else
+            {
+                if (factory.CompilationModuleGroup.ContainsType(_targetMethod.OwningType))
+                {
+                    objData.EmitReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32,
+                        (int)CachePointerType.CachePointerIsInterfaceRelativePointer);
+                }
+                else
+                {
+                    objData.EmitReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32,
+                        (int)CachePointerType.CachePointerIsIndirectedInterfaceRelativePointer);
+                }
+
+                if (objData.TargetPointerSize == 8)
+                {
+                    // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer 
+                    // width there since a pointer to the cache will be written into the cell. Emit additional
+                    // 32 bits on targets whose pointer size is 64 bit. 
+                    objData.EmitInt(0);
+                }
+            }
+
             // End the run of dispatch cells
             objData.EmitZeroPointer();
 
@@ -69,7 +120,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    objData.EmitInt(interfaceMethodSlot);
                 }
             }
 
