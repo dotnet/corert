@@ -73,7 +73,7 @@ namespace Internal.Reflection.Execution
             byte* pBlob;
             uint cbBlob;
 
-            if (!resourceInfo.Module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, ref pBlob, ref cbBlob))
+            if (!resourceInfo.Module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out pBlob, out cbBlob))
             {
                 throw new BadImageFormatException();
             }
@@ -182,7 +182,7 @@ namespace Internal.Reflection.Execution
                 Name = name;
                 Index = index;
                 Length = length;
-                ModuleHandle = moduleHandle;
+                Module = module;
             }
 
             public String Name { get; }
