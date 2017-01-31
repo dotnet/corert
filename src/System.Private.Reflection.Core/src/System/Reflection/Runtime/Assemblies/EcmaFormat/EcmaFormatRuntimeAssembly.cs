@@ -95,14 +95,14 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             }
         }
 
-        unsafe struct InternalManifestResourceInfo
+        private unsafe struct InternalManifestResourceInfo
         {
-            bool Found;
-            string FileName;
-            Assembly ReferencedAssembly;
-            byte* PointerToResource;
-            uint SizeOfResource; 
-            ResourceLocation ResourceLocation;
+            public bool Found;
+            public string FileName;
+            public Assembly ReferencedAssembly;
+            public byte* PointerToResource;
+            public uint SizeOfResource; 
+            public ResourceLocation ResourceLocation;
         }
 
         private unsafe InternalManifestResourceInfo GetInternalManifestResourceInfo(string resourceName)
@@ -121,12 +121,12 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                         {
                             // Embedded data resource
                             result.ResourceLocation = ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile;
-                            PEReader pe = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader);
+                            PEReader pe = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader).EcmaPEInfo.PE;
 
                             PEMemoryBlock resourceDirectory = pe.GetSectionData(pe.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             uint length = reader.ReadUInt32();
-                            result.PointerToResource = new IntPtr(reader.CurrentPointer);
+                            result.PointerToResource = reader.CurrentPointer;
                             
                             // Length check the size of the resource to ensure it fits in the PE file section, note, this is only safe as its in a checked region
                             if (length + sizeof(Int32) > reader.Length)
@@ -209,11 +209,14 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             if (name.Equals(""))
                 throw new ArgumentException(nameof(name));
             
-            InternalManifestResourceInfo internalManifestResourceInfo = GetInternalManifestResourceInfo(resourceName);
+            InternalManifestResourceInfo internalManifestResourceInfo = GetInternalManifestResourceInfo(name);
 
-            if ((internalManifestResourceInfo.ResourceLocation & ResourceLocation.Embedded) != null)
+            if ((internalManifestResourceInfo.ResourceLocation & ResourceLocation.Embedded) != 0)
             {
-                return new UnmanagedMemoryStream((byte*)internalManifestResourceInfo.PointerToResource.ToPointer(), internalManifestResourceInfo.SizeOfResource);
+                unsafe
+                {
+                    return new UnmanagedMemoryStream(internalManifestResourceInfo.PointerToResource, internalManifestResourceInfo.SizeOfResource);
+                }
             }
             else
             {
