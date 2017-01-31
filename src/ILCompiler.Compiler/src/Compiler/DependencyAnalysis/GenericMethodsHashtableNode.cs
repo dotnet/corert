@@ -44,6 +44,9 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
+            // Ensure the native layout data has been saved, in order to get valid Vertex offsets for the signature Vertices 
+            factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);
+
             NativeWriter nativeWriter = new NativeWriter();
             VertexHashtable hashtable = new VertexHashtable();
             Section nativeSection = nativeWriter.NewSection();
