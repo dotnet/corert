@@ -3,15 +3,101 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 class Program
 {
+    public const int Pass = 100;
+    public const int Fail = -1;
+
     static int Main()
     {
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
         ThreadStaticsTestWithTasks.Run();
-        return 100;
+        if (FinalizeTest.Run() != Pass)
+            return Fail;
+
+        return Pass;
+    }
+}
+
+class FinalizeTest
+{
+    struct FillStack
+    {
+        public long a;
+        public long b;
+        public long c;
+        public long d;
+        public long e;
+        public long f;
+    }
+
+    public static bool visited = false;
+    public class Dummy
+    {
+        ~Dummy()
+        {
+            Console.WriteLine("In Finalize() of Dummy");
+            FinalizeTest.visited = true;
+        }
+    }
+
+    public class CreateObj
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void CreateDummy()
+        {
+            Dummy dummy = new Dummy();
+            dummy = null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void SanitizeStack()
+        {
+            FillStack f;
+            f.a = 1L;
+            f.b = 2L;
+            f.c = 3L;
+            f.d = 4L;
+            f.e = 5L;
+            f.f = 6L;
+        }
+
+
+        public void RunTest()
+        {
+            CreateDummy();
+
+            //
+            // Currently CoreRT uses conservative GC which treats any object pointer in the
+            // stack as a possible GC ref, even if it's no longer live. Work around this 
+            // by immediately torching the stack with a large value type.
+            //
+            SanitizeStack();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
+        }
+    }
+
+    public static int Run()
+    {
+        CreateObj temp = new CreateObj();
+        temp.RunTest();
+
+
+        if (visited)
+        {
+            Console.WriteLine("Test for Finalize() & WaitForPendingFinalizers() passed!");
+            return Program.Pass;
+        }
+        else
+        {
+            Console.WriteLine("Test for Finalize() & WaitForPendingFinalizers() failed!");
+            return Program.Fail;
+        }
     }
 }
 
