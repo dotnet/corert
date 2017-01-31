@@ -305,7 +305,7 @@ namespace Internal.Runtime.TypeLoader
         private NativeParser GetStaticInfo(RuntimeTypeHandle instantiatedType, out ExternalReferencesTable staticsInfoLookup)
         {
             IntPtr moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(instantiatedType);
-            NativeFormatModuleInfo module = (NativeFormatModuleInfo)ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
             NativeHashtable staticsInfoHashtable;
             ExternalReferencesTable externalReferencesLookup;
             if (!GetStaticsInfoHashtable(module, out staticsInfoHashtable, out externalReferencesLookup, out staticsInfoLookup))
