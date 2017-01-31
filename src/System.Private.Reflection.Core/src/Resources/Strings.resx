@@ -334,4 +334,10 @@
   <data name="Arg_PlatformNotSupportedInvokeMemberCom" xml:space="preserve">
     <value>InvokeMember on a COM object is not supported on this platform.</value>
   </data>
+  <data name="Argument_MustBeRuntimeType" xml:space="preserve">
+    <value>Type must be a runtime Type object.</value>
+  </data>
+  <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
+    <value>MethodInfo must be a runtime MethodInfo object.</value>
+  </data>
 </root>
