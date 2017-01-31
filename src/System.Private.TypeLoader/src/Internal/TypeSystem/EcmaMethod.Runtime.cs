@@ -8,8 +8,9 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Threading;
-using Internal.Metadata.NativeFormat;
 using Internal.Runtime.CompilerServices;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem;
 
@@ -21,11 +22,15 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                throw new NotImplementedException();
-/*                int handleAsToken = _handle.ToInt();
+                int handleAsToken = MetadataTokens.GetToken(_handle);
+                IntPtr moduleHandle;
+                
+                unsafe
+                {
+                    moduleHandle = new IntPtr(Module.RuntimeModuleInfo.DynamicModulePtr);
+                }
 
-                IntPtr moduleHandle = Internal.Runtime.TypeLoader.ModuleList.Instance.GetModuleForMetadataReader(MetadataReader);
-                return new MethodNameAndSignature(Name, RuntimeMethodSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));*/
+                return new MethodNameAndSignature(Name, RuntimeMethodSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
             }
         }
     }

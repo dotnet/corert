@@ -10,7 +10,7 @@ namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaModule
     {
-        public ModuleInfo RuntimeModuleInfo { get; private set; }
+        public EcmaModuleInfo RuntimeModuleInfo { get; private set; }
 
         public void SetRuntimeModuleInfoUNSAFE(ModuleInfo moduleInfo) { RuntimeModuleInfo = moduleInfo; }
     }
