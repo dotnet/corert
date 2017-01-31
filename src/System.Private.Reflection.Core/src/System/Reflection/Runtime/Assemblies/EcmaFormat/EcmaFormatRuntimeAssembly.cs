@@ -95,22 +95,139 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             }
         }
 
-        public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
+        unsafe struct InternalManifestResourceInfo
         {
-            throw new NotImplementedException();
-            //return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
+            bool Found;
+            string FileName;
+            Assembly ReferencedAssembly;
+            byte* PointerToResource;
+            uint SizeOfResource; 
+            ResourceLocation ResourceLocation;
+        }
+
+        private unsafe InternalManifestResourceInfo GetInternalManifestResourceInfo(string resourceName)
+        {
+            InternalManifestResourceInfo result = new InternalManifestResourceInfo();
+            ManifestResourceHandleCollection manifestResources = MetadataReader.ManifestResources;
+            foreach (var resourceHandle in manifestResources)
+            {
+                ManifestResource resource = MetadataReader.GetManifestResource(resourceHandle);
+                if (MetadataReader.StringComparer.Equals(resource.Name, resourceName))
+                {
+                    result.Found = true;
+                    if (resource.Implementation.IsNil)
+                    {
+                        checked
+                        {
+                            // Embedded data resource
+                            result.ResourceLocation = ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile;
+                            PEReader pe = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader);
+
+                            PEMemoryBlock resourceDirectory = pe.GetSectionData(pe.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
+                            BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
+                            uint length = reader.ReadUInt32();
+                            result.PointerToResource = new IntPtr(reader.CurrentPointer);
+                            
+                            // Length check the size of the resource to ensure it fits in the PE file section, note, this is only safe as its in a checked region
+                            if (length + sizeof(Int32) > reader.Length)
+                                throw new BadImageFormatException();
+                            result.SizeOfResource = length;
+                        }
+                    }
+                    else
+                    {
+                        if (resource.Implementation.Kind == HandleKind.AssemblyFile)
+                        {
+                            // Get file name
+                            result.ResourceLocation = default(ResourceLocation);
+                            AssemblyFile file = MetadataReader.GetAssemblyFile((AssemblyFileHandle)resource.Implementation);
+                            if (file.ContainsMetadata)
+                            {
+                                result.ResourceLocation = ResourceLocation.Embedded;
+                                throw new PlatformNotSupportedException(); // Support for multi-module assemblies is not implemented on this platform
+                            }
+                            result.FileName = MetadataReader.GetString(file.Name);
+                        }
+                        else if (resource.Implementation.Kind == HandleKind.AssemblyReference)
+                        {
+                            // Resolve assembly reference
+                            result.ResourceLocation = ResourceLocation.ContainedInAnotherAssembly;
+                            RuntimeAssemblyName destinationAssemblyName = ((AssemblyReferenceHandle)resource.Implementation).ToRuntimeAssemblyName(MetadataReader);
+                            result.ReferencedAssembly = RuntimeAssembly.GetRuntimeAssemblyIfExists(destinationAssemblyName);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public sealed override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
+        {
+            if (resourceName == null)
+                throw new ArgumentNullException(nameof(resourceName));
+
+            if (resourceName.Equals(""))
+                throw new ArgumentException(nameof(resourceName));
+            
+            InternalManifestResourceInfo internalManifestResourceInfo = GetInternalManifestResourceInfo(resourceName);
+
+            if (internalManifestResourceInfo.ResourceLocation == ResourceLocation.ContainedInAnotherAssembly)
+            {
+                // Must get resource info from other assembly, and OR in the contained in another assembly information
+                ManifestResourceInfo underlyingManifestResourceInfo = internalManifestResourceInfo.ReferencedAssembly.GetManifestResourceInfo(resourceName);
+                internalManifestResourceInfo.FileName = underlyingManifestResourceInfo.FileName;
+                internalManifestResourceInfo.ResourceLocation = underlyingManifestResourceInfo.ResourceLocation | ResourceLocation.ContainedInAnotherAssembly;
+                if (underlyingManifestResourceInfo.ReferencedAssembly != null)
+                    internalManifestResourceInfo.ReferencedAssembly = underlyingManifestResourceInfo.ReferencedAssembly;
+            }
+
+            return new ManifestResourceInfo(internalManifestResourceInfo.ReferencedAssembly, internalManifestResourceInfo.FileName, internalManifestResourceInfo.ResourceLocation);
         }
 
         public sealed override String[] GetManifestResourceNames()
         {
-            throw new NotImplementedException();
-            //return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceNames(this);
+            ManifestResourceHandleCollection manifestResources = MetadataReader.ManifestResources;
+            string[] resourceNames = new string[manifestResources.Count];
+
+            int iResource = 0;
+            foreach (var resourceHandle in manifestResources)
+            {
+                ManifestResource resource = MetadataReader.GetManifestResource(resourceHandle);
+                resourceNames[iResource] = MetadataReader.GetString(resource.Name);
+                iResource++;
+            }
+
+            return resourceNames;
         }
 
-        public sealed override Stream GetManifestResourceStream(String name)
+        public sealed override Stream GetManifestResourceStream(string name)
         {
-            throw new NotImplementedException();
-            //return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            if (name.Equals(""))
+                throw new ArgumentException(nameof(name));
+            
+            InternalManifestResourceInfo internalManifestResourceInfo = GetInternalManifestResourceInfo(resourceName);
+
+            if ((internalManifestResourceInfo.ResourceLocation & ResourceLocation.Embedded) != null)
+            {
+                return new UnmanagedMemoryStream((byte*)internalManifestResourceInfo.PointerToResource.ToPointer(), internalManifestResourceInfo.SizeOfResource);
+            }
+            else
+            {
+                if (internalManifestResourceInfo.ResourceLocation == ResourceLocation.ContainedInAnotherAssembly)
+                {
+                    return internalManifestResourceInfo.ReferencedAssembly.GetManifestResourceStream(name);
+                }
+                else
+                {
+                    // Linked resource case.
+                    // TODO Implement linked resources, when FileStream, and CodeBase are fully implemented
+                    throw new NotImplementedException();
+                }
+            }
         }
 
         internal sealed override RuntimeAssemblyName RuntimeAssemblyName
@@ -137,11 +254,11 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             return MetadataReader.GetHashCode();
         }
 
+/* Uncomment, when EntryPoint is removed from ApiToDo.cs
         public sealed override MethodInfo EntryPoint 
         {
             get 
             {
-                 
                 CorHeader corHeader = PEReader.PEHeaders.CorHeader; 
                 if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0) 
                 { 
@@ -170,7 +287,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 return RuntimeNamedMethodInfo<EcmaFormatMethodCommon>.GetRuntimeNamedMethodInfo(new EcmaFormatMethodCommon(methodHandle, (EcmaFormatRuntimeNamedTypeInfo)runtimeType, runtimeType), runtimeType);
             }
         }
-
+*/
 
         internal AssemblyDefinition AssemblyDefinition { get; }
         internal MetadataReader MetadataReader { get; }
