@@ -115,6 +115,19 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
         }
+
+        public unsafe bool TryFindBlob(int blobId, out byte* pBlob, out uint cbBlob)
+        {
+            pBlob = null;
+            cbBlob = 0;
+            fixed (byte** ppBlob = &pBlob)
+            {
+                fixed (uint* pcbBlob = &cbBlob)
+                {
+                    return RuntimeAugments.FindBlob(Handle, (int)blobId, new IntPtr(ppBlob), new IntPtr(pcbBlob));
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -733,13 +746,13 @@ namespace Internal.Runtime.TypeLoader
 
         /// <summary>
         /// Locate module info for a given module. Fail if not found or before the module registry
-        /// gets initialized.
+        /// gets initialized. Must only be called for modules described as native format (not the mrt module, or an ECMA module)
         /// </summary>
         /// <param name="moduleHandle">Handle of module to look up</param>
-        public ModuleInfo GetModuleInfoByHandle(IntPtr moduleHandle)
+        public NativeFormatModuleInfo GetModuleInfoByHandle(IntPtr moduleHandle)
         {
             ModuleMap moduleMap = _loadedModuleMap;
-            return moduleMap.Modules[moduleMap.HandleToModuleIndex[moduleHandle]];
+            return (NativeFormatModuleInfo)moduleMap.Modules[moduleMap.HandleToModuleIndex[moduleHandle]];
         }
 
         /// <summary>

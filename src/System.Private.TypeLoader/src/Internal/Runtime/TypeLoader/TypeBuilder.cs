@@ -1650,7 +1650,7 @@ namespace Internal.Runtime.TypeLoader
 
             GenericContextKind contextKind = (GenericContextKind)parser.GetUnsigned();
 
-            NativeFormatModuleInfo moduleInfo = (NativeFormatModuleInfo)ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+            NativeFormatModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
 
             NativeLayoutInfoLoadContext nlilContext = new NativeLayoutInfoLoadContext();
             nlilContext._module = moduleInfo;

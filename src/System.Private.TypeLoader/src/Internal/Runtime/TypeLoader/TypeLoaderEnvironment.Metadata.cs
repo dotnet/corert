@@ -36,7 +36,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// module containing the relevant metadata, null when not found
         /// </summary>
-        public IntPtr MappingTableModule;
+        public NativeFormatModuleInfo MappingTableModule;
 
         /// <summary>
         /// Method entrypoint
@@ -468,7 +468,7 @@ namespace Internal.Runtime.TypeLoader
                     // Use the CctorContextMap instead.
 
                     var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(typeHandle);
-                    NativeFormatModuleInfo module = (NativeFormatModuleInfo)ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+                    NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
                     Debug.Assert(moduleHandle != IntPtr.Zero);
 
                     NativeReader typeMapReader;
@@ -798,7 +798,7 @@ namespace Internal.Runtime.TypeLoader
                 openOrNonGenericTypeDefinition = type;
 
             IntPtr moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(openOrNonGenericTypeDefinition);
-            NativeFormatModuleInfo module = (NativeFormatModuleInfo)ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
 
             return TryGetMethodNameAndSigFromVirtualResolveData(module, openOrNonGenericTypeDefinition, logicalSlot, out methodNameAndSig);
         }
@@ -1222,7 +1222,7 @@ namespace Internal.Runtime.TypeLoader
                         out methodInvokeMetadata.DictionaryComponent,
                         out methodInvokeMetadata.RawMethodEntryPoint))
                     {
-                        methodInvokeMetadata.MappingTableModule = module.Handle;
+                        methodInvokeMetadata.MappingTableModule = module;
                         methodInvokeMetadata.DynamicInvokeCookie = entryData._dynamicInvokeCookie;
                         methodInvokeMetadata.InvokeTableFlags = entryData._flags;
 
@@ -1323,9 +1323,9 @@ namespace Internal.Runtime.TypeLoader
             // in vtables - for plain reflection invoke everything seems to work
             // without additional changes thanks to the "NeedsParameterInterpretation" flag.
             if (methodHandle.IsNativeFormatMetadataBased)
-                methodInvokeMetadata.MappingTableModule = ((NativeFormatType)declaringTypeDefinition).MetadataUnit.RuntimeModule;
+                methodInvokeMetadata.MappingTableModule = ((NativeFormatType)declaringTypeDefinition).MetadataUnit.RuntimeModuleInfo;
             else
-                methodInvokeMetadata.MappingTableModule = IntPtr.Zero; // MappingTableModule is only used if NeedsParameterInterpretation isn't set
+                methodInvokeMetadata.MappingTableModule = null; // MappingTableModule is only used if NeedsParameterInterpretation isn't set
             methodInvokeMetadata.MethodEntryPoint = entryPoint;
             methodInvokeMetadata.RawMethodEntryPoint = entryPoint;
             // TODO: methodInvokeMetadata.DictionaryComponent

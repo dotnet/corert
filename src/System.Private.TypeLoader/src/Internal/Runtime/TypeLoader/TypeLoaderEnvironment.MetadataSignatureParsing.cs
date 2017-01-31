@@ -165,7 +165,7 @@ namespace Internal.Runtime.TypeLoader
         internal static NativeParser GetNativeParserForSignature(RuntimeSignature signature)
         {
             Debug.Assert(signature.IsNativeLayoutSignature);
-            NativeFormatModuleInfo module = (NativeFormatModuleInfo)ModuleList.Instance.GetModuleInfoByHandle(signature.ModuleHandle);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(signature.ModuleHandle);
 
             NativeReader reader = TypeLoaderEnvironment.GetNativeReaderForBlob(module, ReflectionMapBlob.NativeLayoutInfo);
             return new NativeParser(reader, signature.NativeLayoutOffset);
