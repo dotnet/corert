@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 interface IFoo<out U>
 {
@@ -47,6 +48,11 @@ class SuperDerived : Derived, IFoo<string>, IFoo<int>
 
 class GenBase<A> : IFoo<string>, IFoo<int>
 {
+    public virtual string VMethod1()
+    {
+        return "GenBase<" + typeof(A) + ">.VMethod1()";
+    }
+
     public virtual string GMethod1<T>(T t1, T t2)
     {
         return "GenBase<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")";
@@ -60,6 +66,11 @@ class GenBase<A> : IFoo<string>, IFoo<int>
 
 class GenDerived<A> : GenBase<A>, IFoo<string>, IFoo<int>
 {
+    public override string VMethod1()
+    {
+        return "GenBase<" + typeof(A) + ">.VMethod1()";
+    }
+
     public override string GMethod1<T>(T t1, T t2)
     {
         return "GenDerived<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")";
@@ -160,16 +171,16 @@ internal class Program
             s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
             TestWithGenClass<byte>(new GenBase<byte>());
             Console.WriteLine("====================");
-
-
+            
+            
             s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
             s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
             s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
             s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
             TestWithGenClass<byte>(new GenDerived<byte>());
             Console.WriteLine("====================");
-
-
+            
+            
             s_GMethod1 = "GenDerived<System.String>.GMethod1<System.Int32>(1,2)";
             s_IFooString = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(3,4)";
             s_IFooObject = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(5,6)";
@@ -265,6 +276,9 @@ internal class Program
         IFoo<int> ifoo3 = o as IFoo<int>;
         res = ifoo3.IMethod1<int>(7, 8);
         WriteLineWithVerification(res, s_IFooInt);
+
+        res = b.VMethod1();
+        Console.WriteLine(res);
     }
 
     private static void WriteLineWithVerification(string actual, string expected)

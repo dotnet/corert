@@ -35,6 +35,7 @@ namespace ILCompiler
         protected abstract bool GenerateDebugInfo { get; }
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
+        private readonly GVMCallHelperCache _gvmCallHelpers;
 
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -59,6 +60,7 @@ namespace ILCompiler
                 rootProvider.AddCompilationRoots(rootingService);
 
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType());
+            _gvmCallHelpers = new GVMCallHelperCache(nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType());
 
             bool? forceLazyPInvokeResolution = null;
             // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
@@ -157,6 +159,11 @@ namespace ILCompiler
             }
 
             return intrinsicMethod;
+        }
+
+        public MethodDesc GetGVMCallHelperStub(MethodDesc targetMethod)
+        {
+            return _gvmCallHelpers.GetHelper(targetMethod);
         }
 
         void ICompilation.Compile(string outputFile)

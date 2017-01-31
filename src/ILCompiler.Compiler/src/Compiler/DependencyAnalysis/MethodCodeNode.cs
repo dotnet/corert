@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.IL.Stubs;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -125,6 +126,18 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     dependencies = dependencies ?? new DependencyList();
                     dependencies.AddRange(templateMethodDependencies);
+                }
+
+                GVMCallHelper methodAsGVMStub = _method.GetTypicalMethodDefinition() as GVMCallHelper;
+                if (methodAsGVMStub != null && !_method.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    MethodDesc exactGVMTarget = methodAsGVMStub.GetInstantiatedGVMTarget(_method.Instantiation);
+                    dependencies.Add(new DependencyListEntry(factory.GVMDependencies(exactGVMTarget), "GVM Dependencies Support"));
+
+                    //bool getUnboxingStub = exactGVMTarget.OwningType.IsValueType && !exactGVMTarget.Signature.IsStatic;
+                    //
+                    //dependencies = dependencies ?? new DependencyList();
+                    //dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(exactGVMTarget, getUnboxingStub), "exact GVM target method"));
                 }
             }
 

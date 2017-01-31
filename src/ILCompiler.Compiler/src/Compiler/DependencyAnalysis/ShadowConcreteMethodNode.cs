@@ -8,8 +8,10 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.IL.Stubs;
 
 using Debug = System.Diagnostics.Debug;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -87,6 +89,22 @@ namespace ILCompiler.DependencyAnalysis
                     yield return new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke");
                 else
                     yield return new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
+            }
+
+            if (Method.HasInstantiation)
+            {
+                if (Method.IsVirtual)
+                    yield return new DependencyListEntry(factory.GVMDependencies(Method), "GVM Dependencies Support for method dictinoary");
+
+                GVMCallHelper methodAsGVMHelperStub = Method.GetTypicalMethodDefinition() as GVMCallHelper;
+                if (methodAsGVMHelperStub != null)
+                {
+                    MethodDesc instantiatedTargetGVM = methodAsGVMHelperStub.GetInstantiatedGVMTarget(Method.Instantiation);
+                    yield return new DependencyListEntry(factory.GVMDependencies(instantiatedTargetGVM), "GVM Dependencies for concrete GVM caller stub");
+                }
+
+                // Dictionary dependency
+                yield return new DependencyListEntry(factory.MethodGenericDictionary(Method), "Method dictionary");
             }
 
             if (Method.HasInstantiation)

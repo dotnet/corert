@@ -394,7 +394,7 @@ namespace Internal.Runtime.TypeLoader
 
             Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
 
-#if CORERT
+#if false
             // HACK: Use an instantiating standard to standard calling convention convertion thunk to correctly pass the
             // generic context argument to the target function (Requires JIT work to support this without this hack)
             if (!templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))

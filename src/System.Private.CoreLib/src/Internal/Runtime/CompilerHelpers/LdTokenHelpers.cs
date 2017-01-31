@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using Internal.Runtime.CompilerServices;
 using Internal.Reflection.Core.NonPortable;
 
 namespace Internal.Runtime.CompilerHelpers

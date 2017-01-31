@@ -14,6 +14,7 @@ using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {

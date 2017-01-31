@@ -236,8 +236,9 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
-
-            return factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack, instantiatedMethod);
+            return factory.RuntimeMethodHandle(instantiatedMethod);
+            //return factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack, instantiatedMethod);
+            //return factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, instantiatedMethod);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
