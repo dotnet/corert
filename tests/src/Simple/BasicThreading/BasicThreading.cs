@@ -24,16 +24,6 @@ class Program
 
 class FinalizeTest
 {
-    struct FillStack
-    {
-        public long a;
-        public long b;
-        public long c;
-        public long d;
-        public long e;
-        public long f;
-    }
-
     public static bool visited = false;
     public class Dummy
     {
@@ -44,49 +34,14 @@ class FinalizeTest
         }
     }
 
-    public class CreateObj
-    {
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public void CreateDummy()
-        {
-            Dummy dummy = new Dummy();
-            dummy = null;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public void SanitizeStack()
-        {
-            FillStack f;
-            f.a = 1L;
-            f.b = 2L;
-            f.c = 3L;
-            f.d = 4L;
-            f.e = 5L;
-            f.f = 6L;
-        }
-
-
-        public void RunTest()
-        {
-            CreateDummy();
-
-            //
-            // Currently CoreRT uses conservative GC which treats any object pointer in the
-            // stack as a possible GC ref, even if it's no longer live. Work around this 
-            // by immediately torching the stack with a large value type.
-            //
-            SanitizeStack();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
-        }
-    }
-
     public static int Run()
     {
-        CreateObj temp = new CreateObj();
-        temp.RunTest();
-
+        int iterationCount = 0;
+        while (!visited && iterationCount++ < 1000000)
+        {
+           GC.KeepAlive(new Dummy());
+           GC.Collect();
+        }
 
         if (visited)
         {

@@ -69,6 +69,8 @@ namespace Internal.Runtime
                     return SR.InvalidProgram_Specific;
                 case ExceptionStringID.InvalidProgramVararg:
                     return SR.InvalidProgram_Vararg;
+                case ExceptionStringID.InvalidProgramCallVirtFinalize:
+                    return SR.InvalidProgram_CallVirtFinalize;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:
