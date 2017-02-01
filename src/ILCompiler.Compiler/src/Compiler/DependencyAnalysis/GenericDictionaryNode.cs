@@ -167,13 +167,6 @@ namespace ILCompiler.DependencyAnalysis
             return GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(factory, _owningMethod);
         }
 
-        public MethodDesc OwningMethod => _owningMethod;
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            return GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(factory, _owningMethod);
-        }
-
         protected override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
             return factory.GenericDictionaryLayout(_owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));

@@ -37,12 +37,11 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                Metadata.NativeFormat.MetadataReader reader;
-                Metadata.NativeFormat.TypeDefinitionHandle typeDefHandle;
+                System.Reflection.Runtime.General.QTypeDefinition qTypeDefinition;
 
                 // Check if we have metadata.
-                if (Instance.TryGetMetadataForNamedType(rtth, out reader, out typeDefHandle))
-                    return typeDefHandle.GetFullName(reader);
+                if (Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+                    return qTypeDefinition.NativeFormatHandle.GetFullName(qTypeDefinition.NativeFormatReader);
             }
 
             result = "EEType:0x";

@@ -780,6 +780,5 @@ namespace ILCompiler.DependencyAnalysis
         EnsureClassConstructorRunAndReturnThreadStaticBase,
         GetThreadStaticBaseForType,
         GVMLookupForSlot,
-
     }
 }

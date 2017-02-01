@@ -31,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
         TypeHandle,
         MethodHandle,
         FieldHandle,
-        MethodHandle,
         MethodDictionary,
         MethodEntry
     }

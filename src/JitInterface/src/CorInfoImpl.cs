@@ -1382,7 +1382,7 @@ namespace Internal.JitInterface
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
                         object helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
-                        if (helperId == ReadyToRunHelperId.MethodDictionary && helperArg is MethodDesc)
+                        /*if (helperId == ReadyToRunHelperId.MethodDictionary && helperArg is MethodDesc)
                         {
                             MethodDesc helperMethodArg = (MethodDesc)helperArg;
                             if (helperMethodArg.OwningType.IsDefType && !helperMethodArg.OwningType.IsValueType)
@@ -1394,7 +1394,7 @@ namespace Internal.JitInterface
                                     helperArg = _compilation.GetGVMCallHelperStub(helperMethodArg);
                                 }
                             }
-                        }
+                        }*/
                         ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
                         pLookup.addr = (void*)ObjectToHandle(helper);
                     }
@@ -2329,8 +2329,14 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("embedModuleHandle"); }
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedClassHandle"); }
+
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedMethodHandle"); }
+        {
+            MethodDesc method = HandleToObject(handle);
+            ppIndirection = null;
+            return (CORINFO_METHOD_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeMethodHandle(method));
+        }
+
         private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedFieldHandle"); }
 
@@ -2797,13 +2803,12 @@ namespace Internal.JitInterface
 
                 // GVM Call Support
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN_GENERIC_DESCRIPTOR;
-                //pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
                 pResult.nullInstanceCheck = true;
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
 
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
@@ -2813,16 +2818,14 @@ namespace Internal.JitInterface
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
-                    //pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack;
                 }
-                else
+                /*else
                 {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.RuntimeMethodHandle(targetMethod));
 
-                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
-                }
-                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+                    //pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                    //    _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
+                }*/
             }
             else if((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {

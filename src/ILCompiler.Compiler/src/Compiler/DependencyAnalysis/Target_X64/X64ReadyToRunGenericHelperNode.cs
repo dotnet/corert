@@ -141,6 +141,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodDictionary:
                 case ReadyToRunHelperId.VirtualCall:
                 case ReadyToRunHelperId.ResolveVirtualFunction:
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
                 case ReadyToRunHelperId.MethodEntry:
                     {
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
@@ -148,7 +149,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
-                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
                 case ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack:
                     {
                         Debug.Assert(encoder.TargetRegister.Result == Register.RAX);

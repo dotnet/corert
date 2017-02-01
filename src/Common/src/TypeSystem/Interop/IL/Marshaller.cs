@@ -601,11 +601,6 @@ namespace Internal.TypeSystem.Interop
                     default:
                         return MarshallerKind.Invalid;
                 }
-                else if (PInvokeMethodData.IsSafeHandle(byRefType.ParameterType))
-                {
-                    // HACK
-                    return MarshallerKind.SafeHandle;
-                }
             }
             else if (elementType.IsValueType)
             {

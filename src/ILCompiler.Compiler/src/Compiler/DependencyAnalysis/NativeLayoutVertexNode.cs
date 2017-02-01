@@ -102,7 +102,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _method = method;
             _flags = flags;
-            _saveEntryPoint = saveEntryPoint;
             _methodSig = factory.NativeLayout.MethodSignatureVertex(method.GetTypicalMethodDefinition());
 
             if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) == 0)

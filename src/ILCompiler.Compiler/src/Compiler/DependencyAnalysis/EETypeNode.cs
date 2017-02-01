@@ -14,7 +14,6 @@ using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
-using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -160,10 +159,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.Alignment = objData.TargetPointerSize;
             objData.DefinedSymbols.Add(this);
 
-            if (!(_type is CanonBaseType))
-            {
-                ComputeOptionalEETypeFields(factory);
-            }
+            ComputeOptionalEETypeFields(factory);
 
             OutputGCDesc(ref objData);
             OutputComponentSize(ref objData);
@@ -265,11 +261,7 @@ namespace ILCompiler.DependencyAnalysis
             int pointerSize = _type.Context.Target.PointerSize;
             int objectSize;
 
-            if (_type is CanonBaseType)
-            {
-                objectSize = pointerSize;
-            }
-            else if (_type.IsDefType)
+            if (_type.IsDefType)
             {
                 objectSize = pointerSize +
                     ((DefType)_type).InstanceByteCount; // +pointerSize for SyncBlock

@@ -17,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeMethodHandleNode(NodeFactory factory, MethodDesc targetMethod)
         {
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
+            Debug.Assert(!targetMethod.IsRuntimeDeterminedExactMethod);
             _targetMethod = targetMethod;
         }
 
@@ -31,6 +32,17 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            if (_targetMethod.HasInstantiation && _targetMethod.IsVirtual)
+            {
+                DependencyList dependencies = new DependencyList();
+                dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_targetMethod), "GVM dependencies for runtime method handle"));
+                return dependencies;
+            }
+            return null;
+        }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

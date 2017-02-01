@@ -106,15 +106,6 @@ namespace ILCompiler.DependencyAnalysis
                 // Dictionary dependency
                 yield return new DependencyListEntry(factory.MethodGenericDictionary(Method), "Method dictionary");
             }
-
-            if (Method.HasInstantiation)
-            {
-                if (Method.IsVirtual)
-                    yield return new DependencyListEntry(factory.GVMDependencies(Method), "GVM Dependencies Support for method dictionary");
-
-                // Dictionary dependency
-                yield return new DependencyListEntry(factory.MethodGenericDictionary(Method), "Method dictionary");
-            }
         }
 
         protected override string GetName() => $"{Method.ToString()} backed by {CanonicalMethodNode.GetMangledName()}";

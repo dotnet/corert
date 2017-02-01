@@ -113,7 +113,6 @@
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutSignatureNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericTypesHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\GenericMethodsTemplateMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsTemplateMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeMethodHandleNode.cs" />
