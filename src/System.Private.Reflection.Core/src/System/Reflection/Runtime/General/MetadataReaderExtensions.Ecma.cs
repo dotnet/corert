@@ -25,69 +25,6 @@ namespace System.Reflection.Runtime.General
     //
     internal static class EcmaMetadataReaderExtensions
     {
-        public static string GetString(this StringHandle handle, MetadataReader reader)
-        {
-            return reader.GetString(handle);
-        }
-
-        public static string GetStringOrNull(this StringHandle handle, MetadataReader reader)
-        {
-            if (handle.IsNil)
-                return null;
-
-            return reader.GetString(handle);
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyDefinition assemblyDefinition, MetadataReader reader)
-        {
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                assemblyDefinition.Name,
-                assemblyDefinition.Version,
-                assemblyDefinition.Culture,
-                assemblyDefinition.PublicKey,
-                assemblyDefinition.Flags
-                );
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyReferenceHandle assemblyReferenceHandle, MetadataReader reader)
-        {
-            AssemblyReference assemblyReference = reader.GetAssemblyReference(assemblyReferenceHandle);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                assemblyReference.Name,
-                assemblyReference.Version,
-                assemblyReference.Culture,
-                assemblyReference.PublicKeyOrToken,
-                assemblyReference.Flags
-                );
-        }
-
-        private static RuntimeAssemblyName CreateRuntimeAssemblyNameFromMetadata(
-            MetadataReader reader,
-            StringHandle name,
-            Version version,
-            StringHandle culture,
-            BlobHandle publicKeyOrToken,
-            AssemblyFlags assemblyFlags)
-        {
-            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & AssemblyFlags.PublicKey))
-                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & AssemblyFlags.Retargetable))
-                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
-            int contentType = ((int)assemblyFlags) & 0x00000E00;
-            assemblyNameFlags |= (AssemblyNameFlags)contentType;
-
-            return new RuntimeAssemblyName(
-                name.GetString(reader),
-                version,
-                culture.GetString(reader),
-                assemblyNameFlags,
-                reader.GetBlobContent(publicKeyOrToken).ToArray()
-                );
-        }
-
         //
         // Used to split methods between DeclaredMethods and DeclaredConstructors.
         //
@@ -96,5 +33,90 @@ namespace System.Reflection.Runtime.General
             MethodDefinition method = reader.GetMethodDefinition(methodHandle);
             return EcmaMetadataHelpers.IsConstructor(ref method, reader);
         }
+
+        public static PrimitiveTypeCode GetPrimitiveTypeCode(this Type type)
+        {
+            if (type == CommonRuntimeTypes.Object)
+                return PrimitiveTypeCode.Object;
+            else if (type == CommonRuntimeTypes.Boolean)
+                return PrimitiveTypeCode.Boolean;
+            else if (type == CommonRuntimeTypes.Char)
+                return PrimitiveTypeCode.Char;
+            else if (type == CommonRuntimeTypes.Double)
+                return PrimitiveTypeCode.Double;
+            else if (type == CommonRuntimeTypes.Single)
+                return PrimitiveTypeCode.Single;
+            else if (type == CommonRuntimeTypes.Int16)
+                return PrimitiveTypeCode.Int16;
+            else if (type == CommonRuntimeTypes.Int32)
+                return PrimitiveTypeCode.Int32;
+            else if (type == CommonRuntimeTypes.Int64)
+                return PrimitiveTypeCode.Int64;
+            else if (type == CommonRuntimeTypes.SByte)
+                return PrimitiveTypeCode.SByte;
+            else if (type == CommonRuntimeTypes.UInt16)
+                return PrimitiveTypeCode.UInt16;
+            else if (type == CommonRuntimeTypes.UInt32)
+                return PrimitiveTypeCode.UInt32;
+            else if (type == CommonRuntimeTypes.UInt64)
+                return PrimitiveTypeCode.UInt64;
+            else if (type == CommonRuntimeTypes.Byte)
+                return PrimitiveTypeCode.Byte;
+            else if (type == CommonRuntimeTypes.IntPtr)
+                return PrimitiveTypeCode.IntPtr;
+            else if (type == CommonRuntimeTypes.UIntPtr)
+                return PrimitiveTypeCode.UIntPtr;
+            else if (type == CommonRuntimeTypes.String)
+                return PrimitiveTypeCode.String;
+            else if (type == CommonRuntimeTypes.Void)
+                return PrimitiveTypeCode.Void;
+            
+            throw new ArgumentException();
+        }
+
+        public static Type GetRuntimeType(this PrimitiveTypeCode primitiveCode)
+        {
+            switch(primitiveCode)
+            {
+                case PrimitiveTypeCode.Boolean:
+                    return CommonRuntimeTypes.Boolean;
+                case PrimitiveTypeCode.Byte:
+                    return CommonRuntimeTypes.Byte;
+                case PrimitiveTypeCode.Char:
+                    return CommonRuntimeTypes.Char;
+                case PrimitiveTypeCode.Double:
+                    return CommonRuntimeTypes.Double;
+                case PrimitiveTypeCode.Int16:
+                    return CommonRuntimeTypes.Int16;
+                case PrimitiveTypeCode.Int32:
+                    return CommonRuntimeTypes.Int32;
+                case PrimitiveTypeCode.Int64:
+                    return CommonRuntimeTypes.Int64;
+                case PrimitiveTypeCode.IntPtr:
+                    return CommonRuntimeTypes.IntPtr;
+                case PrimitiveTypeCode.Object:
+                    return CommonRuntimeTypes.Object;
+                case PrimitiveTypeCode.SByte:
+                    return CommonRuntimeTypes.SByte;
+                case PrimitiveTypeCode.Single:
+                    return CommonRuntimeTypes.Single;
+                case PrimitiveTypeCode.String:
+                    return CommonRuntimeTypes.String;
+                case PrimitiveTypeCode.TypedReference:
+                    throw new PlatformNotSupportedException();
+                case PrimitiveTypeCode.UInt16:
+                    return CommonRuntimeTypes.UInt16;
+                case PrimitiveTypeCode.UInt32:
+                    return CommonRuntimeTypes.UInt32;
+                case PrimitiveTypeCode.UInt64:
+                    return CommonRuntimeTypes.UInt64;
+                case PrimitiveTypeCode.UIntPtr:
+                    return CommonRuntimeTypes.UIntPtr;
+                case PrimitiveTypeCode.Void:
+                    return CommonRuntimeTypes.Void;
+            }
+
+            throw new BadImageFormatException();
+        }        
     }
 }

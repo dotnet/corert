@@ -356,7 +356,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override int MetadataToken
+        public override int MetadataToken
         {
             get
             {

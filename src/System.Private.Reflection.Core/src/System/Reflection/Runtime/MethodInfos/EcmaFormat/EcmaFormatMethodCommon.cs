@@ -13,11 +13,13 @@ using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.ParameterInfos.EcmaFormat;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
 {
@@ -166,7 +168,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
                     yield return cad;
 
                 if (0 != (_method.ImplAttributes & MethodImplAttributes.PreserveSig))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(System.Runtime.InteropServices.PreserveSigAttribute), null, null);
+                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(PreserveSigAttribute), null, null);
             }
         }
 
@@ -199,6 +201,14 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             get
             {
                 return _definingTypeInfo.Module;
+            }
+        }
+
+        public int MetadataToken
+        {
+            get
+            {
+                return MetadataTokens.GetToken(_methodHandle);
             }
         }
 

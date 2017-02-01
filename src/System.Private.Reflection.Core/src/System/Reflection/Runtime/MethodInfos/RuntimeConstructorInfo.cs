@@ -105,7 +105,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInvoker.Invoke(obj, parameters);
         }
 
-        public sealed override int MetadataToken
+        public override int MetadataToken
         {
             get
             {

@@ -16,99 +16,9 @@ using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime
 {
-    static class ReflectionTypeProviderHelpers
+    internal sealed class ReflectionTypeProvider : ICustomAttributeTypeProvider<RuntimeTypeInfo>, ISZArrayTypeProvider<RuntimeTypeInfo>, ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>
     {
-        public static PrimitiveTypeCode GetPrimitiveTypeCode(this Type type)
-        {
-            if (type == CommonRuntimeTypes.Object)
-                return PrimitiveTypeCode.Object;
-            else if (type == CommonRuntimeTypes.Boolean)
-                return PrimitiveTypeCode.Boolean;
-            else if (type == CommonRuntimeTypes.Char)
-                return PrimitiveTypeCode.Char;
-            else if (type == CommonRuntimeTypes.Double)
-                return PrimitiveTypeCode.Double;
-            else if (type == CommonRuntimeTypes.Single)
-                return PrimitiveTypeCode.Single;
-            else if (type == CommonRuntimeTypes.Int16)
-                return PrimitiveTypeCode.Int16;
-            else if (type == CommonRuntimeTypes.Int32)
-                return PrimitiveTypeCode.Int32;
-            else if (type == CommonRuntimeTypes.Int64)
-                return PrimitiveTypeCode.Int64;
-            else if (type == CommonRuntimeTypes.SByte)
-                return PrimitiveTypeCode.SByte;
-            else if (type == CommonRuntimeTypes.UInt16)
-                return PrimitiveTypeCode.UInt16;
-            else if (type == CommonRuntimeTypes.UInt32)
-                return PrimitiveTypeCode.UInt32;
-            else if (type == CommonRuntimeTypes.UInt64)
-                return PrimitiveTypeCode.UInt64;
-            else if (type == CommonRuntimeTypes.Byte)
-                return PrimitiveTypeCode.Byte;
-            else if (type == CommonRuntimeTypes.IntPtr)
-                return PrimitiveTypeCode.IntPtr;
-            else if (type == CommonRuntimeTypes.UIntPtr)
-                return PrimitiveTypeCode.UIntPtr;
-            else if (type == CommonRuntimeTypes.String)
-                return PrimitiveTypeCode.String;
-            else if (type == CommonRuntimeTypes.Void)
-                return PrimitiveTypeCode.Void;
-            
-            throw new ArgumentException();
-        }
-
-        public static Type GetRuntimeType(this PrimitiveTypeCode primitiveCode)
-        {
-            switch(primitiveCode)
-            {
-                case PrimitiveTypeCode.Boolean:
-                    return CommonRuntimeTypes.Boolean;
-                case PrimitiveTypeCode.Byte:
-                    return CommonRuntimeTypes.Byte;
-                case PrimitiveTypeCode.Char:
-                    return CommonRuntimeTypes.Char;
-                case PrimitiveTypeCode.Double:
-                    return CommonRuntimeTypes.Double;
-                case PrimitiveTypeCode.Int16:
-                    return CommonRuntimeTypes.Int16;
-                case PrimitiveTypeCode.Int32:
-                    return CommonRuntimeTypes.Int32;
-                case PrimitiveTypeCode.Int64:
-                    return CommonRuntimeTypes.Int64;
-                case PrimitiveTypeCode.IntPtr:
-                    return CommonRuntimeTypes.IntPtr;
-                case PrimitiveTypeCode.Object:
-                    return CommonRuntimeTypes.Object;
-                case PrimitiveTypeCode.SByte:
-                    return CommonRuntimeTypes.SByte;
-                case PrimitiveTypeCode.Single:
-                    return CommonRuntimeTypes.Single;
-                case PrimitiveTypeCode.String:
-                    return CommonRuntimeTypes.String;
-                case PrimitiveTypeCode.TypedReference:
-                    throw new PlatformNotSupportedException();
-                case PrimitiveTypeCode.UInt16:
-                    return CommonRuntimeTypes.UInt16;
-                case PrimitiveTypeCode.UInt32:
-                    return CommonRuntimeTypes.UInt32;
-                case PrimitiveTypeCode.UInt64:
-                    return CommonRuntimeTypes.UInt64;
-                case PrimitiveTypeCode.UIntPtr:
-                    return CommonRuntimeTypes.UIntPtr;
-                case PrimitiveTypeCode.Void:
-                    return CommonRuntimeTypes.Void;
-            }
-
-            throw new BadImageFormatException();
-        }
-    }
-    class ReflectionTypeProvider : ICustomAttributeTypeProvider<RuntimeTypeInfo>, ISZArrayTypeProvider<RuntimeTypeInfo>, ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>
-    {
-        private static readonly RuntimeTypeInfo s_systemType = (RuntimeTypeInfo)CommonRuntimeTypes.Type.GetTypeInfo();
-        private static readonly RuntimeTypeInfo s_intPtrType = (RuntimeTypeInfo)CommonRuntimeTypes.IntPtr.GetTypeInfo();
-
-        private bool _throwOnError;
+        private readonly bool _throwOnError;
         private Exception _exceptionResult;
         public bool ExceptionOccurred { get {return _exceptionResult != null; } }
         public Exception ExceptionResult
@@ -136,17 +46,17 @@ namespace System.Reflection.Runtime
 
         RuntimeTypeInfo ICustomAttributeTypeProvider<RuntimeTypeInfo>.GetSystemType()
         {
-            return s_systemType;
+            return CommonRuntimeTypes.Type.CastToRuntimeTypeInfo();
         }
 
         bool ICustomAttributeTypeProvider<RuntimeTypeInfo>.IsSystemType(RuntimeTypeInfo type)
         {
-            return Object.ReferenceEquals(s_systemType, type);
+            return CommonRuntimeTypes.Type.Equals(type);
         }
 
         RuntimeTypeInfo ICustomAttributeTypeProvider<RuntimeTypeInfo>.GetTypeFromSerializedName(string name)
         {
-            RuntimeTypeInfo result = (RuntimeTypeInfo)Type.GetType(name, _throwOnError);
+            RuntimeTypeInfo result = Type.GetType(name, _throwOnError).CastToRuntimeTypeInfo();
             if (result == null)
                 ExceptionResult = new TypeLoadException();
 
@@ -161,7 +71,7 @@ namespace System.Reflection.Runtime
 
         RuntimeTypeInfo ISimpleTypeProvider<RuntimeTypeInfo>.GetPrimitiveType(PrimitiveTypeCode primitiveCode)
         {
-            return (RuntimeTypeInfo)primitiveCode.GetRuntimeType().GetTypeInfo();
+            return primitiveCode.GetRuntimeType().CastToRuntimeTypeInfo();
         }
 
         RuntimeTypeInfo ISZArrayTypeProvider<RuntimeTypeInfo>.GetSZArrayType(RuntimeTypeInfo elementType)
@@ -172,7 +82,7 @@ namespace System.Reflection.Runtime
                 return null;
             }
             
-            return (RuntimeTypeInfo)elementType.MakeArrayType().GetTypeInfo();
+            return elementType.MakeArrayType().CastToRuntimeTypeInfo();
         }
 
         RuntimeTypeInfo ISimpleTypeProvider<RuntimeTypeInfo>.GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
@@ -220,7 +130,7 @@ namespace System.Reflection.Runtime
 
         RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetFunctionPointerType(MethodSignature<RuntimeTypeInfo> signature)
         {
-            return s_intPtrType;
+            return CommonRuntimeTypes.IntPtr.CastToRuntimeTypeInfo();
         }
 
         RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetGenericTypeParameter(TypeContext typeContext, int parameter)
@@ -258,13 +168,9 @@ namespace System.Reflection.Runtime
         // IConstructedTypeProvider
         RuntimeTypeInfo IConstructedTypeProvider<RuntimeTypeInfo>.GetGenericInstantiation(RuntimeTypeInfo genericType, ImmutableArray<RuntimeTypeInfo> typeArguments)
         {
-            Type[] typeArgumentsAsType = new Type[typeArguments.Length];
-            for (int i = 0 ; i < typeArgumentsAsType.Length; i++)
-            {
-                typeArgumentsAsType[i] = typeArguments[i].AsType();
-            }
-
-            return (RuntimeTypeInfo)genericType.MakeGenericType(typeArgumentsAsType).GetTypeInfo();
+            RuntimeTypeInfo[] typeArgumentsArray = new RuntimeTypeInfo[typeArguments.Length];
+            typeArguments.CopyTo(typeArgumentsArray);
+            return genericType.GetConstructedGenericType(typeArgumentsArray);
         }
 
         RuntimeTypeInfo IConstructedTypeProvider<RuntimeTypeInfo>.GetArrayType(RuntimeTypeInfo elementType, ArrayShape shape)

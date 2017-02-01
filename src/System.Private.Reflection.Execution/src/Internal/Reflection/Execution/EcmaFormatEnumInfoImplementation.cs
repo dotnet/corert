@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Collections.Generic;
 
-using global::Internal.Runtime.Augments;
+using Internal.Runtime.Augments;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
 using System.Reflection.Metadata;
 
@@ -23,7 +23,7 @@ namespace Internal.Reflection.Execution
             _typeDefinition = reader.GetTypeDefinition(typeDefinitionHandle);
         }
 
-        protected override KeyValuePair<String, ulong>[] ReadNamesAndValues()
+        protected sealed override KeyValuePair<String, ulong>[] ReadNamesAndValues()
         {
             LowLevelList<KeyValuePair<String, ulong>> namesAndUnboxedValues = new LowLevelList<KeyValuePair<String, ulong>>();
             MetadataReader reader = _reader;
@@ -100,7 +100,7 @@ namespace Internal.Reflection.Execution
             throw new BadImageFormatException();
         } 
 
-        private MetadataReader _reader;
-        private TypeDefinition _typeDefinition;
+        private readonly MetadataReader _reader;
+        private readonly TypeDefinition _typeDefinition;
     }
 }

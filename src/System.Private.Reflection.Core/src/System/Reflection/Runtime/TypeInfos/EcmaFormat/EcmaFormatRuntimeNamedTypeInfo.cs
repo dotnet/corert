@@ -14,11 +14,13 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
 {
@@ -54,7 +56,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
                     yield return cad;
 
                 if (0 != (_typeDefinition.Attributes & TypeAttributes.Import))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(System.Runtime.InteropServices.ComImportAttribute), null, null);
+                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(ComImportAttribute), null, null);
             }
         }
 
@@ -137,6 +139,14 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             if (IsGenericTypeDefinition)
                 return this;
             return base.GetGenericTypeDefinition();
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return MetadataTokens.GetToken(_typeDefinitionHandle);
+            }
         }
 
         public sealed override string ToString()

@@ -164,6 +164,14 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return GenericTypeDefinitionTypeInfo.MetadataToken;
+            }
+        }
+
         public sealed override string ToString()
         {
             // Get the FullName of the generic type definition in a pay-for-play safe way.

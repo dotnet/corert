@@ -57,6 +57,7 @@
     <Compile Include="Internal\TypeSystem\NativeFormatType.Interop.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.Ecma.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.Ecma.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.Ecma.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Internal\TypeSystem\Ecma\CachingMetadataStringDecoder.cs</Link>
     </Compile>

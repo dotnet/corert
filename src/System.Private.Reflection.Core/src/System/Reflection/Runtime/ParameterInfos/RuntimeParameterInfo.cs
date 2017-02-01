@@ -43,7 +43,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
         public abstract override bool HasDefaultValue { get; }
 
-        public sealed override int MetadataToken
+        public override int MetadataToken
         {
             get
             {

@@ -18,6 +18,7 @@ using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.BindingFlagSupport;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
@@ -94,7 +95,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
         {
             get
             {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+                return MetadataTokens.GetToken(_fieldHandle);
             }
         }
 

@@ -16,6 +16,7 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.CustomAttributes;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
@@ -145,7 +146,7 @@ namespace System.Reflection.Runtime.EventInfos.EcmaFormat
         {
             get
             {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+                return MetadataTokens.GetToken(_eventHandle);
             }
         }
 

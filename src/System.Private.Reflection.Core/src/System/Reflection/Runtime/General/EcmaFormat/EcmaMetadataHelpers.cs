@@ -218,6 +218,9 @@ namespace System.Reflection.Runtime
                         SkipType(ref reader);
                     return;
                 }
+
+                default:
+                    throw new BadImageFormatException();
             }
         }
     }

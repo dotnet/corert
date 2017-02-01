@@ -23,6 +23,7 @@ using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
 {
@@ -121,7 +122,7 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
         {
             get
             {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+                return MetadataTokens.GetToken(_propertyHandle);
             }
         }
 

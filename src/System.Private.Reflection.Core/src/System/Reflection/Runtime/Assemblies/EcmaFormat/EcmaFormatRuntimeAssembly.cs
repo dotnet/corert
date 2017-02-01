@@ -121,7 +121,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                         {
                             // Embedded data resource
                             result.ResourceLocation = ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile;
-                            PEReader pe = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader).EcmaPEInfo.PE;
+                            PEReader pe = PEReader;
 
                             PEMemoryBlock resourceDirectory = pe.GetSectionData(pe.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
@@ -166,7 +166,6 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
         {
             if (resourceName == null)
                 throw new ArgumentNullException(nameof(resourceName));
-
             if (resourceName.Equals(""))
                 throw new ArgumentException(nameof(resourceName));
             
@@ -205,7 +204,6 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-
             if (name.Equals(""))
                 throw new ArgumentException(nameof(name));
             
@@ -299,7 +297,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             get
             {
                 EcmaModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader);
-                return moduleInfo.EcmaPEInfo.PE;
+                return moduleInfo.PE;
             }
         }
     }

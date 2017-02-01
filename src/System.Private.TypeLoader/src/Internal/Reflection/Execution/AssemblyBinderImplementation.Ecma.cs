@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
-using global::System.Reflection.Runtime.General;
+using Internal.Reflection.Core;
+using Internal.Runtime.TypeLoader;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Runtime.TypeLoader;
+using System.Reflection.Runtime.General;
 
 using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
@@ -19,103 +18,8 @@ using System.Collections.Immutable;
 
 using System.Reflection.Runtime.Assemblies;
 
-namespace System.Reflection.Runtime.General
-{
-    //
-    // Collect various metadata reading tasks for better chunking...
-    //
-    internal static class EcmaMetadataReaderExtensions
-    {
-        public static string GetString(this StringHandle handle, MetadataReader reader)
-        {
-            return reader.GetString(handle);
-        }
-
-        public static string GetStringOrNull(this StringHandle handle, MetadataReader reader)
-        {
-            if (handle.IsNil)
-                return null;
-
-            return reader.GetString(handle);
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyDefinition assemblyDefinition, MetadataReader reader)
-        {
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                assemblyDefinition.Name,
-                assemblyDefinition.Version,
-                assemblyDefinition.Culture,
-                assemblyDefinition.PublicKey,
-                assemblyDefinition.Flags
-                );
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyReferenceHandle assemblyReferenceHandle, MetadataReader reader)
-        {
-            AssemblyReference assemblyReference = reader.GetAssemblyReference(assemblyReferenceHandle);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                assemblyReference.Name,
-                assemblyReference.Version,
-                assemblyReference.Culture,
-                assemblyReference.PublicKeyOrToken,
-                assemblyReference.Flags
-                );
-        }
-
-        private static RuntimeAssemblyName CreateRuntimeAssemblyNameFromMetadata(
-            MetadataReader reader,
-            StringHandle name,
-            Version version,
-            StringHandle culture,
-            BlobHandle publicKeyOrToken,
-            AssemblyFlags assemblyFlags)
-        {
-            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & AssemblyFlags.PublicKey))
-                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & AssemblyFlags.Retargetable))
-                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
-            int contentType = ((int)assemblyFlags) & 0x00000E00;
-            assemblyNameFlags |= (AssemblyNameFlags)contentType;
-
-            byte[] publicKeyOrTokenByteArray = null;
-            if (!publicKeyOrToken.IsNil)
-            {
-                ImmutableArray<byte> publicKeyOrTokenBlob = reader.GetBlobContent(publicKeyOrToken);
-                publicKeyOrTokenByteArray = new byte[publicKeyOrTokenBlob.Length];
-                publicKeyOrTokenBlob.CopyTo(publicKeyOrTokenByteArray);
-            }
-            
-            return new RuntimeAssemblyName(
-                name.GetString(reader),
-                version,
-                culture.GetString(reader),
-                assemblyNameFlags,
-                publicKeyOrTokenByteArray
-                );
-        }
-    }
-}
-
 namespace Internal.Reflection.Execution
 {
-    /// Abstraction to hold PE data for an ECMA module
-    public class PEInfo
-    {
-        public PEInfo(AssemblyName name, MetadataReader reader, PEReader pe)
-        {
-            Name = name;
-            Reader = reader;
-            PE = pe;
-        }
-
-        public readonly AssemblyName Name;
-        public readonly MetadataReader Reader;
-        public readonly PEReader PE;
-    }
-
     //=============================================================================================================================
     // The assembly resolution policy for Project N's emulation of "classic reflection."
     //
@@ -125,6 +29,21 @@ namespace Internal.Reflection.Execution
     //=============================================================================================================================
     public sealed partial class AssemblyBinderImplementation : AssemblyBinder
     {
+        /// Abstraction to hold PE data for an ECMA module
+        private class PEInfo
+        {
+            public PEInfo(AssemblyName name, MetadataReader reader, PEReader pe)
+            {
+                Name = name;
+                Reader = reader;
+                PE = pe;
+            }
+
+            public readonly AssemblyName Name;
+            public readonly MetadataReader Reader;
+            public readonly PEReader PE;
+        }
+
         private static LowLevelList<PEInfo> s_ecmaLoadedAssemblies = new LowLevelList<PEInfo>();
 
         partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result)
@@ -154,7 +73,7 @@ namespace Internal.Reflection.Execution
 
                 s_ecmaLoadedAssemblies.Add(peinfo);
                 ModuleList moduleList = ModuleList.Instance;
-                ModuleInfo newModuleInfo = new EcmaModuleInfo(moduleList.SystemModule.Handle, peinfo);
+                ModuleInfo newModuleInfo = new EcmaModuleInfo(moduleList.SystemModule.Handle, pe, reader);
                 moduleList.RegisterModule(newModuleInfo);
 
                 // 5. Then try to load by name again. This load should always succeed

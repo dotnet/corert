@@ -12,24 +12,31 @@ using System.Threading;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Execution;
 using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 
 namespace Internal.Runtime.TypeLoader
 {
     public sealed class EcmaModuleInfo : ModuleInfo
     {
         /// <summary>
+        /// Metadata Reader for this module.
+        /// </summary>
+        public readonly MetadataReader MetadataReader;
+
+        /// <summary>
         /// Ecma PE data for this module.
         /// </summary>
-        public PEInfo EcmaPEInfo { get; private set; }
+        public readonly PEReader PE;
 
         /// <summary>
         /// Initialize module info and construct per-module metadata reader.
         /// </summary>
         /// <param name="moduleHandle">Handle (address) of module to initialize</param>
-        internal EcmaModuleInfo(IntPtr moduleHandle, PEInfo peinfo)
+        internal EcmaModuleInfo(IntPtr moduleHandle, PEReader pe, MetadataReader reader)
             : base(moduleHandle, ModuleType.Ecma)
         {
-            EcmaPEInfo = peinfo;
+            PE = pe;
+            MetadataReader = reader;
         }
     }
 
@@ -48,7 +55,7 @@ namespace Internal.Runtime.TypeLoader
                 if (ecmaModuleInfo == null)
                     continue;
                 
-                if (ecmaModuleInfo.EcmaPEInfo.Reader == reader)
+                if (ecmaModuleInfo.MetadataReader == reader)
                 {
                     return ecmaModuleInfo;
                 }

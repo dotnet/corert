@@ -8,11 +8,13 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Runtime.ParameterInfos.EcmaFormat
 {
@@ -56,11 +58,11 @@ namespace System.Reflection.Runtime.ParameterInfos.EcmaFormat
 
                 ParameterAttributes attributes = Attributes;
                 if (0 != (attributes & ParameterAttributes.In))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(System.Runtime.InteropServices.InAttribute), null, null);
+                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(InAttribute), null, null);
                 if (0 != (attributes & ParameterAttributes.Out))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(System.Runtime.InteropServices.OutAttribute), null, null);
+                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(OutAttribute), null, null);
                 if (0 != (attributes & ParameterAttributes.Optional))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(System.Runtime.InteropServices.OptionalAttribute), null, null);
+                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(OptionalAttribute), null, null);
             }
         }
 
@@ -85,6 +87,14 @@ namespace System.Reflection.Runtime.ParameterInfos.EcmaFormat
             get
             {
                 return _parameter.Name.GetStringOrNull(this.Reader);
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return MetadataTokens.GetToken(_parameterHandle);
             }
         }
 

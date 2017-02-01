@@ -702,7 +702,7 @@ namespace Internal.TypeSystem
 
             protected override Internal.TypeSystem.Ecma.EcmaModule CreateValueFromKey(EcmaModuleInfo key)
             {
-                Internal.TypeSystem.Ecma.EcmaModule result = new Internal.TypeSystem.Ecma.EcmaModule(_context, key.EcmaPEInfo.PE, key.EcmaPEInfo.Reader);
+                Internal.TypeSystem.Ecma.EcmaModule result = new Internal.TypeSystem.Ecma.EcmaModule(_context, key.PE, key.MetadataReader);
                 result.SetRuntimeModuleInfoUNSAFE(key);
                 return result;
             }

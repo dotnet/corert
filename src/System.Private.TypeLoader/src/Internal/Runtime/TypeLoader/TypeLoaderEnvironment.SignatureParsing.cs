@@ -97,7 +97,7 @@ namespace Internal.Runtime.TypeLoader
                 else
                 {
                     EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
-                    var metadataReader = ecmaModuleInfo.EcmaPEInfo.Reader;
+                    var metadataReader = ecmaModuleInfo.MetadataReader;
                     var ecmaHandle = (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(signature.Signature.Token);                
                     var method = metadataReader.GetMethodDefinition(ecmaHandle);
                     var blobHandle = method.Signature;
@@ -208,7 +208,7 @@ namespace Internal.Runtime.TypeLoader
                 else
                 {
                     EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
-                    var metadataReader = ecmaModuleInfo.EcmaPEInfo.Reader;
+                    var metadataReader = ecmaModuleInfo.MetadataReader;
                     var ecmaHandle = (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(methodSig.Token);                
                     var method = metadataReader.GetMethodDefinition(ecmaHandle);
                     var blobHandle = method.Signature;

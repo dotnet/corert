@@ -15,7 +15,7 @@ using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 namespace Internal.Runtime.TypeLoader
 {
-    public static class MetadataReaderExtensions
+    public static partial class MetadataReaderExtensions
     {
         /// <summary>
         /// Convert raw token to a typed metadata handle.
