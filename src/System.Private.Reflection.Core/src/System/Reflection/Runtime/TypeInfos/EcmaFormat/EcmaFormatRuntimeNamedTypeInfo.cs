@@ -71,17 +71,17 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
                 // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
                 CustomAttribute attribute = Reader.GetCustomAttribute(cah);
                 EntityHandle ctorType;
-                EcmaMetadataReaderExtensions.GetAttributeTypeDefRefOrSpecHandle(_reader, attribute.Constructor, out ctorType);
+                EcmaMetadataHelpers.GetAttributeTypeDefRefOrSpecHandle(_reader, attribute.Constructor, out ctorType);
                 StringHandle typeNameHandle;
                 StringHandle typeNamespaceHandle;
-                if (EcmaMetadataReaderExtensions.GetAttributeNamespaceAndName(Reader, ctorType, out typeNamespaceHandle, out typeNameHandle))
+                if (EcmaMetadataHelpers.GetAttributeNamespaceAndName(Reader, ctorType, out typeNamespaceHandle, out typeNameHandle))
                 {
                     MetadataStringComparer stringComparer = Reader.StringComparer;
                     if (stringComparer.Equals(typeNamespaceHandle, "System.Runtime.InteropServices"))
                     {
                         if (stringComparer.Equals(typeNameHandle, "GuidAttribute"))
                         {
-                            ReflectionTypeProvider typeProvider = new ReflectionTypeProvider(false);
+                            ReflectionTypeProvider typeProvider = new ReflectionTypeProvider(throwOnError: false);
 
                             CustomAttributeValue<RuntimeTypeInfo> customAttributeValue = attribute.DecodeValue(typeProvider);
                             if (customAttributeValue.FixedArguments.Length != 1)
@@ -185,7 +185,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             get
             {
                 RuntimeTypeInfo declaringType = null;
-                if (((int)_typeDefinition.Attributes & 7) >= 2) // Check visibility mask on TypeDefinition
+                if (EcmaMetadataHelpers.IsNested(_typeDefinition.Attributes))
                 {
                     TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.GetDeclaringType();
                     declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);

@@ -61,12 +61,12 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 #endif
                 TypeDefinitionHandleCollection allTypes = MetadataReader.TypeDefinitions;
 
-                bool skipFirstType = true; // The first type is always the module type, which isn't returned by this api.
+                bool firstType = true; // The first type is always the module type, which isn't returned by this api.
                 foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
                 {
-                    if (skipFirstType)
+                    if (firstType)
                     {
-                        skipFirstType = false;
+                        firstType = false;
                         continue;
                     }
                     yield return typeDefinitionHandle.GetNamedType(MetadataReader);
@@ -298,7 +298,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
         {
             get
             {
-                var moduleInfo = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader);
+                EcmaModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoForMetadataReader(MetadataReader);
                 return moduleInfo.EcmaPEInfo.PE;
             }
         }

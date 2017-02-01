@@ -18,59 +18,41 @@ namespace System.Reflection.Runtime
 {
     static class ReflectionTypeProviderHelpers
     {
-        private static Type s_objectType = typeof(object);
-        private static Type s_intPtrType = typeof(IntPtr);
-        private static Type s_int64Type = typeof(long);
-        private static Type s_int32Type = typeof(int);
-        private static Type s_int16Type = typeof(short);
-        private static Type s_int8Type = typeof(sbyte);
-        private static Type s_uintPtrType = typeof(UIntPtr);
-        private static Type s_uint64Type = typeof(ulong);
-        private static Type s_uint32Type = typeof(uint);
-        private static Type s_uint16Type = typeof(ushort);
-        private static Type s_uint8Type = typeof(byte);
-        private static Type s_charType = typeof(char);
-        private static Type s_floatType = typeof(float);
-        private static Type s_doubleType = typeof(double);
-        private static Type s_boolType = typeof(bool);
-        private static Type s_stringType = typeof(string);
-        private static Type s_voidType = typeof(void);
-
         public static PrimitiveTypeCode GetPrimitiveTypeCode(this Type type)
         {
-            if (type == s_objectType)
+            if (type == CommonRuntimeTypes.Object)
                 return PrimitiveTypeCode.Object;
-            else if (type == s_boolType)
+            else if (type == CommonRuntimeTypes.Boolean)
                 return PrimitiveTypeCode.Boolean;
-            else if (type == s_charType)
+            else if (type == CommonRuntimeTypes.Char)
                 return PrimitiveTypeCode.Char;
-            else if (type == s_doubleType)
+            else if (type == CommonRuntimeTypes.Double)
                 return PrimitiveTypeCode.Double;
-            else if (type == s_floatType)
+            else if (type == CommonRuntimeTypes.Single)
                 return PrimitiveTypeCode.Single;
-            else if (type == s_int16Type)
+            else if (type == CommonRuntimeTypes.Int16)
                 return PrimitiveTypeCode.Int16;
-            else if (type == s_int32Type)
+            else if (type == CommonRuntimeTypes.Int32)
                 return PrimitiveTypeCode.Int32;
-            else if (type == s_int64Type)
+            else if (type == CommonRuntimeTypes.Int64)
                 return PrimitiveTypeCode.Int64;
-            else if (type == s_int8Type)
+            else if (type == CommonRuntimeTypes.SByte)
                 return PrimitiveTypeCode.SByte;
-            else if (type == s_uint16Type)
+            else if (type == CommonRuntimeTypes.UInt16)
                 return PrimitiveTypeCode.UInt16;
-            else if (type == s_uint32Type)
+            else if (type == CommonRuntimeTypes.UInt32)
                 return PrimitiveTypeCode.UInt32;
-            else if (type == s_uint64Type)
+            else if (type == CommonRuntimeTypes.UInt64)
                 return PrimitiveTypeCode.UInt64;
-            else if (type == s_uint8Type)
+            else if (type == CommonRuntimeTypes.Byte)
                 return PrimitiveTypeCode.Byte;
-            else if (type == s_intPtrType)
+            else if (type == CommonRuntimeTypes.IntPtr)
                 return PrimitiveTypeCode.IntPtr;
-            else if (type == s_uintPtrType)
+            else if (type == CommonRuntimeTypes.UIntPtr)
                 return PrimitiveTypeCode.UIntPtr;
-            else if (type == s_stringType)
+            else if (type == CommonRuntimeTypes.String)
                 return PrimitiveTypeCode.String;
-            else if (type == s_voidType)
+            else if (type == CommonRuntimeTypes.Void)
                 return PrimitiveTypeCode.Void;
             
             throw new ArgumentException();
@@ -81,41 +63,41 @@ namespace System.Reflection.Runtime
             switch(primitiveCode)
             {
                 case PrimitiveTypeCode.Boolean:
-                    return s_boolType;
+                    return CommonRuntimeTypes.Boolean;
                 case PrimitiveTypeCode.Byte:
-                    return s_uint8Type;
+                    return CommonRuntimeTypes.Byte;
                 case PrimitiveTypeCode.Char:
-                    return s_charType;
+                    return CommonRuntimeTypes.Char;
                 case PrimitiveTypeCode.Double:
-                    return s_doubleType;
+                    return CommonRuntimeTypes.Double;
                 case PrimitiveTypeCode.Int16:
-                    return s_int16Type;
+                    return CommonRuntimeTypes.Int16;
                 case PrimitiveTypeCode.Int32:
-                    return s_int32Type;
+                    return CommonRuntimeTypes.Int32;
                 case PrimitiveTypeCode.Int64:
-                    return s_int64Type;
+                    return CommonRuntimeTypes.Int64;
                 case PrimitiveTypeCode.IntPtr:
-                    return s_intPtrType;
+                    return CommonRuntimeTypes.IntPtr;
                 case PrimitiveTypeCode.Object:
-                    return s_objectType;
+                    return CommonRuntimeTypes.Object;
                 case PrimitiveTypeCode.SByte:
-                    return s_int8Type;
+                    return CommonRuntimeTypes.SByte;
                 case PrimitiveTypeCode.Single:
-                    return s_floatType;
+                    return CommonRuntimeTypes.Single;
                 case PrimitiveTypeCode.String:
-                    return s_stringType;
+                    return CommonRuntimeTypes.String;
                 case PrimitiveTypeCode.TypedReference:
                     throw new PlatformNotSupportedException();
                 case PrimitiveTypeCode.UInt16:
-                    return s_uint16Type;
+                    return CommonRuntimeTypes.UInt16;
                 case PrimitiveTypeCode.UInt32:
-                    return s_uint32Type;
+                    return CommonRuntimeTypes.UInt32;
                 case PrimitiveTypeCode.UInt64:
-                    return s_uint64Type;
+                    return CommonRuntimeTypes.UInt64;
                 case PrimitiveTypeCode.UIntPtr:
-                    return s_uintPtrType;
+                    return CommonRuntimeTypes.UIntPtr;
                 case PrimitiveTypeCode.Void:
-                    return s_voidType;
+                    return CommonRuntimeTypes.Void;
             }
 
             throw new BadImageFormatException();
@@ -123,8 +105,8 @@ namespace System.Reflection.Runtime
     }
     class ReflectionTypeProvider : ICustomAttributeTypeProvider<RuntimeTypeInfo>, ISZArrayTypeProvider<RuntimeTypeInfo>, ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>
     {
-        private static RuntimeTypeInfo s_systemType = (RuntimeTypeInfo)typeof(Type).GetTypeInfo();
-        private static RuntimeTypeInfo s_intPtrType = (RuntimeTypeInfo)typeof(IntPtr).GetTypeInfo();
+        private static readonly RuntimeTypeInfo s_systemType = (RuntimeTypeInfo)CommonRuntimeTypes.Type.GetTypeInfo();
+        private static readonly RuntimeTypeInfo s_intPtrType = (RuntimeTypeInfo)CommonRuntimeTypes.IntPtr.GetTypeInfo();
 
         private bool _throwOnError;
         private Exception _exceptionResult;
@@ -152,17 +134,17 @@ namespace System.Reflection.Runtime
             _throwOnError = throwOnError;
         }
 
-        public RuntimeTypeInfo GetSystemType()
+        RuntimeTypeInfo ICustomAttributeTypeProvider<RuntimeTypeInfo>.GetSystemType()
         {
             return s_systemType;
         }
 
-        public bool IsSystemType(RuntimeTypeInfo type)
+        bool ICustomAttributeTypeProvider<RuntimeTypeInfo>.IsSystemType(RuntimeTypeInfo type)
         {
             return Object.ReferenceEquals(s_systemType, type);
         }
 
-        public RuntimeTypeInfo GetTypeFromSerializedName(string name)
+        RuntimeTypeInfo ICustomAttributeTypeProvider<RuntimeTypeInfo>.GetTypeFromSerializedName(string name)
         {
             RuntimeTypeInfo result = (RuntimeTypeInfo)Type.GetType(name, _throwOnError);
             if (result == null)
@@ -171,18 +153,18 @@ namespace System.Reflection.Runtime
             return result;
         }
 
-        public PrimitiveTypeCode GetUnderlyingEnumType(RuntimeTypeInfo type)
+        PrimitiveTypeCode ICustomAttributeTypeProvider<RuntimeTypeInfo>.GetUnderlyingEnumType(RuntimeTypeInfo type)
         {
             Debug.Assert(type.IsEnum);
             return type.GetEnumUnderlyingType().GetPrimitiveTypeCode();
         }
 
-        public RuntimeTypeInfo GetPrimitiveType(PrimitiveTypeCode primitiveCode)
+        RuntimeTypeInfo ISimpleTypeProvider<RuntimeTypeInfo>.GetPrimitiveType(PrimitiveTypeCode primitiveCode)
         {
             return (RuntimeTypeInfo)primitiveCode.GetRuntimeType().GetTypeInfo();
         }
 
-        public RuntimeTypeInfo GetSZArrayType(RuntimeTypeInfo elementType)
+        RuntimeTypeInfo ISZArrayTypeProvider<RuntimeTypeInfo>.GetSZArrayType(RuntimeTypeInfo elementType)
         {
             if (elementType == null)
             {
@@ -193,7 +175,7 @@ namespace System.Reflection.Runtime
             return (RuntimeTypeInfo)elementType.MakeArrayType().GetTypeInfo();
         }
 
-        public RuntimeTypeInfo GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+        RuntimeTypeInfo ISimpleTypeProvider<RuntimeTypeInfo>.GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
             // raw Type Kind is either 0, ELEMENT_TYPE_CLASS, or ELEMENT_TYPE_VALUETYPE
             Exception exception = null;
@@ -207,7 +189,7 @@ namespace System.Reflection.Runtime
             }
         }
 
-        public RuntimeTypeInfo GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+        RuntimeTypeInfo ISimpleTypeProvider<RuntimeTypeInfo>.GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
             // raw Type Kind is either 0, ELEMENT_TYPE_CLASS, or ELEMENT_TYPE_VALUETYPE
             Exception exception = null;
@@ -221,7 +203,8 @@ namespace System.Reflection.Runtime
             }
         }
 
-        public RuntimeTypeInfo GetTypeFromSpecification(MetadataReader reader, TypeContext typeContext, TypeSpecificationHandle handle, byte rawTypeKind)
+        // ISignatureTypeProvider
+        RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetTypeFromSpecification(MetadataReader reader, TypeContext typeContext, TypeSpecificationHandle handle, byte rawTypeKind)
         {
             // raw Type Kind is either 0, ELEMENT_TYPE_CLASS, or ELEMENT_TYPE_VALUETYPE
             Exception exception = null;
@@ -235,13 +218,12 @@ namespace System.Reflection.Runtime
             }
         }
 
-        // ISignatureTypeProvider
-        public RuntimeTypeInfo GetFunctionPointerType(MethodSignature<RuntimeTypeInfo> signature)
+        RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetFunctionPointerType(MethodSignature<RuntimeTypeInfo> signature)
         {
             return s_intPtrType;
         }
 
-        public RuntimeTypeInfo GetGenericTypeParameter(TypeContext typeContext, int parameter)
+        RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetGenericTypeParameter(TypeContext typeContext, int parameter)
         {
             if ((typeContext.GenericTypeArguments == null) ||
                 (typeContext.GenericTypeArguments.Length < parameter) ||
@@ -251,7 +233,7 @@ namespace System.Reflection.Runtime
             return typeContext.GenericTypeArguments[parameter];
         }
 
-        public RuntimeTypeInfo GetGenericMethodParameter(TypeContext typeContext, int parameter)
+        RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetGenericMethodParameter(TypeContext typeContext, int parameter)
         {
             if ((typeContext.GenericMethodArguments == null) ||
                 (typeContext.GenericMethodArguments.Length < parameter) ||
@@ -261,20 +243,20 @@ namespace System.Reflection.Runtime
             return typeContext.GenericMethodArguments[parameter];
         }
         
-        public RuntimeTypeInfo GetModifiedType(RuntimeTypeInfo modifier, RuntimeTypeInfo unmodifiedType, bool isRequired)
+        RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetModifiedType(RuntimeTypeInfo modifier, RuntimeTypeInfo unmodifiedType, bool isRequired)
         {
             // Reflection doesn't really model custom modifiers...
             return unmodifiedType;
         }
 
-        public RuntimeTypeInfo GetPinnedType(RuntimeTypeInfo elementType)
+        RuntimeTypeInfo ISignatureTypeProvider<RuntimeTypeInfo, TypeContext>.GetPinnedType(RuntimeTypeInfo elementType)
         {
             // Reflection doesn't model pinned types
             return elementType;
         }
 
         // IConstructedTypeProvider
-        public RuntimeTypeInfo GetGenericInstantiation(RuntimeTypeInfo genericType, ImmutableArray<RuntimeTypeInfo> typeArguments)
+        RuntimeTypeInfo IConstructedTypeProvider<RuntimeTypeInfo>.GetGenericInstantiation(RuntimeTypeInfo genericType, ImmutableArray<RuntimeTypeInfo> typeArguments)
         {
             Type[] typeArgumentsAsType = new Type[typeArguments.Length];
             for (int i = 0 ; i < typeArgumentsAsType.Length; i++)
@@ -285,7 +267,7 @@ namespace System.Reflection.Runtime
             return (RuntimeTypeInfo)genericType.MakeGenericType(typeArgumentsAsType).GetTypeInfo();
         }
 
-        public RuntimeTypeInfo GetArrayType(RuntimeTypeInfo elementType, ArrayShape shape)
+        RuntimeTypeInfo IConstructedTypeProvider<RuntimeTypeInfo>.GetArrayType(RuntimeTypeInfo elementType, ArrayShape shape)
         {
             if ((shape.Rank < 1) || (shape.Rank > 32))
                 ExceptionResult = new BadImageFormatException();
@@ -293,12 +275,12 @@ namespace System.Reflection.Runtime
             return elementType.GetMultiDimArrayType(shape.Rank);
         }
 
-        public RuntimeTypeInfo GetByReferenceType(RuntimeTypeInfo elementType)
+        RuntimeTypeInfo IConstructedTypeProvider<RuntimeTypeInfo>.GetByReferenceType(RuntimeTypeInfo elementType)
         {
             return elementType.GetByRefType();
         }
 
-        public RuntimeTypeInfo GetPointerType(RuntimeTypeInfo elementType)
+        RuntimeTypeInfo IConstructedTypeProvider<RuntimeTypeInfo>.GetPointerType(RuntimeTypeInfo elementType)
         {
             return elementType.GetPointerType();
         }

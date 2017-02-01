@@ -41,7 +41,15 @@ namespace Internal.Runtime.TypeLoader
             return th;
         }
 
-        public class TypeHandleCell : GenericDictionaryCell
+
+        public static GenericDictionaryCell CreateTypeHandleCell(TypeDesc type)
+        {
+            TypeHandleCell typeCell = new TypeHandleCell();
+            typeCell.Type = type;
+            return typeCell;
+        }
+
+        private class TypeHandleCell : GenericDictionaryCell
         {
             internal TypeDesc Type;
 
@@ -500,9 +508,16 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public class IntPtrCell : GenericDictionaryCell
+        public static GenericDictionaryCell CreateIntPtrCell(IntPtr ptrValue)
         {
-            public IntPtr Value;
+            IntPtrCell typeCell = new IntPtrCell();
+            typeCell.Value = ptrValue;
+            return typeCell;
+        }
+
+        private class IntPtrCell : GenericDictionaryCell
+        {
+            internal IntPtr Value;
             internal unsafe override void Prepare(TypeBuilder builder)
             {
             }
@@ -513,12 +528,26 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public class MethodCell : GenericDictionaryCell
-        {
-            public MethodDesc Method;
-            public RuntimeSignature MethodSignature;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            public bool ExactCallableAddressNeeded;
+        public static GenericDictionaryCell CreateExactCallableMethodCell(MethodDesc method)
+        {
+            MethodCell methodCell = new MethodCell();
+            methodCell.Method = method;
+            if (!RuntimeSignatureHelper.TryCreate(method, out methodCell.MethodSignature))
+            {
+                Environment.FailFast("Unable to create method signature, for method reloc");
+            }
+            methodCell.ExactCallableAddressNeeded = true;
+            return methodCell;
+        }
+#endif
+
+        private class MethodCell : GenericDictionaryCell
+        {
+            internal MethodDesc Method;
+            internal RuntimeSignature MethodSignature;
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+            internal bool ExactCallableAddressNeeded;
 #endif
             private bool _universalCanonImplementationOfCanonMethod;
             private MethodDesc _methodToUseForInstantiatingParameters;

@@ -1978,8 +1978,7 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
             TypeDesc type = context.GetTypeDescFromQHandle(qTypeDefinition);
-            GenericDictionaryCell.TypeHandleCell cell = new GenericDictionaryCell.TypeHandleCell();
-            cell.Type = type;
+            GenericDictionaryCell cell = GenericDictionaryCell.CreateTypeHandleCell(type);
 
             new TypeBuilder().ResolveSingleCell_Worker(cell, out typeHandle);
 

@@ -39,8 +39,8 @@ namespace Internal.Reflection.Execution
 
                     ConstantHandle valueHandle = field.GetDefaultValue();
 
-                    ulong lValue = ReadUnboxedEnumValue(reader, valueHandle);
-                    namesAndUnboxedValues.Add(new KeyValuePair<String, ulong>(name, lValue));
+                    ulong ulValue = ReadUnboxedEnumValue(reader, valueHandle);
+                    namesAndUnboxedValues.Add(new KeyValuePair<String, ulong>(name, ulValue));
                 }
             }
 

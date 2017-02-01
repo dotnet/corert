@@ -55,11 +55,13 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.CoreGetDeclared.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EcmaFormat\EcmaMetadataHelpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\EcmaFormat\ReflectionTypeProvider.cs" />
     <Compile Include="System\Reflection\Runtime\General\EcmaFormat\DefaultValueProcessing.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\CorElementType.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.Ecma.cs" />

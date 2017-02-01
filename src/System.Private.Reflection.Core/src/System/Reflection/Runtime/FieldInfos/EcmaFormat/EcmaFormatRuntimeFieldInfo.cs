@@ -111,7 +111,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             try
             {
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
-                ReflectionTypeProvider reflectionTypeProvider = new ReflectionTypeProvider(false);
+                ReflectionTypeProvider reflectionTypeProvider = new ReflectionTypeProvider(throwOnError: false);
                 RuntimeTypeInfo fieldType = _field.DecodeSignature(reflectionTypeProvider, typeContext);
 
                 string fieldTypeName;
@@ -164,7 +164,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             get
             {
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
-                ReflectionTypeProvider reflectionTypeProvider = new ReflectionTypeProvider(true);
+                ReflectionTypeProvider reflectionTypeProvider = new ReflectionTypeProvider(throwOnError: true);
                 return _field.DecodeSignature(reflectionTypeProvider, typeContext);
             }
         }

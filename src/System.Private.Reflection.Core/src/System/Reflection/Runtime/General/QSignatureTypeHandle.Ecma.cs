@@ -28,7 +28,7 @@ namespace System.Reflection.Runtime.General
 
         private RuntimeTypeInfo TryResolveSignature(TypeContext typeContext, ref Exception exception)
         {
-            ReflectionTypeProvider typeProvider = new ReflectionTypeProvider(false);
+            ReflectionTypeProvider typeProvider = new ReflectionTypeProvider(throwOnError: false);
             SignatureDecoder<RuntimeTypeInfo, TypeContext> signatureDecoder = new SignatureDecoder<RuntimeTypeInfo, TypeContext>(typeProvider, (MetadataReader)Reader, typeContext);
             BlobReader localCopyOfReader = _blobReader;
             RuntimeTypeInfo result = signatureDecoder.DecodeType(ref localCopyOfReader, false);

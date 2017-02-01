@@ -68,7 +68,7 @@ namespace System.Reflection.Runtime.General
         private static RuntimeTypeInfo TryResolveTypeSignature(this TypeSpecificationHandle typeSpecHandle, MetadataReader reader, TypeContext typeContext, ref Exception exception)
         {
             TypeSpecification typeSpec = reader.GetTypeSpecification(typeSpecHandle);
-            ReflectionTypeProvider refTypeProvider = new ReflectionTypeProvider(false);
+            ReflectionTypeProvider refTypeProvider = new ReflectionTypeProvider(throwOnError: false);
             RuntimeTypeInfo result = typeSpec.DecodeSignature<RuntimeTypeInfo, TypeContext>(refTypeProvider, typeContext);
             exception = refTypeProvider.ExceptionResult;
             return result;
@@ -110,6 +110,7 @@ namespace System.Reflection.Runtime.General
                     return null;
 
                 case HandleKind.TypeReference:
+                {
                     // This is a nested type. Find the enclosing type, then search for a matching nested type
                     RuntimeTypeInfo enclosingType = ((TypeReferenceHandle)typeReference.ResolutionScope).TryResolveTypeReference(reader, ref exception);
                     if (enclosingType == null)
@@ -130,8 +131,10 @@ namespace System.Reflection.Runtime.General
                     }
                     exception = ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(enclosingType, reader.GetString(typeReference.Name));
                     return null;
+                }
 
                 case HandleKind.AssemblyReference:
+                {
                     string fullName = typeReference.GetFullyQualifiedTypeName(reader);
 
                     RuntimeAssemblyName runtimeAssemblyName = ((AssemblyReferenceHandle)resolutionScope).ToRuntimeAssemblyName(reader);
@@ -146,6 +149,7 @@ namespace System.Reflection.Runtime.General
                         return null;
                     }
                     return runtimeType;
+                }
 
                 case HandleKind.ModuleDefinition:
                     return TryResolveTypeByName(reader, typeReference.GetFullyQualifiedTypeName(reader), ref exception);

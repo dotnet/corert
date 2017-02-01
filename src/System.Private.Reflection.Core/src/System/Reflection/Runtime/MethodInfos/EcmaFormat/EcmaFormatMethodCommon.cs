@@ -314,7 +314,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
                 int numParameters = signatureBlob.ReadCompressedInteger();
                 QSignatureTypeHandle[] signatureHandles = new QSignatureTypeHandle[checked(numParameters + 1)];
                 signatureHandles[0] = new QSignatureTypeHandle(_reader, signatureBlob);
-                EcmaMetadataReaderExtensions.SkipType(ref signatureBlob);
+                EcmaMetadataHelpers.SkipType(ref signatureBlob);
                 for (int i = 0 ; i < numParameters; i++)
                 {
                     signatureHandles[i + 1] = new QSignatureTypeHandle(_reader, signatureBlob);

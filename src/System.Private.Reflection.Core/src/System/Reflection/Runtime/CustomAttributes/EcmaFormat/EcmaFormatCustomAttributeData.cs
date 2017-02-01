@@ -38,7 +38,7 @@ namespace System.Reflection.Runtime.CustomAttributes.EcmaFormat
                 if (lazyAttributeType == null)
                 {
                     EntityHandle ctorType;
-                    EcmaMetadataReaderExtensions.GetAttributeTypeDefRefOrSpecHandle(_reader, _customAttribute.Constructor, out ctorType);
+                    EcmaMetadataHelpers.GetAttributeTypeDefRefOrSpecHandle(_reader, _customAttribute.Constructor, out ctorType);
                     lazyAttributeType = _lazyAttributeType = ((Handle)ctorType).Resolve(_reader, new TypeContext(null, null));
                 }
                 return lazyAttributeType;

@@ -104,9 +104,16 @@ namespace Internal.Reflection.Execution
     /// Abstraction to hold PE data for an ECMA module
     public class PEInfo
     {
-        public AssemblyName Name;
-        public MetadataReader Reader;
-        public PEReader PE;
+        public PEInfo(AssemblyName name, MetadataReader reader, PEReader pe)
+        {
+            Name = name;
+            Reader = reader;
+            PE = pe;
+        }
+
+        public readonly AssemblyName Name;
+        public readonly MetadataReader Reader;
+        public readonly PEReader PE;
     }
 
     //=============================================================================================================================
@@ -118,8 +125,6 @@ namespace Internal.Reflection.Execution
     //=============================================================================================================================
     public sealed partial class AssemblyBinderImplementation : AssemblyBinder
     {
-
-
         private static LowLevelList<PEInfo> s_ecmaLoadedAssemblies = new LowLevelList<PEInfo>();
 
         partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result)
@@ -145,10 +150,7 @@ namespace Internal.Reflection.Execution
                 exception = null;
 
                 // 4. If that fails, then add newly created metareader to global cache of byte array loaded modules
-                PEInfo peinfo = new PEInfo();
-                peinfo.PE = pe;
-                peinfo.Reader = reader;
-                peinfo.Name = asmName;
+                PEInfo peinfo = new PEInfo(asmName, reader, pe);
 
                 s_ecmaLoadedAssemblies.Add(peinfo);
                 ModuleList moduleList = ModuleList.Instance;

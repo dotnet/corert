@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             {
                 MethodDefinition method = reader.GetMethodDefinition(methodHandle);
 
-                if (!EcmaMetadataReaderExtensions.IsConstructor(ref method, reader))
+                if (!EcmaMetadataHelpers.IsConstructor(ref method, reader))
                     continue;
 
                 if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
@@ -45,7 +45,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             {
                 MethodDefinition method = reader.GetMethodDefinition(methodHandle);
 
-                if (EcmaMetadataReaderExtensions.IsConstructor(ref method, reader))
+                if (EcmaMetadataHelpers.IsConstructor(ref method, reader))
                     continue;
 
                 if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
