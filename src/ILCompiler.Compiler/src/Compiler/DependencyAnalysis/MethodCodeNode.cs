@@ -119,6 +119,13 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies = dependencies ?? new DependencyList();
                     dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_method), "GVM Dependencies Support"));
                 }
+
+                var templateMethodDependencies = GenericMethodsTemplateMap.GetTemplateMethodDependencies(factory, _method);
+                if (templateMethodDependencies != null)
+                {
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.AddRange(templateMethodDependencies);
+                }
             }
 
             return dependencies;

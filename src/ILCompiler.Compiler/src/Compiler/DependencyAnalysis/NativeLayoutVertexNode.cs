@@ -83,25 +83,36 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutSavedVertexNode
+    internal abstract class NativeLayoutMethodEntryVertexNode : NativeLayoutSavedVertexNode
     {
-        private MethodDesc _method;
+        [Flags]
+        public enum MethodEntryFlags
+        {
+            CreateInstantiatedSignature = 1,
+            SaveEntryPoint = 2,
+        }
+
+        protected readonly MethodDesc _method;
+        private MethodEntryFlags _flags;
         private NativeLayoutTypeSignatureVertexNode _containingTypeSig;
         private NativeLayoutMethodSignatureVertexNode _methodSig;
         private NativeLayoutTypeSignatureVertexNode[] _instantiationArgsSig;
 
-        protected override string GetName() => "NativeLayoutMethodLdTokenVertexNode_" + NodeFactory.NameMangler.GetMangledMethodName(_method);
-
-        public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method)
+        public NativeLayoutMethodEntryVertexNode(NodeFactory factory, MethodDesc method, MethodEntryFlags flags)
         {
             _method = method;
-            _containingTypeSig = factory.NativeLayout.TypeSignatureVertex(method.OwningType);
+            _flags = flags;
             _methodSig = factory.NativeLayout.MethodSignatureVertex(method.GetTypicalMethodDefinition());
-            if (method.HasInstantiation)
+
+            if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) == 0)
             {
-                _instantiationArgsSig = new NativeLayoutTypeSignatureVertexNode[method.Instantiation.Length];
-                for (int i = 0; i < _instantiationArgsSig.Length; i++)
-                    _instantiationArgsSig[i] = factory.NativeLayout.TypeSignatureVertex(method.Instantiation[i]);
+                _containingTypeSig = factory.NativeLayout.TypeSignatureVertex(method.OwningType);
+                if (method.HasInstantiation)
+                {
+                    _instantiationArgsSig = new NativeLayoutTypeSignatureVertexNode[method.Instantiation.Length];
+                    for (int i = 0; i < _instantiationArgsSig.Length; i++)
+                        _instantiationArgsSig[i] = factory.NativeLayout.TypeSignatureVertex(method.Instantiation[i]);
+                }
             }
         }
 
@@ -109,12 +120,28 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            dependencies.Add(new DependencyListEntry(_containingTypeSig, "NativeLayoutLdTokenVertexNode containing type signature"));
-            dependencies.Add(new DependencyListEntry(_methodSig, "NativeLayoutLdTokenVertexNode method signature"));
-            if (_method.HasInstantiation)
+            dependencies.Add(new DependencyListEntry(_methodSig, "NativeLayoutMethodEntryVertexNode method signature"));
+            if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) != 0)
             {
-                foreach (var arg in _instantiationArgsSig)
-                    dependencies.Add(new DependencyListEntry(arg, "NativeLayoutLdTokenVertexNode instantiation argument signature"));
+                dependencies.Add(new DependencyListEntry(context.NecessaryTypeSymbol(_method.OwningType), "NativeLayoutMethodEntryVertexNode containing type"));
+                foreach (var arg in _method.Instantiation)
+                    dependencies.Add(new DependencyListEntry(context.NecessaryTypeSymbol(arg), "NativeLayoutMethodEntryVertexNode instantiation argument type"));
+            }
+            else
+            {
+                dependencies.Add(new DependencyListEntry(_containingTypeSig, "NativeLayoutMethodEntryVertexNode containing type signature"));
+                if (_method.HasInstantiation)
+                {
+                    foreach (var arg in _instantiationArgsSig)
+                        dependencies.Add(new DependencyListEntry(arg, "NativeLayoutMethodEntryVertexNode instantiation argument signature"));
+                }
+            }
+
+            if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
+            {
+                bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
+                IMethodNode methodEntryPointNode = context.MethodEntrypoint(_method, getUnboxingStub);
+                dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
 
             return dependencies;
@@ -122,24 +149,80 @@ namespace ILCompiler.DependencyAnalysis
 
         public override Vertex WriteVertex(NodeFactory factory)
         {
-            Vertex containingType = _containingTypeSig.WriteVertex(factory);
+            Vertex containingType = GetContainingTypeVertex(factory);
             Vertex methodSig = _methodSig.WriteVertex(factory);
             Vertex methodNameAndSig = GetNativeWriter(factory).GetMethodNameAndSigSignature(_method.Name, methodSig);
-
-            Debug.Assert(_instantiationArgsSig == null || (_method.HasInstantiation && _method.Instantiation.Length == _instantiationArgsSig.Length));
 
             Vertex[] args = null;
             MethodFlags flags = 0;
             if (_method.HasInstantiation)
             {
+                Debug.Assert(_instantiationArgsSig == null || (_instantiationArgsSig != null && _method.Instantiation.Length == _instantiationArgsSig.Length));
+
                 flags |= MethodFlags.HasInstantiation;
                 args = new Vertex[_method.Instantiation.Length];
+
                 for (int i = 0; i < args.Length; i++)
-                    args[i] = _instantiationArgsSig[i].WriteVertex(factory);
+                {
+                    if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) != 0)
+                    {
+                        IEETypeNode eetypeNode = factory.NecessaryTypeSymbol(_method.Instantiation[i]);
+                        uint typeIndex = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(eetypeNode);
+                        args[i] = GetNativeWriter(factory).GetExternalTypeSignature(typeIndex);
+                    }
+                    else
+                    {
+                        args[i] = _instantiationArgsSig[i].WriteVertex(factory);
+                    }
+                }
             }
 
-            Vertex signature = GetNativeWriter(factory).GetMethodSignature((uint)flags, 0, containingType, methodNameAndSig, args);
-            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(signature));
+            uint fptrReferenceId = 0;
+            if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
+            {
+                flags |= MethodFlags.HasFunctionPointer;
+
+                bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
+                IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, getUnboxingStub);
+                fptrReferenceId = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(methodEntryPointNode);
+
+                if (getUnboxingStub)
+                    flags |= MethodFlags.IsUnboxingStub;
+                if (_method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    flags |= MethodFlags.FunctionPointerIsUSG;
+            }
+
+            return GetNativeWriter(factory).GetMethodSignature((uint)flags, fptrReferenceId, containingType, methodNameAndSig, args);
+        }
+
+        private Vertex GetContainingTypeVertex(NodeFactory factory)
+        {
+            if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) != 0)
+            {
+                IEETypeNode eetypeNode = factory.NecessaryTypeSymbol(_method.OwningType);
+                uint typeIndex = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(eetypeNode);
+                return GetNativeWriter(factory).GetExternalTypeSignature(typeIndex);
+            }
+            else
+            {
+                return _containingTypeSig.WriteVertex(factory);
+            }
+        }
+    }
+
+    internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutMethodEntryVertexNode
+    {
+        protected override string GetName() => "NativeLayoutMethodLdTokenVertexNode_" + NodeFactory.NameMangler.GetMangledMethodName(_method);
+
+        public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method) 
+            : base(factory, method, 0)
+        {
+        }
+
+        public override Vertex WriteVertex(NodeFactory factory)
+        {
+            Vertex methodEntryVertex = base.WriteVertex(factory);
+            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(methodEntryVertex));
         }
     }
 
@@ -385,7 +468,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private NativeLayoutVertexNode _signatureToBePlaced;
 
-        protected override string GetName() => "NativeLayoutTypeSignatureVertexNode";
+        protected override string GetName() => "NativeLayoutPlacedSignatureVertexNode";
 
         public NativeLayoutPlacedSignatureVertexNode(NativeLayoutVertexNode signatureToBePlaced)
         {
@@ -405,6 +488,49 @@ namespace ILCompiler.DependencyAnalysis
 
             Vertex signature = _signatureToBePlaced.WriteVertex(factory);
             return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(signature));
+        }
+    }
+
+    internal sealed class NativeLayoutTemplateMethodSignatureVertexNode : NativeLayoutMethodEntryVertexNode
+    {
+        protected override string GetName() => "NativeLayoutTemplateMethodSignatureVertexNode_" + NodeFactory.NameMangler.GetMangledMethodName(_method);
+
+        public NativeLayoutTemplateMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
+            : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | MethodEntryFlags.SaveEntryPoint)
+        {
+        }
+
+        public override Vertex WriteVertex(NodeFactory factory)
+        {
+            Vertex methodEntryVertex = base.WriteVertex(factory);
+            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(methodEntryVertex));
+        }
+    }
+
+    internal sealed class NativeLayoutTemplateMethodLayoutVertexNode : NativeLayoutSavedVertexNode
+    {
+        private MethodDesc _method;
+
+        protected override string GetName() => "NativeLayoutTemplateMethodLayoutVertexNode" + NodeFactory.NameMangler.GetMangledMethodName(_method);
+
+        public NativeLayoutTemplateMethodLayoutVertexNode(NodeFactory factory, MethodDesc method)
+        {
+            _method = method;
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            // TODO
+            return Array.Empty<DependencyListEntry>();
+        }
+
+        public override Vertex WriteVertex(NodeFactory factory)
+        {
+            // TODO
+            VertexBag layoutInfo = new VertexBag();
+            factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(layoutInfo);
+
+            return SetSavedVertex(layoutInfo);
         }
     }
 }

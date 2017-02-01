@@ -1137,6 +1137,9 @@
   <data name="InvalidProgram_Vararg" xml:space="preserve">
     <value>Method '{0}' has a variable argument list. Variable argument lists are not supported in .NET Core.</value>
   </data>
+  <data name="InvalidProgram_CallVirtFinalize" xml:space="preserve">
+    <value>Object.Finalize() can not be called directly. It is only callable by the runtime.</value>
+  </data>
   <data name="InvalidTimeZone_InvalidRegistryData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the registry information was corrupt.</value>
   </data>

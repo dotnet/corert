@@ -53,6 +53,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new NativeLayoutSignatureNode(signature);
                 });
+
+                _templateMethodEntries = new NodeCache<MethodDesc, NativeLayoutTemplateMethodSignatureVertexNode>(method =>
+                {
+                    return new NativeLayoutTemplateMethodSignatureVertexNode(_factory, method);
+                });
+
+                _templateMethodLayouts = new NodeCache<MethodDesc, NativeLayoutTemplateMethodLayoutVertexNode>(method =>
+                {
+                    return new NativeLayoutTemplateMethodLayoutVertexNode(_factory, method);
+                });
             }
 
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
@@ -89,6 +99,18 @@ namespace ILCompiler.DependencyAnalysis
             internal NativeLayoutSignatureNode NativeLayoutSignature(NativeLayoutSavedVertexNode signature)
             {
                 return _nativeLayoutSignatureNodes.GetOrAdd(signature);
+            }
+
+            private NodeCache<MethodDesc, NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries;
+            internal NativeLayoutTemplateMethodSignatureVertexNode TemplateMethodEntry(MethodDesc method)
+            {
+                return _templateMethodEntries.GetOrAdd(method);
+            }
+
+            private NodeCache<MethodDesc, NativeLayoutTemplateMethodLayoutVertexNode> _templateMethodLayouts;
+            internal NativeLayoutTemplateMethodLayoutVertexNode TemplateMethodLayout(MethodDesc method)
+            {
+                return _templateMethodLayouts.GetOrAdd(method);
             }
         }
 

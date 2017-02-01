@@ -1049,7 +1049,7 @@ namespace Internal.TypeSystem.Interop
 
                 unmarshallingCodeStream.EmitLdLoc(vOutArg);
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
-                unmarshallingCodeStream.Emit(ILOpcode.stind_i);
+                unmarshallingCodeStream.Emit(ILOpcode.stind_ref);
 
                 NativeParameterType = nativeType;
             }

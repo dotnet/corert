@@ -3,15 +3,56 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 class Program
 {
+    public const int Pass = 100;
+    public const int Fail = -1;
+
     static int Main()
     {
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
         ThreadStaticsTestWithTasks.Run();
-        return 100;
+        if (FinalizeTest.Run() != Pass)
+            return Fail;
+
+        return Pass;
+    }
+}
+
+class FinalizeTest
+{
+    public static bool visited = false;
+    public class Dummy
+    {
+        ~Dummy()
+        {
+            Console.WriteLine("In Finalize() of Dummy");
+            FinalizeTest.visited = true;
+        }
+    }
+
+    public static int Run()
+    {
+        int iterationCount = 0;
+        while (!visited && iterationCount++ < 1000000)
+        {
+           GC.KeepAlive(new Dummy());
+           GC.Collect();
+        }
+
+        if (visited)
+        {
+            Console.WriteLine("Test for Finalize() & WaitForPendingFinalizers() passed!");
+            return Program.Pass;
+        }
+        else
+        {
+            Console.WriteLine("Test for Finalize() & WaitForPendingFinalizers() failed!");
+            return Program.Fail;
+        }
     }
 }
 

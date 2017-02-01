@@ -3,15 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
+    [Serializable]
     public class LockRecursionException : System.Exception
     {
-        public LockRecursionException() { }
-        public LockRecursionException(string message) : base(message) { }
-        public LockRecursionException(string message, Exception innerException) : base(message, innerException) { }
+        public LockRecursionException()
+        {
+        }
+
+        public LockRecursionException(string message)
+            : base(message)
+        {
+        }
+
+        public LockRecursionException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+        protected LockRecursionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

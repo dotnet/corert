@@ -710,6 +710,14 @@ namespace System.Reflection.Runtime.TypeInfos
 
         internal abstract RuntimeTypeHandle InternalTypeHandleIfAvailable { get; }
 
+        internal bool IsDelegate
+        {
+            get
+            {
+                return 0 != (Classification & TypeClassification.IsDelegate);
+            }
+        }
+
         //
         // Returns true if it's possible to ask for a list of members and the base type without triggering a MissingMetadataException.
         //
@@ -886,6 +894,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
                         if (baseType.Equals(enumType))
                             classification |= TypeClassification.IsEnum | TypeClassification.IsValueType;
+                        if (baseType.Equals(CommonRuntimeTypes.MulticastDelegate))
+                            classification |= TypeClassification.IsDelegate;
                         if (baseType.Equals(valueType) && !(this.Equals(enumType)))
                         {
                             classification |= TypeClassification.IsValueType;
@@ -912,6 +922,7 @@ namespace System.Reflection.Runtime.TypeInfos
             IsValueType = 0x00000002,
             IsEnum = 0x00000004,
             IsPrimitive = 0x00000008,
+            IsDelegate = 0x00000010,
         }
 
         object ICloneable.Clone()
