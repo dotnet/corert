@@ -356,6 +356,9 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        //
+        // Left unsealed as there are so many subclasses. Need to be overriden by EcmaFormatRuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo
+        //
         public override int MetadataToken
         {
             get

@@ -73,6 +73,14 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         internal sealed override String ParameterTypeString
         {
             get

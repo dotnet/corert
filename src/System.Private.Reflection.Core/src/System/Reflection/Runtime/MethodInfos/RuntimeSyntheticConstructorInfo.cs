@@ -61,6 +61,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
             binder.EnsureNotCustomBinder();

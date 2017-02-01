@@ -30,6 +30,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override bool IsGenericMethodDefinition { get { throw NotImplemented.ByDesign; } }
         public sealed override MethodImplAttributes MethodImplementationFlags { get { throw NotImplemented.ByDesign; } }
         public sealed override Module Module { get { throw NotImplemented.ByDesign; } }
+        public sealed override int MetadataToken { get { throw NotImplemented.ByDesign; } }
         protected sealed override MethodInvoker UncachedMethodInvoker { get { throw NotImplemented.ByDesign; } }
         internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter) { throw NotImplemented.ByDesign; }
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType { get { throw NotImplemented.ByDesign; } }

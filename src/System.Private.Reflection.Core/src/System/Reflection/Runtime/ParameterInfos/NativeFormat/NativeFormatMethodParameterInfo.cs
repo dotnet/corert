@@ -83,6 +83,14 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+        
         private Tuple<bool, Object> DefaultValueInfo
         {
             get

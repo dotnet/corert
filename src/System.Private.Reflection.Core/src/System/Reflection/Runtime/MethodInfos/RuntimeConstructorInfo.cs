@@ -105,12 +105,9 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInvoker.Invoke(obj, parameters);
         }
 
-        public override int MetadataToken
-        {
-            get
-            {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-            }
+        public abstract override int MetadataToken 
+        { 
+            get; 
         }
 
         public sealed override Module Module

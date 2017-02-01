@@ -92,7 +92,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public override int MetadataToken
+        public sealed override int MetadataToken
         {
             get
             {
