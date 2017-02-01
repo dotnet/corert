@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.MethodInfos;
 using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
@@ -172,6 +173,24 @@ namespace System.Reflection.Runtime.General
         {
             if (!(binder == null || binder is DefaultBinder))
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_CustomBinder);
+        }
+
+        public static RuntimeMethodInfo GetInvokeMethod(this RuntimeTypeInfo delegateType)
+        {
+            Debug.Assert(delegateType.IsDelegate);
+
+            MethodInfo invokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            if (invokeMethod == null)
+            {
+                // No Invoke method found. Since delegate types are compiler constructed, the most likely cause is missing metadata rather than
+                // a missing Invoke method. 
+
+                // We're deliberating calling FullName rather than ToString() because if it's the type that's missing metadata, 
+                // the FullName property constructs a more informative MissingMetadataException than we can. 
+                string fullName = delegateType.FullName;
+                throw new MissingMetadataException(SR.Format(SR.Arg_InvokeMethodMissingMetadata, fullName)); // No invoke method found.
+            }
+            return (RuntimeMethodInfo)invokeMethod;
         }
     }
 }
