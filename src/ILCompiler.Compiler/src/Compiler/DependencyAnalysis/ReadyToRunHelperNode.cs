@@ -77,6 +77,14 @@ namespace ILCompiler.DependencyAnalysis
                         defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
                     }
                     break;
+                case ReadyToRunHelperId.VirtualCall:
+                    {
+                        // Make sure we aren't trying to callvirt Object.Finalize
+                        MethodDesc method = (MethodDesc)target;
+                        if (method.IsFinalizer)
+                            throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramCallVirtFinalize, method);
+                    }
+                    break;
             }
         }
 
