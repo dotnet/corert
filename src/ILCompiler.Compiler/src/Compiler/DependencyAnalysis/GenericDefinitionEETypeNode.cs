@@ -27,6 +27,10 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
+        protected internal override void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
+        {
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
