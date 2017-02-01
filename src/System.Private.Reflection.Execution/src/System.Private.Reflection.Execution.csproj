@@ -29,6 +29,7 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />  
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="e:\git\corefx\corefx\bin\obj\Windows_NT.AnyCPU.Debug\System.Private.Reflection.Metadata.Ecma335\netcoreapp\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
 
