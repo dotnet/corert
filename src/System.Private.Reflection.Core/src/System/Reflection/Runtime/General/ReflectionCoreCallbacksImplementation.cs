@@ -171,5 +171,151 @@ namespace System.Reflection.Runtime.General
         {
             return ActivatorImplementation.CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
         }
+
+        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
+        public sealed override Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure)
+        {
+            return CreateDelegateWorker(type, firstArgument, method, throwOnBindFailure, allowClosed: true);
+        }
+
+        // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
+        public sealed override Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
+        {
+            // This API existed in v1/v1.1 and only expected to create open
+            // instance delegates, so we forbid closed delegates for backward compatibility. 
+            // But we'll allow relaxed signature checking and open static delegates because
+            // there's no ambiguity there (the caller would have to explicitly
+            // pass us a static method or a method with a non-exact signature
+            // and the only change in behavior from v1.1 there is that we won't
+            // fail the call).
+            return CreateDelegateWorker(type, null, method, throwOnBindFailure, allowClosed: false);
+        }
+
+        private static Delegate CreateDelegateWorker(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure, bool allowClosed)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
+            if (runtimeDelegateType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
+
+            RuntimeMethodInfo runtimeMethodInfo = method as RuntimeMethodInfo;
+            if (runtimeMethodInfo == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
+
+            if (!runtimeDelegateType.IsDelegate)
+                throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
+
+            Delegate result = runtimeMethodInfo.CreateDelegateNoThrowOnBindFailure(runtimeDelegateType, firstArgument, allowClosed);
+            if (result == null)
+            {
+                if (throwOnBindFailure)
+                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                return null;
+            }
+            return result;
+        }
+
+        // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
+        public sealed override Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
+            if (runtimeDelegateType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
+            if (!runtimeDelegateType.IsDelegate)
+                throw new ArgumentException(SR.Arg_MustBeDelegate);
+
+            RuntimeTypeInfo runtimeContainingType = target.GetType().CastToRuntimeTypeInfo();
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: false, ignoreCase: ignoreCase);
+            if (runtimeMethodInfo == null)
+            {
+                if (throwOnBindFailure)
+                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                return null;
+            }
+            return runtimeMethodInfo.CreateDelegateWithoutSignatureValidation(type, target, isStatic: false, isOpen: false);
+        }
+
+        // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
+        public sealed override Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (target.ContainsGenericParameters)
+                throw new ArgumentException(SR.Arg_UnboundGenParam);
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
+            if (runtimeDelegateType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
+
+            RuntimeTypeInfo runtimeContainingType = target as RuntimeTypeInfo;
+            if (runtimeContainingType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
+
+            if (!runtimeDelegateType.IsDelegate)
+                throw new ArgumentException(SR.Arg_MustBeDelegate);
+
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: true, ignoreCase: ignoreCase);
+            if (runtimeMethodInfo == null)
+            {
+                if (throwOnBindFailure)
+                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                return null;
+            }
+            return runtimeMethodInfo.CreateDelegateWithoutSignatureValidation(type, target: null, isStatic: true, isOpen: true);
+        }
+
+        //
+        // Helper for the V1/V1.1 Delegate.CreateDelegate() api. These apis take method names rather than MethodInfo and only expect to create open static delegates 
+        // or closed instance delegates. For backward compatibility, they don't allow relaxed signature matching (which could make the choice of target method ambiguous.)
+        //
+        private static RuntimeMethodInfo LookupMethodForCreateDelegate(RuntimeTypeInfo runtimeDelegateType, RuntimeTypeInfo containingType, string method, bool isStatic, bool ignoreCase)
+        {
+            Debug.Assert(runtimeDelegateType.IsDelegate);
+
+            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.ExactBinding;
+            if (isStatic)
+            {
+                bindingFlags |= BindingFlags.Static | BindingFlags.FlattenHierarchy;
+            }
+            else
+            {
+                bindingFlags |= BindingFlags.Instance;
+            }
+            if (ignoreCase)
+            {
+                bindingFlags |= BindingFlags.IgnoreCase;
+            }
+            RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
+            ParameterInfo[] parameters = invokeMethod.GetParametersNoCopy();
+            int numParameters = parameters.Length;
+            Type[] parameterTypes = new Type[numParameters];
+            for (int i = 0; i < numParameters; i++)
+            {
+                parameterTypes[i] = parameters[i].ParameterType;
+            }
+            MethodInfo methodInfo = containingType.GetMethod(method, bindingFlags, null, parameterTypes, null);
+            if (methodInfo == null)
+                return null;
+
+            if (!methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
+                return null;
+
+            return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
+        }
     }
 }
