@@ -433,6 +433,7 @@
     <Compile Include="System\ParamsArray.cs" />
     <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\PlatformNotSupportedException.cs" />
+    <Compile Include="System\Progress.cs" />
     <Compile Include="System\RankException.cs" />
     <Compile Include="System\Reflection\AssemblyAttributes.cs" />
     <Compile Include="System\Reflection\AssemblyNameFlags.cs" />
