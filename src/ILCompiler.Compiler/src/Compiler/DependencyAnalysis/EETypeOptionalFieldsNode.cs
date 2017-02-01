@@ -40,6 +40,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
+            _owner.ComputeOptionalEETypeFields(factory, relocsOnly: false);
             return _owner.ShouldSkipEmittingObjectNode(factory) || !_owner.HasOptionalFields;
         }
 
@@ -51,7 +52,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!relocsOnly)
             {
-                objData.EmitBytes(_owner.GetOptionalFieldsData());
+                _owner.ComputeOptionalEETypeFields(factory, relocsOnly: false);
+                objData.EmitBytes(_owner.GetOptionalFieldsData(factory));
             }
             
             return objData.ToObjectData();

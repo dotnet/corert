@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory) => null;
         protected override int GCDescSize => 0;
 
-        protected override void ComputeOptionalEETypeFields(NodeFactory factory)
+        protected internal override void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
             // TODO: handle the __UniversalCanon case (valuetype padding optional field...)
             Debug.Assert(_type.IsCanonicalDefinitionType(CanonicalFormKind.Specific));

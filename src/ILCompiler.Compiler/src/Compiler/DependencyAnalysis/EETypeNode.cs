@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
             get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
         }
 
-        internal byte[] GetOptionalFieldsData()
+        internal byte[] GetOptionalFieldsData(NodeFactory factory)
         {
             return _optionalFieldsBuilder.GetBytes();
         }
@@ -159,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.Alignment = objData.TargetPointerSize;
             objData.DefinedSymbols.Add(this);
 
-            ComputeOptionalEETypeFields(factory);
+            ComputeOptionalEETypeFields(factory, relocsOnly);
 
             OutputGCDesc(ref objData);
             OutputComponentSize(ref objData);
@@ -462,11 +462,12 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
-        protected virtual void ComputeOptionalEETypeFields(NodeFactory factory)
+        protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
             ComputeRareFlags(factory);
             ComputeNullableValueOffset();
-            ComputeICastableVirtualMethodSlots(factory);
+            if (!relocsOnly)
+                ComputeICastableVirtualMethodSlots(factory);
             ComputeValueTypeFieldPadding();
         }
 
@@ -492,6 +493,15 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsDefType && ((DefType)_type).IsHfa)
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
+            }
+
+            foreach (DefType itf in _type.RuntimeInterfaces)
+            {
+                if (itf == factory.ICastableInterface)
+                {
+                    flags |= (uint)EETypeRareFlags.ICastableFlag;
+                    break;
+                }
             }
 
             if (flags != 0)
@@ -524,9 +534,8 @@ namespace ILCompiler.DependencyAnalysis
         /// Instead, their VTable slots are recorded on the EEType of an object implementing ICastable and are
         /// called directly.
         /// </summary>
-        void ComputeICastableVirtualMethodSlots(NodeFactory factory)
+        protected virtual void ComputeICastableVirtualMethodSlots(NodeFactory factory)
         {
-            // TODO: This method is untested (we don't support interfaces yet)
             if (_type.IsInterface)
                 return;
 
@@ -534,27 +543,19 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (itf == factory.ICastableInterface)
                 {
-                    var isInstMethod = itf.GetKnownMethod("IsInstanceOfInterface", null);
-                    var getImplTypeMethod = itf.GetKnownMethod("GetImplType", null);
+                    MethodDesc isInstDecl = itf.GetKnownMethod("IsInstanceOfInterface", null);
+                    MethodDesc getImplTypeDecl = itf.GetKnownMethod("GetImplType", null);
 
-                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethod);
-                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethod);
+                    MethodDesc isInstMethodImpl = _type.ResolveInterfaceMethodTarget(isInstDecl);
+                    MethodDesc getImplTypeMethodImpl = _type.ResolveInterfaceMethodTarget(getImplTypeDecl);
 
-                    if (isInstMethodSlot != -1 || getImplTypeMethodSlot != -1)
-                    {
-                        var rareFlags = _optionalFieldsBuilder.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
-                        rareFlags |= (uint)EETypeRareFlags.ICastableFlag;
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
-                    }
+                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethodImpl);
+                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethodImpl);
 
-                    if (isInstMethodSlot != -1)
-                    {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableIsInstSlot, (uint)isInstMethodSlot);
-                    }
-                    if (getImplTypeMethodSlot != -1)
-                    {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
-                    }
+                    Debug.Assert(isInstMethodSlot != -1 && getImplTypeMethodSlot != -1);
+
+                    _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableIsInstSlot, (uint)isInstMethodSlot);
+                    _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
                 }
             }
         }

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -43,13 +44,27 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
 
-                // If any of the implemented interfaces have variance, calls against compatible interface methods
-                // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
-                // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
-                // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
+                    // If the type implements ICastable, the methods are implicitly necessary
+                    if (implementedInterface == factory.ICastableInterface)
+                    {
+                        MethodDesc isInstDecl = implementedInterface.GetKnownMethod("IsInstanceOfInterface", null);
+                        MethodDesc getImplTypeDecl = implementedInterface.GetKnownMethod("GetImplType", null);
+
+                        MethodDesc isInstMethodImpl = _type.ResolveInterfaceMethodTarget(isInstDecl);
+                        MethodDesc getImplTypeMethodImpl = _type.ResolveInterfaceMethodTarget(getImplTypeDecl);
+
+                        if (isInstMethodImpl != null)
+                            dependencyList.Add(factory.VirtualMethodUse(isInstMethodImpl), "ICastable IsInst");
+                        if (getImplTypeMethodImpl != null)
+                            dependencyList.Add(factory.VirtualMethodUse(getImplTypeMethodImpl), "ICastable GetImplType");
+                    }
+
+                    // If any of the implemented interfaces have variance, calls against compatible interface methods
+                    // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
+                    // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
+                    // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
                     if (implementedInterface.HasVariance)
                     {
                         foreach (var interfaceMethod in implementedInterface.GetAllMethods())
