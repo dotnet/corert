@@ -36,7 +36,6 @@
     <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
-    <Compile Include="System\Threading\Progress.cs" />
     <Compile Include="System\Threading\Tasks\TPLETWProvider.cs" />
     <Compile Include="TypeForwarders.cs" />
   </ItemGroup>

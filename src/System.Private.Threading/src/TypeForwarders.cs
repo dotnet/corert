@@ -6,6 +6,7 @@
 
 [assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.AggregateException))]
 [assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.OperationCanceledException))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Progress<>))]
 
 [assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.AsyncTaskMethodBuilder))]
 [assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.AsyncTaskMethodBuilder<>))]
