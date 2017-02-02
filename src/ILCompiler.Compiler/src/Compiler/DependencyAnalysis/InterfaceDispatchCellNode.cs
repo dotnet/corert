@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 
+using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -48,20 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
-
-        // The second cell field uses the two lower-order bits to communicate the contents.
-        // See src\Native\Runtime\inc\rhbinder.h
-        private enum CachePointerType
-        {
-            // The low 2 bits of the m_pCache pointer are treated specially so that we can avoid the need for 
-            // extra fields on this type.
-            CachePointerIsInterfaceRelativePointer = 0x3,
-            CachePointerIsIndirectedInterfaceRelativePointer = 0x2,
-            CachePointerIsInterfacePointer = 0x1,
-            CachePointerPointsAtCache = 0x0,
-            CachePointerMask = 0x3,
-        };
-
+        
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
@@ -79,23 +67,23 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
             }
 
-            if (factory.Target.ApplicationModel == TargetApplicationModel.CoreRT)
+            if (factory.Target.Abi == TargetAbi.CoreRT)
             {
                 // TODO: Enable Indirect Pointer for Interface Dispatch Cell. See https://github.com/dotnet/corert/issues/2542
                 objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType),
-                    (int)CachePointerType.CachePointerIsInterfacePointer);
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfacePointerOrMetadataToken);
             }
             else
             {
                 if (factory.CompilationModuleGroup.ContainsType(_targetMethod.OwningType))
                 {
                     objData.EmitReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32,
-                        (int)CachePointerType.CachePointerIsInterfaceRelativePointer);
+                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
                 }
                 else
                 {
                     objData.EmitReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32,
-                        (int)CachePointerType.CachePointerIsIndirectedInterfaceRelativePointer);
+                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
                 }
 
                 if (objData.TargetPointerSize == 8)
@@ -113,15 +101,7 @@ namespace ILCompiler.DependencyAnalysis
             // Avoid consulting VTable slots until they're guaranteed complete during final data emission
             if (!relocsOnly)
             {
-                int interfaceMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod);
-                if (factory.Target.PointerSize == 8)
-                {
-                    objData.EmitLong(interfaceMethodSlot);
-                }
-                else
-                {
-                    objData.EmitInt(interfaceMethodSlot);
-                }
+                objData.EmitNaturalInt(VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod));
             }
 
             return objData.ToObjectData();

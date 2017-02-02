@@ -35,7 +35,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Specifies 
     /// </summary>
-    public enum TargetApplicationModel
+    public enum TargetAbi
     {
         Unknown,
         /// <summary>
@@ -45,7 +45,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Windows-specific UWP model
         /// </summary>
-        NetNative
+        ProjectN
     }
 
     /// <summary>
@@ -70,9 +70,9 @@ namespace Internal.TypeSystem
             get;
         }
 
-        public TargetApplicationModel ApplicationModel
+        public TargetAbi Abi
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -120,11 +120,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetApplicationModel appModel)
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi)
         {
             Architecture = architecture;
             OperatingSystem = targetOS;
-            ApplicationModel = appModel;
+            Abi = abi;
         }
 
         /// <summary>
