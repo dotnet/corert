@@ -34,9 +34,15 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.ContainsMethod(method))
             {
+                ArrayMethod arrayMethod = method as ArrayMethod;
+
                 if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
                 {
                     return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
+                }
+                else if (arrayMethod != null && arrayMethod.Kind == ArrayMethodKind.Address)
+                {
+                    return MethodEntrypoint(arrayMethod.OwningArray.GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
                 }
                 else
                 {

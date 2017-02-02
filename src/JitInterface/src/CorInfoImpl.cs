@@ -499,7 +499,9 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method.Signature, out sig);
 
             // Does the method have a hidden parameter?
-            if (method.RequiresInstArg() && !isFatFunctionPointer && !_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+            ArrayMethod arrayMethod = method as ArrayMethod;
+            if ((method.RequiresInstArg() && !isFatFunctionPointer && !_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+                || (arrayMethod != null && arrayMethod.Kind == ArrayMethodKind.Address))
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
@@ -2651,6 +2653,9 @@ namespace Internal.JitInterface
                     targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
                 }
 
+                ArrayMethod arrayMethod = targetMethod as ArrayMethod;
+                bool referencingArrayAddressMethod = ((arrayMethod != null) && arrayMethod.Kind == ArrayMethodKind.Address);
+
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -2680,7 +2685,7 @@ namespace Internal.JitInterface
                     // result in getting back the unresolved target. Don't capture runtime determined dependencies
                     // in that case and rely on the dependency analysis computing them based on seeing a call to the
                     // canonical method body.
-                    if (targetMethod.IsSharedByGenericInstantiations && !inlining && !resolvedConstraint)
+                    if (targetMethod.IsSharedByGenericInstantiations && !inlining && !resolvedConstraint && !referencingArrayAddressMethod)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
@@ -2701,7 +2706,7 @@ namespace Internal.JitInterface
                     {
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
                     }
-                    else if (targetMethod.RequiresInstMethodTableArg())
+                    else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
                     {
                         // Ask for a constructed type symbol because we need the vtable to get to the dictionary
                         instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
@@ -2712,8 +2717,16 @@ namespace Internal.JitInterface
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
                         pResult.instParamLookup.addr = (void*)ObjectToHandle(instParam);
 
-                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                        if (!referencingArrayAddressMethod)
+                        {
+                            pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                        }
+                        else
+                        {
+                            pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                                _compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                        }
                     }
                     else if (targetMethod.AcquiresInstMethodTableFromThis())
                     {

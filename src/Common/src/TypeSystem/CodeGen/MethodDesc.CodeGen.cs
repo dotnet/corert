@@ -239,5 +239,15 @@ namespace Internal.TypeSystem
                 return true;
             }
         }
+
+        public override bool IsNoInlining
+        {
+            get
+            {
+                // Do not allow inlining the Address method. The method that actually gets called is
+                // the one that has a hidden argument with the expected array type.
+                return Kind == ArrayMethodKind.Address;
+            }
+        }
     }
 }

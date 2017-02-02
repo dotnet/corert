@@ -164,6 +164,7 @@ namespace Internal.TypeSystem
         Get,
         Set,
         Address,
+        AddressWithHiddenArg,
         Ctor
     }
 
@@ -192,6 +193,14 @@ namespace Internal.TypeSystem
         }
 
         public override TypeDesc OwningType
+        {
+            get
+            {
+                return _owningType;
+            }
+        }
+
+        public ArrayType OwningArray
         {
             get
             {
@@ -242,6 +251,15 @@ namespace Internal.TypeSystem
                                 _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);
                             }
                             break;
+                        case ArrayMethodKind.AddressWithHiddenArg:
+                            {
+                                var parameters = new TypeDesc[_owningType.Rank + 1];
+                                parameters[0] = Context.SystemModule.GetType("System", "EETypePtr");
+                                for (int i = 0; i < _owningType.Rank; i++)
+                                    parameters[i + 1] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
+                                _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);
+                            }
+                            break;
                         default:
                             {
                                 int numArgs;
@@ -277,6 +295,7 @@ namespace Internal.TypeSystem
                     case ArrayMethodKind.Set:
                         return "Set";
                     case ArrayMethodKind.Address:
+                    case ArrayMethodKind.AddressWithHiddenArg:
                         return "Address";
                     default:
                         return ".ctor";
