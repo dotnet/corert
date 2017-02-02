@@ -21,5 +21,5 @@ namespace Internal.Runtime
         CachePointerMask = 0x3,
         CachePointerMaskShift = 0x2,
         MaxVTableOffsetPlusOne = 0x1000
-    };
+    }
 }
