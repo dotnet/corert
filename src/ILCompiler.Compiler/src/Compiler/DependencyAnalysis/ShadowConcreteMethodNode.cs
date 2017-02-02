@@ -75,18 +75,21 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
-            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
-            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
-            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
-            if (factory.MetadataManager.HasReflectionInvokeStub(Method))
+            if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
-                MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (invokeStub != canonInvokeStub)
-                    yield return new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke");
-                else
-                    yield return new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
+                // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
+                // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
+                // we even start the compilation process (with the invocation stubs being compilation roots like any other).
+                // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
+                if (factory.MetadataManager.HasReflectionInvokeStub(Method))
+                {
+                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
+                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (invokeStub != canonInvokeStub)
+                        yield return new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke");
+                    else
+                        yield return new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
+                }
             }
 
             if (Method.HasInstantiation)

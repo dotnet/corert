@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
     /// are runtime-determined - the concrete dependency depends on the generic context the canonical
     /// entity is instantiated with.
     /// </remarks>
-    class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
+    public class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
     {
         class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
         {
