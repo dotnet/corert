@@ -432,11 +432,14 @@ struct InterfaceDispatchCell
                                     // m_pCache field, and in the second lowest 16 bits, a Flags field. For the interface
                                     // case Flags shall be 0, and for the metadata token case, Flags shall be 1.
 
+    //
+    // Keep these in sync with the managed copy in src\Common\src\Internal\Runtime\InterfaceCachePointerType.cs
+    //
     enum Flags
     {
         // The low 2 bits of the m_pCache pointer are treated specially so that we can avoid the need for 
         // extra fields on this type.
-        // OR if the m_pCache value is less than 4096 then this it is a vtable offset and should be used as such
+        // OR if the m_pCache value is less than 0x1000 then this it is a vtable offset and should be used as such
         IDC_CachePointerIsInterfaceRelativePointer = 0x3,
         IDC_CachePointerIsIndirectedInterfaceRelativePointer = 0x2,
         IDC_CachePointerIsInterfacePointerOrMetadataToken = 0x1, // Metadata token is a 30 bit number in this case. 
@@ -446,7 +449,7 @@ struct InterfaceDispatchCell
         IDC_CachePointerPointsAtCache = 0x0,
         IDC_CachePointerMask = 0x3,
         IDC_CachePointerMaskShift = 0x2,
-        IDC_MaxVTableOffsetPlusOne = 4096,
+        IDC_MaxVTableOffsetPlusOne = 0x1000,
     };
 
 #if !defined(RHDUMP) && !defined(BINDER)

@@ -44,7 +44,8 @@ namespace Internal.Runtime.TypeLoader
 #else
 #error Unknown architecture
 #endif
-            TargetOS.Windows));
+            TargetOS.Windows,
+            TargetAbi.Unknown));
         }
 
         public static void Recycle(TypeSystemContext context)
