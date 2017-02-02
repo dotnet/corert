@@ -9,13 +9,17 @@ namespace System.Threading
 {
     public sealed class Lock
     {
+        // The following constants define characteristics of spinning logic in the Lock class
+        private const int SpinningNotInitialized = 0;
+        private const int SpinningDisabled = -1;
+        private const int MaxSpinningValue = 10000;
+
         //
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
         // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
         // All static data in Lock must be pre-initialized.
         //
-        [PreInitialized]
-        private static int s_maxSpinCount = -1; // -1 means the spin count has not yet beeen determined.
+        private static int s_maxSpinCount;
 
         //
         // m_state layout:
@@ -132,9 +136,9 @@ namespace System.Threading
 
             int spins = 1;
 
-            if (s_maxSpinCount < 0)
+            if (s_maxSpinCount == SpinningNotInitialized)
             {
-                s_maxSpinCount = (Environment.ProcessorCount > 1) ? 10000 : 0;
+                s_maxSpinCount = (Environment.ProcessorCount > 1) ? MaxSpinningValue : SpinningDisabled;
             }
 
             while (true)
