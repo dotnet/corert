@@ -15,6 +15,7 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Tracing;
 
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
 {
@@ -49,6 +50,14 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return MetadataTokens.GetToken(GenericParameterHandle);
+            }
+        }
+        
         protected sealed override int InternalGetHashCode()
         {
             return GenericParameterHandle.GetHashCode();

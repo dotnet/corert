@@ -124,6 +124,14 @@ namespace System.Reflection.Runtime.TypeInfos
             return _typeHandle.LastResortString();
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
         {
             return TypeAttributes.Class | TypeAttributes.NotPublic;

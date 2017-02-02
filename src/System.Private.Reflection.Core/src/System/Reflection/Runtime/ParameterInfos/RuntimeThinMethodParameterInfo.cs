@@ -70,7 +70,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+                return 0x08000000; // nil ParamDef token
             }
         }
     }

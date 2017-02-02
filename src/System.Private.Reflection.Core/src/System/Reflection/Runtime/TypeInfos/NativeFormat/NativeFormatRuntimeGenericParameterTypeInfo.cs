@@ -49,6 +49,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         protected sealed override int InternalGetHashCode()
         {
             return GenericParameterHandle.GetHashCode();

@@ -130,6 +130,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return base.GetGenericTypeDefinition();
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override string ToString()
         {
             StringBuilder sb = null;
