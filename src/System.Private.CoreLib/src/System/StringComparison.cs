@@ -16,6 +16,7 @@
 
 namespace System
 {
+    [Serializable]
     public enum StringComparison
     {
         CurrentCulture = 0,

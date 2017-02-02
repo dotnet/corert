@@ -10,6 +10,7 @@ namespace System
     // Enum used to indicate all the elements of the
     // VOS it is valid to attach this element to.
     [Flags]
+    [Serializable]
     public enum AttributeTargets
     {
         Assembly = 0x0001,
