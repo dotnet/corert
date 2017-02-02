@@ -986,7 +986,7 @@ namespace System
         //
         // Value equality on the "adjustmentRules" array
         //
-        internal Boolean HasSameRules(TimeZoneInfo other)
+        public Boolean HasSameRules(TimeZoneInfo other)
         {
             if (other == null)
             {
