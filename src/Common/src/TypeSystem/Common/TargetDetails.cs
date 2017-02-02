@@ -32,9 +32,6 @@ namespace Internal.TypeSystem
         NetBSD,
     }
 
-    /// <summary>
-    /// Specifies 
-    /// </summary>
     public enum TargetAbi
     {
         Unknown,
