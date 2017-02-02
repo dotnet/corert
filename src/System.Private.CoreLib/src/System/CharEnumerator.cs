@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace System
 {
-    internal sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable, ICloneable
+    public sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable, ICloneable
     {
         private String _str;
         private int _index;

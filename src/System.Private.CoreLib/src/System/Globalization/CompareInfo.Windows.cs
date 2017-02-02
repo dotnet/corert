@@ -256,6 +256,7 @@ namespace System.Globalization
         }
 
         // PAL ends here
+        [NonSerialized]
         private readonly IntPtr _sortHandle;
 
         private const uint LCMAP_HASH = 0x00040000;

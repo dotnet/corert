@@ -15,10 +15,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    // NullReferenceException is required by Bartok due to an internal implementation detail, but Redhawk 
-    // does not promote AVs to NullReferenceExceptions, so it won't be catchable unless someone explicitly 
-    // has a 'throw new NullReferenceException()'
-
     [Serializable]
     public class NullReferenceException : SystemException
     {

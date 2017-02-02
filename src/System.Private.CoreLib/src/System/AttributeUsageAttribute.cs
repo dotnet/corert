@@ -16,6 +16,7 @@ using System.Reflection;
 namespace System
 {
     /* By default, attributes are inherited and multiple attributes are not allowed */
+    [Serializable]
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class AttributeUsageAttribute : Attribute
     {

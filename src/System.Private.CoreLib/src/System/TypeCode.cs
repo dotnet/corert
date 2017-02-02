@@ -23,6 +23,7 @@
 
 namespace System
 {
+    [Serializable]
     public enum TypeCode
     {
         Empty = 0,          // Null reference

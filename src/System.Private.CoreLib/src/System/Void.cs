@@ -10,6 +10,7 @@
 namespace System
 {
     // This class represents the void return type
+    [Serializable]
     public struct Void
     {
     }

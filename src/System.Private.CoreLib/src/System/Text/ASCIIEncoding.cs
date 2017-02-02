@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -18,6 +19,7 @@ namespace System.Text
     //       use fallbacks, and we cannot guarantee that fallbacks are normalized.
     //
 
+    [Serializable]
     public class ASCIIEncoding : Encoding
     {
         // Used by Encoding.ASCII for lazy initialization
@@ -181,9 +183,6 @@ namespace System.Text
                 Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetByteCount]Expected empty fallback buffer");
-                //                if (encoder.InternalHasFallbackBuffer && encoder.FallbackBuffer.Remaining > 0)
-                //                    throw new ArgumentException(SR.FormatSR.Argument_EncoderFallbackNotEmpty,
-                //                    this.EncodingName, encoder.Fallback.GetType()));
             }
             else
             {
@@ -320,10 +319,6 @@ namespace System.Text
                 Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetBytes]Expected empty fallback buffer");
-                //                if (encoder.m_throwOnOverflow && encoder.InternalHasFallbackBuffer &&
-                //                  encoder.FallbackBuffer.Remaining > 0)
-                //                  throw new ArgumentException(SR.FormatSR.Argument_EncoderFallbackNotEmpty,
-                //                        this.EncodingName, encoder.Fallback.GetType()));
             }
             else
             {
