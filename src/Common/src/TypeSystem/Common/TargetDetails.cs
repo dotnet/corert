@@ -14,6 +14,7 @@ namespace Internal.TypeSystem
     {
         Unknown,
         ARM,
+        ARMEL,
         ARM64,
         X64,
         X86,
@@ -85,6 +86,7 @@ namespace Internal.TypeSystem
                     case TargetArchitecture.X64:
                         return 8;
                     case TargetArchitecture.ARM:
+                    case TargetArchitecture.ARMEL:
                     case TargetArchitecture.X86:
                         return 4;
                     default:
@@ -181,6 +183,7 @@ namespace Internal.TypeSystem
             switch (Architecture)
             {
                 case TargetArchitecture.ARM:
+                case TargetArchitecture.ARMEL:
                     // ARM supports two alignments for objects on the GC heap (4 byte and 8 byte)
                     if (fieldAlignment <= 4)
                         return 4;
@@ -216,6 +219,7 @@ namespace Internal.TypeSystem
                 // There is a hard limit of 4 elements on an HFA type, see
                 // http://blogs.msdn.com/b/vcblog/archive/2013/07/12/introducing-vector-calling-convention.aspx
                 Debug.Assert(Architecture == TargetArchitecture.ARM ||
+                    Architecture == TargetArchitecture.ARMEL ||
                     Architecture == TargetArchitecture.ARM64 ||
                     Architecture == TargetArchitecture.X64 ||
                     Architecture == TargetArchitecture.X86);
