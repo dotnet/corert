@@ -356,12 +356,12 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override int MetadataToken
+        //
+        // Left unsealed as there are so many subclasses. Need to be overriden by EcmaFormatRuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo
+        //
+        public abstract override int MetadataToken
         {
-            get
-            {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-            }
+            get;
         }
 
         public sealed override Module Module

@@ -73,6 +73,14 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return 0x08000000; // nil ParamDef token
+            }
+        }
+
         internal sealed override String ParameterTypeString
         {
             get

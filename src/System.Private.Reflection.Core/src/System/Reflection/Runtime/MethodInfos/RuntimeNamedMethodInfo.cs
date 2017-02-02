@@ -159,6 +159,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _common.MetadataToken;
+            }
+        }
+
         public sealed override String ToString()
         {
             return ComputeToString(this);

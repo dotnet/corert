@@ -305,18 +305,14 @@ namespace Internal.Runtime.TypeLoader
         {
             int lookupHashcode = declaringType.GetHashCode();
 
-            int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
-            var moduleHandles = new System.IntPtr[loadedModuleCount];
-            RuntimeAugments.GetLoadedModules(moduleHandles);
-
             NativeHashtable hashtable;
             ExternalReferencesTable externalReferencesLookup;
 
             HandleBasedGenericMethodLookup lookupData = new HandleBasedGenericMethodLookup(declaringType, nameAndSignature, genericMethodArgumentHandles);
 
-            foreach (IntPtr moduleHandle in moduleHandles)
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                if (!GetHashtableFromBlob(moduleHandle, ReflectionMapBlob.ExactMethodInstantiationsHashtable, out hashtable, out externalReferencesLookup))
+                if (!GetHashtableFromBlob(module, ReflectionMapBlob.ExactMethodInstantiationsHashtable, out hashtable, out externalReferencesLookup))
                     continue;
 
                 var enumerator = hashtable.Lookup(lookupHashcode);
@@ -324,7 +320,7 @@ namespace Internal.Runtime.TypeLoader
                 NativeParser entryParser;
                 while (!(entryParser = enumerator.GetNext()).IsNull)
                 {
-                    if (!lookupData.MatchParsedEntry(ref entryParser, ref externalReferencesLookup, moduleHandle))
+                    if (!lookupData.MatchParsedEntry(ref entryParser, ref externalReferencesLookup, module.Handle))
                         continue;
 
                     // We found a match
@@ -455,16 +451,12 @@ namespace Internal.Runtime.TypeLoader
         {
             // Search the hashtable for a generic instantiation match
 
-            int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
-            var moduleHandles = new System.IntPtr[loadedModuleCount];
-            RuntimeAugments.GetLoadedModules(moduleHandles);
-
             ExternalReferencesTable externalReferencesLookup;
             NativeHashtable genericMethodsHashtable;
 
-            foreach (IntPtr moduleHandle in moduleHandles)
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                if (!GetHashtableFromBlob(moduleHandle, ReflectionMapBlob.GenericMethodsHashtable, out genericMethodsHashtable, out externalReferencesLookup))
+                if (!GetHashtableFromBlob(module, ReflectionMapBlob.GenericMethodsHashtable, out genericMethodsHashtable, out externalReferencesLookup))
                     continue;
 
                 int lookupHashcode = lookupData.LookupHashCode();
@@ -475,7 +467,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     uint dictionaryIndex = entryParser.GetUnsigned();
 
-                    if (!lookupData.MatchParsedEntry(ref entryParser, ref externalReferencesLookup, moduleHandle))
+                    if (!lookupData.MatchParsedEntry(ref entryParser, ref externalReferencesLookup, module.Handle))
                         continue;
 
                     // Current entry matched all inputs, return success
@@ -515,16 +507,12 @@ namespace Internal.Runtime.TypeLoader
             IntPtr dictionaryHeader = IntPtr.Subtract(methodDictionary, IntPtr.Size);
             int lookupHashcode = *(int*)dictionaryHeader;
 
-            int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
-            var moduleHandles = new System.IntPtr[loadedModuleCount];
-            RuntimeAugments.GetLoadedModules(moduleHandles);
-
             ExternalReferencesTable externalReferencesLookup;
             NativeHashtable genericMethodsHashtable;
 
-            foreach (IntPtr moduleHandle in moduleHandles)
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                if (!GetHashtableFromBlob(moduleHandle, ReflectionMapBlob.GenericMethodsHashtable, out genericMethodsHashtable, out externalReferencesLookup))
+                if (!GetHashtableFromBlob(module, ReflectionMapBlob.GenericMethodsHashtable, out genericMethodsHashtable, out externalReferencesLookup))
                     continue;
 
                 var enumerator = genericMethodsHashtable.Lookup(lookupHashcode);
@@ -542,7 +530,7 @@ namespace Internal.Runtime.TypeLoader
                     declaringType = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
                     // Hash table names / sigs are indirected through to the native layout info
-                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(moduleHandle, entryParser.GetUnsigned(), out methodNameAndSignature))
+                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, entryParser.GetUnsigned(), out methodNameAndSignature))
                         continue;
 
                     uint arity = entryParser.GetSequenceCount();

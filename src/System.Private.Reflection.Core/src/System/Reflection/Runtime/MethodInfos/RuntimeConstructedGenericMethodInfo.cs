@@ -92,6 +92,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _genericMethodDefinition.MetadataToken;
+            }
+        }
+
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));

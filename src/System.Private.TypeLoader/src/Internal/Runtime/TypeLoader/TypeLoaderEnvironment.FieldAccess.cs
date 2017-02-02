@@ -123,7 +123,7 @@ namespace Internal.Runtime.TypeLoader
             string fieldName = null;
             RuntimeTypeHandle declaringTypeHandleDefinition = Instance.GetTypeDefinition(declaringTypeHandle);
 
-            foreach (IntPtr mappingTableModule in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
+            foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
                 NativeReader fieldMapReader;
                 if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.FieldAccessMap, out fieldMapReader))
@@ -209,7 +209,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         if (canonFormKind != CanonicalFormKind.Universal)
                         {
-                            fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule, fieldOffset);
+                            fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, fieldOffset);
                         }
 
                         if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
@@ -229,7 +229,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                     }
 
-                    fieldAccessMetadata.MappingTableModule = mappingTableModule;
+                    fieldAccessMetadata.MappingTableModule = mappingTableModule.Handle;
                     fieldAccessMetadata.Cookie = fieldAddressCookie;
                     fieldAccessMetadata.Flags = entryFlags;
                     fieldAccessMetadata.Offset = fieldOffset;
@@ -315,7 +315,7 @@ namespace Internal.Runtime.TypeLoader
             if (RuntimeAugments.IsDynamicType(declaringTypeHandle) || RuntimeAugments.IsGenericType(declaringTypeHandle))
                 return false;
 
-            foreach (IntPtr mappingTableModule in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
+            foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
                 NativeReader fieldMapReader;
                 if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.FieldAccessMap, out fieldMapReader))
@@ -386,7 +386,7 @@ namespace Internal.Runtime.TypeLoader
                     int fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
 
                     IntPtr fieldAddress = RvaToNonGenericStaticFieldAddress(
-                        mappingTableModule, fieldOffset);
+                        mappingTableModule.Handle, fieldOffset);
 
                     if ((comparableStaticRegionAddress == null) || (comparableStaticRegionAddress > fieldAddress.ToPointer()))
                     {

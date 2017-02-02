@@ -116,7 +116,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private MetadataReader _reader;
-        private TypeDefinition _typeDefinition;
+        private readonly MetadataReader _reader;
+        private readonly TypeDefinition _typeDefinition;
     }
 }
