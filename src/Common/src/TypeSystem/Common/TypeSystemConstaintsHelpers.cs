@@ -12,8 +12,11 @@ namespace Internal.TypeSystem
         private static bool VerifyGenericParamConstraint(Instantiation typeInstantiation, Instantiation methodInstantiation, GenericParameterDesc genericParam, TypeDesc instantiationParam)
         {
             // Check class constraint
-            if (genericParam.HasReferenceTypeConstraint && !instantiationParam.IsGCPointer)
-                return false;
+            if (genericParam.HasReferenceTypeConstraint)
+            {
+                if (!instantiationParam.IsGCPointer)
+                    return false;
+            }
 
             // Check default constructor constraint
             if (genericParam.HasDefaultConstructorConstraint)
@@ -44,11 +47,12 @@ namespace Internal.TypeSystem
 
         public static bool CheckConstraints(this TypeDesc type)
         {
+            TypeDesc uninstantiatedType = type.GetTypeDefinition();
+
             // Non-generic types always pass constraints check
-            if (!type.HasInstantiation)
+            if (uninstantiatedType == type)
                 return true;
 
-            TypeDesc uninstantiatedType = type.GetTypeDefinition();
             for (int i = 0; i < uninstantiatedType.Instantiation.Length; i++)
             {
                 if (!VerifyGenericParamConstraint(type.Instantiation, default(Instantiation), (GenericParameterDesc)uninstantiatedType.Instantiation[i], type.Instantiation[i]))

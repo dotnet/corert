@@ -191,6 +191,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool HasFinalizer
+        {
+            get
+            {
+                return _typeDef.HasFinalizer;
+            }
+        }
+
         public override IEnumerable<FieldDesc> GetFields()
         {
             foreach (var fieldDef in _typeDef.GetFields())
