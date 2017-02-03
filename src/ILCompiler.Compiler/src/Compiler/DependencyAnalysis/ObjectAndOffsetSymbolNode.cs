@@ -10,7 +10,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
+    public class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
     {
         private ObjectNode _object;
         private int _offset;

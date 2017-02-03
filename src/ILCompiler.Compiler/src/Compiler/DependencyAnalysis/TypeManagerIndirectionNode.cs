@@ -6,7 +6,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class TypeManagerIndirectionNode : ObjectNode, ISymbolNode
+    public class TypeManagerIndirectionNode : ObjectNode, ISymbolNode
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

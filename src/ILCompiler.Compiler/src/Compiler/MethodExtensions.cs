@@ -7,7 +7,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    internal static class MethodExtensions
+    public static class MethodExtensions
     {
         public static string GetRuntimeImportName(this EcmaMethod This)
         {

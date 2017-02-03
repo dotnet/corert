@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         private TargetDetails _target;
         private ArrayBuilder<Relocation> _relocs;
         private ArrayBuilder<byte> _data;
-        internal int Alignment;
+        public int Alignment;
         internal ArrayBuilder<ISymbolNode> DefinedSymbols;
 
 #if DEBUG
@@ -266,5 +266,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public enum Reservation { }
+
+        public void AddSymbol(ISymbolNode node)
+        {
+            DefinedSymbols.Add(node);
+        }
     }
 }

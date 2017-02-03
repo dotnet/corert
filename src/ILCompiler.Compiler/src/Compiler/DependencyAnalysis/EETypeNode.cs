@@ -58,11 +58,11 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    internal partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
+    public partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
     {
         protected TypeDesc _type;
-        protected EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
-        protected EETypeOptionalFieldsNode _optionalFieldsNode;
+        internal EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        internal EETypeOptionalFieldsNode _optionalFieldsNode;
 
         public EETypeNode(NodeFactory factory, TypeDesc type)
         {

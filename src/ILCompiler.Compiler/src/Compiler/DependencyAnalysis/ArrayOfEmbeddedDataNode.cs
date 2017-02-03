@@ -31,8 +31,8 @@ namespace ILCompiler.DependencyAnalysis
             _sorter = nodeSorter;
         }
 
-        internal ObjectAndOffsetSymbolNode StartSymbol => _startSymbol;
-        internal ObjectAndOffsetSymbolNode EndSymbol => _endSymbol;
+        public ObjectAndOffsetSymbolNode StartSymbol => _startSymbol;
+        public ObjectAndOffsetSymbolNode EndSymbol => _endSymbol;
 
         public void AddEmbeddedObject(TEmbedded symbol)
         {
