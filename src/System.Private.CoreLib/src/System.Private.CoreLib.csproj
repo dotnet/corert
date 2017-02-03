@@ -279,6 +279,7 @@
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
+    <Compile Include="System\Empty.cs" />
     <Compile Include="System\FormattableString.cs" />
     <Compile Include="System\Globalization\FormatProvider.cs" />
     <Compile Include="System\Globalization\CalendarWeekRule.cs" />
@@ -671,6 +672,7 @@
     <Compile Include="System\UnauthorizedAccessException.cs" />
     <Compile Include="System\UnhandledExceptionEventArgs.cs" />
     <Compile Include="System\UnhandledExceptionEventHandler.cs" />
+    <Compile Include="System\UnitySerializationHolder.cs" />
     <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
