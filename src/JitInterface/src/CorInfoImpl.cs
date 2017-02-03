@@ -499,9 +499,8 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method.Signature, out sig);
 
             // Does the method have a hidden parameter?
-            ArrayMethod arrayMethod = method as ArrayMethod;
             if ((method.RequiresInstArg() && !isFatFunctionPointer && !_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                || (arrayMethod != null && arrayMethod.Kind == ArrayMethodKind.Address))
+                || method.IsArrayAddressMethod())
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
@@ -2653,8 +2652,10 @@ namespace Internal.JitInterface
                     targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
                 }
 
-                ArrayMethod arrayMethod = targetMethod as ArrayMethod;
-                bool referencingArrayAddressMethod = ((arrayMethod != null) && arrayMethod.Kind == ArrayMethodKind.Address);
+                // For multidim array Address method, we pretend the method requires a hidden instantiation argument
+                // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
+                // a matching calling convention later. See ArrayMethod for a description.
+                bool referencingArrayAddressMethod = targetMethod.IsArrayAddressMethod();
 
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
@@ -2685,6 +2686,7 @@ namespace Internal.JitInterface
                     // result in getting back the unresolved target. Don't capture runtime determined dependencies
                     // in that case and rely on the dependency analysis computing them based on seeing a call to the
                     // canonical method body.
+                    // Same applies to array address method (the method doesn't actually do any generic lookups).
                     if (targetMethod.IsSharedByGenericInstantiations && !inlining && !resolvedConstraint && !referencingArrayAddressMethod)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
@@ -2724,6 +2726,9 @@ namespace Internal.JitInterface
                         }
                         else
                         {
+                            // We don't want array Address method to be modeled in the generic dependency analysis.
+                            // The method doesn't actually have runtime determined dependencies (won't do
+                            // any generic lookups).
                             pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                                 _compilation.NodeFactory.MethodEntrypoint(targetMethod));
                         }

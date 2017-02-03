@@ -173,7 +173,18 @@ namespace Internal.TypeSystem
     /// classes backed by metadata, they do have methods that can be referenced from the IL
     /// and the type system needs to provide a way to represent them.
     /// </summary>
-    public partial class ArrayMethod : MethodDesc
+    /// <remarks>
+    /// There are two array Address methods (<see cref="ArrayMethodKind.Address"/> and 
+    /// <see cref="ArrayMethodKind.AddressWithHiddenArg"/>). One is used when referencing Address
+    /// method from IL, the other is used when *compiling* the method body.
+    /// The reason we need to do this is that the Address method is required to do a type check using a type
+    /// that is only known at the callsite. The trick we use is that we tell codegen that the
+    /// <see cref="ArrayMethodKind.Address"/> method requires a hidden instantiation parameter (even though it doesn't).
+    /// The instantiation parameter is where we capture the type at the callsite.
+    /// When we compile the method body, we compile it as <see cref="ArrayMethodKind.AddressWithHiddenArg"/> that
+    /// has the hidden argument explicitly listed in it's signature and is available as a regular parameter.
+    /// </remarks>
+    public sealed partial class ArrayMethod : MethodDesc
     {
         private ArrayType _owningType;
         private ArrayMethodKind _kind;
