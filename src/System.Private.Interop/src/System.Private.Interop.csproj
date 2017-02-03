@@ -20,22 +20,14 @@
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>    
-
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" >
-      <Aliases>CoreFX_Runtime</Aliases>
-    </ReferencePath>
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Handles.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" >
-      <Aliases>CoreFX_IO</Aliases>
-    </ReferencePath>
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" >
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll">
       <Aliases>CoreFX_Collections</Aliases>
     </ReferencePath>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Contracts.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Debug.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Threading.Tasks.dll" />    
   </ItemGroup>

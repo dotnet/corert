@@ -19,6 +19,7 @@ namespace System
     /// when the instance is constructed.  If there is no current SynchronizationContext
     /// at the time of construction, the callbacks will be invoked on the ThreadPool.
     /// </remarks>
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
     public class Progress<T> : IProgress<T>
     {
         /// <summary>The synchronization context captured upon construction.  This will never be null.</summary>

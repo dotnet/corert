@@ -4,7 +4,7 @@
 
 namespace System
 {
-    public static partial class Environment
+    internal static partial class Environment
     {
         internal static int CurrentNativeThreadId => unchecked((int)Interop.mincore.GetCurrentThreadId());
 
