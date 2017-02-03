@@ -102,6 +102,20 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public void EmitLdArga(int index)
+        {
+            if (index < 0x100)
+            {
+                Emit(ILOpcode.ldarga_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.ldarga);
+                EmitUInt16((ushort)index);
+            }
+        }
+
         public void EmitLdLoc(ILLocalVariable variable)
         {
             int index = (int)variable;
