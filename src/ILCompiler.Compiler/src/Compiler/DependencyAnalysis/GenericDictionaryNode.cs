@@ -146,7 +146,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class MethodGenericDictionaryNode : GenericDictionaryNode
+    public sealed class MethodGenericDictionaryNode : GenericDictionaryNode
     {
         private MethodDesc _owningMethod;
 

@@ -152,7 +152,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to a virtual dispatch stub.
     /// </summary>
-    internal sealed class VirtualDispatchGenericLookupResult : GenericLookupResult
+    public sealed class VirtualDispatchGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 
@@ -198,7 +198,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to a virtual function address load stub.
     /// </summary>
-    internal sealed class VirtualResolveGenericLookupResult : GenericLookupResult
+    public sealed class VirtualResolveGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 

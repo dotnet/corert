@@ -43,7 +43,7 @@ namespace Internal.Runtime
     // Eventually this will be reconciled with ReadyToRunSectionType from 
     // https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
     //
-    enum ReadyToRunSectionType
+    public enum ReadyToRunSectionType
     {
         StringTable                 = 200, // Unused
         GCStaticRegion              = 201,
@@ -52,6 +52,8 @@ namespace Internal.Runtime
         TypeManagerIndirection      = 204,
         EagerCctor                  = 205,
         FrozenObjectRegion          = 206,
+        GCStaticDesc                = 207,
+        ThreadStaticOffsetRegion    = 208,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart     = 300,

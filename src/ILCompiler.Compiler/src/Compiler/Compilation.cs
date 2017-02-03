@@ -26,9 +26,9 @@ namespace ILCompiler
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
 
-        internal NameMangler NameMangler => _nameMangler;
-        internal NodeFactory NodeFactory => _nodeFactory;
-        internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
+        public NameMangler NameMangler => _nameMangler;
+        public NodeFactory NodeFactory => _nodeFactory;
+        public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         internal Logger Logger => _logger;
         internal PInvokeILProvider PInvokeILProvider { get; }
 
@@ -162,7 +162,7 @@ namespace ILCompiler
         void ICompilation.Compile(string outputFile)
         {
             // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
-            _nameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : NodeFactory.NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(outputFile));
+            _nameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : Path.GetFileNameWithoutExtension(outputFile);
             CompileInternal(outputFile);
         }
 

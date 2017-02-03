@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    internal class NonGCStaticsNode : ObjectNode, ISymbolNode
+    public class NonGCStaticsNode : ObjectNode, ISymbolNode
     {
         private MetadataType _type;
 

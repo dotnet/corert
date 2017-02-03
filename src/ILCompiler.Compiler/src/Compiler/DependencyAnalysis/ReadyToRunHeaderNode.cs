@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        internal void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol = null)
+        public void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol = null)
         {
             _items.Add(new HeaderItem(id, node, startSymbol, endSymbol));
         }

@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class InterfaceDispatchCellNode : ObjectNode, ISymbolNode
+    public class InterfaceDispatchCellNode : ObjectNode, ISymbolNode
     {
         MethodDesc _targetMethod;
         string _callSiteIdentifier;

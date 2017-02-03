@@ -10,7 +10,7 @@ using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
-    internal static class VirtualMethodSlotHelper
+    public static class VirtualMethodSlotHelper
     {
         /// <summary>
         /// Given a virtual method decl, return its VTable slot if the method is used on its containing type.
