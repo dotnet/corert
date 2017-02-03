@@ -75,6 +75,11 @@ namespace Internal.TypeSystem
         public abstract bool IsSealed { get; }
 
         /// <summary>
+        /// Gets a value indicating whether the type is abstract and cannot be allocated.
+        /// </summary>
+        public abstract bool IsAbstract { get; }
+
+        /// <summary>
         /// Returns true if the type has given custom attribute.
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);

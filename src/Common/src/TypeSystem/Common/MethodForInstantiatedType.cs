@@ -119,6 +119,14 @@ namespace Internal.TypeSystem
             return _typicalMethodDef;
         }
 
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                return _typicalMethodDef.IsDefaultConstructor;
+            }
+        }
+
         public override string Name
         {
             get

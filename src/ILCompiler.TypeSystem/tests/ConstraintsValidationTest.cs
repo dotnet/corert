@@ -21,6 +21,8 @@ namespace TypeSystemTests
         private MetadataType _structArgWithDefaultCtorType;
         private MetadataType _structArgWithoutDefaultCtorType;
         private MetadataType _classArgWithDefaultCtorType;
+        private MetadataType _classArgWithPrivateDefaultCtorType;
+        private MetadataType _abstractClassArgWithDefaultCtorType;
         private MetadataType _classArgWithoutDefaultCtorType;
         private MetadataType _referenceTypeConstraintType;
         private MetadataType _defaultConstructorConstraintType;
@@ -49,6 +51,8 @@ namespace TypeSystemTests
             _structArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "StructArgWithDefaultCtor");
             _structArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints", "StructArgWithoutDefaultCtor");
             _classArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithDefaultCtor");
+            _classArgWithPrivateDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithPrivateDefaultCtor");
+            _abstractClassArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "AbstractClassArgWithDefaultCtor");
             _classArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithoutDefaultCtor");
 
             _referenceTypeConstraintType = _testModule.GetType("GenericConstraints", "ReferenceTypeConstraint`1");
@@ -94,6 +98,12 @@ namespace TypeSystemTests
 
                 instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_classArgWithDefaultCtorType);
                 Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_classArgWithPrivateDefaultCtorType);
+                Assert.False(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_abstractClassArgWithDefaultCtorType);
+                Assert.False(instantiatedType.CheckConstraints());
 
                 instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_classArgWithoutDefaultCtorType);
                 Assert.False(instantiatedType.CheckConstraints());

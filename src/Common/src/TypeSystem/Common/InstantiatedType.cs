@@ -154,6 +154,14 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalCctor, this);
         }
 
+        public override MethodDesc GetDefaultConstructor()
+        {
+            MethodDesc typicalCtor = _typeDef.GetDefaultConstructor();
+            if (typicalCtor == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalCtor, this);
+        }
+
         public override MethodDesc GetFinalizer()
         {
             MethodDesc typicalFinalizer = _typeDef.GetFinalizer();
@@ -303,6 +311,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typeDef.IsSealed;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return _typeDef.IsAbstract;
             }
         }
 

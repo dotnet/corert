@@ -125,6 +125,14 @@ namespace Internal.TypeSystem
             return _methodDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override MethodDesc GetMethodDefinition()
         {
             return _methodDef;

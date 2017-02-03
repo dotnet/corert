@@ -18,10 +18,7 @@ namespace Internal.TypeSystem
             // Check default constructor constraint
             if (genericParam.HasDefaultConstructorConstraint)
             {
-                if (!instantiationParam.IsDefType)
-                    return false;
-
-                if (!instantiationParam.IsValueType && instantiationParam.GetDefaultConstructor() == null)
+                if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor())
                     return false;
             }
 
