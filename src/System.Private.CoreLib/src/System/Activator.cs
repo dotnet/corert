@@ -54,6 +54,10 @@ namespace System
                 if (s_createInstanceMissingDefaultConstructor != oldValueOfMissingDefaultCtorMarkerBool)
                 {
                     missingDefaultConstructor = true;
+
+                    // We didn't call the real .ctor (because there wasn't one), but we still allocated
+                    // an uninitialized object. If it has a finalizer, it would run - prevent that.
+                    GC.SuppressFinalize(t);
                 }
             }
 
