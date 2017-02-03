@@ -33,7 +33,7 @@ namespace System
         Machine = 2,
     }
 
-    public static partial class Environment
+    internal static partial class Environment
     {
         /*==================================TickCount===================================
         **Action: Gets the number of ticks since the system was started.

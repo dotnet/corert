@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#if !CORECLR
-extern alias CoreFX_IO;
-#endif
 
 using System;
 using System.Diagnostics;
@@ -336,7 +333,7 @@ namespace System.Runtime.InteropServices
                     break; // DuplicateWaitObjectException
                 case __HResults.COR_E_ENDOFSTREAM:
                 case unchecked((int)0x800A003E):
-                    exception = new CoreFX_IO::System.IO.EndOfStreamException();
+                    exception = new System.IO.EndOfStreamException();
 
                     if (errorCode != __HResults.COR_E_ENDOFSTREAM)
                         shouldDisplayHR = true;
