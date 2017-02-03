@@ -8,7 +8,6 @@ using System.Collections.Generic;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
-using Internal.Metadata.NativeFormat.Writer;
 
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
@@ -25,23 +24,21 @@ namespace ILCompiler
     /// module. It also helps facilitate mappings between generated runtime structures or code,
     /// and the native metadata.
     /// </summary>
-    public class MetadataGeneration
+    public abstract class MetadataGeneration
     {
         internal const int MetadataOffsetMask = 0xFFFFFF;
 
         private byte[] _metadataBlob;
-        private List<MetadataMapping<MetadataType>> _typeMappings = new List<MetadataMapping<MetadataType>>();
-        private List<MetadataMapping<FieldDesc>> _fieldMappings = new List<MetadataMapping<FieldDesc>>();
-        private List<MetadataMapping<MethodDesc>> _methodMappings = new List<MetadataMapping<MethodDesc>>();
+        private List<MetadataMapping<MetadataType>> _typeMappings;
+        private List<MetadataMapping<FieldDesc>> _fieldMappings;
+        private List<MetadataMapping<MethodDesc>> _methodMappings;
+        private IMetadataPolicy _metadataPolicy;
 
         private NodeFactory _nodeFactory;
 
-        private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
-        private HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
         private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
-        private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
@@ -53,6 +50,11 @@ namespace ILCompiler
         public MetadataGeneration(NodeFactory factory)
         {
             _nodeFactory = factory;
+        }
+
+        protected void InitMetadataPolicy(IMetadataPolicy metadataPolicy)
+        {
+            _metadataPolicy = metadataPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -118,6 +120,9 @@ namespace ILCompiler
             var genericMethodsTemplatesMapNode = new GenericMethodsTemplateMap(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericMethodsTemplateMap), genericMethodsTemplatesMapNode, genericMethodsTemplatesMapNode, genericMethodsTemplatesMapNode.EndSymbol);
 
+            var blockReflectionTypeMapNode = new BlockReflectionTypeMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlockReflectionTypeMap), blockReflectionTypeMapNode, blockReflectionTypeMapNode, blockReflectionTypeMapNode.EndSymbol);
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
@@ -142,8 +147,7 @@ namespace ILCompiler
                 MethodDesc method = methodNode.Method;
 
                 AddGeneratedType(method.OwningType);
-                _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
-                _methodsGenerated.Add(method);
+                AddGeneratedMethod(method);
                 return;
             }
 
@@ -291,20 +295,11 @@ namespace ILCompiler
             return context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
         }
 
-        private void AddGeneratedType(TypeDesc type)
+        protected virtual void AddGeneratedType(TypeDesc type)
         {
             Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
 
-            if (type.IsDefType && type.IsTypeDefinition)
-            {
-                var mdType = type as MetadataType;
-                if (mdType != null)
-                {
-                    _typeDefinitionsGenerated.Add(mdType);
-                    _modulesSeen.Add(mdType.Module);
-                }
-            }
-            else if (type.IsArray)
+            if (type.IsArray)
             {
                 var arrayType = (ArrayType)type;
                 _arrayTypesGenerated.Add(arrayType);
@@ -313,73 +308,31 @@ namespace ILCompiler
             // TODO: track generic types, etc.
         }
 
+        protected virtual void AddGeneratedMethod(MethodDesc method)
+        {
+            Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
+            _methodsGenerated.Add(method);
+        }
+
         private void EnsureMetadataGenerated()
         {
             if (_metadataBlob != null)
                 return;
 
-            var transformed = MetadataTransform.Run(new DummyMetadataPolicy(this), _modulesSeen);
-
-            // TODO: DeveloperExperienceMode: Use transformed.Transform.HandleType() to generate
-            //       TypeReference records for _typeDefinitionsGenerated that don't have metadata.
-            //       (To be used in MissingMetadataException messages)
-
-            // Generate metadata blob
-            var writer = new MetadataWriter();
-            writer.ScopeDefinitions.AddRange(transformed.Scopes);
-            var ms = new MemoryStream();
-            writer.Write(ms);
-            _metadataBlob = ms.ToArray();
-
-            // Generate type definition mappings
-            foreach (var definition in _typeDefinitionsGenerated)
-            {
-                MetadataRecord record = transformed.GetTransformedTypeDefinition(definition);
-
-                // Reflection requires that we maintain type identity. Even if we only generated a TypeReference record,
-                // if there is an EEType for it, we also need a mapping table entry for it.
-                if (record == null)
-                    record = transformed.GetTransformedTypeReference(definition);
-
-                if (record != null)
-                    _typeMappings.Add(new MetadataMapping<MetadataType>(definition, writer.GetRecordHandle(record)));
-            }
-
-            foreach (var method in _methodsGenerated)
-            {
-                if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
-                {
-                    // Canonical methods are not interesting.
-                    continue;
-                }
-
-                MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
-
-                if (record != null)
-                    _methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
-            }
-
-            foreach (var eetypeGenerated in _typesWithEETypesGenerated)
-            {
-                if (eetypeGenerated.IsGenericDefinition)
-                    continue;
-
-                foreach (FieldDesc field in eetypeGenerated.GetFields())
-                {
-                    Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
-                    if (record != null)
-                        _fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
-                }
-            }
+            ComputeMetadata(out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings);
         }
+
+        protected abstract void ComputeMetadata(out byte[] metadataBlob, 
+                                                out List<MetadataMapping<MetadataType>> typeMappings,
+                                                out List<MetadataMapping<MethodDesc>> methodMappings,
+                                                out List<MetadataMapping<FieldDesc>> fieldMappings);
+
+
 
         /// <summary>
         /// Returns a set of modules that will get some metadata emitted into the output module
         /// </summary>
-        public HashSet<ModuleDesc> GetModulesWithMetadata()
-        {
-            return _modulesSeen;
-        }
+        public abstract HashSet<ModuleDesc> GetModulesWithMetadata();
 
         public byte[] GetMetadataBlob()
         {
@@ -440,49 +393,9 @@ namespace ILCompiler
             return _typesWithEETypesGenerated;
         }
 
-        private struct DummyMetadataPolicy : IMetadataPolicy
+        internal IMetadataPolicy GetMetadataPolicy()
         {
-            private MetadataGeneration _parent;
-            private ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
-
-            public DummyMetadataPolicy(MetadataGeneration parent)
-            {
-                _parent = parent;
-                _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
-            }
-
-            public bool GeneratesMetadata(FieldDesc fieldDef)
-            {
-                return _parent._typeDefinitionsGenerated.Contains((MetadataType)fieldDef.OwningType);
-            }
-
-            public bool GeneratesMetadata(MethodDesc methodDef)
-            {
-                return _parent._methodDefinitionsGenerated.Contains(methodDef);
-            }
-
-            public bool GeneratesMetadata(MetadataType typeDef)
-            {
-                // Metadata consistency: if a nested type generates metadata, the containing type is
-                // required to generate metadata, or metadata generation will fail.
-                foreach (var nested in typeDef.GetNestedTypes())
-                {
-                    if (GeneratesMetadata(nested))
-                        return true;
-                }
-
-                return _parent._typeDefinitionsGenerated.Contains(typeDef);
-            }
-
-            public bool IsBlocked(MetadataType typeDef)
-            {
-                return false;
-            }
-
-            public ModuleDesc GetModuleOfType(MetadataType typeDef)
-            {
-                return _explicitScopeMixin.GetModuleOfType(typeDef);
-            }
+            return _metadataPolicy;
         }
     }
 

@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             _compilationModuleGroup = compilationModuleGroup;
             CreateNodeCaches();
 
-            MetadataManager = new MetadataGeneration(this);
+            MetadataManager = new GeneratedOnlyMetadataGeneration(this);
         }
 
         public TargetDetails Target
