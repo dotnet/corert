@@ -1,8 +1,8 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 
-using System.Runtime.Remoting;
 using System.Runtime.Serialization;
 using System.Reflection;
 using System.Globalization;
@@ -14,15 +14,15 @@ namespace System {
     
     [Serializable]
     // Holds classes (Empty, Null, Missing) for which we guarantee that there is only ever one instance of.
-    internal class UnitySerializationHolder : ISerializable, IObjectReference
+    public class UnitySerializationHolder : ISerializable, IObjectReference
     {   
         #region Internal Constants
         internal const int EmptyUnity       = 0x0001;
         internal const int NullUnity        = 0x0002;
         internal const int MissingUnity     = 0x0003;
         internal const int RuntimeTypeUnity = 0x0004;
-        internal const int ModuleUnity      = 0x0005;
-        internal const int AssemblyUnity    = 0x0006;
+        public   const int ModuleUnity      = 0x0005;
+        public   const int AssemblyUnity    = 0x0006;
         internal const int GenericParameterTypeUnity = 0x0007;
         internal const int PartialInstantiationTypeUnity = 0x0008;
         
@@ -39,7 +39,7 @@ namespace System {
             info.AddValue("UnityType", MissingUnity);
         }
 
-        internal static RuntimeType AddElementTypes(SerializationInfo info, RuntimeType type)
+        internal static Type AddElementTypes(SerializationInfo info, Type type)
         {
             List<int> elementTypes = new List<int>();
             while(type.HasElementType)
@@ -62,7 +62,7 @@ namespace System {
                     elementTypes.Add(ByRef);
                 }
                 
-                type = (RuntimeType)type.GetElementType();
+                type = type.GetElementType();
             }
 
             info.AddValue("ElementTypes", elementTypes.ToArray(), typeof(int[]));
@@ -95,9 +95,15 @@ namespace System {
             return type;
         }
             
-        internal static void GetUnitySerializationInfo(SerializationInfo info, RuntimeType type)
+        public static void GetUnitySerializationInfo(SerializationInfo info, Type type)
         {
-            if (type.GetRootElementType().IsGenericParameter)
+            Type rootElementType = type;
+            while (rootElementType.HasElementType)
+            {
+                rootElementType = rootElementType.GetElementType();
+            }
+
+            if (rootElementType.IsGenericParameter)
             {
                 type = AddElementTypes(info, type);
                 info.SetType(typeof(UnitySerializationHolder));
@@ -117,14 +123,14 @@ namespace System {
                 unityType = PartialInstantiationTypeUnity;
                 type = AddElementTypes(info, type);
                 info.AddValue("GenericArguments", type.GetGenericArguments(), typeof(Type[]));
-                type = (RuntimeType)type.GetGenericTypeDefinition();
+                type = type.GetGenericTypeDefinition();
             }
 
-            GetUnitySerializationInfo(info, unityType, type.FullName, type.GetRuntimeAssembly());
+            GetUnitySerializationInfo(info, unityType, type.FullName, type.Assembly);
         }
 
-        internal static void GetUnitySerializationInfo(
-            SerializationInfo info, int unityType, String data, RuntimeAssembly assembly)
+        public static void GetUnitySerializationInfo(
+            SerializationInfo info, int unityType, String data, Assembly assembly)
         {
             // A helper method that returns the SerializationInfo that a class utilizing 
             // UnitySerializationHelper should return from a call to GetObjectData.  It contains
@@ -162,10 +168,10 @@ namespace System {
         #endregion  
 
         #region Constructor
-        internal UnitySerializationHolder(SerializationInfo info, StreamingContext context) 
+        public UnitySerializationHolder(SerializationInfo info, StreamingContext context) 
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
             
             m_unityType = info.GetInt32("UnityType");
@@ -198,20 +204,18 @@ namespace System {
         private void ThrowInsufficientInformation(string field)
         {
             throw new SerializationException(
-                Environment.GetResourceString("Serialization_InsufficientDeserializationState", field));
+                SR.Format(SR.Serialization_InsufficientDeserializationState, field));
         }
         #endregion
 
         #region ISerializable
-        [System.Security.SecurityCritical]  // auto-generated
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnitySerHolder"));
+            throw new NotSupportedException(SR.NotSupported_UnitySerHolder);
         }
         #endregion
 
         #region IObjectReference
-        [System.Security.SecurityCritical]  // auto-generated
         public virtual Object GetRealObject(StreamingContext context) 
         {
             // GetRealObject uses the data we have in m_data and m_unityType to do a lookup on the correct 
@@ -269,9 +273,14 @@ namespace System {
                     if (m_assemblyName == null)
                         ThrowInsufficientInformation("AssemblyName");
 
-                    if (m_assemblyName.Length == 0) 
-                        return Type.GetType(m_data, true, false);
-                    
+                    if (m_assemblyName.Length == 0)
+                    {
+                        // @todo: Temporary workaround for ILC toolchain bug: Type.GetType() is an intrinsic and invoking it from inside CoreLib triggers this.
+
+                        //return Type.GetType(m_data, true, false);
+                        return Internal.Runtime.Augments.RuntimeAugments.Callbacks.GetType(m_data, null, null, throwOnError: true, ignoreCase: false, defaultAssembly: typeof(object).Assembly.FullName);
+                    }
+
                     assembly = Assembly.Load(m_assemblyName);
                     
                     Type t = assembly.GetType(m_data, true, false);
@@ -293,7 +302,7 @@ namespace System {
                     
                     if (namedModule == null)
                         throw new SerializationException(
-                            Environment.GetResourceString("Serialization_UnableToFindModule", m_data, m_assemblyName));
+                            SR.Format(SR.Serialization_UnableToFindModule, m_data, m_assemblyName));
                     
                     return namedModule;
                 }
@@ -312,7 +321,7 @@ namespace System {
                 }
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidUnity"));
+                    throw new ArgumentException(SR.Argument_InvalidUnity);
             }
         }
         #endregion

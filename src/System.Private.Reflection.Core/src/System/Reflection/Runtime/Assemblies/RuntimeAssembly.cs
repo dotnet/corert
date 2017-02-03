@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
@@ -26,7 +27,8 @@ namespace System.Reflection.Runtime.Assemblies
     //
     // The runtime's implementation of an Assembly. 
     //
-    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>
+    [Serializable]
+    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, ISerializable
     {
         public bool Equals(RuntimeAssembly other)
         {
@@ -47,6 +49,14 @@ namespace System.Reflection.Runtime.Assemblies
 
                 return GetName().FullName;
             }
+        }
+
+        public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+
+            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.AssemblyUnity, FullName, this);
         }
 
         public sealed override Module ManifestModule

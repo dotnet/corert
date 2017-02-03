@@ -70,7 +70,6 @@
   <ItemGroup>
     <Compile Include="System\ActivatorImplementation.cs" />
     <Compile Include="System\DBNull.cs" />
-    <Compile Include="System\Empty.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
