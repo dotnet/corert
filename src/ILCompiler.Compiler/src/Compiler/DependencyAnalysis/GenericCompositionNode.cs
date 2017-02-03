@@ -86,9 +86,9 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             var builder = new ObjectDataBuilder(factory);
-            builder.DefinedSymbols.Add(this);
+            builder.AddSymbol(this);
 
-            builder.RequirePointerAlignment();
+            builder.RequireInitialPointerAlignment();
 
             builder.EmitShort((short)checked((UInt16)_details.Instantiation.Length));
 

@@ -57,9 +57,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
 
-            builder.RequirePointerAlignment();
+            builder.RequireInitialPointerAlignment();
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), 1);
-            builder.DefinedSymbols.Add(this);
+            builder.AddSymbol(this);
 
             return builder.ToObjectData();
         }

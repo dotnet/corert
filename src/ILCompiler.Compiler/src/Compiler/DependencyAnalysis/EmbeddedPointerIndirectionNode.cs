@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            dataBuilder.RequirePointerAlignment();
+            dataBuilder.RequireInitialPointerAlignment();
             dataBuilder.EmitPointerReloc(Target);
         }
 

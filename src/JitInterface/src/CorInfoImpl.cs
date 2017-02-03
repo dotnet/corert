@@ -248,7 +248,7 @@ namespace Internal.JitInterface
         private ObjectNode.ObjectData EncodeEHInfo()
         {
             var builder = new ObjectDataBuilder();
-            builder.Alignment = 1;
+            builder.RequireInitialAlignment(1);
 
             int totalClauses = _ehClauses.Length;
 

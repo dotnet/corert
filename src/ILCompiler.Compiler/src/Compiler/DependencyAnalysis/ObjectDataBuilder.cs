@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
             _data = new ArrayBuilder<byte>();
             _relocs = new ArrayBuilder<Relocation>();
             Alignment = 1;
-            DefinedSymbols = new ArrayBuilder<ISymbolNode>();
+            _definedSymbols = new ArrayBuilder<ISymbolNode>();
 #if DEBUG
             _numReservations = 0;
 #endif
@@ -27,8 +27,8 @@ namespace ILCompiler.DependencyAnalysis
         private TargetDetails _target;
         private ArrayBuilder<Relocation> _relocs;
         private ArrayBuilder<byte> _data;
-        public int Alignment;
-        internal ArrayBuilder<ISymbolNode> DefinedSymbols;
+        public int Alignment { get; private set; }
+        private ArrayBuilder<ISymbolNode> _definedSymbols;
 
 #if DEBUG
         private int _numReservations;
@@ -50,14 +50,22 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void RequireAlignment(int align)
+        /// <summary>
+        /// Raise the alignment requirement of this object to <paramref name="align"/>. This has no effect
+        /// if the alignment requirement is already larger than <paramref name="align"/>.
+        /// </summary>
+        public void RequireInitialAlignment(int align)
         {
             Alignment = Math.Max(align, Alignment);
         }
 
-        public void RequirePointerAlignment()
+        /// <summary>
+        /// Raise the alignment requirement of this object to the target pointer size. This has no effect
+        /// if the alignment requirement is already larger than a pointer size.
+        /// </summary>
+        public void RequireInitialPointerAlignment()
         {
-            RequireAlignment(_target.PointerSize);
+            RequireInitialAlignment(_target.PointerSize);
         }
 
         public void EmitByte(byte emit)
@@ -260,7 +268,7 @@ namespace ILCompiler.DependencyAnalysis
             ObjectNode.ObjectData returnData = new ObjectNode.ObjectData(_data.ToArray(),
                                                                          _relocs.ToArray(),
                                                                          Alignment,
-                                                                         DefinedSymbols.ToArray());
+                                                                         _definedSymbols.ToArray());
 
             return returnData;
         }
@@ -269,7 +277,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AddSymbol(ISymbolNode node)
         {
-            DefinedSymbols.Add(node);
+            _definedSymbols.Add(node);
         }
     }
 }

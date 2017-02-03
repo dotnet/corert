@@ -67,8 +67,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.Alignment = factory.Target.PointerSize;
-            builder.DefinedSymbols.Add(this);
+            builder.RequireInitialPointerAlignment();
+            builder.AddSymbol(this);
 
             // Don't bother sorting if we're not emitting the contents
             if (!relocsOnly)
