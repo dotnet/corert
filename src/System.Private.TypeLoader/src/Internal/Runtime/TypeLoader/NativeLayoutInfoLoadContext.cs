@@ -24,7 +24,7 @@ namespace Internal.Runtime.TypeLoader
     internal class NativeLayoutInfoLoadContext
     {
         public TypeSystemContext _typeSystemContext;
-        public ModuleInfo _module;
+        public NativeFormatModuleInfo _module;
         private ExternalReferencesTable _staticInfoLookup;
         private ExternalReferencesTable _externalReferencesLookup;
         public Instantiation _typeArgumentHandles;
@@ -66,7 +66,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!_externalReferencesLookup.IsInitialized())
             {
-                bool success = _externalReferencesLookup.InitializeNativeReferences(_module.Handle);
+                bool success = _externalReferencesLookup.InitializeNativeReferences(_module);
                 Debug.Assert(success);
             }
         }
@@ -88,7 +88,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!_staticInfoLookup.IsInitialized())
             {
-                bool success = _staticInfoLookup.InitializeNativeStatics(_module.Handle);
+                bool success = _staticInfoLookup.InitializeNativeStatics(_module);
                 Debug.Assert(success);
             }
 

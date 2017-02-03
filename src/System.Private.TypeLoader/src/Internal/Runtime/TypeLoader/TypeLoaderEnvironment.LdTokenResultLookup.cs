@@ -241,7 +241,7 @@ namespace Internal.Runtime.TypeLoader
 
                 string name;
 #if ECMA_METADATA_SUPPORT
-                if (moduleInfo.MetadataReader != null)
+                if (moduleInfo is NativeFormatModuleInfo)
 #endif            
                 {
                     var metadataReader = ((NativeFormatModuleInfo)moduleInfo).MetadataReader;
@@ -252,7 +252,7 @@ namespace Internal.Runtime.TypeLoader
 #if ECMA_METADATA_SUPPORT
                 else
                 {
-                    var ecmaReader = ((EcmaModuleInfo)moduleInfo).EcmaPEInfo.Reader;
+                    var ecmaReader = ((EcmaModuleInfo)moduleInfo).MetadataReader;
                     var ecmaHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(methodData->MethodSignature.Token);
                     var ecmaMethodHandle = (System.Reflection.Metadata.MethodDefinitionHandle)ecmaHandle;
                     var ecmaMethod = ecmaReader.GetMethodDefinition(ecmaMethodHandle);

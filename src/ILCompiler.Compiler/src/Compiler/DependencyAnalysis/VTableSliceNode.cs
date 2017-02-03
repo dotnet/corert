@@ -54,6 +54,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             var slots = new ArrayBuilder<MethodDesc>();
 
+            MethodDesc finalizerMethod = type.GetFinalizer();
             DefType defType = _type.GetClosestDefType();
             foreach (var method in defType.GetAllMethods())
             {
@@ -62,6 +63,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 // GVMs are not emitted in the type's vtable.
                 if (method.HasInstantiation)
+                    continue;
+
+                // Finalizers are called via a field on the EEType, not through the VTable
+                if (finalizerMethod == method || (type.IsObject && method.Name == "Finalize"))
                     continue;
 
                 slots.Add(method);

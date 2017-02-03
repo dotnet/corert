@@ -83,7 +83,7 @@ namespace ILCompiler
         /// </summary>
         public static bool HasGenericDictionarySlot(this TypeDesc type)
         {
-            return !type.IsInterface &&
+            return !type.IsInterface && type.HasInstantiation &&
                 (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type || type.IsCanonicalSubtype(CanonicalFormKind.Any));
         }
     }

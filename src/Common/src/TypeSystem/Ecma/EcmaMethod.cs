@@ -14,7 +14,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
+    public sealed partial class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
     {
         private static class MethodFlags
         {

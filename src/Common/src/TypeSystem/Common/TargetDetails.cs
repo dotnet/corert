@@ -32,6 +32,19 @@ namespace Internal.TypeSystem
         NetBSD,
     }
 
+    public enum TargetAbi
+    {
+        Unknown,
+        /// <summary>
+        /// Cross-platform console model
+        /// </summary>
+        CoreRT,
+        /// <summary>
+        /// Windows-specific UWP model
+        /// </summary>
+        ProjectN
+    }
+
     /// <summary>
     /// Represents various details about the compilation target that affect
     /// layout, padding, allocations, or ABI.
@@ -50,6 +63,11 @@ namespace Internal.TypeSystem
         /// Gets the target ABI.
         /// </summary>
         public TargetOS OperatingSystem
+        {
+            get;
+        }
+
+        public TargetAbi Abi
         {
             get;
         }
@@ -99,10 +117,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS)
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi)
         {
             Architecture = architecture;
             OperatingSystem = targetOS;
+            Abi = abi;
         }
 
         /// <summary>

@@ -177,7 +177,7 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = _useSharedGenerics ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
-            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS), genericsMode);
+            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT), genericsMode);
             typeSystemContext.InputFilePaths = _inputFilePaths;
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 

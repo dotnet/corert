@@ -2,14 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-// 
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-using System;
 
 namespace System
 {
@@ -17,6 +11,7 @@ namespace System
     // should be treated as a bitfield (or set of flags).
     // An IDE may use this information to provide a richer
     // development experience.
+    [Serializable]
     [AttributeUsage(AttributeTargets.Enum, Inherited = false)]
     public class FlagsAttribute : Attribute
     {

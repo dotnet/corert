@@ -549,6 +549,96 @@ namespace Internal.NativeFormat
         }
     }
 
+    //
+    // Bag of <id, data> pairs. Good for extensible information (e.g. type info)
+    //
+    // Data can be either relative offset of another vertex, or arbitrary integer.
+    //
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class VertexBag : Vertex
+    {
+        enum EntryType { Vertex, Unsigned, Signed }
+
+        struct Entry
+        {
+            internal BagElementKind _id;
+            internal EntryType _type;
+            internal object _value;
+
+            internal Entry(BagElementKind id, Vertex value)
+            {
+                _id = id;
+                _type = EntryType.Vertex;
+                _value = value;
+            }
+
+            internal Entry(BagElementKind id, uint value)
+            {
+                _id = id;
+                _type = EntryType.Unsigned;
+                _value = value;
+            }
+
+            internal Entry(BagElementKind id, int value)
+            {
+                _id = id;
+                _type = EntryType.Signed;
+                _value = value;
+            }
+        }
+
+        private List<Entry> _elements;
+
+        public VertexBag()
+        {
+            _elements = new List<Entry>();
+        }
+
+        public void Append(BagElementKind id, Vertex value)
+        {
+            _elements.Add(new Entry(id, value));
+        }
+
+        public void AppendUnsigned(BagElementKind id, uint value)
+        {
+            _elements.Add(new Entry(id, value));
+        }
+
+        public void AppendSigned(BagElementKind id, int value)
+        {
+            _elements.Add(new Entry(id, value));
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            foreach (var elem in _elements)
+            {
+                writer.WriteUnsigned((uint)elem._id);
+
+                switch (elem._type)
+                {
+                    case EntryType.Vertex:
+                        writer.WriteRelativeOffset((Vertex)elem._value);
+                        break;
+
+                    case EntryType.Unsigned:
+                        writer.WriteUnsigned((uint)elem._value);
+                        break;
+
+                    case EntryType.Signed:
+                        writer.WriteSigned((int)elem._value);
+                        break;
+
+                }
+            }
+            writer.WriteUnsigned((uint)BagElementKind.End);
+        }
+    }
+
 #if NATIVEFORMAT_PUBLICWRITER
     public
 #else

@@ -61,7 +61,7 @@ namespace System.Globalization
         protected CultureNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _invalidCultureId = (Nullable<int>)info.GetValue("InvalidCultureId", typeof(Nullable<int>));
+            _invalidCultureId = (int?)info.GetValue("InvalidCultureId", typeof(int?));
             _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
         }
 

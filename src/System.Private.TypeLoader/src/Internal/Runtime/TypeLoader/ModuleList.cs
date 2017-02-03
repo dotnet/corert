@@ -102,6 +102,32 @@ namespace Internal.Runtime.TypeLoader
         /// Module metadata reader for NativeFormat metadata
         /// </summary>
         public MetadataReader MetadataReader { get; private set; }
+
+        internal unsafe bool TryFindBlob(ReflectionMapBlob blobId, out byte* pBlob, out uint cbBlob)
+        {
+            pBlob = null;
+            cbBlob = 0;
+            fixed (byte** ppBlob = &pBlob)
+            {
+                fixed (uint* pcbBlob = &cbBlob)
+                {
+                    return RuntimeAugments.FindBlob(Handle, (int)blobId, new IntPtr(ppBlob), new IntPtr(pcbBlob));
+                }
+            }
+        }
+
+        public unsafe bool TryFindBlob(int blobId, out byte* pBlob, out uint cbBlob)
+        {
+            pBlob = null;
+            cbBlob = 0;
+            fixed (byte** ppBlob = &pBlob)
+            {
+                fixed (uint* pcbBlob = &cbBlob)
+                {
+                    return RuntimeAugments.FindBlob(Handle, (int)blobId, new IntPtr(ppBlob), new IntPtr(pcbBlob));
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -260,6 +286,133 @@ namespace Internal.Runtime.TypeLoader
     }
 
     /// <summary>
+    /// Helper class that can construct an enumerator for the module info map, possibly adjusting
+    /// the module order so that a given explicitly specified module goes first - this is used
+    /// as optimization in cases where a certain module is most likely to contain some metadata.
+    /// </summary>
+    public struct NativeFormatModuleInfoEnumerable
+    {
+        /// <summary>
+        /// Module map to enumerate
+        /// </summary>
+        private readonly ModuleMap _moduleMap;
+
+        /// <summary>
+        /// Module handle that should be enumerated first, default(IntPtr) when not used.
+        /// </summary>
+        private readonly IntPtr _preferredModuleHandle;
+
+        /// <summary>
+        /// Store module map and preferred module to pass to the enumerator upon construction.
+        /// </summary>
+        /// <param name="moduleMap">Module map to enumerate</param>
+        /// <param name="preferredModuleHandle">Optional module handle to enumerate first</param>
+        internal NativeFormatModuleInfoEnumerable(ModuleMap moduleMap, IntPtr preferredModuleHandle)
+        {
+            _moduleMap = moduleMap;
+            _preferredModuleHandle = preferredModuleHandle;
+        }
+
+        /// <summary>
+        /// Construct the actual module info enumerator.
+        /// </summary>
+        public NativeFormatModuleInfoEnumerator GetEnumerator()
+        {
+            return new NativeFormatModuleInfoEnumerator(_moduleMap, _preferredModuleHandle);
+        }
+    }
+
+    /// <summary>
+    /// This enumerator iterates the module map, possibly adjusting the order to make a given
+    /// module go first in the enumeration.
+    /// </summary>
+    public struct NativeFormatModuleInfoEnumerator
+    {
+        /// <summary>
+        /// Array of modules to enumerate.
+        /// </summary>
+        private readonly ModuleInfo[] _modules;
+
+        /// <summary>
+        /// Preferred module index in the array, -1 when none (in such case the array is enumerated
+        /// in its natural order).
+        /// </summary>
+        private int _preferredIndex;
+
+        /// <summary>
+        /// Enumeration step index initially set to -1 (so that the first MoveNext increments it to 0).
+        /// </summary>
+        private int _iterationIndex;
+
+        /// <summary>
+        /// Current _modules element that should be returned by Current (updated in MoveNext).
+        /// </summary>
+        private NativeFormatModuleInfo _currentModule;
+
+        /// <summary>
+        /// Initialize the module enumerator state machine and locate the preferred module index.
+        /// </summary>
+        /// <param name="moduleMap">Module map to enumerate</param>
+        /// <param name="preferredModuleHandle">Optional module handle to enumerate first</param>
+        internal NativeFormatModuleInfoEnumerator(ModuleMap moduleMap, IntPtr preferredModuleHandle)
+        {
+            _modules = moduleMap.Modules;
+            _preferredIndex = -1;
+            _iterationIndex = -1;
+            _currentModule = null;
+
+            if (preferredModuleHandle != default(IntPtr) &&
+                !moduleMap.HandleToModuleIndex.TryGetValue(preferredModuleHandle, out _preferredIndex))
+            {
+                Environment.FailFast("Invalid module requested in enumeration: " + preferredModuleHandle.LowLevelToString());
+            }
+        }
+
+        /// <summary>
+        /// Move the enumerator state machine to the next element in the module map.
+        /// </summary>
+        /// <returns>true when [another] module is available, false when the enumeration is finished</returns>
+        public bool MoveNext()
+        {
+            do
+            {
+                if (_iterationIndex + 1 >= _modules.Length)
+                {
+                    _currentModule = null;
+                    return false;
+                }
+
+                _iterationIndex++;
+                int moduleIndex = _iterationIndex;
+                if (moduleIndex <= _preferredIndex)
+                {
+                    // Transform the index so that the _preferredIndex is returned in first iteration
+                    moduleIndex = (moduleIndex == 0 ? _preferredIndex : moduleIndex - 1);
+                }
+
+                _currentModule = _modules[moduleIndex] as NativeFormatModuleInfo;
+            } while (_currentModule == null);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Look up the "current" module corresponding to the previous call to MoveNext.
+        /// </summary>
+        public NativeFormatModuleInfo Current
+        {
+            get
+            {
+                if (_currentModule == null)
+                {
+                    Environment.FailFast("Current module queried in wrong enumerator state");
+                }
+                return _currentModule;
+            }
+        }
+    }
+
+    /// <summary>
     /// Helper class that can construct an enumerator for the module handle map, possibly adjusting
     /// the module order so that a given explicitly specified module goes first - this is used
     /// as optimization in cases where a certain module is most likely to contain some metadata.
@@ -392,7 +545,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// The underlying ModuleInfoEnumerator handles enumeration internals
         /// </summary>
-        private ModuleInfoEnumerator _moduleInfoEnumerator;
+        private NativeFormatModuleInfoEnumerator _moduleInfoEnumerator;
 
         /// <summary>
         /// Construct the underlying module info enumerator used to iterate the module map
@@ -401,7 +554,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="preferredModuleHandle">Optional module handle to enumerate first</param>
         internal MetadataReaderEnumerator(ModuleMap moduleMap, IntPtr preferredModuleHandle)
         {
-            _moduleInfoEnumerator = new ModuleInfoEnumerator(moduleMap, preferredModuleHandle);
+            _moduleInfoEnumerator = new NativeFormatModuleInfoEnumerator(moduleMap, preferredModuleHandle);
         }
 
         /// <summary>
@@ -410,15 +563,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public bool MoveNext()
         {
-            while (_moduleInfoEnumerator.MoveNext())
-            {
-                NativeFormatModuleInfo moduleInfo = _moduleInfoEnumerator.Current as NativeFormatModuleInfo;
-                if (moduleInfo != null && moduleInfo.MetadataReader != null)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return _moduleInfoEnumerator.MoveNext();
         }
 
         /// <summary>
@@ -426,7 +571,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public MetadataReader Current
         {
-            get { return ((NativeFormatModuleInfo)_moduleInfoEnumerator.Current).MetadataReader; }
+            get { return _moduleInfoEnumerator.Current.MetadataReader; }
         }
     }
 
@@ -601,13 +746,13 @@ namespace Internal.Runtime.TypeLoader
 
         /// <summary>
         /// Locate module info for a given module. Fail if not found or before the module registry
-        /// gets initialized.
+        /// gets initialized. Must only be called for modules described as native format (not the mrt module, or an ECMA module)
         /// </summary>
         /// <param name="moduleHandle">Handle of module to look up</param>
-        public ModuleInfo GetModuleInfoByHandle(IntPtr moduleHandle)
+        public NativeFormatModuleInfo GetModuleInfoByHandle(IntPtr moduleHandle)
         {
             ModuleMap moduleMap = _loadedModuleMap;
-            return moduleMap.Modules[moduleMap.HandleToModuleIndex[moduleHandle]];
+            return (NativeFormatModuleInfo)moduleMap.Modules[moduleMap.HandleToModuleIndex[moduleHandle]];
         }
 
         /// <summary>
@@ -640,7 +785,10 @@ namespace Internal.Runtime.TypeLoader
             if (moduleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out moduleIndex))
             {
                 NativeFormatModuleInfo moduleInfo = moduleMap.Modules[moduleIndex] as NativeFormatModuleInfo;
-                return moduleInfo.MetadataReader;
+                if (moduleInfo != null)
+                    return moduleInfo.MetadataReader;
+                else
+                    return null;
             }
             return null;
         }
@@ -669,14 +817,14 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="reader">Metadata reader to look up</param>
         /// <returns>Module handle of the module containing the given reader</returns>
-        public ModuleInfo GetModuleInfoForMetadataReader(MetadataReader reader)
+        public NativeFormatModuleInfo GetModuleInfoForMetadataReader(MetadataReader reader)
         {
             foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
             {
                 NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
                 if (nativeFormatModuleInfo != null && nativeFormatModuleInfo.MetadataReader == reader)
                 {
-                    return moduleInfo;
+                    return nativeFormatModuleInfo;
                 }
             }
 
@@ -720,9 +868,9 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Enumerate modules.
         /// </summary>
-        public static ModuleInfoEnumerable EnumerateModules()
+        public static NativeFormatModuleInfoEnumerable EnumerateModules()
         {
-            return new ModuleInfoEnumerable(Instance._loadedModuleMap, IntPtr.Zero);
+            return new NativeFormatModuleInfoEnumerable(Instance._loadedModuleMap, IntPtr.Zero);
         }
 
         /// <summary>
@@ -731,9 +879,9 @@ namespace Internal.Runtime.TypeLoader
         /// to contain a certain information.
         /// </summary>
         /// <param name="preferredModule">Handle to the module which should be enumerated first</param>
-        public static ModuleInfoEnumerable EnumerateModules(IntPtr preferredModule)
+        public static NativeFormatModuleInfoEnumerable EnumerateModules(IntPtr preferredModule)
         {
-            return new ModuleInfoEnumerable(Instance._loadedModuleMap, preferredModule);
+            return new NativeFormatModuleInfoEnumerable(Instance._loadedModuleMap, preferredModule);
         }
 
         /// <summary>

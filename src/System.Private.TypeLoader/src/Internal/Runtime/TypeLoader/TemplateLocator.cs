@@ -54,7 +54,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a type from a ReadyToRun image. 
         /// </summary>
-        public bool TryGetMetadataNativeLayout(TypeDesc concreteType, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public bool TryGetMetadataNativeLayout(TypeDesc concreteType, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -110,7 +110,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Get the NativeLayout for a method from a ReadyToRun image. 
         /// </summary>
-        public bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
@@ -162,21 +162,17 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
             var canonForm = concreteType.ConvertToCanonForm(kind);
             var hashCode = canonForm.GetHashCode();
 
-            foreach (ModuleInfo unknownModuleInfo in ModuleList.EnumerateModules())
+            foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
             {
-                NativeFormatModuleInfo moduleInfo = unknownModuleInfo as NativeFormatModuleInfo;
-                if (moduleInfo == null)
-                    continue;
-
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
+                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
 
                 if (typeTemplatesHashtable.IsNull)
                     continue;
@@ -217,7 +213,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the template method for a generic method instantation
         //
-        public InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        public InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             // First, see if there is a specific canonical template
             InstantiatedMethod result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
@@ -228,26 +224,21 @@ namespace Internal.Runtime.TypeLoader
 
             return result;
         }
-        private InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out ModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
+        private InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
             var canonForm = concreteMethod.GetCanonMethodTarget(kind);
             var hashCode = canonForm.GetHashCode();
 
-            foreach (ModuleInfo unknownModuleInfo in ModuleList.EnumerateModules())
+            foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
             {
-                NativeFormatModuleInfo moduleInfo = unknownModuleInfo as NativeFormatModuleInfo;
-
-                if (moduleInfo == null)
-                    continue;
-
                 NativeReader nativeLayoutReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(moduleInfo.Handle);
                 if (nativeLayoutReader == null)
                     continue;
 
                 ExternalReferencesTable externalFixupsTable;
-                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.GenericMethodsTemplateMap, out externalFixupsTable);
+                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleInfo, ReflectionMapBlob.GenericMethodsTemplateMap, out externalFixupsTable);
 
                 if (genericMethodTemplatesHashtable.IsNull)
                     continue;
@@ -297,17 +288,17 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // Lazy loadings of hashtables (load on-demand only)
-        private unsafe NativeHashtable LoadHashtable(IntPtr moduleHandle, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
+        private unsafe NativeHashtable LoadHashtable(NativeFormatModuleInfo module, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
         {
             // Load the common fixups table
             externalFixupsTable = default(ExternalReferencesTable);
-            if (!externalFixupsTable.InitializeCommonFixupsTable(moduleHandle))
+            if (!externalFixupsTable.InitializeCommonFixupsTable(module))
                 return default(NativeHashtable);
 
             // Load the hashtable
             byte* pBlob;
             uint cbBlob;
-            if (!RuntimeAugments.FindBlob(moduleHandle, (int)hashtableBlobId, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+            if (!module.TryFindBlob(hashtableBlobId, out pBlob, out cbBlob))
                 return default(NativeHashtable);
 
             NativeReader reader = new NativeReader(pBlob, cbBlob);

@@ -73,7 +73,7 @@ namespace Internal.Reflection.Execution
             byte* pBlob;
             uint cbBlob;
 
-            if (!RuntimeAugments.FindBlob(resourceInfo.ModuleHandle, (int)ReflectionMapBlob.BlobIdResourceData, (IntPtr)(&pBlob), (IntPtr)(&cbBlob)))
+            if (!resourceInfo.Module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out pBlob, out cbBlob))
             {
                 throw new BadImageFormatException();
             }
@@ -112,7 +112,7 @@ namespace Internal.Reflection.Execution
 
                     LowLevelDictionary<String, LowLevelList<ResourceInfo>> dict = new LowLevelDictionary<String, LowLevelList<ResourceInfo>>();
 
-                    foreach (IntPtr module in ModuleList.Enumerate())
+                    foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                     {
                         NativeReader reader;
                         if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out reader))
@@ -177,18 +177,18 @@ namespace Internal.Reflection.Execution
 
         private struct ResourceInfo
         {
-            public ResourceInfo(String name, int index, int length, IntPtr moduleHandle)
+            public ResourceInfo(String name, int index, int length, NativeFormatModuleInfo module)
             {
                 Name = name;
                 Index = index;
                 Length = length;
-                ModuleHandle = moduleHandle;
+                Module = module;
             }
 
             public String Name { get; }
             public int Index { get; }
             public int Length { get; }
-            public IntPtr ModuleHandle { get; }
+            public NativeFormatModuleInfo Module { get; }
         }
     }
 }

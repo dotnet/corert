@@ -458,6 +458,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsFinalizer
+        {
+            get
+            {
+                return OwningType.GetFinalizer() == this || OwningType.IsObject && Name == "Finalize";
+            }
+        }
+
         public virtual MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             Instantiation instantiation = Instantiation;

@@ -101,6 +101,14 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         return new GenericDefinitionEETypeNode(this, type);
                     }
+                    else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        return new CanonicalDefinitionEETypeNode(this, type);
+                    }
+                    else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        return new CanonicalEETypeNode(this, type);
+                    }
                     else
                     {
                         return new EETypeNode(this, type);
@@ -116,7 +124,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    return new ConstructedEETypeNode(this, type);
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        return new CanonicalEETypeNode(this, type);
+                    }
+                    else
+                    {
+                        return new ConstructedEETypeNode(this, type);
+                    }
                 }
                 else
                 {
@@ -241,9 +256,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenStringNode(data, Target);
             });
 
-            _interfaceDispatchCells = new NodeCache<MethodDesc, InterfaceDispatchCellNode>((MethodDesc method) =>
+            _interfaceDispatchCells = new NodeCache<Tuple<MethodDesc, string>, InterfaceDispatchCellNode>((Tuple<MethodDesc, string> callSiteCell) =>
             {
-                return new InterfaceDispatchCellNode(method);
+                return new InterfaceDispatchCellNode(callSiteCell.Item1, callSiteCell.Item2);
             });
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
@@ -396,11 +411,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<MethodDesc, InterfaceDispatchCellNode> _interfaceDispatchCells;
+        private NodeCache<Tuple<MethodDesc, string>, InterfaceDispatchCellNode> _interfaceDispatchCells;
 
-        internal InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method)
+        internal InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, string callSite = null)
         {
-            return _interfaceDispatchCells.GetOrAdd(method);
+            return _interfaceDispatchCells.GetOrAdd(new Tuple<MethodDesc, string>(method, callSite));
         }
 
         private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;

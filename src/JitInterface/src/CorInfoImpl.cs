@@ -2768,8 +2768,13 @@ namespace Internal.JitInterface
                     pResult.exactContextNeedsRuntimeLookup = false;
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
+                    // Get the slot defining method to make sure our virtual method use tracking gets this right.
+                    // For normal C# code the targetMethod will always be newslot.
+                    MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
+                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
+
                     pResult.codePointerOrStubLookup.constLookup.addr =
-                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
+                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, slotDefiningMethod));
                 }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
@@ -2808,8 +2813,13 @@ namespace Internal.JitInterface
                     pResult.exactContextNeedsRuntimeLookup = false;
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
+                    // Get the slot defining method to make sure our virtual method use tracking gets this right.
+                    // For normal C# code the targetMethod will always be newslot.
+                    MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
+                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
+
                     pResult.codePointerOrStubLookup.constLookup.addr =
-                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
+                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, slotDefiningMethod));
                 }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks

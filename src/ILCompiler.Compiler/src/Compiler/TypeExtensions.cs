@@ -99,5 +99,13 @@ namespace ILCompiler
 
             return false;
         }
+
+        /// <summary>
+        /// Wrapper helper function around the IsCanonicalDefinitionType API on the TypeSystemContext
+        /// </summary>
+        public static bool IsCanonicalDefinitionType(this TypeDesc type, CanonicalFormKind kind)
+        {
+            return type.Context.IsCanonicalDefinitionType(type, kind);
+        }
     }
 }

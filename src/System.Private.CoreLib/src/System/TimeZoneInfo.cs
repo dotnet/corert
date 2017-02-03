@@ -5,7 +5,6 @@
 /*============================================================
 **
 **
-**
 ** Purpose: 
 ** This class is used to represent a Dynamic TimeZone.  It
 ** has methods for converting a DateTime between TimeZones.
@@ -17,7 +16,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -45,7 +43,6 @@ namespace System
 
 
     [Serializable]
-    [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
     sealed public partial class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
         // ---- SECTION:  members for internal support ---------*
@@ -989,7 +986,7 @@ namespace System
         //
         // Value equality on the "adjustmentRules" array
         //
-        internal Boolean HasSameRules(TimeZoneInfo other)
+        public Boolean HasSameRules(TimeZoneInfo other)
         {
             if (other == null)
             {
@@ -2601,7 +2598,6 @@ namespace System
         **
         ============================================================*/
         [Serializable]
-        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
         sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
@@ -2910,7 +2906,6 @@ namespace System
         **
         ============================================================*/
         [Serializable]
-        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
         public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*

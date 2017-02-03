@@ -200,14 +200,14 @@ namespace Internal.Runtime.TypeLoader
 
             if (bindResult.Reader != null)
             {
-                ModuleInfo primaryModule = moduleList.GetModuleInfoForMetadataReader(bindResult.Reader);
+                NativeFormatModuleInfo primaryModule = moduleList.GetModuleInfoForMetadataReader(bindResult.Reader);
                 NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(primaryModule);
                 return metadataUnit.GetModule(bindResult.ScopeDefinitionHandle);
             }
 #if ECMA_METADATA_SUPPORT
             else if (bindResult.EcmaMetadataReader != null)
             {
-                ModuleInfo ecmaModule = moduleList.GetModuleInfoForMetadataReader(bindResult.EcmaMetadataReader);
+                EcmaModuleInfo ecmaModule = moduleList.GetModuleInfoForMetadataReader(bindResult.EcmaMetadataReader);
                 return ResolveEcmaModule(ecmaModule);
             }
 #endif

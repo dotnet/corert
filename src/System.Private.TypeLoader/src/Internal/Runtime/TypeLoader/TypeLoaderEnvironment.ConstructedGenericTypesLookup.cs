@@ -297,16 +297,12 @@ namespace Internal.Runtime.TypeLoader
 
             runtimeTypeHandle = default(RuntimeTypeHandle);
 
-            int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
-            var moduleHandles = new System.IntPtr[loadedModuleCount];
-            RuntimeAugments.GetLoadedModules(moduleHandles);
-
             NativeHashtable genericsHashtable;
             ExternalReferencesTable externalReferencesLookup;
 
-            foreach (IntPtr moduleHandle in moduleHandles)
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                if (!GetHashtableFromBlob(moduleHandle, ReflectionMapBlob.GenericsHashtable, out genericsHashtable, out externalReferencesLookup))
+                if (!GetHashtableFromBlob(module, ReflectionMapBlob.GenericsHashtable, out genericsHashtable, out externalReferencesLookup))
                     continue;
 
                 int lookupHashcode = lookupData.LookupHashCode();

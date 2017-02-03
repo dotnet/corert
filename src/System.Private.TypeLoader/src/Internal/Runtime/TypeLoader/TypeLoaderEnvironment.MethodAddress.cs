@@ -132,7 +132,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Attempt a virtual dispatch on a given instanceType based on the method found via a metadata token
         /// </summary>
-        private static bool TryDispatchMethodOnTarget_Inner(ModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
+        private static bool TryDispatchMethodOnTarget_Inner(NativeFormatModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             TypeSystemContext context = TypeSystemContextFactory.Create();
@@ -167,7 +167,7 @@ namespace Internal.Runtime.TypeLoader
         /// Attempt to convert the dispatch cell to a metadata token to a more efficient vtable dispatch or interface/slot dispatch.
         /// Failure to convert is not a correctness issue. We also support performing a dispatch based on metadata token alone.
         /// </summary>
-        private static DispatchCellInfo ConvertDispatchCellInfo_Inner(ModuleInfo module, DispatchCellInfo cellInfo)
+        private static DispatchCellInfo ConvertDispatchCellInfo_Inner(NativeFormatModuleInfo module, DispatchCellInfo cellInfo)
         {
             Debug.Assert(cellInfo.CellType == DispatchCellType.MetadataToken);
 

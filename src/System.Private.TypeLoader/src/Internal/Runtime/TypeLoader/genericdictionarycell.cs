@@ -19,7 +19,7 @@ using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal abstract class GenericDictionaryCell
+    public abstract class GenericDictionaryCell
     {
         abstract internal void Prepare(TypeBuilder builder);
         abstract internal IntPtr Create(TypeBuilder builder);
@@ -39,6 +39,14 @@ namespace Internal.Runtime.TypeLoader
             if (RuntimeAugments.IsNullable(th))
                 th = builder.GetRuntimeTypeHandle(((DefType)type).Instantiation[0]);
             return th;
+        }
+
+
+        public static GenericDictionaryCell CreateTypeHandleCell(TypeDesc type)
+        {
+            TypeHandleCell typeCell = new TypeHandleCell();
+            typeCell.Type = type;
+            return typeCell;
         }
 
         private class TypeHandleCell : GenericDictionaryCell
@@ -499,6 +507,40 @@ namespace Internal.Runtime.TypeLoader
                 return TypeLoaderEnvironment.Instance.TryGetTlsOffsetDictionaryCellForType(builder.GetRuntimeTypeHandle(Type));
             }
         }
+
+        public static GenericDictionaryCell CreateIntPtrCell(IntPtr ptrValue)
+        {
+            IntPtrCell typeCell = new IntPtrCell();
+            typeCell.Value = ptrValue;
+            return typeCell;
+        }
+
+        private class IntPtrCell : GenericDictionaryCell
+        {
+            internal IntPtr Value;
+            internal unsafe override void Prepare(TypeBuilder builder)
+            {
+            }
+
+            internal unsafe override IntPtr Create(TypeBuilder builder)
+            {
+                return Value;
+            }
+        }
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        public static GenericDictionaryCell CreateExactCallableMethodCell(MethodDesc method)
+        {
+            MethodCell methodCell = new MethodCell();
+            methodCell.Method = method;
+            if (!RuntimeSignatureHelper.TryCreate(method, out methodCell.MethodSignature))
+            {
+                Environment.FailFast("Unable to create method signature, for method reloc");
+            }
+            methodCell.ExactCallableAddressNeeded = true;
+            return methodCell;
+        }
+#endif
 
         private class MethodCell : GenericDictionaryCell
         {

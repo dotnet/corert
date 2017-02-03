@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -62,6 +64,13 @@ namespace Internal.Runtime.TypeLoader
         Statics = 2,
     }
 
+    public static class TypeBuilderApi
+    {
+        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
+        {
+            TypeBuilder.ResolveMultipleCells(cells, out fixups);
+        }
+    }
 
 
     internal class TypeBuilder
@@ -385,7 +394,7 @@ namespace Internal.Runtime.TypeLoader
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             uint r2rNativeLayoutInfoToken;
             GenericDictionaryCell[] cells = null;
-            ModuleInfo r2rNativeLayoutModuleInfo;
+            NativeFormatModuleInfo r2rNativeLayoutModuleInfo;
 
             if ((new TemplateLocator()).TryGetMetadataNativeLayout(nonTemplateMethod, out r2rNativeLayoutModuleInfo, out r2rNativeLayoutInfoToken))
             {
@@ -428,7 +437,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             uint nativeLayoutInfoToken;
-            ModuleInfo nativeLayoutModule;
+            NativeFormatModuleInfo nativeLayoutModule;
             MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
 
             // If the templateMethod found in the static image is missing or universal, see if the R2R layout
@@ -1641,7 +1650,7 @@ namespace Internal.Runtime.TypeLoader
 
             GenericContextKind contextKind = (GenericContextKind)parser.GetUnsigned();
 
-            ModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+            NativeFormatModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
 
             NativeLayoutInfoLoadContext nlilContext = new NativeLayoutInfoLoadContext();
             nlilContext._module = moduleInfo;
@@ -1925,6 +1934,23 @@ namespace Internal.Runtime.TypeLoader
             fixupResolution = cell.Create(this);
         }
 
+        private void ResolveMultipleCells_Worker(GenericDictionaryCell[] cells, out IntPtr[] fixups)
+        {
+            foreach (var cell in cells)
+            {
+                cell.Prepare(this);
+            }
+
+            // Process the pending types
+            ProcessTypesNeedingPreparation();
+            FinishTypeAndMethodBuilding();
+
+            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
+            fixups = new IntPtr[cells.Length];
+            for (int i = 0; i < fixups.Length; i++)
+                fixups[i] = cells[i].Create(this);
+        }
+
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         private void ResolveSingleMetadataFixup(NativeFormatMetadataUnit module, Handle token, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
@@ -1935,7 +1961,7 @@ namespace Internal.Runtime.TypeLoader
             ResolveSingleCell_Worker(cell, out fixupResolution);
         }
 
-        public static bool TryResolveSingleMetadataFixup(IntPtr module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
+        public static bool TryResolveSingleMetadataFixup(NativeFormatModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
@@ -1946,11 +1972,28 @@ namespace Internal.Runtime.TypeLoader
 
             return true;
         }
+
+        public static void ResolveSingleTypeDefinition(QTypeDefinition qTypeDefinition, out IntPtr typeHandle)
+        {
+            TypeSystemContext context = TypeSystemContextFactory.Create();
+
+            TypeDesc type = context.GetTypeDescFromQHandle(qTypeDefinition);
+            GenericDictionaryCell cell = GenericDictionaryCell.CreateTypeHandleCell(type);
+
+            new TypeBuilder().ResolveSingleCell_Worker(cell, out typeHandle);
+
+            TypeSystemContextFactory.Recycle(context);
+        }
 #endif
 
         internal static void ResolveSingleCell(GenericDictionaryCell cell, out IntPtr fixupResolution)
         {
             new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
+        }
+
+        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
+        {
+            new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }
 
         public static IntPtr BuildGenericLookupTarget(IntPtr typeContext, IntPtr signature, out IntPtr auxResult)

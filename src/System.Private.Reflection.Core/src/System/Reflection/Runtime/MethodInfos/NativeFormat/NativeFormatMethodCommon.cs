@@ -197,6 +197,14 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             }
         }
 
+        public int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         //
         // Returns the ParameterInfo objects for the method parameters and return parameter.
         //

@@ -110,6 +110,14 @@ namespace System.Reflection.Runtime.TypeInfos
             return _key.ElementType.ToString() + Suffix;
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return 0x02000000; // nil TypeDef token
+            }
+        }
+
         //
         // Left unsealed because this implemention is correct for ByRefs and Pointers but not Arrays.
         //

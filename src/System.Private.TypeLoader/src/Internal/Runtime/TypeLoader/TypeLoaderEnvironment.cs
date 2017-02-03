@@ -289,6 +289,14 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the native layout info reader
         //
+        internal unsafe NativeReader GetNativeLayoutInfoReader(NativeFormatModuleInfo module)
+        {
+            return GetNativeLayoutInfoReader(module.Handle);
+        }
+
+        //
+        // Returns the native layout info reader
+        //
         internal unsafe NativeReader GetNativeLayoutInfoReader(IntPtr moduleHandle)
         {
             Debug.Assert(moduleHandle != IntPtr.Zero);
@@ -496,7 +504,7 @@ namespace Internal.Runtime.TypeLoader
 
         // get the generics hash table and external references table for a module
         // TODO multi-file: consider whether we want to cache this info
-        private unsafe bool GetHashtableFromBlob(IntPtr moduleHandle, ReflectionMapBlob blobId, out NativeHashtable hashtable, out ExternalReferencesTable externalReferencesLookup)
+        private unsafe bool GetHashtableFromBlob(NativeFormatModuleInfo module, ReflectionMapBlob blobId, out NativeHashtable hashtable, out ExternalReferencesTable externalReferencesLookup)
         {
             byte* pBlob;
             uint cbBlob;
@@ -504,7 +512,7 @@ namespace Internal.Runtime.TypeLoader
             hashtable = default(NativeHashtable);
             externalReferencesLookup = default(ExternalReferencesTable);
 
-            if (!RuntimeAugments.FindBlob(moduleHandle, (int)blobId, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+            if (!module.TryFindBlob(blobId, out pBlob, out cbBlob))
                 return false;
 
             NativeReader reader = new NativeReader(pBlob, cbBlob);
@@ -512,7 +520,7 @@ namespace Internal.Runtime.TypeLoader
 
             hashtable = new NativeHashtable(parser);
 
-            return externalReferencesLookup.InitializeNativeReferences(moduleHandle);
+            return externalReferencesLookup.InitializeNativeReferences(module);
         }
 
         public static unsafe void GetFieldAlignmentAndSize(RuntimeTypeHandle fieldType, out int alignment, out int size)
@@ -625,7 +633,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 try
                 {
-                    return TypeBuilder.TryResolveSingleMetadataFixup(module, metadataToken, fixupKind, out fixupResolution);
+                    return TypeBuilder.TryResolveSingleMetadataFixup((NativeFormatModuleInfo)module, metadataToken, fixupKind, out fixupResolution);
                 }
                 catch (Exception ex)
                 {
@@ -643,7 +651,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
         }
 
-        public bool TryDispatchMethodOnTarget(ModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
+        public bool TryDispatchMethodOnTarget(NativeFormatModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
         {
             using (LockHolder.Hold(_typeLoaderLock))
             {
@@ -656,7 +664,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        internal DispatchCellInfo ConvertDispatchCellInfo(ModuleInfo module, DispatchCellInfo cellInfo)
+        internal DispatchCellInfo ConvertDispatchCellInfo(NativeFormatModuleInfo module, DispatchCellInfo cellInfo)
         {
             using (LockHolder.Hold(_typeLoaderLock))
             {
@@ -683,27 +691,18 @@ namespace Internal.Runtime.TypeLoader
             {
                 return true;
             }
+
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            ModuleInfo module = null;
-            
-            if (qTypeDefinition.IsNativeFormatMetadataBased)
-                module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.NativeFormatReader);
-#if ECMA_METADATA_SUPPORT
-            else
-                module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.EcmaFormatReader);
-#endif
-            IntPtr runtimeTypeHandleAsIntPtr;
-            if (TryResolveSingleMetadataFixup(
-                module,
-                qTypeDefinition.Token,
-                MetadataFixupKind.TypeHandle,
-                out runtimeTypeHandleAsIntPtr))
+            using (LockHolder.Hold(_typeLoaderLock))
             {
+                IntPtr runtimeTypeHandleAsIntPtr;
+                TypeBuilder.ResolveSingleTypeDefinition(qTypeDefinition, out runtimeTypeHandleAsIntPtr);
                 runtimeTypeHandle = *(RuntimeTypeHandle*)&runtimeTypeHandleAsIntPtr;
                 return true;
             }
-#endif
+#else
             return false;
+#endif
         }
     }
 }

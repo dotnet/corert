@@ -23,7 +23,7 @@ namespace Internal.Runtime.TypeLoader
     internal struct NativeLayoutInfo
     {
         public uint Offset;
-        public ModuleInfo Module;
+        public NativeFormatModuleInfo Module;
         public NativeReader Reader;
         public NativeLayoutInfoLoadContext LoadContext;
     }

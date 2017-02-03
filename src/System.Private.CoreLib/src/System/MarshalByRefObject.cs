@@ -4,10 +4,27 @@
 
 namespace System
 {
+    [Serializable]
     public abstract class MarshalByRefObject
     {
         protected MarshalByRefObject()
         {
+        }
+
+        public object GetLifetimeService()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public virtual object InitializeLifetimeService()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        protected MarshalByRefObject MemberwiseClone(bool cloneIdentity)
+        {
+            MarshalByRefObject mbr = (MarshalByRefObject)base.MemberwiseClone();
+            return mbr;
         }
     }
 }

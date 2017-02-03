@@ -78,6 +78,14 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _backingParameter.MetadataToken;
+            }
+        }
+
         private readonly RuntimeParameterInfo _backingParameter;
     }
 }

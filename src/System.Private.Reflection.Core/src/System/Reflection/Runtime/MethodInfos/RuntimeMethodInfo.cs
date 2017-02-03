@@ -191,12 +191,9 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override MethodInfo MakeGenericMethod(params Type[] typeArguments);
 
-        public sealed override int MetadataToken
+        public abstract override int MetadataToken
         {
-            get
-            {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-            }
+            get;
         }
 
         public abstract override MethodImplAttributes MethodImplementationFlags

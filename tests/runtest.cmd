@@ -103,11 +103,17 @@ if /i "%__BuildType%"=="Debug" (
 
 echo. > %__CoreRTTestBinDir%\testResults.tmp
 
+rem Hacky filtering to prevent shared generics and unshared generics from mixing
+set __Filter=
+if /i "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
+    set __Filter=^^^| findstr /V Generics
+)
+
 set /a __CppTotalTests=0
 set /a __CppPassedTests=0
 set /a __JitTotalTests=0
 set /a __JitPassedTests=0
-for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\*') do (
+for /f "delims=" %%a in ('cmd /c dir /s /aD /b %CoreRT_TestRoot%\src\* %__Filter%') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!

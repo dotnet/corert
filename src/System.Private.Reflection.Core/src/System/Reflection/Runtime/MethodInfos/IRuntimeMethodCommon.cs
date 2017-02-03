@@ -53,5 +53,7 @@ namespace System.Reflection.Runtime.MethodInfos
         TRuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod { get; }
 
         RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<TRuntimeMethodCommon> owningMethod);
+
+        int MetadataToken { get; }
     }
 }

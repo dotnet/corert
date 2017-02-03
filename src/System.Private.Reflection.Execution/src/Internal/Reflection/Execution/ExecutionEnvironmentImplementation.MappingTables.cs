@@ -131,7 +131,7 @@ namespace Internal.Reflection.Execution
             return staticFieldAddress;
         }
 
-        private static unsafe NativeReader GetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob)
+        private static unsafe NativeReader GetNativeReaderForBlob(NativeFormatModuleInfo module, ReflectionMapBlob blob)
         {
             NativeReader reader;
             if (TryGetNativeReaderForBlob(module, blob, out reader))
@@ -143,12 +143,12 @@ namespace Internal.Reflection.Execution
             return default(NativeReader);
         }
 
-        private static unsafe bool TryGetNativeReaderForBlob(IntPtr module, ReflectionMapBlob blob, out NativeReader reader)
+        private static unsafe bool TryGetNativeReaderForBlob(NativeFormatModuleInfo module, ReflectionMapBlob blob, out NativeReader reader)
         {
             byte* pBlob;
             uint cbBlob;
 
-            if (RuntimeAugments.FindBlob(module, (int)blob, (IntPtr)(&pBlob), (IntPtr)(&cbBlob)))
+            if (module.TryFindBlob((int)blob, out pBlob, out cbBlob))
             {
                 reader = new NativeReader(pBlob, cbBlob);
                 return true;
@@ -188,12 +188,13 @@ namespace Internal.Reflection.Execution
             runtimeTypeHandle = GetTypeDefinition(runtimeTypeHandle);
 
             var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(runtimeTypeHandle);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
 
-            NativeReader blockedReflectionReader = GetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.BlockReflectionTypeMap);
+            NativeReader blockedReflectionReader = GetNativeReaderForBlob(module, ReflectionMapBlob.BlockReflectionTypeMap);
             NativeParser blockedReflectionParser = new NativeParser(blockedReflectionReader, 0);
             NativeHashtable blockedReflectionHashtable = new NativeHashtable(blockedReflectionParser);
             ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-            externalReferences.InitializeCommonFixupsTable(moduleHandle);
+            externalReferences.InitializeCommonFixupsTable(module);
 
             int hashcode = runtimeTypeHandle.GetHashCode();
             var lookup = blockedReflectionHashtable.Lookup(hashcode);
@@ -498,7 +499,7 @@ namespace Internal.Reflection.Execution
         // Get the pointers necessary to call a dynamic method invocation function
         //
         // This is either a function pointer to call, or a function pointer and template token.
-        private unsafe void GetDynamicMethodInvokeMethodInfo(IntPtr moduleHandle, uint cookie, RuntimeTypeHandle[] argHandles,
+        private unsafe void GetDynamicMethodInvokeMethodInfo(NativeFormatModuleInfo module, uint cookie, RuntimeTypeHandle[] argHandles,
             out IntPtr dynamicInvokeMethod, out IntPtr dynamicInvokeMethodGenericDictionary)
         {
             if ((cookie & 1) == 1)
@@ -507,39 +508,40 @@ namespace Internal.Reflection.Execution
                 // the matching template so that we can instantiate it. The DynamicInvokeTemplateData table starts with a single UINT
                 // with the RVA of the type that hosts all DynamicInvoke methods. The table then follows with list of [Token, FunctionPointer]
                 // pairs. The cookie parameter is an index into this table and points to a single pair.
-                uint* pBlob;
+                byte* pBlobAsBytes;
                 uint cbBlob;
-                bool success = RuntimeAugments.FindBlob(moduleHandle, (int)ReflectionMapBlob.DynamicInvokeTemplateData, (IntPtr)(&pBlob), (IntPtr)(&cbBlob));
+                bool success = module.TryFindBlob((int)ReflectionMapBlob.DynamicInvokeTemplateData, out pBlobAsBytes, out cbBlob);
+                uint* pBlob = (uint*)pBlobAsBytes;
                 Debug.Assert(success && cbBlob > 4);
 
                 byte* pNativeLayoutInfoBlob;
                 uint cbNativeLayoutInfoBlob;
-                success = RuntimeAugments.FindBlob(moduleHandle, (int)ReflectionMapBlob.NativeLayoutInfo, new IntPtr(&pNativeLayoutInfoBlob), new IntPtr(&cbNativeLayoutInfoBlob));
+                success = module.TryFindBlob((int)ReflectionMapBlob.NativeLayoutInfo, out pNativeLayoutInfoBlob, out cbNativeLayoutInfoBlob);
                 Debug.Assert(success);
 
                 // All methods referred from this blob are contained in the same type. The first UINT in the blob is the RVA of that EEType
-                RuntimeTypeHandle declaringTypeHandle = RvaToRuntimeTypeHandle(moduleHandle, pBlob[0]);
+                RuntimeTypeHandle declaringTypeHandle = RvaToRuntimeTypeHandle(module.Handle, pBlob[0]);
 
                 // The index points to two entries: the token of the dynamic invoke method and the function pointer to the canonical method
                 // Now have the type loader build or locate a dictionary for this method
                 uint index = cookie >> 1;
 
                 MethodNameAndSignature nameAndSignature;
-                RuntimeSignature nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, pBlob[index]);
+                RuntimeSignature nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, pBlob[index]);
                 success = TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutSignature(nameAndSigSignature, out nameAndSignature);
                 Debug.Assert(success);
 
                 success = TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(declaringTypeHandle, argHandles, nameAndSignature, out dynamicInvokeMethodGenericDictionary);
                 Debug.Assert(success);
 
-                dynamicInvokeMethod = RvaToFunctionPointer(moduleHandle, pBlob[index + 1]);
+                dynamicInvokeMethod = RvaToFunctionPointer(module.Handle, pBlob[index + 1]);
             }
             else
             {
                 // Nongeneric DynamicInvoke method. This is used to DynamicInvoke methods that have parameters that
                 // cannot be shared (or if there are no parameters to begin with).
                 ExternalReferencesTable extRefs = default(ExternalReferencesTable);
-                extRefs.InitializeCommonFixupsTable(moduleHandle);
+                extRefs.InitializeCommonFixupsTable(module);
 
                 dynamicInvokeMethod = extRefs.GetFunctionPointerFromIndex(cookie >> 1);
                 dynamicInvokeMethodGenericDictionary = IntPtr.Zero;
@@ -599,12 +601,12 @@ namespace Internal.Reflection.Execution
             return result;
         }
 
-        private IntPtr TryGetVirtualResolveData(IntPtr moduleHandle,
+        private IntPtr TryGetVirtualResolveData(NativeFormatModuleInfo module,
             RuntimeTypeHandle methodHandleDeclaringType, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericArgs,
             ref MethodSignatureComparer methodSignatureComparer)
         {
             TypeLoaderEnvironment.VirtualResolveDataResult lookupResult;
-            bool success = TypeLoaderEnvironment.TryGetVirtualResolveData(moduleHandle, methodHandleDeclaringType, genericArgs, ref methodSignatureComparer, out lookupResult);
+            bool success = TypeLoaderEnvironment.TryGetVirtualResolveData(module, methodHandleDeclaringType, genericArgs, ref methodSignatureComparer, out lookupResult);
             if (!success)
                 return IntPtr.Zero;
             else
@@ -712,7 +714,7 @@ namespace Internal.Reflection.Execution
             IntPtr resolver = IntPtr.Zero;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.HasVirtualInvoke) != 0)
             {
-                resolver = TryGetVirtualResolveData(ModuleList.Instance.GetModuleForMetadataReader(methodHandle.NativeFormatReader),
+                resolver = TryGetVirtualResolveData(ModuleList.Instance.GetModuleInfoForMetadataReader(methodHandle.NativeFormatReader),
                     declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
                     ref methodSignatureComparer);
 
@@ -872,11 +874,11 @@ namespace Internal.Reflection.Execution
 
         // ldftn reverse lookup hash. Must be cleared and reset if the module list changes. (All sets to
         // this variable must happen under a lock)
-        private volatile KeyValuePair<IntPtr, FunctionPointersToOffsets>[] _ldftnReverseLookup = null;
+        private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup = null;
 
-        private KeyValuePair<IntPtr, FunctionPointersToOffsets>[] GetLdFtnReverseLookups()
+        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups()
         {
-            KeyValuePair<IntPtr, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup;
+            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup;
 
             if (ldFtnReverseLookup != null)
                 return ldFtnReverseLookup;
@@ -894,20 +896,20 @@ namespace Internal.Reflection.Execution
                     while (true)
                     {
                         int size = 0;
-                        foreach (IntPtr module in ModuleList.Enumerate())
+                        foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                         {
                             size++;
                         }
 
-                        ldFtnReverseLookup = new KeyValuePair<IntPtr, FunctionPointersToOffsets>[size];
+                        ldFtnReverseLookup = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[size];
                         int index = 0;
-                        foreach (IntPtr module in ModuleList.Enumerate())
+                        foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                         {
                             // If the module list changes during execution of this code, rebuild from scratch
                             if (index >= ldFtnReverseLookup.Length)
                                 continue;
 
-                            ldFtnReverseLookup[index] = new KeyValuePair<IntPtr, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookupLookup(module));
+                            ldFtnReverseLookup[index] = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookupLookup(module));
                             index++;
                         }
 
@@ -952,7 +954,7 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            foreach (KeyValuePair<IntPtr, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups())
+            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups())
             {
                 int startIndex;
                 int endIndex;
@@ -973,7 +975,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private FunctionPointersToOffsets ComputeLdftnReverseLookupLookup(IntPtr mappingTableModule)
+        private FunctionPointersToOffsets ComputeLdftnReverseLookupLookup(NativeFormatModuleInfo mappingTableModule)
         {
             FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = new FunctionPointersToOffsets();
 
@@ -1017,7 +1019,7 @@ namespace Internal.Reflection.Execution
             return functionPointerToOffsetInInvokeMap;
         }
 
-        private unsafe bool TryGetMethodForOriginalLdFtnResult_Inner(IntPtr mappingTableModule, IntPtr canonOriginalLdFtnResult, IntPtr instantiationArgument, uint parserOffset, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        private unsafe bool TryGetMethodForOriginalLdFtnResult_Inner(NativeFormatModuleInfo mappingTableModule, IntPtr canonOriginalLdFtnResult, IntPtr instantiationArgument, uint parserOffset, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             methodHandle = default(QMethodDefinition);
             genericMethodTypeArgumentHandles = null;
@@ -1096,7 +1098,7 @@ namespace Internal.Reflection.Execution
             {
                 uint nameAndSigOffset = externalReferences.GetExternalNativeLayoutOffset(entryMethodHandleOrNameAndSigRaw);
                 MethodNameAndSignature nameAndSig;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule, nameAndSigOffset, out nameAndSig))
+                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule.Handle, nameAndSigOffset, out nameAndSig))
                 {
                     Debug.Assert(false);
                     return false;
