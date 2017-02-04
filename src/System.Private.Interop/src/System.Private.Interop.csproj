@@ -22,13 +22,11 @@
     </ProjectReference>    
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll">
-      <Aliases>CoreFX_Collections</Aliases>
-    </ReferencePath>
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Debug.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Debug.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Threading.Tasks.dll" />    
   </ItemGroup>
  
@@ -39,7 +37,6 @@
   <!-- TODO  We should not include anything from CompilerServices directly -->
   <ItemGroup>
     <Compile Include="TypeForwarders.cs" />
-    <Compile Include="System\RhBaseName.cs" />
     <Compile Include="System\Runtime\CompilerServices\UnmanagedValueTypeConstraintAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\McgResource.cs" />
     <Compile Include="System\Runtime\CompilerServices\ModuleConstructorAttribute.cs" />

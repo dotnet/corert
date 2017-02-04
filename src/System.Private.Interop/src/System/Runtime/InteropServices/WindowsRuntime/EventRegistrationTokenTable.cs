@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#if !CORECLR
-extern alias CoreFX_Collections;
-#endif
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +14,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     public sealed class EventRegistrationTokenTable<T> where T : class
     {
         // Note this dictionary is also used as the synchronization object for this table
-        private CoreFX_Collections::System.Collections.Generic.Dictionary<EventRegistrationToken, T> m_tokens = new CoreFX_Collections::System.Collections.Generic.Dictionary<EventRegistrationToken, T>();
+        private System.Collections.Generic.Dictionary<EventRegistrationToken, T> m_tokens = new System.Collections.Generic.Dictionary<EventRegistrationToken, T>();
 
         // Cached multicast delegate which will invoke all of the currently registered delegates.  This
         // will be accessed frequently in common coding paterns, so we don't want to calculate it repeatedly.
