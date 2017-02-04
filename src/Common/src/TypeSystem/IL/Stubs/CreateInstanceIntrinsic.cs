@@ -40,7 +40,7 @@ namespace Internal.IL.Stubs
                 else
                 {
                     var missingCtor = type.Context.SystemModule.GetKnownType("System", "Activator").
-                        GetNestedType("ClassWithMissingConstructor").GetDefaultConstructor();
+                        GetNestedType("ClassWithMissingConstructor").GetParameterlessConstructor();
 
                     codeStream.Emit(ILOpcode.newobj, emitter.NewToken(missingCtor));
                 }

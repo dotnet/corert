@@ -47,8 +47,8 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.DefinedSymbols.Add(this);
-            builder.RequirePointerAlignment();
+            builder.AddSymbol(this);
+            builder.RequireInitialPointerAlignment();
 
             // Node representing the generic dictionary doesn't have any dependencies for
             // dependency analysis purposes. The dependencies are tracked as dependencies of the
@@ -146,7 +146,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class MethodGenericDictionaryNode : GenericDictionaryNode
+    public sealed class MethodGenericDictionaryNode : GenericDictionaryNode
     {
         private MethodDesc _owningMethod;
 

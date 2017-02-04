@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    internal class NonGCStaticsNode : ObjectNode, ISymbolNode
+    public class NonGCStaticsNode : ObjectNode, ISymbolNode
     {
         private MetadataType _type;
 
@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(_type.Context.Target));
                 int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);
-                builder.RequireAlignment(alignmentRequired);
+                builder.RequireInitialAlignment(alignmentRequired);
                 
                 Debug.Assert(classConstructorContextStorageSize >= GetClassConstructorContextSize(_type.Context.Target));
 
@@ -103,11 +103,11 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireAlignment(_type.NonGCStaticFieldAlignment);
+                builder.RequireInitialAlignment(_type.NonGCStaticFieldAlignment);
             }
 
             builder.EmitZeros(_type.NonGCStaticFieldSize);
-            builder.DefinedSymbols.Add(this);
+            builder.AddSymbol(this);
 
             return builder.ToObjectData();
         }

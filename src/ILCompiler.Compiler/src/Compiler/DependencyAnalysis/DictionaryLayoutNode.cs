@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             _layout = layout;
         }
 
-        public int GetSlotForEntry(GenericLookupResult entry)
+        public virtual int GetSlotForEntry(GenericLookupResult entry)
         {
             if (_layout == null)
                 ComputeLayout();
@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public IEnumerable<GenericLookupResult> Entries
+        public virtual IEnumerable<GenericLookupResult> Entries
         {
             get
             {

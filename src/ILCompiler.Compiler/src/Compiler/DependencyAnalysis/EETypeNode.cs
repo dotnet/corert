@@ -58,11 +58,11 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    internal partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
+    public partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
     {
         protected TypeDesc _type;
-        protected EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
-        protected EETypeOptionalFieldsNode _optionalFieldsNode;
+        internal EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        internal EETypeOptionalFieldsNode _optionalFieldsNode;
 
         public EETypeNode(NodeFactory factory, TypeDesc type)
         {
@@ -156,8 +156,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.Alignment = objData.TargetPointerSize;
-            objData.DefinedSymbols.Add(this);
+            objData.RequireInitialPointerAlignment();
+            objData.AddSymbol(this);
 
             ComputeOptionalEETypeFields(factory, relocsOnly);
 

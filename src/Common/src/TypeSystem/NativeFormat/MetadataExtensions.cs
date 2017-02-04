@@ -164,6 +164,18 @@ namespace Internal.TypeSystem.NativeFormat
             return (flags & NestedMask) != 0;
         }
 
+
+        public static bool IsRuntimeSpecialName(this MethodAttributes flags)
+        {
+            return (flags & (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName))
+                == (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+        }
+
+        public static bool IsPublic(this MethodAttributes flags)
+        {
+            return (flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
+        }
+
         /// <summary>
         /// Convert a metadata Handle to a integer (that can be round-tripped back into a handle)
         /// </summary>

@@ -1038,7 +1038,7 @@ namespace Internal.TypeSystem.Interop
                 var nativeType = PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr).MakeByRefType();
                 var vOutValue = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr));
                 var vSafeHandle = emitter.NewLocal(resolvedType);
-                marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(resolvedType.GetDefaultConstructor()));
+                marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(resolvedType.GetParameterlessConstructor()));
                 marshallingCodeStream.EmitStLoc(vSafeHandle);
                 marshallingCodeStream.EmitLdLoca(vOutValue);
 
@@ -1087,7 +1087,7 @@ namespace Internal.TypeSystem.Interop
             var vSafeHandle = emitter.NewLocal(ManagedParameterType);
             var vReturnValue = emitter.NewLocal(NativeParameterType);
 
-            marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(ManagedParameterType.GetDefaultConstructor()));
+            marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(ManagedParameterType.GetParameterlessConstructor()));
             marshallingCodeStream.EmitStLoc(vSafeHandle);
 
             returnValueMarshallingCodeStream.EmitStLoc(vReturnValue);

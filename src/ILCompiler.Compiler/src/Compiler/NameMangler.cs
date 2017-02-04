@@ -33,7 +33,7 @@ namespace ILCompiler
 
         public string CompilationUnitPrefix
         {
-            set { _compilationUnitPrefix = value; }
+            set { _compilationUnitPrefix = SanitizeNameWithHash(value); }
             get
             {
                 System.Diagnostics.Debug.Assert(_compilationUnitPrefix != null);
@@ -95,6 +95,25 @@ namespace ILCompiler
             return _mangleForCplusPlus
                 ? sanitizedName.Replace(EnterNameScopeSequence, "_AA_").Replace(ExitNameScopeSequence, "_VV_")
                 : sanitizedName;
+        }
+
+        private string SanitizeNameWithHash(string literal)
+        {
+            string mangledName = SanitizeName(literal);
+
+            if (mangledName.Length > 30)
+                mangledName = mangledName.Substring(0, 30);
+
+            if (mangledName != literal)
+            {
+                if (_sha256 == null)
+                    _sha256 = SHA256.Create();
+
+                var hash = _sha256.ComputeHash(Encoding.UTF8.GetBytes(literal));
+                mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
+            }
+
+            return mangledName;
         }
 
         /// <summary>
@@ -416,24 +435,7 @@ namespace ILCompiler
             if (_mangledStringLiterals.TryGetValue(literal, out mangledName))
                 return mangledName;
 
-            return ComputeMangledStringLiteralName(literal);
-        }
-
-        private string ComputeMangledStringLiteralName(string literal)
-        {
-            string mangledName = SanitizeName(literal);
-
-            if (mangledName.Length > 30)
-                mangledName = mangledName.Substring(0, 30);
-
-            if (mangledName != literal)
-            {
-                if (_sha256 == null)
-                    _sha256 = SHA256.Create();
-                
-                var hash = _sha256.ComputeHash(Encoding.UTF8.GetBytes(literal));
-                mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
-            }
+            mangledName = SanitizeNameWithHash(literal);
 
             lock (this)
             {

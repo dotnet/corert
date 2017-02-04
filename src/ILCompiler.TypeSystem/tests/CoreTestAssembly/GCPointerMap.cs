@@ -36,6 +36,28 @@ namespace GCPointerMap
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    struct Struct4GcPointers
+    {
+        public object o1;
+        public object o2;
+        public object o3;
+        public object o4;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct Struct32GcPointers
+    {
+        public Struct4GcPointers x1;
+        public Struct4GcPointers x2;
+        public Struct4GcPointers x3;
+        public Struct4GcPointers x4;
+        public Struct4GcPointers x5;
+        public Struct4GcPointers x6;
+        public Struct4GcPointers x7;
+        public Struct4GcPointers x8;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     struct StructWithSameGCLayoutAsMixedStruct
     {
         MixedStruct s;

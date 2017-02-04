@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
-            builder.RequirePointerAlignment();
+            builder.RequireInitialPointerAlignment();
 
             // At runtime, an instance of the GCStaticEEType will be created and a GCHandle to it
             // will be written in this location.

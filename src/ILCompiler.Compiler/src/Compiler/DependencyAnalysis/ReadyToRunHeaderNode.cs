@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        internal void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol = null)
+        public void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol = null)
         {
             _items.Add(new HeaderItem(id, node, startSymbol, endSymbol));
         }
@@ -67,8 +67,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.Alignment = factory.Target.PointerSize;
-            builder.DefinedSymbols.Add(this);
+            builder.RequireInitialPointerAlignment();
+            builder.AddSymbol(this);
 
             // Don't bother sorting if we're not emitting the contents
             if (!relocsOnly)

@@ -395,10 +395,35 @@ namespace Internal.TypeSystem.NativeFormat
             foreach (var handle in _typeDefinition.Methods)
             {
                 var methodDefinition = metadataReader.GetMethod(handle);
-                if ((methodDefinition.Flags & MethodAttributes.SpecialName) != 0 &&
+                if (methodDefinition.Attributes.IsRuntimeSpecialName() &&
                     methodDefinition.Name.StringEquals(".cctor", metadataReader))
                 {
                     MethodDesc method = (MethodDesc)_metadataUnit.GetMethod(handle, this);
+                    return method;
+                }
+            }
+
+            return null;
+        }
+
+        public override MethodDesc GetDefaultConstructor()
+        {
+            if (IsAbstract)
+                return null;
+
+            MetadataReader metadataReader = this.MetadataReader;
+
+            foreach (var handle in _typeDefinition.Methods)
+            {
+                var methodDefinition = metadataReader.GetMethod(handle);
+                MethodAttributes attributes = methodDefinition.Attributes;
+                if (attributes.IsRuntimeSpecialName() && attributes.IsPublic() &&
+                    methodDefinition.Name.StringEquals(".ctor", metadataReader))
+                {
+                    MethodDesc method = (MethodDesc)_metadataUnit.GetMethod(handle, this);
+                    if (method.Signature.Length != 0)
+                        continue;
+
                     return method;
                 }
             }
@@ -589,6 +614,14 @@ namespace Internal.TypeSystem.NativeFormat
             get
             {
                 return (_typeDefinition.Flags & TypeAttributes.Sealed) != 0;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return (_typeDefinition.Flags & TypeAttributes.Abstract) != 0;
             }
         }
     }

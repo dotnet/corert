@@ -54,8 +54,8 @@ namespace ILCompiler.DependencyAnalysis
 
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
 
-            objData.Alignment = objData.TargetPointerSize;
-            objData.DefinedSymbols.Add(this);
+            objData.RequireInitialPointerAlignment();
+            objData.AddSymbol(this);
 
             objData.EmitPointerReloc(factory.TypeManagerIndirection);
             objData.EmitNaturalInt(_nativeSignature.SavedVertex.VertexOffset);

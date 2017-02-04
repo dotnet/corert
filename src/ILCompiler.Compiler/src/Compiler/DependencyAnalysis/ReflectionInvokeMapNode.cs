@@ -82,8 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
                     flags |= InvokeTableFlags.RequiresInstArg;
 
-                // TODO: better check for default public(!) constructor
-                if (method.IsConstructor && method.Signature.Length == 0)
+                if (method.IsDefaultConstructor)
                     flags |= InvokeTableFlags.IsDefaultConstructor;
 
                 // TODO: HasVirtualInvoke
@@ -107,7 +106,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Only store the offset portion of the metadata handle to get better integer compression
                     vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataGeneration.MetadataOffsetMask)));
+                        writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataManager.MetadataOffsetMask)));
                 }
                 else
                 {

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'"/>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -25,7 +25,7 @@
       <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
     </PackageDestination>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj">
       <Project>{dac23e9f-f826-4577-ae7a-0849ff83280c}</Project>
       <Name>ILCompiler.DependencyAnalysisFramework</Name>
@@ -103,6 +103,7 @@
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeGVMEntriesNode.cs" />
@@ -171,6 +172,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GCStaticDescNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
@@ -187,9 +189,13 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsIndexNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsOffsetNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeThreadStaticIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\UtcDictionaryLayoutNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\UtcNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
@@ -214,7 +220,8 @@
     <Compile Include="Compiler\LibraryRootProvider.cs" />
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
-    <Compile Include="Compiler\MetadataGeneration.cs" />
+    <Compile Include="Compiler\CompilerGeneratedMetadataManager.cs" />
+    <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
@@ -333,5 +340,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'"/>
 </Project>

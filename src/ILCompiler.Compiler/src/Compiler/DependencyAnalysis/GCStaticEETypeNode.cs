@@ -62,8 +62,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
-            dataBuilder.Alignment = 16;
-            dataBuilder.DefinedSymbols.Add(this);
+            dataBuilder.RequireInitialPointerAlignment();
+            dataBuilder.AddSymbol(this);
 
             // +2 for SyncBlock and EETypePtr field
             int totalSize = (_gcMap.Size + 2) * _target.PointerSize;

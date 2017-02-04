@@ -346,6 +346,18 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a public parameterless instance constructor
+        /// on a non-abstract type.
+        /// </summary>
+        public virtual bool IsDefaultConstructor
+        {
+            get
+            {
+                return OwningType.GetDefaultConstructor() == this;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this method is a static constructor.
         /// </summary>
         public bool IsStaticConstructor

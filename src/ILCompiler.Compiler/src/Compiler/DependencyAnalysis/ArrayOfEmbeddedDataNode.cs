@@ -31,8 +31,8 @@ namespace ILCompiler.DependencyAnalysis
             _sorter = nodeSorter;
         }
 
-        internal ObjectAndOffsetSymbolNode StartSymbol => _startSymbol;
-        internal ObjectAndOffsetSymbolNode EndSymbol => _endSymbol;
+        public ObjectAndOffsetSymbolNode StartSymbol => _startSymbol;
+        public ObjectAndOffsetSymbolNode EndSymbol => _endSymbol;
 
         public void AddEmbeddedObject(TEmbedded symbol)
         {
@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
                 node.EncodeData(ref builder, factory, relocsOnly);
                 if (node is ISymbolNode)
                 {
-                    builder.DefinedSymbols.Add((ISymbolNode)node);
+                    builder.AddSymbol((ISymbolNode)node);
                 }
             }
         }
@@ -75,17 +75,17 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.Alignment = factory.Target.PointerSize;
+            builder.RequireInitialPointerAlignment();
 
             if (_sorter != null)
                 _nestedNodesList.Sort(_sorter);
 
-            builder.DefinedSymbols.Add(_startSymbol);
+            builder.AddSymbol(_startSymbol);
 
             GetElementDataForNodes(ref builder, factory, relocsOnly);
 
             _endSymbol.SetSymbolOffset(builder.CountBytes);
-            builder.DefinedSymbols.Add(_endSymbol);
+            builder.AddSymbol(_endSymbol);
 
             ObjectData objData = builder.ToObjectData();
             return objData;

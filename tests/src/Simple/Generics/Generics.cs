@@ -22,6 +22,7 @@ class Program
         TestThreadStaticFieldAccess.Run();
         TestConstrainedMethodCalls.Run();
         TestInstantiatingUnboxingStubs.Run();
+        TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestUnusedGVMsDoNotCrashCompiler.Run();
 
@@ -512,6 +513,65 @@ class Program
 
             var foo = (Foo<string>)s_foo;
             if (foo.Value != 42)
+                throw new Exception();
+        }
+    }
+
+    class TestMDArrayAddressMethod
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void PassByRef(ref object x)
+        {
+            x = new Object();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DoGen<T>(object[,] arr)
+        {
+            // Here, the array type is known statically at the time of compilation
+            PassByRef(ref arr[0, 0]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void PassByRef2<T>(ref T x)
+        {
+            x = default(T);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DoGen2<T>(T[,] arr)
+        {
+            // Here, the array type needs to be looked up from the dictionary
+            PassByRef2<T>(ref arr[0, 0]);
+        }
+
+        public static void Run()
+        {
+            int exceptionsSeen = 0;
+
+            try
+            {
+                DoGen<object>(new string[1, 1]);
+            }
+            catch (ArrayTypeMismatchException)
+            {
+                exceptionsSeen++;
+            }
+
+            DoGen<object>(new object[1, 1]);
+
+            try
+            {
+                DoGen2<object>(new string[1, 1]);
+            }
+            catch (ArrayTypeMismatchException)
+            {
+                exceptionsSeen++;
+            }
+
+            DoGen2<object>(new object[1, 1]);
+
+            if (exceptionsSeen != 2)
                 throw new Exception();
         }
     }

@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.DefinedSymbols.Add(this);
+            builder.AddSymbol(this);
 
             //
             // Emit a MethodFixupCell struct

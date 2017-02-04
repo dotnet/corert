@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class InterfaceDispatchCellNode : ObjectNode, ISymbolNode
+    public class InterfaceDispatchCellNode : ObjectNode, ISymbolNode
     {
         MethodDesc _targetMethod;
         string _callSiteIdentifier;
@@ -55,8 +55,8 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
             // The interface dispatch cell has an alignment requirement of 2 * [Pointer size] as part of the 
             // synchronization mechanism of the two values in the runtime.
-            objData.Alignment = _targetMethod.Context.Target.PointerSize * 2;
-            objData.DefinedSymbols.Add(this);
+            objData.RequireInitialAlignment(_targetMethod.Context.Target.PointerSize * 2);
+            objData.AddSymbol(this);
 
             if (factory.Target.Architecture == TargetArchitecture.ARM)
             {
