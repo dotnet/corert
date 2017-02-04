@@ -16,7 +16,7 @@ using System.Collections;
 
 namespace System
 {
-    public static partial class Environment
+    internal static partial class Environment
     {
         public static unsafe String ExpandEnvironmentVariables(String name)
         {

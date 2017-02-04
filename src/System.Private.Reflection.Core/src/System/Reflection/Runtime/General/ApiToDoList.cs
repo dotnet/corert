@@ -22,7 +22,6 @@ namespace System.Reflection.Runtime.Assemblies
     {
         public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) { throw new NotImplementedException(); }
         public sealed override MethodInfo EntryPoint { get { throw new NotImplementedException(); } }
-        public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
     }
 }
 
@@ -77,7 +76,6 @@ namespace System.Reflection.Runtime.Modules
         public sealed override FieldInfo[] GetFields(BindingFlags bindingFlags) { throw new NotImplementedException(); }
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotImplementedException(); }
         public sealed override MethodInfo[] GetMethods(BindingFlags bindingFlags) { throw new NotImplementedException(); }
-        public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
         public sealed override FieldInfo ResolveField(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new NotImplementedException(); }
         public sealed override MemberInfo ResolveMember(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new NotImplementedException(); }
         public sealed override MethodBase ResolveMethod(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new NotImplementedException(); }
