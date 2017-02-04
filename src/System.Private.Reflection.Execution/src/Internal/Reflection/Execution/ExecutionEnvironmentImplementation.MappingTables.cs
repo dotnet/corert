@@ -1086,7 +1086,7 @@ namespace Internal.Reflection.Execution
                 QTypeDefinition qTypeDefinition;
                 if (!TryGetMetadataForNamedType(declaringTypeHandleDefinition, out qTypeDefinition))
                 {
-                    Environment.FailFast("Unable to resolve named type to having a metadata reader");
+                    RuntimeExceptionHelpers.FailFast("Unable to resolve named type to having a metadata reader");
                 }
                 
                 MethodHandle nativeFormatMethodHandle = 
@@ -1471,7 +1471,7 @@ namespace Internal.Reflection.Execution
                                             return true;
 
                                         if (!TypeLoaderEnvironment.Instance.TryComputeHasInstantiationDeterminedSize(type.TypeHandle, out needsCallingConventionConverter))
-                                            Environment.FailFast("Unable to setup calling convention converter correctly");
+                                            RuntimeExceptionHelpers.FailFast("Unable to setup calling convention converter correctly");
                                         return needsCallingConventionConverter;
                                     }
                                 }
