@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
-            dataBuilder.RequireInitialAlignment(16);
+            objData.RequireInitialPointerAlignment();
             dataBuilder.AddSymbol(this);
 
             // +2 for SyncBlock and EETypePtr field
