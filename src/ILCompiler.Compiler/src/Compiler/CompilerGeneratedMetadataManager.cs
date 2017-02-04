@@ -15,11 +15,17 @@ using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
-    public class GeneratedOnlyMetadataGeneration : MetadataGeneration
+    /// <summary>
+    /// This class is responsible for managing native metadata to be emitted into the compiled
+    /// module. It applies a policy that every type/method emitted shall be reflectable.
+    /// </summary>
+    public class CompilerGeneratedMetadataManager : MetadataManager
     {
-        public GeneratedOnlyMetadataGeneration(NodeFactory factory) : base(factory)
+        private GeneratedTypesAndCodeMetadataPolicy _metadataPolicy;
+
+        public CompilerGeneratedMetadataManager(NodeFactory factory) : base(factory)
         {
-            InitMetadataPolicy(new GeneratedTypesAndCodeMetadataPolicy(this));
+            _metadataPolicy = new GeneratedTypesAndCodeMetadataPolicy(this);
         }
 
         private HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
@@ -50,6 +56,11 @@ namespace ILCompiler
         {
             _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
             base.AddGeneratedMethod(method);
+        }
+
+        public override bool IsReflectionBlocked(MetadataType type)
+        {
+            return _metadataPolicy.IsBlocked(type);
         }
 
         protected override void ComputeMetadata(out byte[] metadataBlob, 
@@ -118,10 +129,10 @@ namespace ILCompiler
 
         private struct GeneratedTypesAndCodeMetadataPolicy : IMetadataPolicy
         {
-            private GeneratedOnlyMetadataGeneration _parent;
+            private CompilerGeneratedMetadataManager _parent;
             private ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
 
-            public GeneratedTypesAndCodeMetadataPolicy(GeneratedOnlyMetadataGeneration parent)
+            public GeneratedTypesAndCodeMetadataPolicy(CompilerGeneratedMetadataManager parent)
             {
                 _parent = parent;
                 _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();

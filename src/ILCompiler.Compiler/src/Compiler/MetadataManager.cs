@@ -24,7 +24,7 @@ namespace ILCompiler
     /// module. It also helps facilitate mappings between generated runtime structures or code,
     /// and the native metadata.
     /// </summary>
-    public abstract class MetadataGeneration
+    public abstract class MetadataManager
     {
         internal const int MetadataOffsetMask = 0xFFFFFF;
 
@@ -32,7 +32,6 @@ namespace ILCompiler
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
-        private IMetadataPolicy _metadataPolicy;
 
         private NodeFactory _nodeFactory;
 
@@ -47,14 +46,9 @@ namespace ILCompiler
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
-        public MetadataGeneration(NodeFactory factory)
+        public MetadataManager(NodeFactory factory)
         {
             _nodeFactory = factory;
-        }
-
-        protected void InitMetadataPolicy(IMetadataPolicy metadataPolicy)
-        {
-            _metadataPolicy = metadataPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -393,10 +387,7 @@ namespace ILCompiler
             return _typesWithEETypesGenerated;
         }
 
-        internal IMetadataPolicy GetMetadataPolicy()
-        {
-            return _metadataPolicy;
-        }
+        public abstract bool IsReflectionBlocked(MetadataType type);
     }
 
     public struct MetadataMapping<TEntity>

@@ -14,7 +14,7 @@ using Internal.Text;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a map between EETypes and metadata records within the <see cref="MetadataNode"/>.
+    /// Represents a hashtable of all type blocked from reflection.
     /// </summary>
     internal sealed class BlockReflectionTypeMapNode : ObjectNode, ISymbolNode
     {
@@ -53,13 +53,9 @@ namespace ILCompiler.DependencyAnalysis
 
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(reflectionBlockTypeMapHashTable);
-            IMetadataPolicy metadataPolicy = factory.MetadataManager.GetMetadataPolicy();
 
             foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
-                if (!type.IsDefType)
-                    continue;
-
                 if (!type.IsTypeDefinition)
                     continue;
 
@@ -67,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (mdType == null)
                     continue;
 
-                if (!metadataPolicy.IsBlocked(mdType))
+                if (!factory.MetadataManager.IsReflectionBlocked(mdType))
                     continue;
         
                 if (!factory.CompilationModuleGroup.ContainsType(mdType))
