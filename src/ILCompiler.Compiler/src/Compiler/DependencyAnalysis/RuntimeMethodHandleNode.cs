@@ -36,8 +36,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
 
-            objData.Alignment = objData.TargetPointerSize;
-            objData.DefinedSymbols.Add(this);
+            objData.RequireInitialPointerAlignment();
+            objData.AddSymbol(this);
 
             NativeLayoutMethodLdTokenVertexNode ldtokenSigNode = factory.NativeLayout.MethodLdTokenVertex(_targetMethod);
             objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode));

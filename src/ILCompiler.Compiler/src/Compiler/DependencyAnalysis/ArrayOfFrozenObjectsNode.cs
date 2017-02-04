@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
                 node.EncodeData(ref builder, factory, relocsOnly);
                 if (node is ISymbolNode)
                 {
-                    builder.DefinedSymbols.Add((ISymbolNode)node);
+                    builder.AddSymbol((ISymbolNode)node);
                 }
             }
 

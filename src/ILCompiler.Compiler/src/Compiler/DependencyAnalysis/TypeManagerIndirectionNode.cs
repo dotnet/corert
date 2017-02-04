@@ -24,8 +24,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.DefinedSymbols.Add(this);
-            objData.RequirePointerAlignment();
+            objData.AddSymbol(this);
+            objData.RequireInitialPointerAlignment();
             objData.EmitZeroPointer();
             objData.EmitZeroPointer();
             return objData.ToObjectData();

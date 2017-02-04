@@ -61,13 +61,13 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.Alignment = factory.Target.PointerSize;
-            objData.DefinedSymbols.Add(this);
+            objData.RequireInitialPointerAlignment();
+            objData.AddSymbol(this);
 
             // Emit an aliased symbol named _tls_index for native P/Invoke code that uses TLS. This is required
             // because we do not link against libcmt.lib.
             ObjectAndOffsetSymbolNode aliasedSymbol = new ObjectAndOffsetSymbolNode(this, objData.CountBytes, "_tls_index", false);
-            objData.DefinedSymbols.Add(aliasedSymbol);
+            objData.AddSymbol(aliasedSymbol);
 
             // This is the TLS index field which is a 4-byte integer. Emit an 8-byte interger which includes a
             // 4-byte padding to make an pointer-sized alignment for the subsequent fields for all targets.
@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
             */
             // In order to utilize linker support, the struct variable needs to be named _tls_used
             ObjectAndOffsetSymbolNode structSymbol = new ObjectAndOffsetSymbolNode(this, objData.CountBytes, "_tls_used", false);
-            objData.DefinedSymbols.Add(structSymbol);
+            objData.AddSymbol(structSymbol);
             objData.EmitPointerReloc(factory.ThreadStaticsRegion.StartSymbol);     // start of tls data
             objData.EmitPointerReloc(factory.ThreadStaticsRegion.EndSymbol);     // end of tls data
             objData.EmitPointerReloc(this);     // address of tls_index

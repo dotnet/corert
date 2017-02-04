@@ -51,9 +51,9 @@ namespace ILCompiler.DependencyAnalysis
             var builder = new ObjectDataBuilder(factory);
 
             // These need to be aligned the same as methods because they show up in same contexts
-            builder.RequireAlignment(factory.Target.MinimumFunctionAlignment);
+            builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
 
-            builder.DefinedSymbols.Add(this);
+            builder.AddSymbol(this);
 
             MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
