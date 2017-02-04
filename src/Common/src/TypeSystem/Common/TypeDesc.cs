@@ -502,6 +502,15 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Retrieves the public parameterless constructor method of the type, or null if there isn't one
+        /// or the type is abstract.
+        /// </summary>
+        public virtual MethodDesc GetDefaultConstructor()
+        {
+            return null;
+        }
+
+        /// <summary>
         /// Gets all fields on the type as defined in the metadata.
         /// </summary>
         public virtual IEnumerable<FieldDesc> GetFields()

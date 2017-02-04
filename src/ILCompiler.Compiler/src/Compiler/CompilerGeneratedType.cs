@@ -170,6 +170,14 @@ namespace ILCompiler
             }
         }
 
+        public override bool IsAbstract
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override DefType ContainingType
         {
             get

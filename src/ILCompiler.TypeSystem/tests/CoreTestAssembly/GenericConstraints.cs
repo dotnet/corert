@@ -26,6 +26,16 @@ namespace GenericConstraints
         public ClassArgWithDefaultCtor() { }
     }
 
+    public abstract class AbstractClassArgWithDefaultCtor : IGen<object>
+    {
+        public AbstractClassArgWithDefaultCtor() { }
+    }
+
+    public class ClassArgWithPrivateDefaultCtor : IGen<object>
+    {
+        private ClassArgWithPrivateDefaultCtor() { }
+    }
+
     public class ClassArgWithoutDefaultCtor : IGen<object>
     {
         public ClassArgWithoutDefaultCtor(int argument) { }

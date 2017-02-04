@@ -313,10 +313,36 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in _typeDefinition.GetMethods())
             {
                 var methodDefinition = metadataReader.GetMethodDefinition(handle);
-                if ((methodDefinition.Attributes & MethodAttributes.SpecialName) != 0 &&
+                if (methodDefinition.Attributes.IsRuntimeSpecialName() &&
                     stringComparer.Equals(methodDefinition.Name, ".cctor"))
                 {
                     MethodDesc method = (MethodDesc)_module.GetObject(handle);
+                    return method;
+                }
+            }
+
+            return null;
+        }
+
+        public override MethodDesc GetDefaultConstructor()
+        {
+            if (IsAbstract)
+                return null;
+
+            MetadataReader metadataReader = this.MetadataReader;
+            MetadataStringComparer stringComparer = metadataReader.StringComparer;
+
+            foreach (var handle in _typeDefinition.GetMethods())
+            {
+                var methodDefinition = metadataReader.GetMethodDefinition(handle);
+                MethodAttributes attributes = methodDefinition.Attributes;
+                if (attributes.IsRuntimeSpecialName() && attributes.IsPublic()
+                    && stringComparer.Equals(methodDefinition.Name, ".ctor"))
+                {
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
+                    if (method.Signature.Length != 0)
+                        continue;
+
                     return method;
                 }
             }
@@ -511,6 +537,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (_typeDefinition.Attributes & TypeAttributes.Sealed) != 0;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.Abstract) != 0;
             }
         }
 

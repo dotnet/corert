@@ -333,6 +333,19 @@ namespace Internal.TypeSystem.NativeFormat
             }
         }
 
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                MethodAttributes attributes = Attributes;
+                return attributes.IsRuntimeSpecialName() 
+                    && attributes.IsPublic()
+                    && Signature.Length == 0
+                    && Name == ".ctor"
+                    && !_type.IsAbstract;
+            }
+        }
+
         public MethodAttributes Attributes
         {
             get

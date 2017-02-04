@@ -247,6 +247,7 @@ namespace ILCompiler
             public override bool IsBeforeFieldInit => false;
             public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             public override bool IsSealed => true;
+            public override bool IsAbstract => false;
             public override DefType ContainingType => null;
             public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
             public override TypeSystemContext Context => ValueTypeRepresented.Context;

@@ -72,11 +72,19 @@ namespace Internal.TypeSystem
             }
         }
 
-        public static MethodDesc GetDefaultConstructor(this TypeDesc type)
+        /// <summary>
+        /// Gets the parameterless instance constructor on the specified type. To get the default constructor, use <see cref="TypeDesc.GetDefaultConstructor"/>.
+        /// </summary>
+        public static MethodDesc GetParameterlessConstructor(this TypeDesc type)
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
             var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes);
             return type.GetMethod(".ctor", sig);
+        }
+
+        public static bool HasExplicitOrImplicitDefaultConstructor(this TypeDesc type)
+        {
+            return type.IsValueType || type.GetDefaultConstructor() != null;
         }
 
         internal static MethodDesc FindMethodOnExactTypeWithMatchingTypicalMethod(this TypeDesc type, MethodDesc method)
