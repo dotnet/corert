@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Only store the offset portion of the metadata handle to get better integer compression
                     vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant((uint)(fieldMapping.MetadataHandle & MetadataGeneration.MetadataOffsetMask)));
+                        writer.GetUnsignedConstant((uint)(fieldMapping.MetadataHandle & MetadataManager.MetadataOffsetMask)));
                 }
                 else
                 {
