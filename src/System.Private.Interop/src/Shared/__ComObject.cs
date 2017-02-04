@@ -10,9 +10,6 @@
 //   These source code are being published to InternalAPIs and consumed by RH builds
 //   Use PublishInteropAPI.bat to keep the InternalAPI copies in sync
 // ---------------------------------------------------------------------------------
-#if !CORECLR
-extern alias CoreFX_Collections;
-#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -155,8 +152,8 @@ namespace System
         private RCWFinalizer m_finalizer;
 
 #if !RHTESTCL && !CORECLR && !CORERT
-        private static readonly CoreFX_Collections::System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = 
-            new CoreFX_Collections::System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
+        private static readonly System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = 
+            new System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
 #endif
 
         #endregion

@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System
 {
-    public static partial class Environment
+    internal static partial class Environment
     {
         internal static int CurrentNativeThreadId => ManagedThreadId.Current;
 
