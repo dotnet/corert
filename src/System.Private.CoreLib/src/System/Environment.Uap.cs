@@ -18,16 +18,6 @@ namespace System
 {
     internal static partial class Environment
     {
-        public static unsafe String ExpandEnvironmentVariables(String name)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            // Environment variable accessors are not approved modern API.
-            // Behave as if no variables are defined in this case.
-            return name;
-        }
-
         public static unsafe String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
