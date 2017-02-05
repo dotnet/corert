@@ -1,11 +1,12 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.0",
-    "System.IO.MemoryMappedFiles": "4.0.0",
-    "System.Reflection.Metadata": "1.4.1-beta-24227-04",
-    "System.Runtime.CompilerServices.Unsafe": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.2.0",
-    "System.Security.Cryptography.Primitives": "4.0.0"
+    "NETStandard.Library": "1.6.1",
+    "System.IO.MemoryMappedFiles": "4.3.0",
+    "System.Reflection.Metadata": "1.4.2",
+    "System.Collections.Immutable": "1.3.1",
+    "System.Runtime.CompilerServices.Unsafe": "4.3.0",
+    "System.Security.Cryptography.Algorithms": "4.3.0",
+    "System.Security.Cryptography.Primitives": "4.3.0"
   },
   "frameworks": {
     "netstandard1.3": {}
