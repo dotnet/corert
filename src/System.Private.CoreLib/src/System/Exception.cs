@@ -500,7 +500,7 @@ namespace System
                 int cbBuffer = sizeof(SERIALIZED_EXCEPTION_HEADER) + (nStackTraceElements * IntPtr.Size);
 
                 byte[] buffer = new byte[cbBuffer];
-                fixed (byte* pBuffer = buffer)
+                fixed (byte* pBuffer = &buffer[0])
                 {
                     SERIALIZED_EXCEPTION_HEADER* pHeader = (SERIALIZED_EXCEPTION_HEADER*)pBuffer;
                     pHeader->HResult = _HResult;

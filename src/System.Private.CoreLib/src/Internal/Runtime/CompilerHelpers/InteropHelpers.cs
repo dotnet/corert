@@ -28,7 +28,7 @@ namespace Internal.Runtime.CompilerHelpers
                 int stringLength = str.Length;
                 int bufferLength = encoding.GetByteCount(pStr, stringLength);
                 var buffer = new byte[bufferLength + 1];
-                fixed (byte* pBuffer = buffer)
+                fixed (byte* pBuffer = &buffer[0])
                 {
                     encoding.GetBytes(pStr, stringLength, pBuffer, bufferLength);
                     return buffer;

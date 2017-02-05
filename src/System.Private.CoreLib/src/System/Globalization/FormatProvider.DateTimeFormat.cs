@@ -188,7 +188,7 @@ namespace System.Globalization
                 int digits;
 
                 char[] charBuff = new char[16];
-                fixed (char* buffer = charBuff)
+                fixed (char* buffer = &charBuff[0])
                 {
                     char* p = buffer + 16;
                     int n = value;
