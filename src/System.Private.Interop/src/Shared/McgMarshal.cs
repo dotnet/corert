@@ -249,7 +249,7 @@ namespace System.Runtime.InteropServices
             if (lenUnicode > 0)
             {
                 char[] buffer = new char[lenUnicode];
-                fixed (char* pTemp = buffer)
+                fixed (char* pTemp = &buffer[0])
                 {
                     ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(newBuffer),
                                                                lenAnsi,
@@ -446,12 +446,9 @@ namespace System.Runtime.InteropServices
         /// <param name="nativeValue">Single ANSI byte value.</param>
         public static unsafe char AnsiCharToWideChar(byte nativeValue)
         {
-            char[] buffer = new char[1];
-            fixed (char* pTemp = buffer)
-            {
-                ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(&nativeValue), 1, new System.IntPtr(pTemp), 1);
-                return buffer[0];
-            }
+            char ch;
+            ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(&nativeValue), 1, new System.IntPtr(&ch), 1);
+            return ch;
         }
 
         /// <summary>

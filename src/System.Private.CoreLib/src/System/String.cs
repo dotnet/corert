@@ -350,7 +350,7 @@ namespace System
             {
                 char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = chars)
+                    fixed (char* dest = &chars[0])
                 {
                     wstrcpy(dest, src, length);
                 }
@@ -373,7 +373,7 @@ namespace System
             {
                 char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = chars)
+                    fixed (char* dest = &chars[0])
                 {
                     wstrcpy(dest, src + startIndex, length);
                 }

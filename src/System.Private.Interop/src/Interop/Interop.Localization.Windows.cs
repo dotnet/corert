@@ -14,6 +14,7 @@
 // always manually marshal the arguments
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -90,10 +91,11 @@ namespace System.Runtime.InteropServices
         /// <returns>Return false IFF when buffer space isnt enough</returns>
         private static unsafe bool TryGetMessage(int errorCode, int bufferSize, out string errorMsg)
         {
+            Debug.Assert(bufferSize > 0);
             errorMsg = null;
             char[] buffer = new char[bufferSize];
             int result;
-            fixed (char* pinned_lpBuffer = buffer)
+            fixed (char* pinned_lpBuffer = &buffer[0])
             {
                 result = ExternalInterop.FormatMessage(
                     FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM |

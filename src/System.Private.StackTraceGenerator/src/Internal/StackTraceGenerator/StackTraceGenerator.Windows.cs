@@ -82,9 +82,9 @@ namespace Internal.StackTraceGenerator
                 {
                     byte[] _clsid = clsId.ToByteArray();
                     byte[] _iid = iid.ToByteArray();
-                    fixed (byte* pclsid = _clsid)
+                    fixed (byte* pclsid = &_clsid[0])
                     {
-                        fixed (byte* piid = _iid)
+                        fixed (byte* piid = &_iid[0])
                         {
                             IntPtr _dataSource;
                             hr = CoCreateInstance(pclsid, (IntPtr)0, CLSCTX_INPROC, piid, out _dataSource);
