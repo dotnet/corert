@@ -76,8 +76,44 @@ build_native_corert()
     popd
 }
 
+initHostDistroRid()
+{
+    if [ "$__HostOS" == "Linux" ]; then
+        if [ ! -e /etc/os-release ]; then
+            echo "WARNING: Can not determine runtime id for current distro."
+            __HostDistroRid=""
+        else
+            source /etc/os-release
+            __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
+        fi
+    fi
+}
+
+initTargetDistroRid()
+{
+    if [ $__CrossBuild == 1 ]; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            if [ ! -e $ROOTFS_DIR/etc/os-release ]; then
+                echo "WARNING: Can not determine runtime id for current distro."
+                export __DistroRid=""
+            else
+                source $ROOTFS_DIR/etc/os-release
+                export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
+            fi
+        fi
+    else
+        export __DistroRid="$__HostDistroRid"
+    fi
+}
+
 
 if $__buildnative; then
+
+    # init the host distro name
+    initHostDistroRid
+
+    # init the target distro name
+    initTargetDistroRid
 
     # Check prereqs.
 

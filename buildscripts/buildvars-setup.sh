@@ -6,7 +6,7 @@ usage()
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
-    echo "BuildArch can be: x64, x86, arm, arm64"
+    echo "BuildArch can be: x64, x86, arm, arm64, armel"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
@@ -177,6 +177,11 @@ while [ "$1" != "" ]; do
             ;;
         arm64)
             export __BuildArch=arm64
+            ;;
+        armel)
+            export __BuildArch=armel
+            export __ClangMajorVersion=3
+            export __ClangMinorVersion=5
             ;;
         debug)
             export __BuildType=Debug
