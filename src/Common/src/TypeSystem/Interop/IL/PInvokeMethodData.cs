@@ -15,15 +15,13 @@ namespace Internal.TypeSystem.Interop
         public PInvokeILEmitterConfiguration PInvokeILEmitterConfiguration { get;  }
         public TypeSystemContext Context { get; }
         public PInvokeMetadata ImportMetadata { get; }
-        public MarshalDirection Direction { get; }
 
-        public PInvokeMethodData(MethodDesc method, PInvokeILEmitterConfiguration config, MarshalDirection direction)
+        public PInvokeMethodData(MethodDesc method, PInvokeILEmitterConfiguration config)
         {
             TargetMethod = method;
             PInvokeILEmitterConfiguration = config;
             Context = method.Context;
             ImportMetadata = method.GetPInvokeMethodMetadata();
-            Direction = direction;
         }
 
         public MetadataType SafeHandleType
