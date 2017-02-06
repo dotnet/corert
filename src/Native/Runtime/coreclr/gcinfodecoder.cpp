@@ -1477,7 +1477,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum != 13);  // sp
 
 #ifdef FEATURE_REDHAWK
-    PTR_UIntNative *ppReg = pRD->pR0;
+    PTR_UIntNative *ppReg = &pRD->pR0;
     if (regNum > 12) regNum--; // rsp is skipped in Redhawk RegDisplay
     return (OBJECTREF*)*(ppReg + regNum);
 #else
