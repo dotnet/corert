@@ -22,7 +22,7 @@ function(clr_unknown_arch)
     if (WIN32)
         message(FATAL_ERROR "Only AMD64 and I386 are supported")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64 ARM and ARMEL are supported")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM and ARMEL are supported")
     endif()
 endfunction()
 
