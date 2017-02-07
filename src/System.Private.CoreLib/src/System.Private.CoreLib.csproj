@@ -176,6 +176,8 @@
     <Compile Include="System\Reflection\ManifestResourceInfo.cs" />
     <Compile Include="System\Reflection\MemberFilter.cs" />
     <Compile Include="System\Reflection\MemberInfo.cs" />
+    <Compile Include="System\Reflection\MemberInfoSerializationHolder.cs" />
+    <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MemberTypes.cs" />
     <Compile Include="System\Reflection\MethodAttributes.cs" />
     <Compile Include="System\Reflection\MethodBase.cs" />
