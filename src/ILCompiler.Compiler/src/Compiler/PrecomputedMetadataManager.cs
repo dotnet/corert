@@ -26,7 +26,7 @@ namespace ILCompiler
         class MetadataLoadedInfo
         {
             public ImmutableArray<ModuleDesc> MetadataModules = ImmutableArray<ModuleDesc>.Empty;
-            public ImmutableArray<ModuleDesc> LocalModules = ImmutableArray<ModuleDesc>.Empty;
+            public ImmutableArray<ModuleDesc> LocalMetadataModules = ImmutableArray<ModuleDesc>.Empty;
             public ImmutableArray<ModuleDesc> ExternalMetadataModules = ImmutableArray<ModuleDesc>.Empty;
             public List<MetadataMapping<MetadataType>> StrongTypeMappings = new List<MetadataMapping<MetadataType>>();
             public List<MetadataMapping<MetadataType>> AllTypeMappings = new List<MetadataMapping<MetadataType>>();
@@ -193,19 +193,19 @@ namespace ILCompiler
                     localMetadataModulesBuilder.Add(module);
             }
             result.ExternalMetadataModules = externalMetadataModulesBuilder.ToImmutable();
-            result.LocalModules = localMetadataModulesBuilder.ToImmutable();
+            result.LocalMetadataModules = localMetadataModulesBuilder.ToImmutable();
 
             return result;
         }
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
-            return _loadedMetadata.Value.LocalModules;
+            return _loadedMetadata.Value.LocalMetadataModules;
         }
 
         public override bool IsReflectionBlocked(MetadataType type)
         {
-            return _loadedMetadata.Value.ReflectionBlockedTypes.Contains(type);
+            return type.HasCustomAttribute("System.Runtime.CompilerServices", "ReflectionBlockedAttribute");
         }
 
         protected override void ComputeMetadata(out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
