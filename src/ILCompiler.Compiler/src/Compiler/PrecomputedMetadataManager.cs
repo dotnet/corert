@@ -10,6 +10,7 @@ using System.Collections.Immutable;
 using Internal.Compiler;
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
@@ -37,6 +38,7 @@ namespace ILCompiler
         ModuleDesc _metadataDescribingModule;
         HashSet<ModuleDesc> _compilationModules;
         Lazy<MetadataLoadedInfo> _loadedMetadata;
+        Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
         readonly byte[] _metadataBlob;
 
         public PrecomputedMetadataManager(NodeFactory factory, ModuleDesc metadataDescribingModule, IEnumerable<ModuleDesc> compilationModules, byte[] metadataBlob) : base(factory)
@@ -44,6 +46,7 @@ namespace ILCompiler
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
             _loadedMetadata = new Lazy<MetadataLoadedInfo>(LoadMetadata);
+            _dynamicInvokeStubs = new Lazy<Dictionary<MethodDesc, MethodDesc>>(LoadDynamicInvokeStubs);
             _metadataBlob = metadataBlob;
         }
 
@@ -212,6 +215,151 @@ namespace ILCompiler
             typeMappings = loadedMetadata.AllTypeMappings;
             methodMappings = loadedMetadata.MethodMappings;
             fieldMappings = loadedMetadata.FieldMappings;
+        }
+
+        private Dictionary<MethodDesc, MethodDesc> LoadDynamicInvokeStubs()
+        {
+            MetadataType typeWithMetadataMappings = (MetadataType)_metadataDescribingModule.GetTypeByCustomAttributeTypeName(MetadataMappingTypeName);
+            Dictionary<MethodDesc, MethodDesc> dynamicInvokeMapTable = new Dictionary<MethodDesc, MethodDesc>();
+            MethodDesc dynamicInvokeStubDescriptorMethod = typeWithMetadataMappings.GetMethod("DynamicInvokeStubs", null);
+
+            if (dynamicInvokeStubDescriptorMethod == null)
+                return dynamicInvokeMapTable;
+
+            ILProvider ilProvider = new ILProvider(null);
+            ILStreamReader il = new ILStreamReader(ilProvider.GetMethodIL(dynamicInvokeStubDescriptorMethod));
+            // structure is 
+            // REPEAT N TIMES    
+            //ldtoken method
+            //ldtoken dynamicInvokeStubMethod
+            //pop
+            //pop
+            while (true)
+            {
+                if (il.TryReadRet()) // ret
+                    break;
+
+                MethodDesc method = il.ReadLdtokenAsTypeSystemEntity() as MethodDesc;
+                MethodDesc dynamicMethodInvokeStub = il.ReadLdtokenAsTypeSystemEntity() as MethodDesc;
+                il.ReadPop();
+                il.ReadPop();
+
+                if ((method != null) && (dynamicMethodInvokeStub != null))
+                {
+                    dynamicInvokeMapTable[method] = dynamicMethodInvokeStub;
+                }
+                else
+                {
+                    throw new BadImageFormatException();
+                }
+            }
+
+            return dynamicInvokeMapTable;
+        }
+
+        /// <summary>
+        /// Is there a reflection invoke stub for a method that is invokable?
+        /// </summary>
+        public override bool HasReflectionInvokeStub(MethodDesc method)
+        {
+            return GetReflectionInvokeStub(method) != null;
+        }
+
+        private MethodDesc InstantiateDynamicInvokeMethodForMethod(MethodDesc dynamicInvokeMethod, MethodDesc methodToInvoke)
+        {
+            if (dynamicInvokeMethod.Instantiation.Length == 0)
+            {
+                // nothing to instantiate
+                return dynamicInvokeMethod;
+            }
+
+            List<TypeDesc> instantiation = new List<TypeDesc>();
+            MethodSignature methodSig = methodToInvoke.Signature;
+            for (int iParam = 0; iParam < methodSig.Length; iParam++)
+            {
+                TypeDesc parameterType = methodSig[iParam];
+
+                if (parameterType.IsByRef)
+                {
+                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
+                    parameterType = ((ByRefType)parameterType).ParameterType;
+                }
+                else if (parameterType.IsPointer)
+                {
+                    // For pointer typed parameter, instantiate the method over IntPtr
+                    parameterType = parameterType.Context.GetWellKnownType(WellKnownType.IntPtr);
+                }
+                else if (parameterType.IsDefType && parameterType.IsEnum && methodToInvoke is EcmaMethod)
+                {
+                    DefType parameterDefType = (DefType)parameterType;
+                    EcmaMethod ecmaMethodToInvoke = (EcmaMethod)methodToInvoke;
+
+                    // If the invoke method takes an enum as an input paramter and there is no default value for
+                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // on the underlying integral type of the enum.)
+                    foreach (ParameterMetadata paramMetadata in ecmaMethodToInvoke.GetParameterMetadata())
+                    {
+                        if ((paramMetadata.Index - 1) == iParam)
+                        {
+                            if (!paramMetadata.HasDefault)
+                            {
+                                parameterType = parameterType.UnderlyingType;
+                            }
+                        }
+                    }
+                }
+
+                instantiation.Add(parameterType);
+            }
+
+            // If the method returns void, do not include void in the specialization
+            if (!methodSig.ReturnType.IsVoid)
+            {
+                TypeDesc returnType = methodSig.ReturnType;
+
+                if (returnType.IsByRef)
+                {
+                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
+                    returnType = ((ByRefType)returnType).ParameterType;
+                }
+                else if (returnType.IsDefType && !returnType.IsValueType)
+                {
+                    returnType = returnType.Context.GetWellKnownType(WellKnownType.Object);
+                }
+
+                instantiation.Add(returnType);
+            }
+
+            Debug.Assert(dynamicInvokeMethod.Instantiation.Length == instantiation.Count);
+
+            // Check if at least one of the instantiation arguments is a universal canonical type, and if so, we 
+            // won't create a dynamic invoker instantiation. The arguments will be interpreted at runtime by the
+            // calling convention converter during the dynamic invocation
+            foreach (TypeDesc type in instantiation)
+            {
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                    return null;
+            }
+
+            MethodDesc instantiatedDynamicInvokeMethod = dynamicInvokeMethod.Context.GetInstantiatedMethod(dynamicInvokeMethod, new Instantiation(instantiation.ToArray()));
+            return instantiatedDynamicInvokeMethod;
+        }
+
+        /// <summary>
+        /// Gets a stub that can be used to reflection-invoke a method with a given signature.
+        /// </summary>
+        public override MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        {
+            // Methods we see here shouldn't be canonicalized, or we'll end up creating bastardized instantiations
+            // (e.g. we instantiate over System.Object below.)
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any));
+            MethodDesc typicalInvokeTarget = method.GetTypicalMethodDefinition();
+            MethodDesc typicalDynamicInvokeStub;
+
+            if (!_dynamicInvokeStubs.Value.TryGetValue(typicalInvokeTarget, out typicalDynamicInvokeStub))
+                return null;
+
+            return InstantiateDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, method);
         }
     }
 }

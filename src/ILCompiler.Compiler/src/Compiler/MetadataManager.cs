@@ -42,14 +42,14 @@ namespace ILCompiler
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
 
-        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
-
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(NodeFactory factory)
         {
             _nodeFactory = factory;
         }
+
+        public NodeFactory NodeFactory { get { return _nodeFactory; } }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
@@ -164,7 +164,10 @@ namespace ILCompiler
             }
         }
 
-        public bool HasReflectionInvokeStub(MethodDesc method)
+        /// <summary>
+        /// Is a method that is reflectable a method which should be placed into the invoke map as invokable?
+        /// </summary>
+        public bool IsReflectionInvokable (MethodDesc method)
         {
             var signature = method.Signature;
 
@@ -197,97 +200,14 @@ namespace ILCompiler
         }
 
         /// <summary>
+        /// Is there a reflection invoke stub for a method that is invokable?
+        /// </summary>
+        public abstract bool HasReflectionInvokeStub(MethodDesc method);
+
+        /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public MethodDesc GetReflectionInvokeStub(MethodDesc method)
-        {
-            // Methods we see here shouldn't be canonicalized, or we'll end up creating bastardized instantiations
-            // (e.g. we instantiate over System.Object below.)
-            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any));
-
-            TypeSystemContext context = method.Context;
-            var sig = method.Signature;
-            ParameterMetadata[] paramMetadata = null;
-
-            // Get a generic method that can be used to invoke method with this shape.
-            MethodDesc thunk;
-            var lookupSig = new DynamicInvokeMethodSignature(sig);
-            if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
-            {
-                thunk = new DynamicInvokeMethodThunk(_nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
-                _dynamicInvokeThunks.Add(lookupSig, thunk);
-            }
-
-            // If the method has no parameters and returns void, we don't need to specialize
-            if (sig.ReturnType.IsVoid && sig.Length == 0)
-            {
-                Debug.Assert(!thunk.HasInstantiation);
-                return thunk;
-            }
-
-            //
-            // Instantiate the generic thunk over the parameters and the return type of the target method
-            //
-
-            TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
-            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
-            for (int i = 0; i < sig.Length; i++)
-            {
-                TypeDesc parameterType = sig[i];
-                if (parameterType.IsByRef)
-                {
-                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
-                    parameterType = ((ByRefType)parameterType).ParameterType;
-                }
-
-                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
-                {
-                    // For pointer typed parameters, instantiate the method over IntPtr
-                    parameterType = context.GetWellKnownType(WellKnownType.IntPtr);
-                }
-                else if (parameterType.IsEnum)
-                {
-                    // If the invoke method takes an enum as an input parameter and there is no default value for
-                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
-                    // on the underlying integral type of the enum.)
-                    if (paramMetadata == null)
-                        paramMetadata = method.GetParameterMetadata();
-
-                    bool hasDefaultValue = false;
-                    foreach (var p in paramMetadata)
-                    {
-                        // Parameter metadata indexes are 1-based (0 is reserved for return "parameter")
-                        if (p.Index == (i + 1) && p.HasDefault)
-                        {
-                            hasDefaultValue = true;
-                            break;
-                        }
-                    }
-
-                    if (!hasDefaultValue)
-                        parameterType = parameterType.UnderlyingType;
-                }
-
-                instantiation[i] = parameterType;
-            }
-
-            if (!sig.ReturnType.IsVoid)
-            {
-                TypeDesc returnType = sig.ReturnType;
-                Debug.Assert(!returnType.IsByRef);
-
-                // If the invoke method return an object reference, we don't need to specialize on the
-                // exact type of the object reference, as the behavior is not different.
-                if ((returnType.IsDefType && !returnType.IsValueType) || returnType.IsArray)
-                {
-                    returnType = context.GetWellKnownType(WellKnownType.Object);
-                }
-
-                instantiation[sig.Length] = returnType;
-            }
-
-            return context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
-        }
+        public abstract MethodDesc GetReflectionInvokeStub(MethodDesc method);
 
         protected virtual void AddGeneratedType(TypeDesc type)
         {
