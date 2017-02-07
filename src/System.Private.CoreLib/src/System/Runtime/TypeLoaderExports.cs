@@ -29,7 +29,7 @@ namespace System.Runtime
 
             return result;
         }
-
+        
         [RuntimeExport("ActivatorCreateInstanceAny")]
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {
@@ -464,6 +464,12 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(System.IntPtr pfn, Object arg1, IntPtr arg2)
+        {
+            return default(T);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static T Call<T>(IntPtr pfn, string[] arg0) 
         {
             return default(T);
         }

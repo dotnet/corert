@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         // Force all non-abstract nodes to provide a name
-        protected internal abstract string GetName();
+        protected abstract string GetName();
 
         public override string ToString()
         {

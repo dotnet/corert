@@ -8,19 +8,20 @@ namespace ILCompiler.DependencyAnalysis
 {
     public enum RelocType
     {
-        IMAGE_REL_BASED_ABSOLUTE = 0x00,
-        IMAGE_REL_BASED_HIGHLOW = 0x03,
-        IMAGE_REL_BASED_DIR64 = 0x0A,
-        IMAGE_REL_BASED_REL32 = 0x10,
-        IMAGE_REL_THUMB_MOV32 = 0x11,     // Thumb2: MOVW/MOVT
-        IMAGE_REL_THUMB_BRANCH24 = 0x14,     // Thumb2: B, BL   
-
-        IMAGE_REL_BASED_RELPTR32 = 0x7C,     // 32-bit relative address from byte starting reloc
-                                             // This is a special NGEN-specific relocation type 
-                                             // for relative pointer (used to make NGen relocation 
-                                             // section smaller)    
-        IMAGE_REL_SECREL = 0x80,     // 32 bit offset from base of section containing target
+        IMAGE_REL_BASED_ABSOLUTE        = 0x00,     // No relocation required
+        IMAGE_REL_BASED_HIGHLOW         = 0x03,     // 32 bit address base
+        IMAGE_REL_BASED_DIR64           = 0x0A,     // 64 bit address base
+        IMAGE_REL_BASED_REL32           = 0x10,     // 32-bit relative address from byte following reloc
+        IMAGE_REL_THUMB_MOV32           = 0x11,     // Thumb2: MOVW/MOVT
+        IMAGE_REL_THUMB_BRANCH24        = 0x14,     // Thumb2: B, BL   
+             
+        IMAGE_REL_BASED_RELPTR32        = 0x7C,     // 32-bit relative address from byte starting reloc
+                                                    // This is a special NGEN-specific relocation type 
+                                                    // for relative pointer (used to make NGen relocation 
+                                                    // section smaller)    
+        IMAGE_REL_SECREL                = 0x80,     // 32 bit offset from base of section containing target
     }
+
     public struct Relocation
     {
         public readonly RelocType RelocType;

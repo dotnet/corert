@@ -29,9 +29,14 @@ namespace ILCompiler.DependencyAnalysis
             factory.ThreadStaticsRegion.AddEmbeddedObject(this);
         }
 
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        {
+            return "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
+        }
+ 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__ThreadStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
+            sb.Append(GetMangledName(_type, nameMangler));
         }
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
@@ -42,17 +47,20 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DependencyListEntry[] result;
+            List<DependencyListEntry> result = new List<DependencyListEntry>();
+
+            result.Add(new DependencyListEntry(factory.ThreadStaticsRegion, "ThreadStatics Region"));
+
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType"));
+            }
+
             if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
             {
-                result = new DependencyListEntry[3];
-                result[2] = new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
             }
-            else
-                result = new DependencyListEntry[2];
 
-            result[0] = new DependencyListEntry(factory.ThreadStaticsRegion, "ThreadStatics Region");
-            result[1] = new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType");
             return result;
         }
 
@@ -60,11 +68,34 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
-            builder.RequireInitialPointerAlignment();
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // At runtime, an instance of the GCStaticEEType will be created and a GCHandle to it
+                // will be written in this location.
+                builder.RequireInitialPointerAlignment();
+                builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
+            }
+            else
+            {
+                builder.RequireInitialAlignment(_type.ThreadStaticFieldAlignment);
+                builder.EmitZeros(_type.ThreadStaticFieldSize);
+            }
+        }
+    }
 
-            // At runtime, an instance of the GCStaticEEType will be created and a GCHandle to it
-            // will be written in this location.
-            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
+    public class ThreadStaticsRegionNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
+    {
+        public ThreadStaticsRegionNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
+            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
+        {
+        }
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                return ObjectNodeSection.TLSSection;
+            }
         }
     }
 }

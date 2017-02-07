@@ -154,6 +154,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _arrayAllocators.GetOrAdd(type);
             }
+
         }
 
         public GenericLookupResults GenericLookup = new GenericLookupResults();

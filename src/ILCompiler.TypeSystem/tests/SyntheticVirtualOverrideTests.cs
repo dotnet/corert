@@ -140,7 +140,7 @@ namespace TypeSystemTests
                 return result;
             }
 
-            protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+            public override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
             {
                 MetadataType mdType = type as MetadataType;
 
