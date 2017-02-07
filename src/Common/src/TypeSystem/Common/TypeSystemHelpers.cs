@@ -248,7 +248,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public static IEnumerable<MethodDesc> GetAllMethods(this TypeDesc type)
         {
-            return type.Context.GetAllMethods(type);
+            return type.Context.GetAllMethods(type); 
         }
 
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)

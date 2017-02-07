@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _slots = slots.ToArray();
         }
-
+        
         public override IReadOnlyList<MethodDesc> Slots
         {
             get

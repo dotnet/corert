@@ -60,7 +60,7 @@ namespace Internal.Runtime.CompilerHelpers
             for (int i = 0; i < count; i++)
             {
                 if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = CreateTypeManager(((IntPtr*)moduleHeaders)[i]);
+                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(((IntPtr*)moduleHeaders)[i]);
             }
 
             return modules;
@@ -80,6 +80,7 @@ namespace Internal.Runtime.CompilerHelpers
             section->TypeManager = typeManager;
             section->ModuleIndex = moduleIndex;
 
+#if CORERT
             // Initialize statics if any are present
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
@@ -87,6 +88,7 @@ namespace Internal.Runtime.CompilerHelpers
                 Debug.Assert(length % IntPtr.Size == 0);
                 InitializeStatics(staticsSection, length);
             }
+#endif
 
             // Initialize frozen object segment with GC present
             IntPtr frozenObjectSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
@@ -158,10 +160,6 @@ namespace Internal.Runtime.CompilerHelpers
             for (; str[len] != 0; len++) { }
             return len;
         }
-
-        [RuntimeImport(".", "RhpCreateTypeManager")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr CreateTypeManager(IntPtr moduleHeader);
     }
 
     [StructLayout(LayoutKind.Sequential)]

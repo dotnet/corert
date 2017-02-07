@@ -8,6 +8,7 @@ typedef DPTR(Module) PTR_Module;
 class ICodeManager;
 struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
+class TypeManager;
 struct ModuleHeader;
 enum GenericVarianceType : UInt8;
 struct GenericUnificationDesc;
@@ -40,6 +41,15 @@ class RuntimeInstance
     typedef SList<CodeManagerEntry> CodeManagerList;
     CodeManagerList             m_CodeManagerList;
 #endif
+
+    struct TypeManagerEntry
+    {
+        TypeManagerEntry*         m_pNext;
+        TypeManager*              m_pTypeManager;
+    };
+  
+    typedef SList<TypeManagerEntry> TypeManagerList;
+    TypeManagerList             m_TypeManagerList;
 
     // Indicates whether the runtime is in standalone exe mode where the only Redhawk module that will be
     // loaded into the process (besides the runtime's own module) is the exe itself. This flag will be 
@@ -111,6 +121,8 @@ class RuntimeInstance
 
     SList<Module>* GetModuleList();
 
+    SList<TypeManager*>* GetModuleManagerList();
+
     bool BuildGenericTypeHashTable();
 
 public:
@@ -145,6 +157,8 @@ public:
 #endif
     ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
 
+    bool RegisterTypeManager(TypeManager * pTypeManager);
+
     // This will hold the module list lock over each callback. Make sure
     // the callback will not trigger any operation that needs to make use
     // of the module list.
@@ -169,15 +183,15 @@ public:
     bool AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiThreadStaticOffset, StaticGcDesc *pGcStaticsDesc);
 
     bool CreateGenericAndStaticInfo(EEType *             pEEType,
-                                    EEType *             pTemplateType,
-                                    UInt32               arity,
-                                    UInt32               nonGcStaticDataSize,
-                                    UInt32               nonGCStaticDataOffset,
-                                    UInt32               gcStaticDataSize,
-                                    UInt32               threadStaticOffset,
-                                    StaticGcDesc *       pGcStaticsDesc,
-                                    StaticGcDesc *       pThreadStaticsDesc,
-                                    UInt32*              pGenericVarianceFlags);
+                                   EEType *             pTemplateType,
+                                   UInt32               arity,
+                                   UInt32               nonGcStaticDataSize,
+                                   UInt32               nonGCStaticDataOffset,
+                                   UInt32               gcStaticDataSize,
+                                   UInt32               threadStaticOffset,
+                                   StaticGcDesc *       pGcStaticsDesc,
+                                   StaticGcDesc *       pThreadStaticsDesc,
+                                   UInt32*              pGenericVarianceFlags);
 
     bool UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCount, void  **pIndirCells, UInt32 indirCellCount);
 
@@ -213,5 +227,4 @@ PTR_RuntimeInstance GetRuntimeInstance();
 #define END_FOREACH_MODULE  \
     }                       \
 }                           \
-
 
