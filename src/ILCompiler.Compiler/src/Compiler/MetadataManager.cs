@@ -326,7 +326,7 @@ namespace ILCompiler
         /// <summary>
         /// Returns a set of modules that will get some metadata emitted into the output module
         /// </summary>
-        public abstract HashSet<ModuleDesc> GetModulesWithMetadata();
+        public abstract IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata();
 
         public byte[] GetMetadataBlob()
         {

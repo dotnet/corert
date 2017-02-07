@@ -47,7 +47,7 @@ namespace ILCompiler
             base.AddGeneratedType(type);
         }
 
-        public override HashSet<ModuleDesc> GetModulesWithMetadata()
+        public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             return _modulesSeen;
         }
