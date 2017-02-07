@@ -254,6 +254,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
       <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\PrimitiveTypeProvider.cs">
+      <Link>Ecma\PrimitiveTypeProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
       <Link>Ecma\EcmaModule.Symbols.cs</Link>
     </Compile>

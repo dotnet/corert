@@ -178,10 +178,9 @@ namespace Internal.Runtime
         private UInt16 _usNumInterfaces;
         private UInt32 _uHashCode;
 
-#if CORERT
+#if CORERT || EETYPE_MODULE_MANAGER
         private IntPtr _ppTypeManager;
 #endif
-
         // vtable follows
 
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -1093,7 +1092,7 @@ namespace Internal.Runtime
 #endif
         }
 
-#if CORERT
+#if CORERT || EETYPE_MODULE_MANAGER
         internal IntPtr TypeManager
         {
             get
@@ -1105,6 +1104,12 @@ namespace Internal.Runtime
 #if TYPE_LOADER_IMPLEMENTATION
         internal IntPtr PointerToTypeManager
         {
+            get
+            {
+                // This is always a pointer to a pointer to a module manager
+                return _ppTypeManager;
+            }
+
             set
             {
                 _ppTypeManager = value;

@@ -294,7 +294,7 @@ namespace ILCompiler
             return _virtualMethodAlgorithm;
         }
 
-        protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+        public override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
         {
             if (type.IsDelegate)
             {
@@ -359,6 +359,8 @@ namespace ILCompiler
             return _metadataStringDecoder;
         }
 
+        // Overriding 'protected internal' virtuals requires a specific signature if overriding from within
+        // the same assembly vs inheriting across assemblies.
         protected override bool ComputeHasGCStaticBase(FieldDesc field)
         {
             Debug.Assert(field.IsStatic);

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -165,6 +165,9 @@ namespace Internal.Runtime.TypeLoader
                 ushort flags;
                 ushort runtimeInterfacesLength = 0;
                 bool isGenericEETypeDef = false;
+#if EETYPE_MODULE_MANAGER
+                IntPtr moduleManager = IntPtr.Zero;
+#endif
 
                 if (state.RuntimeInterfaces != null)
                 {
@@ -184,6 +187,9 @@ namespace Internal.Runtime.TypeLoader
                     flags = pTemplateEEType->Flags;
                     isArray = pTemplateEEType->IsArray;
                     isGeneric = pTemplateEEType->IsGeneric;
+#if EETYPE_MODULE_MANAGER
+                    moduleManager = pTemplateEEType->PointerToTypeManager;
+#endif
                     Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
                 }
                 else if (state.TypeBeingBuilt.IsGenericDefinition)
@@ -374,6 +380,9 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;
                     pEEType->HashCode = hashCodeOfNewType;
+#if EETYPE_MODULE_MANAGER
+                    pEEType->PointerToTypeManager = moduleManager;
+#endif
 
                     // Write the GCDesc
                     bool isSzArray = isArray ? state.ArrayRank < 1 : false;

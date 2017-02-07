@@ -8,6 +8,14 @@
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "holder.h"
+#include "rhassert.h"
+#include "slist.h"
+#include "gcrhinterface.h"
+#include "shash.h"
+#include "RWLock.h"
+#include "module.h"
+#include "varint.h"
+#include "rhbinder.h"
 #include "TypeManager.h"
 
 /* static */
@@ -31,6 +39,9 @@ TypeManager * TypeManager::Create(void * pModuleHeader)
 TypeManager::TypeManager(ReadyToRunHeader * pHeader)
     : m_pHeader(pHeader), m_pDispatchMapTable(nullptr)
 {
+    int length;
+    m_pStaticsGCDataSection = (UInt8*)GetModuleSection(ReadyToRunSectionType::GCStaticRegion, &length);
+    m_pStaticsGCInfo = (StaticGcDesc*)GetModuleSection(ReadyToRunSectionType::GCStaticDesc, &length);;
 }
 
 void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)
@@ -75,10 +86,35 @@ int TypeManager::ModuleInfoRow::GetLength()
 {
     if (HasEndPointer())
     {
-        return (int)((PTR_UInt8)End - (PTR_UInt8)Start);
+        return (int)((UInt8*)End - (UInt8*)Start);
     }
     else
     {
         return sizeof(void*);
     }
+}
+
+void TypeManager::EnumStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, StaticGcDesc* pStaticGcInfo)
+{
+    if (pStaticGcInfo == NULL)
+        return;
+
+    for (UInt32 idxSeries = 0; idxSeries < pStaticGcInfo->m_numSeries; idxSeries++)
+    {
+        PTR_StaticGcDescGCSeries pSeries = dac_cast<PTR_StaticGcDescGCSeries>(dac_cast<TADDR>(pStaticGcInfo) +
+            offsetof(StaticGcDesc, m_series) + (idxSeries * sizeof(StaticGcDesc::GCSeries)));
+
+        // The m_startOffset field is really 32-bit relocation (IMAGE_REL_BASED_RELPTR32) to the GC static base of the type
+        // the GCSeries is describing for. This makes it tolerable to the symbol sorting that the linker conducts.
+        PTR_RtuObjectRef    pRefLocation = dac_cast<PTR_RtuObjectRef>(dac_cast<PTR_UInt8>(&pSeries->m_startOffset) + pSeries->m_startOffset);
+        UInt32              numObjects = pSeries->m_size;
+
+        RedhawkGCInterface::BulkEnumGcObjRef(pRefLocation, numObjects, pfnCallback, pvCallbackData);
+    }
+}
+
+void TypeManager::EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData)
+{
+    // Regular statics.
+    EnumStaticGCRefsBlock(pfnCallback, pvCallbackData, m_pStaticsGCInfo);
 }

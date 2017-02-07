@@ -6,12 +6,21 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
+    using System.Runtime.InteropServices;
+
     // CONTRACT with Runtime
     // The binder expects a RuntimeExport'ed method with name "CreateCommandLine" in the class library
     //      Signature : public string[] fnname ();
 
     internal static class CommandLine
     {
+        [NativeCallable(EntryPoint="InvokeExeMain", CallingConvention = CallingConvention.Cdecl)]
+        public unsafe static int InvokeExeMain(IntPtr pfnUserMain)
+        {
+            string[] commandLine = InternalCreateCommandLine();
+            return RawCalliHelper.Call<int>(pfnUserMain, commandLine);
+        }
+        
         [RuntimeExport("CreateCommandLine")]
         public static unsafe string[] InternalCreateCommandLine()
         {
