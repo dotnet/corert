@@ -30,12 +30,19 @@ namespace System
 
             bool missingDefaultConstructor = false;
 
+            EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
+
             // ProjectN:936613 - Early exit for variable sized types (strings, arrays, etc.) as we cannot call
             // CreateInstanceIntrinsic on them since the intrinsic will attempt to allocate an instance of these types
             // and that is verboten (it results in silent heap corruption!).
-            if (EETypePtr.EETypePtrOf<T>().ComponentSize != 0)
+            if (eetype.ComponentSize != 0)
             {
                 // ComponentSize > 0 indicates an array-like type (e.g. string, array, etc).
+                missingDefaultConstructor = true;
+            }
+            else if (eetype.IsInterface)
+            {
+                // Do not attempt to allocate interface types either
                 missingDefaultConstructor = true;
             }
             else
@@ -63,7 +70,7 @@ namespace System
 
             if (missingDefaultConstructor)
             {
-                throw new MissingMemberException(SR.Format(SR.MissingConstructor_Name, typeof(T)));
+                throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, typeof(T)));
             }
 
             return t;
