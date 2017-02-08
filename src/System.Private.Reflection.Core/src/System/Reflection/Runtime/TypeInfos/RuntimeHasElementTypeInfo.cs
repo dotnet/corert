@@ -147,7 +147,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             string elementTypeName = _key.ElementType.InternalGetNameIfAvailable(ref rootCauseForFailure);
             if (elementTypeName == null)
