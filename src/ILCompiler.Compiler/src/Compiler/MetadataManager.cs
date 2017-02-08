@@ -202,7 +202,18 @@ namespace ILCompiler
         /// <summary>
         /// Is there a reflection invoke stub for a method that is invokable?
         /// </summary>
-        public abstract bool HasReflectionInvokeStub(MethodDesc method);
+        public bool HasReflectionInvokeStub(MethodDesc method)
+        {
+            if (!IsReflectionInvokable(method))
+                return false;
+
+            return HasReflectionInvokeStubForInvokableMethod(method);
+        }
+
+        /// <summary>
+        /// Given that a method is invokable, does there exist a reflection invoke stub?
+        /// </summary>
+        public abstract bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method);
 
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.

@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Once we have a true multi module compilation story, we'll need to start emitting entries where this is not set.
                 flags |= InvokeTableFlags.HasMetadataHandle;
 
-                if (!factory.MetadataManager.HasReflectionInvokeStub(method))
+                if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                     flags |= InvokeTableFlags.NeedsParameterInterpretation;
 
                 // TODO: native signature for P/Invokes and NativeCallable methods

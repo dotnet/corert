@@ -133,7 +133,7 @@ namespace ILCompiler
         /// <summary>
         /// Is there a reflection invoke stub for a method that is invokable?
         /// </summary>
-        public override bool HasReflectionInvokeStub(MethodDesc method)
+        public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
             return true;
         }
