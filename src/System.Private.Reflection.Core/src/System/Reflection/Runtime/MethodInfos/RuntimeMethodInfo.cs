@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
@@ -22,7 +23,7 @@ namespace System.Reflection.Runtime.MethodInfos
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeMethodInfo : MethodInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeMethodInfo : MethodInfo, ISerializable, ITraceableTypeMember
     {
         protected RuntimeMethodInfo()
         {
@@ -140,6 +141,13 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         public abstract override MethodInfo GetGenericMethodDefinition();
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+        }
 
         public sealed override ParameterInfo[] GetParameters()
         {

@@ -102,7 +102,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     sep = ",";
                     String name = methodTypeArgument.InternalNameIfAvailable;
                     if (name == null)
-                        name = ToStringUtils.UnavailableType;
+                        name = Type.DefaultTypeNameWhenMissingMetadata;
                     sb.Append(methodTypeArgument.Name);
                 }
                 sb.Append(']');

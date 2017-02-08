@@ -6,58 +6,6 @@ using System;
 
 namespace System.Threading
 {
-    public delegate void ThreadStart();
-    public delegate void ParameterizedThreadStart(object obj);
-
-    public class ThreadInterruptedException : Exception
-    {
-        public ThreadInterruptedException() { }
-        public ThreadInterruptedException(string message) { }
-        public ThreadInterruptedException(string message, Exception innerException) { }
-    }
-
-    public sealed class ThreadStartException : Exception
-    {
-        internal ThreadStartException() { }
-    }
-
-    public class ThreadStateException : Exception
-    {
-        public ThreadStateException() { }
-        public ThreadStateException(string message) { }
-        public ThreadStateException(string message, Exception innerException) { }
-    }
-
-    public enum ThreadPriority
-    {
-        Lowest = 0,
-        BelowNormal = 1,
-        Normal = 2,
-        AboveNormal = 3,
-        Highest = 4
-    }
-
-    public enum ThreadState
-    {
-        Running = 0,
-        StopRequested = 1,
-        SuspendRequested = 2,
-        Background = 4,
-        Unstarted = 8,
-        Stopped = 16,
-        WaitSleepJoin = 32,
-        Suspended = 64,
-        AbortRequested = 128,
-        Aborted = 256
-    }
-
-    public enum ApartmentState
-    {
-        STA = 0,
-        MTA = 1,
-        Unknown = 2
-    }
-
     public sealed class RuntimeThread
     {
         public static RuntimeThread Create(ThreadStart start) { throw null; }

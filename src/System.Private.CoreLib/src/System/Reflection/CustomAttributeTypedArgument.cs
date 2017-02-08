@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
+using System.Collections.Generic;
+
 namespace System.Reflection
 {
     public struct CustomAttributeTypedArgument
@@ -34,11 +37,50 @@ namespace System.Reflection
         public static bool operator ==(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => left.Equals(right);
         public static bool operator !=(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => !(left.Equals(right));
 
-        public override string ToString()
+        public override string ToString() => ToString(typed: false);
+
+        internal string ToString(bool typed)
         {
-            // base.ToString() is a temporary implementation: this silly looking line officially tags this method as needing further work.
-            if (string.Empty.Length > 0) throw new NotImplementedException();
-            return base.ToString();
+            if (ArgumentType == null)
+                return base.ToString(); // Someone called ToString() on "default(CustomAttributeTypedArgument)"
+
+            try
+            {
+                if (ArgumentType.IsEnum)
+                    return string.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullNameOrDefault);
+
+                else if (Value == null)
+                    return string.Format(CultureInfo.CurrentCulture, typed ? "null" : "({0})null", ArgumentType.NameOrDefault);
+
+                else if (ArgumentType == typeof(string))
+                    return string.Format(CultureInfo.CurrentCulture, "\"{0}\"", Value);
+
+                else if (ArgumentType == typeof(char))
+                    return string.Format(CultureInfo.CurrentCulture, "'{0}'", Value);
+
+                else if (ArgumentType == typeof(Type))
+                    return string.Format(CultureInfo.CurrentCulture, "typeof({0})", ((Type)Value).FullNameOrDefault);
+
+                else if (ArgumentType.IsArray)
+                {
+                    string result = null;
+                    IList<CustomAttributeTypedArgument> array = Value as IList<CustomAttributeTypedArgument>;
+
+                    Type elementType = ArgumentType.GetElementType();
+                    result = string.Format(CultureInfo.CurrentCulture, @"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullNameOrDefault : elementType.NameOrDefault, array.Count);
+
+                    for (int i = 0; i < array.Count; i++)
+                        result += string.Format(CultureInfo.CurrentCulture, i == 0 ? "{0}" : ", {0}", array[i].ToString(elementType != typeof(object)));
+
+                    return result += " }";
+                }
+
+                return string.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.NameOrDefault);
+            }
+            catch (MissingMetadataException)
+            {
+                return base.ToString(); // Failsafe. Code inside "try" should still strive to avoid trigging a MissingMetadataException as caught exceptions are annoying when debugging.
+            }
         }
 
         private static object CanonicalizeValue(object value)

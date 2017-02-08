@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
     internal class GCStress
     {
+        // ProjectX TODO:  delete the RuntimeExport attribute. The RuntimeExport version is
+        // only used in MDIL mode where it's called in the managed bootstrapping code. 
         [RuntimeExport("RhGcStress_Initialize")]
         public static void Initialize()
         {
@@ -35,6 +38,12 @@ namespace System.Runtime
             // notify redhawku.dll
             InternalCalls.RhpInitializeGcStress();
 #endif // FEATURE_GC_STRESS
+        }
+
+        [NativeCallable(EntryPoint = "RhGcStress_Initialize2", CallingConvention = CallingConvention.Cdecl)]
+        internal static void Initialize2()
+        {
+            Initialize();
         }
 
         [System.Diagnostics.Conditional("FEATURE_GC_STRESS")]

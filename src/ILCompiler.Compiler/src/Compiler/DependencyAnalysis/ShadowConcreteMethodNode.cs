@@ -62,15 +62,19 @@ namespace ILCompiler.DependencyAnalysis
             // with the concrete instantiation of the method to get concrete dependencies.
             Instantiation typeInst = Method.OwningType.Instantiation;
             Instantiation methodInst = Method.Instantiation;
+            IEnumerable<DependencyListEntry> staticDependencies = CanonicalMethodNode.GetStaticDependencies(factory);
 
-            foreach (DependencyListEntry canonDep in CanonicalMethodNode.GetStaticDependencies(factory))
+            if (staticDependencies != null)
             {
-                var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
-                if (runtimeDep != null)
+                foreach (DependencyListEntry canonDep in staticDependencies)
                 {
-                    foreach (var d in runtimeDep.InstantiateDependencies(factory, typeInst, methodInst))
+                    var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
+                    if (runtimeDep != null)
                     {
-                        yield return d;
+                        foreach (var d in runtimeDep.InstantiateDependencies(factory, typeInst, methodInst))
+                        {
+                            yield return d;
+                        }
                     }
                 }
             }

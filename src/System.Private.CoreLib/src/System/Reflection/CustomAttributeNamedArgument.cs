@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using Internal.Runtime.Augments;
 
 namespace System.Reflection
@@ -86,9 +87,29 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            // base.ToString() is a temporary implementation: this silly looking line officially tags this method as needing further work.
-            if (string.Empty.Length > 0) throw new NotImplementedException();
-            return base.ToString();
+            if (_attributeType == null)
+                return base.ToString(); // Someone called ToString() on default(CustomAttributeNamedArgument)
+
+            try
+            {
+                bool typed;
+                if (_lazyMemberInfo == null)
+                {
+                    // If we haven't resolved the memberName into a MemberInfo yet, don't do so just for ToString()'s sake (it can trigger a MissingMetadataException.)
+                    // Just use the fully type-qualified format by fiat.
+                    typed = true;
+                }
+                else
+                {
+                    Type argumentType = IsField ? ((FieldInfo)_lazyMemberInfo).FieldType : ((PropertyInfo)_lazyMemberInfo).PropertyType;
+                    typed = argumentType != typeof(object);
+                }
+                return string.Format(CultureInfo.CurrentCulture, "{0} = {1}", MemberName, TypedValue.ToString(typed));
+            }
+            catch (MissingMetadataException)
+            {
+                return base.ToString(); // Failsafe. Code inside "try" should still strive to avoid trigging a MissingMetadataException as caught exceptions are annoying when debugging.
+            }
         }
 
         private readonly Type _attributeType;

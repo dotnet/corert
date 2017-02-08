@@ -32,10 +32,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        {
+            return "__NonGCStaticBase_" + nameMangler.GetMangledTypeName(type);
+        }
+ 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__NonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
+            sb.Append("__NonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type)); 
         }
+
         public int Offset => 0;
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 

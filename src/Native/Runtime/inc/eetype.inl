@@ -148,15 +148,18 @@ inline DispatchMap * EEType::GetDispatchMap()
     {
         if (HasDynamicallyAllocatedDispatchMap())
             return *(DispatchMap **)((UInt8*)this + GetFieldOffset(ETF_DynamicDispatchMap));
-        else 
+        else
             return get_DynamicTemplateType()->GetDispatchMap();
     }
 
     // Determine this EEType's module.
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
-#ifdef CORERT
-    return GetTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
+#if defined(EETYPE_TYPE_MANAGER)
+    if (HasTypeManager())
+    {
+        return GetTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
+    }
 #endif
 
     // handle case of R2R cloned string type correctly - the cloned string type is just a copy

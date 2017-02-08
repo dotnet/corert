@@ -53,7 +53,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        public void SetSystemModule(ModuleDesc systemModule)
+        public virtual void SetSystemModule(ModuleDesc systemModule)
         {
             InitializeSystemModule(systemModule);
 

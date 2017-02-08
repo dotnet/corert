@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 
 using System.Reflection.Runtime.General;
@@ -24,8 +25,9 @@ namespace System.Reflection.Runtime.FieldInfos
     //
     // The Runtime's implementation of fields.
     //
+    [Serializable]
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeFieldInfo : FieldInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeFieldInfo : FieldInfo, ISerializable, ITraceableTypeMember
     {
         //
         // contextType    - the type that supplies the type context (i.e. substitutions for generic parameters.) Though you
@@ -69,6 +71,13 @@ namespace System.Reflection.Runtime.FieldInfos
             {
                 return this.FieldRuntimeType;
             }
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
         public sealed override Object GetValue(Object obj)

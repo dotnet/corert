@@ -54,7 +54,7 @@ namespace System.Reflection
 
         public object GetRealObject(StreamingContext context) { throw new NotImplementedException(); }
 
-        public override string ToString() { throw new NotImplementedException(); }
+        public override string ToString() => ParameterType.FormatTypeName() + " " + Name;
 
         protected ParameterAttributes AttrsImpl;
         protected Type ClassImpl;
