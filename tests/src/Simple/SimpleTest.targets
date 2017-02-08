@@ -3,8 +3,8 @@
 
   <PropertyGroup>
     <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
-    <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -35,4 +35,9 @@
 
   <!-- Use the source primary copy for development convenience -->
   <Import Project="$(MSBuildThisFileDirectory)\..\..\Test.Common.targets" />
+
+  <ItemGroup>
+    <CustomLinkerArg Include="$(AdditionalLinkerFlags)" />
+  </ItemGroup>
+
 </Project>

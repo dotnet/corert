@@ -23,6 +23,9 @@ for i in "$@"
 		arm)
 			CoreRT_BuildArch=arm
 			;;
+		armel)
+			CoreRT_BuildArch=armel
+			;;
 		arm64)
 			CoreRT_BuildArch=arm64
 			;;

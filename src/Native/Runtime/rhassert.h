@@ -26,6 +26,8 @@
 
 void Assert(const char * expr, const char * file, unsigned int line_num, const char * message);
 
+void NYI_Assert();
+
 #else
 
 #define ASSERT(expr)
