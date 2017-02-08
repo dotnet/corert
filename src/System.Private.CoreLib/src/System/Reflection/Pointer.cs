@@ -20,6 +20,12 @@ namespace System.Reflection
             _ptrType = ptrType;
         }
 
+        private unsafe Pointer(SerializationInfo info, StreamingContext context)
+        {
+            _ptr = ((IntPtr)(info.GetValue("_ptr", typeof(IntPtr)))).ToPointer();
+            _ptrType = (Type)info.GetValue("_ptrType", typeof(Type));
+        }
+
         [CLSCompliant(false)]
         public static object Box(void* ptr, Type type)
         {
@@ -41,7 +47,11 @@ namespace System.Reflection
             return ((Pointer)ptr)._ptr;
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("_ptr", new IntPtr(_ptr));
+            info.AddValue("_ptrType", _ptrType);
+        }
 
         private readonly void* _ptr;
         private readonly Type _ptrType;
