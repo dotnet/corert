@@ -158,8 +158,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
-        protected override TypeSystemContext Context => _owningMethod.Context;
-				
+        protected override TypeSystemContext Context => _owningMethod.Context;				
 		public MethodDesc OwningMethod => _owningMethod;
 
 		public static string GetMangledName(MethodDesc owningMethod)

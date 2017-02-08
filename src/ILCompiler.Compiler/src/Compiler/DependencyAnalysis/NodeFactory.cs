@@ -32,6 +32,9 @@ namespace ILCompiler.DependencyAnalysis
             CreateNodeCaches();
 
             MetadataManager = new CompilerGeneratedMetadataManager(this);
+
+            ThreadStaticsRegion = new ThreadStaticsRegionNode(
+                "__ThreadStaticRegionStart", "__ThreadStaticRegionEnd", null, _target.Abi);
         }
 
         public TargetDetails Target
@@ -726,10 +729,7 @@ namespace ILCompiler.DependencyAnalysis
             "__GCStaticRegionStart", 
             "__GCStaticRegionEnd", 
             null);
-        public ThreadStaticsRegionNode ThreadStaticsRegion = new ThreadStaticsRegionNode(
-            "__ThreadStaticRegionStart",
-            "__ThreadStaticRegionEnd", 
-            null);
+        public ThreadStaticsRegionNode ThreadStaticsRegion;
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             "__EagerCctorStart",

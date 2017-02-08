@@ -85,16 +85,19 @@ namespace ILCompiler.DependencyAnalysis
 
     public class ThreadStaticsRegionNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
     {
-        public ThreadStaticsRegionNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
+        private TargetAbi _targetAbi;
+        
+        public ThreadStaticsRegionNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter, TargetAbi targetAbi)
             : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
         {
+            _targetAbi = targetAbi;
         }
 
         public override ObjectNodeSection Section
         {
             get
             {
-                return ObjectNodeSection.TLSSection;
+                return _targetAbi == TargetAbi.ProjectN ? ObjectNodeSection.TLSSection : ObjectNodeSection.DataSection;
             }
         }
     }
