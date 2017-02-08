@@ -1824,6 +1824,24 @@ namespace System.Runtime.InteropServices
         }
     }
 
+    /// <summary>
+    /// Native Value for STATSTG
+    /// </summary>
+    struct STATSTG_UnsafeType
+    {
+        public IntPtr pwcsName;
+        public int type;
+        public long cbSize;
+        public ComTypes.FILETIME mtime;
+        public ComTypes.FILETIME ctime;
+        public ComTypes.FILETIME atime;
+        public int grfMode;
+        public int grfLocksSupported;
+        public Guid clsid;
+        public int grfStateBits;
+        public int reserved;
+    }
+
     unsafe internal struct __vtable_IStream
     {
         // IUnknown
@@ -2041,12 +2059,13 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal static unsafe int Stat(System.IntPtr pComThis, out ComTypes.STATSTG pstatstg, int grfStatFlag)
+        internal static unsafe int Stat(System.IntPtr pComThis, IntPtr pstatstg, int grfStatFlag)
         {
             __com_IStream* pIStream = (__com_IStream*)pComThis;
-            pstatstg = new ComTypes.STATSTG();
-            pstatstg.cbSize = pIStream->m_cbSize;
-            pstatstg.type = 2; // STGTY_STREAM
+            STATSTG_UnsafeType* pUnsafeStatstg = (STATSTG_UnsafeType*)pstatstg;
+            pUnsafeStatstg->pwcsName = IntPtr.Zero;
+            pUnsafeStatstg->type = 2; // STGTY_STREAM
+            pUnsafeStatstg->cbSize = pIStream->m_cbSize;
             return Interop.COM.S_OK;
         }
 
