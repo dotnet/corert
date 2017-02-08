@@ -10,6 +10,7 @@
 using System.Reflection;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime;
 
 using Internal.Reflection.Augments;
 
@@ -77,7 +78,26 @@ namespace System
         }
 
         [Intrinsic]
-        private extern static T CreateInstanceIntrinsic<T>();
+        private static T CreateInstanceIntrinsic<T>()
+        {
+            // Fallback implementation for codegens that don't support this intrinsic.
+            // This uses the type loader and doesn't have the kind of guarantees about it always working
+            // as the intrinsic expansion has. Also, it's slower.
+
+            EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
+
+            // The default(T) check can be evaluated statically and will result in the body of this method
+            // becoming empty for valuetype Ts. We still need a dynamic IsNullable check to cover Nullables though.
+            // This will obviously need work once we start supporting default valuetype constructors.
+            if (default(T) == null && !eetype.IsNullable)
+            {
+                object o = null;
+                TypeLoaderExports.ActivatorCreateInstanceAny(ref o, eetype.RawValue);
+                return (T)o;
+            }
+
+            return default(T);
+        }
 
         [ThreadStatic]
         internal static bool s_createInstanceMissingDefaultConstructor;
