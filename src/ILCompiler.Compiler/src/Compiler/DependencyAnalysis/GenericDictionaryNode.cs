@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
             }
         }
-        
+
         protected sealed override string GetName()
         {
             return this.GetMangledName();

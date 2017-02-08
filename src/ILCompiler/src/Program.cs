@@ -182,7 +182,6 @@ namespace ILCompiler
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
             typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));           
-            typeSystemContext.SupportLazyCctors = typeSystemContext.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null;
 
             //
             // Initialize compilation group and compilation roots

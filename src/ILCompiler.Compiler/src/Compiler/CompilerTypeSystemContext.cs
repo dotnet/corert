@@ -134,6 +134,14 @@ namespace ILCompiler
             set;
         }
 
+        private bool _supportsLazyCctors;
+
+        public override void SetSystemModule(ModuleDesc systemModule)
+        {
+            base.SetSystemModule(systemModule);
+            _supportsLazyCctors = systemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null;
+        }
+
         public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
             return GetModuleForSimpleName(name.Name, throwIfNotFound);
@@ -294,7 +302,7 @@ namespace ILCompiler
             return _virtualMethodAlgorithm;
         }
 
-        public override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+        protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
         {
             if (type.IsDelegate)
             {
@@ -359,8 +367,6 @@ namespace ILCompiler
             return _metadataStringDecoder;
         }
 
-        // Overriding 'protected internal' virtuals requires a specific signature if overriding from within
-        // the same assembly vs inheriting across assemblies.
         protected override bool ComputeHasGCStaticBase(FieldDesc field)
         {
             Debug.Assert(field.IsStatic);

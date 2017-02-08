@@ -114,10 +114,10 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromPointer, (PTR_VOID pPointerVal))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
 {
-#if CORERT  
+#if CORERT
     return (HANDLE)(pEEType->GetTypeManager());
 #else
-#if EETYPE_MODULE_MANAGER
+#if EETYPE_TYPE_MANAGER
     if (pEEType->HasTypeManager())
         return (HANDLE)(pEEType->GetTypeManager());
 #endif

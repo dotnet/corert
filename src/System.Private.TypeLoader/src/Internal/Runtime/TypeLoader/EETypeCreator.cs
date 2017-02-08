@@ -165,8 +165,8 @@ namespace Internal.Runtime.TypeLoader
                 ushort flags;
                 ushort runtimeInterfacesLength = 0;
                 bool isGenericEETypeDef = false;
-#if EETYPE_MODULE_MANAGER
-                IntPtr moduleManager = IntPtr.Zero;
+#if EETYPE_TYPE_MANAGER
+                IntPtr typeManager = IntPtr.Zero;
 #endif
 
                 if (state.RuntimeInterfaces != null)
@@ -187,8 +187,8 @@ namespace Internal.Runtime.TypeLoader
                     flags = pTemplateEEType->Flags;
                     isArray = pTemplateEEType->IsArray;
                     isGeneric = pTemplateEEType->IsGeneric;
-#if EETYPE_MODULE_MANAGER
-                    moduleManager = pTemplateEEType->PointerToTypeManager;
+#if EETYPE_TYPE_MANAGER
+                    typeManager = pTemplateEEType->PointerToTypeManager;
 #endif
                     Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
                 }
@@ -380,8 +380,8 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;
                     pEEType->HashCode = hashCodeOfNewType;
-#if EETYPE_MODULE_MANAGER
-                    pEEType->PointerToTypeManager = moduleManager;
+#if EETYPE_TYPE_MANAGER
+                    pEEType->PointerToTypeManager = typeManager;
 #endif
 
                     // Write the GCDesc

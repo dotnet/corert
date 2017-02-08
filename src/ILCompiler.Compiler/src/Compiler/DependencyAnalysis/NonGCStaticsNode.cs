@@ -39,8 +39,9 @@ namespace ILCompiler.DependencyAnalysis
  
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type, nameMangler));
+            sb.Append("__NonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type)); 
         }
+
         public int Offset => 0;
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 

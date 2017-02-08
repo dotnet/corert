@@ -7,7 +7,7 @@ using System.Reflection.Metadata;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public class PrimitiveTypeProvider
+    public static class PrimitiveTypeProvider
     {
         public static TypeDesc GetPrimitiveType(TypeSystemContext context, PrimitiveTypeCode typeCode)
         {

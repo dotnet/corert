@@ -29,14 +29,6 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr* section = (IntPtr*)RuntimeImports.GetModuleSection(moduleManager, (int)ReadyToRunSectionType.ModuleManagerIndirection, out length);
             *section = moduleManager;
 
-            // Initialize strings if any are present
-            IntPtr stringSection = RuntimeImports.GetModuleSection(moduleManager, (int)ReadyToRunSectionType.StringTable, out length);
-            if (stringSection != IntPtr.Zero)
-            {
-                Debug.Assert(length % IntPtr.Size == 0);
-                InitializeStringTable(stringSection, length);
-            }
-
             // Initialize statics if any are present
             IntPtr staticsSection = RuntimeImports.GetModuleSection(moduleManager, (int)ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
@@ -51,27 +43,6 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 Debug.Assert(length % IntPtr.Size == 0);
                 InitializeFrozenObjectSegment(frozenObjectSection, length);
-            }
-        }
-
-        private static unsafe void InitializeStringTable(IntPtr stringTableStart, int length)
-        {
-            IntPtr stringTableEnd = (IntPtr)((byte*)stringTableStart + length);
-            for (IntPtr* tab = (IntPtr*)stringTableStart; tab < (IntPtr*)stringTableEnd; tab++)
-            {
-                byte* bytes = (byte*)*tab;
-                int len = (int)NativePrimitiveDecoder.DecodeUnsigned(ref bytes);
-                int count = LowLevelUTF8Encoding.GetCharCount(bytes, len);
-                Debug.Assert(count >= 0);
-
-                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.EETypePtrOf<string>(), count);
-                fixed (char* dest = newStr)
-                {
-                    int newCount = LowLevelUTF8Encoding.GetChars(bytes, len, dest, count);
-                    Debug.Assert(newCount == count);
-                }
-                GCHandle handle = GCHandle.Alloc(newStr);
-                *tab = (IntPtr)handle;
             }
         }
 

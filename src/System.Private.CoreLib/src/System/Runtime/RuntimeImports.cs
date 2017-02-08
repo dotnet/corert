@@ -756,14 +756,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpArrayClear")]
         internal static extern bool TryArrayClear(Array array, int index, int length);
 
-        [RuntimeImport(".", "RhpGetModuleSection")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetModuleSection(IntPtr module, int readyToRunSectionId, out int length);
-
-        [RuntimeImport(".", "RhpCreateModuleManager")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static unsafe extern IntPtr CreateModuleManager(IntPtr moduleHeader);
-
         // Only the values defined below are valid. Any other value returned from RhGetCorElementType
         // indicates only that the type is not one of the primitives defined below and is otherwise undefined
         // and subject to change.

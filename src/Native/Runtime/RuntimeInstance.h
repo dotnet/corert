@@ -183,15 +183,15 @@ public:
     bool AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiThreadStaticOffset, StaticGcDesc *pGcStaticsDesc);
 
     bool CreateGenericAndStaticInfo(EEType *             pEEType,
-                                   EEType *             pTemplateType,
-                                   UInt32               arity,
-                                   UInt32               nonGcStaticDataSize,
-                                   UInt32               nonGCStaticDataOffset,
-                                   UInt32               gcStaticDataSize,
-                                   UInt32               threadStaticOffset,
-                                   StaticGcDesc *       pGcStaticsDesc,
-                                   StaticGcDesc *       pThreadStaticsDesc,
-                                   UInt32*              pGenericVarianceFlags);
+                                    EEType *             pTemplateType,
+                                    UInt32               arity,
+                                    UInt32               nonGcStaticDataSize,
+                                    UInt32               nonGCStaticDataOffset,
+                                    UInt32               gcStaticDataSize,
+                                    UInt32               threadStaticOffset,
+                                    StaticGcDesc *       pGcStaticsDesc,
+                                    StaticGcDesc *       pThreadStaticsDesc,
+                                    UInt32*              pGenericVarianceFlags);
 
     bool UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCount, void  **pIndirCells, UInt32 indirCellCount);
 

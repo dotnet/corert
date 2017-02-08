@@ -650,19 +650,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private TypeDesc _systemStringClass;
-        public TypeDesc SystemStringClass
-        {
-            get
-            {
-                if (_systemStringClass == null)
-                {
-                    _systemStringClass = _context.GetWellKnownType(WellKnownType.String);
-                }
-                return _systemStringClass;
-            }
-        }
-
         private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;
 
         public DependencyNode VirtualMethodUse(MethodDesc decl)

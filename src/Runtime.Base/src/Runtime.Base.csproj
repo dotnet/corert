@@ -51,7 +51,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants>EETYPE_MODULE_MANAGER;$(DefineConstants)</DefineConstants>
+    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

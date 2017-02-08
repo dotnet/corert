@@ -224,7 +224,7 @@ private:
     UInt16              m_usNumVtableSlots;
     UInt16              m_usNumInterfaces;
     UInt32              m_uHashCode;
-#if defined(CORERT) || defined(EETYPE_MODULE_MANAGER)
+#if defined(EETYPE_TYPE_MANAGER)
     TypeManager**     m_ppTypeManager;
 #endif
 
@@ -470,12 +470,12 @@ public:
 
     DynamicModule* get_DynamicModule();
 
-#if defined(CORERT) || defined(EETYPE_MODULE_MANAGER)
+#if defined(EETYPE_TYPE_MANAGER)
     TypeManager* GetTypeManager()
          { return *m_ppTypeManager; }
 #endif
 
-#if defined(CORERT) || defined(EETYPE_MODULE_MANAGER)
+#if defined(EETYPE_TYPE_MANAGER)
     //
     // PROJX-TODO
     // Needed while we exist in a world where some things are built using CoreRT and some built using 

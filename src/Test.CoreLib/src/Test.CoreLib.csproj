@@ -36,7 +36,7 @@
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>CORERT;EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
     <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>

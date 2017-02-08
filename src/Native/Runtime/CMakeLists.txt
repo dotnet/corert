@@ -162,7 +162,7 @@ add_definitions(-DVERIFY_HEAP)
 add_definitions(-DCORERT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
-add_definitions(-DEETYPE_MODULE_MANAGER)
+add_definitions(-DEETYPE_TYPE_MANAGER)
 
 if(WIN32)
   # There is a problem with undefined symbol g_pConfig, windows don't care since it is in template method, but clang does 

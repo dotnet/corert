@@ -29,7 +29,7 @@ namespace System.Runtime
 
             return result;
         }
-        
+
         [RuntimeExport("ActivatorCreateInstanceAny")]
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {

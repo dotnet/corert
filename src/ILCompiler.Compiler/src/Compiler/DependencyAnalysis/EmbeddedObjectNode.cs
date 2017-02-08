@@ -30,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             set
             {
+                Debug.Assert(_offset == InvalidOffset || _offset == value);
                 _offset = value;
             }
         }

@@ -661,9 +661,9 @@ namespace Internal.TypeSystem
             return _signatureVariables.GetOrCreateValue(combinedIndex);
         }
 
-        public virtual IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+        protected internal virtual IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
         {
-            return type.GetMethods(); 
+            return type.GetMethods();
         }
 
         /// <summary>
