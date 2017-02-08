@@ -35,11 +35,11 @@ namespace ILCompiler
             public HashSet<MetadataType> ReflectionBlockedTypes = new HashSet<MetadataType>();
         }
 
-        ModuleDesc _metadataDescribingModule;
-        HashSet<ModuleDesc> _compilationModules;
-        Lazy<MetadataLoadedInfo> _loadedMetadata;
-        Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
-        readonly byte[] _metadataBlob;
+        private readonly ModuleDesc _metadataDescribingModule;
+        private readonly HashSet<ModuleDesc> _compilationModules;
+        private readonly Lazy<MetadataLoadedInfo> _loadedMetadata;
+        private Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
+        private readonly byte[] _metadataBlob;
 
         public PrecomputedMetadataManager(NodeFactory factory, ModuleDesc metadataDescribingModule, IEnumerable<ModuleDesc> compilationModules, byte[] metadataBlob) : base(factory)
         {
@@ -110,13 +110,7 @@ namespace ILCompiler
 
         public static bool ModuleHasMetadataMappings(ModuleDesc metadataDescribingModule)
         {
-            try
-            {
-                return metadataDescribingModule.GetTypeByCustomAttributeTypeName(MetadataMappingTypeName) != null;
-            }
-            catch { }
-
-            return false;
+            return metadataDescribingModule.GetTypeByCustomAttributeTypeName(MetadataMappingTypeName, throwIfNotFound: false) != null;
         }
 
         private MetadataLoadedInfo LoadMetadata()
