@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Object writer using https://github.com/dotnet/llilc
     /// </summary>
-    public class ObjectWriter : IDisposable
+    internal class ObjectWriter : IDisposable
     {
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();

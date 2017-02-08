@@ -21,7 +21,7 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <UseSyncTable>true</UseSyncTable>
-    <DefineConstants>EETYPE_MODULE_MANAGER;$(DefineConstants)</DefineConstants>
+    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>

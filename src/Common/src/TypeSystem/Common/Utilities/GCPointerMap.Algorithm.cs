@@ -43,10 +43,12 @@ namespace Internal.TypeSystem
                 {
                     Debug.Assert(fieldType.IsValueType);
                     var fieldDefType = (DefType)fieldType;
-
-                    GCPointerMapBuilder innerBuilder =
-                        builder.GetInnerBuilder(field.Offset, fieldDefType.InstanceFieldSize);
-                    FromInstanceLayoutHelper(ref innerBuilder, fieldDefType);
+                    if (fieldDefType.ContainsGCPointers)
+                    {
+                        GCPointerMapBuilder innerBuilder =
+                            builder.GetInnerBuilder(field.Offset, fieldDefType.InstanceByteCount);
+                        FromInstanceLayoutHelper(ref innerBuilder, fieldDefType);
+                    }
                 }
             }
 

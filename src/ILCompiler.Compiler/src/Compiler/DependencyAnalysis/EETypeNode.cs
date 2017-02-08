@@ -133,8 +133,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type, nameMangler));
+            sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
+        
         public int Offset => GCDescSize;
         public override bool IsShareable => IsTypeNodeShareable(_type);
 
@@ -200,10 +201,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputNullableTypeParameter(factory, ref objData);
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                OutputGenericInstantiationDetails(factory, ref objData);
-            }
+            OutputGenericInstantiationDetails(factory, ref objData);
 
             return objData.ToObjectData();
         }
@@ -605,7 +603,7 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
-        
+
         protected override void OnMarked(NodeFactory context)
         {
             //Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");

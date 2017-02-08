@@ -178,7 +178,7 @@ namespace Internal.Runtime
         private UInt16 _usNumInterfaces;
         private UInt32 _uHashCode;
 
-#if CORERT || EETYPE_MODULE_MANAGER
+#if EETYPE_TYPE_MANAGER
         private IntPtr _ppTypeManager;
 #endif
         // vtable follows
@@ -1092,12 +1092,12 @@ namespace Internal.Runtime
 #endif
         }
 
-#if CORERT || EETYPE_MODULE_MANAGER
+#if EETYPE_TYPE_MANAGER
         internal IntPtr TypeManager
         {
             get
             {
-                // This is always a pointer to a pointer to a module manager
+                // This is always a pointer to a pointer to a type manager
                 return *(IntPtr*)_ppTypeManager;
             }
         }
@@ -1106,7 +1106,7 @@ namespace Internal.Runtime
         {
             get
             {
-                // This is always a pointer to a pointer to a module manager
+                // This is always a pointer to a pointer to a type manager
                 return _ppTypeManager;
             }
 

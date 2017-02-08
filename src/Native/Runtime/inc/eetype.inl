@@ -155,7 +155,7 @@ inline DispatchMap * EEType::GetDispatchMap()
     // Determine this EEType's module.
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
-#if defined(CORERT) || defined(EETYPE_MODULE_MANAGER)
+#if defined(EETYPE_TYPE_MANAGER)
     if (HasTypeManager())
     {
         return GetTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
