@@ -33,7 +33,7 @@ namespace ILCompiler
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
 
-        private NodeFactory _nodeFactory;
+        protected readonly NodeFactory NodeFactory;
 
         private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
@@ -46,10 +46,8 @@ namespace ILCompiler
 
         public MetadataManager(NodeFactory factory)
         {
-            _nodeFactory = factory;
+            NodeFactory = factory;
         }
-
-        public NodeFactory NodeFactory { get { return _nodeFactory; } }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
@@ -146,7 +144,7 @@ namespace ILCompiler
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && _nodeFactory.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
+            if (nonGcStaticSectionNode != null && NodeFactory.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }
@@ -219,6 +217,100 @@ namespace ILCompiler
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
         public abstract MethodDesc GetReflectionInvokeStub(MethodDesc method);
+
+        /// <summary>
+        /// Compute the particular instantiation of a dynamic invoke thunk needed to invoke a method
+        /// This algorithm is shared with the runtime, so if a thunk requires generic instantiation
+        /// to be used, it must match this algorithm, and cannot be different with different MetadataManagers
+        /// NOTE: This function may return null in cases where an exact instantiation does not exist. (Universal Generics)
+        /// </summary>
+        protected MethodDesc InstantiateDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
+        {
+            if (thunk.Instantiation.Length == 0)
+            {
+                // nothing to instantiate
+                return thunk;
+            }
+
+            MethodSignature sig = method.Signature;
+            TypeSystemContext context = method.Context;
+
+            //
+            // Instantiate the generic thunk over the parameters and the return type of the target method
+            //
+
+            ParameterMetadata[] paramMetadata = null;
+            TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
+            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
+            for (int i = 0; i < sig.Length; i++)
+            {
+                TypeDesc parameterType = sig[i];
+                if (parameterType.IsByRef)
+                {
+                    // strip ByRefType off the parameter (the method already has ByRef in the signature)
+                    parameterType = ((ByRefType)parameterType).ParameterType;
+                }
+
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                {
+                    // For pointer typed parameters, instantiate the method over IntPtr
+                    parameterType = context.GetWellKnownType(WellKnownType.IntPtr);
+                }
+                else if (parameterType.IsEnum)
+                {
+                    // If the invoke method takes an enum as an input parameter and there is no default value for
+                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // on the underlying integral type of the enum.)
+                    if (paramMetadata == null)
+                        paramMetadata = method.GetParameterMetadata();
+
+                    bool hasDefaultValue = false;
+                    foreach (var p in paramMetadata)
+                    {
+                        // Parameter metadata indexes are 1-based (0 is reserved for return "parameter")
+                        if (p.Index == (i + 1) && p.HasDefault)
+                        {
+                            hasDefaultValue = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasDefaultValue)
+                        parameterType = parameterType.UnderlyingType;
+                }
+
+                instantiation[i] = parameterType;
+            }
+
+            if (!sig.ReturnType.IsVoid)
+            {
+                TypeDesc returnType = sig.ReturnType;
+                Debug.Assert(!returnType.IsByRef);
+
+                // If the invoke method return an object reference, we don't need to specialize on the
+                // exact type of the object reference, as the behavior is not different.
+                if ((returnType.IsDefType && !returnType.IsValueType) || returnType.IsArray)
+                {
+                    returnType = context.GetWellKnownType(WellKnownType.Object);
+                }
+
+                instantiation[sig.Length] = returnType;
+            }
+
+            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
+
+            // Check if at least one of the instantiation arguments is a universal canonical type, and if so, we 
+            // won't create a dynamic invoker instantiation. The arguments will be interpreted at runtime by the
+            // calling convention converter during the dynamic invocation
+            foreach (TypeDesc type in instantiation)
+            {
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                    return null;
+            }
+
+            MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
+            return instantiatedDynamicInvokeMethod;
+        }
 
         protected virtual void AddGeneratedType(TypeDesc type)
         {
