@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.General
                 Exception exception = null;
                 RuntimeTypeInfo runtimeType = TryResolve(typeContext, ref exception);
                 if (runtimeType == null)
-                    return ToStringUtils.UnavailableType;
+                    return Type.DefaultTypeNameWhenMissingMetadata;
 
                 // Because this runtimeType came from a successful TryResolve() call, it is safe to querying the TypeInfo's of the type and its component parts.
                 // If we're wrong, we do have the safety net of a try-catch.
@@ -70,7 +70,7 @@ namespace System.Reflection.Runtime.General
             }
             catch (Exception)
             {
-                return ToStringUtils.UnavailableType;
+                return Type.DefaultTypeNameWhenMissingMetadata;
             }
         }        
     }

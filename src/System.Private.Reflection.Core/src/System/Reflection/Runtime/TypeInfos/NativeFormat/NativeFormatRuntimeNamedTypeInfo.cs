@@ -202,7 +202,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             ConstantStringValueHandle nameHandle = _typeDefinition.Name;
             string name = nameHandle.GetString(_reader);

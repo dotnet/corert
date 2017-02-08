@@ -671,7 +671,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         internal abstract string InternalFullNameOfAssembly { get; }
 
-        internal abstract string InternalGetNameIfAvailable(ref Type rootCauseForFailure);
+        public abstract override string InternalGetNameIfAvailable(ref Type rootCauseForFailure);
 
         // Left unsealed so that multidim arrays can override.
         internal virtual bool InternalIsMultiDimArray
@@ -679,15 +679,6 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return false;
-            }
-        }
-
-        internal string InternalNameIfAvailable
-        {
-            get
-            {
-                Type ignore = null;
-                return InternalGetNameIfAvailable(ref ignore);
             }
         }
 
