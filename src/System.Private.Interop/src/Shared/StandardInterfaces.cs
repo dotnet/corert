@@ -1827,6 +1827,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Native Value for STATSTG
     /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
     struct STATSTG_UnsafeType
     {
         public IntPtr pwcsName;
