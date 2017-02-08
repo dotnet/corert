@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
@@ -27,7 +28,7 @@ namespace System.Reflection.Runtime.PropertyInfos
     // The runtime's implementation of PropertyInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimePropertyInfo : PropertyInfo, ITraceableTypeMember
+    internal abstract partial class RuntimePropertyInfo : PropertyInfo, ISerializable, ITraceableTypeMember
     {
         //
         // propertyHandle - the "tkPropertyDef" that identifies the property.
@@ -118,6 +119,13 @@ namespace System.Reflection.Runtime.PropertyInfos
                 result[i] = indexParameters[i];
             }
             return result;
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
         public sealed override MethodInfo GetMethod

@@ -117,6 +117,11 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
 #if CORERT
     return (HANDLE)(pEEType->GetTypeManager());
 #else
+#if EETYPE_TYPE_MANAGER
+    if (pEEType->HasTypeManager())
+        return (HANDLE)(pEEType->GetTypeManager());
+#endif
+
     // For dynamically created types, return the module handle that contains the template type
     if (pEEType->IsDynamicType())
         pEEType = pEEType->get_DynamicTemplateType();
@@ -635,17 +640,10 @@ COOP_PINVOKE_HELPER(Boolean, RhpRegisterFrozenSegment, (void* pSegmentStart, UIn
     return RedhawkGCInterface::RegisterFrozenSection(pSegmentStart, length) != NULL;
 }
 
-#ifdef CORERT
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManager* pModule, Int32 headerId, Int32* length))
 {
     return pModule->GetModuleSection((ReadyToRunSectionType)headerId, length);
 }
-
-COOP_PINVOKE_HELPER(void*, RhpCreateTypeManager, (void* pModuleHeader))
-{
-    return TypeManager::Create(pModuleHeader);
-}
-#endif
 
 COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, (PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh))
 {

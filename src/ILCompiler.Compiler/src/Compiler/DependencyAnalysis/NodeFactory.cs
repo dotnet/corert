@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 
@@ -31,6 +32,9 @@ namespace ILCompiler.DependencyAnalysis
             CreateNodeCaches();
 
             MetadataManager = new CompilerGeneratedMetadataManager(this);
+
+            ThreadStaticsRegion = new ThreadStaticsRegionNode(
+                "__ThreadStaticRegionStart", "__ThreadStaticRegionEnd", null, _target.Abi);
         }
 
         public TargetDetails Target
@@ -65,29 +69,23 @@ namespace ILCompiler.DependencyAnalysis
         protected struct NodeCache<TKey, TValue>
         {
             private Func<TKey, TValue> _creator;
-            private Dictionary<TKey, TValue> _cache;
+            private ConcurrentDictionary<TKey, TValue> _cache;
 
             public NodeCache(Func<TKey, TValue> creator, IEqualityComparer<TKey> comparer)
             {
                 _creator = creator;
-                _cache = new Dictionary<TKey, TValue>(comparer);
+                _cache = new ConcurrentDictionary<TKey, TValue>(comparer);
             }
 
             public NodeCache(Func<TKey, TValue> creator)
             {
                 _creator = creator;
-                _cache = new Dictionary<TKey, TValue>();
+                _cache = new ConcurrentDictionary<TKey, TValue>();
             }
 
             public TValue GetOrAdd(TKey key)
             {
-                TValue result;
-                if (!_cache.TryGetValue(key, out result))
-                {
-                    result = _creator(key);
-                    _cache.Add(key, result);
-                }
-                return result;
+                return _cache.GetOrAdd(key, _creator);
             }
         }
 
@@ -113,6 +111,10 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         return new EETypeNode(this, type);
                     }
+                }
+                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
+                {
+                    return new ImportedEETypeSymbolNode(type);
                 }
                 else
                 {
@@ -219,8 +221,17 @@ namespace ILCompiler.DependencyAnalysis
 
             _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
-                return new ShadowConcreteMethodNode<MethodCodeNode>(method,
-                    (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                if (_target.Abi == TargetAbi.CoreRT)
+                {
+                    return new ShadowConcreteMethodNode<MethodCodeNode>(method,
+                        (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                }
+                else
+                {
+                    // All methods are modeled as ExternMethodSymbolNode in ProjectX.
+                    return new ShadowConcreteMethodNode<ExternMethodSymbolNode>(method,
+                        (ExternMethodSymbolNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                }
             });
 
             _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
@@ -360,7 +371,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return ExternSymbol("__NonGCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+                return ExternSymbol(NonGCStaticsNode.GetMangledName(type, NodeFactory.NameMangler));
             }
         }
         
@@ -374,7 +385,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return ExternSymbol("__GCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+                return ExternSymbol(GCStaticsNode.GetMangledName(type, NodeFactory.NameMangler));
             }
         }
 
@@ -718,10 +729,7 @@ namespace ILCompiler.DependencyAnalysis
             "__GCStaticRegionStart", 
             "__GCStaticRegionEnd", 
             null);
-        public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
-            "__ThreadStaticRegionStart",
-            "__ThreadStaticRegionEnd", 
-            null);
+        public ThreadStaticsRegionNode ThreadStaticsRegion;
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             "__EagerCctorStart",

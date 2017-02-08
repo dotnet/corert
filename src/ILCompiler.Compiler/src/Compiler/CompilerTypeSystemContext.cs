@@ -134,6 +134,14 @@ namespace ILCompiler
             set;
         }
 
+        private bool _supportsLazyCctors;
+
+        public override void SetSystemModule(ModuleDesc systemModule)
+        {
+            base.SetSystemModule(systemModule);
+            _supportsLazyCctors = systemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null;
+        }
+
         public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
             return GetModuleForSimpleName(name.Name, throwIfNotFound);

@@ -402,7 +402,11 @@ namespace Internal.Runtime.TypeLoader
             {
                 // Debug sanity check for the size of the EEType structure
                 // just to ensure nothing of it gets reduced
+#if EETYPE_TYPE_MANAGER
+                Debug.Assert(sizeof(EEType) == (IntPtr.Size == 8 ? 32 : 24));
+#else
                 Debug.Assert(sizeof(EEType) == (IntPtr.Size == 8 ? 24 : 20));
+#endif
 
                 int result = (int)VTableSlot;
                 DefType currentType = (DefType)ContainingType;

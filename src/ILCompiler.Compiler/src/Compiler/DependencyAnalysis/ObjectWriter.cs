@@ -135,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis
             CreateCustomSection(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
             _customSectionNames.Add(section.Name);
         }
-        
+
         [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitAlignment(IntPtr objWriter, int byteAlignment);
         public void EmitAlignment(int byteAlignment)
@@ -519,7 +519,7 @@ namespace ILCompiler.DependencyAnalysis
             List<byte[]> cfis;
             if (_offsetToCfis.TryGetValue(offset, out cfis))
             {
-                foreach(byte[] cfi in cfis)
+                foreach (byte[] cfi in cfis)
                 {
                     EmitCFICode(offset, cfi);
                 }
@@ -825,6 +825,14 @@ namespace ILCompiler.DependencyAnalysis
                             if (++nextRelocIndex < relocs.Length)
                             {
                                 nextRelocOffset = relocs[nextRelocIndex].Offset;
+                            }
+                            else
+                            {
+                                // This is the last reloc. Set the next reloc offset to -1 in case the last reloc has a zero size, 
+                                // which means the reloc does not have vacant bytes corresponding to in the data buffer. E.g, 
+                                // IMAGE_REL_THUMB_BRANCH24 is a kind of 24-bit reloc whose bits scatte over the instruction that 
+                                // references it. We do not vacate extra bytes in the data buffer for this kind of reloc.
+                                nextRelocOffset = -1;
                             }
                             i += size;
                         }

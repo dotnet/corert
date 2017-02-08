@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
@@ -20,7 +21,8 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // The runtime's implementation of ConstructorInfo.
     //
-    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo
+    [Serializable]
+    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo, ISerializable
     {
         public abstract override MethodAttributes Attributes { get; }
 
@@ -42,6 +44,13 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             // Constructors cannot be generic. Desktop compat dictates that We throw NotSupported rather than returning a 0-length array.
             throw new NotSupportedException();
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
         public sealed override ParameterInfo[] GetParameters()

@@ -26,7 +26,7 @@ namespace ILCompiler
         /// </summary>
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
-            return type.HasStaticConstructor && !HasEagerConstructorAttribute(type);
+            return type.HasStaticConstructor && !HasEagerConstructorAttribute(type) && _supportsLazyCctors;
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace ILCompiler
         /// </summary>
         public bool HasEagerStaticConstructor(TypeDesc type)
         {
-            return type.HasStaticConstructor && HasEagerConstructorAttribute(type);
+            return type.HasStaticConstructor && (HasEagerConstructorAttribute(type) || !_supportsLazyCctors);
         }
 
         private static bool HasEagerConstructorAttribute(TypeDesc type)

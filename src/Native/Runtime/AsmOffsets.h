@@ -33,9 +33,7 @@ ASM_OFFSET(    4,     8, Array, m_Length)
 ASM_OFFSET(    0,     0, EEType, m_usComponentSize)
 ASM_OFFSET(    2,     2, EEType, m_usFlags)
 ASM_OFFSET(    4,     4, EEType, m_uBaseSize)
-#if defined(CORERT)
-// If this ever changes, you must update src\ILCompiler.Compiler\src\Compiler\DependencyAnalysis\EETypeNode.cs GetVTableOffset()
-// to reflect the updated VTable offset
+#if defined(EETYPE_TYPE_MANAGER)
 ASM_OFFSET(   18,    20, EEType, m_VTable)
 #else
 ASM_OFFSET(   14,    18, EEType, m_VTable)
