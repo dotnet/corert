@@ -226,14 +226,18 @@ namespace TypeSystemTests
         {
             // Test throwing behavior
             Assert.Throws<TypeSystemException.TypeLoadException>(() => _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.SimpleButNotThere"));
+            Assert.Throws<TypeSystemException.TypeLoadException>(() => _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.SimpleButNotThere+NonNamespaceQualifiedType"));
             Assert.Throws<TypeSystemException.TypeLoadException>(() => _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+NestedNotThere"));
             Assert.Throws<TypeSystemException.TypeLoadException>(() => _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+Nested+NestedTwiceNotThere"));
             Assert.Throws<TypeSystemException.TypeLoadException>(() => _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Generic`1[TypeNameParsing.SimpleButNotThere]"));
 
             // Test returning null behavior
             Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.SimpleButNotThere", throwIfNotFound: false));
+            Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.SimpleButNotThere+NonNamespaceQualifiedType", throwIfNotFound: false));
             Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+NestedNotThere", throwIfNotFound: false));
+            Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+NestedNotThere+NonNamespaceQualifiedType", throwIfNotFound: false));
             Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+Nested+NestedTwiceNotThere", throwIfNotFound: false));
+            Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+Nested+NonNamespaceQualifiedType", throwIfNotFound: false));
             Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Generic`1[TypeNameParsing.SimpleButNotThere]", throwIfNotFound: false));
         }
     }

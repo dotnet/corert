@@ -236,6 +236,8 @@ namespace Internal.TypeSystem
                     else
                     {
                         containingType = module.GetType(typeName.ToString(), throwIfNotFound);
+                        if (containingType == null)
+                            return null;
                     }
                     typeName.Length = 0;
                     continue;
