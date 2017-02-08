@@ -25,7 +25,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__GCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
         }
+
         public int Offset => 0;
+
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        {
+           return "__GCStaticBase_" + nameMangler.GetMangledTypeName(type);
+        }
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
@@ -43,7 +49,10 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-            dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
+            }
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
             return dependencyList;
         }
@@ -58,7 +67,17 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
 
             builder.RequireInitialPointerAlignment();
-            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), 1);
+
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), 1);
+            }
+            else
+            {
+                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment);
+                builder.EmitZeros(_type.GCStaticFieldSize);
+            }
+
             builder.AddSymbol(this);
 
             return builder.ToObjectData();

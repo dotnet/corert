@@ -181,7 +181,7 @@ namespace ILCompiler
             typeSystemContext.InputFilePaths = _inputFilePaths;
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
-            typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));           
 
             //
             // Initialize compilation group and compilation roots

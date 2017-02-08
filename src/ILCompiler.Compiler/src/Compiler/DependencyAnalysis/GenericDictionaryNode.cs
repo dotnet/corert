@@ -159,8 +159,13 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
+				
+		public MethodDesc OwningMethod => _owningMethod;
 
-        public MethodDesc OwningMethod => _owningMethod;
+		public static string GetMangledName(MethodDesc owningMethod)
+        {
+            return MangledNamePrefix + NodeFactory.NameMangler.GetMangledMethodName(owningMethod);
+        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

@@ -248,6 +248,11 @@ void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackD
     }
     END_FOREACH_MODULE
 
+    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
+    {
+        iter->m_pTypeManager->EnumStaticGCRefs(pfnCallback, pvCallbackData);
+    }
+
     EnumStaticGCRefDescs(pfnCallback, pvCallbackData);
     EnumThreadStaticGCRefDescs(pfnCallback, pvCallbackData);
 }
@@ -406,6 +411,30 @@ extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
     return GetRuntimeInstance()->UnregisterCodeManager(pCodeManager);
 }
 #endif
+
+bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
+{
+    TypeManagerEntry * pEntry = new (nothrow) TypeManagerEntry();
+    if (NULL == pEntry)
+        return false;
+
+    pEntry->m_pTypeManager = pTypeManager;
+
+    {
+        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
+
+        m_TypeManagerList.PushHead(pEntry);
+    }
+
+    return true;
+}
+
+COOP_PINVOKE_HELPER(void*, RhpCreateTypeManager, (void* pModuleHeader))
+{
+    TypeManager * typeManager = TypeManager::Create(pModuleHeader);
+    GetRuntimeInstance()->RegisterTypeManager(typeManager);
+    return typeManager;
+}
 
 // static 
 RuntimeInstance * RuntimeInstance::Create(HANDLE hPalInstance)

@@ -501,7 +501,7 @@ struct InterfaceDispatchCell
             case IDC_CachePointerIsInterfaceRelativePointer:
             case IDC_CachePointerIsIndirectedInterfaceRelativePointer:
                 {
-                    UIntTarget interfacePointerValue = (UIntTarget)&m_pCache + cachePointerValue;
+                    UIntTarget interfacePointerValue = (UIntTarget)&m_pCache + (Int32)cachePointerValue;
                     interfacePointerValue &= ~IDC_CachePointerMask;
                     if ((cachePointerValue & IDC_CachePointerMask) == IDC_CachePointerIsInterfaceRelativePointer)
                     {
@@ -748,6 +748,8 @@ enum RhEHClauseKind
     RH_EH_CLAUSE_FILTER             = 2,
     RH_EH_CLAUSE_UNUSED             = 3
 };
+
+#define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED 
 
 // Structure used to store offsets information of thread static fields, and mainly used
 // by Reflection to get the address of that field in the TLS block
