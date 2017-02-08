@@ -134,6 +134,10 @@ namespace ILCompiler.DependencyAnalysis
                         return new ConstructedEETypeNode(this, type);
                     }
                 }
+                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
+                {
+                    return new ImportedEETypeSymbolNode(type);
+                }
                 else
                 {
                     return new ExternEETypeSymbolNode(this, type);
