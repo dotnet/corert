@@ -6,6 +6,8 @@
 
 #include "pal_common.h"
 
+#include <stdlib.h>
+
 #include <pthread.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,15 +25,27 @@ private:
 #endif
 
 public:
-    LowLevelMutex()
+    LowLevelMutex(bool abortOnFailure, bool *successRef)
 #if DEBUG
         : m_isLocked(false)
 #endif
     {
+        assert(abortOnFailure || successRef != nullptr);
+
         int error = pthread_mutex_init(&m_mutex, nullptr);
         if (error != 0)
         {
-            throw OutOfMemoryException();
+            if (abortOnFailure)
+            {
+                abort();
+            }
+            *successRef = false;
+            return;
+        }
+
+        if (successRef != nullptr)
+        {
+            *successRef = true;
         }
     }
 
@@ -96,7 +110,7 @@ private:
     pthread_cond_t m_condition;
 
 public:
-    LowLevelMonitor();
+    LowLevelMonitor(bool abortOnFailure, bool *successRef);
 
     ~LowLevelMonitor()
     {

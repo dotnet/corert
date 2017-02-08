@@ -30,8 +30,14 @@ extern "C" void CoreLibNative_LowLevelMutex_Release(LowLevelMutex *mutex)
 #error Don't know how to perfom timed wait on this platform
 #endif
 
-LowLevelMonitor::LowLevelMonitor()
+LowLevelMonitor::LowLevelMonitor(bool abortOnFailure, bool *successRef) : LowLevelMutex(abortOnFailure, successRef)
 {
+    if (successRef != nullptr && !*successRef)
+    {
+        assert(!abortOnFailure);
+        return;
+    }
+
 #if HAVE_MACH_ABSOLUTE_TIME
     // Older versions of OSX don't support CLOCK_MONOTONIC, so we don't use pthread_condattr_setclock. See
     // Wait(int32_t timeoutMilliseconds).
@@ -43,7 +49,13 @@ LowLevelMonitor::LowLevelMonitor()
     error = pthread_condattr_init(&conditionAttributes);
     if (error != 0)
     {
-        throw OutOfMemoryException();
+        if (abortOnFailure)
+        {
+            abort();
+        }
+        LowLevelMutex::~LowLevelMutex();
+        *successRef = false;
+        return;
     }
 
     error = pthread_condattr_setclock(&conditionAttributes, CLOCK_MONOTONIC);
@@ -57,7 +69,18 @@ LowLevelMonitor::LowLevelMonitor()
 
     if (initError != 0)
     {
-        throw OutOfMemoryException();
+        if (abortOnFailure)
+        {
+            abort();
+        }
+        LowLevelMutex::~LowLevelMutex();
+        *successRef = false;
+        return;
+    }
+
+    if (successRef != nullptr)
+    {
+        *successRef = true;
     }
 }
 
@@ -97,20 +120,29 @@ bool LowLevelMonitor::Wait(int32_t timeoutMilliseconds)
 
 extern "C" LowLevelMonitor *CoreLibNative_LowLevelMonitor_New()
 {
-    try
-    {
-        return new(nothrow) LowLevelMonitor();
-    }
-    catch (OutOfMemoryException)
+    void *monitorBuffer = malloc(sizeof(LowLevelMonitor));
+    if (monitorBuffer == nullptr)
     {
         return nullptr;
     }
+
+    bool success;
+    LowLevelMonitor *monitor = new(monitorBuffer) LowLevelMonitor(false /* abortOnFailure */, &success);
+    assert(monitor == monitorBuffer);
+    if (!success)
+    {
+        free(monitorBuffer);
+        return nullptr;
+    }
+    return monitor;
 }
 
 extern "C" void CoreLibNative_LowLevelMonitor_Delete(LowLevelMonitor *monitor)
 {
     assert(monitor != nullptr);
-    delete monitor;
+
+    monitor->~LowLevelMonitor();
+    free(monitor);
 }
 
 extern "C" void CoreLibNative_LowLevelMonitor_Wait(LowLevelMonitor *monitor)

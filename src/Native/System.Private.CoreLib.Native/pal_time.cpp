@@ -9,7 +9,7 @@
 #include <pthread.h>
 
 #if HAVE_MACH_ABSOLUTE_TIME
-static LowLevelMutex s_lock;
+static LowLevelMutex s_lock(true /* abortOnFailure */, nullptr /* successRef */);
 
 mach_timebase_info_data_t g_machTimebaseInfo = {};
 bool g_isMachTimebaseInfoInitialized = false;
