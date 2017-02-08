@@ -6,11 +6,18 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
+    [Serializable]
     public sealed class Missing : ISerializable
     {
         private Missing() { }
         public static readonly Missing Value = new Missing();
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+    
+            UnitySerializationHolder.GetUnitySerializationInfo(info, this);
+        }
     }
 }
