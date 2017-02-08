@@ -441,6 +441,12 @@
   <data name="Arg_DefaultValueMissingException" xml:space="preserve">
     <value>Missing parameter does not have a default value.</value>
   </data>
+  <data name="Arg_ThreadStartException" xml:space="preserve">
+    <value>Thread failed to start.</value>
+  </data>
+  <data name="Arg_ThreadStateException" xml:space="preserve">
+    <value>Thread was in an invalid state for the operation being executed.</value>
+  </data>
   <data name="Arg_TimeoutException" xml:space="preserve">
     <value>The operation has timed out.</value>
   </data>
@@ -1385,6 +1391,9 @@
   </data>
   <data name="Threading_SemaphoreFullException" xml:space="preserve">
     <value>Adding the specified count to the semaphore would cause it to exceed its maximum count.</value>
+  </data>
+  <data name="Threading_ThreadInterrupted" xml:space="preserve">
+    <value>Thread was interrupted from a waiting state.</value>
   </data>
   <data name="Threading_WaitHandleCannotBeOpenedException" xml:space="preserve">
     <value>No handle of the given name exists.</value>
