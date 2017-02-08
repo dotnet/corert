@@ -265,9 +265,6 @@ namespace ILCompiler
         /// </summary>
         public override MethodDesc GetReflectionInvokeStub(MethodDesc method)
         {
-            // Methods we see here shouldn't be canonicalized, or we'll end up creating bastardized instantiations
-            // (e.g. we instantiate over System.Object below.)
-            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any));
             MethodDesc typicalInvokeTarget = method.GetTypicalMethodDefinition();
             MethodDesc typicalDynamicInvokeStub;
 

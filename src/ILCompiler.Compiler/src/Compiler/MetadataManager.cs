@@ -33,7 +33,7 @@ namespace ILCompiler
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
 
-        protected readonly NodeFactory NodeFactory;
+        protected readonly NodeFactory _nodeFactory;
 
         private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
@@ -46,7 +46,7 @@ namespace ILCompiler
 
         public MetadataManager(NodeFactory factory)
         {
-            NodeFactory = factory;
+            _nodeFactory = factory;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -144,7 +144,7 @@ namespace ILCompiler
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && NodeFactory.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
+            if (nonGcStaticSectionNode != null && _nodeFactory.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }
@@ -226,6 +226,9 @@ namespace ILCompiler
         /// </summary>
         protected MethodDesc InstantiateDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
         {
+            // Methods we see here shouldn't be canonicalized, or we'll end up creating unsupported instantiations
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Specific));
+
             if (thunk.Instantiation.Length == 0)
             {
                 // nothing to instantiate
