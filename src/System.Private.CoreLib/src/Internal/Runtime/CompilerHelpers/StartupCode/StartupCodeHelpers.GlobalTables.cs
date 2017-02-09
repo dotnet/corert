@@ -14,7 +14,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    internal static partial class StartupCodeHelpers
+    public partial class StartupCodeHelpers
     {
         /// <summary>
         /// Each managed module linked into the final binary may have its own global tables for strings,

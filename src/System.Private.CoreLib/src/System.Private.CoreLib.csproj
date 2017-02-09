@@ -67,6 +67,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\ThreadingHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
