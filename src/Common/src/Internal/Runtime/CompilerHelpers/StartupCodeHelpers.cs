@@ -12,7 +12,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 namespace Internal.Runtime.CompilerHelpers
 {
     [McgIntrinsics]
-    internal static partial class StartupCodeHelpers
+    public static partial class StartupCodeHelpers
     {
         public static IntPtr[] Modules
         {
