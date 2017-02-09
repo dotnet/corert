@@ -16,32 +16,27 @@ namespace ILCompiler.DependencyAnalysis
     public class GCStaticDescNode : EmbeddedObjectNode, ISymbolNode
     {
         private MetadataType _type;
-        private GCPointerMap _gcMap;  
+        private GCPointerMap _gcMap;
+        private bool _isThreadStatic;
 
-        public GCStaticDescNode(MetadataType type)
+        public GCStaticDescNode(MetadataType type, bool isThreadStatic)
         {
             _type = type;
-            _gcMap = GCPointerMap.FromStaticLayout(type);  
-        }     
+            _gcMap = isThreadStatic ? GCPointerMap.FromThreadStaticLayout(type) : GCPointerMap.FromStaticLayout(type);
+            _isThreadStatic = isThreadStatic;
+        }
 
         protected override string GetName() => this.GetMangledName();
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type));
+            sb.Append(GetMangledName(_type, _isThreadStatic));
         }
 
-        public static string GetMangledName(MetadataType type)
+        public static string GetMangledName(MetadataType type, bool isThreadStatic)
         {
-            return "__GCStaticDesc_" + NodeFactory.NameMangler.GetMangledTypeName(type);
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return Offset;
-            }
+            string prefix = isThreadStatic ? "__ThreadStaticGCDesc_" : "__GCStaticDesc_";
+            return prefix + NodeFactory.NameMangler.GetMangledTypeName(type);
         }
 
         public int NumSeries
@@ -75,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
             result[0] = new DependencyListEntry(hostedFactory.GCStaticDescRegion, "GCStaticDesc Region");
             result[1] = new DependencyListEntry(hostedFactory.TypeGCStaticsSymbol(_type), "GC Static Base Symbol");
             return result;
-        }        
+        }
 
         public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
@@ -97,11 +92,20 @@ namespace ILCompiler.DependencyAnalysis
                     startIndex = i;
                 }
 
-                if (i == _gcMap.Size -1 || !_gcMap[i+1])
+                if (i == _gcMap.Size - 1 || !_gcMap[i + 1])
                 {
                     // The cell ends the current series
                     builder.EmitInt(gcFieldCount);
-                    builder.EmitReloc(factory.TypeGCStaticsSymbol(_type), RelocType.IMAGE_REL_BASED_RELPTR32, startIndex * factory.Target.PointerSize);
+
+                    if (_isThreadStatic)
+                    {
+                        builder.EmitReloc((factory as UtcNodeFactory).TlsStart, RelocType.IMAGE_REL_SECREL, startIndex * factory.Target.PointerSize);
+                    }
+                    else
+                    {
+                        builder.EmitReloc(factory.TypeGCStaticsSymbol(_type), RelocType.IMAGE_REL_BASED_RELPTR32, startIndex * factory.Target.PointerSize);
+                    }
+
                     gcFieldCount = 0;
                     numSeries++;
                 }
