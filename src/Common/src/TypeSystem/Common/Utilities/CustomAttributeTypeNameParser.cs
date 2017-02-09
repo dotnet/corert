@@ -21,7 +21,7 @@ namespace Internal.TypeSystem
         /// Parses the string '<paramref name="name"/>' and returns the type corresponding to the parsed type name.
         /// The type name string should be in the 'SerString' format as defined by the ECMA-335 standard.
         /// </summary>
-        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name)
+        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true)
         {
             TypeDesc loadedType;
 
@@ -71,7 +71,9 @@ namespace Internal.TypeSystem
             {
                 homeModule = module.Context.ResolveAssembly(homeAssembly);
             }
-            MetadataType typeDef = ResolveCustomAttributeTypeNameToTypeDesc(genericTypeDefName.ToString(), homeModule);
+            MetadataType typeDef = ResolveCustomAttributeTypeNameToTypeDesc(genericTypeDefName.ToString(), homeModule, throwIfNotFound);
+            if (typeDef == null)
+                return null;
 
             ArrayBuilder<TypeDesc> genericArgs = new ArrayBuilder<TypeDesc>();
 
@@ -101,7 +103,9 @@ namespace Internal.TypeSystem
                         ch += argLen;
                     }
 
-                    TypeDesc argType = module.GetTypeByCustomAttributeTypeName(typeArgName);
+                    TypeDesc argType = module.GetTypeByCustomAttributeTypeName(typeArgName, throwIfNotFound);
+                    if (argType == null)
+                        return null;
                     genericArgs.Add(argType);
                 }
 
@@ -185,7 +189,7 @@ namespace Internal.TypeSystem
         }
 
 
-        private static MetadataType ResolveCustomAttributeTypeNameToTypeDesc(string name, ModuleDesc module)
+        private static MetadataType ResolveCustomAttributeTypeNameToTypeDesc(string name, ModuleDesc module, bool throwIfNotFound)
         {
             MetadataType containingType = null;
             StringBuilder typeName = new StringBuilder(name.Length);
@@ -219,11 +223,21 @@ namespace Internal.TypeSystem
                 {
                     if (containingType != null)
                     {
-                        containingType = containingType.GetNestedType(typeName.ToString());
+                        MetadataType outerType = containingType;
+                        containingType = outerType.GetNestedType(typeName.ToString());
+                        if (containingType == null)
+                        {
+                            if (throwIfNotFound)
+                                throw new TypeSystemException.TypeLoadException(typeName.ToString(), outerType.Module);
+                            else
+                                return null;
+                        }
                     }
                     else
                     {
-                        containingType = module.GetType(typeName.ToString());
+                        containingType = module.GetType(typeName.ToString(), throwIfNotFound);
+                        if (containingType == null)
+                            return null;
                     }
                     typeName.Length = 0;
                     continue;
@@ -234,13 +248,17 @@ namespace Internal.TypeSystem
 
             if (containingType != null)
             {
-                return containingType.GetNestedType(typeName.ToString());
+                MetadataType type = containingType.GetNestedType(typeName.ToString());
+                if ((type == null) && throwIfNotFound)
+                    throw new TypeSystemException.TypeLoadException(typeName.ToString(), containingType.Module);
+
+                return type;
             }
 
-            return module.GetType(typeName.ToString());
+            return module.GetType(typeName.ToString(), throwIfNotFound);
         }
 
-        private static MetadataType GetType(this ModuleDesc module, string fullName)
+        private static MetadataType GetType(this ModuleDesc module, string fullName, bool throwIfNotFound = true)
         {
             string namespaceName;
             string typeName;
@@ -255,7 +273,7 @@ namespace Internal.TypeSystem
                 namespaceName = fullName.Substring(0, split);
                 typeName = fullName.Substring(split + 1);
             }
-            return module.GetType(namespaceName, typeName);
+            return module.GetType(namespaceName, typeName, throwIfNotFound);
         }
 
         private static AssemblyName FindAssemblyIfNamePresent(string name)
