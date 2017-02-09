@@ -499,8 +499,19 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method.Signature, out sig);
 
             // Does the method have a hidden parameter?
-            if ((method.RequiresInstArg() && !isFatFunctionPointer && !_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                || method.IsArrayAddressMethod())
+            bool hasHiddenParameter = method.RequiresInstArg() && !isFatFunctionPointer;
+
+            // Some intrinsics will beg to differ about the hasHiddenParameter decision
+            if (method.IsIntrinsic)
+            {
+                if (_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+                    hasHiddenParameter = false;
+
+                if (method.IsArrayAddressMethod())
+                    hasHiddenParameter = true;
+            }
+
+            if (hasHiddenParameter)
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
@@ -2643,19 +2654,21 @@ namespace Internal.JitInterface
             }
             else if (directCall)
             {
-                // If this is an intrinsic method with a callsite-specific expansion, this will replace
-                // the method with a method the intrinsic expands into. If it's not the special intrinsic,
-                // method stays unchanged.
+                bool referencingArrayAddressMethod = false;
+
                 if (targetMethod.IsIntrinsic)
                 {
+                    // If this is an intrinsic method with a callsite-specific expansion, this will replace
+                    // the method with a method the intrinsic expands into. If it's not the special intrinsic,
+                    // method stays unchanged.
                     var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
                     targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
-                }
 
-                // For multidim array Address method, we pretend the method requires a hidden instantiation argument
-                // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
-                // a matching calling convention later. See ArrayMethod for a description.
-                bool referencingArrayAddressMethod = targetMethod.IsArrayAddressMethod();
+                    // For multidim array Address method, we pretend the method requires a hidden instantiation argument
+                    // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
+                    // a matching calling convention later. See ArrayMethod for a description.
+                    referencingArrayAddressMethod = targetMethod.IsArrayAddressMethod();
+                }
 
                 MethodDesc concreteMethod = targetMethod;
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
