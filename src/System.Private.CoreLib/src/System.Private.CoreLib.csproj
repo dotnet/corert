@@ -119,7 +119,14 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplementedType.cs" />
@@ -624,7 +631,6 @@
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\ParameterizedThreadStart.cs" />
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
-    <Compile Include="System\Threading\RuntimeThread.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreFullException.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
@@ -775,7 +781,6 @@
     <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="System\Text\Normalization.Windows.cs" />
     <Compile Include="System\Threading\LowLevelThread.cs" />
-    <Compile Include="System\Threading\RuntimeThread.Windows.cs" />
     <Compile Include="System\DateTime.Windows.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
@@ -1006,7 +1011,6 @@
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
-    <Compile Include="System\Threading\RuntimeThread.Unix.cs" />
     <Compile Include="System\Threading\Semaphore.Unix.cs" />
     <Compile Include="System\Threading\ThreadPool.Unix.cs" />
     <Compile Include="System\Threading\Timer.Unix.cs" />

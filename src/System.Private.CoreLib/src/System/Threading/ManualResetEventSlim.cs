@@ -16,6 +16,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -591,7 +592,7 @@ namespace System.Threading
                         }
                         else
                         {
-                            SpinWait.Spin(PlatformHelper.ProcessorCount * (4 << i));
+                            RuntimeThread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
                         }
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_1 == 0)

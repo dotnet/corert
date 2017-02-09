@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
+using System.Threading;
 
-namespace System.Threading
+namespace Internal.Runtime.Augments
 {
     public sealed partial class RuntimeThread
     {
@@ -28,13 +30,13 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0()
         {
-            Interop.mincore.Sleep(0);
+            global::Interop.mincore.Sleep(0);
         }
 
         private static void SleepCore(int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
-            Interop.mincore.Sleep((uint)millisecondsTimeout);
+            global::Interop.mincore.Sleep((uint)millisecondsTimeout);
         }
 
         internal static void SuppressReentrantWaits() => LowLevelThread.SuppressReentrantWaits();

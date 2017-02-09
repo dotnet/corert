@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
+using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading

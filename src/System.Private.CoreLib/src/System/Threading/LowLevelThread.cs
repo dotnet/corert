@@ -10,6 +10,7 @@
 
 using System.Diagnostics;
 using System.Runtime;
+using Internal.Runtime.Augments;
 
 #pragma warning disable 0420
 
