@@ -72,5 +72,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
+
+        protected override IMethodNode CreateShadowConcreteMethodNode(MethodDesc method)
+        {
+            return new ShadowConcreteMethodNode<MethodCodeNode>(method, 
+                (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+        }
     }
 }

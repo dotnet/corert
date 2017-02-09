@@ -100,6 +100,13 @@ namespace ILCompiler
             return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
 
+        protected override IMethodNode CreateShadowConcreteMethodNode(MethodDesc method)
+        {
+            // All methods are modeled as ExternMethodSymbolNode in ProjectX for now.
+            return new ShadowConcreteMethodNode<ExternMethodSymbolNode>(method,
+                (ExternMethodSymbolNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+        }
+
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(
             CompilationUnitPrefix + "__GCStaticDescStart", 
             CompilationUnitPrefix + "__GCStaticDescEnd");
