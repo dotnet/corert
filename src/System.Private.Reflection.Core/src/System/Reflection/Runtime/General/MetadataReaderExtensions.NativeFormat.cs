@@ -156,16 +156,32 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        // If a typedef/ref/spec handle has one or more custom modifiers wrapped around it, unwrap it. All we care about is the actual type.
-        public static Handle WithoutCustomModifiers(this Handle h, MetadataReader reader)
+        // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
+        // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
+        // safe for returning to api callers.
+        public static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, bool optional)
         {
-            HandleType handleType;
-            while ((handleType = h.HandleType) == HandleType.ModifiedType)
+            HandleType handleType = handle.HandleType;
+            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
+            if (handleType != HandleType.ModifiedType)
+                return Array.Empty<Type>();
+
+            LowLevelList<Type> customModifiers = new LowLevelList<Type>();
+            do
             {
-                h = h.ToModifiedTypeHandle(reader).GetModifiedType(reader).Type;
+                ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                if (optional == modifiedType.IsOptional)
+                {
+                    // The modifier type handle can only be TypeDef or TypeRef, never a TypeSpec. So the passed in type context will be never be consulted for type variable lookups..
+                    Type customModifier = modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null));
+                    customModifiers.Add(customModifier);
+                }
+
+                handle = modifiedType.Type;
+                handleType = handle.HandleType;
             }
-            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification);
-            return h;
+            while (handleType == HandleType.ModifiedType);
+            return customModifiers.ToArray();
         }
 
         public static MethodSignature ParseMethodSignature(this Handle handle, MetadataReader reader)

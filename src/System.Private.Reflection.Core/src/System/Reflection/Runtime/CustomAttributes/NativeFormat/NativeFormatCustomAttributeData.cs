@@ -79,7 +79,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                     foreach (Handle _parameterHandle in parameters)
                     {
                         Handle parameterHandle = _parameterHandle;
-                        expectedParameterTypes[index++] = parameterHandle.WithoutCustomModifiers(reader).Resolve(reader, attributeType.TypeContext);
+                        expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeType.TypeContext);
                     }
                     return ResolveAttributeConstructor(attributeType, expectedParameterTypes);
                 }
