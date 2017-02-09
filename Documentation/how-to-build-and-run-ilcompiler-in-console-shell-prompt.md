@@ -108,3 +108,15 @@ If you are seeing errors such as:
  - Search for the missing lib files in your SDK, for example under C:\Program Files (x86)\Windows Kits\10\lib. Make sure the path to these libraries is included in the LIB environment variable. It appears VS 2015 RTM developer command prompt does not correctly set the LIB paths for the 10586 Windows SDK. VS 2015 Update 1 resolves that issue, so installing it is another alternative.
 
 For more details see the discussion in issue #606
+
+If you are seeing errors such as:
+
+```
+libcpmtd.lib(nothrow.obj) : fatal error LNK1112: module machine type 'X86' conflicts with target machine type 'x64' [C:\Users\[omitted]\nativetest\app\app.csproj]
+C:\Users\[omitted]\nativetest\bin\Product\Windows_NT.x64.Debug\packaging\publish1\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp1.0\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
+```
+
+- Make sure you run these commands from the `VS2015 x64 Native Tools Command Prompt` instead of a vanilla command prompt
+- Try running command `"c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64` to force x64 target
+
+For more details see discussion in issue #2679
