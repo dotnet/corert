@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -169,9 +168,7 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
-            MemoryStream ms = new MemoryStream();
-            writer.Save(ms);
-            byte[] hashTableBytes = ms.ToArray();
+            byte[] hashTableBytes = writer.Save();
 
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 

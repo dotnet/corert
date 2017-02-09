@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Diagnostics;
 
 using Internal.Text;
@@ -74,10 +73,7 @@ namespace ILCompiler.DependencyAnalysis
                 hashtable.Append(hashCode, nativeSection.Place(entry));
             }
 
-            MemoryStream stream = new MemoryStream();
-            nativeWriter.Save(stream);
-
-            byte[] streamBytes = stream.ToArray();
+            byte[] streamBytes = nativeWriter.Save();
 
             _endSymbol.SetSymbolOffset(streamBytes.Length);
 
