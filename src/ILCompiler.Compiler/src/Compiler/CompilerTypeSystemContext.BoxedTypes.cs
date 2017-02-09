@@ -437,6 +437,10 @@ namespace ILCompiler
             // We really don't want this method to be inlined.
             public override bool IsNoInlining => true;
 
+            public override bool IsInternalCall => true;
+
+            public override bool IsIntrinsic => true;
+
             public override TypeSystemContext Context => _methodRepresented.Context;
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
