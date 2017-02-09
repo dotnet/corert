@@ -66,8 +66,8 @@ namespace ILCompiler
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
-            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", _nodeFactory.Target);
+            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences", _nodeFactory.Target);
 
             var resourceDataNode = new ResourceDataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);

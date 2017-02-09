@@ -33,7 +33,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method { get; }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (Method.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
 
         public override bool StaticDependenciesAreComputed => true;
 
