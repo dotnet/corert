@@ -33,6 +33,16 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern int VerifyUnicodeString(string str);
 
+        [DllImport("*", CharSet=CharSet.Ansi)]
+        private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string []str);
+
+        [DllImport("*", CharSet=CharSet.Ansi)]
+        private static extern void ToUpper([In, Out, MarshalAs(UnmanagedType.LPArray)]string[] str);
+
+        [DllImport("*", CharSet = CharSet.Ansi)]
+        private static extern bool VerifySizeParamIndex(
+                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out byte[] arrByte, out byte arrSize);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern int VerifyStringBuilder(StringBuilder sb);
 
@@ -55,6 +65,8 @@ namespace PInvokeTests
             TestString();
             TestLastError();
             TestSafeHandle();
+            TestStringArray();
+            TestSizeParamIndex();
             return 100;
         }
 
@@ -120,6 +132,16 @@ namespace PInvokeTests
             ThrowIfNotEquals(1, VerifyUnicodeString("Hello World"), "Unicode String marshalling failed.");
         }
 
+        private static void TestStringArray()
+        {
+            Console.WriteLine("Testing marshalling string array");
+            string[] strArray = new string[] { "Hello", "World" };
+            ThrowIfNotEquals(1, VerifyAnsiStringArray(strArray), "Ansi string array in marshalling failed.");
+            ToUpper(strArray);
+
+            ThrowIfNotEquals(true, "HELLO" ==  strArray[0] && "WORLD" == strArray[1], "Ansi string array  out marshalling failed.");
+        }
+
         private static void TestLastError()
         {
             Console.WriteLine("Testing last error");
@@ -144,6 +166,26 @@ namespace PInvokeTests
             int expected = unchecked((int)hnd2.DangerousGetHandle().ToInt64());
             ThrowIfNotEquals(actual, expected, "SafeHandle out marshalling failed");
         }
+
+        private static void TestSizeParamIndex()
+        {
+            Console.WriteLine("Testing SizeParamIndex");
+            byte byte_Array_Size;
+            byte[] arrByte;
+
+            VerifySizeParamIndex(out arrByte, out byte_Array_Size);
+            ThrowIfNotEquals(10, byte_Array_Size, "out size failed.");
+            bool pass = true;
+            for (int i = 0; i < byte_Array_Size; i++)
+            {
+                if (arrByte[i] != i)
+                {
+                    pass = false;
+                    break;
+                }
+            }
+            ThrowIfNotEquals(true, pass, "SizeParamIndex failed.");
+        } 
     }
 
     public class SafeMemoryHandle : SafeHandle //SafeHandle subclass

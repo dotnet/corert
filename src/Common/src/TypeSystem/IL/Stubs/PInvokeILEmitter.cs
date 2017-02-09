@@ -26,7 +26,7 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(targetMethod.IsPInvoke);
 
-            _methodData = new PInvokeMethodData(targetMethod, pinvokeILEmitterConfiguration, MarshalDirection.Forward);
+            _methodData = new PInvokeMethodData(targetMethod, pinvokeILEmitterConfiguration);
             _marshallers = InitializeMarshallers(_methodData);
         }
 
@@ -51,7 +51,7 @@ namespace Internal.IL.Stubs
                     parameterMetadata = parameterMetadataArray[parameterIndex++];
                 }
                 TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
-                marshallers[i] = Marshaller.CreateMarshaller(parameterType, pInvokeMethodData, parameterMetadata);
+                marshallers[i] = Marshaller.CreateMarshaller(parameterType, pInvokeMethodData, parameterMetadata, marshallers);
             }
 
             return marshallers;
@@ -136,6 +136,27 @@ namespace Internal.IL.Stubs
             return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(targetMethod), IsStubRequired());
         }
 
+        //TODO: https://github.com/dotnet/corert/issues/2675
+        // This exception messages need to localized
+        // TODO: Log as warning
+        public static MethodIL EmitExceptionBody(string message, MethodDesc method)
+        {
+            ILEmitter emitter = new ILEmitter();
+
+            TypeSystemContext context = method.Context;
+            MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
+                new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
+            MethodDesc exceptionCtor = method.Context.GetWellKnownType(WellKnownType.Exception).GetKnownMethod(".ctor", ctorSignature);
+
+            ILCodeStream codeStream = emitter.NewCodeStream();
+            codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
+            codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
+            codeStream.Emit(ILOpcode.throw_);
+            codeStream.Emit(ILOpcode.ret);
+
+            return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), true);
+        }
+
         public static MethodIL EmitIL(MethodDesc method, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration)
         {
             try
@@ -144,22 +165,14 @@ namespace Internal.IL.Stubs
             }
             catch (NotSupportedException)
             {
-                ILEmitter emitter = new ILEmitter();
                 string message = "Method '" + method.ToString() +
                     "' requires non-trivial marshalling that is not yet supported by this compiler.";
-
-                TypeSystemContext context = method.Context;
-                MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
-                    new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
-                MethodDesc exceptionCtor = method.Context.GetWellKnownType(WellKnownType.Exception).GetKnownMethod(".ctor", ctorSignature);
-
-                ILCodeStream codeStream = emitter.NewCodeStream();
-                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
-                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
-                codeStream.Emit(ILOpcode.throw_);
-                codeStream.Emit(ILOpcode.ret);
-
-                return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), true);
+                return EmitExceptionBody(message, method);
+            }
+            catch (InvalidProgramException ex)
+            {
+                Debug.Assert(!String.IsNullOrEmpty(ex.Message));
+                return EmitExceptionBody(ex.Message, method);
             }
         }
 

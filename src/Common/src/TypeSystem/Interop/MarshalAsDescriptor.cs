@@ -25,22 +25,25 @@ namespace Internal.TypeSystem
         LPWStr = 0x15,
         Struct = 0x1b,
         ByValArray = 0x1e,
+        SysInt = 0x1f,
+        SysUInt = 0x20,
         Int = 0x1f,
         UInt = 0x20,
         Func = 0x26,
         Array = 0x2a,
         LPStruct = 0x2b,    // This is not  defined in Ecma-335(II.23.4)
         Invalid = 0x50,      // This is the default value
+        Variant = 0x51,
     }
 
     public class MarshalAsDescriptor
     {
         public NativeType Type { get; }
         public NativeType ArraySubType { get; }
-        public uint SizeParamIndex { get; }
-        public uint SizeConst { get; }
+        public uint? SizeParamIndex { get; }
+        public uint? SizeConst { get; }
 
-        public MarshalAsDescriptor(NativeType type, NativeType arraySubType, uint sizeParamIndex, uint sizeConst)
+        public MarshalAsDescriptor(NativeType type, NativeType arraySubType, uint? sizeParamIndex, uint? sizeConst)
         {
             Type = type;
             ArraySubType = arraySubType;
