@@ -67,6 +67,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\ThreadingHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
@@ -673,6 +674,7 @@
     <Compile Include="System\Tuple.cs" />
     <Compile Include="System\TupleExtensions.cs" />
     <Compile Include="System\Type.cs" />
+    <Compile Include="System\Type.Enum.cs" />
     <Compile Include="System\Type.Helpers.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />

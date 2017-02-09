@@ -174,7 +174,7 @@ namespace System.Reflection
                 return m.Assembly;
         }
 
-        public static Assembly GetEntryAssembly() { throw new NotImplementedException(); }
+        public static Assembly GetEntryAssembly() => Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetEntryAssembly();
         public static Assembly GetExecutingAssembly() { throw new NotImplementedException(); }
         public static Assembly GetCallingAssembly() { throw new NotImplementedException(); }
 

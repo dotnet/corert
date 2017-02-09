@@ -30,14 +30,5 @@ namespace Internal.Runtime.Augments
         {
             return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
         }
-
-        //         
-        // Returns a new delegate which can only be dynamically invoked (dlg.DynamicInvoke)
-        //
-        public static Delegate CreateDynamicDelegate(Func<object[], object> handler)
-        {
-            // implementation is provied by ILTransform
-            throw NotImplemented.ByDesign;
-        }
     }
 }
