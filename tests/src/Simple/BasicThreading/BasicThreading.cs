@@ -14,9 +14,9 @@ class Program
     static int Main()
     {
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
-        ThreadStaticsTestWithTasks.Run();
         if (FinalizeTest.Run() != Pass)
             return Fail;
+        ThreadStaticsTestWithTasks.Run();
 
         return Pass;
     }
