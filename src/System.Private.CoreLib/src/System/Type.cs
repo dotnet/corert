@@ -311,9 +311,6 @@ namespace System
         public virtual bool IsInstanceOfType(object o) => o == null ? false : IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo(Type other) => this == other;
 
-        public virtual bool IsEnumDefined(object value) { throw new NotImplementedException(); }
-        public virtual string GetEnumName(object value) { throw new NotImplementedException(); }
-        public virtual string[] GetEnumNames() { throw new NotImplementedException(); }
         public virtual Type GetEnumUnderlyingType()
         {
             if (!IsEnum)
