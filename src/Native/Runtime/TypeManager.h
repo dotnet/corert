@@ -15,6 +15,9 @@ class TypeManager
     StaticGcDesc*               m_pStaticsGCInfo;
     StaticGcDesc*               m_pThreadStaticsGCInfo;
     UInt8*                      m_pStaticsGCDataSection;
+    UInt8*                      m_pThreadStaticsDataSection;
+    UInt32*                     m_pTlsIndex;  // Pointer to TLS index if this module uses thread statics 
+    UInt32                      m_managedTlsStartOffset; // Start offset for managed TLS data
 
     TypeManager(ReadyToRunHeader * pHeader);
 
@@ -38,4 +41,5 @@ private:
     };
 
     void EnumStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, StaticGcDesc* pStaticGcInfo);
+    void EnumThreadStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, StaticGcDesc* pStaticGcInfo, UInt8* pbThreadStaticData);
 };

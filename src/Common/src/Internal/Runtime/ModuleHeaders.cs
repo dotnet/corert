@@ -54,6 +54,9 @@ namespace Internal.Runtime
         FrozenObjectRegion          = 206,
         GCStaticDesc                = 207,
         ThreadStaticOffsetRegion    = 208,
+        ThreadStaticGCDescRegion    = 209,
+        ThreadStaticIndex           = 210,
+        ThreadStaticStartOffset     = 211,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart     = 300,
