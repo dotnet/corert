@@ -38,5 +38,11 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: this is wrong: this returns an assembly stub node
             return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
         }
+
+        protected override IMethodNode CreateShadowConcreteMethodNode(MethodDesc method)
+        {
+            return new ShadowConcreteMethodNode<CppMethodCodeNode>(method,
+                (CppMethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+        }
     }
 }
