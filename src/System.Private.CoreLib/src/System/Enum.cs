@@ -482,6 +482,8 @@ namespace System
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.GetEnumName(value);
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             ulong rawValue;
@@ -500,6 +502,10 @@ namespace System
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.GetEnumNames();
+
             KeyValuePair<String, ulong>[] namesAndValues = GetEnumInfo(enumType).NamesAndValues;
             String[] names = new String[namesAndValues.Length];
             for (int i = 0; i < namesAndValues.Length; i++)
@@ -588,6 +594,10 @@ namespace System
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.IsEnumDefined(value);
+
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
@@ -606,7 +616,7 @@ namespace System
                 ulong rawValue;
                 if (!TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
                 {
-                    if (IsIntegerType(value.GetType()))
+                    if (Type.IsIntegerType(value.GetType()))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), Enum.GetUnderlyingType(enumType)));
                     else
                         throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
@@ -857,6 +867,15 @@ namespace System
             if (!(enumEEType == value.EETypePtr))
                 return false;
             return true;
+        }
+
+        // Exported for use by legacy user-defined Type Enum apis.
+        internal static ulong ToUInt64(object value)
+        {
+            ulong result;
+            if (!TryGetUnboxedValueOfEnumOrInteger(value, out result))
+                throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            return result;
         }
 
         //
@@ -1206,20 +1225,6 @@ namespace System
                 else
                     return 0;
             }
-        }
-
-        private static bool IsIntegerType(Type t)
-        {
-            return (t == typeof(int) ||
-                    t == typeof(short) ||
-                    t == typeof(ushort) ||
-                    t == typeof(byte) ||
-                    t == typeof(sbyte) ||
-                    t == typeof(uint) ||
-                    t == typeof(long) ||
-                    t == typeof(ulong) ||
-                    t == typeof(char) ||
-                    t == typeof(bool));
         }
 
         private static NamesAndValueComparer s_nameAndValueComparer = new NamesAndValueComparer();
