@@ -2173,4 +2173,10 @@
   <data name="Serialization_MemberTypeNotRecognized" xml:space="preserve">
     <value>Unknown member type.</value>
   </data>
+  <data name="Serialization_BadParameterInfo" xml:space="preserve">
+    <value>Non existent ParameterInfo. Position bigger than member's parameters length.</value>
+  </data>
+  <data name="Serialization_NoParameterInfo" xml:space="preserve">
+    <value>Serialized member does not have a ParameterInfo.</value>
+  </data>
 </root>

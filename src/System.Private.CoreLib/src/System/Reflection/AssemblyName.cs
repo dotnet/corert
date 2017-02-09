@@ -35,6 +35,13 @@ namespace System.Reflection
             runtimeAssemblyName.CopyToAssemblyName(this);
         }
 
+        // Constructs a new AssemblyName during deserialization. (Needs to public so we can whitelist in Reflection).
+        public AssemblyName(SerializationInfo info, StreamingContext context)
+        {
+            //The graph is not valid until OnDeserialization() has been called.
+            _siInfo = info;
+        }
+
         public object Clone()
         {
             AssemblyName n = new AssemblyName();
@@ -178,8 +185,51 @@ namespace System.Reflection
                 return s;
         }
 
-        public void GetObjectData(SerializationInfo info, StreamingContext context) { throw new NotImplementedException(); }
-        public void OnDeserialization(object sender) { throw new NotImplementedException(); }
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+
+            //Allocate the serialization info and serialize our static data.
+            info.AddValue("_Name", Name);
+            info.AddValue("_PublicKey", _publicKey, typeof(byte[]));
+            info.AddValue("_PublicKeyToken", _publicKeyToken, typeof(byte[]));
+            info.AddValue("_CultureInfo", (CultureInfo == null) ? -1 :CultureInfo.LCID);
+            info.AddValue("_CodeBase", CodeBase);
+            info.AddValue("_Version", Version);
+            info.AddValue("_HashAlgorithm", HashAlgorithm, typeof(AssemblyHashAlgorithm));
+            info.AddValue("_StrongNameKeyPair", KeyPair, typeof(StrongNameKeyPair));
+            info.AddValue("_VersionCompatibility", VersionCompatibility, typeof(AssemblyVersionCompatibility));
+            info.AddValue("_Flags", _flags, typeof(AssemblyNameFlags));
+
+            // These are fields used (and set) internally by the full framework only. The fields are optional but the full framework
+            // will catch an exception internally if they aren't there so to avoid that annoyance, we'll emit them using their default values.
+            info.AddValue("_HashAlgorithmForControl", AssemblyHashAlgorithm.None, typeof(AssemblyHashAlgorithm));
+            info.AddValue("_HashForControl", null, typeof(byte[]));
+        }
+
+        public void OnDeserialization(object sender)
+        {
+            // Deserialization has already been performed
+            if (_siInfo == null)
+                return;
+
+            Name = _siInfo.GetString("_Name");
+            _publicKey = (byte[])_siInfo.GetValue("_PublicKey", typeof(byte[]));
+            _publicKeyToken = (byte[])_siInfo.GetValue("_PublicKeyToken", typeof(byte[]));
+            int lcid = (int)_siInfo.GetInt32("_CultureInfo");
+            if (lcid != -1)
+                CultureInfo = new CultureInfo(lcid);
+
+            CodeBase = _siInfo.GetString("_CodeBase");
+            Version = (Version)_siInfo.GetValue("_Version", typeof(Version));
+            HashAlgorithm = (AssemblyHashAlgorithm)_siInfo.GetValue("_HashAlgorithm", typeof(AssemblyHashAlgorithm));
+            KeyPair = (StrongNameKeyPair)_siInfo.GetValue("_StrongNameKeyPair", typeof(StrongNameKeyPair));
+            VersionCompatibility = (AssemblyVersionCompatibility)_siInfo.GetValue("_VersionCompatibility", typeof(AssemblyVersionCompatibility));
+            _flags = (AssemblyNameFlags)_siInfo.GetValue("_Flags", typeof(AssemblyNameFlags));
+
+            _siInfo = null;
+        }
 
         public static AssemblyName GetAssemblyName(String assemblyFile) { throw new NotImplementedException(); }
         public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition) { throw new NotImplementedException(); }
@@ -189,6 +239,8 @@ namespace System.Reflection
         private AssemblyNameFlags _flags;
         private byte[] _publicKey;
         private byte[] _publicKeyToken;
+
+        private SerializationInfo _siInfo;
     }
 }
 
