@@ -262,7 +262,10 @@ namespace System.Resources
 #if FEATURE_COREFX_GLOBALIZATION
             return null;
 #else
-            return CultureInfo.nativeGetResourceFallbackArray();
+            // TODO: Bug https://github.com/dotnet/corert/issues/2715
+            // Uncomment this and port nativeGetResourceFallbackArray from CoreCLR
+            //return CultureInfo.nativeGetResourceFallbackArray();
+            return null;
 #endif
         }
     }
