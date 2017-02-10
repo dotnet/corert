@@ -238,13 +238,5 @@ namespace System
             // in a method signature - this is an artifact of how the desktop represents these things.
             instantiation = null;
         }
-
-        // @todo: https://github.com/dotnet/corert/issues/2674
-        // For some reason, ILC fails in building the shared library if MemberInfoSerializationHolder calls MakeGenericMethod() directory.
-        // This is our workaround.
-        public static MethodInfo MakeGenericMethodInternal(this MethodInfo method, Type[] genericTypeArguments)
-        {
-            return method.MakeGenericMethod(genericTypeArguments);
-        }
     }
 }
