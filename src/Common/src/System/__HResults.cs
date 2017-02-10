@@ -166,6 +166,7 @@ namespace System
         internal const int ERROR_INVALID_PARAMETER = unchecked((int)0x80070057);
         internal const int ERROR_LOCK_VIOLATION = unchecked((int)0x80070021);
         internal const int ERROR_MOD_NOT_FOUND = unchecked((int)0x8007007E);
+        internal const int ERROR_MRM_MAP_NOT_FOUND = unchecked((int)0x80073b1f);
         internal const int ERROR_NO_UNICODE_TRANSLATION = unchecked((int)0x80070459);
         internal const int ERROR_NOACCESS = unchecked((int)0x800703E6);
         internal const int ERROR_NOT_READY = unchecked((int)0x80070015);

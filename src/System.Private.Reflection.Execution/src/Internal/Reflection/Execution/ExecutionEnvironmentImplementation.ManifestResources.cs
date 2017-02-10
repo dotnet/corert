@@ -48,14 +48,9 @@ namespace Internal.Reflection.Execution
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-#if ENABLE_WINRT
-            Stream resultFromFile = ReadFileFromAppDirectory(name);
-            if (resultFromFile != null)
-                return resultFromFile;
-#endif // ENABLE_WINRT
 
-            // If that didn't work, this was an embedded resource. The toolchain should have embedded the
-            // resource in an assembly. Go retrieve it now.
+            // This was most likely an embedded resource which the toolchain should have embedded 
+            // into an assembly.
             LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
             for (int i = 0; i < resourceInfos.Count; i++)
             {
@@ -65,6 +60,14 @@ namespace Internal.Reflection.Execution
                     return ReadResourceFromBlob(resourceInfo);
                 }
             }
+
+            // Fall back to checking in the app directory in case it was a linked resource
+#if ENABLE_WINRT
+            Stream resultFromFile = ReadFileFromAppDirectory(name);
+            if (resultFromFile != null)
+                return resultFromFile;
+#endif // ENABLE_WINRT
+
             return null;
         }
 
