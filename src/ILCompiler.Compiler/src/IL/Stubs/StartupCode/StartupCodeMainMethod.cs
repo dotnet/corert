@@ -82,6 +82,16 @@ namespace Internal.IL.Stubs.StartupCode
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(initArgs));
             }
 
+            // Initialize the entrypoint assembly if the class library supports this
+            MethodDesc initEntryAssembly = startup.GetMethod("InitializeEntryAssembly", null);
+            if (initEntryAssembly != null)
+            {
+                IAssemblyDesc entrypointAssembly = ((MetadataType)_mainMethod.WrappedMethod.OwningType).Module as IAssemblyDesc;
+                Debug.Assert(entrypointAssembly != null, "Multi-module assembly?");
+                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(entrypointAssembly.GetName().FullName));
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(initEntryAssembly));
+            }
+
             // Call program Main
             if (_mainMethod.Signature.Length > 0)
             {
@@ -160,13 +170,15 @@ namespace Internal.IL.Stubs.StartupCode
         /// </summary>
         private class MainMethodWrapper : ILStubMethod
         {
-            private MethodDesc _mainMethod;
-
             public MainMethodWrapper(TypeDesc owningType, MethodDesc mainMethod)
             {
-                _mainMethod = mainMethod;
-
+                WrappedMethod = mainMethod;
                 OwningType = owningType;
+            }
+
+            public MethodDesc WrappedMethod
+            {
+                get;
             }
 
             public override TypeSystemContext Context
@@ -194,7 +206,7 @@ namespace Internal.IL.Stubs.StartupCode
             {
                 get
                 {
-                    return _mainMethod.Signature;
+                    return WrappedMethod.Signature;
                 }
             }
 
@@ -206,7 +218,7 @@ namespace Internal.IL.Stubs.StartupCode
                 for (int i = 0; i < Signature.Length; i++)
                     codeStream.EmitLdArg(i);
 
-                codeStream.Emit(ILOpcode.call, emit.NewToken(_mainMethod));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(WrappedMethod));
 
                 codeStream.Emit(ILOpcode.ret);
 
