@@ -230,26 +230,21 @@ namespace System.Threading
                 }
             }
 
-            public bool Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool isLocked)
+            public bool Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds)
             {
-                if (isLocked)
-                {
-                    s_lock.VerifyIsLocked();
-                }
-                else
-                {
-                    s_lock.VerifyIsNotLocked();
-                }
+                s_lock.Acquire();
+                return Wait_Locked(waitInfo, timeoutMilliseconds);
+            }
+
+            public bool Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds)
+            {
+                s_lock.VerifyIsLocked();
                 Debug.Assert(waitInfo != null);
                 Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
 
                 Debug.Assert(timeoutMilliseconds >= -1);
 
                 bool needToWait = false;
-                if (!isLocked)
-                {
-                    s_lock.Acquire();
-                }
                 try
                 {
                     if (IsSignaled)

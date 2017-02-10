@@ -171,7 +171,7 @@ namespace System.Threading
             /// by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
             /// possibilities for exceptions have been exhausted.
             ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            bool acquiredLock = waitableObject.Wait(waitInfo, 0, isLocked: false);
+            bool acquiredLock = waitableObject.Wait(waitInfo, 0);
             Debug.Assert(acquiredLock);
             return safeWaitHandle;
         }
@@ -249,7 +249,7 @@ namespace System.Threading
                 throw new ThreadInterruptedException();
             }
 
-            return HandleManager.FromHandle(handle).Wait(waitInfo, timeoutMilliseconds, isLocked: false);
+            return HandleManager.FromHandle(handle).Wait(waitInfo, timeoutMilliseconds);
         }
 
         public static int Wait(
@@ -315,7 +315,7 @@ namespace System.Threading
             {
                 WaitableObject waitableObject = waitableObjects[0];
                 waitableObjects[0] = null;
-                return waitableObject.Wait(waitInfo, timeoutMilliseconds, isLocked: false) ? 0 : WaitHandle.WaitTimeout;
+                return waitableObject.Wait(waitInfo, timeoutMilliseconds) ? 0 : WaitHandle.WaitTimeout;
             }
 
             return
@@ -349,7 +349,7 @@ namespace System.Threading
             {
                 waitableObjectToSignal.Signal(1);
                 waitCalled = true;
-                return waitableObjectToWaitOn.Wait(waitInfo, timeoutMilliseconds, isLocked: true);
+                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds);
             }
             finally
             {
