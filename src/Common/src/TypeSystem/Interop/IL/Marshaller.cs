@@ -350,6 +350,7 @@ namespace Internal.TypeSystem.Interop
                         return GetDefaultNativeType(NativeType.SysInt);
 
                 case MarshallerKind.UnicodeString:
+                    return GetDefaultNativeType(NativeType.SysInt); // We pin UniCodeString, so native type will be SysInt
                 case MarshallerKind.UnicodeStringBuilder:
                     return GetDefaultNativeType(NativeType.LPWStr);
 
@@ -1948,7 +1949,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(_vManaged);
             codeStream.EmitLdLoc(_vNative);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "ReplaceStringBuilderBuffer")));
+            PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "ReplaceStringBuilderBuffer")));
         }
     }
 }
