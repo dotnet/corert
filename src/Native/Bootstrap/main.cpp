@@ -209,6 +209,10 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
+extern "C" void CCWAddRef()
+{
+	throw "CCWAddRef";
+}
 
 void* RtRHeaderWrapper();
 
