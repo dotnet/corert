@@ -265,7 +265,7 @@ namespace System.Reflection
                             {
                                 if (methods[i].GetGenericArguments().Length == genericArguments.Length)
                                 {
-                                    MethodInfo candidateMethod = methods[i].MakeGenericMethodInternal(genericArguments);
+                                    MethodInfo candidateMethod = methods[i].MakeGenericMethod(genericArguments);
 
                                     if (m_signature2 != null)
                                     {
@@ -300,7 +300,7 @@ namespace System.Reflection
                     if (genericArguments[0] == null)
                         return null;
 
-                    return methodInfo.MakeGenericMethodInternal(genericArguments);
+                    return methodInfo.MakeGenericMethod(genericArguments);
                 }
                 #endregion
 

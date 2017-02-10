@@ -274,12 +274,7 @@ namespace System {
                         ThrowInsufficientInformation("AssemblyName");
 
                     if (m_assemblyName.Length == 0)
-                    {
-                        // @todo: Temporary workaround for ILC toolchain bug: Type.GetType() is an intrinsic and invoking it from inside CoreLib triggers this.
-
-                        //return Type.GetType(m_data, true, false);
-                        return Internal.Runtime.Augments.RuntimeAugments.Callbacks.GetType(m_data, null, null, throwOnError: true, ignoreCase: false, defaultAssembly: typeof(object).Assembly.FullName);
-                    }
+                        return Type.GetType(m_data, true, false);
 
                     assembly = Assembly.Load(m_assemblyName);
                     
