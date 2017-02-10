@@ -19,7 +19,7 @@ namespace System.Threading
 
                 IntPtr handle = RuntimeImports.RhHandleAlloc(waitableObject, GCHandleType.Normal);
 
-                // SafeWaitHandle treats -1 and 0 as invalid, and the handle should be these values anyway
+                // SafeWaitHandle treats -1 and 0 as invalid, and the handle should not be these values anyway
                 Debug.Assert(handle != IntPtr.Zero);
                 Debug.Assert(handle != new IntPtr(-1));
                 return handle;
