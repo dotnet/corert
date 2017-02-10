@@ -102,9 +102,6 @@ namespace System.Threading
     ///     <see cref="WaitableObject._ownershipInfo"/>
     ///   - When support for cross-process objects is added, the current thought is to have an <see cref="object"/> field that
     ///     is used for both cross-process state and ownership state.
-    ///   - The <see cref="HandleManager"/> uses a contiguous array of pointers. This allows for fast lookups (though at the
-    ///     cost of an additional indirection), keeps the array relatively small, and allows for unreferencing
-    ///     <see cref="WaitableObject"/>s for handles that are deleted.
     /// 
     /// No allocation in typical cases of any operation except where necessary
     ///   - Since the maximum number of wait handles for a multi-wait operation is limited to
@@ -115,14 +112,16 @@ namespace System.Threading
     ///     <see cref="ThreadWaitInfo.LockedMutexesHead"/>. <see cref="WaitableObject.OwnershipInfo"/> is itself a list node,
     ///     and is created along with the mutex <see cref="WaitableObject"/>.
     /// 
-    /// No p/invoke in typical uncontended cases (when the process-wide lock is also unlocked)
+    /// Minimal p/invokes in typical uncontended cases
+    ///   - <see cref="HandleManager"/> currently uses <see cref="Runtime.InteropServices.GCHandle"/> in the interest of
+    ///     simplicity, which p/invokes and does a cast to get the <see cref="WaitableObject"/> from a handle
     ///   - Most of the wait subsystem is written in C#, so there is no initially required p/invoke
     ///   - <see cref="LowLevelLock"/>, used by the process-wide lock <see cref="s_lock"/>, uses interlocked operations to
     ///     acquire and release the lock when there is no need to wait or to release a waiter. This is significantly faster than
     ///     using <see cref="LowLevelMonitor"/> as a lock, which uses pthread mutex functionality through p/invoke. The lock is
     ///     typically not held for very long, especially since allocations inside the lock will be rare.
     ///   - Since <see cref="s_lock"/> provides mutual exclusion for the states of all <see cref="WaitableObject"/>s in the
-    ///     process, any operation that does not involve waiting or releasing a wait can occur without any p/invokes
+    ///     process, any operation that does not involve waiting or releasing a wait can occur with minimal p/invokes
     /// 
     /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -133,17 +132,7 @@ namespace System.Threading
 
         private static SafeWaitHandle NewHandle(WaitableObject waitableObject)
         {
-            IntPtr handle;
-            s_lock.Acquire();
-            try
-            {
-                handle = HandleManager.NewHandle(waitableObject);
-            }
-            finally
-            {
-                s_lock.Release();
-            }
-
+            IntPtr handle = HandleManager.NewHandle(waitableObject);
             SafeWaitHandle safeWaitHandle = null;
             try
             {
@@ -154,7 +143,7 @@ namespace System.Threading
             {
                 if (safeWaitHandle == null)
                 {
-                    DeleteHandle(handle);
+                    HandleManager.DeleteHandle(handle);
                 }
             }
         }
@@ -172,71 +161,33 @@ namespace System.Threading
         public static SafeWaitHandle NewMutex(bool initiallyOwned)
         {
             WaitableObject waitableObject = WaitableObject.NewMutex();
+            SafeWaitHandle safeWaitHandle = NewHandle(waitableObject);
             if (!initiallyOwned)
             {
-                return NewHandle(waitableObject);
-            }
-
-            ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            bool waitCalled = false;
-            s_lock.Acquire();
-            try
-            {
-                IntPtr handle = HandleManager.NewHandle(waitableObject);
-                SafeWaitHandle safeWaitHandle = null;
-                try
-                {
-                    safeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
-                }
-                finally
-                {
-                    if (safeWaitHandle == null)
-                    {
-                        HandleManager.DeleteHandle(handle);
-                    }
-                }
-
-                /// Acquire the mutex. A thread's <see cref="ThreadWaitInfo"/> has a reference to all <see cref="Mutex"/>es
-                /// locked by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after
-                /// all possibilities for exceptions have been exhausted.
-                waitCalled = true;
-                bool acquiredLock = waitableObject.Wait(waitInfo, 0);
-                Debug.Assert(acquiredLock);
                 return safeWaitHandle;
             }
-            finally
-            {
-                // Once the wait function is called, it will release the lock
-                if (waitCalled)
-                {
-                    s_lock.VerifyIsNotLocked();
-                }
-                else
-                {
-                    s_lock.Release();
-                }
-            }
+
+            /// Acquire the mutex. A thread's <see cref="ThreadWaitInfo"/> has a reference to all <see cref="Mutex"/>es locked
+            /// by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
+            /// possibilities for exceptions have been exhausted.
+            ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
+            bool acquiredLock = waitableObject.Wait(waitInfo, 0, isLocked: false);
+            Debug.Assert(acquiredLock);
+            return safeWaitHandle;
         }
 
         public static void DeleteHandle(IntPtr handle)
         {
-            s_lock.Acquire();
-            try
-            {
-                HandleManager.DeleteHandle(handle);
-            }
-            finally
-            {
-                s_lock.Release();
-            }
+            HandleManager.DeleteHandle(handle);
         }
 
         public static void SetEvent(IntPtr handle)
         {
+            WaitableObject waitableObject = HandleManager.FromHandle(handle);
             s_lock.Acquire();
             try
             {
-                HandleManager.FromHandle(handle).SignalEvent();
+                waitableObject.SignalEvent();
             }
             finally
             {
@@ -246,10 +197,11 @@ namespace System.Threading
 
         public static void ResetEvent(IntPtr handle)
         {
+            WaitableObject waitableObject = HandleManager.FromHandle(handle);
             s_lock.Acquire();
             try
             {
-                HandleManager.FromHandle(handle).UnsignalEvent();
+                waitableObject.UnsignalEvent();
             }
             finally
             {
@@ -261,10 +213,11 @@ namespace System.Threading
         {
             Debug.Assert(count > 0);
 
+            WaitableObject waitableObject = HandleManager.FromHandle(handle);
             s_lock.Acquire();
             try
             {
-                return HandleManager.FromHandle(handle).SignalSemaphore(count);
+                return waitableObject.SignalSemaphore(count);
             }
             finally
             {
@@ -274,10 +227,11 @@ namespace System.Threading
 
         public static void ReleaseMutex(IntPtr handle)
         {
+            WaitableObject waitableObject = HandleManager.FromHandle(handle);
             s_lock.Acquire();
             try
             {
-                HandleManager.FromHandle(handle).SignalMutex();
+                waitableObject.SignalMutex();
             }
             finally
             {
@@ -290,31 +244,12 @@ namespace System.Threading
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            bool waitCalled = false;
-            s_lock.Acquire();
-            try
+            if (waitInfo.CheckAndResetPendingInterrupt)
             {
-                if (waitInfo.CheckAndResetPendingInterrupt_Locked)
-                {
-                    throw new ThreadInterruptedException();
-                }
+                throw new ThreadInterruptedException();
+            }
 
-                WaitableObject waitableObject = HandleManager.FromHandle(handle);
-                waitCalled = true;
-                return waitableObject.Wait(waitInfo, timeoutMilliseconds);
-            }
-            finally
-            {
-                // Once the wait function is called, it will release the lock
-                if (waitCalled)
-                {
-                    s_lock.VerifyIsNotLocked();
-                }
-                else
-                {
-                    s_lock.Release();
-                }
-            }
+            return HandleManager.FromHandle(handle).Wait(waitInfo, timeoutMilliseconds, isLocked: false);
         }
 
         public static int Wait(
@@ -331,18 +266,17 @@ namespace System.Threading
             Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            int count = waitHandles.Length;
             ThreadWaitInfo waitInfo = currentThread.WaitInfo;
+            if (waitInfo.CheckAndResetPendingInterrupt)
+            {
+                throw new ThreadInterruptedException();
+            }
+
+            int count = waitHandles.Length;
             WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(count);
-            bool waitCalled = false;
-            s_lock.Acquire();
+            bool success = false;
             try
             {
-                if (waitInfo.CheckAndResetPendingInterrupt_Locked)
-                {
-                    throw new ThreadInterruptedException();
-                }
-
                 for (int i = 0; i < count; ++i)
                 {
                     Debug.Assert(safeWaitHandles[i] != null);
@@ -364,43 +298,34 @@ namespace System.Threading
 
                     waitableObjects[i] = waitableObject;
                 }
-
-                waitCalled = true;
-                if (count == 1)
-                {
-                    WaitableObject waitableObject = waitableObjects[0];
-                    waitableObjects[0] = null;
-                    return waitableObject.Wait(waitInfo, timeoutMilliseconds) ? 0 : WaitHandle.WaitTimeout;
-                }
-                else
-                {
-                    return
-                        WaitableObject.Wait(
-                            waitableObjects,
-                            count,
-                            waitForAll,
-                            waitInfo,
-                            timeoutMilliseconds,
-                            waitHandles);
-                }
+                success = true;
             }
             finally
             {
-                // Once the wait function is called, it will clear the array and release the lock
-                if (waitCalled)
-                {
-                    s_lock.VerifyIsNotLocked();
-                }
-                else
+                if (!success)
                 {
                     for (int i = 0; i < count; ++i)
                     {
                         waitableObjects[i] = null;
                     }
-
-                    s_lock.Release();
                 }
             }
+
+            if (count == 1)
+            {
+                WaitableObject waitableObject = waitableObjects[0];
+                waitableObjects[0] = null;
+                return waitableObject.Wait(waitInfo, timeoutMilliseconds, isLocked: false) ? 0 : WaitHandle.WaitTimeout;
+            }
+
+            return
+                WaitableObject.Wait(
+                    waitableObjects,
+                    count,
+                    waitForAll,
+                    waitInfo,
+                    timeoutMilliseconds,
+                    waitHandles);
         }
 
         public static bool SignalAndWait(IntPtr handleToSignal, IntPtr handleToWaitOn, int timeoutMilliseconds)
@@ -409,21 +334,22 @@ namespace System.Threading
 
             ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
 
+            // A pending interrupt does not signal the specified handle
+            if (waitInfo.CheckAndResetPendingInterrupt)
+            {
+                throw new ThreadInterruptedException();
+            }
+
+            WaitableObject waitableObjectToSignal = HandleManager.FromHandle(handleToSignal);
+            WaitableObject waitableObjectToWaitOn = HandleManager.FromHandle(handleToWaitOn);
+
             bool waitCalled = false;
             s_lock.Acquire();
             try
             {
-                // A pending interrupt does not signal the specified handle
-                if (waitInfo.CheckAndResetPendingInterrupt_Locked)
-                {
-                    throw new ThreadInterruptedException();
-                }
-
-                WaitableObject waitableObjectToSignal = HandleManager.FromHandle(handleToSignal);
-                WaitableObject waitableObjectToWaitOn = HandleManager.FromHandle(handleToWaitOn);
                 waitableObjectToSignal.Signal(1);
                 waitCalled = true;
-                return waitableObjectToWaitOn.Wait(waitInfo, timeoutMilliseconds);
+                return waitableObjectToWaitOn.Wait(waitInfo, timeoutMilliseconds, isLocked: true);
             }
             finally
             {
@@ -449,7 +375,7 @@ namespace System.Threading
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = RuntimeThread.CurrentThread.WaitInfo;
-            if (waitInfo.CheckAndResetPendingInterrupt_Unlocked)
+            if (waitInfo.CheckAndResetPendingInterrupt)
             {
                 throw new ThreadInterruptedException();
             }

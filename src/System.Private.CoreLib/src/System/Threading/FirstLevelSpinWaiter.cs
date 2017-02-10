@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -43,13 +42,13 @@ namespace System.Threading
             int spinningThreadCount = Interlocked.Increment(ref _spinningThreadCount);
             try
             {
-                // Limit the maximum spinning thread count to the processor count to prevent unnecessary context switching caused by
-                // an excessive number of threads spin waiting, perhaps even slowing down the thread holding the resource being
-                // waited upon
+                // Limit the maximum spinning thread count to the processor count to prevent unnecessary context switching
+                // caused by an excessive number of threads spin waiting, perhaps even slowing down the thread holding the
+                // resource being waited upon
                 if (spinningThreadCount <= processorCount)
                 {
-                    // For uniprocessor systems, start at the yield threshold since the pause instructions used for waiting prior to
-                    // that threshold would not help other threads make progress
+                    // For uniprocessor systems, start at the yield threshold since the pause instructions used for waiting
+                    // prior to that threshold would not help other threads make progress
                     for (int spinIndex = processorCount > 1 ? 0 : SpinYieldThreshold; spinIndex < SpinCount; ++spinIndex)
                     {
                         // The caller should check the condition in a fast path before calling this method, so wait first
@@ -76,18 +75,18 @@ namespace System.Threading
 
             if (spinIndex < SpinYieldThreshold)
             {
-                RuntimeImports.RhSpinWait(1 << spinIndex);
+                RuntimeThread.SpinWait(1 << spinIndex);
                 return;
             }
 
-            if (spinIndex < SpinSleep0Threshold && RuntimeImports.RhYield())
+            if (spinIndex < SpinSleep0Threshold && RuntimeThread.Yield())
             {
                 return;
             }
 
             /// <see cref="RuntimeThread.Sleep(int)"/> is interruptible. The current operation may not allow thread interrupt
-            /// (for instance, <see cref="LowLevelLock.Acquire"/> as part of <see cref="WaitSubsystem.SetEvent(IntPtr)"/>). Use
-            /// the uninterruptible version of Sleep(0).
+            /// (for instance, <see cref="LowLevelLock.Acquire"/> as part of <see cref="EventWaitHandle.Set"/>). Use the
+            /// uninterruptible version of Sleep(0).
             RuntimeThread.UninterruptibleSleep0();
 
             // Don't want to Sleep(1) in this spin wait:

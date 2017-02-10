@@ -20,18 +20,18 @@ namespace Internal.Runtime.Augments
         /// </summary>
         private WaitHandleArray<SafeWaitHandle> _waitedSafeWaitHandles;
 
-        private ThreadState _threadState;
+        private int _threadState;
 
         private RuntimeThread()
         {
             _waitedSafeWaitHandles = new WaitHandleArray<SafeWaitHandle>(elementInitializer: null);
-            _threadState = ThreadState.Unstarted;
+            _threadState = (int)ThreadState.Unstarted;
 
 #if PLATFORM_UNIX
             _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
-#else
-            _waitedHandles = new WaitHandleArray<IntPtr>(elementInitializer: null);
 #endif
+
+            PlatformSpecificInitialize();
         }
 
         /// <summary>
@@ -62,8 +62,8 @@ namespace Internal.Runtime.Augments
                 }
 
                 t_currentThread = currentThread = new RuntimeThread();
-                Debug.Assert(currentThread._threadState == ThreadState.Unstarted);
-                currentThread._threadState = ThreadState.Running | ThreadState.Background;
+                Debug.Assert(currentThread._threadState == (int)ThreadState.Unstarted);
+                currentThread._threadState = (int)(ThreadState.Running | ThreadState.Background);
                 return currentThread;
             }
         }
@@ -75,21 +75,14 @@ namespace Internal.Runtime.Augments
         public string Name { get { throw null; } set { throw null; } }
         public ThreadPriority Priority { get { throw null; } set { throw null; } }
 
-        public ThreadState ThreadState
-        {
-            get
-            {
-                Interlocked.MemoryBarrier(); // read the latest value
-                return _threadState;
-            }
-        }
+        public ThreadState ThreadState => (ThreadState)Volatile.Read(ref _threadState);
 
         internal void SetWaitSleepJoinState()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert((_threadState & ThreadState.WaitSleepJoin) == 0);
+            Debug.Assert((_threadState & (int)ThreadState.WaitSleepJoin) == 0);
 
-            _threadState |= ThreadState.WaitSleepJoin;
+            _threadState |= (int)ThreadState.WaitSleepJoin;
             // A memory barrier is not necessary to make this change visible to other threads immediately, since a system wait
             // call will soon follow
         }
@@ -97,9 +90,9 @@ namespace Internal.Runtime.Augments
         internal void ClearWaitSleepJoinState()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert((_threadState & ThreadState.WaitSleepJoin) != 0);
+            Debug.Assert((_threadState & (int)ThreadState.WaitSleepJoin) != 0);
 
-            _threadState ^= ThreadState.WaitSleepJoin;
+            _threadState ^= (int)ThreadState.WaitSleepJoin;
             Interlocked.MemoryBarrier(); // make the change visible to other threads immediately
         }
 

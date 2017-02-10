@@ -9,7 +9,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Runtime;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -139,7 +138,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    RuntimeImports.RhYield();
+                    RuntimeThread.Yield();
                 }
             }
             else
@@ -155,7 +154,7 @@ namespace System.Threading
                 // number of spins we are willing to tolerate to reduce delay to the caller,
                 // since we expect most callers will eventually block anyway.
                 //
-                RuntimeImports.RhSpinWait(4 << _count);
+                RuntimeThread.SpinWait(4 << _count);
             }
 
             // Finally, increment our spin counter.
@@ -264,13 +263,7 @@ namespace System.Threading
             }
             return true;
         }
-
-        public static void Spin(int spins)
-        {
-            RuntimeImports.RhSpinWait(spins);
-        }
         #endregion
-
     }
 
     /// <summary>

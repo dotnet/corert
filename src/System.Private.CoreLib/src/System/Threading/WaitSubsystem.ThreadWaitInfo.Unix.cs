@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -65,13 +64,6 @@ namespace System.Threading
             /// </summary>
             private WaitHandleArray<WaitedListNode> _waitedListNodes;
 
-            /// <summary>
-            /// Recording a pending interrupt (see <see cref="RecordPendingInterrupt"/>) is synchronized with
-            /// <see cref="s_lock"/> and using an interlocked operation, so that <see cref="WaitSubsystem"/>'s wait functions
-            /// can test and reset the value while <see cref="s_lock"/> is locked without an interlocked operation, and
-            /// <see cref="Sleep(int)"/> can test and reset the value with an interlocked operation without acquiring
-            /// <see cref="s_lock"/>.
-            /// </summary>
             private int _isPendingInterrupt;
 
             ////////////////////////////////////////////////////////////////
@@ -354,7 +346,7 @@ namespace System.Threading
                 // of the call. The documentation does not state whether the thread yields or does nothing before returning
                 // an error, and in some cases, suggests that doing nothing is acceptable. The behavior could also be
                 // different between distributions. Yield directly here.
-                RuntimeImports.RhYield();
+                RuntimeThread.Yield();
             }
 
             public void Sleep(int timeoutMilliseconds)
@@ -468,40 +460,8 @@ namespace System.Threading
                 _waitMonitor.Signal_Release();
             }
 
-            private void RecordPendingInterrupt()
-            {
-                s_lock.VerifyIsLocked();
-
-                if (_isPendingInterrupt == 0)
-                {
-                    Interlocked.Exchange(ref _isPendingInterrupt, 1);
-                }
-            }
-
-            public bool CheckAndResetPendingInterrupt_Locked
-            {
-                get
-                {
-                    s_lock.VerifyIsLocked();
-
-                    if (_isPendingInterrupt == 0)
-                    {
-                        return false;
-                    }
-
-                    _isPendingInterrupt = 0;
-                    return true;
-                }
-            }
-
-            public bool CheckAndResetPendingInterrupt_Unlocked
-            {
-                get
-                {
-                    s_lock.VerifyIsNotLocked();
-                    return Interlocked.CompareExchange(ref _isPendingInterrupt, 0, 1) != 0;
-                }
-            }
+            private void RecordPendingInterrupt() => Interlocked.Exchange(ref _isPendingInterrupt, 1);
+            public bool CheckAndResetPendingInterrupt => Interlocked.CompareExchange(ref _isPendingInterrupt, 0, 1) != 0;
 
             public WaitableObject LockedMutexesHead
             {

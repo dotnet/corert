@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime;
 using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
 
@@ -11,11 +12,84 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
+        private static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
+        {
+            return WaitForMultipleObjects(&handle, 1, false, millisecondsTimeout);
+        }
+
+        private static unsafe int WaitForMultipleObjects(IntPtr[] handles, int numHandles, bool waitAll, int millisecondsTimeout)
+        {
+            fixed (IntPtr* pHandles = handles)
+            {
+                return WaitForMultipleObjects(pHandles, numHandles, waitAll, millisecondsTimeout);
+            }
+        }
+
+        private static unsafe int WaitForMultipleObjects(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
+        {
+            Debug.Assert(millisecondsTimeout >= -1);
+
+            //
+            // In the CLR, we use CoWaitForMultipleHandles to pump messages while waiting in an STA.  In that case, we cannot use WAIT_ALL.  
+            // That's because the wait would only be satisfied if a message arrives while the handles are signalled.
+            //
+            if (waitAll)
+            {
+                if (numHandles == 1)
+                    waitAll = false;
+                else if (RuntimeThread.GetCurrentApartmentType() == RuntimeThread.ApartmentType.STA)
+                    throw new NotSupportedException(SR.NotSupported_WaitAllSTAThread);
+            }
+
+            RuntimeThread currentThread = RuntimeThread.CurrentThread;
+            currentThread.SetWaitSleepJoinState();
+
+            int result;
+            if (RuntimeThread.ReentrantWaitsEnabled)
+            {
+                Debug.Assert(!waitAll);
+                result = RuntimeImports.RhCompatibleReentrantWaitAny(false, millisecondsTimeout, numHandles, pHandles);
+            }
+            else
+            {
+                result = (int)Interop.mincore.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
+            }
+
+            currentThread.ClearWaitSleepJoinState();
+
+            if (result == WaitHandle.WaitFailed)
+            {
+                int errorCode = Interop.mincore.GetLastError();
+                if (waitAll && errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    /// Check for duplicate handles. This is a brute force O(n^2) search, which is intended since the typical
+                    /// array length is short enough that this would actually be faster than using a hash set. Also, the worst
+                    /// case is not so bad considering that the array length is limited by
+                    /// <see cref="WaitHandle.MaxWaitHandles"/>.
+                    for (int i = 1; i < numHandles; ++i)
+                    {
+                        IntPtr handle = pHandles[i];
+                        for (int j = 0; j < i; ++j)
+                        {
+                            if (pHandles[j] == handle)
+                            {
+                                throw new DuplicateWaitObjectException("waitHandles[" + i + ']');
+                            }
+                        }
+                    }
+                }
+
+                ThrowWaitFailedException(errorCode);
+            }
+
+            return result;
+        }
+
         private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = LowLevelThread.WaitForSingleObject(handle, millisecondsTimeout);
+            int ret = WaitForSingleObject(handle, millisecondsTimeout);
 
             if (ret == WaitAbandoned)
             {
@@ -48,7 +122,7 @@ namespace System.Threading
                 handles[i] = safeWaitHandles[i].DangerousGetHandle();
             }
 
-            return LowLevelThread.WaitForMultipleObjects(handles, count, waitAll, millisecondsTimeout);
+            return WaitForMultipleObjects(handles, count, waitAll, millisecondsTimeout);
         }
 
         private static int WaitAnyCore(
@@ -120,7 +194,7 @@ namespace System.Threading
 
             if (ret == WaitFailed)
             {
-                LowLevelThread.ThrowWaitFailedException(Interop.mincore.GetLastError());
+                ThrowWaitFailedException(Interop.mincore.GetLastError());
             }
 
             return ret != WaitTimeout;
@@ -154,6 +228,47 @@ namespace System.Threading
 
                 default:
                     var ex = new Exception();
+                    ex.SetErrorCode(errorCode);
+                    throw ex;
+            }
+        }
+
+        private static void ThrowWaitFailedException(int errorCode)
+        {
+            switch (errorCode)
+            {
+                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                    throw InvalidOperationException.NewInvalidHandle();
+
+                case Interop.mincore.Errors.ERROR_INVALID_PARAMETER:
+                    throw new ArgumentException();
+
+                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                    throw new UnauthorizedAccessException();
+
+                case Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY:
+                    throw new OutOfMemoryException();
+
+                case Interop.mincore.Errors.ERROR_TOO_MANY_POSTS:
+                    /// Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/>. Note however, that
+                    /// if the semahpore already has the maximum signal count, the Windows SignalObjectAndWait function does not
+                    /// return an error, but this code is kept for historical reasons and to convey the intent, since ideally,
+                    /// that should be an error.
+                    throw new InvalidOperationException(SR.Threading_SemaphoreFullException);
+
+                case Interop.mincore.Errors.ERROR_NOT_OWNER:
+                    /// Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/> when signaling a mutex
+                    /// that is locked by a different thread. Note that if the mutex is already unlocked, the Windows
+                    /// SignalObjectAndWait function does not return an error.
+                    throw new SynchronizationLockException();
+                    // TODO: netstandard2.0 - After switching to ns2.0 contracts, use the below instead for compatibility
+                    //throw new ApplicationException(SR.Arg_SynchronizationLockException);
+
+                case Interop.mincore.Errors.ERROR_MUTANT_LIMIT_EXCEEDED:
+                    throw new OverflowException(SR.Overflow_MutexReacquireCount);
+
+                default:
+                    Exception ex = new Exception();
                     ex.SetErrorCode(errorCode);
                     throw ex;
             }

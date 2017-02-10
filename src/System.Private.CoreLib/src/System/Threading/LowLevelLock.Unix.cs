@@ -37,6 +37,7 @@ namespace System.Threading
         private bool _isAnyWaitingThreadSignaled;
 
         private FirstLevelSpinWaiter _spinWaiter;
+        private readonly Func<bool> _spinWaitTryAcquireCallback;
         private readonly LowLevelMonitor _monitor;
 
         public LowLevelLock()
@@ -47,6 +48,7 @@ namespace System.Threading
 
             _spinWaiter = new FirstLevelSpinWaiter();
             _spinWaiter.Initialize();
+            _spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
             _monitor = new LowLevelMonitor();
         }
 
@@ -107,25 +109,26 @@ namespace System.Threading
 
             // A common case is that there are no waiters, so hope for that and try to acquire the lock
             int state = Interlocked.CompareExchange(ref _state, LockedMask, 0);
-            if (state == 0)
-            {
-                SetOwnerThreadToCurrent();
-                return true;
-            }
-
-            // The lock may be available, but there may be waiters. This thread could acquire the lock in that case. Acquiring
-            // the lock means that if this thread is repeatedly acquiring and releasing the lock, it could permanently starve
-            // waiters. Waiting instead in the same situation would deterministically create a lock convoy. Here, we opt for
-            // acquiring the lock to prevent a deterministic lock convoy in that situation, and rely on the system's
-            // waiting/waking implementation to mitigate starvation, even in cases where there are enough logical processors to
-            // accommodate all threads.
-            if ((state & LockedMask) == 0 && Interlocked.CompareExchange(ref _state, state + LockedMask, state) == state)
+            if (state == 0 || TryAcquire_NoFastPath(state))
             {
                 SetOwnerThreadToCurrent();
                 return true;
             }
             return false;
         }
+
+        private bool TryAcquire_NoFastPath(int state)
+        {
+            // The lock may be available, but there may be waiters. This thread could acquire the lock in that case. Acquiring
+            // the lock means that if this thread is repeatedly acquiring and releasing the lock, it could permanently starve
+            // waiters. Waiting instead in the same situation would deterministically create a lock convoy. Here, we opt for
+            // acquiring the lock to prevent a deterministic lock convoy in that situation, and rely on the system's
+            // waiting/waking implementation to mitigate starvation, even in cases where there are enough logical processors to
+            // accommodate all threads.
+            return (state & LockedMask) == 0 && Interlocked.CompareExchange(ref _state, state + LockedMask, state) == state;
+        }
+
+        private bool SpinWaitTryAcquireCallback() => TryAcquire_NoFastPath(_state);
 
         public void Acquire()
         {
@@ -140,13 +143,7 @@ namespace System.Threading
             VerifyIsNotLocked();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
-            if (_spinWaiter.SpinWaitForCondition(() =>
-                {
-                    int state2 = _state;
-                    return
-                        (state2 & LockedMask) == 0 &&
-                        Interlocked.CompareExchange(ref _state, state2 + LockedMask, state2) == state2;
-                }))
+            if (_spinWaiter.SpinWaitForCondition(_spinWaitTryAcquireCallback))
             {
                 Debug.Assert((_state & LockedMask) != 0);
                 SetOwnerThreadToCurrent();

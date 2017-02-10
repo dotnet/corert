@@ -151,10 +151,11 @@ extern "C" void CoreLibNative_LowLevelMonitor_Wait(LowLevelMonitor *monitor)
     monitor->Wait();
 }
 
-extern "C" int CoreLibNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t timeoutMilliseconds)
+// TODO: Change return type to 'bool' once marshaling support is added for it
+extern "C" int32_t CoreLibNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t timeoutMilliseconds)
 {
     assert(monitor != nullptr);
-    return static_cast<int>(monitor->Wait(timeoutMilliseconds));
+    return static_cast<int32_t>(monitor->Wait(timeoutMilliseconds));
 }
 
 extern "C" void CoreLibNative_LowLevelMonitor_Signal_Release(LowLevelMonitor *monitor)

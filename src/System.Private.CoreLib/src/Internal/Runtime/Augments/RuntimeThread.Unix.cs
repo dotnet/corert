@@ -12,18 +12,22 @@ namespace Internal.Runtime.Augments
     {
         private readonly WaitSubsystem.ThreadWaitInfo _waitInfo;
 
+        private void PlatformSpecificInitialize() { }
+
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
 
         public ApartmentState GetApartmentState()
         {
-            Debug.Fail("Should not reach here because CoreFX's Thread class does not forward to this function on Unix");
+            Environment.FailFast(
+                "Should not reach here because CoreFX's Thread class should not forward to this function on Unix");
             return ApartmentState.Unknown;
         }
 
         public bool TrySetApartmentState(ApartmentState state)
         {
-            Debug.Fail("Should not reach here because CoreFX's Thread class does not forward to this function on Unix");
-            return state == ApartmentState.Unknown;
+            Environment.FailFast(
+                "Should not reach here because CoreFX's Thread class should not forward to this function on Unix");
+            return false;
         }
 
         public void DisableComObjectEagerCleanup() { }
@@ -42,6 +46,6 @@ namespace Internal.Runtime.Augments
             throw new PlatformNotSupportedException();
         }
 
-        internal static bool ReentrantWaitsEnabled => false;
+        internal const bool ReentrantWaitsEnabled = false;
     }
 }

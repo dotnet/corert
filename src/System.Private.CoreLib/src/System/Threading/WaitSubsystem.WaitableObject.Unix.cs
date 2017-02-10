@@ -73,13 +73,19 @@ namespace System.Threading
 
             public void OnDeleteHandle()
             {
-                s_lock.VerifyIsLocked();
-
-                if (IsMutex && !IsSignaled)
+                s_lock.Acquire();
+                try
                 {
-                    /// A thread has a reference to all <see cref="Mutex"/>es locked by it, see
-                    /// <see cref="ThreadWaitInfo.LockedMutexesHead"/>. Abandon the mutex to remove the reference to it.
-                    AbandonMutex();
+                    if (IsMutex && !IsSignaled)
+                    {
+                        /// A thread has a reference to all <see cref="Mutex"/>es locked by it, see
+                        /// <see cref="ThreadWaitInfo.LockedMutexesHead"/>. Abandon the mutex to remove the reference to it.
+                        AbandonMutex();
+                    }
+                }
+                finally
+                {
+                    s_lock.Release();
                 }
             }
 
@@ -224,16 +230,26 @@ namespace System.Threading
                 }
             }
 
-            public bool Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds)
+            public bool Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool isLocked)
             {
-                s_lock.VerifyIsLocked();
-
+                if (isLocked)
+                {
+                    s_lock.VerifyIsLocked();
+                }
+                else
+                {
+                    s_lock.VerifyIsNotLocked();
+                }
                 Debug.Assert(waitInfo != null);
                 Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
 
                 Debug.Assert(timeoutMilliseconds >= -1);
 
                 bool needToWait = false;
+                if (!isLocked)
+                {
+                    s_lock.Acquire();
+                }
                 try
                 {
                     if (IsSignaled)
@@ -287,7 +303,7 @@ namespace System.Threading
                 int timeoutMilliseconds,
                 WaitHandle[] waitHandlesForAbandon)
             {
-                s_lock.VerifyIsLocked();
+                s_lock.VerifyIsNotLocked();
                 Debug.Assert(waitInfo != null);
                 Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
 
@@ -297,6 +313,7 @@ namespace System.Threading
                 Debug.Assert(timeoutMilliseconds >= -1);
 
                 bool needToWait = false;
+                s_lock.Acquire();
                 try
                 {
                     if (!waitForAll)
