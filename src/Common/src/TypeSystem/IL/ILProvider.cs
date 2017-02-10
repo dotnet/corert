@@ -129,12 +129,6 @@ namespace Internal.IL
             else
             if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
-                if (method.IsIntrinsic && method.Name == "CreateInstanceIntrinsic")
-                {
-                    // CreateInstanceIntrinsic is specialized per instantiation
-                    return CreateInstanceIntrinsic.EmitIL(method);
-                }
-
                 var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
                 if (methodDefinitionIL == null)
                     return null;

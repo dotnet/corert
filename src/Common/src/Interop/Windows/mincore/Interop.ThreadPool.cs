@@ -34,6 +34,8 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
         internal extern static IntPtr CreateThreadpoolWork(IntPtr pfnwk, IntPtr pv, IntPtr pcbe);
 
+        internal delegate void WorkCallback(IntPtr Instance, IntPtr Context, IntPtr Work);
+
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
         internal extern static IntPtr CloseThreadpoolWork(IntPtr pfnwk);
 
@@ -42,5 +44,7 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
         internal extern static unsafe bool TrySubmitThreadpoolCallback(IntPtr pns, IntPtr pv, TP_CALLBACK_ENVIRON* pcbe);
+
+        internal delegate void SimpleCallback(IntPtr Instance, IntPtr Context);
     }
 }

@@ -62,6 +62,7 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetSp() const { return SP; }
     UIntNative GetFp() const { return R7; }
     UIntNative GetLr() const { return LR; }
+    void SetIp(UIntNative ip) { IP = ip; }
 #elif defined(_TARGET_ARM64_)
     // @TODO: Add ARM64 registers
     UIntNative IP;

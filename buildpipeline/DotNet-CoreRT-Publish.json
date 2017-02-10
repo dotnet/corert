@@ -345,7 +345,7 @@
       "allowOverride": true
     },
     "MyGetFeedUrl": {
-      "value": "https://dotnet.myget.org/F/dotnet-core-test/api/v2/package",
+      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package",
       "allowOverride": true
     },
     "MyGetApiKey": {

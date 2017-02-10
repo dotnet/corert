@@ -3,12 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
 
 using Internal.Text;
-using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
@@ -50,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode EndSymbol => _endSymbol;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName() => this.GetMangledName();
 
@@ -73,9 +70,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var vertexNode in _vertexNodesToWrite)
                 vertexNode.WriteVertex(factory);
 
-            MemoryStream writerStream = new MemoryStream();
-            _writer.Save(writerStream);
-            _writerSavedBytes = writerStream.ToArray();
+            _writerSavedBytes = _writer.Save();
 
             // Zero out the native writer and vertex list so that we AV if someone tries to insert after we're done.
             _writer = null;

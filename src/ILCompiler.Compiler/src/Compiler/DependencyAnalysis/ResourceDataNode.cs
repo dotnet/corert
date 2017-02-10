@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
             _totalLength = 0;
             _indexData = new List<ResourceIndexData>();
             // Build up index information
-            foreach (EcmaAssembly module in factory.MetadataManager.GetModulesWithMetadata().OfType<EcmaAssembly>())
+            foreach (EcmaAssembly module in factory.MetadataManager.GetCompilationModulesWithMetadata().OfType<EcmaAssembly>())
             {
                 PEMemoryBlock resourceDirectory = module.PEReader.GetSectionData(module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
 

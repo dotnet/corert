@@ -705,7 +705,7 @@ namespace System.Runtime.InteropServices
             }
 
             char[] wideChars = new char[charsRequired + 1];
-            fixed (char* pWideChars = wideChars)
+            fixed (char* pWideChars = &wideChars[0])
             {
                 int converted = ExternalInterop.ConvertMultiByteToWideChar(sourceBuffer,
                                                                     cbSourceBuffer,

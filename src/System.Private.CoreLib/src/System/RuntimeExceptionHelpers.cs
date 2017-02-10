@@ -332,7 +332,7 @@ namespace System
                 checked
                 {
                     byte[] serializedData = new byte[sizeof(ExceptionMetadataStruct) + SerializedExceptionData.Length];
-                    fixed (byte* pSerializedData = serializedData)
+                    fixed (byte* pSerializedData = &serializedData[0])
                     {
                         ExceptionMetadataStruct* pMetadata = (ExceptionMetadataStruct*)pSerializedData;
                         pMetadata->ExceptionId = ExceptionMetadata.ExceptionId;
@@ -538,7 +538,7 @@ namespace System
                 }
 
                 byte[] finalBuffer = new byte[cbFinalBuffer];
-                fixed (byte* pBuffer = finalBuffer)
+                fixed (byte* pBuffer = &finalBuffer[0])
                 {
                     byte* pCursor = pBuffer;
                     int cbRemaining = cbFinalBuffer;
@@ -593,17 +593,19 @@ namespace System
 
         private static unsafe void UpdateErrorReportBuffer(byte[] finalBuffer)
         {
+            Debug.Assert(finalBuffer?.Length > 0);
+
             using (LockHolder.Hold(s_ExceptionInfoBufferLock))
             {
-                fixed (byte* pBuffer = finalBuffer)
+                fixed (byte* pBuffer = &finalBuffer[0])
                 {
                     byte* pPrevBuffer = (byte*)RuntimeImports.RhSetErrorInfoBuffer(pBuffer);
                     Debug.Assert(s_ExceptionInfoBufferPinningHandle.IsAllocated == (pPrevBuffer != null));
                     if (pPrevBuffer != null)
                     {
                         byte[] currentExceptionInfoBuffer = (byte[])s_ExceptionInfoBufferPinningHandle.Target;
-                        Debug.Assert(currentExceptionInfoBuffer != null);
-                        fixed (byte* pPrev = currentExceptionInfoBuffer)
+                        Debug.Assert(currentExceptionInfoBuffer?.Length > 0);
+                        fixed (byte* pPrev = &currentExceptionInfoBuffer[0])
                             Debug.Assert(pPrev == pPrevBuffer);
                     }
                     if (!s_ExceptionInfoBufferPinningHandle.IsAllocated)

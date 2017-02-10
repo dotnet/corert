@@ -396,6 +396,35 @@ namespace Internal.IL.Stubs
         }
     }
 
+    public sealed class DelegateReversePInvokeThunk : DelegateThunk
+    {
+        internal DelegateReversePInvokeThunk(DelegateInfo delegateInfo)
+            : base(delegateInfo)
+        {
+        }
+
+        public override MethodIL EmitIL()
+        {
+            var emitter = new ILEmitter();
+            ILCodeStream codeStream = emitter.NewCodeStream();
+
+            MetadataType throwHelpersType = Context.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ThrowHelpers");
+            MethodDesc throwHelper = throwHelpersType.GetKnownMethod("ThrowNotSupportedException", null);
+
+            codeStream.EmitCallThrowHelper(emitter, throwHelper);
+
+            return emitter.Link(this);
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return "InvokeReversePInvokeThunk";
+            }
+        }
+    }
+
     /// <summary>
     /// Delegate thunk that supports Delegate.DynamicInvoke. This thunk has heavy dependencies on the
     /// general dynamic invocation infrastructure in System.InvokeUtils and gets called from there

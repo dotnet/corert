@@ -249,5 +249,15 @@ namespace Internal.TypeSystem
                 return Kind == ArrayMethodKind.Address;
             }
         }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                // We consider Address method an internal call since this will end up calling a different
+                // method at runtime.
+                return Kind == ArrayMethodKind.Address;
+            }
+        }
     }
 }

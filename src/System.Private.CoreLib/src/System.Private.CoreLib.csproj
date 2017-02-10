@@ -813,6 +813,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
+      <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
+    </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs">
       <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>

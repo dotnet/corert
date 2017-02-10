@@ -252,7 +252,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             TypeDesc relatedType = null;
-            if (_type.IsArray || _type.IsPointer)
+            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
             {
                 relatedType = ((ParameterizedType)_type).ParameterType;
             }

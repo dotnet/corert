@@ -21,5 +21,20 @@ namespace System.Runtime.InteropServices
         {
             Interop.mincore.SetLastError(0);
         }
+
+        internal static IntPtr CoTaskMemAlloc(UIntPtr bytes)
+        {
+            IntPtr allocatedMemory = Interop.mincore.CoTaskMemAlloc(bytes);
+            if (allocatedMemory == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return allocatedMemory;
+        }
+
+        internal static void CoTaskMemFree(IntPtr allocatedMemory)
+        {
+            Interop.mincore.CoTaskMemFree(allocatedMemory);
+        }
     }
 }

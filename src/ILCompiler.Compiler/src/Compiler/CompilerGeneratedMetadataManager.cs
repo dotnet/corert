@@ -13,6 +13,8 @@ using Internal.Metadata.NativeFormat.Writer;
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     /// <summary>
@@ -31,6 +33,7 @@ namespace ILCompiler
         private HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
         private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
         private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
+        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
         protected override void AddGeneratedType(TypeDesc type)
         {
@@ -47,7 +50,7 @@ namespace ILCompiler
             base.AddGeneratedType(type);
         }
 
-        public override HashSet<ModuleDesc> GetModulesWithMetadata()
+        public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             return _modulesSeen;
         }
@@ -125,6 +128,34 @@ namespace ILCompiler
                         fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
                 }
             }
+        }
+
+        /// <summary>
+        /// Is there a reflection invoke stub for a method that is invokable?
+        /// </summary>
+        public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Gets a stub that can be used to reflection-invoke a method with a given signature.
+        /// </summary>
+        public override MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        {
+            TypeSystemContext context = method.Context;
+            var sig = method.Signature;
+
+            // Get a generic method that can be used to invoke method with this shape.
+            MethodDesc thunk;
+            var lookupSig = new DynamicInvokeMethodSignature(sig);
+            if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
+            {
+                thunk = new DynamicInvokeMethodThunk(_nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
+                _dynamicInvokeThunks.Add(lookupSig, thunk);
+            }
+
+            return InstantiateDynamicInvokeMethodForMethod(thunk, method);
         }
 
         private struct GeneratedTypesAndCodeMetadataPolicy : IMetadataPolicy

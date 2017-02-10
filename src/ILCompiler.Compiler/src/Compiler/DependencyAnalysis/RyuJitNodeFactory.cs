@@ -21,8 +21,15 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (method.IsInternalCall)
             {
-                // The only way to locate the entrypoint for an internal call is through the RuntimeImportAttribute.
-                if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
+                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+                {
+                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
+                }
+                else if (method.IsArrayAddressMethod())
+                {
+                    return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
+                }
+                else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
                     return new RuntimeImportMethodNode(method);
                 }
@@ -34,18 +41,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.ContainsMethod(method))
             {
-                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
-                }
-                else if (method.IsArrayAddressMethod())
-                {
-                    return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
-                }
-                else
-                {
-                    return new MethodCodeNode(method);
-                }
+                return new MethodCodeNode(method);
             }
             else
             {
@@ -75,6 +71,12 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
         {
             return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
+        }
+
+        protected override IMethodNode CreateShadowConcreteMethodNode(MethodDesc method)
+        {
+            return new ShadowConcreteMethodNode<MethodCodeNode>(method, 
+                (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
         }
     }
 }

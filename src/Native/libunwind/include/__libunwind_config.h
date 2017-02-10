@@ -44,8 +44,8 @@
 #    define _LIBUNWIND_CONTEXT_SIZE 76
 #    define _LIBUNWIND_CURSOR_SIZE 83
 #  else
-#    define _LIBUNWIND_CONTEXT_SIZE 58
-#    define _LIBUNWIND_CURSOR_SIZE 65
+#    define _LIBUNWIND_CONTEXT_SIZE 50
+#    define _LIBUNWIND_CURSOR_SIZE 57
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER 96
 # elif defined(__or1k__)

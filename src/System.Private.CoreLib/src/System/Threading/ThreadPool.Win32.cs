@@ -25,7 +25,7 @@ namespace System.Threading
         {
             if (s_work == IntPtr.Zero)
             {
-                IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Action<IntPtr, IntPtr, IntPtr>>(DispatchCallback);
+                IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Interop.mincore.WorkCallback>(DispatchCallback);
 
                 IntPtr work = Interop.mincore.CreateThreadpoolWork(nativeCallback, IntPtr.Zero, IntPtr.Zero);
                 if (work == IntPtr.Zero)
@@ -55,7 +55,7 @@ namespace System.Threading
             environ.Initialize();
             environ.SetLongFunction();
 
-            IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Action<IntPtr, IntPtr>>(LongRunningWorkCallback);
+            IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Interop.mincore.SimpleCallback>(LongRunningWorkCallback);
 
             GCHandle gcHandle = GCHandle.Alloc(callback);
             if (!Interop.mincore.TrySubmitThreadpoolCallback(nativeCallback, GCHandle.ToIntPtr(gcHandle), &environ))

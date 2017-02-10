@@ -45,6 +45,11 @@ namespace Internal.Runtime.CompilerHelpers
             throw new PlatformNotSupportedException();
         }
 
+        public static void ThrowNotSupportedException()
+        {
+            throw new NotSupportedException();
+        }
+
         public static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName)
         {
             throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName);

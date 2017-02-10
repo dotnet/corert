@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -43,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => _externalReferences.Section;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -71,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // We have a method body, we have a metadata token, but we can't get an invoke stub. Bail.
-                if (!factory.MetadataManager.HasReflectionInvokeStub(method))
+                if (!factory.MetadataManager.IsReflectionInvokable(method))
                     continue;
 
                 InvokeTableFlags flags = 0;
@@ -92,6 +91,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Once we have a true multi module compilation story, we'll need to start emitting entries where this is not set.
                 flags |= InvokeTableFlags.HasMetadataHandle;
+
+                if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
+                    flags |= InvokeTableFlags.NeedsParameterInterpretation;
 
                 // TODO: native signature for P/Invokes and NativeCallable methods
                 if (method.IsRawPInvoke() || method.IsNativeCallable)
@@ -127,17 +129,20 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 // TODO: data to generate the generic dictionary with the type loader
-                MethodDesc invokeStubMethod = factory.MetadataManager.GetReflectionInvokeStub(method);
-                MethodDesc canonInvokeStubMethod = invokeStubMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (invokeStubMethod != canonInvokeStubMethod)
+                if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 {
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.FatFunctionPointer(invokeStubMethod), FatFunctionPointerConstants.Offset) << 1));
-                }
-                else
-                {
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(invokeStubMethod)) << 1));
+                    MethodDesc invokeStubMethod = factory.MetadataManager.GetReflectionInvokeStub(method);
+                    MethodDesc canonInvokeStubMethod = invokeStubMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (invokeStubMethod != canonInvokeStubMethod)
+                    {
+                        vertex = writer.GetTuple(vertex,
+                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.FatFunctionPointer(invokeStubMethod), FatFunctionPointerConstants.Offset) << 1));
+                    }
+                    else
+                    {
+                        vertex = writer.GetTuple(vertex,
+                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(invokeStubMethod)) << 1));
+                    }
                 }
 
                 if ((flags & InvokeTableFlags.IsGenericMethod) != 0)
@@ -163,9 +168,7 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
-            MemoryStream ms = new MemoryStream();
-            writer.Save(ms);
-            byte[] hashTableBytes = ms.ToArray();
+            byte[] hashTableBytes = writer.Save();
 
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 

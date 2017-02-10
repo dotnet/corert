@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
 
@@ -38,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode EndSymbol => _endSymbol;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName() => this.GetMangledName();
 
@@ -208,9 +207,7 @@ namespace ILCompiler.DependencyAnalysis
             // Zero out the dictionary so that we AV if someone tries to insert after we're done.
             _interfaceGvmSlots = null;
 
-            MemoryStream stream = new MemoryStream();
-            nativeFormatWriter.Save(stream);
-            byte[] streamBytes = stream.ToArray();
+            byte[] streamBytes = nativeFormatWriter.Save();
 
             _endSymbol.SetSymbolOffset(streamBytes.Length);
 

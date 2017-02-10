@@ -17,7 +17,7 @@ namespace System.Threading
         {
             if (_nativeTimer == IntPtr.Zero)
             {
-                IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Action<IntPtr, IntPtr, IntPtr>>(TimerCallback);
+                IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Interop.mincore.TimerCallback>(TimerCallback);
 
                 _nativeTimer = Interop.mincore.CreateThreadpoolTimer(nativeCallback, IntPtr.Zero, IntPtr.Zero);
                 if (_nativeTimer == IntPtr.Zero)

@@ -60,14 +60,13 @@ DLL_EXPORT bool __stdcall GetNextChar(short *value)
     return true;
 }
 
-DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
+int CompareAnsiString(const char *val, const char * expected)
 {
     if (val == NULL)
-        return 1;
+        return 0;
 
-    char expected[] = "Hello World";
-    char *p = expected;
-    char *q = val;
+    const char *p = expected;
+    const char *q = val;
 
     while (*p  && *q && *p == *q)
     {
@@ -75,13 +74,53 @@ DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
         q++;
     }
 
-    return *p == 0  &&  *q == 0;
+    return *p == 0 && *q == 0;
+}
+
+DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
+{
+    if (val == NULL)
+        return 0;
+
+    return CompareAnsiString(val, "Hello World");
+}
+
+DLL_EXPORT int __stdcall VerifyAnsiStringArray(char **val)
+{
+    if (val == NULL || *val == NULL)
+        return 0;
+
+    return CompareAnsiString(val[0], "Hello") && CompareAnsiString(val[1], "World");
+}
+
+void ToUpper(char *val)
+{
+    if (val == NULL) 
+        return;
+    char *p = val;
+    while (*p != '\0')
+    {
+        if (*p >= 'a' && *p <= 'z')
+        {
+            *p = *p - 'a' + 'A';
+        }
+        p++;
+    }
+}
+
+DLL_EXPORT void __stdcall ToUpper(char **val)
+{
+    if (val == NULL)
+        return;
+
+    ToUpper(val[0]);
+    ToUpper(val[1]);
 }
 
 DLL_EXPORT int __stdcall VerifyUnicodeString(unsigned short *val)
 {
     if (val == NULL)
-        return 1;
+        return 0;
 
     unsigned short expected[] = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0};
     unsigned short *p = expected;
@@ -94,6 +133,23 @@ DLL_EXPORT int __stdcall VerifyUnicodeString(unsigned short *val)
     }
 
     return *p == 0  &&  *q == 0;
+}
+DLL_EXPORT bool __stdcall VerifySizeParamIndex(unsigned char ** arrByte, unsigned char *arrSize)
+{
+    *arrSize = 10;
+#ifdef Windows_NT
+    *arrByte = (unsigned char *)CoTaskMemAlloc(sizeof(unsigned char) * (*arrSize));
+#else
+    *arrByte = (unsigned char *)malloc(sizeof(unsigned char) * (*arrSize));
+#endif
+    if (*arrByte == NULL)
+        return false;
+
+    for (int i = 0; i < *arrSize; i++)
+    {
+        (*arrByte)[i] = (unsigned char)i;
+    }
+    return true;
 }
 
 DLL_EXPORT bool __stdcall LastErrorTest()

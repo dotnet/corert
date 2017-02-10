@@ -573,7 +573,7 @@ namespace System.Runtime
             {
                 fixed (byte* pPublicKey = publicKey)
                 {
-                    fixed (byte* pPublicKeyToken = publicKeyToken)
+                    fixed (byte* pPublicKeyToken = &publicKeyToken[0])
                     {
                         RhConvertPublicKeyToPublicKeyToken(pPublicKey, publicKey.Length, pPublicKeyToken, publicKeyToken.Length);
                     }

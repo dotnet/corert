@@ -2532,18 +2532,22 @@ namespace System
             if (indices == null)
                 throw new ArgumentNullException(nameof(indices));
 
-            if (IsSzArray && indices.Length == 1)
+            int length = indices.Length;
+
+            if (IsSzArray && length == 1)
                 return GetValue(indices[0]);
 
-            fixed (int* pIndices = indices)
-                return GetValue(pIndices, indices.Length);
+            if (Rank != length)
+                throw new ArgumentException(SR.Arg_RankIndices);
+
+            Debug.Assert(length > 0);
+            fixed (int* pIndices = &indices[0])
+                return GetValue(pIndices, length);
         }
 
         private unsafe Object GetValue(int* pIndices, int rank)
         {
-            if (this.Rank != rank)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
+            Debug.Assert(Rank == rank);
             Debug.Assert(!IsSzArray);
 
             fixed (IntPtr* pThisArray = &m_pEEType)
@@ -2662,24 +2666,28 @@ namespace System
             if (indices == null)
                 throw new ArgumentNullException(nameof(indices));
 
-            if (IsSzArray && indices.Length == 1)
+            int length = indices.Length;
+
+            if (IsSzArray && length == 1)
             {
                 SetValue(value, indices[0]);
                 return;
             }
 
-            fixed (int* pIndices = indices)
+            if (Rank != length)
+                throw new ArgumentException(SR.Arg_RankIndices);
+
+            Debug.Assert(length > 0);
+            fixed (int* pIndices = &indices[0])
             {
-                SetValue(value, pIndices, indices.Length);
+                SetValue(value, pIndices, length);
                 return;
             }
         }
 
         private unsafe void SetValue(Object value, int* pIndices, int rank)
         {
-            if (this.Rank != rank)
-                throw new ArgumentException(SR.Arg_RankIndices);
-
+            Debug.Assert(Rank == rank);
             Debug.Assert(!IsSzArray);
 
             fixed (IntPtr* pThisArray = &m_pEEType)

@@ -28,12 +28,33 @@ namespace Internal.Runtime.CompilerHelpers
                 int stringLength = str.Length;
                 int bufferLength = encoding.GetByteCount(pStr, stringLength);
                 var buffer = new byte[bufferLength + 1];
-                fixed (byte* pBuffer = buffer)
+                fixed (byte* pBuffer = &buffer[0])
                 {
                     encoding.GetBytes(pStr, stringLength, pBuffer, bufferLength);
                     return buffer;
                 }
             }
+        }
+
+        public static unsafe string AnsiStringToString(byte* buffer)
+        {
+            if (buffer == null)
+                return null;
+
+            int length = strlen(buffer);
+            string result = String.Empty;
+
+            if (length > 0)
+            {
+                result = new String(' ', length);
+
+                fixed (char* pTemp = result)
+                {
+                    // TODO: support ansi semantics in windows
+                    Encoding.UTF8.GetChars(buffer, length, pTemp, length);
+                }
+            }
+            return result;
         }
 
         internal static char[] GetEmptyStringBuilderBuffer(StringBuilder sb)
@@ -167,6 +188,23 @@ namespace Internal.Runtime.CompilerHelpers
             byte* p = pString;
             while (*p != 0) p++;
             return checked((int)(p - pString));
+        }
+
+        internal unsafe static void* CoTaskMemAllocAndZeroMemory(global::System.IntPtr size)
+        {
+            void* ptr;
+            ptr = PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(void*)size).ToPointer();
+
+            // PInvokeMarshal.CoTaskMemAlloc will throw OOMException if out of memory
+            System.Diagnostics.Debug.Assert(ptr != null);
+
+            Buffer.ZeroMemory((byte*)ptr, size.ToInt64());
+            return ptr;
+        }
+
+        internal unsafe static void CoTaskMemFree(void* p)
+        {
+            PInvokeMarshal.CoTaskMemFree((IntPtr)p);
         }
 
         [StructLayout(LayoutKind.Sequential)]

@@ -37,5 +37,15 @@ namespace System.Runtime.InteropServices
 
             return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
         }
+
+        internal static IntPtr CoTaskMemAlloc(UIntPtr bytes)
+        {
+            return Interop.MemAlloc(bytes);
+        }
+
+        internal static void CoTaskMemFree(IntPtr allocatedMemory)
+        {
+            Interop.MemFree(allocatedMemory);
+        }
     }
 }

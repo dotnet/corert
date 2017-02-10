@@ -222,20 +222,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
-            _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
-            {
-                if (_target.Abi == TargetAbi.CoreRT)
-                {
-                    return new ShadowConcreteMethodNode<MethodCodeNode>(method,
-                        (MethodCodeNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
-                }
-                else
-                {
-                    // All methods are modeled as ExternMethodSymbolNode in ProjectX.
-                    return new ShadowConcreteMethodNode<ExternMethodSymbolNode>(method,
-                        (ExternMethodSymbolNode)MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
-                }
-            });
+            _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(CreateShadowConcreteMethodNode);
 
             _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
@@ -342,6 +329,8 @@ namespace ILCompiler.DependencyAnalysis
         protected abstract IMethodNode CreateUnboxingStubNode(MethodDesc method);
 
         protected abstract ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, Object> helperCall);
+
+        protected abstract IMethodNode CreateShadowConcreteMethodNode(MethodDesc method);
 
         private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
 

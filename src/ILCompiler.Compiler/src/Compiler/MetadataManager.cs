@@ -33,7 +33,7 @@ namespace ILCompiler
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
 
-        private NodeFactory _nodeFactory;
+        protected readonly NodeFactory _nodeFactory;
 
         private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
@@ -41,8 +41,6 @@ namespace ILCompiler
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
-
-        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
@@ -68,8 +66,8 @@ namespace ILCompiler
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable");
-            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences");
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", _nodeFactory.Target);
+            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences", _nodeFactory.Target);
 
             var resourceDataNode = new ResourceDataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
@@ -164,7 +162,10 @@ namespace ILCompiler
             }
         }
 
-        public bool HasReflectionInvokeStub(MethodDesc method)
+        /// <summary>
+        /// Is a method that is reflectable a method which should be placed into the invoke map as invokable?
+        /// </summary>
+        public bool IsReflectionInvokable (MethodDesc method)
         {
             var signature = method.Signature;
 
@@ -197,38 +198,51 @@ namespace ILCompiler
         }
 
         /// <summary>
+        /// Is there a reflection invoke stub for a method that is invokable?
+        /// </summary>
+        public bool HasReflectionInvokeStub(MethodDesc method)
+        {
+            if (!IsReflectionInvokable(method))
+                return false;
+
+            return HasReflectionInvokeStubForInvokableMethod(method);
+        }
+
+        /// <summary>
+        /// Given that a method is invokable, does there exist a reflection invoke stub?
+        /// </summary>
+        public abstract bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method);
+
+        /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        public abstract MethodDesc GetReflectionInvokeStub(MethodDesc method);
+
+        /// <summary>
+        /// Compute the particular instantiation of a dynamic invoke thunk needed to invoke a method
+        /// This algorithm is shared with the runtime, so if a thunk requires generic instantiation
+        /// to be used, it must match this algorithm, and cannot be different with different MetadataManagers
+        /// NOTE: This function may return null in cases where an exact instantiation does not exist. (Universal Generics)
+        /// </summary>
+        protected MethodDesc InstantiateDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
         {
-            // Methods we see here shouldn't be canonicalized, or we'll end up creating bastardized instantiations
-            // (e.g. we instantiate over System.Object below.)
-            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any));
+            // Methods we see here shouldn't be canonicalized, or we'll end up creating unsupported instantiations
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Specific));
 
-            TypeSystemContext context = method.Context;
-            var sig = method.Signature;
-            ParameterMetadata[] paramMetadata = null;
-
-            // Get a generic method that can be used to invoke method with this shape.
-            MethodDesc thunk;
-            var lookupSig = new DynamicInvokeMethodSignature(sig);
-            if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
+            if (thunk.Instantiation.Length == 0)
             {
-                thunk = new DynamicInvokeMethodThunk(_nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
-                _dynamicInvokeThunks.Add(lookupSig, thunk);
-            }
-
-            // If the method has no parameters and returns void, we don't need to specialize
-            if (sig.ReturnType.IsVoid && sig.Length == 0)
-            {
-                Debug.Assert(!thunk.HasInstantiation);
+                // nothing to instantiate
                 return thunk;
             }
+
+            MethodSignature sig = method.Signature;
+            TypeSystemContext context = method.Context;
 
             //
             // Instantiate the generic thunk over the parameters and the return type of the target method
             //
 
+            ParameterMetadata[] paramMetadata = null;
             TypeDesc[] instantiation = new TypeDesc[sig.ReturnType.IsVoid ? sig.Length : sig.Length + 1];
             Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
             for (int i = 0; i < sig.Length; i++)
@@ -286,7 +300,19 @@ namespace ILCompiler
                 instantiation[sig.Length] = returnType;
             }
 
-            return context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
+            Debug.Assert(thunk.Instantiation.Length == instantiation.Length);
+
+            // Check if at least one of the instantiation arguments is a universal canonical type, and if so, we 
+            // won't create a dynamic invoker instantiation. The arguments will be interpreted at runtime by the
+            // calling convention converter during the dynamic invocation
+            foreach (TypeDesc type in instantiation)
+            {
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                    return null;
+            }
+
+            MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
+            return instantiatedDynamicInvokeMethod;
         }
 
         protected virtual void AddGeneratedType(TypeDesc type)
@@ -326,7 +352,7 @@ namespace ILCompiler
         /// <summary>
         /// Returns a set of modules that will get some metadata emitted into the output module
         /// </summary>
-        public abstract HashSet<ModuleDesc> GetModulesWithMetadata();
+        public abstract IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata();
 
         public byte[] GetMetadataBlob()
         {
