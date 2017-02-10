@@ -46,6 +46,11 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new NotSupportedException();
         }
 
+        public sealed override MethodBody GetMethodBody()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)

@@ -25,6 +25,10 @@ namespace System.Reflection.Runtime.ParameterInfos
             _typeContext = typeContext;
         }
 
+        public sealed override Type[] GetOptionalCustomModifiers() => QualifiedParameterTypeHandle.GetCustomModifiers(optional: true);
+
+        public sealed override Type[] GetRequiredCustomModifiers() => QualifiedParameterTypeHandle.GetCustomModifiers(optional: false);
+
         public sealed override Type ParameterType
         {
             get

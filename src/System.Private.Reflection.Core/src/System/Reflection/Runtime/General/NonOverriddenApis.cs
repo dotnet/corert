@@ -32,6 +32,7 @@ namespace System.Reflection.Runtime.Assemblies
     internal partial class RuntimeAssembly
     {
 #if DEBUG
+        public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) => base.CreateInstance(typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes);
         public sealed override Type GetType(string name) => base.GetType(name);
         public sealed override Type GetType(string name, bool throwOnError) => base.GetType(name, throwOnError);
         public sealed override bool IsDynamic => base.IsDynamic;

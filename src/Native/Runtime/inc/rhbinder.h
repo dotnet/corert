@@ -139,6 +139,8 @@ struct ModuleHeader
     UInt32          RraGenericUnificationIndirCells;
     UInt32          CountOfGenericUnificationIndirCells;
 
+    UInt32          RraColdToHotMappingInfo;
+
     // Macro to generate an inline accessor for RRA-based fields.
 #ifdef RHDUMP
 #define DEFINE_GET_ACCESSOR(_field, _region)\
@@ -194,6 +196,8 @@ struct ModuleHeader
 
     DEFINE_GET_ACCESSOR(GenericUnificationDescs,    RDATA_REGION);
     DEFINE_GET_ACCESSOR(GenericUnificationIndirCells,DATA_REGION);
+
+    DEFINE_GET_ACCESSOR(ColdToHotMappingInfo,       RDATA_REGION);
 
 #ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
@@ -889,5 +893,37 @@ struct GenericUnificationDesc
     }
 
     bool Equals(GenericUnificationDesc *that);
+};
+
+
+// mapping of cold code blocks to the corresponding hot entry point RVA
+// format is a as follows:
+// -------------------
+// | subSectionCount |     # of subsections, where each subsection has a run of hot bodies
+// -------------------     followed by a run of cold bodies
+// | hotMethodCount  |     # of hot bodies in subsection
+// | coldMethodCount |     # of cold bodies in subsection
+// -------------------
+// ... possibly repeated on ARM
+// -------------------
+// | hotRVA #1       |     RVA of the hot entry point corresponding to the 1st cold body
+// | hotRVA #2       |     RVA of the hot entry point corresponding to the 2nd cold body
+// ... one entry for each cold body containing the corresponding hot entry point
+
+// number of hot and cold bodies in a subsection of code
+// in x86 and x64 there's only one subsection, on ARM there may be several
+// for large modules with > 16 MB of code
+struct SubSectionDesc
+{
+    UInt32          hotMethodCount;
+    UInt32          coldMethodCount;
+};
+
+// this is the structure describing the cold to hot mapping info
+struct ColdToHotMapping
+{
+    UInt32          subSectionCount;
+    SubSectionDesc  subSection[/*subSectionCount*/1];
+    //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
 #endif

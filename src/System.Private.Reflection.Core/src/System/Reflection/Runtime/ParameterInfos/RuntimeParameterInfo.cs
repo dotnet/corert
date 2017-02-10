@@ -57,6 +57,10 @@ namespace System.Reflection.Runtime.ParameterInfos
             info.AddValue("PositionImpl", Position);
         }
 
+        public abstract override Type[] GetOptionalCustomModifiers();
+
+        public abstract override Type[] GetRequiredCustomModifiers();
+
         public abstract override bool HasDefaultValue { get; }
 
         public abstract override int MetadataToken

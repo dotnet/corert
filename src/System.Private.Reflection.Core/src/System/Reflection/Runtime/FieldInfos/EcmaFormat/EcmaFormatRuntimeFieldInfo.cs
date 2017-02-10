@@ -150,6 +150,10 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             return _fieldHandle.GetHashCode();
         }
 
+        public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
+
+        public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
+
         protected sealed override bool TryGetDefaultValue(out object defaultValue)
         {
             return DefaultValueProcessing.GetDefaultValueIfAny(_reader, ref _field, this, out defaultValue);

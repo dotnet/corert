@@ -84,6 +84,10 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             }
         }
 
+        public sealed override Type[] GetOptionalCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_reader, optional: true);
+
+        public sealed override Type[] GetRequiredCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_reader, optional: false);
+
         public sealed override int MetadataToken
         {
             get
@@ -148,12 +152,13 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             get
             {
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
-                Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-                return typeHandle.Resolve(_reader, typeContext);
+                return FieldTypeHandle.Resolve(_reader, typeContext);
             }
         }
 
         protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
+
+        private Handle FieldTypeHandle => _field.Signature.GetFieldSignature(_reader).Type;
 
         private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldHandle _fieldHandle;

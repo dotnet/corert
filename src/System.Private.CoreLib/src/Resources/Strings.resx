@@ -2119,9 +2119,9 @@
   <data name="Serialization_MissingKeys" xml:space="preserve">
     <value>The keys for this dictionary are missing.</value>
   </data>
-  <data name="Serialization_NullKey" xml:space="preserve"> 
+  <data name="Serialization_NullKey" xml:space="preserve">
     <value>One of the serialized keys is null.</value>
-  </data> 
+  </data>
   <data name="NotSupported_KeyCollectionSet" xml:space="preserve">
     <value>Mutating a key collection derived from a dictionary is not allowed.</value>
   </data>
@@ -2178,5 +2178,80 @@
   </data>
   <data name="Serialization_NoParameterInfo" xml:space="preserve">
     <value>Serialized member does not have a ParameterInfo.</value>
+  </data>
+  <data name="ArgumentNull_Assembly" xml:space="preserve">
+    <value>Assembly cannot be null.</value>
+  </data>
+  <data name="Arg_InvalidNeutralResourcesLanguage_Asm_Culture" xml:space="preserve">
+    <value>The NeutralResourcesLanguageAttribute on the assembly "{0}" specifies an invalid culture name: "{1}".</value>
+  </data>
+  <data name="Arg_InvalidNeutralResourcesLanguage_FallbackLoc" xml:space="preserve">
+    <value>The NeutralResourcesLanguageAttribute specifies an invalid or unrecognized ultimate resource fallback location: "{0}".</value>
+  </data>
+  <data name="Arg_InvalidSatelliteContract_Asm_Ver" xml:space="preserve">
+    <value>Satellite contract version attribute on the assembly '{0}' specifies an invalid version: {1}.</value>
+  </data>
+  <data name="Arg_ResMgrNotResSet" xml:space="preserve">
+    <value>Type parameter must refer to a subclass of ResourceSet.</value>
+  </data>
+  <data name="BadImageFormat_ResourceNameCorrupted" xml:space="preserve">
+    <value>Corrupt .resources file. A resource name extends past the end of the stream.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesNameTooLong" xml:space="preserve">
+    <value>Corrupt .resources file. Resource name extends past the end of the file.</value>
+  </data>
+  <data name="InvalidOperation_ResMgrBadResSet_Type" xml:space="preserve">
+    <value>'{0}': ResourceSet derived classes must provide a constructor that takes a String file name and a constructor that takes a Stream.</value>
+  </data>
+  <data name="InvalidOperation_ResourceNotStream_Name" xml:space="preserve">
+    <value>Resource '{0}' was not a Stream - call GetObject instead.</value>
+  </data>
+  <data name="MissingManifestResource_MultipleBlobs" xml:space="preserve">
+    <value>A case-insensitive lookup for resource file "{0}" in assembly "{1}" found multiple entries. Remove the duplicates or specify the exact case.</value>
+  </data>
+  <data name="MissingManifestResource_NoNeutralAsm" xml:space="preserve">
+    <value>Could not find any resources appropriate for the specified culture or the neutral culture.  Make sure "{0}" was correctly embedded or linked into assembly "{1}" at compile time, or that all the satellite assemblies required are loadable and fully signed.</value>
+  </data>
+  <data name="MissingManifestResource_NoNeutralDisk" xml:space="preserve">
+    <value>Could not find any resources appropriate for the specified culture (or the neutral culture) on disk.</value>
+  </data>
+  <data name="MissingManifestResource_NoPRIresources" xml:space="preserve">
+    <value>Unable to open Package Resource Index.</value>
+  </data>
+  <data name="MissingManifestResource_ResWFileNotLoaded" xml:space="preserve">
+    <value>Unable to load resources for resource file "{0}" in package "{1}".</value>
+  </data>
+  <data name="MissingSatelliteAssembly_Culture_Name" xml:space="preserve">
+    <value>The satellite assembly named "{1}" for fallback culture "{0}" either could not be found or could not be loaded. This is generally a setup problem. Please consider reinstalling or repairing the application.</value>
+  </data>
+  <data name="MissingSatelliteAssembly_Default" xml:space="preserve">
+    <value>Resource lookup fell back to the ultimate fallback resources in a satellite assembly, but that satellite either was not found or could not be loaded. Please consider reinstalling or repairing the application.</value>
+  </data>
+  <data name="NotSupported_ObsoleteResourcesFile" xml:space="preserve">
+    <value>Found an obsolete .resources file in assembly '{0}'. Rebuild that .resources file then rebuild that assembly.</value>
+  </data>
+  <data name="NotSupported_ResourceObjectSerialization" xml:space="preserve">
+    <value>Cannot read resources that depend on serialization.</value>
+  </data>
+  <data name="ObjectDisposed_ResourceSet" xml:space="preserve">
+    <value>Cannot access a closed resource set.</value>
+  </data>
+  <data name="Arg_ResourceNameNotExist" xml:space="preserve">
+    <value>The specified resource name "{0}" does not exist in the resource file.</value>
+  </data>
+  <data name="BadImageFormat_ResourceDataLengthInvalid" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified data length '{0}' is not a valid position in the stream.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesIndexTooLong" xml:space="preserve">
+    <value>Corrupt .resources file. String for name index '{0}' extends past the end of the file.</value>
+  </data>
+  <data name="InvalidOperation_ResourceNotString_Name" xml:space="preserve">
+    <value>Resource '{0}' was not a String - call GetObject instead.</value>
+  </data>
+  <data name="InvalidOperation_ResourceNotString_Type" xml:space="preserve">
+    <value>Resource was of type '{0}' instead of String - call GetObject instead.</value>
+  </data>
+  <data name="NotSupported_WrongResourceReader_Type" xml:space="preserve">
+    <value>This .resources file should not be read with this reader. The resource reader type is "{0}".</value>
   </data>
 </root>
