@@ -25,7 +25,6 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Console.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     
     <ProjectReference Include="..\..\System.Private.StackTraceGenerator\src\System.Private.StackTraceGenerator.csproj" />
   </ItemGroup>

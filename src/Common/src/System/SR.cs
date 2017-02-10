@@ -31,6 +31,12 @@ namespace System
             return false;
         }
 
+        // Needed for debugger integration
+        internal static string GetResourceString(string resourceKey)
+        {
+            return GetResourceString(resourceKey, String.Empty);
+        }
+
         internal static string GetResourceString(string resourceKey, string defaultString)
         {
             string resourceString = null;

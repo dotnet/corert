@@ -17,7 +17,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm'" />
   <PropertyGroup>
-    <SkipCommonResourcesIncludes Condition="'$(IsProjectNLibrary)' == 'true'">true</SkipCommonResourcesIncludes>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <UseSyncTable>true</UseSyncTable>
@@ -53,9 +52,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\SR.Core.cs" Condition="'$(IsProjectNLibrary)' == 'true'">
-      <Link>Resources\Common</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks</Link>
@@ -96,6 +92,7 @@
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\SpinLockTraceCallbacks.cs" />
+    <Compile Include="Internal\Runtime\CompilerServices\HasEmbeddedStringResourcesAttribute.cs" />
     <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
@@ -208,11 +205,24 @@
     <Compile Include="System\Reflection\TypeInfo.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
-    <!-- TODO: Enable ResourceManager in ProjectN TFS build -->
-    <Compile Include="System\Resources\MissingManifestResourceException.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\Resources\NeutralResourcesLanguageAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\Resources\ResourceManager.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\Resources\ResourceReader.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Resources\FastResourceComparer.cs" />
+    <Compile Include="System\Resources\FileBasedResourceGroveler.cs" />
+    <Compile Include="System\Resources\IResourceGroveler.cs" />
+    <Compile Include="System\Resources\IResourceReader.cs" />
+    <Compile Include="System\Resources\ManifestBasedResourceGroveler.cs" />
+    <Compile Include="System\Resources\MissingManifestResourceException.cs" />
+    <Compile Include="System\Resources\MissingSatelliteAssemblyException.cs" />
+    <Compile Include="System\Resources\NeutralResourcesLanguageAttribute.cs" />
+    <Compile Include="System\Resources\PinnedBufferMemoryStream.cs" />
+    <Compile Include="System\Resources\ResourceFallbackManager.cs" />
+    <Compile Include="System\Resources\ResourceManager.cs" />
+    <Compile Include="System\Resources\ResourceReader.cs" />
+    <Compile Include="System\Resources\ResourceSet.cs" />
+    <Compile Include="System\Resources\ResourceTypeCode.cs" />
+    <Compile Include="System\Resources\RuntimeResourceSet.cs" />
+    <Compile Include="System\Resources\SatelliteContractVersionAttribute.cs" />
+    <Compile Include="System\Resources\UltimateResourceFallbackLocation.cs" />
+    <Compile Include="System\Resources\UnmanagedMemoryStreamWrapper.cs" />
     <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
