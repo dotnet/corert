@@ -559,7 +559,7 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected virtual void ComputeICastableVirtualMethodSlots(NodeFactory factory)
         {
-            if (_type.IsInterface)
+            if (_type.IsInterface || !EmitVirtualSlotsAndInterfaces)
                 return;
 
             foreach (DefType itf in _type.RuntimeInterfaces)
