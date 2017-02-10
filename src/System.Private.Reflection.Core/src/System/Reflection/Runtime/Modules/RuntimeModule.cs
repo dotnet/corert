@@ -115,6 +115,17 @@ namespace System.Reflection.Runtime.Modules
         public sealed override int MDStreamVersion { get { throw new PlatformNotSupportedException(); } }
         public sealed override string ScopeName { get { throw new PlatformNotSupportedException(); } }
 
+        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new PlatformNotSupportedException(); }
+        public sealed override FieldInfo[] GetFields(BindingFlags bindingFlags) { throw new PlatformNotSupportedException(); }
+        protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new PlatformNotSupportedException(); }
+        public sealed override MethodInfo[] GetMethods(BindingFlags bindingFlags) { throw new PlatformNotSupportedException(); }
+        public sealed override FieldInfo ResolveField(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new PlatformNotSupportedException(); }
+        public sealed override MemberInfo ResolveMember(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new PlatformNotSupportedException(); }
+        public sealed override MethodBase ResolveMethod(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new PlatformNotSupportedException(); }
+        public sealed override byte[] ResolveSignature(int metadataToken) { throw new PlatformNotSupportedException(); }
+        public sealed override string ResolveString(int metadataToken) { throw new PlatformNotSupportedException(); }
+        public sealed override Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new PlatformNotSupportedException(); }
+
         private readonly Assembly _assembly;
     }
 }

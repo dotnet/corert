@@ -80,6 +80,10 @@ namespace System.Reflection.Runtime.FieldInfos
             MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
+        public abstract override Type[] GetOptionalCustomModifiers();
+
+        public abstract override Type[] GetRequiredCustomModifiers();
+
         public sealed override Object GetValue(Object obj)
         {
 #if ENABLE_REFLECTION_TRACE
