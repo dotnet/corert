@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             if (IsStandardSection)
                 standardSectionPrefix = ".";
 
-            return new ObjectNodeSection(standardSectionPrefix + Name + "$" + key, Type, key);
+            return new ObjectNodeSection(standardSectionPrefix + Name, Type, key);
         }
 
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);

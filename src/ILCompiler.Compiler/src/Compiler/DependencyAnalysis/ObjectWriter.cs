@@ -49,14 +49,11 @@ namespace ILCompiler.DependencyAnalysis
         //  The size of CFI_CODE that RyuJit passes.
         private const int CfiCodeSize = 8;
 
-        // The section name of the current node being processed.
-        private string _currentSectionName;
+        // The section for the current node being processed.
+        private ObjectNodeSection _currentSection;
 
         // The first defined symbol name of the current node being processed.
         private Utf8String _currentNodeZeroTerminatedName;
-
-        // The set of custom section names that have been created so far
-        private HashSet<string> _customSectionNames = new HashSet<string>();
 
         private const string NativeObjectWriterFileName = "objwriter";
 
@@ -80,21 +77,25 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void FinishObjWriter(IntPtr objWriter);
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void SwitchSection(IntPtr objWriter, string sectionName);
+        private static extern void SwitchSection(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes = 0, string comdatName = null);
+
         public void SetSection(ObjectNodeSection section)
         {
-            if (!section.IsStandardSection && !_customSectionNames.Contains(section.Name))
+            if (!section.IsStandardSection)
             {
-                CreateCustomSection(section);
+                SwitchSection(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
+            }
+            else
+            {
+                SwitchSection(_nativeObjectWriter, section.Name);
             }
 
-            _currentSectionName = section.Name;
-            SwitchSection(_nativeObjectWriter, section.Name);
+            _currentSection = section;
         }
 
         public void EnsureCurrentSection()
         {
-            SwitchSection(_nativeObjectWriter, _currentSectionName);
+            SetSection(_currentSection);
         }
 
         [Flags]
@@ -126,14 +127,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return attributes;
-        }
-
-        [DllImport(NativeObjectWriterFileName)]
-        private static extern bool CreateCustomSection(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes, string comdatName);
-        public void CreateCustomSection(ObjectNodeSection section)
-        {
-            CreateCustomSection(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
-            _customSectionNames.Add(section.Name);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -749,7 +742,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    objectWriter.CreateCustomSection(MethodCodeNode.WindowsContentSection);
+                    objectWriter.SetSection(MethodCodeNode.WindowsContentSection);
 
                     // Emit sentinels for managed code section.
                     ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
@@ -767,8 +760,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    objectWriter.CreateCustomSection(MethodCodeNode.UnixContentSection);
-                    objectWriter.CreateCustomSection(LsdaSection);
+                    objectWriter.SetSection(MethodCodeNode.UnixContentSection);
+                    objectWriter.SetSection(LsdaSection);
                 }
 
                 // Build file info map.
