@@ -73,6 +73,11 @@ namespace System.Reflection.Runtime.EventInfos
             MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
+        public sealed override MethodInfo[] GetOtherMethods(bool nonPublic)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public sealed override Module Module
         {
             get

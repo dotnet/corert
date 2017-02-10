@@ -149,6 +149,11 @@ namespace System.Reflection.Runtime.MethodInfos
             MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
+        public sealed override MethodBody GetMethodBody()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public sealed override ParameterInfo[] GetParameters()
         {
 #if ENABLE_REFLECTION_TRACE
