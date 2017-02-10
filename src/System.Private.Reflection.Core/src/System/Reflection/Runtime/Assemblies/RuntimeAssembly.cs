@@ -154,6 +154,7 @@ namespace System.Reflection.Runtime.Assemblies
         // Types that derive from RuntimeAssembly must implement the following public surface area members
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override IEnumerable<TypeInfo> DefinedTypes { get; }
+        public abstract override MethodInfo EntryPoint { get; }
         public abstract override IEnumerable<Type> ExportedTypes { get; }
         public abstract override ManifestResourceInfo GetManifestResourceInfo(String resourceName);
         public abstract override String[] GetManifestResourceNames();

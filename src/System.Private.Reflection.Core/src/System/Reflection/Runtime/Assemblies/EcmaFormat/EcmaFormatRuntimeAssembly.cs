@@ -255,7 +255,6 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             return MetadataReader.GetHashCode();
         }
 
-/* Uncomment, when EntryPoint is removed from ApiToDo.cs
         public sealed override MethodInfo EntryPoint 
         {
             get 
@@ -288,7 +287,6 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 return RuntimeNamedMethodInfo<EcmaFormatMethodCommon>.GetRuntimeNamedMethodInfo(new EcmaFormatMethodCommon(methodHandle, (EcmaFormatRuntimeNamedTypeInfo)runtimeType, runtimeType), runtimeType);
             }
         }
-*/
 
         internal AssemblyDefinition AssemblyDefinition { get; }
         internal MetadataReader MetadataReader { get; }
