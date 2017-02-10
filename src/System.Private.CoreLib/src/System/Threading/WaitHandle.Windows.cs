@@ -222,9 +222,7 @@ namespace System.Threading
                     throw new SemaphoreFullException();
 
                 case Interop.mincore.Errors.ERROR_NOT_OWNER:
-                    throw new SynchronizationLockException();
-                    // TODO: netstandard2.0 - After switching to ns2.0 contracts, use the below instead for compatibility
-                    //throw new ApplicationException(SR.Arg_SynchronizationLockException);
+                    throw new ApplicationException(SR.Arg_SynchronizationLockException);
 
                 default:
                     var ex = new Exception();
@@ -260,9 +258,7 @@ namespace System.Threading
                     /// Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/> when signaling a mutex
                     /// that is locked by a different thread. Note that if the mutex is already unlocked, the Windows
                     /// SignalObjectAndWait function does not return an error.
-                    throw new SynchronizationLockException();
-                    // TODO: netstandard2.0 - After switching to ns2.0 contracts, use the below instead for compatibility
-                    //throw new ApplicationException(SR.Arg_SynchronizationLockException);
+                    throw new ApplicationException(SR.Arg_SynchronizationLockException);
 
                 case Interop.mincore.Errors.ERROR_MUTANT_LIMIT_EXCEEDED:
                     throw new OverflowException(SR.Overflow_MutexReacquireCount);

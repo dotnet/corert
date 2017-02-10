@@ -393,9 +393,6 @@ internal static class WaitSubsystemTests
     [Fact]
     public static void MutexTest()
     {
-        // TODO: netstandard2.0 - After switching to ns2.0 contracts, and fixing TODOs in Mutex, check for ApplicationException
-        // instead of SynchronizationLockException
-
         // Constructor and dispose
 
         var m = new Mutex();
@@ -423,17 +420,17 @@ internal static class WaitSubsystemTests
         // Acquire and release
 
         m = new Mutex();
-        Assert.Throws<SynchronizationLockException>(() => m.ReleaseMutex());
+        VerifyThrowsApplicationException(() => m.ReleaseMutex());
         Assert.True(m.WaitOne(0));
         m.ReleaseMutex();
-        Assert.Throws<SynchronizationLockException>(() => m.ReleaseMutex());
+        VerifyThrowsApplicationException(() => m.ReleaseMutex());
         Assert.True(m.WaitOne(0));
         Assert.True(m.WaitOne(0));
         Assert.True(m.WaitOne(0));
         m.ReleaseMutex();
         m.ReleaseMutex();
         m.ReleaseMutex();
-        Assert.Throws<SynchronizationLockException>(() => m.ReleaseMutex());
+        VerifyThrowsApplicationException(() => m.ReleaseMutex());
 
         // Wait
 
@@ -461,19 +458,19 @@ internal static class WaitSubsystemTests
         ms[0].ReleaseMutex();
         for (int i = 1; i < ms.Length; ++i)
         {
-            Assert.Throws<SynchronizationLockException>(() => ms[i].ReleaseMutex());
+            VerifyThrowsApplicationException(() => ms[i].ReleaseMutex());
         }
         Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         ms[0].ReleaseMutex();
         for (int i = 1; i < ms.Length; ++i)
         {
-            Assert.Throws<SynchronizationLockException>(() => ms[i].ReleaseMutex());
+            VerifyThrowsApplicationException(() => ms[i].ReleaseMutex());
         }
         Assert.Equal(0, WaitHandle.WaitAny(ms));
         ms[0].ReleaseMutex();
         for (int i = 1; i < ms.Length; ++i)
         {
-            Assert.Throws<SynchronizationLockException>(() => ms[i].ReleaseMutex());
+            VerifyThrowsApplicationException(() => ms[i].ReleaseMutex());
         }
         Assert.True(WaitHandle.WaitAll(ms, 0));
         for (int i = 0; i < ms.Length; ++i)
@@ -496,16 +493,16 @@ internal static class WaitSubsystemTests
         ms[3].WaitOne(0);
         Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
         ms[0].ReleaseMutex();
-        Assert.Throws<SynchronizationLockException>(() => ms[1].ReleaseMutex());
-        Assert.Throws<SynchronizationLockException>(() => ms[2].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[1].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[2].ReleaseMutex());
         Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         ms[0].ReleaseMutex();
-        Assert.Throws<SynchronizationLockException>(() => ms[1].ReleaseMutex());
-        Assert.Throws<SynchronizationLockException>(() => ms[2].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[1].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[2].ReleaseMutex());
         Assert.Equal(0, WaitHandle.WaitAny(ms));
         ms[0].ReleaseMutex();
-        Assert.Throws<SynchronizationLockException>(() => ms[1].ReleaseMutex());
-        Assert.Throws<SynchronizationLockException>(() => ms[2].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[1].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[2].ReleaseMutex());
         Assert.True(WaitHandle.WaitAll(ms, 0));
         for (int i = 0; i < ms.Length; ++i)
         {
@@ -522,8 +519,8 @@ internal static class WaitSubsystemTests
             ms[i].ReleaseMutex();
         }
         ms[0].ReleaseMutex();
-        Assert.Throws<SynchronizationLockException>(() => ms[1].ReleaseMutex());
-        Assert.Throws<SynchronizationLockException>(() => ms[2].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[1].ReleaseMutex());
+        VerifyThrowsApplicationException(() => ms[2].ReleaseMutex());
         ms[3].ReleaseMutex();
 
         // Multi-wait with all indexes locked
@@ -555,8 +552,30 @@ internal static class WaitSubsystemTests
         for (int i = 0; i < ms.Length; ++i)
         {
             ms[i].ReleaseMutex();
-            Assert.Throws<SynchronizationLockException>(() => ms[i].ReleaseMutex());
+            VerifyThrowsApplicationException(() => ms[i].ReleaseMutex());
         }
+    }
+
+    private static void VerifyThrowsApplicationException(Action action)
+    {
+        // TODO: netstandard2.0 - After switching to ns2.0 contracts, use Assert.Throws<T> instead of this function
+        // TODO: Enable this verification. There currently seem to be some reliability issues surrounding exceptions on Unix.
+        //try
+        //{
+        //    action();
+        //}
+        //catch (Exception ex)
+        //{
+        //    if (ex.HResult == unchecked((int)0x80131600))
+        //        return;
+        //    Console.WriteLine(
+        //        "VerifyThrowsApplicationException: Assertion failure - Assert.Throws<ApplicationException>: got {1}",
+        //        ex.GetType());
+        //    throw new AssertionFailureException(ex);
+        //}
+        //Console.WriteLine(
+        //    "VerifyThrowsApplicationException: Assertion failure - Assert.Throws<ApplicationException>: got no exception");
+        //throw new AssertionFailureException();
     }
 
     [Fact]

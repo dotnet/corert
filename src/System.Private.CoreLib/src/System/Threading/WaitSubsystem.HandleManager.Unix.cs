@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -16,12 +17,11 @@ namespace System.Threading
             {
                 Debug.Assert(waitableObject != null);
 
-                IntPtr handle = GCHandle.ToIntPtr(GCHandle.Alloc(waitableObject));
-                Debug.Assert(handle != new IntPtr(-1)); // SafeWaitHandle treats -1 and 0 as invalid
-                if (handle == IntPtr.Zero)
-                {
-                    throw new OutOfMemoryException();
-                }
+                IntPtr handle = RuntimeImports.RhHandleAlloc(waitableObject, GCHandleType.Normal);
+
+                // SafeWaitHandle treats -1 and 0 as invalid, and the handle should be these values anyway
+                Debug.Assert(handle != IntPtr.Zero);
+                Debug.Assert(handle != new IntPtr(-1));
                 return handle;
             }
 
@@ -34,7 +34,7 @@ namespace System.Threading
 
                 // We don't know if any other handles are invalid, and this may crash or otherwise do bad things, that is by
                 // design, IntPtr is unsafe by nature.
-                return (WaitableObject)GCHandle.FromIntPtr(handle).Target;
+                return (WaitableObject)RuntimeImports.RhHandleGet(handle);
             }
 
             /// <summary>
@@ -49,9 +49,8 @@ namespace System.Threading
 
                 // We don't know if any other handles are invalid, and this may crash or otherwise do bad things, that is by
                 // design, IntPtr is unsafe by nature.
-                GCHandle gcHandle = GCHandle.FromIntPtr(handle);
-                ((WaitableObject)gcHandle.Target).OnDeleteHandle();
-                gcHandle.Free();
+                ((WaitableObject)RuntimeImports.RhHandleGet(handle)).OnDeleteHandle();
+                RuntimeImports.RhHandleFree(handle);
             }
         }
     }

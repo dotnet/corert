@@ -702,9 +702,7 @@ namespace System.Threading
 
                 if (IsSignaled || _ownershipInfo.Thread != RuntimeThread.CurrentThread)
                 {
-                    throw new SynchronizationLockException();
-                    // TODO: netstandard2.0 - After switching to ns2.0 contracts, use the below instead for compatibility
-                    //throw new ApplicationException(SR.Arg_SynchronizationLockException);
+                    throw new ApplicationException(SR.Arg_SynchronizationLockException);
                 }
 
                 if (!_ownershipInfo.TryDecrementReacquireCount())

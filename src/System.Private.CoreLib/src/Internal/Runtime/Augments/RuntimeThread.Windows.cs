@@ -8,6 +8,8 @@ using System.Threading;
 
 namespace Internal.Runtime.Augments
 {
+    using Interop = global::Interop; /// due to the existence of <see cref="Internal.Interop"/>
+
     public sealed partial class RuntimeThread
     {
         [ThreadStatic]
@@ -41,13 +43,13 @@ namespace Internal.Runtime.Augments
 
         internal static void UninterruptibleSleep0()
         {
-            global::Interop.mincore.Sleep(0);
+            Interop.mincore.Sleep(0);
         }
 
         private static void SleepCore(int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
-            global::Interop.mincore.Sleep((uint)millisecondsTimeout);
+            Interop.mincore.Sleep((uint)millisecondsTimeout);
         }
 
         //
@@ -75,40 +77,40 @@ namespace Internal.Runtime.Augments
             if (currentThreadType != ApartmentType.Unknown)
                 return currentThreadType;
 
-            global::Interop._APTTYPE aptType;
-            global::Interop._APTTYPEQUALIFIER aptTypeQualifier;
-            int result = global::Interop.mincore.CoGetApartmentType(out aptType, out aptTypeQualifier);
+            Interop._APTTYPE aptType;
+            Interop._APTTYPEQUALIFIER aptTypeQualifier;
+            int result = Interop.mincore.CoGetApartmentType(out aptType, out aptTypeQualifier);
 
             ApartmentType type = ApartmentType.Unknown;
 
-            switch ((global::Interop.Constants)result)
+            switch ((Interop.Constants)result)
             {
-                case global::Interop.Constants.CoENotInitialized:
+                case Interop.Constants.CoENotInitialized:
                     type = ApartmentType.None;
                     break;
 
-                case global::Interop.Constants.SOk:
+                case Interop.Constants.SOk:
                     switch (aptType)
                     {
-                        case global::Interop._APTTYPE.APTTYPE_STA:
-                        case global::Interop._APTTYPE.APTTYPE_MAINSTA:
+                        case Interop._APTTYPE.APTTYPE_STA:
+                        case Interop._APTTYPE.APTTYPE_MAINSTA:
                             type = ApartmentType.STA;
                             break;
 
-                        case global::Interop._APTTYPE.APTTYPE_MTA:
+                        case Interop._APTTYPE.APTTYPE_MTA:
                             type = ApartmentType.MTA;
                             break;
 
-                        case global::Interop._APTTYPE.APTTYPE_NA:
+                        case Interop._APTTYPE.APTTYPE_NA:
                             switch (aptTypeQualifier)
                             {
-                                case global::Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MTA:
-                                case global::Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_IMPLICIT_MTA:
+                                case Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MTA:
+                                case Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_IMPLICIT_MTA:
                                     type = ApartmentType.MTA;
                                     break;
 
-                                case global::Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_STA:
-                                case global::Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MAINSTA:
+                                case Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_STA:
+                                case Interop._APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MAINSTA:
                                     type = ApartmentType.STA;
                                     break;
 
