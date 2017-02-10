@@ -152,7 +152,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to a virtual dispatch stub.
     /// </summary>
-    public sealed class VirtualDispatchGenericLookupResult : GenericLookupResult
+    internal sealed class VirtualDispatchGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 
@@ -176,14 +176,9 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return GetInterfaceDispatchCell(factory, dictionary);
+                MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName());
             }
-        }
-
-        public InterfaceDispatchCellNode GetInterfaceDispatchCell(NodeFactory factory, GenericDictionaryNode dictionary)
-        {
-            MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName());
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -198,7 +193,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to a virtual function address load stub.
     /// </summary>
-    public sealed class VirtualResolveGenericLookupResult : GenericLookupResult
+    internal sealed class VirtualResolveGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 
@@ -225,14 +220,9 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return GetInterfaceDispatchCell(factory, dictionary);
+                MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName());
             }
-        }
-
-        public InterfaceDispatchCellNode GetInterfaceDispatchCell(NodeFactory factory, GenericDictionaryNode dictionary)
-        {
-            MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName());
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
