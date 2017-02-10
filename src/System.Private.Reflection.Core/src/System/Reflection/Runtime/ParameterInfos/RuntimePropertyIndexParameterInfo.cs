@@ -46,6 +46,17 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+
+        public sealed override Type[] GetOptionalCustomModifiers()
+        {
+            return _backingParameter.GetOptionalCustomModifiers();
+        }
+
+        public sealed override Type[] GetRequiredCustomModifiers()
+        {
+            return _backingParameter.GetRequiredCustomModifiers();
+        }
+
         public sealed override bool HasDefaultValue
         {
             get

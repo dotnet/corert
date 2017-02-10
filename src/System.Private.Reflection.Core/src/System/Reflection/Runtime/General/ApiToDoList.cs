@@ -54,8 +54,6 @@ namespace System.Reflection.Runtime.FieldInfos
     internal abstract partial class RuntimeFieldInfo
     {
         public sealed override RuntimeFieldHandle FieldHandle { get { throw new NotImplementedException(); } }
-        public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
-        public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
     }
 }
 
@@ -89,8 +87,6 @@ namespace System.Reflection.Runtime.ParameterInfos
 {
     internal abstract partial class RuntimeParameterInfo
     {
-        public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
-        public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
     }
 }
 
@@ -98,8 +94,6 @@ namespace System.Reflection.Runtime.PropertyInfos
 {
     internal abstract partial class RuntimePropertyInfo
     {
-        public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
-        public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
     }
 }
 

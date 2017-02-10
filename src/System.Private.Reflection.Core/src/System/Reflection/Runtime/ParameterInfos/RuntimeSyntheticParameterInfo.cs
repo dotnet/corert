@@ -57,6 +57,10 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override Type[] GetOptionalCustomModifiers() => Array.Empty<Type>();
+
+        public sealed override Type[] GetRequiredCustomModifiers() => Array.Empty<Type>();
+
         public sealed override String Name
         {
             get
