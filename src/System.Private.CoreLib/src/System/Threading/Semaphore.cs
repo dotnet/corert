@@ -95,12 +95,12 @@ namespace System.Threading
 
         private int ReleaseCore(int releaseCount)
         {
-            /// The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
-            /// to ensure that one instance is used in all places in this method
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
             SafeWaitHandle waitHandle = _waitHandle;
             if (waitHandle == null)
             {
-                throw InvalidOperationException.NewInvalidHandle();
+                ThrowInvalidHandleException();
             }
 
             waitHandle.DangerousAddRef();

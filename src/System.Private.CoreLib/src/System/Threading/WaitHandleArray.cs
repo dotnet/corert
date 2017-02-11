@@ -26,7 +26,7 @@ namespace System.Threading
             Debug.Assert((InitialCapacity & (InitialCapacity - 1)) == 0); // is a power of 2
             Debug.Assert(InitialCapacity < MaximumCapacity);
 
-            /// Precreating these prevents waits from having to throw <see cref="OutOfMemoryException"/> in most typical cases
+            // Precreating these prevents waits from having to throw <see cref="OutOfMemoryException"/> in most typical cases
             _items = new T[InitialCapacity];
 
             if (elementInitializer != null)

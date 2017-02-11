@@ -38,12 +38,5 @@ namespace System
         }
 
         protected InvalidOperationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-
-        internal static InvalidOperationException NewInvalidHandle()
-        {
-            var ex = new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
-            ex.HResult = __HResults.ERROR_INVALID_HANDLE;
-            return ex;
-        }
     }
 }

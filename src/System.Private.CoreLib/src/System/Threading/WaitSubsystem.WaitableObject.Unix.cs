@@ -78,8 +78,8 @@ namespace System.Threading
                 {
                     if (IsMutex && !IsSignaled)
                     {
-                        /// A thread has a reference to all <see cref="Mutex"/>es locked by it, see
-                        /// <see cref="ThreadWaitInfo.LockedMutexesHead"/>. Abandon the mutex to remove the reference to it.
+                        // A thread has a reference to all <see cref="Mutex"/>es locked by it, see
+                        // <see cref="ThreadWaitInfo.LockedMutexesHead"/>. Abandon the mutex to remove the reference to it.
                         AbandonMutex();
                     }
                 }
@@ -574,7 +574,8 @@ namespace System.Threading
                         break;
 
                     default:
-                        throw InvalidOperationException.NewInvalidHandle();
+                        WaitHandle.ThrowInvalidHandleException();
+                        break;
                 }
             }
 
@@ -634,7 +635,7 @@ namespace System.Threading
 
                 if (!IsEvent)
                 {
-                    throw InvalidOperationException.NewInvalidHandle();
+                    WaitHandle.ThrowInvalidHandleException();
                 }
 
                 if (IsSignaled)
@@ -650,7 +651,7 @@ namespace System.Threading
 
                 if (!IsSemaphore)
                 {
-                    throw InvalidOperationException.NewInvalidHandle();
+                    WaitHandle.ThrowInvalidHandleException();
                 }
 
                 int oldSignalCount = _signalCount;
@@ -692,7 +693,7 @@ namespace System.Threading
 
                 if (!IsMutex)
                 {
-                    throw InvalidOperationException.NewInvalidHandle();
+                    WaitHandle.ThrowInvalidHandleException();
                 }
 
                 if (IsSignaled || _ownershipInfo.Thread != RuntimeThread.CurrentThread)
@@ -713,12 +714,12 @@ namespace System.Threading
                 Debug.Assert(IsMutex);
                 Debug.Assert(!IsSignaled);
 
-                /// Typically, a mutex is abandoned before a thread that owns the mutex exits. However, any thread may
-                /// abandon a mutex since any thread may delete a mutex handle. See <see cref="OnDeleteHandle"/>. Although
-                /// Windows does not release waiters when a mutex is abandoned by deleting its handle, this implementation
-                /// treats that case as abandonment as well and releases waiters, as it's a bit more robust. As the handle
-                /// would be deleted shortly afterwards, it would otherwise not be possible to signal the mutex to release
-                /// waiters.
+                // Typically, a mutex is abandoned before a thread that owns the mutex exits. However, any thread may
+                // abandon a mutex since any thread may delete a mutex handle. See <see cref="OnDeleteHandle"/>. Although
+                // Windows does not release waiters when a mutex is abandoned by deleting its handle, this implementation
+                // treats that case as abandonment as well and releases waiters, as it's a bit more robust. As the handle
+                // would be deleted shortly afterwards, it would otherwise not be possible to signal the mutex to release
+                // waiters.
                 SignalMutex(isAbandoned: true);
             }
 

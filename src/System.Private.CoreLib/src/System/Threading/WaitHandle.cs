@@ -113,15 +113,13 @@ namespace System.Threading
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            /// The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
-            /// to ensure that one instance is used in all places in this method
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
             SafeWaitHandle waitHandle = _waitHandle;
             if (waitHandle == null)
             {
-                /// The desktop framework and CoreCLR throw <see cref="ObjectDisposedException"/>, but <see cref="_waitHandle"/>
-                /// is not set to null when disposed, so that is not be representative of the issue. Also, trying to be
-                /// consistent across APIs when invalid handles are concerned.
-                throw InvalidOperationException.NewInvalidHandle();
+                // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
 
             waitHandle.DangerousAddRef();
@@ -168,10 +166,8 @@ namespace System.Threading
                     SafeWaitHandle safeWaitHandle = waitHandle._waitHandle;
                     if (safeWaitHandle == null)
                     {
-                        /// The desktop framework and CoreCLR throw <see cref="ObjectDisposedException"/>, but
-                        /// <see cref="_waitHandle"/> is not set to null when disposed, so that is not be representative of the
-                        /// issue. Also, trying to be consistent across APIs when invalid handles are concerned.
-                        throw InvalidOperationException.NewInvalidHandle();
+                        // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
+                        throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
                     }
 
                     safeWaitHandle.DangerousAddRef();
@@ -325,16 +321,14 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
 
-            /// The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
-            /// to ensure that one instance is used in all places in this method
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
             SafeWaitHandle safeWaitHandleToSignal = toSignal._waitHandle;
             SafeWaitHandle safeWaitHandleToWaitOn = toWaitOn._waitHandle;
             if (safeWaitHandleToSignal == null || safeWaitHandleToWaitOn == null)
             {
-                /// The desktop framework and CoreCLR throw <see cref="ObjectDisposedException"/>, but <see cref="_waitHandle"/>
-                /// is not set to null when disposed, so that is not be representative of the issue. Also, trying to be
-                /// consistent across APIs when invalid handles are concerned.
-                throw InvalidOperationException.NewInvalidHandle();
+                // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
 
             Contract.EndContractBlock();
@@ -384,6 +378,13 @@ namespace System.Threading
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        internal static void ThrowInvalidHandleException()
+        {
+            var ex = new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
+            ex.SetErrorCode(__HResults.ERROR_INVALID_HANDLE);
+            throw ex;
         }
     }
 }
