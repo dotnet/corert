@@ -236,6 +236,9 @@ namespace Internal.TypeSystem.Interop
             return true;
         }
 
+        /// <summary>
+        /// Given a NativeType enum returns a corresponding Type that should be passed to the Native side
+        /// </summary>
         protected TypeDesc GetDefaultNativeType(NativeType nativeType)
         {
             switch (nativeType)
@@ -321,14 +324,10 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.Struct:
                 case MarshallerKind.Decimal:
                 case MarshallerKind.VoidReturn:
-                    {
                         return type;
-                    }
 
                 case MarshallerKind.BlittableStructPtr:
-                    {
                         return type.MakePointerType();
-                    }
 
                 case MarshallerKind.Variant:
                     return GetDefaultNativeType(NativeType.Variant);
@@ -351,6 +350,7 @@ namespace Internal.TypeSystem.Interop
 
                 case MarshallerKind.UnicodeString:
                     return GetDefaultNativeType(NativeType.SysInt); // We pin UniCodeString, so native type will be SysInt
+
                 case MarshallerKind.UnicodeStringBuilder:
                     return GetDefaultNativeType(NativeType.LPWStr);
 
