@@ -86,12 +86,12 @@ namespace System.Threading
 
         public bool Reset()
         {
-            /// The field value is modifiable via <see cref="SafeWaitHandle"/>, save it locally to ensure that ref modification
-            /// is done on the same instance
+            // The field value is modifiable via <see cref="SafeWaitHandle"/>, save it locally to ensure that ref modification
+            // is done on the same instance
             SafeWaitHandle waitHandle = _waitHandle;
             if (waitHandle == null)
             {
-                throw InvalidOperationException.NewInvalidHandle();
+                ThrowInvalidHandleException();
             }
 
             waitHandle.DangerousAddRef();
@@ -107,12 +107,12 @@ namespace System.Threading
 
         public bool Set()
         {
-            /// The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
-            /// to ensure that one instance is used in all places in this method
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
             SafeWaitHandle waitHandle = _waitHandle;
             if (waitHandle == null)
             {
-                throw InvalidOperationException.NewInvalidHandle();
+                ThrowInvalidHandleException();
             }
 
             waitHandle.DangerousAddRef();
