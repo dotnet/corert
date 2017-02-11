@@ -14,9 +14,10 @@ class Program
     static int Main()
     {
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
-        ThreadStaticsTestWithTasks.Run();
+        // TODO: After issue https://github.com/dotnet/corert/issues/2695 is fixed, move FinalizeTest to run at the end
         if (FinalizeTest.Run() != Pass)
             return Fail;
+        ThreadStaticsTestWithTasks.Run();
 
         return Pass;
     }

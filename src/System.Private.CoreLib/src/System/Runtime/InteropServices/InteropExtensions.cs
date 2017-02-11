@@ -459,12 +459,12 @@ namespace System.Runtime.InteropServices
 
         public static void SuppressReentrantWaits()
         {
-            System.Threading.LowLevelThread.SuppressReentrantWaits();
+            RuntimeThread.SuppressReentrantWaits();
         }
 
         public static void RestoreReentrantWaits()
         {
-            System.Threading.LowLevelThread.RestoreReentrantWaits();
+            RuntimeThread.RestoreReentrantWaits();
         }
 
         public static IntPtr MemAlloc(UIntPtr sizeInBytes)

@@ -235,47 +235,6 @@ namespace Internal.TypeSystem.Interop
             }
             return true;
         }
-
-        protected TypeDesc GetDefaultNativeType(NativeType nativeType)
-        {
-            switch (nativeType)
-            {
-                case NativeType.I1:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.SByte);
-                case NativeType.U1:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Byte);
-                case NativeType.I2:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Int16);
-                case NativeType.U2:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UInt16);
-                case NativeType.I4:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Int32);
-                case NativeType.U4:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UInt32);
-                case NativeType.I8:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Int64);
-                case NativeType.U8:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UInt64);
-                case NativeType.Boolean:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Int32);
-                case NativeType.SysInt:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr);
-                case NativeType.SysUInt:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UIntPtr);
-                case NativeType.LPStr:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Byte).MakeArrayType();
-                case NativeType.LPWStr:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UInt16).MakeArrayType();
-                case NativeType.R4:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Single);
-                case NativeType.R8:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Double);
-                default:
-                    Debug.Assert(false, "Unexpected NativeType enum");
-                    return null;
-            }
-        }
-
         private TypeDesc GetNativeTypeFromMarshallerKind(TypeDesc type, MarshallerKind kind, MarshallerKind elementMarshallerKind,
                 MarshalAsDescriptor marshalAs)
         {
@@ -284,10 +243,11 @@ namespace Internal.TypeSystem.Interop
                 return GetNativeTypeFromMarshallerKind(((ByRefType)type).ParameterType, kind, elementMarshallerKind, marshalAs).MakePointerType();
             }
 
+            TypeSystemContext context = PInvokeMethodData.Context;
             NativeType nativeType = NativeType.Invalid;
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
-             
+
             switch (kind)
             {
                 case MarshallerKind.BlittableValue:
@@ -295,70 +255,69 @@ namespace Internal.TypeSystem.Interop
                         switch (nativeType)
                         {
                             case NativeType.I1:
+                                return context.GetWellKnownType(WellKnownType.SByte);
                             case NativeType.U1:
+                                return context.GetWellKnownType(WellKnownType.Byte);
                             case NativeType.I2:
+                                return context.GetWellKnownType(WellKnownType.Int16);
                             case NativeType.U2:
+                                return context.GetWellKnownType(WellKnownType.UInt16);
                             case NativeType.I4:
+                                return context.GetWellKnownType(WellKnownType.Int32);
                             case NativeType.U4:
+                                return context.GetWellKnownType(WellKnownType.UInt32);
                             case NativeType.I8:
+                                return context.GetWellKnownType(WellKnownType.Int64);
                             case NativeType.U8:
+                                return context.GetWellKnownType(WellKnownType.UInt64);
                             case NativeType.R4:
+                                return context.GetWellKnownType(WellKnownType.Single);
                             case NativeType.R8:
-                                return GetDefaultNativeType(marshalAs.Type);
+                                return context.GetWellKnownType(WellKnownType.Double);
                             default:
                                 return type.UnderlyingType;
                         }
                     }
 
                 case MarshallerKind.Bool:
-                    if (nativeType == NativeType.Invalid)
-                        return GetDefaultNativeType(NativeType.I4);
-                    else
-                        return GetDefaultNativeType(nativeType);
+                    return context.GetWellKnownType(WellKnownType.Int32);
 
                 case MarshallerKind.Enum:
                 case MarshallerKind.BlittableStruct:
                 case MarshallerKind.Struct:
                 case MarshallerKind.Decimal:
                 case MarshallerKind.VoidReturn:
-                    {
-                        return type;
-                    }
+                    return type;
 
                 case MarshallerKind.BlittableStructPtr:
-                    {
-                        return type.MakePointerType();
-                    }
-
-                case MarshallerKind.Variant:
-                    return GetDefaultNativeType(NativeType.Variant);
+                    return type.MakePointerType();
 
                 case MarshallerKind.HandleRef:
-                    return GetDefaultNativeType(NativeType.SysInt);
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 
                 case MarshallerKind.UnicodeChar:
-                    if (nativeType == NativeType.Invalid)
-                        return GetDefaultNativeType(NativeType.I2);
+                    if (nativeType == NativeType.U2)
+                        return context.GetWellKnownType(WellKnownType.UInt16);
                     else
-                        return GetDefaultNativeType(nativeType);
+                        return context.GetWellKnownType(WellKnownType.Int16);
 
                 case MarshallerKind.OleDateTime:
-                    return GetDefaultNativeType(NativeType.R8);
+                    return context.GetWellKnownType(WellKnownType.Double);
 
                 case MarshallerKind.SafeHandle:
                 case MarshallerKind.CriticalHandle:
-                        return GetDefaultNativeType(NativeType.SysInt);
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 
                 case MarshallerKind.UnicodeString:
                 case MarshallerKind.UnicodeStringBuilder:
-                    return GetDefaultNativeType(NativeType.LPWStr);
+                    return context.GetWellKnownType(WellKnownType.Char).MakePointerType();
 
                 case MarshallerKind.AnsiString:
                 case MarshallerKind.AnsiStringBuilder:
-                    return GetDefaultNativeType(NativeType.LPStr);
+                    return context.GetWellKnownType(WellKnownType.Byte).MakePointerType();
 
                 case MarshallerKind.CBool:
-                    return GetDefaultNativeType(NativeType.U1);
+                    return context.GetWellKnownType(WellKnownType.Byte);
 
                 case MarshallerKind.BlittableArray:
                 case MarshallerKind.Array:
@@ -379,7 +338,7 @@ namespace Internal.TypeSystem.Interop
                     }
 
                 case MarshallerKind.AnsiChar:
-                    return GetDefaultNativeType(NativeType.U1);
+                    return context.GetWellKnownType(WellKnownType.Byte);
 
                 case MarshallerKind.ByValArray:
                 case MarshallerKind.ByValAnsiCharArray:
@@ -1910,22 +1869,16 @@ namespace Internal.TypeSystem.Interop
             // TODO: Handles [out] marshalling only for now
 
             var stringBuilderType = context.SystemModule.GetKnownType("System.Text", "StringBuilder");
-            var charArrayType = context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
-
 
             marshallingCodeStream.EmitLdLoc(_vManaged);
             marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                 context.GetHelperEntryPoint("InteropHelpers", "GetEmptyStringBuilderBuffer")));
-            marshallingCodeStream.EmitStLoc(_vNative);
-
-
-            marshallingCodeStream.EmitLdLoc(_vNative);
 
             // back up the managed types 
             TypeDesc tempType = ManagedParameterType;
             ILLocalVariable vTemp = _vManaged;
 
-            ManagedParameterType = NativeParameterType;
+            ManagedParameterType = context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
             _vManaged = emitter.NewLocal(ManagedParameterType);
             marshallingCodeStream.EmitStLoc(_vManaged);
 
@@ -1948,7 +1901,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(_vManaged);
             codeStream.EmitLdLoc(_vNative);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "ReplaceStringBuilderBuffer")));
+            PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "ReplaceStringBuilderBuffer")));
         }
     }
 }

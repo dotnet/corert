@@ -59,6 +59,21 @@ extern "C"
         throw "CoGetApartmentType";
     }
 
+	void CoUnmarshalInterface()
+	{
+		throw "CoUnmarshalInterface";
+	}
+
+	void CoMarshalInterface()
+	{
+		throw "CoMarshalInterface";
+	}
+
+	void CoGetMarshalSizeMax()
+	{
+		throw "CoGetMarshalSizeMax";
+	}
+
     void CreateEventExW()
     {
         throw "CreateEventExW";

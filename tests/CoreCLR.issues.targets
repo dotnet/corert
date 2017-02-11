@@ -1460,6 +1460,11 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\dev10_bug719093\variancesmall\variancesmall.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance1\Variance1.*" />
 
+    <!-- Intrinsic Activator.CreateInstance<T> implementation -->
+    <!-- https://github.com/dotnet/corert/issues/368 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\341477\Test\Test.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\SealedTypes\SealedTypes.*" />
+
     <!-- Needs template type loader (MakeArrayType) -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\array\array.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b309539\b309539\b309539.*" />

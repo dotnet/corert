@@ -18,96 +18,46 @@ using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
 using Microsoft.Win32.SafeHandles;
 using System.IO;
+using System.Diagnostics;
 
 namespace System.Threading
 {
-    public class EventWaitHandle : WaitHandle
+    public partial class EventWaitHandle : WaitHandle
     {
-        public EventWaitHandle(bool initialState, EventResetMode mode) : this(initialState, mode, null) { }
+        public EventWaitHandle(bool initialState, EventResetMode mode)
+        {
+            VerifyMode(mode);
+            Contract.EndContractBlock();
+
+            bool createdNew;
+            CreateEventCore(initialState, mode, null, out createdNew);
+        }
 
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
         {
-            if (null != name)
-            {
-                if (((int)Interop.Constants.MaxPath) < name.Length)
-                {
-                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name));
-                }
-            }
+            VerifyNameForCreate(name);
+            VerifyMode(mode);
             Contract.EndContractBlock();
 
-            uint eventFlags = initialState ? (uint)Interop.Constants.CreateEventInitialSet : 0;
-
-            IntPtr unsafeHandle;
-            switch (mode)
-            {
-                case EventResetMode.ManualReset:
-                    eventFlags |= (uint)Interop.Constants.CreateEventManualReset;
-                    break;
-
-                case EventResetMode.AutoReset:
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFlag, name));
-            };
-
-            unsafeHandle = Interop.mincore.CreateEventEx(IntPtr.Zero, name, eventFlags, (uint)Interop.Constants.EventAllAccess);
-            int errorCode = (int)Interop.mincore.GetLastError();
-            SafeWaitHandle _handle = new SafeWaitHandle(unsafeHandle, true);
-
-            if (_handle.IsInvalid)
-            {
-                _handle.SetHandleAsInvalid();
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
-                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
-
-                throw ExceptionFromCreationError(errorCode, name);
-            }
-            SafeWaitHandle = _handle;
+            bool createdNew;
+            CreateEventCore(initialState, mode, name, out createdNew);
         }
 
         public EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew)
         {
-            if (null != name && ((int)Interop.Constants.MaxPath) < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name));
-            }
+            VerifyNameForCreate(name);
+            VerifyMode(mode);
             Contract.EndContractBlock();
 
-            SafeWaitHandle _handle = null;
-            uint eventFlags = initialState ? (uint)Interop.Constants.CreateEventInitialSet : 0;
-            switch (mode)
-            {
-                case EventResetMode.ManualReset:
-                    eventFlags |= (uint)Interop.Constants.CreateEventManualReset;
-                    break;
-                case EventResetMode.AutoReset:
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFlag, name));
-            };
-
-            IntPtr unsafeHandle = Interop.mincore.CreateEventEx(IntPtr.Zero, name, eventFlags, (uint)Interop.Constants.EventAllAccess);
-            int errorCode = (int)Interop.mincore.GetLastError();
-            _handle = new SafeWaitHandle(unsafeHandle, true);
-
-            if (_handle.IsInvalid)
-            {
-                _handle.SetHandleAsInvalid();
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
-                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
-
-                throw ExceptionFromCreationError(errorCode, name);
-            }
-            createdNew = errorCode != Interop.mincore.Errors.ERROR_ALREADY_EXISTS;
-            SafeWaitHandle = _handle;
+            CreateEventCore(initialState, mode, name, out createdNew);
         }
 
-        private EventWaitHandle(SafeWaitHandle handle)
+        private static void VerifyMode(EventResetMode mode)
         {
-            SafeWaitHandle = handle;
+            if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
+            {
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(mode));
+            }
         }
 
         public static EventWaitHandle OpenExisting(string name)
@@ -134,72 +84,41 @@ namespace System.Threading
             return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out EventWaitHandle result)
-        {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_WithParamName);
-            }
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
-
-            if (null != name && ((int)Interop.Constants.MaxPath) < name.Length)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name));
-            }
-
-            Contract.EndContractBlock();
-
-            result = null;
-
-            IntPtr unsafeHandle = Interop.mincore.OpenEvent((uint)(Interop.Constants.EventModifyState | Interop.Constants.Synchronize), false, name);
-
-            int errorCode = (int)Interop.mincore.GetLastError();
-            SafeWaitHandle myHandle = new SafeWaitHandle(unsafeHandle, true);
-
-            if (myHandle.IsInvalid)
-            {
-                if (Interop.mincore.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.mincore.Errors.ERROR_INVALID_NAME == errorCode)
-                    return OpenExistingResult.NameNotFound;
-                if (Interop.mincore.Errors.ERROR_PATH_NOT_FOUND == errorCode)
-                    return OpenExistingResult.PathNotFound;
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
-                    return OpenExistingResult.NameInvalid;
-                //this is for passed through Win32Native Errors
-                throw ExceptionFromCreationError(errorCode, name);
-            }
-            result = new EventWaitHandle(myHandle);
-            return OpenExistingResult.Success;
-        }
         public bool Reset()
         {
+            // The field value is modifiable via <see cref="SafeWaitHandle"/>, save it locally to ensure that ref modification
+            // is done on the same instance
+            SafeWaitHandle waitHandle = _waitHandle;
+            if (waitHandle == null)
+            {
+                ThrowInvalidHandleException();
+            }
+
             waitHandle.DangerousAddRef();
             try
             {
-                bool res = Interop.mincore.ResetEvent(waitHandle.DangerousGetHandle());
-                if (!res)
-                    throw new IOException(SR.Arg_IOException, (int)Interop.mincore.GetLastError());
-                return res;
+                return ResetCore(_waitHandle.DangerousGetHandle());
             }
             finally
             {
                 waitHandle.DangerousRelease();
             }
         }
+
         public bool Set()
         {
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
+            SafeWaitHandle waitHandle = _waitHandle;
+            if (waitHandle == null)
+            {
+                ThrowInvalidHandleException();
+            }
+
             waitHandle.DangerousAddRef();
             try
             {
-                bool res = Interop.mincore.SetEvent(waitHandle.DangerousGetHandle());
-
-                if (!res)
-                    throw new IOException(SR.Arg_IOException, (int)Interop.mincore.GetLastError());
-
-                return res;
+                return SetCore(waitHandle.DangerousGetHandle());
             }
             finally
             {
@@ -208,4 +127,3 @@ namespace System.Threading
         }
     }
 }
-

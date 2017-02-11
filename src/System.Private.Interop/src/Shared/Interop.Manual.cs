@@ -34,28 +34,6 @@ partial class Interop
 
 #endif   
 
-    internal unsafe partial class MinCore
-    {
-
-#if RHTESTCL
-        [DllImport(CORE_SYNCH_L2)]
-        [McgGeneratedNativeCallCodeAttribute]
-        internal static extern void Sleep(int milliseconds);
-#else
-        private static readonly System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
-        internal static void Sleep(uint milliseconds)
-        {
-#if CORECLR
-            System.Threading.Thread.Sleep(0);
-#else
-            if (milliseconds == 0)
-                System.Threading.SpinWait.Yield();
-            else
-                s_sleepHandle.WaitOne((int)milliseconds);
-#endif
-        }
-#endif
-    }
     internal unsafe partial class COM
     {
         //

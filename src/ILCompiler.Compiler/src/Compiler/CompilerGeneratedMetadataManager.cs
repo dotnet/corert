@@ -162,11 +162,16 @@ namespace ILCompiler
         {
             private CompilerGeneratedMetadataManager _parent;
             private ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
+            private Dictionary<MetadataType, bool> _isAttributeCache;
 
             public GeneratedTypesAndCodeMetadataPolicy(CompilerGeneratedMetadataManager parent)
             {
                 _parent = parent;
                 _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
+
+                MetadataType systemAttributeType = parent._nodeFactory.TypeSystemContext.SystemModule.GetType("System", "Attribute", false);
+                _isAttributeCache = new Dictionary<MetadataType, bool>();
+                _isAttributeCache.Add(systemAttributeType, true);
             }
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
@@ -194,7 +199,29 @@ namespace ILCompiler
 
             public bool IsBlocked(MetadataType typeDef)
             {
+                // If an attribute type would generate metadata in this blob (had we compiled it), consider it blocked.
+                // Otherwise we end up with an attribute that is an unresolvable TypeRef and we would get a TypeLoadException
+                // when enumerating attributes on anything that has it.
+                if (!GeneratesMetadata(typeDef)
+                    && _parent._nodeFactory.CompilationModuleGroup.ContainsType(typeDef)
+                    && IsAttributeType(typeDef))
+                {
+                    return true;
+                }
+
                 return false;
+            }
+
+            private bool IsAttributeType(MetadataType type)
+            {
+                bool result;
+                if (!_isAttributeCache.TryGetValue(type, out result))
+                {
+                    MetadataType baseType = type.MetadataBaseType;
+                    result = baseType != null && IsAttributeType(baseType);
+                    _isAttributeCache.Add(type, result);
+                }
+                return result;
             }
 
             public ModuleDesc GetModuleOfType(MetadataType typeDef)

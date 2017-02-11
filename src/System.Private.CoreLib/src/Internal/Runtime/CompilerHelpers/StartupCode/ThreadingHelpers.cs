@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -69,7 +70,7 @@ namespace Internal.Runtime.CompilerHelpers
                     // We have lost the race so just wait until another thread finishes the initialization
                     while (Volatile.Read(ref callOnceGuard) != CallOnceState.HasRun)
                     {
-                        SpinWait.Yield();
+                        RuntimeThread.Yield();
                     }
                 }
             }
