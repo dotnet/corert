@@ -266,9 +266,9 @@ namespace Internal.TypeSystem.Interop
                 case NativeType.SysUInt:
                     return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UIntPtr);
                 case NativeType.LPStr:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Byte).MakeArrayType();
+                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Byte).MakePointerType();
                 case NativeType.LPWStr:
-                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UInt16).MakeArrayType();
+                    return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.UInt16).MakePointerType();
                 case NativeType.R4:
                     return PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Single);
                 case NativeType.R8:
@@ -1911,22 +1911,16 @@ namespace Internal.TypeSystem.Interop
             // TODO: Handles [out] marshalling only for now
 
             var stringBuilderType = context.SystemModule.GetKnownType("System.Text", "StringBuilder");
-            var charArrayType = context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
-
 
             marshallingCodeStream.EmitLdLoc(_vManaged);
             marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                 context.GetHelperEntryPoint("InteropHelpers", "GetEmptyStringBuilderBuffer")));
-            marshallingCodeStream.EmitStLoc(_vNative);
-
-
-            marshallingCodeStream.EmitLdLoc(_vNative);
 
             // back up the managed types 
             TypeDesc tempType = ManagedParameterType;
             ILLocalVariable vTemp = _vManaged;
 
-            ManagedParameterType = NativeParameterType;
+            ManagedParameterType = context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
             _vManaged = emitter.NewLocal(ManagedParameterType);
             marshallingCodeStream.EmitStLoc(_vManaged);
 
