@@ -14,18 +14,19 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 using Internal.Threading.Tasks.Tracing;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
 using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
 using CausalitySource = Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
 using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
+using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
+using RuntimeThread = Internal.Runtime.Augments.RuntimeThread;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -2879,11 +2880,11 @@ namespace System.Threading.Tasks
 
                 if (i == spinCount / 2)
                 {
-                    System.Threading.SpinWait.Yield();
+                    RuntimeThread.Yield();
                 }
                 else
                 {
-                    System.Threading.SpinWait.Spin(PlatformHelper.ProcessorCount * (4 << i));
+                    RuntimeThread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
                 }
             }
 

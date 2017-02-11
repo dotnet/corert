@@ -17,6 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Security;
+using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -111,7 +112,7 @@ namespace System
         // Block until the next finalization pass is complete.
         public static void WaitForPendingFinalizers()
         {
-            RuntimeImports.RhWaitForPendingFinalizers(LowLevelThread.ReentrantWaitsEnabled);
+            RuntimeImports.RhWaitForPendingFinalizers(RuntimeThread.ReentrantWaitsEnabled);
         }
 
         public static void SuppressFinalize(Object obj)

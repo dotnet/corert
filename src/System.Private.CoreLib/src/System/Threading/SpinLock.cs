@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime.Augments;
 using Internal.Threading.Tracing;
 
 namespace System.Threading
@@ -365,7 +366,7 @@ namespace System.Threading
                 int processFactor = 1;
                 for (int i = 1; i <= turn * SPINNING_FACTOR; i++)
                 {
-                    SpinWait.Spin((turn + i) * SPINNING_FACTOR * processFactor);
+                    RuntimeThread.SpinWait((turn + i) * SPINNING_FACTOR * processFactor);
                     if (processFactor < processorCount)
                         processFactor++;
                     observedOwner = m_owner;
@@ -412,15 +413,15 @@ namespace System.Threading
 
                 if (yieldsoFar % SLEEP_ONE_FREQUENCY == 0)
                 {
-                    Interop.mincore.Sleep(1);
+                    RuntimeThread.Sleep(1);
                 }
                 else if (yieldsoFar % SLEEP_ZERO_FREQUENCY == 0)
                 {
-                    Interop.mincore.Sleep(0);
+                    RuntimeThread.Sleep(0);
                 }
                 else
                 {
-                    SpinWait.Yield();
+                    RuntimeThread.Yield();
                 }
 
                 if (yieldsoFar % TIMEOUT_CHECK_FREQUENCY == 0)

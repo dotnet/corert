@@ -11,6 +11,7 @@ using System.Diagnostics.Contracts;
 using System.Security;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Internal.Runtime.Augments;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -1162,10 +1163,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     for (int i = 0; ; i++)
                     {
                         if (i < 3 && Environment.ProcessorCount > 1)
-                            System.Threading.SpinWait.Spin(20);    // Wait a few dozen instructions to let another processor release lock.
-
+                            RuntimeThread.SpinWait(20);    // Wait a few dozen instructions to let another processor release lock.
                         else
-                            System.Threading.SpinWait.Yield();
+                            RuntimeThread.Yield();
 
                         if (Interlocked.CompareExchange(ref myLock, 1, 0) == 0)
                             return;

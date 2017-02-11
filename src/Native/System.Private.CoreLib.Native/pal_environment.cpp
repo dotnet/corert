@@ -1,22 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <assert.h>
-#include <config.h>
-#include <sys/time.h>
-#include <time.h>
 
+#include "pal_common.h"
+#include "pal_time.h"
+
+#include <stdlib.h>
+#include <string.h>
 #if HAVE_SCHED_GETCPU
 #include <sched.h>
 #endif
 
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
-static mach_timebase_info_data_t s_timebaseInfo = {};
-#endif
 
 extern "C" char* CoreLibNative_GetEnv(const char* variable)
 {
@@ -37,18 +31,8 @@ extern "C" uint64_t CoreLibNative_GetTickCount64()
 
 #if HAVE_MACH_ABSOLUTE_TIME
     {
-        // UNIXTODO: This is not thread safe!!!
-        // use denom == 0 to indicate that s_timebaseInfo is uninitialised.
-        if (s_timebaseInfo.denom == 0)
-        {
-            kern_return_t machRet;
-            if ((machRet = mach_timebase_info(&s_timebaseInfo)) != KERN_SUCCESS)
-            {
-                assert(false);
-                return retval;
-            }
-        }
-        retval = (mach_absolute_time() * s_timebaseInfo.numer / s_timebaseInfo.denom) / MILLISECONDS_TO_NANOSECONDS;
+        mach_timebase_info_data_t *machTimebaseInfo = GetMachTimebaseInfo();
+        retval = (mach_absolute_time() * machTimebaseInfo->numer / machTimebaseInfo->denom) / MILLISECONDS_TO_NANOSECONDS;
     }
 #elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
     {

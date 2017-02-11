@@ -748,7 +748,7 @@
     <value>The UTC time represented when the offset is applied must be between year 0 and 10,000.</value>
   </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
-    <value>The name can be no more than 260 characters in length.</value>
+    <value>The name can be no more than {0} characters in length.</value>
   </data>
   <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
     <value>Object is not a array with the same number of elements as the array to compare it to.</value>
@@ -1076,9 +1076,6 @@
   </data>
   <data name="InvalidCast_StoreArrayElement" xml:space="preserve">
     <value>Object cannot be stored in an array of this type.</value>
-  </data>
-  <data name="InvalidNullEmptyArgument" xml:space="preserve">
-    <value>Argument {0} cannot be null or zero-length.</value>
   </data>
   <data name="InvalidOperation_Calling" xml:space="preserve">
     <value>WinRT Interop has already been initialized and cannot be initialized again.</value>
@@ -2160,6 +2157,18 @@
   </data>
   <data name="Argument_InvalidUnity" xml:space="preserve">
     <value>Invalid Unity type.</value>
+  </data>
+  <data name="InvalidOperation_InvalidHandle" xml:space="preserve">
+    <value>The handle is invalid.</value>
+  </data>
+  <data name="PlatformNotSupported_NamedSynchronizationPrimitives" xml:space="preserve">
+    <value>The named version of this synchronization primitive is not supported on this platform.</value>
+  </data>
+  <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
+    <value>Queue empty.</value>
+  </data>
+  <data name="Overflow_MutexReacquireCount" xml:space="preserve">
+    <value>The current thread attempted to reacquire a mutex that has reached its maximum acquire count.</value>
   </data>
   <data name="Serialization_InsufficientState" xml:space="preserve">
     <value>Insufficient state to return the real object.</value>

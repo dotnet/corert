@@ -1762,16 +1762,4 @@ namespace System.Runtime.InteropServices
         }
     }
 #endif
-
-    public static class SpinWaitExtensions
-    {
-        public static void Yield()
-        {
-#if CORECLR
-            System.Threading.Thread.Sleep(0);
-#else
-            System.Threading.SpinWait.Yield();
-#endif
-        }
-    }
 }

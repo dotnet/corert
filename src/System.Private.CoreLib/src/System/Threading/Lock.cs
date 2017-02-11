@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -158,7 +159,7 @@ namespace System.Threading
                 //
                 if (spins <= s_maxSpinCount)
                 {
-                    System.Runtime.RuntimeImports.RhSpinWait(spins);
+                    RuntimeThread.SpinWait(spins);
                     spins *= 2;
                 }
                 else
