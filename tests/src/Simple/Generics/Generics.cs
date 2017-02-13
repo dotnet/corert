@@ -131,6 +131,22 @@ class Program
     /// </summary>
     class TestDelegateFatFunctionPointers
     {
+        struct SmallStruct
+        {
+            public int X;
+        }
+
+        struct MediumStruct
+        {
+            public int X, Y, Z, W;
+        }
+
+        unsafe struct BigStruct
+        {
+            public const int Length = 128;
+            public fixed byte Bytes[Length];
+        }
+
         T Generic<T>(object o) where T : class
         {
             Func<object, T> f = OtherGeneric<T>;
@@ -142,12 +158,74 @@ class Program
             return o as T;
         }
 
+        delegate void VoidGenericDelegate<T>(ref T x, T val);
+        void VoidGeneric<T>(ref T x, T val)
+        {
+            x = val;
+        }
+
+        SmallStruct SmallStructGeneric<T>(SmallStruct x)
+        {
+            return x;
+        }
+
+        MediumStruct MediumStructGeneric<T>(MediumStruct x)
+        {
+            return x;
+        }
+
+        BigStruct BigStructGeneric<T>(BigStruct x)
+        {
+            return x;
+        }
+
         public static void Run()
         {
+            var o = new TestDelegateFatFunctionPointers();
+
             string hw = "Hello World";
-            string roundtrip = new TestDelegateFatFunctionPointers().Generic<string>(hw);
+            string roundtrip = o.Generic<string>(hw);
             if (roundtrip != hw)
                 throw new Exception();
+
+            {
+                VoidGenericDelegate<object> f = o.VoidGeneric;
+                object obj = new object();
+                object location = null;
+                f(ref location, obj);
+                if (location != obj)
+                    throw new Exception();
+            }
+
+            {
+                Func<SmallStruct, SmallStruct> f = o.SmallStructGeneric<object>;
+                SmallStruct x = new SmallStruct { X = 12345 };
+                SmallStruct result = f(x);
+                if (result.X != x.X)
+                    throw new Exception();
+            }
+
+            {
+                Func<MediumStruct, MediumStruct> f = o.MediumStructGeneric<object>;
+                MediumStruct x = new MediumStruct { X = 12, Y = 34, Z = 56, W = 78 };
+                /*MediumStruct result = f(x);
+                if (result.X != x.X || result.Y != x.Y || result.Z != x.Z || result.W != x.W)
+                    throw new Exception();*/
+            }
+
+            unsafe
+            {
+                Func<BigStruct, BigStruct> f = o.BigStructGeneric<object>;
+                BigStruct x = new BigStruct();
+                for (int i = 0; i < BigStruct.Length; i++)
+                    x.Bytes[i] = (byte)(i * 2);
+
+                /*BigStruct result = f(x);
+
+                for (int i = 0; i < BigStruct.Length; i++)
+                    if (x.Bytes[i] != result.Bytes[i])
+                        throw new Exception();*/
+            }
         }
     }
 

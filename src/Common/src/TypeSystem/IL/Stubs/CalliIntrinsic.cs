@@ -46,26 +46,7 @@ namespace Internal.IL.Stubs
             }
 
             var signature = new MethodSignature(template.Flags, 0, returnType, parameters);
-
-            bool useTransformedCalli = true;
-
-            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0)
-            {
-                // Fat function pointer only ever exist for managed targets.
-                useTransformedCalli = false;
-            }
-
-            if (((MetadataType)target.OwningType).Name == "RawCalliHelper")
-            {
-                // RawCalliHelper doesn't need the transform.
-                useTransformedCalli = false;
-            }
-
-            if (useTransformedCalli)
-                EmitTransformedCalli(emitter, codeStream, signature);
-            else
-                codeStream.Emit(ILOpcode.calli, emitter.NewToken(signature));
-            
+            codeStream.Emit(ILOpcode.calli, emitter.NewToken(signature));
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(target);

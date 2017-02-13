@@ -124,8 +124,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
 
-            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, builder.ToSignature());
-            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(builder.ToSignature()));
+            codeStream.Emit(ILOpcode.calli, emitter.NewToken(builder.ToSignature()));
 
             codeStream.Emit(ILOpcode.ret);
 
@@ -185,8 +184,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
 
-            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, targetMethodSignature);
-            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
+            codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
 
             codeStream.Emit(ILOpcode.ret);
 
@@ -302,8 +300,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdLoc(delegateToCallLocal);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(FunctionPointerField));
 
-            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, Signature);
-            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
+            codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
 
             if (returnValueLocal != 0)
                 codeStream.EmitStLoc(returnValueLocal);
@@ -379,8 +376,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
 
-            CalliIntrinsic.EmitTransformedCalli(emitter, codeStream, Signature);
-            //codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
+            codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
 
             codeStream.Emit(ILOpcode.ret);
 

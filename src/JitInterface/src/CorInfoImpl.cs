@@ -2617,7 +2617,7 @@ namespace Internal.JitInterface
 
             bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
-            if (directCall && !allowInstParam && targetMethod.RequiresInstArg())
+            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
             {
                 // JIT needs a single address to call this method but the method needs a hidden argument.
                 // We need a fat function pointer for this that captures both things.
@@ -2626,10 +2626,10 @@ namespace Internal.JitInterface
                 // JIT won't expect fat function pointers unless this is e.g. delegate creation
                 Debug.Assert((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0);
 
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
@@ -2647,9 +2647,9 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    // Probably just grab a fat function pointer from the node factory and return it as the address.
-                    // Couldn't really test this so leaving it to throw. We'll also need to set the right bit.
-                    throw new NotImplementedException();
+                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.FatFunctionPointer(targetMethod));
                 }
             }
             else if (directCall)
@@ -3167,6 +3167,10 @@ namespace Internal.JitInterface
                     }
 
                     relocTarget = (ISymbolNode)targetObject;
+
+                    if (relocTarget is FatFunctionPointerNode)
+                        relocDelta = Runtime.FatFunctionPointerConstants.Offset;
+
                     break;
             }
 
