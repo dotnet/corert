@@ -434,6 +434,14 @@ REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(UInt32 fir
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
 }
 
+REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
+{
+    // Write the message using lowest-level OS API available. This is used to print the stack overflow
+    // message, so there is not much that can be done here.
+    DWORD dwBytesWritten;
+    WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, strlen(message), &dwBytesWritten, NULL);
+}
+
 //
 // -----------------------------------------------------------------------------------------------------------
 //

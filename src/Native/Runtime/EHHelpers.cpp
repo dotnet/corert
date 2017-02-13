@@ -405,7 +405,7 @@ Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative fau
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
         {
-            ASSERT_UNCONDITIONALLY("managed stack overflow");
+            PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
             RhFailFast();
         }
 
@@ -447,7 +447,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
         {
-            ASSERT_UNCONDITIONALLY("managed stack overflow");
+            PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
             RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
         }
 
