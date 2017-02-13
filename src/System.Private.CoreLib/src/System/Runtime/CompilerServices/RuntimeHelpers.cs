@@ -163,5 +163,12 @@ namespace System.Runtime.CompilerServices
             //
             return (t_sufficientStackLimit = (byte*)lower + (((byte*)upper - (byte*)lower) / 2));
         }
+
+        [Intrinsic]
+        public static bool IsReferenceOrContainsReferences<T>()
+        {
+            var pEEType = EETypePtr.EETypePtrOf<T>();
+            return !pEEType.IsValueType || pEEType.HasPointers;
+        }
     }
 }
