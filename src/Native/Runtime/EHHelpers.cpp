@@ -405,6 +405,8 @@ Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative fau
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
         {
+            // Do not use ASSERT_UNCONDITIONALLY here. It will crash because of it consumes too much stack.
+
             PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
             RhFailFast();
         }
@@ -447,8 +449,10 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
         {
+            // Do not use ASSERT_UNCONDITIONALLY here. It will crash because of it consumes too much stack.
+
             PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
-            RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
+            PalRaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
         }
 
         pExPtrs->ContextRecord->SetIp((UIntNative)&RhpThrowHwEx);
@@ -484,7 +488,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             // Generally any form of hardware exception within the runtime itself is considered a fatal error.
             // Note this includes the managed code within the runtime.
             ASSERT_UNCONDITIONALLY("Hardware exception raised inside the runtime.");
-            RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
+            PalRaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
         }
     }
 
