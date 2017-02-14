@@ -42,7 +42,7 @@ namespace Internal.DeveloperExperience
                 }
 
                 // If we don't have precise information, try to map it at least back to the right module.
-                IntPtr moduleBase = RuntimeImports.RhGetModuleFromPointer(ip);
+                IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
                 moduleFullFileName = RuntimeAugments.TryGetFullPathToApplicationModule(moduleBase);
             }
 

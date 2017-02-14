@@ -42,14 +42,26 @@ class RuntimeInstance
     CodeManagerList             m_CodeManagerList;
 #endif
 
+public:
+    struct OsModuleEntry
+    {
+        OsModuleEntry*         m_pNext;
+        HANDLE                 m_osModule;
+    };
+
+    typedef SList<OsModuleEntry> OsModuleList;
+
     struct TypeManagerEntry
     {
         TypeManagerEntry*         m_pNext;
         TypeManager*              m_pTypeManager;
     };
-  
+
     typedef SList<TypeManagerEntry> TypeManagerList;
+    
+private:
     TypeManagerList             m_TypeManagerList;
+    OsModuleList                m_OsModuleList;
 
     // Indicates whether the runtime is in standalone exe mode where the only Redhawk module that will be
     // loaded into the process (besides the runtime's own module) is the exe itself. This flag will be 
@@ -158,6 +170,9 @@ public:
     ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
 
     bool RegisterTypeManager(TypeManager * pTypeManager);
+    TypeManagerList& GetTypeManagerList();
+    OsModuleList& GetOsModuleList();
+    ReaderWriterLock& GetTypeManagerLock();
 
     // This will hold the module list lock over each callback. Make sure
     // the callback will not trigger any operation that needs to make use

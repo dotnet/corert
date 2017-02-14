@@ -130,7 +130,7 @@ namespace Internal.Runtime.TypeLoader
         internal abstract class GenericMethodLookupData
         {
             internal abstract int LookupHashCode();
-            internal abstract bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, IntPtr moduleHandle);
+            internal abstract bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle);
             internal abstract bool MatchGenericMethodEntry(GenericMethodEntry entry);
         }
         internal class MethodDescBasedGenericMethodLookup : GenericMethodLookupData
@@ -141,7 +141,7 @@ namespace Internal.Runtime.TypeLoader
 
             internal override int LookupHashCode() { return _methodToLookup.GetHashCode(); }
 
-            internal override bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, IntPtr moduleHandle)
+            internal override bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle)
             {
                 //
                 // Entries read from the hashtable are loaded as GenericMethodDescs, and compared to the input.
@@ -206,7 +206,7 @@ namespace Internal.Runtime.TypeLoader
                 return _methodToLookup != null ? _methodToLookup.GetHashCode() : (_declaringType.GetHashCode() ^ TypeHashingAlgorithms.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(_nameAndSignature.Name), _genericMethodArgumentHandles));
             }
 
-            internal override bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, IntPtr moduleHandle)
+            internal override bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle)
             {
                 // Compare entry with inputs as we parse it. If we get a mismatch, stop parsing and move to the next entry...
                 RuntimeTypeHandle parsedDeclaringTypeHandle = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());

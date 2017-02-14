@@ -6,6 +6,7 @@
 using System;
 using System.Text;
 using System.Reflection;
+using System.Runtime;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -133,14 +134,14 @@ namespace Internal.Runtime.TypeLoader
             IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)fieldData->NativeLayoutInfoSignature;
 
             RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                *(IntPtr*)nativeLayoutInfoSignatureData[0],
+                new TypeManagerHandle(*(IntPtr*)nativeLayoutInfoSignatureData[0]),
                 (uint)nativeLayoutInfoSignatureData[1].ToInt32());
 #else
-            IntPtr moduleHandle = RuntimeAugments.GetModuleFromPointer(fieldData->NativeLayoutInfoSignature);
+            IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(fieldData->NativeLayoutInfoSignature);
 
             RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                moduleHandle,
-                GetNativeLayoutInfoReader(moduleHandle).AddressToOffset(fieldData->NativeLayoutInfoSignature));
+                new TypeManagerHandle(moduleHandle),
+                GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle)).AddressToOffset(fieldData->NativeLayoutInfoSignature));
 #endif
 
             RuntimeSignature remainingSignature;
@@ -149,7 +150,7 @@ namespace Internal.Runtime.TypeLoader
 
             // GetTypeFromSignatureAndContext parses the type from the signature and returns a pointer to the next
             // part of the native layout signature to read which we get the field name from
-            var reader = GetNativeLayoutInfoReader(remainingSignature.ModuleHandle);
+            var reader = GetNativeLayoutInfoReader(remainingSignature);
             var parser = new NativeParser(reader, remainingSignature.NativeLayoutOffset);
             fieldName = parser.GetString();
 
@@ -282,14 +283,14 @@ namespace Internal.Runtime.TypeLoader
             IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)methodData->NativeLayoutInfoSignature;
 
             RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                *(IntPtr*)nativeLayoutInfoSignatureData[0],
+                new TypeManagerHandle(*(IntPtr*)nativeLayoutInfoSignatureData[0]),
                 (uint)nativeLayoutInfoSignatureData[1].ToInt32());
 #else
-            IntPtr moduleHandle = RuntimeAugments.GetModuleFromPointer(methodData->NativeLayoutInfoSignature);
+            IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(methodData->NativeLayoutInfoSignature);
 
             RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                moduleHandle,
-                GetNativeLayoutInfoReader(moduleHandle).AddressToOffset(methodData->NativeLayoutInfoSignature));
+                new TypeManagerHandle(moduleHandle),
+                GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle)).AddressToOffset(methodData->NativeLayoutInfoSignature));
 #endif
 
             RuntimeSignature remainingSignature;

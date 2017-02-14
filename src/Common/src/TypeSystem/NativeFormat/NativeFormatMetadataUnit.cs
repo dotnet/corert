@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime;
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 
@@ -253,7 +254,7 @@ namespace Internal.TypeSystem.NativeFormat
             }
         }
 
-        public IntPtr RuntimeModule
+        public TypeManagerHandle RuntimeModule
         {
             get
             {

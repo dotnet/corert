@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime;
 using System.Text;
 
 using System.Reflection.Runtime.General;
@@ -1643,14 +1644,14 @@ namespace Internal.Runtime.TypeLoader
         {
             TypeLoaderLogger.WriteLine("BuildGenericLookupTarget for " + context.LowLevelToString() + "/" + signature.LowLevelToString());
 
-            IntPtr moduleHandle = RuntimeAugments.GetModuleFromPointer(signature);
-            NativeReader reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(moduleHandle);
+            IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(signature);
+            NativeReader reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle));
             uint offset = reader.AddressToOffset(signature);
             NativeParser parser = new NativeParser(reader, offset);
 
             GenericContextKind contextKind = (GenericContextKind)parser.GetUnsigned();
 
-            NativeFormatModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+            NativeFormatModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(moduleHandle));
 
             NativeLayoutInfoLoadContext nlilContext = new NativeLayoutInfoLoadContext();
             nlilContext._module = moduleInfo;

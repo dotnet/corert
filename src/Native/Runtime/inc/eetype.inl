@@ -158,7 +158,7 @@ inline DispatchMap * EEType::GetDispatchMap()
 #if defined(EETYPE_TYPE_MANAGER)
     if (HasTypeManager())
     {
-        return GetTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
+        return GetTypeManagerPtr()->AsTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
     }
 #endif
 

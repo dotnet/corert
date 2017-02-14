@@ -47,7 +47,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, IntPtr moduleHandle, uint nativeLayoutOffset)
+        private MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
         {
             NativeParser parser = new NativeParser(nativeLayoutReader, nativeLayoutOffset);
 

@@ -149,7 +149,7 @@ namespace System.Runtime
             }
             else
             {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING_AND_SUPPORTS_TOKEN_BASED_DISPATCH_CELLS
                 // Attempt to convert dispatch cell to non-metadata form if we haven't acquired a cache for this cell yet
                 if (cellInfo.HasCache == 0)
                 {

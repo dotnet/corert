@@ -6,6 +6,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime;
 
 using Internal.Runtime.TypeLoader;
 using Internal.Runtime.Augments;
@@ -28,12 +29,12 @@ namespace Internal.Runtime.TypeLoader
                 if(signature1.StructuralEquals(signature2))
                     return true;
 
-                NativeFormatModuleInfo module1 = ModuleList.GetModuleInfoByHandle(signature1.ModuleHandle);
-                NativeReader reader1 = GetNativeLayoutInfoReader(signature1.ModuleHandle);
+                NativeFormatModuleInfo module1 = ModuleList.GetModuleInfoByHandle(new TypeManagerHandle(signature1.ModuleHandle));
+                NativeReader reader1 = GetNativeLayoutInfoReader(signature1);
                 NativeParser parser1 = new NativeParser(reader1, signature1.NativeLayoutOffset);
 
-                NativeFormatModuleInfo module2 = ModuleList.GetModuleInfoByHandle(signature2.ModuleHandle);
-                NativeReader reader2 = GetNativeLayoutInfoReader(signature2.ModuleHandle);
+                NativeFormatModuleInfo module2 = ModuleList.GetModuleInfoByHandle(new TypeManagerHandle(signature2.ModuleHandle));
+                NativeReader reader2 = GetNativeLayoutInfoReader(signature2);
                 NativeParser parser2 = new NativeParser(reader2, signature2.NativeLayoutOffset);
 
                 return CompareMethodSigs(parser1, module1, parser2, module2);
@@ -41,7 +42,7 @@ namespace Internal.Runtime.TypeLoader
             else if (signature1.IsNativeLayoutSignature)
             {
                 int token = signature2.Token;
-                MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(signature2.ModuleHandle);
+                MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(new TypeManagerHandle(signature2.ModuleHandle));
 
                 MethodSignatureComparer comparer = new MethodSignatureComparer(metadataReader, token.AsHandle().ToMethodHandle(metadataReader));
                 return comparer.IsMatchingNativeLayoutMethodSignature(signature1);
@@ -49,7 +50,7 @@ namespace Internal.Runtime.TypeLoader
             else if (signature2.IsNativeLayoutSignature)
             {
                 int token = signature1.Token;
-                MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(signature1.ModuleHandle);
+                MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(new TypeManagerHandle(signature1.ModuleHandle));
 
                 MethodSignatureComparer comparer = new MethodSignatureComparer(metadataReader, token.AsHandle().ToMethodHandle(metadataReader));
                 return comparer.IsMatchingNativeLayoutMethodSignature(signature2);
@@ -72,7 +73,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (signature.Signature.IsNativeLayoutSignature)
             {
-                NativeReader reader = GetNativeLayoutInfoReader(signature.Signature.ModuleHandle);
+                NativeReader reader = GetNativeLayoutInfoReader(signature.Signature);
                 NativeParser parser = new NativeParser(reader, signature.Signature.NativeLayoutOffset);
 
                 return GetGenericArgCountFromSig(parser);
@@ -116,19 +117,19 @@ namespace Internal.Runtime.TypeLoader
         {
             nameAndSignature = null;
 
-            NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
+            NativeReader reader = GetNativeLayoutInfoReader(signature);
             NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
             if (parser.IsNull)
                 return false;
 
             RuntimeSignature methodSig;
             RuntimeSignature methodNameSig;
-            nameAndSignature = GetMethodNameAndSignature(ref parser, signature.ModuleHandle, out methodNameSig, out methodSig);
+            nameAndSignature = GetMethodNameAndSignature(ref parser, new TypeManagerHandle(signature.ModuleHandle), out methodNameSig, out methodSig);
 
             return true;
         }
 
-        public bool TryGetMethodNameAndSignaturePointersFromNativeLayoutSignature(IntPtr module, uint methodNameAndSigToken, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
+        public bool TryGetMethodNameAndSignaturePointersFromNativeLayoutSignature(TypeManagerHandle module, uint methodNameAndSigToken, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
             methodNameSig = default(RuntimeSignature);
             methodSig = default(RuntimeSignature);
@@ -150,7 +151,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        public bool TryGetMethodNameAndSignatureFromNativeLayoutOffset(IntPtr moduleHandle, uint nativeLayoutOffset, out MethodNameAndSignature nameAndSignature)
+        public bool TryGetMethodNameAndSignatureFromNativeLayoutOffset(TypeManagerHandle moduleHandle, uint nativeLayoutOffset, out MethodNameAndSignature nameAndSignature)
         {
             nameAndSignature = null;
 
@@ -165,7 +166,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        internal MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, IntPtr moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
+        internal MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
             methodNameSig = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, parser.Offset);
             string methodName = parser.GetString();
@@ -183,7 +184,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (methodSig.IsNativeLayoutSignature)
             {
-                NativeReader reader = GetNativeLayoutInfoReader(methodSig.ModuleHandle);
+                NativeReader reader = GetNativeLayoutInfoReader(methodSig);
                 NativeParser parser = new NativeParser(reader, methodSig.NativeLayoutOffset);
 
                 MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
@@ -282,8 +283,8 @@ namespace Internal.Runtime.TypeLoader
             nativeLayoutContext._typeArgumentHandles = typeInstantiation;
             nativeLayoutContext._methodArgumentHandles = methodInstantiation;
 
-            NativeReader reader = GetNativeLayoutInfoReader(methodSig.ModuleHandle);
-            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(methodSig.ModuleHandle);
+            NativeReader reader = GetNativeLayoutInfoReader(methodSig);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSig.ModuleHandle));
             NativeParser parser = new NativeParser(reader, methodSig.NativeLayoutOffset);
 
             MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
@@ -421,9 +422,9 @@ namespace Internal.Runtime.TypeLoader
 
         private bool MethodSignatureHasVarsNeedingCallingConventionConverter_NativeLayout(TypeSystemContext context, RuntimeSignature methodSig)
         {
-            NativeReader reader = GetNativeLayoutInfoReader(methodSig.ModuleHandle);
+            NativeReader reader = GetNativeLayoutInfoReader(methodSig);
             NativeParser parser = new NativeParser(reader, methodSig.NativeLayoutOffset);
-            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(methodSig.ModuleHandle);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSig.ModuleHandle));
 
             MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
             uint numGenArgs = callingConvention.HasFlag(MethodCallingConvention.Generic) ? parser.GetUnsigned() : 0;

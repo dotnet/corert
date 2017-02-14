@@ -112,9 +112,16 @@ namespace System
                 String s;
                 EETypePtr eeType = this.ToEETypePtr();
                 IntPtr rawEEType = eeType.RawValue;
-                IntPtr moduleBase = RuntimeImports.RhGetModuleFromEEType(rawEEType);
-                uint rva = (uint)(rawEEType.ToInt64() - moduleBase.ToInt64());
-                s = "EETypeRva:0x" + rva.LowLevelToString();
+                IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromEEType(rawEEType);
+                if (moduleBase != IntPtr.Zero)
+                {
+                    uint rva = (uint)(rawEEType.ToInt64() - moduleBase.ToInt64());
+                    s = "EETypeRva:0x" + rva.LowLevelToString();
+                }
+                else
+                {
+                    s = "EETypePointer:0x" + rawEEType.LowLevelToString();
+                }
 
                 ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.CallbacksIfAvailable;
                 if (callbacks != null)

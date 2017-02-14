@@ -67,7 +67,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
 
         protected MetadataReader Reader { get; }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             if (_genericParameter.Name.IsNil)
                 return string.Empty;
