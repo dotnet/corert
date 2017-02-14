@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _endSymbol.SetSymbolOffset(_writerSavedBytes.Length);
 
-            return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+                        return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
         }
     }
 }

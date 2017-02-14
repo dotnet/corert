@@ -640,11 +640,11 @@ namespace Internal.Runtime.TypeLoader
                     Environment.FailFast("Failed to resolve metadata token " +
                         ((uint)metadataToken).LowLevelToString() + ": " + ex.Message);
 #else
-                    Environment.FailFast("Failed to resolve metadata token " +
-                        ((uint)metadataToken).LowLevelToString());
+            Environment.FailFast("Failed to resolve metadata token " +
+                ((uint)metadataToken).LowLevelToString());
 #endif
-                    fixupResolution = IntPtr.Zero;
-                    return false;
+            fixupResolution = IntPtr.Zero;
+            return false;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
                 }
             }

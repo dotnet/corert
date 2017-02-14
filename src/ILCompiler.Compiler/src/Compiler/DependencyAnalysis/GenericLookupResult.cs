@@ -235,6 +235,38 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// HACK Generic lookup result that points to a generic virtual function lookup stub.
+    /// </summary>
+    internal sealed class GenericVirtualResolveGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public GenericVirtualResolveGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+            Debug.Assert(method.IsVirtual && method.HasInstantiation);
+
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.RuntimeMethodHandle(instantiatedMethod);
+            //return factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack, instantiatedMethod);
+            //return factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, instantiatedMethod);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("GenericVirtualResolve_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"GenericVirtualResolve: {_method}";
+    }
+
+    /// <summary>
     /// Generic lookup result that points to the non-GC static base of a type.
     /// </summary>
     internal sealed class TypeNonGCStaticBaseGenericLookupResult : GenericLookupResult

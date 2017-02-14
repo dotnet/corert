@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -46,6 +47,12 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.VirtualCall((MethodDesc)target);
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     return factory.GenericLookup.VirtualMethodAddress((MethodDesc)target);
+
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                    return factory.GenericLookup.MethodHandle((MethodDesc)target);
+
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack:
+                    return factory.GenericLookup.GenericVirtualMethodAddress((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 default:
@@ -94,6 +101,25 @@ namespace ILCompiler.DependencyAnalysis
                                     "Dictionary dependency"),
                                 new DependencyListEntry(
                                     _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                                    "Dictionary dependency") };
+                        }
+                    }
+                    break;
+
+                case ReadyToRunHelperId.MethodHandle:
+                    {
+                        MethodDesc method = (MethodDesc)_target;
+
+                        if (method.HasInstantiation && method.IsVirtual)
+                        {
+                            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+
+                            return new[] {
+                                new DependencyListEntry(
+                                    factory.GVMDependencies(method.InstantiateSignature(typeInstantiation, methodInstantiation)),
+                                    "GVM dependency from runtime method handle dictionary"),
+                                new DependencyListEntry(
+                                    _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation),
                                     "Dictionary dependency") };
                         }
                     }

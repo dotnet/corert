@@ -240,6 +240,7 @@
     <Compile Include="CppCodeGen\CppWriter.cs" />
     <Compile Include="CppCodeGen\NodeDataSection.cs" />
     <Compile Include="IL\PInvokeILEmitterConfiguration.cs" />
+    <Compile Include="IL\Stubs\GVMCallHelper.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="Logger.cs" />

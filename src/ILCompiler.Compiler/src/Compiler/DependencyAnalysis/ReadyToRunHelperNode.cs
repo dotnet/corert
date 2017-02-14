@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         DelegateCtor,
         ResolveVirtualFunction,
         ResolveGenericVirtualMethod,
+        ResolveGenericVirtualMethod_SharedGenericsHack,
 
         // The following helpers are used for generic lookups only
         TypeHandle,
@@ -140,6 +141,7 @@ namespace ILCompiler.DependencyAnalysis
                     sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
                 case ReadyToRunHelperId.ResolveGenericVirtualMethod:
+                case ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack:
                     sb.Append("__ResolveGenericVirtualMethod_");
                     sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
@@ -165,14 +167,14 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
                 return dependencyList;
             }
-            else if (_id == ReadyToRunHelperId.ResolveGenericVirtualMethod)
+            else if (_id == ReadyToRunHelperId.ResolveGenericVirtualMethod || _id == ReadyToRunHelperId.ResolveGenericVirtualMethod_SharedGenericsHack)
             {
                 MethodDesc method = _target as MethodDesc;
                 Debug.Assert(method != null && method.HasInstantiation && method.IsVirtual);
 
                 // GVM dependency tracking
                 DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(new DependencyListEntry(factory.GVMDependencies(method), "R2R GVM dependency tracking"));
+                dependencyList.Add(new DependencyListEntry(factory.GVMDependencies(method), "GVM Dependencies Support for R2R GVM helper"));
                 return dependencyList;
             }
             else

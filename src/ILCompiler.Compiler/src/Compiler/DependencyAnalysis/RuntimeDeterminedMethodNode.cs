@@ -8,6 +8,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.IL.Stubs;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -50,8 +51,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            yield return new DependencyListEntry(
-                factory.ShadowConcreteMethod(Method.InstantiateSignature(typeInstantiation, methodInstantiation)), "concrete method");
+            MethodDesc instantiatedMethod = Method.InstantiateSignature(typeInstantiation, methodInstantiation);
+
+            yield return new DependencyListEntry(factory.ShadowConcreteMethod(instantiatedMethod), "concrete method");
+
+            GVMCallHelper methodAsGVMHelperStub = Method.GetTypicalMethodDefinition() as GVMCallHelper;
+            if (methodAsGVMHelperStub != null)
+            {
+                MethodDesc instantiatedTargetGVM = methodAsGVMHelperStub.GetInstantiatedGVMTarget(instantiatedMethod.Instantiation);
+                yield return new DependencyListEntry(factory.ShadowConcreteMethod(instantiatedTargetGVM), "concrete GVM target method");
+            }
         }
 
         public override bool HasConditionalStaticDependencies => false;
