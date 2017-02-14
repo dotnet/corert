@@ -14,15 +14,21 @@ namespace Internal.Runtime.CompilerHelpers
     [McgIntrinsics]
     public static partial class StartupCodeHelpers
     {
-        public static IntPtr[] Modules
+        public static IntPtr[] OSModules
+        {
+            get; private set;
+        }
+
+        public static TypeManagerHandle[] Modules
         {
             get; private set;
         }
 
         [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
-        internal static void InitializeModules(IntPtr moduleHeaders, int count)
+        internal static void InitializeModules(IntPtr osModule, IntPtr moduleHeaders, int count)
         {
-            IntPtr[] modules = CreateTypeManagers(moduleHeaders, count);
+            RuntimeImports.RhpRegisterOsModule(osModule);
+            TypeManagerHandle[] modules = CreateTypeManagers(osModule, moduleHeaders, count);
 
             for (int i = 0; i < modules.Length; i++)
             {
@@ -32,6 +38,7 @@ namespace Internal.Runtime.CompilerHelpers
             // We are now at a stage where we can use GC statics - publish the list of modules
             // so that the eager constructors can access it.
             Modules = modules;
+            OSModules = new IntPtr [] { osModule };
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
@@ -41,7 +48,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe IntPtr[] CreateTypeManagers(IntPtr moduleHeaders, int count)
+        private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr moduleHeaders, int count)
         {
             // Count the number of modules so we can allocate an array to hold the TypeManager objects.
             // At this stage of startup, complex collection classes will not work.
@@ -55,12 +62,12 @@ namespace Internal.Runtime.CompilerHelpers
                     moduleCount++;
             }
 
-            IntPtr[] modules = new IntPtr[moduleCount];
+            TypeManagerHandle[] modules = new TypeManagerHandle[moduleCount];
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {
                 if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(((IntPtr*)moduleHeaders)[i]);
+                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, ((IntPtr*)moduleHeaders)[i]);
             }
 
             return modules;
@@ -71,7 +78,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// statics, etc that need initializing. InitializeGlobalTables walks through the modules
         /// and offers each a chance to initialize its global tables.
         /// </summary>
-        private static unsafe void InitializeGlobalTablesForModule(IntPtr typeManager, int moduleIndex)
+        private static unsafe void InitializeGlobalTablesForModule(TypeManagerHandle typeManager, int moduleIndex)
         {
             // Configure the module indirection cell with the newly created TypeManager. This allows EETypes to find
             // their interface dispatch map tables.
@@ -108,7 +115,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe void InitializeEagerClassConstructorsForModule(IntPtr typeManager)
+        private static unsafe void InitializeEagerClassConstructorsForModule(TypeManagerHandle typeManager)
         {
             int length;
 
@@ -165,7 +172,7 @@ namespace Internal.Runtime.CompilerHelpers
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct TypeManagerSlot
     {
-        public IntPtr TypeManager;
+        public TypeManagerHandle TypeManager;
         public Int32 ModuleIndex;
     }
 }

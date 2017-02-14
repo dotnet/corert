@@ -217,13 +217,13 @@ namespace System
 
             uint errorCode = 0x80004005; // E_FAIL
             // To help enable testing to bucket the failures we choose one of the following as errorCode:
-            // * RVA of EETypePtr if it is an unhandled managed exception
+            // * hashcode of EETypePtr if it is an unhandled managed exception
             // * HRESULT, if available
             // * RhFailFastReason, if it is one of the known reasons
             if (exception != null)
             {
                 if (reason == RhFailFastReason.PN_UnhandledException)
-                    errorCode = (uint)(exception.EETypePtr.RawValue.ToInt64() - RuntimeImports.RhGetModuleFromEEType(exception.EETypePtr.RawValue).ToInt64());
+                    errorCode = (uint)(exception.EETypePtr.GetHashCode());
                 else if (exception.HResult != 0)
                     errorCode = (uint)exception.HResult;
             }
@@ -529,7 +529,7 @@ namespace System
         {
             checked
             {
-                int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
+                int loadedModuleCount = RuntimeAugments.GetLoadedOSModules(null);
                 int cbModuleHandles = sizeof(System.IntPtr) * loadedModuleCount;
                 int cbFinalBuffer = sizeof(ERROR_REPORT_BUFFER_HEADER) + sizeof(SERIALIZED_ERROR_REPORT_HEADER) + cbModuleHandles;
                 for (int i = 0; i < serializedExceptions.Count; i++)
@@ -563,8 +563,8 @@ namespace System
                     }
 
                     // copy the module-handle array to report buffer
-                    System.IntPtr[] loadedModuleHandles = new System.IntPtr[loadedModuleCount];
-                    RuntimeAugments.GetLoadedModules(loadedModuleHandles);
+                    IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
+                    RuntimeAugments.GetLoadedOSModules(loadedModuleHandles);
                     Array.CopyToNative(loadedModuleHandles, 0, (IntPtr)pCursor, loadedModuleHandles.Length);
                     cbRemaining -= cbModuleHandles;
                     pCursor += cbModuleHandles;

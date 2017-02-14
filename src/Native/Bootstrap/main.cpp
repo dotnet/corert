@@ -266,7 +266,7 @@ static const pfn c_classlibFunctions[] = {
 
 #endif // !CPPCODEGEN
 
-extern "C" void InitializeModules(void ** modules, int count);
+extern "C" void InitializeModules(void* osModule, void ** modules, int count);
 
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
@@ -286,10 +286,14 @@ int main(int argc, char* argv[])
         return -1;
 
 #ifndef CPPCODEGEN
+    void *osModule;
+
 #if defined(_WIN32)
-    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
+    osModule = GetModuleHandleW(NULL);
+    if (!RhpRegisterCoffModule(osModule,
 #else // _WIN32
-    if (!RhpRegisterUnixModule(PalGetModuleHandleFromPointer((void*)&main),
+    osModule = PalGetModuleHandleFromPointer((void*)&main);
+    if (!RhpRegisterUnixModule(osModule,
 #endif // _WIN32
         (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
         (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
@@ -304,9 +308,9 @@ int main(int argc, char* argv[])
 #endif
 
 #ifndef CPPCODEGEN
-    InitializeModules(__modules_a, (int)((__modules_z - __modules_a)));
+    InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)));
 #else // !CPPCODEGEN
-    InitializeModules((void**)RtRHeaderWrapper(), 2);
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2);
 #endif // !CPPCODEGEN
 
     int retval;

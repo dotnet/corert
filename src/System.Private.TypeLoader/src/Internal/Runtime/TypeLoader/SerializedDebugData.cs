@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
@@ -447,11 +448,11 @@ namespace Internal.Runtime.TypeLoader
                 SerializedDataBlobKind.NativeFormatType,
                 nativeFormatTypeFlags);
 
-            IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(nativeFormatType.MetadataReader);
+            TypeManagerHandle moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(nativeFormatType.MetadataReader);
 
             encoder.WriteUnsignedLong(unchecked((ulong)typeBuilder.GetRuntimeTypeHandle(defType).ToIntPtr().ToInt64()));
             encoder.WriteUnsigned(nativeFormatType.Handle.ToHandle(nativeFormatType.MetadataReader).AsUInt());
-            encoder.WriteUnsignedLong(unchecked((ulong)moduleHandle.ToInt64()));
+            encoder.WriteUnsignedLong(unchecked((ulong)moduleHandle.GetIntPtrUNSAFE().ToInt64()));
 
             Instance.ThreadSafeWriteBytes(encoder.GetBytes());
 #else

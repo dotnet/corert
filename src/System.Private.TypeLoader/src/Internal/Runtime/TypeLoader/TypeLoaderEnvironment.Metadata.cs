@@ -77,13 +77,13 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="moduleHandle">Module containing the pointer</param>
         /// <param name="rva">Relative virtual address, high bit denotes additional indirection</param>
-        internal static unsafe RuntimeTypeHandle RvaToRuntimeTypeHandle(IntPtr moduleHandle, uint rva)
+        public static unsafe RuntimeTypeHandle RvaToRuntimeTypeHandle(TypeManagerHandle moduleHandle, uint rva)
         {
             if ((rva & RVAIsIndirect) != 0)
             {
-                return RuntimeAugments.CreateRuntimeTypeHandle(*(IntPtr*)((byte*)moduleHandle.ToPointer() + (rva & ~RVAIsIndirect)));
+                return RuntimeAugments.CreateRuntimeTypeHandle(*(IntPtr*)(moduleHandle.ConvertRVAToPointer(rva & ~RVAIsIndirect)));
             }
-            return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)((byte*)moduleHandle.ToPointer() + rva));
+            return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(moduleHandle.ConvertRVAToPointer(+ rva)));
         }
 
         /// <summary>
@@ -95,15 +95,15 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="rva">
         /// Relative virtual address, the DynamicInvokeMapEntry.IsImportMethodFlag bit denotes additional indirection
         /// </param>
-        private static unsafe IntPtr RvaToFunctionPointer(IntPtr moduleHandle, uint rva)
+        public static unsafe IntPtr RvaToFunctionPointer(TypeManagerHandle moduleHandle, uint rva)
         {
             if ((rva & DynamicInvokeMapEntry.IsImportMethodFlag) == DynamicInvokeMapEntry.IsImportMethodFlag)
             {
-                return *((IntPtr*)((byte*)moduleHandle + (rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
+                return *((IntPtr*)((byte*)moduleHandle.ConvertRVAToPointer(rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
             }
             else
             {
-                return (IntPtr)((byte*)moduleHandle + rva);
+                return (IntPtr)((byte*)moduleHandle.ConvertRVAToPointer(rva));
             }
         }
 
@@ -469,7 +469,7 @@ namespace Internal.Runtime.TypeLoader
 
                     var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(typeHandle);
                     NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
-                    Debug.Assert(moduleHandle != IntPtr.Zero);
+                    Debug.Assert(!moduleHandle.IsNull);
 
                     NativeReader typeMapReader;
                     if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.CCtorContextMap, out typeMapReader))
@@ -797,7 +797,7 @@ namespace Internal.Runtime.TypeLoader
             if (openOrNonGenericTypeDefinition.IsNull())
                 openOrNonGenericTypeDefinition = type;
 
-            IntPtr moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(openOrNonGenericTypeDefinition);
+            TypeManagerHandle moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(openOrNonGenericTypeDefinition);
             NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
 
             return TryGetMethodNameAndSigFromVirtualResolveData(module, openOrNonGenericTypeDefinition, logicalSlot, out methodNameAndSig);
@@ -1085,7 +1085,7 @@ namespace Internal.Runtime.TypeLoader
 
             CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(method.OwningType.GetClosestDefType(), canonFormKind);
 
-            IntPtr methodHandleModule = typicalMethodDesc.MetadataUnit.RuntimeModule;
+            TypeManagerHandle methodHandleModule = typicalMethodDesc.MetadataUnit.RuntimeModule;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(methodHandleModule))
             {
@@ -1185,7 +1185,7 @@ namespace Internal.Runtime.TypeLoader
             out MethodInvokeMetadata methodInvokeMetadata)
         {
             CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
-            IntPtr methodHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
+            TypeManagerHandle methodHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
@@ -1506,8 +1506,8 @@ namespace Internal.Runtime.TypeLoader
             // Read-only inputs
             private TLookupMethodInfo _lookupMethodInfo;
             readonly private CanonicalFormKind _canonFormKind;
-            readonly private IntPtr _moduleHandle;
-            readonly private IntPtr _moduleForMethodHandle;
+            readonly private TypeManagerHandle _moduleHandle;
+            readonly private TypeManagerHandle _moduleForMethodHandle;
             readonly private MethodHandle _methodHandle;
 
             // Parsed data from entry in the hashtable
@@ -1527,9 +1527,9 @@ namespace Internal.Runtime.TypeLoader
             public InvokeMapEntryDataEnumerator(
                 TLookupMethodInfo lookupMethodInfo,
                 CanonicalFormKind canonFormKind,
-                IntPtr moduleHandle,
+                TypeManagerHandle moduleHandle,
                 MethodHandle methodHandle,
-                IntPtr moduleForMethodHandle)
+                TypeManagerHandle moduleForMethodHandle)
             {
                 _lookupMethodInfo = lookupMethodInfo;
                 _canonFormKind = canonFormKind;

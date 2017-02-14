@@ -212,7 +212,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             string name = _typeDefinition.Name.GetString(_reader);
             return name.EscapeTypeNameIdentifier();

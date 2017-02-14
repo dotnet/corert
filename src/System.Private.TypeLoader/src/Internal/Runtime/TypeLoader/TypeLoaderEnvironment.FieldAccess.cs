@@ -30,7 +30,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module containing the relevant metadata, null when not found
         /// </summary>
-        public IntPtr MappingTableModule;
+        public TypeManagerHandle MappingTableModule;
 
         /// <summary>
         /// Cookie for field access. This field is set to IntPtr.Zero when the value is not available.
@@ -118,7 +118,7 @@ namespace Internal.Runtime.TypeLoader
             ref FieldAccessMetadata fieldAccessMetadata)
         {
             CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
-            IntPtr fieldHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
+            TypeManagerHandle fieldHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
             bool isDynamicType = RuntimeAugments.IsDynamicType(declaringTypeHandle);
             string fieldName = null;
             RuntimeTypeHandle declaringTypeHandleDefinition = Instance.GetTypeDefinition(declaringTypeHandle);
@@ -278,18 +278,18 @@ namespace Internal.Runtime.TypeLoader
         /// RVA of static field for local fields; for remote fields, RVA of a RemoteStaticFieldDescriptor
         /// structure for the field or-ed with the FieldAccessFlags.RemoteStaticFieldRVA bit
         /// </param>
-        private static unsafe IntPtr RvaToNonGenericStaticFieldAddress(IntPtr moduleHandle, int staticFieldRVA)
+        public static unsafe IntPtr RvaToNonGenericStaticFieldAddress(TypeManagerHandle moduleHandle, int staticFieldRVA)
         {
             IntPtr staticFieldAddress;
 
             if ((staticFieldRVA & FieldAccessFlags.RemoteStaticFieldRVA) != 0)
             {
-                RemoteStaticFieldDescriptor* descriptor = (RemoteStaticFieldDescriptor*)(moduleHandle +
+                RemoteStaticFieldDescriptor* descriptor = (RemoteStaticFieldDescriptor*)(moduleHandle.ConvertRVAToPointer
                    (staticFieldRVA & ~FieldAccessFlags.RemoteStaticFieldRVA));
                 staticFieldAddress = *descriptor->IndirectionCell + descriptor->Offset;
             }
             else
-                staticFieldAddress = (IntPtr)(moduleHandle + staticFieldRVA);
+                staticFieldAddress = (IntPtr)(moduleHandle.ConvertRVAToPointer(staticFieldRVA));
 
             return staticFieldAddress;
         }
@@ -460,7 +460,7 @@ namespace Internal.Runtime.TypeLoader
                 return false;
             }
 
-            fieldAccessMetadata.MappingTableModule = IntPtr.Zero;
+            fieldAccessMetadata.MappingTableModule = default(TypeManagerHandle);
 
 #if SUPPORTS_R2R_LOADING
             fieldAccessMetadata.MappingTableModule = ModuleList.Instance.GetModuleForMetadataReader(((NativeFormatType)type.GetTypeDefinition()).MetadataReader);

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Debug = System.Diagnostics.Debug;
@@ -19,9 +20,9 @@ namespace Internal.Runtime.TypeLoader
     {
         private IntPtr _elements;
         private uint _elementsCount;
-        private IntPtr _moduleHandle;
+        private TypeManagerHandle _moduleHandle;
 
-        public bool IsInitialized() { return (_moduleHandle != IntPtr.Zero); }
+        public bool IsInitialized() { return !_moduleHandle.IsNull; }
 
         private unsafe bool Initialize(NativeFormatModuleInfo module, ReflectionMapBlob blobId)
         {
@@ -78,7 +79,7 @@ namespace Internal.Runtime.TypeLoader
             // and we'll not be able to support this for CppCodegen.
             throw new PlatformNotSupportedException();
 #else
-            Debug.Assert(_moduleHandle != IntPtr.Zero);
+            Debug.Assert(!_moduleHandle.IsNull);
 
             if (index >= _elementsCount)
                 throw new BadImageFormatException();
@@ -101,11 +102,11 @@ namespace Internal.Runtime.TypeLoader
             if ((rva & 0x80000000) != 0)
             {
                 // indirect through IAT
-                return *(IntPtr*)((byte*)_moduleHandle + (rva & ~0x80000000));
+                return *(IntPtr*)(_moduleHandle.ConvertRVAToPointer(rva & ~0x80000000));
             }
             else
             {
-                return (IntPtr)((byte*)_moduleHandle + rva);
+                return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #endif
         }
@@ -124,11 +125,11 @@ namespace Internal.Runtime.TypeLoader
 
             if ((rva & DynamicInvokeMapEntry.IsImportMethodFlag) == DynamicInvokeMapEntry.IsImportMethodFlag)
             {
-                return *((IntPtr*)((byte*)_moduleHandle + (rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
+                return *((IntPtr*)(_moduleHandle.ConvertRVAToPointer(rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
             }
             else
             {
-                return (IntPtr)((byte*)_moduleHandle + rva);
+                return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
 #endif
         }

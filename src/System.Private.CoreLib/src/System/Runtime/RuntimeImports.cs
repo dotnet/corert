@@ -416,20 +416,39 @@ namespace System.Runtime
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhFindBlob")]
-        internal static extern unsafe bool RhFindBlob(IntPtr hOsModule, uint blobId, byte** ppbBlob, uint* pcbBlob);
+        private static extern unsafe bool RhFindBlob(ref TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob);
+
+        internal static unsafe bool RhFindBlob(TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob)
+        {
+            return RhFindBlob(ref typeManagerHandle, blobId, ppbBlob, pcbBlob);
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCreateTypeManager")]
-        internal static extern unsafe IntPtr RhpCreateTypeManager(IntPtr moduleHeader);
+        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterOsModule")]
+        internal static extern unsafe IntPtr RhpRegisterOsModule(IntPtr osModule);
 
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)] 
-        internal static extern IntPtr RhGetModuleSection(IntPtr module, ReadyToRunSectionType section, out int length);
+        internal static extern IntPtr RhGetModuleSection(TypeManagerHandle module, ReadyToRunSectionType section, out int length);
 
 #if CORERT
-        internal static uint RhGetLoadedModules(IntPtr[] resultArray)
+        internal static uint RhGetLoadedOSModules(IntPtr[] resultArray)
         {
-            IntPtr[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.Modules;
+            IntPtr[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.OSModules;
+            if (resultArray != null)
+            {
+                Array.Copy(loadedModules, resultArray, Math.Min(loadedModules.Length, resultArray.Length));
+            }
+            return (uint)loadedModules.Length;
+        }
+
+        internal static uint RhGetLoadedModules(TypeManagerHandle[] resultArray)
+        {
+            TypeManagerHandle[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.Modules;
             if (resultArray != null)
             {
                 Array.Copy(loadedModules, resultArray, Math.Min(loadedModules.Length, resultArray.Length));
@@ -438,17 +457,24 @@ namespace System.Runtime
         }
 #else
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetLoadedOSModules")]
+        internal static extern uint RhGetLoadedOSModules(IntPtr[] resultArray);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLoadedModules")]
-        internal static extern uint RhGetLoadedModules(IntPtr[] resultArray);
+        internal static extern uint RhGetLoadedModules(TypeManagerHandle[] resultArray);
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetModuleFromPointer")]
-        internal static extern IntPtr RhGetModuleFromPointer(IntPtr pointerVal);
+        [RuntimeImport(RuntimeLibrary, "RhGetOSModuleFromPointer")]
+        internal static extern IntPtr RhGetOSModuleFromPointer(IntPtr pointerVal);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetModuleFromEEType")]
-        internal static extern IntPtr RhGetModuleFromEEType(IntPtr pEEType);
+        internal static extern TypeManagerHandle RhGetModuleFromEEType(IntPtr pEEType);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetOSModuleFromEEType")]
+        internal static extern IntPtr RhGetOSModuleFromEEType(IntPtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]

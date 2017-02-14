@@ -217,11 +217,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
 
-        [RuntimeImport(Redhawk.BaseName, "RhGetModuleFromPointer")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe IntPtr RhGetModuleFromPointer(void* pointer);
-
         //
         // StackFrameIterator
         //

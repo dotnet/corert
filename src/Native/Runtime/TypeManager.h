@@ -10,6 +10,7 @@ typedef unsigned char       UInt8;
 
 class TypeManager
 {
+    HANDLE                      m_osModule;
     ReadyToRunHeader *          m_pHeader;
     DispatchMap**               m_pDispatchMapTable;
     StaticGcDesc*               m_pStaticsGCInfo;
@@ -19,13 +20,14 @@ class TypeManager
     UInt32*                     m_pTlsIndex;  // Pointer to TLS index if this module uses thread statics 
     UInt32                      m_managedTlsStartOffset; // Start offset for managed TLS data
 
-    TypeManager(ReadyToRunHeader * pHeader);
+    TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader);
 
 public:
-    static TypeManager * Create(void * pModuleHeader);
+    static TypeManager * Create(HANDLE osModule, void * pModuleHeader);
     void * GetModuleSection(ReadyToRunSectionType sectionId, int * length);
     DispatchMap ** GetDispatchMapLookupTable();
     void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData);
+    HANDLE GetOsModuleHandle();
 
 private:
     
@@ -43,3 +45,38 @@ private:
     void EnumStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, StaticGcDesc* pStaticGcInfo);
     void EnumThreadStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, StaticGcDesc* pStaticGcInfo, UInt8* pbThreadStaticData);
 };
+
+// TypeManagerHandle represents an AOT module in MRT based runtimes.
+// These handles are either a pointer to an OS module, or a pointer to a TypeManager
+// When this is a pointer to a TypeManager, then the pointer will have its lowest bit
+// set to indicate that it is a TypeManager pointer instead of OS module.
+struct TypeManagerHandle
+{
+    static TypeManagerHandle Null()
+    {
+        TypeManagerHandle handle;
+        handle._value = nullptr;
+        return handle;
+    }
+
+    static TypeManagerHandle Create(TypeManager * value)
+    {
+        TypeManagerHandle handle;
+        handle._value = ((uint8_t *)value) + 1;
+        return handle;
+    }
+
+    static TypeManagerHandle Create(HANDLE value)
+    {
+        TypeManagerHandle handle;
+        handle._value = value;
+        return handle;
+    }
+
+    void *_value;
+
+    bool IsTypeManager();
+    TypeManager* AsTypeManager();
+    HANDLE AsOsModule();
+};
+

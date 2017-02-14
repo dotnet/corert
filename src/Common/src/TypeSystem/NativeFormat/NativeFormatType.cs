@@ -395,7 +395,7 @@ namespace Internal.TypeSystem.NativeFormat
             foreach (var handle in _typeDefinition.Methods)
             {
                 var methodDefinition = metadataReader.GetMethod(handle);
-                if (methodDefinition.Attributes.IsRuntimeSpecialName() &&
+                if (methodDefinition.Flags.IsRuntimeSpecialName() &&
                     methodDefinition.Name.StringEquals(".cctor", metadataReader))
                 {
                     MethodDesc method = (MethodDesc)_metadataUnit.GetMethod(handle, this);
@@ -416,7 +416,7 @@ namespace Internal.TypeSystem.NativeFormat
             foreach (var handle in _typeDefinition.Methods)
             {
                 var methodDefinition = metadataReader.GetMethod(handle);
-                MethodAttributes attributes = methodDefinition.Attributes;
+                MethodAttributes attributes = methodDefinition.Flags;
                 if (attributes.IsRuntimeSpecialName() && attributes.IsPublic() &&
                     methodDefinition.Name.StringEquals(".ctor", metadataReader))
                 {
