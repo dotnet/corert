@@ -84,7 +84,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
         {
             Object value = thisObject;
             bool hasValue = (thisObject != null);
@@ -120,7 +120,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         // version of Nullable<T> which conveniently happens to be equal to the value we were passed in.
                         CheckArgumentCount(arguments, 1);
                         RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(_nullableTypeHandle);
-                        Object argument = RuntimeAugments.CheckArgument(arguments[0], theT);
+                        Object argument = RuntimeAugments.CheckArgument(arguments[0], theT, binderBundle);
                         return argument;
                     }
 
@@ -147,7 +147,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                     {
                         CheckArgumentCount(arguments, 1);
                         RuntimeTypeHandle theT = RuntimeAugments.GetNullableType(_nullableTypeHandle);
-                        Object defaultValue = RuntimeAugments.CheckArgument(arguments[0], theT);
+                        Object defaultValue = RuntimeAugments.CheckArgument(arguments[0], theT, binderBundle);
                         return hasValue ? value : defaultValue;
                     }
 

@@ -87,8 +87,6 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
             MethodInvoker methodInvoker;
@@ -116,7 +114,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw;
             }
 
-            return methodInvoker.Invoke(obj, parameters);
+            return methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
         }
 
         public abstract override int MetadataToken 

@@ -118,10 +118,9 @@ namespace System.Reflection.Runtime.FieldInfos
                 ReflectionTrace.FieldInfo_SetValue(this, obj, value);
 #endif
 
-            binder.EnsureNotCustomBinder();
-
             FieldAccessor fieldAccessor = this.FieldAccessor;
-            fieldAccessor.SetField(obj, value);
+            BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, culture);
+            fieldAccessor.SetField(obj, value, binderBundle);
         }
 
         Type ITraceableTypeMember.ContainingType

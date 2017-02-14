@@ -31,9 +31,9 @@ namespace Internal.Reflection.Execution.FieldAccessors
             return RuntimeAugments.LoadReferenceTypeField(_fieldAddress);
         }
 
-        protected sealed override void SetFieldBypassCctor(Object obj, Object value)
+        protected sealed override void SetFieldBypassCctor(Object obj, Object value, BinderBundle binderBundle)
         {
-            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle);
+            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle, binderBundle);
             RuntimeAugments.StoreReferenceTypeField(_fieldAddress, value);
         }
     }

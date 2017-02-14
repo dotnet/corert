@@ -33,13 +33,13 @@ namespace Internal.Reflection.Execution.FieldAccessors
             return UncheckedGetField(obj);
         }
 
-        public sealed override void SetField(Object obj, Object value)
+        public sealed override void SetField(Object obj, Object value, BinderBundle binderBundle)
         {
             if (obj == null)
                 throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
             if (!RuntimeAugments.IsAssignable(obj, this.DeclaringTypeHandle))
                 throw new ArgumentException();
-            value = RuntimeAugments.CheckArgument(value, this.FieldTypeHandle);
+            value = RuntimeAugments.CheckArgument(value, this.FieldTypeHandle, binderBundle);
             UncheckedSetField(obj, value);
         }
 
