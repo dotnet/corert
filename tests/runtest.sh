@@ -20,7 +20,7 @@ runtest()
     __SourceFolder=$1
     __SourceFileName=$2
     __SourceFile=${__SourceFolder}/${__SourceFileName}
-    ${__SourceFile}.sh $1/bin/${CoreRT_BuildType}/native $2
+    ${__SourceFile}.sh $1/bin/${CoreRT_BuildType}/${CoreRT_BuildArch}/native $2
     return $?
 }
 
@@ -28,21 +28,34 @@ run_test_dir()
 {
     local __test_dir=$1
     local __mode=$2
+    local __extra_cxxflags=$3
+    local __extra_linkflags=$4
     local __dir_path=`dirname ${__test_dir}`
     local __filename=`basename ${__dir_path}`
     local __extra_args=""
     if [ "${__mode}" = "Cpp" ]; then
-      __extra_args="${__extra_args} /p:NativeCodeGen=cpp"
+        __extra_args="${__extra_args} /p:NativeCodeGen=cpp"
+    fi
+    if [ -n "${__extra_cxxflags}" ]; then
+        __extra_cxxflags="/p:AdditionalCppCompilerFlags=\"${__extra_cxxflags}\""
+    fi
+    if [ -n "${__extra_cxxflags}" ]; then
+        __extra_linkflags="/p:AdditionalLinkerFlags=\"${__extra_linkflags}\""
     fi
 
     rm -rf ${__dir_path}/bin ${__dir_path}/obj
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
-    echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:RepoLocalBuild=true ${__extra_args} ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:RepoLocalBuild=true ${__extra_args} ${__dir_path}/${__filename}.csproj
+    echo ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.exe /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.exe /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
 
-    runtest ${__dir_path} ${__filename}
     local __exitcode=$?
+
+    if [ ${CoreRT_TestRun} == true ]; then
+        runtest ${__dir_path} ${__filename}
+        __exitcode=$?
+    fi
+
     if [ ${__exitcode} == 0 ]; then
         local __pass_var=__${__mode}PassedTests
         eval ${__pass_var}=$((${__pass_var} + 1))
@@ -122,6 +135,9 @@ CoreRT_BuildArch=x64
 CoreRT_BuildType=Debug
 CoreRT_TestRun=true
 CoreRT_TestCompileMode=ryujit
+CoreRT_CrossRootFS=
+CoreRT_CrossCXXFlags=
+CoreRT_CrossLinkerFlags=
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -138,6 +154,9 @@ while [ "$1" != "" ]; do
             ;;
         arm)
             CoreRT_BuildArch=arm
+            ;;
+        armel)
+            CoreRT_BuildArch=armel
             ;;
         arm64)
             CoreRT_BuildArch=arm64
@@ -160,6 +179,10 @@ while [ "$1" != "" ]; do
             shift
             CoreRT_CliBinDir=$1
             ;;
+        -cross)
+            shift
+            CoreRT_CrossBuild=$1
+            ;;
         -coreclr)
             CoreRT_RunCoreCLRTests=true;
             shift
@@ -177,6 +200,50 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
+CoreRT_ExtraCXXFlags=
+CoreRT_ExtraLinkFlags=
+if [ ${CoreRT_CrossBuild} != 0 ]; then
+    CoreRT_TestRun=false
+    CoreRT_CrossRootFS=${CoreRT_TestRoot}/../cross/rootfs/${CoreRT_BuildArch}
+    # all values are brought from the appropriate toolchain.cmake's
+    case $CoreRT_BuildArch in
+         arm)
+             CoreRT_CrossCXXFlags="-target armv7-linux-gnueabihf -mthumb -mfpu=vfpv3 --sysroot=${CoreRT_CrossRootFS}"
+             CoreRT_CrossLinkerFlags="-target arm-linux-gnueabihf -B ${CoreRT_CrossRootFS}/usr/lib/gcc/arm-linux-gnueabihf `
+                                     `-L${CorRT_CrossRootFS}/lib/arm-linux-gnueabihf --sysroot=${CoreRT_CrossRootFS}"
+         ;;
+         arm64)
+             CoreRT_CrossCXXFlags="-target aarch64-linux-gnu --sysroot=${CoreRT_CrossRootFS}"
+             CoreRT_CrossLinkerFlags="-target aarch64-linux-gnu -B ${CoreRT_CrossRootFS}/usr/lib/gcc/aarch64-linux-gnu `
+                                     `-L${CoreRT_CrossRootFS}/lib/aarch64-linux-gnu --sysroot=${CoreRT_CrossRootFS}"
+         ;;
+         armel)
+             CoreRT_CrossCXXFlags="-target armv7-linux-gnueabi -mthumb -mfpu=vfpv3  -mfloat-abi=softfp --sysroot=${CoreRT_CrossRootFS}"
+             CoreRT_CrossLinkerFlags="-target arm-linux-gnueabi --sysroot=${CoreRT_CrossRootFS}"
+             ID=
+             if [ -e $ROOTFS_DIR/etc/os-release ]; then
+                 source $ROOTFS_DIR/etc/os-release
+             fi
+             if [ "$ID" = "tizen" ]; then
+                 CoreRT_CrossCXXFlags="${CoreRT_CrossCXXFlags} -isystem ${CoreRT_CrossRootFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++ `
+                                      `-isystem ${CoreRT_CrossRootFS}//usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/armv7l-tizen-linux-gnueabi `
+                                      `-isystem ${CoreRT_CrossRootFS}/armel/usr/include"
+                 TIZEN_TOOLCHAIN="armv7l-tizen-linux-gnueabi/4.9.2"
+                 CoreRT_CrossLinkerFlags="${CoreRT_CrossLinkerFlags} -B${CoreRT_CrossRootFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN} `
+                                         `-L${CoreRT_CrossRootFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}"
+             else
+                 TOOLCHAIN="arm-linux-gnueabi"
+                 CoreRT_CrossCXXFlags="${CoreRT_CrossCXXFlags} -isystem ${CoreRT_CrossRootFS}/usr/include/c++/4.9 `
+                                      `-isystem ${CoreRT_CrossRootFS}/usr/include/arm-linux-gnueabi/c++/4.9 "
+                 CoreRT_CrossLinkerFlags="${CoreRT_CrossLinkerFlags} -B${CoreRT_CrossRootFS}/usr/lib/gcc/${TOOLCHAIN}/4.9 `
+                                         `-L${CoreRT_CrossRootFS}/usr/lib/gcc/${TOOLCHAIN}/4.9"
+             fi
+         ;;
+    esac
+    CoreRT_ExtraCXXFlags="$CoreRT_ExtraCXXFlags $CoreRT_CrossCXXFlags"
+    CoreRT_ExtraLinkFlags="$CoreRT_ExtraLinkFlags $CoreRT_CrossLinkerFlags"
+fi
 
 source "$CoreRT_TestRoot/testenv.sh"
 
@@ -213,7 +280,7 @@ do
     if [ ! -e `dirname ${csproj}`/no_unix ]; then
         run_test_dir ${csproj} "Jit"
         if [ ! -e `dirname ${csproj}`/no_cpp ]; then
-            run_test_dir ${csproj} "Cpp"
+            run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
         fi
     fi
 done
