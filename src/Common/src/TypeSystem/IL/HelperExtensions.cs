@@ -87,8 +87,8 @@ namespace Internal.IL
             {
                 throw new InvalidOperationException(
                     String.Format("Expected type '{0}' not found in module '{1}'",
-                    module,
-                    @namespace.Length > 0 ? String.Concat(@namespace, ".", name) : name));
+                    @namespace.Length > 0 ? String.Concat(@namespace, ".", name) : name,
+                    module));
             }
 
             return type;
