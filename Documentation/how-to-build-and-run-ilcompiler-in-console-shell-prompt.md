@@ -16,7 +16,7 @@ This will result in the following:
 
 # Install latest CLI tools
 
-* Download latest CLI tools from [https://github.com/dotnet/cli/](https://github.com/dotnet/cli/) and add them to the path. The latest CLI tools include MSBuild support that the native compilation build integration depends on.
+* Download latest CLI tools from [https://github.com/dotnet/cli/](https://github.com/dotnet/cli/) and add them to the path. The latest CLI tools include MSBuild support that the native compilation build integration depends on. These instructions have been tested with build `1.0.0-rc4-004812`.
 * On windows ensure you are using the 'VS2015 x64 Native Tools Command Prompt'
     (This is distinct from the 'Developer Command Prompt for VS2015')
 
@@ -30,7 +30,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 * Modify `.csproj` file that is part of your project. A few lines at the top and at the bottom are different from the default template.
 
 ```
-<Project ToolsVersion="15.0">
+<Project>
   <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.props" />
 
   <PropertyGroup>
@@ -38,19 +38,9 @@ You should now be able to use the `dotnet` commands of the CLI tools.
     <TargetFramework>netcoreapp1.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="**\*.cs" />
-    <EmbeddedResource Include="**\*.resx" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.App" Version="1.0.1" />
-  </ItemGroup>
-
   <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
   <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" />
 </Project>
-
 ```
 
 * Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1` argument to all dotnet commands below.
