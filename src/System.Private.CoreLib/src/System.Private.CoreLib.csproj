@@ -1002,6 +1002,33 @@
     <Compile Include="System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Calendar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Casing.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Casing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Collation.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Collation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Idna.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Idna.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Locale.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Locale.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Utils.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Utils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
@@ -1121,33 +1148,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Calendar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Casing.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Casing.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Collation.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Collation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Idna.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Locale.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Locale.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Utils.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Utils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
