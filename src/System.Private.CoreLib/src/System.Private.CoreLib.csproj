@@ -774,17 +774,6 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CultureData.Windows.cs" />
-    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CalendarData.Windows.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
-    <Compile Include="System\Text\Normalization.Windows.cs" />
     <Compile Include="System\DateTime.Windows.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
@@ -796,15 +785,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
-      <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Normalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Normalization.cs</Link>
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.MUI.cs">
       <Link>Interop\Windows\mincore\Interop.MUI.cs</Link>
@@ -941,6 +921,28 @@
       <Link>Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
+    <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CultureData.Windows.cs" />
+    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CalendarData.Windows.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
+    <Compile Include="System\Text\Normalization.Windows.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
+      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
+      <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Normalization.cs">
+      <Link>Interop\Windows\mincore\Interop.Normalization.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <!-- CORERT-TODO: Port to Unix -->
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
@@ -978,7 +980,7 @@
     </Compile>
   </ItemGroup>
   <!-- Dummy globalization implementation -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' == 'true'">
+  <ItemGroup Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'">
     <Compile Include="System\Globalization\HijriCalendar.Dummy.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.Dummy.cs" />
     <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
