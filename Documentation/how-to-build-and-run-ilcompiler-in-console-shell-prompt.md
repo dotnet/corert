@@ -27,11 +27,10 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 * Ensure that you have done a repo build per the instructions above.
 * Create a new folder and switch into it. 
 * Run `dotnet new` on the command/shell prompt. This will add a project template. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
-* Modify `.csproj` file that is part of your project. A few lines at the top and at the bottom are different from the default template.
+* Modify `.csproj` file that is part of your project. A line at the bottom is different from the default template.
 
 ```
 <Project ToolsVersion="15.0">
-  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.props" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -47,7 +46,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
     <PackageReference Include="Microsoft.NETCore.App" Version="1.0.1" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
+  <!-- This is the line that needs to be added -->
   <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" />
 </Project>
 
