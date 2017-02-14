@@ -62,14 +62,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
         {
             switch (_id)
             {
                 case IntPtrConstructorId.Int32:
                     {
                         CheckArgumentCount(arguments, 1);
-                        Int32 value = (Int32)(RuntimeAugments.CheckArgument(arguments[0], typeof(Int32).TypeHandle));
+                        Int32 value = (Int32)(RuntimeAugments.CheckArgument(arguments[0], typeof(Int32).TypeHandle, binderBundle));
                         try
                         {
                             return new IntPtr(value);
@@ -83,7 +83,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 case IntPtrConstructorId.Int64:
                     {
                         CheckArgumentCount(arguments, 1);
-                        Int64 value = (Int64)(RuntimeAugments.CheckArgument(arguments[0], typeof(Int64).TypeHandle));
+                        Int64 value = (Int64)(RuntimeAugments.CheckArgument(arguments[0], typeof(Int64).TypeHandle, binderBundle));
                         try
                         {
                             return new IntPtr(value);
@@ -97,7 +97,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 case IntPtrConstructorId.UInt32:
                     {
                         CheckArgumentCount(arguments, 1);
-                        UInt32 value = (UInt32)(RuntimeAugments.CheckArgument(arguments[0], typeof(UInt32).TypeHandle));
+                        UInt32 value = (UInt32)(RuntimeAugments.CheckArgument(arguments[0], typeof(UInt32).TypeHandle, binderBundle));
                         try
                         {
                             return new UIntPtr(value);
@@ -111,7 +111,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 case IntPtrConstructorId.UInt64:
                     {
                         CheckArgumentCount(arguments, 1);
-                        UInt64 value = (UInt64)(RuntimeAugments.CheckArgument(arguments[0], typeof(UInt64).TypeHandle));
+                        UInt64 value = (UInt64)(RuntimeAugments.CheckArgument(arguments[0], typeof(UInt64).TypeHandle, binderBundle));
                         try
                         {
                             return new UIntPtr(value);

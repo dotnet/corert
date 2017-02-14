@@ -305,7 +305,7 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args);
+                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }

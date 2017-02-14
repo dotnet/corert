@@ -264,9 +264,6 @@
   <data name="NotSupported_ChangeType" xml:space="preserve">
     <value>ChangeType operation is not supported.</value>
   </data>
-  <data name="PlatformNotSupported_CustomBinder" xml:space="preserve">
-    <value>Passing a binder object other than Type.DefaultBinder is not supported on this platform.</value>
-  </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for this object.</value>
   </data>

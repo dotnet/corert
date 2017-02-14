@@ -37,9 +37,9 @@ namespace Internal.Reflection.Execution.FieldAccessors
             return RuntimeAugments.LoadValueTypeField(fieldAddress, FieldTypeHandle);
         }
 
-        protected sealed override void SetFieldBypassCctor(Object obj, Object value)
+        protected sealed override void SetFieldBypassCctor(Object obj, Object value, BinderBundle binderBundle)
         {
-            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle);
+            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle, binderBundle);
             IntPtr tlsFieldsStartAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, IntPtr.Zero);
             IntPtr fieldAddress = tlsFieldsStartAddress + _fieldOffset;
             RuntimeAugments.StoreValueTypeField(fieldAddress, value, FieldTypeHandle);

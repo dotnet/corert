@@ -151,8 +151,6 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (_lazyGetterInvoker == null)
             {
                 if (!CanRead)
@@ -162,7 +160,7 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
             if (index == null)
                 index = Array.Empty<Object>();
-            return _lazyGetterInvoker.Invoke(obj, index);
+            return _lazyGetterInvoker.Invoke(obj, index, binder, invokeAttr, culture);
         }
 
         public sealed override Module Module
@@ -227,8 +225,6 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (_lazySetterInvoker == null)
             {
                 if (!CanWrite)
@@ -250,7 +246,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 }
                 arguments[index.Length] = value;
             }
-            _lazySetterInvoker.Invoke(obj, arguments);
+            _lazySetterInvoker.Invoke(obj, arguments, binder, invokeAttr, culture);
         }
 
         public sealed override String ToString()

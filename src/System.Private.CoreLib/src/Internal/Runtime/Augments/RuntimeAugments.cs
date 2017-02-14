@@ -19,6 +19,7 @@
 
 using System;
 using System.Runtime;
+using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -307,6 +308,7 @@ namespace Internal.Runtime.Augments
             IntPtr dynamicInvokeHelperGenericDictionary,
             object defaultParametersContext,
             object[] parameters,
+            BinderBundle binderBundle,
             bool invokeMethodHelperIsThisCall,
             bool methodToCallIsThisCall)
         {
@@ -318,6 +320,7 @@ namespace Internal.Runtime.Augments
                 dynamicInvokeHelperGenericDictionary,
                 defaultParametersContext,
                 parameters,
+                binderBundle,
                 invokeMethodHelperIsThisCall,
                 methodToCallIsThisCall);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
@@ -628,9 +631,9 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType)
+        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType);
+            return InvokeUtils.CheckArgument(srcObject, dstType, binderBundle);
         }
 
         public static bool IsAssignable(Object srcObject, RuntimeTypeHandle dstType)

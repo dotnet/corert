@@ -5,6 +5,8 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
+using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Core.Execution
 {
@@ -16,7 +18,12 @@ namespace Internal.Reflection.Core.Execution
     {
         protected MethodInvoker() { }
 
-        public abstract Object Invoke(Object thisObject, Object[] arguments);
+        public Object Invoke(Object thisObject, Object[] arguments, Binder binder, BindingFlags invokeAttr, CultureInfo cultureInfo)
+        {
+            BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, cultureInfo);
+            return Invoke(thisObject, arguments, binderBundle);
+        }
+        public abstract Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle);
         public abstract Delegate CreateDelegate(RuntimeTypeHandle delegateType, Object target, bool isStatic, bool isVirtual, bool isOpen);
     }
 }
