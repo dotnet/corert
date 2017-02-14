@@ -307,7 +307,7 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName() => "NativeLayoutTypeSignatureVertexNode" + NodeFactory.NameMangler.GetMangledTypeName(_type);
+        protected override string GetName() => "NativeLayoutTypeSignatureVertexNode: " + _type.ToString();
 
         public static NativeLayoutTypeSignatureVertexNode NewTypeSignatureVertexNode(NodeFactory factory, TypeDesc type)
         {
