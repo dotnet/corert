@@ -17,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeFieldHandleNode(FieldDesc targetField)
         {
             Debug.Assert(!targetField.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any));
+            Debug.Assert(!targetField.OwningType.IsRuntimeDeterminedSubtype);
             _targetField = targetField;
         }
 
