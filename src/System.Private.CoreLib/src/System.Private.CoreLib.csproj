@@ -570,6 +570,7 @@
     <Compile Include="System\IDisposable.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Delegate.DefaultParameters.cs" />
+    <Compile Include="System\DelegateSerializationHolder.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
