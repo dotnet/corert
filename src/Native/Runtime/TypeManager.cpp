@@ -171,7 +171,7 @@ HANDLE TypeManager::GetOsModuleHandle()
 bool TypeManagerHandle::IsTypeManager()
 {
 #if !CORERT
-    if (((int)_value & 1) == 0)
+    if (((uintptr_t)_value & 1) == 0)
         return false;
 #endif
 
