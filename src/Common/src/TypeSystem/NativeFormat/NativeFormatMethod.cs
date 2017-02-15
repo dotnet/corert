@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
+using System.Runtime;
 using System.Threading;
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.CompilerServices;
@@ -426,7 +427,7 @@ namespace Internal.TypeSystem.NativeFormat
             {
                 int handleAsToken = _handle.ToInt();
 
-                IntPtr moduleHandle = Internal.Runtime.TypeLoader.ModuleList.Instance.GetModuleForMetadataReader(MetadataReader);
+                TypeManagerHandle moduleHandle = Internal.Runtime.TypeLoader.ModuleList.Instance.GetModuleForMetadataReader(MetadataReader);
                 return new MethodNameAndSignature(Name, RuntimeSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
             }
         }

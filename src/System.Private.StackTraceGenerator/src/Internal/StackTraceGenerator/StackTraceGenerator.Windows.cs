@@ -510,7 +510,7 @@ namespace Internal.StackTraceGenerator
                 return null;
             }
 
-            IntPtr moduleBase = RuntimeAugments.GetModuleFromPointer(ip);
+            IntPtr moduleBase = RuntimeAugments.GetOSModuleFromPointer(ip);
             if (moduleBase == IntPtr.Zero)
             {
                 rva = -1;
@@ -522,13 +522,13 @@ namespace Internal.StackTraceGenerator
             if (s_loadedModules == null)
             {
                 // Lazily create the parallel arrays s_loadedModules and s_perModuleDebugInfo
-                int moduleCount = RuntimeAugments.GetLoadedModules(null);
+                int moduleCount = RuntimeAugments.GetLoadedOSModules(null);
 
                 s_loadedModules = new IntPtr[moduleCount];
                 s_perModuleDebugInfo = new IDiaSession[moduleCount];
 
                 // Actually read the module addresses into the array
-                RuntimeAugments.GetLoadedModules(s_loadedModules);
+                RuntimeAugments.GetLoadedOSModules(s_loadedModules);
             }
 
             // Locate module index based on base address

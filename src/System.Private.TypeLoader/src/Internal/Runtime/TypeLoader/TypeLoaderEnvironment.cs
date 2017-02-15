@@ -6,6 +6,7 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
@@ -82,7 +83,7 @@ namespace Internal.Runtime.TypeLoader
             if (!signature.IsNativeLayoutSignature)
                 Environment.FailFast("Not a valid native layout signature");
 
-            NativeReader reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(signature.ModuleHandle);
+            NativeReader reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(signature);
             return reader.OffsetToAddress(signature.NativeLayoutOffset);
         }
     }
@@ -105,7 +106,7 @@ namespace Internal.Runtime.TypeLoader
         // thread safety. Using ThreadStatic instead of a lock is ok as long as the NativeReader class is 
         // small enough in size (which is the case today).
         [ThreadStatic]
-        private static LowLevelDictionary<IntPtr, NativeReader> t_moduleNativeReaders;
+        private static LowLevelDictionary<TypeManagerHandle, NativeReader> t_moduleNativeReaders;
 
         // Eager initialization called from LibraryInitializer for the assembly.
         internal static void Initialize()
@@ -207,17 +208,17 @@ namespace Internal.Runtime.TypeLoader
         //
         internal bool GetTypeFromSignatureAndContext(RuntimeSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out RuntimeSignature remainingSignature)
         {
-            NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
+            NativeReader reader = GetNativeLayoutInfoReader(signature);
             NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
 
-            bool result = GetTypeFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType);
+            bool result = GetTypeFromSignatureAndContext(ref parser, new TypeManagerHandle(signature.ModuleHandle), typeArgs, methodArgs, out createdType);
 
-            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature.ModuleHandle, parser.Offset);
+            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature, parser.Offset);
 
             return result;
         }
 
-        internal bool GetTypeFromSignatureAndContext(ref NativeParser parser, IntPtr moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType)
+        internal bool GetTypeFromSignatureAndContext(ref NativeParser parser, TypeManagerHandle moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType)
         {
             createdType = default(RuntimeTypeHandle);
             TypeSystemContext context = TypeSystemContextFactory.Create();
@@ -242,17 +243,17 @@ namespace Internal.Runtime.TypeLoader
         //
         public bool GetMethodFromSignatureAndContext(RuntimeSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles, out RuntimeSignature remainingSignature)
         {
-            NativeReader reader = GetNativeLayoutInfoReader(signature.ModuleHandle);
+            NativeReader reader = GetNativeLayoutInfoReader(signature);
             NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
 
-            bool result = GetMethodFromSignatureAndContext(ref parser, signature.ModuleHandle, typeArgs, methodArgs, out createdType, out nameAndSignature, out genericMethodTypeArgumentHandles);
+            bool result = GetMethodFromSignatureAndContext(ref parser, new TypeManagerHandle(signature.ModuleHandle), typeArgs, methodArgs, out createdType, out nameAndSignature, out genericMethodTypeArgumentHandles);
 
-            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature.ModuleHandle, parser.Offset);
+            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature, parser.Offset);
 
             return result;
         }
 
-        internal bool GetMethodFromSignatureAndContext(ref NativeParser parser, IntPtr moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        internal bool GetMethodFromSignatureAndContext(ref NativeParser parser, TypeManagerHandle moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             createdType = default(RuntimeTypeHandle);
             nameAndSignature = null;
@@ -297,12 +298,21 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the native layout info reader
         //
-        internal unsafe NativeReader GetNativeLayoutInfoReader(IntPtr moduleHandle)
+        internal unsafe NativeReader GetNativeLayoutInfoReader(RuntimeSignature signature)
         {
-            Debug.Assert(moduleHandle != IntPtr.Zero);
+            Debug.Assert(signature.IsNativeLayoutSignature);
+            return GetNativeLayoutInfoReader(new TypeManagerHandle(signature.ModuleHandle));
+        }
+
+        //
+        // Returns the native layout info reader
+        //
+        internal unsafe NativeReader GetNativeLayoutInfoReader(TypeManagerHandle moduleHandle)
+        {
+            Debug.Assert(!moduleHandle.IsNull);
 
             if (t_moduleNativeReaders == null)
-                t_moduleNativeReaders = new LowLevelDictionary<IntPtr, NativeReader>();
+                t_moduleNativeReaders = new LowLevelDictionary<TypeManagerHandle, NativeReader>();
 
             NativeReader result = null;
             if (t_moduleNativeReaders.TryGetValue(moduleHandle, out result))
@@ -419,7 +429,7 @@ namespace Internal.Runtime.TypeLoader
             return hashCode;
         }
 
-        private object TryParseNativeSignatureWorker(TypeSystemContext typeSystemContext, IntPtr moduleHandle, ref NativeParser parser, RuntimeTypeHandle[] typeGenericArgumentHandles, RuntimeTypeHandle[] methodGenericArgumentHandles, bool isMethodSignature)
+        private object TryParseNativeSignatureWorker(TypeSystemContext typeSystemContext, TypeManagerHandle moduleHandle, ref NativeParser parser, RuntimeTypeHandle[] typeGenericArgumentHandles, RuntimeTypeHandle[] methodGenericArgumentHandles, bool isMethodSignature)
         {
             Instantiation typeGenericArguments = typeSystemContext.ResolveRuntimeTypeHandles(typeGenericArgumentHandles ?? Array.Empty<RuntimeTypeHandle>());
             Instantiation methodGenericArguments = typeSystemContext.ResolveRuntimeTypeHandles(methodGenericArgumentHandles ?? Array.Empty<RuntimeTypeHandle>());
@@ -550,7 +560,7 @@ namespace Internal.Runtime.TypeLoader
             targetMethod = IntPtr.Zero;
 
             // Get module
-            IntPtr associatedModule = RuntimeAugments.GetModuleFromPointer(maybeInstantiatingAndUnboxingStub);
+            IntPtr associatedModule = RuntimeAugments.GetOSModuleFromPointer(maybeInstantiatingAndUnboxingStub);
             if (associatedModule == IntPtr.Zero)
             {
                 return false;
@@ -560,7 +570,7 @@ namespace Internal.Runtime.TypeLoader
             UnboxingAndInstantiatingStubMapEntry* pBlob;
             uint cbBlob;
 
-            if (!RuntimeAugments.FindBlob(associatedModule, (int)ReflectionMapBlob.UnboxingAndInstantiatingStubMap, (IntPtr)(&pBlob), (IntPtr)(&cbBlob)))
+            if (!RuntimeAugments.FindBlob(new TypeManagerHandle(associatedModule), (int)ReflectionMapBlob.UnboxingAndInstantiatingStubMap, (IntPtr)(&pBlob), (IntPtr)(&cbBlob)))
             {
                 return false;
             }
@@ -569,10 +579,10 @@ namespace Internal.Runtime.TypeLoader
 
             for (uint i = 0; i < cStubs; ++i)
             {
-                if (RvaToFunctionPointer(associatedModule, pBlob[i].StubMethodRva) == maybeInstantiatingAndUnboxingStub)
+                if (RvaToFunctionPointer(new TypeManagerHandle(associatedModule), pBlob[i].StubMethodRva) == maybeInstantiatingAndUnboxingStub)
                 {
                     // We found a match, create pointer from RVA and move on.
-                    targetMethod = RvaToFunctionPointer(associatedModule, pBlob[i].MethodRva);
+                    targetMethod = RvaToFunctionPointer(new TypeManagerHandle(associatedModule), pBlob[i].MethodRva);
                     return true;
                 }
             }

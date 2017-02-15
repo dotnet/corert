@@ -24,7 +24,7 @@
 #include "TypeManager.h"
 
 /* static */
-TypeManager * TypeManager::Create(void * pModuleHeader)
+TypeManager * TypeManager::Create(HANDLE osModule, void * pModuleHeader)
 {
     ReadyToRunHeader * pReadyToRunHeader = (ReadyToRunHeader *)pModuleHeader;
 
@@ -38,11 +38,11 @@ TypeManager * TypeManager::Create(void * pModuleHeader)
     if (pReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants::CurrentMajorVersion)
         return nullptr;
 
-    return new (nothrow) TypeManager(pReadyToRunHeader);
+    return new (nothrow) TypeManager(osModule, pReadyToRunHeader);
 }
 
-TypeManager::TypeManager(ReadyToRunHeader * pHeader)
-    : m_pHeader(pHeader), m_pDispatchMapTable(nullptr)
+TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader)
+    : m_osModule(osModule), m_pHeader(pHeader), m_pDispatchMapTable(nullptr)
 {
     int length;
     m_pStaticsGCDataSection = (UInt8*)GetModuleSection(ReadyToRunSectionType::GCStaticRegion, &length);
@@ -162,3 +162,31 @@ void TypeManager::EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData)
         END_FOREACH_THREAD
     }
 }
+
+HANDLE TypeManager::GetOsModuleHandle()
+{
+    return m_osModule;
+}
+
+bool TypeManagerHandle::IsTypeManager()
+{
+#if !CORERT
+    if (((int)_value & 1) == 0)
+        return false;
+#endif
+
+    return true;
+}
+
+TypeManager* TypeManagerHandle::AsTypeManager()
+{
+    ASSERT(IsTypeManager());
+    return (TypeManager*)(((uint8_t *)_value) - 1);
+}
+
+HANDLE TypeManagerHandle::AsOsModule()
+{
+    ASSERT(!IsTypeManager());
+    return (HANDLE)_value;
+}
+

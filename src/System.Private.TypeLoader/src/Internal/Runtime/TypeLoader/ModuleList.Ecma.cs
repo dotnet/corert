@@ -32,7 +32,7 @@ namespace Internal.Runtime.TypeLoader
         /// Initialize module info and construct per-module metadata reader.
         /// </summary>
         /// <param name="moduleHandle">Handle (address) of module to initialize</param>
-        internal EcmaModuleInfo(IntPtr moduleHandle, PEReader pe, MetadataReader reader)
+        internal EcmaModuleInfo(TypeManagerHandle moduleHandle, PEReader pe, MetadataReader reader)
             : base(moduleHandle, ModuleType.Ecma)
         {
             PE = pe;

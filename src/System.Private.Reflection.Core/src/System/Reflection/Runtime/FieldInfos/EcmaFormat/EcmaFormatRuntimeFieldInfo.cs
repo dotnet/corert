@@ -117,7 +117,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
 
                 string fieldTypeName;
                 if (reflectionTypeProvider.ExceptionOccurred)
-                    fieldTypeName = ToStringUtils.UnavailableType;
+                    fieldTypeName = Type.DefaultTypeNameWhenMissingMetadata;
                 else 
                     fieldTypeName = fieldType.FormatTypeName();
                     
@@ -125,7 +125,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             }
             catch
             {
-                return ToStringUtils.UnavailableType + " " + this.Name;
+                return Type.DefaultTypeNameWhenMissingMetadata + " " + this.Name;
             }
         }
 

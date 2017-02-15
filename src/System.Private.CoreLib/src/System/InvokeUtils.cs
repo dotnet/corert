@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
@@ -36,10 +37,10 @@ namespace System
         // This method is targeted by the Delegate ILTransformer.
         //    
         //
-        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType)
+        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
             EETypePtr dstEEType = dstType.ToEETypePtr();
-            return CheckArgument(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke);
+            return CheckArgument(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }
 
         // This option does nothing but decide which type of exception to throw to match the legacy behavior.
@@ -49,8 +50,11 @@ namespace System
             DynamicInvoke,       // Throws ArgumentException
         }
 
-        internal static Object CheckArgument(Object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics)
+        internal static Object CheckArgument(Object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle binderBundle)
         {
+            if (binderBundle != null)
+                throw new PlatformNotSupportedException();
+
             if (srcObject == null)
             {
                 // null -> default(T) 
@@ -221,6 +225,8 @@ namespace System
         private static int s_curIndex;
         [ThreadStatic]
         private static object s_defaultParametersContext;
+        [ThreadStatic]
+        private static BinderBundle s_binderBundle;
 
         private static object GetDefaultValue(RuntimeTypeHandle thType, int argIndex)
         {
@@ -261,6 +267,7 @@ namespace System
             IntPtr dynamicInvokeHelperGenericDictionary,
             object defaultParametersContext,
             object[] parameters,
+            BinderBundle binderBundle,
             bool invokeMethodHelperIsThisCall = true,
             bool methodToCallIsThisCall = true)
         {
@@ -273,6 +280,8 @@ namespace System
             object[] nullableCopyBackObjectsOld = s_nullableCopyBackObjects;
             int curIndexOld = s_curIndex;
             object defaultParametersContextOld = s_defaultParametersContext;
+            BinderBundle binderBundleOld = s_binderBundle;
+            s_binderBundle = binderBundle;
 
             try
             {
@@ -364,6 +373,7 @@ namespace System
                 s_nullableCopyBackObjects = nullableCopyBackObjectsOld;
                 s_curIndex = curIndexOld;
                 s_defaultParametersContext = defaultParametersContextOld;
+                s_binderBundle = binderBundleOld;
             }
         }
 
@@ -655,6 +665,8 @@ namespace System
                     {
                         if (widenAndCompareType.ToEETypePtr() != incomingParam.EETypePtr)
                         {
+                            if (s_binderBundle != null)
+                                throw new PlatformNotSupportedException();
                             throw CreateChangeTypeArgumentException(incomingParam.EETypePtr, type.ToEETypePtr());
                         }
                     }
@@ -663,7 +675,7 @@ namespace System
                         if (widenAndCompareType.ToEETypePtr().CorElementType != incomingParam.EETypePtr.CorElementType)
                         {
                             System.Diagnostics.Debug.Assert(paramType == DynamicInvokeParamType.In);
-                            incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke);
+                            incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle);
                         }
                     }
                 }
@@ -672,13 +684,13 @@ namespace System
             }
             else if (type.ToEETypePtr().IsValueType)
             {
-                incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke);
+                incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle);
                 System.Diagnostics.Debug.Assert(s_parameters[index] == null || Object.ReferenceEquals(incomingParam, s_parameters[index]));
                 return DynamicInvokeBoxedValuetypeReturn(out paramLookupType, incomingParam, index, type, paramType);
             }
             else
             {
-                incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke);
+                incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle);
                 System.Diagnostics.Debug.Assert(Object.ReferenceEquals(incomingParam, s_parameters[index]));
                 paramLookupType = DynamicInvokeParamLookupType.IndexIntoObjectArrayReturned;
                 return s_parameters;

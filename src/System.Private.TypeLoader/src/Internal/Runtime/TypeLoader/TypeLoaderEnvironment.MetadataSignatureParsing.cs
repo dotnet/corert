@@ -5,12 +5,13 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime;
 
-using global::Internal.Runtime.CompilerServices;
-using global::Internal.Metadata.NativeFormat;
-using global::Internal.NativeFormat;
-using global::Internal.Runtime.TypeLoader;
-using global::Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
+using Internal.Metadata.NativeFormat;
+using Internal.NativeFormat;
+using Internal.Runtime.TypeLoader;
+using Internal.Runtime.Augments;
 
 using System.Reflection.Runtime.General;
 
@@ -20,7 +21,7 @@ namespace Internal.Runtime.TypeLoader
 {
     internal static class SigParsing
     {
-        public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, IntPtr moduleHandle, uint offset)
+        public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, uint offset)
         {
             RuntimeTypeHandle typeHandle;
 
@@ -135,7 +136,7 @@ namespace Internal.Runtime.TypeLoader
 
             uint parameterCount = parser.GetUnsigned();
 
-            if (!CompareTypeSigWithType(ref parser, signature.ModuleHandle, _methodSignature.ReturnType))
+            if (!CompareTypeSigWithType(ref parser, new TypeManagerHandle(signature.ModuleHandle), _methodSignature.ReturnType))
             {
                 return false;
             }
@@ -148,7 +149,7 @@ namespace Internal.Runtime.TypeLoader
                     // The metadata-defined _method has more parameters than the native layout
                     return false;
                 }
-                if (!CompareTypeSigWithType(ref parser, signature.ModuleHandle, parameterSignature))
+                if (!CompareTypeSigWithType(ref parser, new TypeManagerHandle(signature.ModuleHandle), parameterSignature))
                     return false;
                 parameterIndexToMatch++;
             }
@@ -165,13 +166,13 @@ namespace Internal.Runtime.TypeLoader
         internal static NativeParser GetNativeParserForSignature(RuntimeSignature signature)
         {
             Debug.Assert(signature.IsNativeLayoutSignature);
-            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(signature.ModuleHandle);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(signature.ModuleHandle));
 
             NativeReader reader = TypeLoaderEnvironment.GetNativeReaderForBlob(module, ReflectionMapBlob.NativeLayoutInfo);
             return new NativeParser(reader, signature.NativeLayoutOffset);
         }
 
-        private bool CompareTypeSigWithType(ref NativeParser parser, IntPtr moduleHandle, Handle typeHandle)
+        private bool CompareTypeSigWithType(ref NativeParser parser, TypeManagerHandle moduleHandle, Handle typeHandle)
         {
             while (typeHandle.HandleType == HandleType.TypeSpecification)
             {

@@ -19,6 +19,7 @@
 
 using System;
 using System.Runtime;
+using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -203,19 +204,24 @@ namespace Internal.Runtime.Augments
             functionPointer = delegateObj.m_functionPointer;
         }
 
-        public static int GetLoadedModules(IntPtr[] resultArray)
+        public static int GetLoadedModules(TypeManagerHandle[] resultArray)
         {
             return (int)RuntimeImports.RhGetLoadedModules(resultArray);
         }
 
-        public static IntPtr GetModuleFromPointer(IntPtr pointerVal)
+        public static int GetLoadedOSModules(IntPtr[] resultArray)
         {
-            return RuntimeImports.RhGetModuleFromPointer(pointerVal);
+            return (int)RuntimeImports.RhGetLoadedOSModules(resultArray);
         }
 
-        public static unsafe bool FindBlob(IntPtr hOsModule, int blobId, IntPtr ppbBlob, IntPtr pcbBlob)
+        public static IntPtr GetOSModuleFromPointer(IntPtr pointerVal)
         {
-            return RuntimeImports.RhFindBlob(hOsModule, (uint)blobId, (byte**)ppbBlob, (uint*)pcbBlob);
+            return RuntimeImports.RhGetOSModuleFromPointer(pointerVal);
+        }
+
+        public static unsafe bool FindBlob(TypeManagerHandle typeManager, int blobId, IntPtr ppbBlob, IntPtr pcbBlob)
+        {
+            return RuntimeImports.RhFindBlob(typeManager, (uint)blobId, (byte**)ppbBlob, (uint*)pcbBlob);
         }
 
         public static IntPtr GetPointerFromTypeHandle(RuntimeTypeHandle typeHandle)
@@ -223,7 +229,7 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().RawValue;
         }
 
-        public static IntPtr GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
+        public static TypeManagerHandle GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
         {
             return RuntimeImports.RhGetModuleFromEEType(GetPointerFromTypeHandle(typeHandle));
         }
@@ -307,6 +313,7 @@ namespace Internal.Runtime.Augments
             IntPtr dynamicInvokeHelperGenericDictionary,
             object defaultParametersContext,
             object[] parameters,
+            BinderBundle binderBundle,
             bool invokeMethodHelperIsThisCall,
             bool methodToCallIsThisCall)
         {
@@ -318,6 +325,7 @@ namespace Internal.Runtime.Augments
                 dynamicInvokeHelperGenericDictionary,
                 defaultParametersContext,
                 parameters,
+                binderBundle,
                 invokeMethodHelperIsThisCall,
                 methodToCallIsThisCall);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
@@ -628,9 +636,9 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType)
+        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType);
+            return InvokeUtils.CheckArgument(srcObject, dstType, binderBundle);
         }
 
         public static bool IsAssignable(Object srcObject, RuntimeTypeHandle dstType)
@@ -662,7 +670,7 @@ namespace Internal.Runtime.Augments
             RuntimeTypeHandle thDummy;
             bool boolDummy;
             IntPtr ipToAnywhereInsideMergedApp = delegateToAnythingInsideMergedApp.GetFunctionPointer(out thDummy, out boolDummy);
-            IntPtr moduleBase = RuntimeImports.RhGetModuleFromPointer(ipToAnywhereInsideMergedApp);
+            IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ipToAnywhereInsideMergedApp);
             return TryGetFullPathToApplicationModule(moduleBase);
         }
 
@@ -691,7 +699,7 @@ namespace Internal.Runtime.Augments
         {
             unsafe
             {
-                IntPtr moduleBase = RuntimeImports.RhGetModuleFromPointer(ip);
+                IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
                 return (int)(ip.ToInt64() - moduleBase.ToInt64());
             }
         }

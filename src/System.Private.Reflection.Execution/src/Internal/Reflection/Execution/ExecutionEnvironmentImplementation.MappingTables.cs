@@ -74,63 +74,6 @@ namespace Internal.Reflection.Execution
             return ((IntPtr)RuntimeAugments.GetPointerFromTypeHandle(runtimeTypeHandle)) != IntPtr.Zero;
         }
 
-        internal static unsafe uint RuntimeTypeHandleToRva(ref IntPtr moduleHandle, RuntimeTypeHandle runtimeTypeHandle)
-        {
-            Debug.Assert(moduleHandle.ToPointer() < (RuntimeAugments.GetPointerFromTypeHandle(runtimeTypeHandle)).ToPointer());
-            return (uint)((byte*)(RuntimeAugments.GetPointerFromTypeHandle(runtimeTypeHandle)) - (byte*)moduleHandle);
-        }
-
-        internal static unsafe RuntimeTypeHandle RvaToRuntimeTypeHandle(IntPtr moduleHandle, uint rva)
-        {
-            if ((rva & 0x80000000) != 0)
-            {
-                return RuntimeAugments.CreateRuntimeTypeHandle(*(IntPtr*)((byte*)moduleHandle.ToPointer() + (rva & ~0x80000000)));
-            }
-            return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)((byte*)moduleHandle.ToPointer() + rva));
-        }
-
-        private static unsafe IntPtr RvaToFunctionPointer(IntPtr moduleHandle, uint rva)
-        {
-            if ((rva & DynamicInvokeMapEntry.IsImportMethodFlag) == DynamicInvokeMapEntry.IsImportMethodFlag)
-            {
-                return *((IntPtr*)((byte*)moduleHandle + (rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
-            }
-            else
-            {
-                return (IntPtr)((byte*)moduleHandle + rva);
-            }
-        }
-
-        /// <summary>
-        /// Resolve a given 32-bit integer (staticFieldRVA) representing a static field address. 
-        /// For "local" static fields residing in the module given by moduleHandle, staticFieldRVA
-        /// directly contains the RVA of the static field. For remote static fields residing in other
-        /// modules, staticFieldRVA has the highest bit set (FieldAccessFlags.RemoteStaticFieldRVA)
-        /// and it contains the RVA of a RemoteStaticFieldDescriptor structure residing in the module
-        /// given by moduleHandle that holds a pointer to the indirection cell
-        /// of the remote static field and its offset within the cell.
-        /// </summary>
-        /// <param name="moduleHandle">Reference module handle used for static field lookup</param>
-        /// <param name="staticFieldRVA">
-        /// RVA of static field for local fields; for remote fields, RVA of a RemoteStaticFieldDescriptor
-        /// structure for the field or-ed with the FieldAccessFlags.RemoteStaticFieldRVA bit
-        /// </param>
-        private static unsafe IntPtr RvaToNonGenericStaticFieldAddress(IntPtr moduleHandle, int staticFieldRVA)
-        {
-            IntPtr staticFieldAddress;
-
-            if ((staticFieldRVA & FieldAccessFlags.RemoteStaticFieldRVA) != 0)
-            {
-                RemoteStaticFieldDescriptor* descriptor = (RemoteStaticFieldDescriptor*)(moduleHandle +
-                   (staticFieldRVA & ~FieldAccessFlags.RemoteStaticFieldRVA));
-                staticFieldAddress = *descriptor->IndirectionCell + descriptor->Offset;
-            }
-            else
-                staticFieldAddress = (IntPtr)(moduleHandle + staticFieldRVA);
-
-            return staticFieldAddress;
-        }
-
         private static unsafe NativeReader GetNativeReaderForBlob(NativeFormatModuleInfo module, ReflectionMapBlob blob)
         {
             NativeReader reader;
@@ -520,7 +463,7 @@ namespace Internal.Reflection.Execution
                 Debug.Assert(success);
 
                 // All methods referred from this blob are contained in the same type. The first UINT in the blob is the RVA of that EEType
-                RuntimeTypeHandle declaringTypeHandle = RvaToRuntimeTypeHandle(module.Handle, pBlob[0]);
+                RuntimeTypeHandle declaringTypeHandle = TypeLoaderEnvironment.RvaToRuntimeTypeHandle(module.Handle, pBlob[0]);
 
                 // The index points to two entries: the token of the dynamic invoke method and the function pointer to the canonical method
                 // Now have the type loader build or locate a dictionary for this method
@@ -534,7 +477,7 @@ namespace Internal.Reflection.Execution
                 success = TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(declaringTypeHandle, argHandles, nameAndSignature, out dynamicInvokeMethodGenericDictionary);
                 Debug.Assert(success);
 
-                dynamicInvokeMethod = RvaToFunctionPointer(module.Handle, pBlob[index + 1]);
+                dynamicInvokeMethod = TypeLoaderEnvironment.RvaToFunctionPointer(module.Handle, pBlob[index + 1]);
             }
             else
             {
@@ -1161,7 +1104,7 @@ namespace Internal.Reflection.Execution
                         else
                         {
                             Debug.Assert((fieldAccessMetadata.Flags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
-                            fieldAddress = RvaToNonGenericStaticFieldAddress(
+                            fieldAddress = TypeLoaderEnvironment.RvaToNonGenericStaticFieldAddress(
                                 fieldAccessMetadata.MappingTableModule, fieldAccessMetadata.Offset);
                         }
 

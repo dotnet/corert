@@ -47,11 +47,15 @@ namespace System.Runtime
 
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhGetModuleSection(IntPtr module, ReadyToRunSectionType section, out int length);
+        internal static extern IntPtr RhGetModuleSection(TypeManagerHandle module, ReadyToRunSectionType section, out int length);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCreateTypeManager")]
-        internal static extern unsafe IntPtr RhpCreateTypeManager(IntPtr moduleHeader);
+        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterOsModule")]
+        internal static extern unsafe IntPtr RhpRegisterOsModule(IntPtr osModule);
 
         //
         // calls to runtime for allocation

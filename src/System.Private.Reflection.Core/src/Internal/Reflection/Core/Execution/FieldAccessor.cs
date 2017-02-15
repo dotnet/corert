@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection;
 using System.Collections.Generic;
 
 namespace Internal.Reflection.Core.Execution
@@ -14,6 +15,6 @@ namespace Internal.Reflection.Core.Execution
     {
         protected FieldAccessor() { }
         public abstract Object GetField(Object obj);
-        public abstract void SetField(Object obj, Object value);
+        public abstract void SetField(Object obj, Object value, BinderBundle binderBundle);
     }
 }

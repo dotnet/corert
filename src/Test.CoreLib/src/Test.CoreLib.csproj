@@ -160,9 +160,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Nullable.cs">
       <Link>System\Nullable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Object.cs">
-      <Link>System\Object.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\ParamArrayAttribute.cs">
       <Link>System\ParamArrayAttribute.cs</Link>
     </Compile>
@@ -252,6 +249,10 @@
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
+    <Compile Include="System\Object.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup>

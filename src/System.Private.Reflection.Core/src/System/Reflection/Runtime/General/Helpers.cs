@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
@@ -168,13 +169,6 @@ namespace System.Reflection.Runtime.General
 
         private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureNotCustomBinder(this Binder binder)
-        {
-            if (!(binder == null || binder is DefaultBinder))
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CustomBinder);
-        }
-
         public static RuntimeMethodInfo GetInvokeMethod(this RuntimeTypeInfo delegateType)
         {
             Debug.Assert(delegateType.IsDelegate);
@@ -191,6 +185,13 @@ namespace System.Reflection.Runtime.General
                 throw new MissingMetadataException(SR.Format(SR.Arg_InvokeMethodMissingMetadata, fullName)); // No invoke method found.
             }
             return (RuntimeMethodInfo)invokeMethod;
+        }
+
+        public static BinderBundle ToBinderBundle(this Binder binder, BindingFlags invokeAttr, CultureInfo cultureInfo)
+        {
+            if (binder == null || binder is DefaultBinder || ((invokeAttr & BindingFlags.ExactBinding) != 0))
+                return null;
+            return new BinderBundle(binder, cultureInfo);
         }
     }
 }

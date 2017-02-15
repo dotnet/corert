@@ -69,6 +69,12 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
       <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.RVA.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.RVA.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupDebug.cs">
       <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupDebug.cs</Link>
     </Compile>
@@ -151,6 +157,7 @@
     <Compile Include="System\Reflection\AssemblyContentType.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
     <Compile Include="System\Reflection\Binder.cs" />
+    <Compile Include="System\Reflection\BinderBundle.cs" />
     <Compile Include="System\Reflection\BindingFlags.cs" />
     <Compile Include="System\Reflection\CallingConventions.cs" />
     <Compile Include="System\Reflection\ConstructorInfo.cs" />

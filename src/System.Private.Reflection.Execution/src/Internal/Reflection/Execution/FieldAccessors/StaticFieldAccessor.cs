@@ -37,16 +37,16 @@ namespace Internal.Reflection.Execution.FieldAccessors
             return GetFieldBypassCctor(obj);
         }
 
-        public sealed override void SetField(Object obj, Object value)
+        public sealed override void SetField(Object obj, Object value, BinderBundle binderBundle)
         {
             if (_cctorContext != IntPtr.Zero)
             {
                 RuntimeAugments.EnsureClassConstructorRun(_cctorContext);
             }
-            SetFieldBypassCctor(obj, value);
+            SetFieldBypassCctor(obj, value, binderBundle);
         }
 
         protected abstract Object GetFieldBypassCctor(Object obj);
-        protected abstract void SetFieldBypassCctor(Object obj, Object value);
+        protected abstract void SetFieldBypassCctor(Object obj, Object value, BinderBundle binderBundle);
     }
 }

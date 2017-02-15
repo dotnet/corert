@@ -429,11 +429,44 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
     return true;
 }
 
-COOP_PINVOKE_HELPER(void*, RhpCreateTypeManager, (void* pModuleHeader))
+COOP_PINVOKE_HELPER(TypeManagerHandle, RhpCreateTypeManager, (HANDLE osModule, void* pModuleHeader))
 {
-    TypeManager * typeManager = TypeManager::Create(pModuleHeader);
+    TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader);
     GetRuntimeInstance()->RegisterTypeManager(typeManager);
-    return typeManager;
+    return TypeManagerHandle::Create(typeManager);
+}
+
+COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
+{
+    RuntimeInstance::OsModuleEntry * pEntry = new (nothrow) RuntimeInstance::OsModuleEntry();
+    if (NULL == pEntry)
+        return nullptr; // Return null on failure.
+
+    pEntry->m_osModule = hOsModule;
+
+    {
+        RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
+        ReaderWriterLock::WriteHolder write(&pRuntimeInstance->GetTypeManagerLock());
+
+        pRuntimeInstance->GetOsModuleList().PushHead(pEntry);
+    }
+
+    return hOsModule; // Return non-null on success
+}
+
+RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList() 
+{
+    return m_TypeManagerList;
+}
+
+RuntimeInstance::OsModuleList& RuntimeInstance::GetOsModuleList() 
+{
+    return m_OsModuleList;
+}
+
+ReaderWriterLock& RuntimeInstance::GetTypeManagerLock() 
+{
+    return m_ModuleListLock;
 }
 
 // static 

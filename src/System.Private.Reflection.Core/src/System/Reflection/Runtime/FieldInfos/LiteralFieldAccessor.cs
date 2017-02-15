@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.FieldInfos
             return _value;
         }
 
-        public sealed override void SetField(Object obj, Object value)
+        public sealed override void SetField(Object obj, Object value, BinderBundle binderBundle)
         {
             throw new FieldAccessException(SR.Acc_ReadOnly);
         }
