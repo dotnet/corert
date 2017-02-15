@@ -323,6 +323,30 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Internal help for dynamic boxing
+        /// This method is only works for native type name
+        /// </summary>
+        /// <param name="typeName">native type name</param>
+        /// <returns>valid type if found; or null</returns>
+        internal static Type GetTypeByName(string typeName)
+        {
+            //
+            // Well-known types
+            //
+            for (int i = 0; i < s_wellKnownTypeNames.Length; i++)
+            {
+                if (s_wellKnownTypeNames[i] == typeName)
+                {
+                    return s_wellKnownTypes[i];
+                }
+            }
+
+            // user imported type
+            bool isWinRT;
+            return McgModuleManager.GetTypeFromName(typeName, out isWinRT);
+        }
+
         internal static unsafe Type TypeNameToType(HSTRING nativeTypeName, int nativeTypeKind)
         {
             string name = McgMarshal.HStringToString(nativeTypeName);

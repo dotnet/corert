@@ -1790,6 +1790,18 @@ namespace System.Runtime.InteropServices
                     if (ret != null)
                         return ret;
                 }
+#if ENABLE_WINRT
+                else if(McgModuleManager.UseDynamicInterop)
+                {
+                    BoxingInterfaceKind boxingInterfaceKind;
+                    RuntimeTypeHandle genericTypeArgument;
+                    if (DynamicInteropBoxingHelpers.TryGetBoxingArgumentTypeHandleFromString(className, out boxingInterfaceKind, out genericTypeArgument))
+                    {
+                        Debug.Assert(target is __ComObject);
+                        return DynamicInteropBoxingHelpers.Unboxing(boxingInterfaceKind, genericTypeArgument, target);
+                    }
+                }
+#endif
             }
             return null;
         }
