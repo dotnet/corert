@@ -10,22 +10,22 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class RuntimeMethodHandleNode : ObjectNode, ISymbolNode
+    class RuntimeFieldHandleNode : ObjectNode, ISymbolNode
     {
-        private MethodDesc _targetMethod;
+        private FieldDesc _targetField;
 
-        public RuntimeMethodHandleNode(MethodDesc targetMethod)
+        public RuntimeFieldHandleNode(FieldDesc targetField)
         {
-            Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
-            Debug.Assert(!targetMethod.IsRuntimeDeterminedExactMethod);
-            _targetMethod = targetMethod;
+            Debug.Assert(!targetField.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any));
+            Debug.Assert(!targetField.OwningType.IsRuntimeDeterminedSubtype);
+            _targetField = targetField;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
-              .Append("__RuntimeMethodHandle_")
-              .Append(NodeFactory.NameMangler.GetMangledMethodName(_targetMethod));
+              .Append("__RuntimeFieldHandle_")
+              .Append(NodeFactory.NameMangler.GetMangledFieldName(_targetField));
         }
         public int Offset => 0;
         protected override string GetName() => this.GetMangledName();
@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            NativeLayoutMethodLdTokenVertexNode ldtokenSigNode = factory.NativeLayout.MethodLdTokenVertex(_targetMethod);
+            NativeLayoutFieldLdTokenVertexNode ldtokenSigNode = factory.NativeLayout.FieldLdTokenVertex(_targetField);
             objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode));
 
             return objData.ToObjectData();

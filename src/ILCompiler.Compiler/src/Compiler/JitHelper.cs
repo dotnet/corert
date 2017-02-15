@@ -102,8 +102,8 @@ namespace ILCompiler
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeMethodHandle");
                     break;
-                case ReadyToRunHelper.GetRuntimeFieldHandle: // TODO: Reflection
-                    mangledName = "__fail_fast";
+                case ReadyToRunHelper.GetRuntimeFieldHandle:
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:

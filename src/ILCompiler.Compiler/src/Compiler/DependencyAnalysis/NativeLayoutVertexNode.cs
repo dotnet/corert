@@ -226,6 +226,37 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    internal sealed class NativeLayoutFieldLdTokenVertexNode : NativeLayoutSavedVertexNode
+    {
+        private readonly FieldDesc _field;
+        private readonly NativeLayoutTypeSignatureVertexNode _containingTypeSig;
+
+        public NativeLayoutFieldLdTokenVertexNode(NodeFactory factory, FieldDesc field)
+        {
+            _field = field;
+            _containingTypeSig = factory.NativeLayout.TypeSignatureVertex(field.OwningType);
+        }
+
+        protected override string GetName() => "NativeLayoutFieldLdTokenVertexNode_" + NodeFactory.NameMangler.GetMangledFieldName(_field);
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            return new DependencyListEntry[]
+            {
+                new DependencyListEntry(_containingTypeSig, "NativeLayoutFieldLdTokenVertexNode containing type signature"),
+            };
+        }
+
+        public override Vertex WriteVertex(NodeFactory factory)
+        {
+            Vertex containingType = _containingTypeSig.WriteVertex(factory);
+
+            Vertex unplacedVertex = GetNativeWriter(factory).GetFieldSignature(containingType, _field.Name);
+
+            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.LdTokenInfoSection.Place(unplacedVertex));
+        }
+    }
+
     internal sealed class NativeLayoutMethodSignatureVertexNode : NativeLayoutVertexNode
     {
         private MethodDesc _method;
