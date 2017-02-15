@@ -732,13 +732,11 @@ class Program
 
         class GenBase<A> : IFoo<string>, IFoo<int>
         {
-            public virtual string VMethod1() { return "GenBase<" + typeof(A) + ">.VMethod1()"; }
             public virtual string GMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
             public virtual string IMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
         }
         class GenDerived<A> : GenBase<A>, IFoo<string>, IFoo<int>
         {
-            public override string VMethod1() { return "GenBase<" + typeof(A) + ">.VMethod1()"; }
             public override string GMethod1<T>(T t1, T t2) { return "GenDerived<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
             string IFoo<string>.IMethod1<T>(T t1, T t2) { return "GenDerived<" + typeof(A) + ">.IFoo<string>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
         }
@@ -818,9 +816,6 @@ class Program
             IFoo<int> ifoo3 = o as IFoo<int>;
             res = ifoo3.IMethod1<int>(7, 8);
             WriteLineWithVerification(res, s_IFooInt);
-
-            res = b.VMethod1();
-            Console.WriteLine(res);
         }
 
         private static void WriteLineWithVerification(string actual, string expected)
@@ -919,7 +914,7 @@ class Program
                 Console.WriteLine("====================");
             }
 
-            if (s_NumErrors == 0)
+            if (s_NumErrors != 0)
                 throw new Exception();
         }
     }
