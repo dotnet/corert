@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.1",
-    "System.IO.MemoryMappedFiles": "4.3.0",
-    "System.Reflection.Metadata": "1.4.2",
+    "NETStandard.Library": "1.6.0",
+    "System.IO.MemoryMappedFiles": "4.0.0",
+    "System.Reflection.Metadata": "1.4.1-beta-24227-04",
     "Microsoft.DiaSymReader": "1.0.8"
   },
   "frameworks": {
