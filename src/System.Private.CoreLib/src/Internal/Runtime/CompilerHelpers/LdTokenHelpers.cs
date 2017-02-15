@@ -20,7 +20,14 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static unsafe RuntimeMethodHandle GetRuntimeMethodHandle(IntPtr pHandleSignature)
         {
-            RuntimeMethodHandle returnValue = default(RuntimeMethodHandle);
+            RuntimeMethodHandle returnValue;
+            *(IntPtr*)&returnValue = pHandleSignature;
+            return returnValue;
+        }
+
+        private static unsafe RuntimeFieldHandle GetRuntimeFieldHandle(IntPtr pHandleSignature)
+        {
+            RuntimeFieldHandle returnValue;
             *(IntPtr*)&returnValue = pHandleSignature;
             return returnValue;
         }

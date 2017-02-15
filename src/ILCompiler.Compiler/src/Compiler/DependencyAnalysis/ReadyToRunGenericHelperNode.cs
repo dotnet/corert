@@ -34,6 +34,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.Type((TypeDesc)target);
                 case ReadyToRunHelperId.MethodHandle:
                     return factory.GenericLookup.MethodHandle((MethodDesc)target);
+                case ReadyToRunHelperId.FieldHandle:
+                    return factory.GenericLookup.FieldHandle((FieldDesc)target);
                 case ReadyToRunHelperId.GetGCStaticBase:
                     return factory.GenericLookup.TypeGCStaticBase((TypeDesc)target);
                 case ReadyToRunHelperId.GetNonGCStaticBase:

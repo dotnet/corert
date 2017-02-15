@@ -89,6 +89,34 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// Generic lookup result that points to a RuntimeFieldHandle.
+    /// </summary>
+    internal sealed class FieldHandleGenericLookupResult : GenericLookupResult
+    {
+        private FieldDesc _field;
+
+        public FieldHandleGenericLookupResult(FieldDesc field)
+        {
+            Debug.Assert(field.OwningType.IsRuntimeDeterminedSubtype, "Concrete field in a generic dictionary?");
+            _field = field;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            FieldDesc instantiatedField = _field.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.RuntimeFieldHandle(instantiatedField);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("FieldHandle_");
+            sb.Append(nameMangler.GetMangledFieldName(_field));
+        }
+
+        public override string ToString() => $"FieldHandle: {_field}";
+    }
+
+    /// <summary>
     /// Generic lookup result that points to a method dictionary.
     /// </summary>
     internal sealed class MethodDictionaryGenericLookupResult : GenericLookupResult
