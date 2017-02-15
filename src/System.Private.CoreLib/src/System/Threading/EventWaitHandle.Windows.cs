@@ -27,7 +27,7 @@ namespace System.Threading
 
         private void CreateEventCore(bool initialState, EventResetMode mode, string name, out bool createdNew)
         {
-            Debug.Assert(Enum.IsDefined(typeof(EventResetMode), mode));
+            Debug.Assert((mode == EventResetMode.AutoReset) || (mode == EventResetMode.ManualReset));
             Debug.Assert(name == null || name.Length <= (int)Interop.Constants.MaxPath);
 
             uint eventFlags = initialState ? (uint)Interop.Constants.CreateEventInitialSet : 0;
