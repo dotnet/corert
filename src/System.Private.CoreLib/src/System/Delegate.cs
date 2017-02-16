@@ -315,14 +315,6 @@ namespace System
         [DebuggerGuidedStepThroughAttribute]
         protected virtual object DynamicInvokeImpl(object[] args)
         {
-            object result = DynamicInvoke(args);
-            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            return result;
-        }
-
-        [DebuggerGuidedStepThroughAttribute]
-        public object DynamicInvoke(params object[] args)
-        {
             if (IsDynamicDelegate())
             {
                 // DynamicDelegate case
@@ -337,6 +329,14 @@ namespace System
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
+        }
+
+        [DebuggerGuidedStepThroughAttribute]
+        public object DynamicInvoke(params object[] args)
+        {
+            object result = DynamicInvokeImpl(args);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public static unsafe Delegate Combine(Delegate a, Delegate b)
