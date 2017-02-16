@@ -40,7 +40,7 @@ namespace System
         public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
             EETypePtr dstEEType = dstType.ToEETypePtr();
-            return CheckArgument(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, binderBundle);
+            return CheckArgument(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, binderBundle, getExactTypeForCustomBinder: null);
         }
 
         // This option does nothing but decide which type of exception to throw to match the legacy behavior.
@@ -50,11 +50,8 @@ namespace System
             DynamicInvoke,       // Throws ArgumentException
         }
 
-        internal static Object CheckArgument(Object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle binderBundle)
+        internal static Object CheckArgument(Object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle binderBundle, Func<Type> getExactTypeForCustomBinder = null)
         {
-            if (binderBundle != null)
-                throw new PlatformNotSupportedException();
-
             if (srcObject == null)
             {
                 // null -> default(T) 
@@ -80,92 +77,136 @@ namespace System
                         return srcObject;
                 }
 
-                if (!((srcEEType.IsEnum || srcEEType.IsPrimitive) && (dstEEType.IsEnum || dstEEType.IsPrimitive)))
-                    throw CreateChangeTypeException(srcEEType, dstEEType, semantics);
+                object dstObject;
+                Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, srcEEType, dstEEType, semantics, out dstObject);
+                if (exception == null)
+                    return dstObject;
 
-                RuntimeImports.RhCorElementType dstCorElementType = dstEEType.CorElementType;
-                if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
-                    throw CreateChangeTypeArgumentException(srcEEType, dstEEType);
+                if (binderBundle == null)
+                    throw exception;
 
-                Object dstObject;
-                switch (dstCorElementType)
+                // Our normal coercion rules could not convert the passed in argument but we were supplied a custom binder. See if it can do it.
+                Type exactDstType;
+                if (getExactTypeForCustomBinder == null)
                 {
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                        dstObject = Convert.ToBoolean(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                        dstObject = Convert.ToChar(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                        dstObject = Convert.ToSByte(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                        dstObject = Convert.ToInt16(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                        dstObject = Convert.ToInt32(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                        dstObject = Convert.ToInt64(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                        dstObject = Convert.ToByte(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                        dstObject = Convert.ToUInt16(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                        dstObject = Convert.ToUInt32(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                        dstObject = Convert.ToUInt64(srcObject);
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
-                        if (srcEEType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR)
-                        {
-                            dstObject = (float)(char)srcObject;
-                        }
-                        else
-                        {
-                            dstObject = Convert.ToSingle(srcObject);
-                        }
-                        break;
-
-                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
-                        if (srcEEType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR)
-                        {
-                            dstObject = (double)(char)srcObject;
-                        }
-                        else
-                        {
-                            dstObject = Convert.ToDouble(srcObject);
-                        }
-                        break;
-
-                    default:
-                        Debug.Assert(false, "Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
-                        throw CreateChangeTypeException(srcEEType, dstEEType, semantics);
+                    // We were called by someone other than DynamicInvokeParamHelperCore(). Those callers pass the correct dstEEType.
+                    exactDstType = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType));
+                }
+                else
+                {
+                    // We were called by DynamicInvokeParamHelperCore(). He passes a dstEEType that enums folded to int and possibly other adjustments. A custom binder
+                    // is app code however and needs the exact type.
+                    exactDstType = getExactTypeForCustomBinder();
                 }
 
-                if (dstEEType.IsEnum)
-                {
-                    Type dstType = ReflectionCoreNonPortable.GetRuntimeTypeForEEType(dstEEType);
-                    dstObject = Enum.ToObject(dstType, dstObject);
-                }
+                srcObject = binderBundle.ChangeType(srcObject, exactDstType);
 
-                Debug.Assert(dstObject.EETypePtr == dstEEType);
+                // For compat with desktop, the result of the binder call gets processed through the default rules again.
+                dstObject = CheckArgument(srcObject, dstEEType, semantics, binderBundle: null, getExactTypeForCustomBinder: null);
                 return dstObject;
             }
+        }
+
+        // Special coersion rules for primitives, enums and pointer.
+        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstObject)
+        {
+            if (!((srcEEType.IsEnum || srcEEType.IsPrimitive) && (dstEEType.IsEnum || dstEEType.IsPrimitive || dstEEType.IsPointer)))
+            {
+                dstObject = null;
+                return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+            }
+
+            if (dstEEType.IsPointer)
+            {
+                dstObject = null;
+                return new NotImplementedException(); //TODO: https://github.com/dotnet/corert/issues/2113
+            }
+
+            RuntimeImports.RhCorElementType dstCorElementType = dstEEType.CorElementType;
+            if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
+            {
+                dstObject = null;
+                return CreateChangeTypeArgumentException(srcEEType, dstEEType);
+            }
+
+            switch (dstCorElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    dstObject = Convert.ToBoolean(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    dstObject = Convert.ToChar(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    dstObject = Convert.ToSByte(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    dstObject = Convert.ToInt16(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    dstObject = Convert.ToInt32(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    dstObject = Convert.ToInt64(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    dstObject = Convert.ToByte(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    dstObject = Convert.ToUInt16(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    dstObject = Convert.ToUInt32(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    dstObject = Convert.ToUInt64(srcObject);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                    if (srcEEType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR)
+                    {
+                        dstObject = (float)(char)srcObject;
+                    }
+                    else
+                    {
+                        dstObject = Convert.ToSingle(srcObject);
+                    }
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                    if (srcEEType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR)
+                    {
+                        dstObject = (double)(char)srcObject;
+                    }
+                    else
+                    {
+                        dstObject = Convert.ToDouble(srcObject);
+                    }
+                    break;
+
+                default:
+                    Debug.Assert(false, "Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
+                    dstObject = null;
+                    return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+            }
+
+            if (dstEEType.IsEnum)
+            {
+                Type dstType = ReflectionCoreNonPortable.GetRuntimeTypeForEEType(dstEEType);
+                dstObject = Enum.ToObject(dstType, dstObject);
+            }
+
+            Debug.Assert(dstObject.EETypePtr == dstEEType);
+            return null;
         }
 
         private static Exception CreateChangeTypeException(EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics)
@@ -224,28 +265,30 @@ namespace System
         [ThreadStatic]
         private static int s_curIndex;
         [ThreadStatic]
-        private static object s_defaultParametersContext;
+        private static object s_targetMethodOrDelegate;
         [ThreadStatic]
         private static BinderBundle s_binderBundle;
+        [ThreadStatic]
+        private static object[] s_customBinderProvidedParameters;
 
         private static object GetDefaultValue(RuntimeTypeHandle thType, int argIndex)
         {
-            object defaultParametersContext = s_defaultParametersContext;
-            if (defaultParametersContext == null)
+            object targetMethodOrDelegate = s_targetMethodOrDelegate;
+            if (targetMethodOrDelegate == null)
             {
                 throw new ArgumentException(SR.Arg_DefaultValueMissingException);
             }
 
             object defaultValue;
             bool hasDefaultValue;
-            Delegate delegateInstance = defaultParametersContext as Delegate;
+            Delegate delegateInstance = targetMethodOrDelegate as Delegate;
             if (delegateInstance != null)
             {
                 hasDefaultValue = delegateInstance.TryGetDefaultParameterValue(thType, argIndex, out defaultValue);
             }
             else
             {
-                hasDefaultValue = RuntimeAugments.Callbacks.TryGetDefaultParameterValue(defaultParametersContext, thType, argIndex, out defaultValue);
+                hasDefaultValue = RuntimeAugments.Callbacks.TryGetDefaultParameterValue(targetMethodOrDelegate, thType, argIndex, out defaultValue);
             }
 
             if (!hasDefaultValue)
@@ -258,6 +301,19 @@ namespace System
             return defaultValue;
         }
 
+        // This is only called if we have to invoke a custom binder to coerce a parameter type. It leverages s_targetMethodOrDelegate to retrieve
+        // the unaltered parameter type to pass to the binder. 
+        private static Type GetExactTypeForCustomBinder()
+        {
+            Debug.Assert(s_binderBundle != null && s_targetMethodOrDelegate is MethodBase);
+            MethodBase method = (MethodBase)s_targetMethodOrDelegate;
+
+            // DynamicInvokeParamHelperCore() increments s_curIndex before calling us - that's why we have to subtract 1.
+            return method.GetParametersNoCopy()[s_curIndex - 1].ParameterType;
+        }
+
+        private static readonly Func<Type> s_getExactTypeForCustomBinder = GetExactTypeForCustomBinder;
+
         [DebuggerGuidedStepThroughAttribute]
         internal static object CallDynamicInvokeMethod(
             object thisPtr,
@@ -265,12 +321,17 @@ namespace System
             object thisPtrDynamicInvokeMethod,
             IntPtr dynamicInvokeHelperMethod,
             IntPtr dynamicInvokeHelperGenericDictionary,
-            object defaultParametersContext,
+            object targetMethodOrDelegate,
             object[] parameters,
             BinderBundle binderBundle,
             bool invokeMethodHelperIsThisCall = true,
             bool methodToCallIsThisCall = true)
         {
+            // This assert is needed because we've double-purposed "targetMethodOrDelegate" (which is actually a MethodBase anytime a custom binder is used)
+            // as a way of obtaining the true parameter type which we need to pass to Binder.ChangeType(). (The type normally passed to DynamicInvokeParamHelperCore
+            // isn't always the exact type (byref stripped off, enums converted to int, etc.)
+            Debug.Assert(!(binderBundle != null && !(targetMethodOrDelegate is MethodBase)), "The only callers that can pass a custom binder are those servicing MethodBase.Invoke() apis.");
+
             bool fDontWrapInTargetInvocationException = false;
             bool parametersNeedCopyBack = false;
             ArgSetupState argSetupState = default(ArgSetupState);
@@ -279,9 +340,11 @@ namespace System
             object[] parametersOld = s_parameters;
             object[] nullableCopyBackObjectsOld = s_nullableCopyBackObjects;
             int curIndexOld = s_curIndex;
-            object defaultParametersContextOld = s_defaultParametersContext;
+            object targetMethodOrDelegateOld = s_targetMethodOrDelegate;
             BinderBundle binderBundleOld = s_binderBundle;
             s_binderBundle = binderBundle;
+            object[] customBinderProvidedParametersOld = s_customBinderProvidedParameters;
+            s_customBinderProvidedParameters = null;
 
             try
             {
@@ -300,7 +363,7 @@ namespace System
 
                 s_nullableCopyBackObjects = null;
                 s_curIndex = 0;
-                s_defaultParametersContext = defaultParametersContext;
+                s_targetMethodOrDelegate = targetMethodOrDelegate;
 
                 try
                 {
@@ -372,8 +435,9 @@ namespace System
                 s_parameters = parametersOld;
                 s_nullableCopyBackObjects = nullableCopyBackObjectsOld;
                 s_curIndex = curIndexOld;
-                s_defaultParametersContext = defaultParametersContextOld;
+                s_targetMethodOrDelegate = targetMethodOrDelegateOld;
                 s_binderBundle = binderBundleOld;
+                s_customBinderProvidedParameters = customBinderProvidedParametersOld;
             }
         }
 
@@ -661,13 +725,16 @@ namespace System
                 // Nullable requires exact matching
                 if (incomingParam != null)
                 {
-                    if ((nullable || paramType == DynamicInvokeParamType.Ref) && incomingParam != null)
+                    if (nullable || paramType == DynamicInvokeParamType.Ref)
                     {
                         if (widenAndCompareType.ToEETypePtr() != incomingParam.EETypePtr)
                         {
-                            if (s_binderBundle != null)
-                                throw new PlatformNotSupportedException();
-                            throw CreateChangeTypeArgumentException(incomingParam.EETypePtr, type.ToEETypePtr());
+                            if (s_binderBundle == null)
+                                throw CreateChangeTypeArgumentException(incomingParam.EETypePtr, type.ToEETypePtr());
+                            Type exactDstType = GetExactTypeForCustomBinder();
+                            incomingParam = s_binderBundle.ChangeType(incomingParam, exactDstType);
+                            if (incomingParam != null && widenAndCompareType.ToEETypePtr() != incomingParam.EETypePtr)
+                                throw CreateChangeTypeArgumentException(incomingParam.EETypePtr, type.ToEETypePtr());
                         }
                     }
                     else
@@ -675,7 +742,7 @@ namespace System
                         if (widenAndCompareType.ToEETypePtr().CorElementType != incomingParam.EETypePtr.CorElementType)
                         {
                             System.Diagnostics.Debug.Assert(paramType == DynamicInvokeParamType.In);
-                            incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle);
+                            incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle, s_getExactTypeForCustomBinder);
                         }
                     }
                 }
@@ -684,16 +751,50 @@ namespace System
             }
             else if (type.ToEETypePtr().IsValueType)
             {
-                incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle);
-                System.Diagnostics.Debug.Assert(s_parameters[index] == null || Object.ReferenceEquals(incomingParam, s_parameters[index]));
+                incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle, s_getExactTypeForCustomBinder);
+                if (s_binderBundle == null)
+                {
+                    System.Diagnostics.Debug.Assert(s_parameters[index] == null || Object.ReferenceEquals(incomingParam, s_parameters[index]));
+                }
                 return DynamicInvokeBoxedValuetypeReturn(out paramLookupType, incomingParam, index, type, paramType);
             }
             else
             {
-                incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle);
-                System.Diagnostics.Debug.Assert(Object.ReferenceEquals(incomingParam, s_parameters[index]));
+                incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle, s_getExactTypeForCustomBinder);
                 paramLookupType = DynamicInvokeParamLookupType.IndexIntoObjectArrayReturned;
-                return s_parameters;
+                if (s_binderBundle == null)
+                {
+                    System.Diagnostics.Debug.Assert(Object.ReferenceEquals(incomingParam, s_parameters[index]));
+                    return s_parameters;
+                }
+                else
+                {
+                    if (object.ReferenceEquals(incomingParam, s_parameters[index]))
+                    {
+                        return s_parameters;
+                    }
+                    else
+                    {
+                        // If we got here, the original argument object was superceded by invoking the custom binder.
+
+                        if (paramType == DynamicInvokeParamType.Ref)
+                        {
+                            s_parameters[index] = incomingParam;
+                            return s_parameters;
+                        }
+                        else
+                        {
+                            // Since this not a by-ref parameter, we don't want to bash the original user-owned argument array but the rules of DynamicInvokeParamHelperCore() require
+                            // that we return non-value types as the "index"th element in an array. Thus, create an on-demand throwaway array just for this purpose.
+                            if (s_customBinderProvidedParameters == null)
+                            {
+                                s_customBinderProvidedParameters = new object[s_parameters.Length];
+                            }
+                            s_customBinderProvidedParameters[index] = incomingParam;
+                            return s_customBinderProvidedParameters;
+                        }
+                    }
+                }
             }
         }
     }
