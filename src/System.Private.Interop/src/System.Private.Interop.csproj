@@ -11,27 +11,23 @@
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-
   <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>    
+    </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Debug.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Threading.Tasks.dll" />    
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Threading.Tasks.dll" />
   </ItemGroup>
- 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
-
   <!-- TODO  We should not include anything from CompilerServices directly -->
   <ItemGroup>
     <Compile Include="TypeForwarders.cs" />
@@ -39,23 +35,21 @@
     <Compile Include="System\Runtime\CompilerServices\McgResource.cs" />
     <Compile Include="System\Runtime\CompilerServices\ModuleConstructorAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IgnoresAccessChecksToAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\FunctionPointerHelpers.cs" />    
+    <Compile Include="System\Runtime\CompilerServices\FunctionPointerHelpers.cs" />
   </ItemGroup>
-
   <ItemGroup>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs" >
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Internal\NativeFormat\NativeFormatReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs" >
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
       <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs" >
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs">
       <Link>Internal\NativeFormat\NativeFormatReader.String.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs">
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
-
     <Compile Include="Shared\__ComObject.cs" />
     <Compile Include="Shared\ComCallableObject.cs" />
     <Compile Include="Shared\ComException.cs" />
@@ -88,11 +82,11 @@
     <Compile Include="Shared\McgRedirectedTypeAttribute.cs" />
     <Compile Include="Shared\McgRemovedType.cs" />
     <Compile Include="Shared\McgRootsTypeAttribute.cs" />
-    <Compile Include="Shared\McgTypeHelpers.cs" />    
+    <Compile Include="Shared\McgTypeHelpers.cs" />
     <Compile Include="Shared\RCWWalker.cs" />
     <Compile Include="Shared\StandardInterfaces.cs" />
-    <Compile Include="Shared\StringPool.cs" /> 
-    <Compile Include="Shared\McgWindowsRuntimeVersionAttribute.cs" />    
+    <Compile Include="Shared\StringPool.cs" />
+    <Compile Include="Shared\McgWindowsRuntimeVersionAttribute.cs" />
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Shared\WindowsRuntimeMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -101,7 +95,7 @@
     <Compile Include="System\Runtime\InteropServices\BStrWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceType.cs" />
-    <Compile Include="System\Runtime\InteropServices\CoClassAttribute.cs" />    
+    <Compile Include="System\Runtime\InteropServices\CoClassAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComDefaultInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.cs" />
@@ -109,7 +103,6 @@
     <Compile Include="System\Runtime\InteropServices\ComInterfaceType.cs" />
     <Compile Include="System\Runtime\InteropServices\ComMemberType.cs" />
     <Compile Include="System\Runtime\InteropServices\ComSourceInterfacesAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\CurrencyWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\CustomQueryInterfaceMode.cs" />
     <Compile Include="System\Runtime\InteropServices\CustomQueryInterfaceResult.cs" />
@@ -120,7 +113,7 @@
     <Compile Include="System\Runtime\InteropServices\DllImportSearchPath.cs" />
     <Compile Include="System\Runtime\InteropServices\ErrorWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropEventProvider.cs" />
-    <Compile Include="System\Runtime\InteropServices\GuidAttribute.cs" />    
+    <Compile Include="System\Runtime\InteropServices\GuidAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomAdapter.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomQueryInterface.cs" />
@@ -150,7 +143,6 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Interop\Interop.Memory.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\bindopts.cs" />
@@ -193,7 +185,7 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\libflags.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\paramdesc.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\paramflag.cs" />  
+    <Compile Include="System\Runtime\InteropServices\ComTypes\paramflag.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\statdata.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\statstg.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
@@ -206,14 +198,11 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\typelibattr.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\vardesc.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varflags.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\varkind.cs" />       
-        
+    <Compile Include="System\Runtime\InteropServices\ComTypes\varkind.cs" />
   </ItemGroup>
-
   <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
   -->
-
   <ItemGroup>
     <Compile Include="Interop\Interop.String.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" />
@@ -221,33 +210,29 @@
     <Compile Include="Interop\Interop.Localization.Windows.cs" />
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
     <Compile Include="Interop\Interop.COM.Windows.cs" />
-    <Compile Include="Interop\Interop.Common.Windows.cs" /> 
+    <Compile Include="Interop\Interop.Common.Windows.cs" />
     <Compile Include="System\__HResults.cs" />
-    <Compile Include="System\DllNotFoundException.cs" />    
+    <Compile Include="System\DllNotFoundException.cs" />
   </ItemGroup>
-  
-
-   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">     
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
     <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
     <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
-  </ItemGroup> 
-
-  <ItemGroup Condition="'$(EnableWinRT)'=='true'">  
-    <Compile Include="InteropCallbacks.cs"/>
+  </ItemGroup>
+  <ItemGroup Condition="'$(EnableWinRT)'=='true'">
+    <Compile Include="InteropCallbacks.cs" />
     <Compile Include="WinRT\ExceptionHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\DefaultInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
-    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttribute.cs" />        
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReadOnlyArrayAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
   </ItemGroup>
-  
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsProjectKLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
@@ -259,13 +244,11 @@
       <Link>Interop\Windows\mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <Compile Include="Interop\Interop.String.Unix.cs" />
     <Compile Include="Interop\Interop.Common.Unix.cs" />
   -->
-
   <ItemGroup Condition="'$(TargetsUnix)'=='true' and '$(IsProjectKLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>

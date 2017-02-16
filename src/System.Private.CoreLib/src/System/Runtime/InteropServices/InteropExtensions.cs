@@ -476,5 +476,15 @@ namespace System.Runtime.InteropServices
         {
             Interop.MemFree(allocatedMemory);
         }
+
+        public static IntPtr GetCriticalHandle(CriticalHandle criticalHandle)
+        {
+            return criticalHandle.handle;
+        }
+
+        public static void SetCriticalHandle(CriticalHandle criticalHandle, IntPtr handle)
+        {
+            criticalHandle.handle = handle;
+        }
     }
 }
