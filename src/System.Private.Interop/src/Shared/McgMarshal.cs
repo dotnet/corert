@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr GetHandle(CriticalHandle criticalHandle)
         {
-            return criticalHandle.handle;
+            return InteropExtensions.GetCriticalHandle(criticalHandle);
         }
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static void SetHandle(CriticalHandle criticalHandle, IntPtr handle)
         {
-            criticalHandle.handle = handle;
+            InteropExtensions.SetCriticalHandle(criticalHandle, handle);
         }
 #endif
     }
