@@ -24,7 +24,6 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
-        ResolveGenericVirtualMethod,
 
         // The following helpers are used for generic lookups only
         TypeHandle,
@@ -139,10 +138,6 @@ namespace ILCompiler.DependencyAnalysis
                     sb.Append("__ResolveVirtualFunction_");
                     sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
-                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
-                    sb.Append("__ResolveGenericVirtualMethod_");
-                    sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
-                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -163,16 +158,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 DependencyList dependencyList = new DependencyList();
                 dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
-                return dependencyList;
-            }
-            else if (_id == ReadyToRunHelperId.ResolveGenericVirtualMethod)
-            {
-                MethodDesc method = _target as MethodDesc;
-                Debug.Assert(method != null && method.HasInstantiation && method.IsVirtual);
-
-                // GVM dependency tracking
-                DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(new DependencyListEntry(factory.GVMDependencies(method), "R2R GVM dependency tracking"));
                 return dependencyList;
             }
             else

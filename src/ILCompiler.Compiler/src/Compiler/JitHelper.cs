@@ -174,6 +174,10 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExitStatic");
                     break;
 
+                case ReadyToRunHelper.GVMLookupForSlot:
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot", null);
+                    break;
+
                 default:
                     throw new NotImplementedException(id.ToString());
             }
