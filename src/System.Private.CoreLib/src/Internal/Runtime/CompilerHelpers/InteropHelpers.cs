@@ -63,13 +63,6 @@ namespace Internal.Runtime.CompilerHelpers
             return new char[sb.Capacity + 1];
         }
 
-        internal static unsafe void ReplaceStringBuilderBuffer(StringBuilder sb, char[] buf)
-        {
-            // CORERT-TODO: Reuse buffer from string builder where possible?
-            fixed (char* p = buf)
-                sb.ReplaceBuffer(p);
-        }
-
         internal static unsafe IntPtr ResolvePInvoke(MethodFixupCell* pCell)
         {
             if (pCell->Target != IntPtr.Zero)
