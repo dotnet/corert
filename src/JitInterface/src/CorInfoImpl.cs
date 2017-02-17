@@ -3186,12 +3186,6 @@ namespace Internal.JitInterface
                     // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject((IntPtr)target);
 
-                    if (targetObject is FieldDesc)
-                    {
-                        // We only support FieldDesc for InitializeArray intrinsic right now.
-                        throw new NotImplementedException("RuntimeFieldHandle is not implemented");
-                    }
-
                     relocTarget = (ISymbolNode)targetObject;
 
                     if (relocTarget is FatFunctionPointerNode)
