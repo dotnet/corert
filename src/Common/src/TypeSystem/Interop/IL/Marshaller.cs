@@ -1901,7 +1901,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(_vManaged);
             codeStream.EmitLdLoc(_vNative);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-            PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "ReplaceStringBuilderBuffer")));
+                PInvokeMethodData.StringBuilder.GetKnownMethod("ReplaceBuffer", null)));
         }
     }
 }
