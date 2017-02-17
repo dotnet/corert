@@ -180,9 +180,6 @@
   <data name="Arg_DivideByZero" xml:space="preserve">
     <value>Attempted to divide by zero.</value>
   </data>
-  <data name="Arg_DriveNotFoundException" xml:space="preserve">
-    <value>Attempted to access a drive that is not available.</value>
-  </data>
   <data name="Arg_DlgtNullInst" xml:space="preserve">
     <value>Delegate to an instance method cannot have null 'this'.</value>
   </data>
@@ -369,9 +366,6 @@
   <data name="Arg_NotSupportedException" xml:space="preserve">
     <value>Specified method is not supported.</value>
   </data>
-  <data name="Arg_NotSupportedMultidim" xml:space="preserve">
-    <value>Multi-dimensional arrays are not supported.</value>
-  </data>
   <data name="Arg_NotSupportedNonZeroLowerBound" xml:space="preserve">
     <value>Arrays with non-zero lower bounds are not supported.</value>
   </data>
@@ -392,9 +386,6 @@
   </data>
   <data name="Arg_ParamName_Name" xml:space="preserve">
     <value>Parameter name: {0}</value>
-  </data>
-  <data name="Arg_Path2IsRooted" xml:space="preserve">
-    <value>Second path fragment must not be a drive or UNC name.</value>
   </data>
   <data name="Arg_PathIllegal" xml:space="preserve">
     <value>The path is not of a legal form.</value>
@@ -708,9 +699,6 @@
   <data name="ArgumentOutOfRange_NeedNonNegNumRequired" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
-  <data name="Argument_PathEmpty" xml:space="preserve">
-    <value>Path cannot be the empty string or all whitespace.</value>
-  </data>
   <data name="Argument_PathFormatNotSupported" xml:space="preserve">
     <value>The given path's format is not supported.</value>
   </data>
@@ -887,9 +875,6 @@
   </data>
   <data name="ArgumentOutOfRange_InvalidUTF32" xml:space="preserve">
     <value>A valid UTF32 value is between 0x000000 and 0x10ffff, inclusive, and should not include surrogate codepoint values (0x00d800 ~ 0x00dfff).</value>
-  </data>
-  <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
-    <value>The specified length exceeds the maximum value of {0}.</value>
   </data>
   <data name="ArgumentOutOfRange_LengthGreaterThanCapacity" xml:space="preserve">
     <value>The length cannot be greater than the capacity.</value>
@@ -1083,9 +1068,6 @@
   <data name="InvalidOperation_DateTimeParsing" xml:space="preserve">
     <value>Internal Error in DateTime and Calendar operations.</value>
   </data>
-  <data name="InvalidOperation_GetCodepageInfo" xml:space="preserve">
-    <value>Internal Error in getting codepage data.</value>
-  </data>
   <data name="InvalidOperation_EnumEnded" xml:space="preserve">
     <value>Enumeration already finished.</value>
   </data>
@@ -1104,9 +1086,6 @@
   <data name="InvalidOperation_IComparerFailed" xml:space="preserve">
     <value>Failed to compare two elements in the array.</value>
   </data>
-  <data name="InvalidOperation_Monitor_UseConditionDirectly" xml:space="preserve">
-    <value>TBD</value>
-  </data>
   <data name="InvalidOperation_NoValue" xml:space="preserve">
     <value>Nullable object must have a value.</value>
   </data>
@@ -1121,12 +1100,6 @@
   </data>
   <data name="InvalidOperation_ArrayCreateInstance_NotARuntimeType" xml:space="preserve">
     <value>Array.CreateInstance() can only accept Type objects created by the runtime.</value>
-  </data>
-  <data name="InvalidOperation_ExpectedEEType" xml:space="preserve">
-    <value>Internal Error: Did not expect an uninstantiated generic type here.</value>
-  </data>
-  <data name="InvalidOperation_ExpectedSpecialLdTokenResult" xml:space="preserve">
-    <value>Internal Error: Expected an uninstantiated generic type here.</value>
   </data>
   <data name="InvalidOperation_TooEarly" xml:space="preserve">
     <value>Internal Error: This operation cannot be invoked in an eager class constructor.</value>
@@ -1146,9 +1119,6 @@
   <data name="InvalidTimeZone_InvalidRegistryData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the registry information was corrupt.</value>
   </data>
-  <data name="IO_DriveNotFound_Drive" xml:space="preserve">
-    <value>Could not find the drive '{0}'. The drive might not be ready or might not be mapped.</value>
-  </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
   </data>
@@ -1163,9 +1133,6 @@
   </data>
   <data name="IO_FileLoad" xml:space="preserve">
     <value>Could not load the specified file.</value>
-  </data>
-  <data name="IO_NoPermissionToDirectoryName" xml:space="preserve">
-    <value>&lt;Path discovery permission to the specified directory was denied.%gt;</value>
   </data>
   <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
     <value>Could not find a part of the path.</value>
@@ -1212,77 +1179,11 @@
   <data name="MustUseCCRewrite" xml:space="preserve">
     <value>An assembly (probably '{1}') must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that 'Perform Runtime Contract Checking' is enabled, which will define CONTRACTS_FULL.</value>
   </data>
-  <data name="net_uri_AlreadyRegistered" xml:space="preserve">
-    <value>A URI scheme name '{0}' already has a registered custom parser.</value>
-  </data>
-  <data name="net_uri_BadAuthority" xml:space="preserve">
-    <value>Invalid URI: The Authority/Host could not be parsed.</value>
-  </data>
-  <data name="net_uri_BadAuthorityTerminator" xml:space="preserve">
-    <value>Invalid URI: The Authority/Host cannot end with a backslash character ('\\').</value>
-  </data>
-  <data name="net_uri_BadFormat" xml:space="preserve">
-    <value>Invalid URI: The format of the URI could not be determined.</value>
-  </data>
-  <data name="net_uri_BadHostName" xml:space="preserve">
-    <value>Invalid URI: The hostname could not be parsed.</value>
-  </data>
-  <data name="net_uri_BadPort" xml:space="preserve">
-    <value>Invalid URI: Invalid port specified.</value>
-  </data>
-  <data name="net_uri_BadScheme" xml:space="preserve">
-    <value>Invalid URI: The URI scheme is not valid.</value>
-  </data>
-  <data name="net_uri_BadString" xml:space="preserve">
-    <value>Invalid URI: There is an invalid sequence in the string.</value>
-  </data>
-  <data name="net_uri_BadUserPassword" xml:space="preserve">
-    <value>Invalid URI: The username:password construct is badly formed.</value>
-  </data>
-  <data name="net_uri_CannotCreateRelative" xml:space="preserve">
-    <value>A relative URI cannot be created because the 'uriString' parameter represents an absolute URI.</value>
-  </data>
-  <data name="net_uri_SchemeLimit" xml:space="preserve">
-    <value>Invalid URI: The Uri scheme is too long.</value>
-  </data>
-  <data name="net_uri_EmptyUri" xml:space="preserve">
-    <value>Invalid URI: The URI is empty.</value>
-  </data>
-  <data name="net_uri_InvalidUriKind" xml:space="preserve">
-    <value>The value '{0}' passed for the UriKind parameter is invalid.</value>
-  </data>
-  <data name="net_uri_MustRootedPath" xml:space="preserve">
-    <value>Invalid URI: A Dos path must be rooted, for example, 'c:\\'.</value>
-  </data>
-  <data name="net_uri_NeedFreshParser" xml:space="preserve">
-    <value>The URI parser instance passed into 'uriParser' parameter is already registered with the scheme name '{0}'.</value>
-  </data>
-  <data name="net_uri_NotAbsolute" xml:space="preserve">
-    <value>This operation is not supported for a relative URI.</value>
-  </data>
-  <data name="net_uri_PortOutOfRange" xml:space="preserve">
-    <value>A derived type '{0}' has reported an invalid value for the Uri port '{1}'.</value>
-  </data>
-  <data name="net_uri_SizeLimit" xml:space="preserve">
-    <value>Invalid URI: The Uri string is too long.</value>
-  </data>
-  <data name="net_uri_UserDrivenParsing" xml:space="preserve">
-    <value>A derived type '{0}' is responsible for parsing this Uri instance. The base implementation must not be used.</value>
-  </data>
-  <data name="net_uri_NotJustSerialization" xml:space="preserve">
-    <value>UriComponents.SerializationInfoString must not be combined with other UriComponents.</value>
-  </data>
-  <data name="net_uri_BadUnicodeHostForIdn" xml:space="preserve">
-    <value>An invalid Unicode character by IDN standards was specified in the host.</value>
-  </data>
   <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
     <value>Collection was of a fixed size.</value>
   </data>
   <data name="NotSupported_MaxWaitHandles" xml:space="preserve">
     <value>The number of WaitHandles must be less than or equal to 64.</value>
-  </data>
-  <data name="NotSupported_OpenType" xml:space="preserve">
-    <value>Cannot create arrays of open type.</value>
   </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
@@ -1304,9 +1205,6 @@
   </data>
   <data name="ObjectDisposed_ObjectName_Name" xml:space="preserve">
     <value>Object name: '{0}'.</value>
-  </data>
-  <data name="ObjectDisposed_WriterClosed" xml:space="preserve">
-    <value>Cannot write to a closed TextWriter.</value>
   </data>
   <data name="Overflow_Byte" xml:space="preserve">
     <value>Value was either too large or too small for an unsigned byte.</value>
@@ -1358,9 +1256,6 @@
   </data>
   <data name="Overflow_UInt64" xml:space="preserve">
     <value>Value was either too large or too small for a UInt64.</value>
-  </data>
-  <data name="PlatformNotSupported_MakePointerType" xml:space="preserve">
-    <value>MakePointerType() is not supported on this platform.</value>
   </data>
   <data name="Rank_MultiDimNotSupported" xml:space="preserve">
     <value>Only single dimension arrays are supported here.</value>
@@ -1458,9 +1353,6 @@
   <data name="AssertionFailed_Cnd" xml:space="preserve">
     <value>Assertion failed: {0}</value>
   </data>
-  <data name="Debug_Fail" xml:space="preserve">
-    <value>Fail: {0}</value>
-  </data>
   <data name="PreconditionFailed" xml:space="preserve">
     <value>Precondition failed.</value>
   </data>
@@ -1556,9 +1448,6 @@
   </data>
   <data name="Format_UTCOutOfRange" xml:space="preserve">
     <value>The UTC representation of the date falls outside the year range 1-9999.</value>
-  </data>
-  <data name="InvalidOperation_ComputerName" xml:space="preserve">
-    <value>Computer name could not be obtained.</value>
   </data>
   <data name="RFLCT_Ambiguous" xml:space="preserve">
     <value>Ambiguous match found.</value>
@@ -1822,9 +1711,6 @@
   <data name="NotSupported_NoTypeInfo" xml:space="preserve">
     <value>Cannot resolve {0} to a TypeInfo object.</value>
   </data>
-  <data name="ReflectionTypeLoad_LoadFailed" xml:space="preserve">
-    <value>Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.</value>
-  </data>
   <data name="Arg_CustomAttributeFormatException" xml:space="preserve">
     <value>Binary format of the specified custom attribute was invalid.</value>
   </data>
@@ -1911,9 +1797,6 @@
   </data>
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
-  </data>
-  <data name="Argument_NeedNonGenericType" xml:space="preserve">
-    <value>The specified Type must not be a generic type definition.</value>
   </data>
   <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
     <value>The specified Type must be a struct containing no references.</value>
@@ -2070,9 +1953,6 @@
   </data>
   <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
     <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
-  </data>
-  <data name="Argument_StreamNotSeekable" xml:space="preserve">
-    <value>Stream was not seekable.</value>
   </data>
   <data name="Arg_ResourceFileUnsupportedVersion" xml:space="preserve">
     <value>The ResourceReader class does not know how to read this version of .resources files.</value>
