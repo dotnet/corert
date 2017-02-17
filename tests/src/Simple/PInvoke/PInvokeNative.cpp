@@ -190,3 +190,12 @@ DLL_EXPORT long __stdcall SafeHandleOutTest(HANDLE **sh)
     *sh = (HANDLE *)malloc(100);
     return (long)((size_t)(*sh));
 }
+
+DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)
+{
+    char str[] = "Hello World";
+    int i;
+    for (i = 0; str[i] != '\0'; i++)
+        val[i] = (unsigned short)str[i];
+    val[i] = 0;
+}

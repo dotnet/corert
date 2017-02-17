@@ -63,6 +63,7 @@ namespace PInvokeTests
             TestArrays();
             TestByRef();
             TestString();
+            TestStringBuilder();
             TestLastError();
             TestSafeHandle();
             TestStringArray();
@@ -131,6 +132,16 @@ namespace PInvokeTests
             ThrowIfNotEquals(1, VerifyAnsiString("Hello World"), "Ansi String marshalling failed.");
             ThrowIfNotEquals(1, VerifyUnicodeString("Hello World"), "Unicode String marshalling failed.");
         }
+
+        private static void TestStringBuilder()
+        {
+            Console.WriteLine("Testing marshalling string builder");
+            StringBuilder sb = new StringBuilder(16);
+            VerifyStringBuilder(sb);
+            bool result = (sb.ToString() == "Hello World");
+            ThrowIfNotEquals(true, result, "Unicode String builder marshalling failed.");
+        }
+
 
         private static void TestStringArray()
         {
