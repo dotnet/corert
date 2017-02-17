@@ -95,7 +95,7 @@ DLL_EXPORT int __stdcall VerifyAnsiStringArray(char **val)
 
 void ToUpper(char *val)
 {
-    if (val == NULL) 
+    if (val == NULL)
         return;
     char *p = val;
     while (*p != '\0')
@@ -173,8 +173,8 @@ DLL_EXPORT void* __stdcall AllocateMemory(int bytes)
 
 DLL_EXPORT bool __stdcall ReleaseMemory(void *mem)
 {
-   free(mem);
-   return true;
+    free(mem);
+    return true;
 }
 
 DLL_EXPORT bool __stdcall SafeHandleTest(HANDLE sh, long shValue)
@@ -184,9 +184,16 @@ DLL_EXPORT bool __stdcall SafeHandleTest(HANDLE sh, long shValue)
 
 DLL_EXPORT long __stdcall SafeHandleOutTest(HANDLE **sh)
 {
-    if (sh == NULL) 
+    if (sh == NULL)
         return -1;
 
     *sh = (HANDLE *)malloc(100);
     return (long)((size_t)(*sh));
+}
+
+DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)
+{
+    char str[] = "Hello World";
+    for (int i = 0; i < strlen(str); i++)
+        val[i] = (unsigned short)str[i];
 }

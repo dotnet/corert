@@ -63,6 +63,7 @@ namespace PInvokeTests
             TestArrays();
             TestByRef();
             TestString();
+            TestStringBuilder();
             TestLastError();
             TestSafeHandle();
             TestStringArray();
@@ -82,20 +83,20 @@ namespace PInvokeTests
 
         public static void ThrowIfNotEquals(bool expected, bool actual, string message)
         {
-           ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
+            ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
         }
 
         private static void TestBlittableType()
         {
-           Console.WriteLine("Testing marshalling blittable types");
-           ThrowIfNotEquals(100, Square(10),  "Int marshalling failed");
+            Console.WriteLine("Testing marshalling blittable types");
+            ThrowIfNotEquals(100, Square(10),  "Int marshalling failed");
         }
 
         private static void TestBoolean()
         {
-           Console.WriteLine("Testing marshalling boolean");
-           ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
-           ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
+            Console.WriteLine("Testing marshalling boolean");
+            ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
+            ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
         }
 
         private static void TestUnichar()
@@ -114,7 +115,7 @@ namespace PInvokeTests
             for (int i = 0; i < ArraySize; i++)
                 arr[i] = i;
 
-           ThrowIfNotEquals(0, CheckIncremental(arr, ArraySize), "Array marshalling failed");
+            ThrowIfNotEquals(0, CheckIncremental(arr, ArraySize), "Array marshalling failed");
         }
 
         private static void TestByRef()
@@ -131,6 +132,16 @@ namespace PInvokeTests
             ThrowIfNotEquals(1, VerifyAnsiString("Hello World"), "Ansi String marshalling failed.");
             ThrowIfNotEquals(1, VerifyUnicodeString("Hello World"), "Unicode String marshalling failed.");
         }
+
+        private static void TestStringBuilder()
+        {
+            Console.WriteLine("Testing marshalling string builder");
+            StringBuilder sb = new StringBuilder(16);
+            VerifyStringBuilder(sb);
+            bool result = (sb.ToString() == "Hello World");
+            ThrowIfNotEquals(true, result, "Unicode String builder marshalling failed.");
+        }
+
 
         private static void TestStringArray()
         {
@@ -185,7 +196,7 @@ namespace PInvokeTests
                 }
             }
             ThrowIfNotEquals(true, pass, "SizeParamIndex failed.");
-        } 
+        }
     }
 
     public class SafeMemoryHandle : SafeHandle //SafeHandle subclass
