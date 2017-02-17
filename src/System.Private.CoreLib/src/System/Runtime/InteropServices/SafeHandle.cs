@@ -16,6 +16,7 @@
 
 using System;
 using System.Threading;
+using System.Runtime.ConstrainedExecution;
 
 namespace System.Runtime.InteropServices
 {
@@ -117,7 +118,7 @@ namespace System.Runtime.InteropServices
       1) Requires some magic to run the critical finalizer.
     */
 
-    public abstract class SafeHandle : IDisposable
+    public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]
         protected IntPtr handle;        // PUBLICLY DOCUMENTED handle field
@@ -235,7 +236,7 @@ namespace System.Runtime.InteropServices
             get;
         }
 
-        internal void Close()
+        public void Close()
         {
             Dispose(true);
         }

@@ -55,6 +55,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Reflection;
 using System.Threading;
+using System.Runtime.ConstrainedExecution;
 
 /*
   Problems addressed by the CriticalHandle class:
@@ -140,7 +141,7 @@ namespace System.Runtime.InteropServices
     // we'll do this to ensure we've cut off all attack vectors.  Similarly, all
     // methods have a link demand to ensure untrusted code cannot directly edit
     // or alter a handle.
-    public abstract class CriticalHandle : IDisposable
+    public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     {
         protected internal IntPtr handle;    // This must be protected so derived classes can use out params.
         private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
@@ -169,11 +170,11 @@ namespace System.Runtime.InteropServices
             // Save last error from P/Invoke in case the implementation of
             // ReleaseHandle trashes it (important because this ReleaseHandle could
             // occur implicitly as part of unmarshaling another P/Invoke).
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = PInvokeMarshal.GetLastWin32Error();
 
             ReleaseHandle();
 
-            Marshal.SetLastWin32Error(lastError);
+            PInvokeMarshal.SetLastWin32Error(lastError);
 
             GC.SuppressFinalize(this);
         }

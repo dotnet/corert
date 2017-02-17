@@ -2263,4 +2263,16 @@
   <data name="NotSupported_WrongResourceReader_Type" xml:space="preserve">
     <value>This .resources file should not be read with this reader. The resource reader type is "{0}".</value>
   </data>
+  <data name="Arg_MustBeDelegate" xml:space="preserve">
+    <value>Type must derive from Delegate.</value>
+  </data>
+  <data name="NotSupported_GlobalMethodSerialization" xml:space="preserve">
+    <value>Serialization of global methods (including implicit serialization via the use of asynchronous delegates) is not supported.</value>
+  </data>
+  <data name="NotSupported_DelegateSerHolderSerial" xml:space="preserve">
+    <value>DelegateSerializationHolder objects are designed to represent a delegate during serialization and are not serializable themselves.</value>
+  </data>
+  <data name="DelegateSer_InsufficientMetadata" xml:space="preserve">
+    <value>The delegate cannot be serialized properly due to missing metadata for the target method.</value>
+  </data>
 </root>

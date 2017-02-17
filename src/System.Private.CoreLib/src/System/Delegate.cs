@@ -30,6 +30,26 @@ namespace System
             // ! Do NOT put any code here. Delegate constructers are not guaranteed to be executed.
         }
 
+        // V1 API: Create closed instance delegates. Method name matching is case sensitive.
+        protected Delegate(Object target, String method)
+        {
+            // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
+            // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
+            // implementation of CreateDelegate below, and does not invoke this constructor.
+            // The constructor is just for API compatibility with the public contract of the Delegate class.
+            throw new PlatformNotSupportedException();
+        }
+
+        // V1 API: Create open static delegates. Method name matching is case insensitive.
+        protected Delegate(Type target, String method)
+        {
+            // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
+            // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
+            // implementation of CreateDelegate below, and does not invoke this constructor.
+            // The constructor is just for API compatibility with the public contract of the Delegate class.
+            throw new PlatformNotSupportedException();
+        }
+
         // New Delegate Implementation
 
         protected internal object m_firstParameter;
@@ -293,7 +313,7 @@ namespace System
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public object DynamicInvoke(params object[] args)
+        protected virtual object DynamicInvokeImpl(object[] args)
         {
             if (IsDynamicDelegate())
             {
@@ -309,6 +329,14 @@ namespace System
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
+        }
+
+        [DebuggerGuidedStepThroughAttribute]
+        public object DynamicInvoke(params object[] args)
+        {
+            object result = DynamicInvokeImpl(args);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public static unsafe Delegate Combine(Delegate a, Delegate b)
