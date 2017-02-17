@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
-    <IlcReference Include="$(MSBuildProjectDirectory)\*.dll" />
+    <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
   </ItemGroup>
   
   <Import Project="$(CoreRT_TestRoot)\Test.Common.targets" />
