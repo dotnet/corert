@@ -70,7 +70,7 @@ See the LICENSE file in the project root for more information.
     BuildFrameworkLib is invoked before IlcCompile in multi-module builds to 
     produce the shared framework library on demand
   -->
-  <Target Name="BuildFrameworkLib">
+  <Target Name="BuildFrameworkLib" Condition="'$(DisableFrameworkLibGeneration)' != 'true'">
     <ItemGroup>
       <ProjectToBuild Include="$(MSBuildThisFileDirectory)\BuildFrameworkNativeObjects.proj">
         <AdditionalProperties>
