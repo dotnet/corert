@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -85,8 +87,17 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {
-                // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
-                builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
+                if (factory.Target.Abi == Internal.TypeSystem.TargetAbi.CoreRT)
+                {
+                    // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
+                    builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
+                }
+                else
+                {
+                    // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
+                    Debug.Assert(factory.Target.Abi == Internal.TypeSystem.TargetAbi.ProjectN);
+                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, symbolAndDelta.Delta);
+                }
             }
 
             _endSymbol.SetSymbolOffset(builder.CountBytes);

@@ -25,7 +25,7 @@ namespace ILCompiler
     {
         private GeneratedTypesAndCodeMetadataPolicy _metadataPolicy;
 
-        public CompilerGeneratedMetadataManager(NodeFactory factory) : base(factory)
+        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext) : base(group, typeSystemContext)
         {
             _metadataPolicy = new GeneratedTypesAndCodeMetadataPolicy(this);
         }
@@ -57,6 +57,7 @@ namespace ILCompiler
 
         protected override void AddGeneratedMethod(MethodDesc method)
         {
+            AddGeneratedType(method.OwningType);
             _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
             base.AddGeneratedMethod(method);
         }
@@ -151,7 +152,7 @@ namespace ILCompiler
             var lookupSig = new DynamicInvokeMethodSignature(sig);
             if (!_dynamicInvokeThunks.TryGetValue(lookupSig, out thunk))
             {
-                thunk = new DynamicInvokeMethodThunk(_nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
+                thunk = new DynamicInvokeMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), lookupSig);
                 _dynamicInvokeThunks.Add(lookupSig, thunk);
             }
 
@@ -169,7 +170,7 @@ namespace ILCompiler
                 _parent = parent;
                 _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
 
-                MetadataType systemAttributeType = parent._nodeFactory.TypeSystemContext.SystemModule.GetType("System", "Attribute", false);
+                MetadataType systemAttributeType = parent._typeSystemContext.SystemModule.GetType("System", "Attribute", false);
                 _isAttributeCache = new Dictionary<MetadataType, bool>();
                 _isAttributeCache.Add(systemAttributeType, true);
             }
@@ -203,7 +204,7 @@ namespace ILCompiler
                 // Otherwise we end up with an attribute that is an unresolvable TypeRef and we would get a TypeLoadException
                 // when enumerating attributes on anything that has it.
                 if (!GeneratesMetadata(typeDef)
-                    && _parent._nodeFactory.CompilationModuleGroup.ContainsType(typeDef)
+                    && _parent._compilationModuleGroup.ContainsType(typeDef)
                     && IsAttributeType(typeDef))
                 {
                     return true;

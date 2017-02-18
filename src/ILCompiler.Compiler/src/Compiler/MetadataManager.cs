@@ -33,7 +33,8 @@ namespace ILCompiler
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
 
-        protected readonly NodeFactory _nodeFactory;
+        protected readonly CompilationModuleGroup _compilationModuleGroup;
+        protected readonly CompilerTypeSystemContext _typeSystemContext;
 
         private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
@@ -44,9 +45,10 @@ namespace ILCompiler
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
-        public MetadataManager(NodeFactory factory)
+        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
-            _nodeFactory = factory;
+            _compilationModuleGroup = compilationModuleGroup;
+            _typeSystemContext = typeSystemContext;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -66,8 +68,8 @@ namespace ILCompiler
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", _nodeFactory.Target);
-            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences", _nodeFactory.Target);
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", _typeSystemContext.Target);
+            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences", _typeSystemContext.Target);
 
             var resourceDataNode = new ResourceDataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
@@ -134,17 +136,19 @@ namespace ILCompiler
             if (methodNode == null)
                 methodNode = obj as ShadowConcreteMethodNode<MethodCodeNode>;
 
+            if (methodNode == null)
+                methodNode = obj as NonExternMethodSymbolNode;
+
             if (methodNode != null)
             {
                 MethodDesc method = methodNode.Method;
 
-                AddGeneratedType(method.OwningType);
                 AddGeneratedMethod(method);
                 return;
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && _nodeFactory.TypeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
+            if (nonGcStaticSectionNode != null && _typeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }
