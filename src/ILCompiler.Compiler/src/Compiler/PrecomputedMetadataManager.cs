@@ -28,20 +28,21 @@ namespace ILCompiler
             public ImmutableArray<ModuleDesc> MetadataModules = ImmutableArray<ModuleDesc>.Empty;
             public ImmutableArray<ModuleDesc> LocalMetadataModules = ImmutableArray<ModuleDesc>.Empty;
             public ImmutableArray<ModuleDesc> ExternalMetadataModules = ImmutableArray<ModuleDesc>.Empty;
-            public List<MetadataMapping<MetadataType>> StrongTypeMappings = new List<MetadataMapping<MetadataType>>();
-            public List<MetadataMapping<MetadataType>> AllTypeMappings = new List<MetadataMapping<MetadataType>>();
-            public List<MetadataMapping<MethodDesc>> MethodMappings = new List<MetadataMapping<MethodDesc>>();
-            public List<MetadataMapping<FieldDesc>> FieldMappings = new List<MetadataMapping<FieldDesc>>();
-            public HashSet<MetadataType> ReflectionBlockedTypes = new HashSet<MetadataType>();
+            public List<MetadataType> TypesWithStrongMetadataMappings = new List<MetadataType>();
+            public Dictionary<MetadataType, int> AllTypeMappings = new Dictionary<MetadataType, int>();
+            public Dictionary<MethodDesc, int> MethodMappings = new Dictionary<MethodDesc, int>();
+            public Dictionary<FieldDesc, int> FieldMappings = new Dictionary<FieldDesc, int>();
+            public HashSet<MethodDesc> DynamicInvokeCompiledMethods = new HashSet<MethodDesc>();
         }
 
+        private readonly HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
         private readonly ModuleDesc _metadataDescribingModule;
         private readonly HashSet<ModuleDesc> _compilationModules;
         private readonly Lazy<MetadataLoadedInfo> _loadedMetadata;
         private Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
         private readonly byte[] _metadataBlob;
 
-        public PrecomputedMetadataManager(NodeFactory factory, ModuleDesc metadataDescribingModule, IEnumerable<ModuleDesc> compilationModules, byte[] metadataBlob) : base(factory)
+        public PrecomputedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, ModuleDesc metadataDescribingModule, IEnumerable<ModuleDesc> compilationModules, byte[] metadataBlob) : base(group, typeSystemContext)
         {
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
@@ -50,15 +51,25 @@ namespace ILCompiler
             _metadataBlob = metadataBlob;
         }
 
+        protected override void AddGeneratedType(TypeDesc type)
+        {
+            if (type.IsDefType && type.IsTypeDefinition)
+            {
+                var mdType = type as MetadataType;
+                if (mdType != null)
+                {
+                    _typeDefinitionsGenerated.Add(mdType);
+                }
+            }
+
+            base.AddGeneratedType(type);
+        }
+
         /// <summary>
         /// Read a method that describes the type system to metadata mappings.
         /// </summary>
-        private void ReadMetadataMethod(MethodIL methodOfMappings, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings, ref HashSet<ModuleDesc> metadataModules)
+        private void ReadMetadataMethod(MethodIL methodOfMappings, ref Dictionary<MetadataType, int> typeMappings, ref Dictionary<MethodDesc, int> methodMappings, ref Dictionary<FieldDesc, int> fieldMappings, ref HashSet<ModuleDesc> metadataModules)
         {
-            typeMappings = new List<MetadataMapping<MetadataType>>();
-            methodMappings = new List<MetadataMapping<MethodDesc>>();
-            fieldMappings = new List<MetadataMapping<FieldDesc>>();
-
             ILStreamReader il = new ILStreamReader(methodOfMappings);
             // structure is 
             // REPEAT N TIMES    
@@ -82,19 +93,19 @@ namespace ILCompiler
                     {
                         MetadataType type = (MetadataType)tse;
                         metadataModules.Add(type.Module);
-                        typeMappings.Add(new MetadataMapping<MetadataType>(type, metadataTokenValue));
+                        typeMappings.Add(type, metadataTokenValue);
                     }
                     else if (tse is MethodDesc)
                     {
                         MethodDesc method = (MethodDesc)tse;
                         metadataModules.Add(((MetadataType)method.OwningType).Module);
-                        methodMappings.Add(new MetadataMapping<MethodDesc>(method, metadataTokenValue));
+                        methodMappings.Add(method, metadataTokenValue);
                     }
                     else if (tse is FieldDesc)
                     {
                         FieldDesc field = (FieldDesc)tse;
                         metadataModules.Add(((MetadataType)field.OwningType).Module);
-                        fieldMappings.Add(new MetadataMapping<FieldDesc>(field, metadataTokenValue));
+                        fieldMappings.Add(field, metadataTokenValue);
                     }
                 }
                 else
@@ -128,52 +139,25 @@ namespace ILCompiler
             if (fullMetadataMethod != null)
             {
                 MethodIL fullMethodIL = ilProvider.GetMethodIL(fullMetadataMethod);
-                ReadMetadataMethod(fullMethodIL, out result.StrongTypeMappings, out result.MethodMappings, out result.FieldMappings, ref metadataModules);
+                ReadMetadataMethod(fullMethodIL, ref result.AllTypeMappings, ref result.MethodMappings, ref result.FieldMappings, ref metadataModules);
+                foreach (var mapping in result.AllTypeMappings)
+                {
+                    result.TypesWithStrongMetadataMappings.Add(mapping.Key);
+                }
             }
 
             if (weakMetadataMethod != null)
             {
                 MethodIL weakMethodIL = ilProvider.GetMethodIL(weakMetadataMethod);
-                List<MetadataMapping<MethodDesc>> weakMethodMappings = new List<MetadataMapping<MethodDesc>>();
-                List<MetadataMapping<FieldDesc>> weakFieldMappings = new List<MetadataMapping<FieldDesc>>();
-                ReadMetadataMethod(weakMethodIL, out result.AllTypeMappings, out weakMethodMappings, out weakFieldMappings, ref metadataModules);
+                Dictionary<MethodDesc, int> weakMethodMappings = new Dictionary<MethodDesc, int>();
+                Dictionary<FieldDesc, int> weakFieldMappings = new Dictionary<FieldDesc, int>();
+                ReadMetadataMethod(weakMethodIL, ref result.AllTypeMappings, ref weakMethodMappings, ref weakFieldMappings, ref metadataModules);
                 if ((weakMethodMappings.Count > 0) || (weakFieldMappings.Count > 0))
                 {
                     // the format does not permit weak field/method mappings
                     throw new BadImageFormatException();
                 }
             }
-
-#if DEBUG
-            // No duplicates are permitted in metadata mappings
-            HashSet<TypeSystemEntity> mappingsDuplicateChecker = new HashSet<TypeSystemEntity>();
-            foreach (MetadataMapping<MetadataType> mapping in result.AllTypeMappings)
-            {
-                if (!mappingsDuplicateChecker.Add(mapping.Entity))
-                    throw new BadImageFormatException();
-            }
-
-            foreach (MetadataMapping<MetadataType> mapping in result.StrongTypeMappings)
-            {
-                if (!mappingsDuplicateChecker.Add(mapping.Entity))
-                    throw new BadImageFormatException();
-            }
-
-            foreach (MetadataMapping<FieldDesc> mapping in result.FieldMappings)
-            {
-                if (!mappingsDuplicateChecker.Add(mapping.Entity))
-                    throw new BadImageFormatException();
-            }
-
-            foreach (MetadataMapping<MethodDesc> mapping in result.MethodMappings)
-            {
-                if (!mappingsDuplicateChecker.Add(mapping.Entity))
-                    throw new BadImageFormatException();
-            }
-#endif
-
-            // All type mappings is the combination of strong and weak type mappings.
-            result.AllTypeMappings.AddRange(result.StrongTypeMappings);
 
             result.MetadataModules = ImmutableArray.CreateRange(metadataModules);
 
@@ -188,6 +172,26 @@ namespace ILCompiler
             }
             result.ExternalMetadataModules = externalMetadataModulesBuilder.ToImmutable();
             result.LocalMetadataModules = localMetadataModulesBuilder.ToImmutable();
+
+            // TODO! Replace with something more complete that capture the generic instantiations that the pre-analysis
+            // indicates should have been present
+            foreach (var pair in result.MethodMappings)
+            {
+                MethodDesc reflectableMethod = pair.Key;
+
+                if (reflectableMethod.HasInstantiation)
+                    continue;
+
+                if (reflectableMethod.OwningType.HasInstantiation)
+                    continue;
+
+                MethodDesc typicalDynamicInvokeStub;
+                if (!_dynamicInvokeStubs.Value.TryGetValue(reflectableMethod, out typicalDynamicInvokeStub))
+                    continue;
+
+                MethodDesc instantiatiatedDynamicInvokeStub = InstantiateDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, reflectableMethod);
+                result.DynamicInvokeCompiledMethods.Add(instantiatiatedDynamicInvokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            }
 
             return result;
         }
@@ -206,9 +210,50 @@ namespace ILCompiler
         {
             MetadataLoadedInfo loadedMetadata = _loadedMetadata.Value;
             metadataBlob = _metadataBlob;
-            typeMappings = loadedMetadata.AllTypeMappings;
-            methodMappings = loadedMetadata.MethodMappings;
-            fieldMappings = loadedMetadata.FieldMappings;
+
+            typeMappings = new List<MetadataMapping<MetadataType>>();
+            methodMappings = new List<MetadataMapping<MethodDesc>>();
+            fieldMappings = new List<MetadataMapping<FieldDesc>>();
+
+            // Generate type definition mappings
+            foreach (var definition in _typeDefinitionsGenerated)
+            {
+                int token;
+                if (loadedMetadata.AllTypeMappings.TryGetValue(definition, out token))
+                {
+                    typeMappings.Add(new MetadataMapping<MetadataType>(definition, token));
+                }
+            }
+
+            foreach (var method in GetCompiledMethods())
+            {
+                if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
+                {
+                    // Canonical methods are not interesting.
+                    continue;
+                }
+
+                int token;
+                if (loadedMetadata.MethodMappings.TryGetValue(method.GetTypicalMethodDefinition(), out token))
+                {
+                    methodMappings.Add(new MetadataMapping<MethodDesc>(method, token));
+                }
+            }
+
+            foreach (var eetypeGenerated in GetTypesWithEETypes())
+            {
+                if (eetypeGenerated.IsGenericDefinition)
+                    continue;
+
+                foreach (FieldDesc field in eetypeGenerated.GetFields())
+                {
+                    int token;
+                    if (loadedMetadata.FieldMappings.TryGetValue(field.GetTypicalFieldDefinition(), out token))
+                    {
+                        fieldMappings.Add(new MetadataMapping<FieldDesc>(field, token));
+                    }
+                }
+            }
         }
 
         private Dictionary<MethodDesc, MethodDesc> LoadDynamicInvokeStubs()
@@ -256,6 +301,9 @@ namespace ILCompiler
         /// </summary>
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+                return false;
+
             return GetReflectionInvokeStub(method) != null;
         }
 
@@ -271,7 +319,16 @@ namespace ILCompiler
             if (!_dynamicInvokeStubs.Value.TryGetValue(typicalInvokeTarget, out typicalDynamicInvokeStub))
                 return null;
 
-            return InstantiateDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, method);
+            MethodDesc dynamicInvokeStubIfItExists = InstantiateDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, method);
+
+            if (dynamicInvokeStubIfItExists == null)
+                return null;
+
+            MethodDesc dynamicInvokeStubCanonicalized = dynamicInvokeStubIfItExists.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (_loadedMetadata.Value.DynamicInvokeCompiledMethods.Contains(dynamicInvokeStubCanonicalized))
+                return dynamicInvokeStubIfItExists;
+            else
+                return null;
         }
     }
 }

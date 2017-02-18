@@ -88,6 +88,8 @@
     </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\ILStreamReader.cs" />
     <Compile Include="Compiler\LibraryInitializers.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />

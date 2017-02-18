@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,8 +21,58 @@ namespace ILCompiler
         public static string CompilationUnitPrefix = "";
         public string targetPrefix;
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, string outputFile) 
-            : base(context, compilationModuleGroup)
+        private static byte[] ReadBytesFromFile(string filename)
+        {
+            using (FileStream file = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                int fileLen = checked((int)file.Length);
+                int fileLenRemaining = fileLen;
+                int curPos = 0;
+                byte[] returnValue = new byte[fileLen];
+                while (fileLenRemaining > 0)
+                {
+                    // Read may return anything from 0 to 10.
+                    int n = file.Read(returnValue, curPos, fileLenRemaining);
+
+                    // Unexpected end of file
+                    if (n == 0)
+                        throw new IOException();
+
+                    curPos += n;
+                    fileLenRemaining -= n;
+                }
+
+                return returnValue;
+            }
+        }
+
+        private static ModuleDesc FindMetadataDescribingModuleInInputSet(IEnumerable<ModuleDesc> inputModules)
+        {
+            foreach (ModuleDesc module in inputModules)
+            {
+                if (PrecomputedMetadataManager.ModuleHasMetadataMappings(module))
+                {
+                    return module;
+                }
+            }
+
+            return null;
+        }
+
+        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile)
+        {
+            if (metadataFile == null)
+            {
+                return new CompilerGeneratedMetadataManager(compilationModuleGroup, context);
+            }
+            else
+            {
+                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, ReadBytesFromFile(metadataFile));
+            }
+        }
+
+        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile) 
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile))
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = Path.GetFileNameWithoutExtension(outputFile);
@@ -53,6 +104,11 @@ namespace ILCompiler
             _hostedGenericDictionaryLayouts = new NodeCache<TypeSystemEntity, UtcDictionaryLayoutNode>((TypeSystemEntity methodOrType) =>
             {
                 return new UtcDictionaryLayoutNode(methodOrType);
+            });
+
+            _nonExternMethodSymbols = new NodeCache<MethodDesc, NonExternMethodSymbolNode>((MethodDesc method) =>
+            {
+                return new NonExternMethodSymbolNode(method);
             });
         }
 
@@ -202,6 +258,13 @@ namespace ILCompiler
         public override DictionaryLayoutNode GenericDictionaryLayout(TypeSystemEntity methodOrType)
         {
             return _hostedGenericDictionaryLayouts.GetOrAdd(methodOrType);
+        }
+
+        private NodeCache<MethodDesc, NonExternMethodSymbolNode> _nonExternMethodSymbols;
+
+        public NonExternMethodSymbolNode NonExternMethodSymbol(MethodDesc method)
+        {
+            return _nonExternMethodSymbols.GetOrAdd(method);
         }
     }
 }
