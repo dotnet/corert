@@ -1,0 +1,69 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics;
+
+using Internal.Text;
+using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.DependencyAnalysis;
+
+using DependencyList=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencyListEntry=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+
+namespace ILCompiler.DependencyAnalysis
+{
+    public static class CodeBasedDependencyAlgorithm
+    {
+        public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
+            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
+            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
+            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
+            if (factory.MetadataManager.IsReflectionInvokable(method))
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
+                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method) && !method.IsCanonicalMethod(CanonicalFormKind.Any) /* Shared generics handled in the shadow concrete method node */)
+                {
+                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(method);
+                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (invokeStub != canonInvokeStub)
+                        dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    else
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                }
+
+                if (method.OwningType.IsValueType && !method.Signature.IsStatic)
+                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub"));
+            }
+
+            if (method.HasInstantiation)
+            {
+                var exactMethodInstantiationDependencies = ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(factory, method);
+                if (exactMethodInstantiationDependencies != null)
+                {
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.AddRange(exactMethodInstantiationDependencies);
+                }
+
+                if (method.IsVirtual)
+                {
+                    // Generic virtual methods dependency tracking
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.Add(new DependencyListEntry(factory.GVMDependencies(method), "GVM Dependencies Support"));
+                }
+
+                var templateMethodDependencies = GenericMethodsTemplateMap.GetTemplateMethodDependencies(factory, method);
+                if (templateMethodDependencies != null)
+                {
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.AddRange(templateMethodDependencies);
+                }
+            }
+        }
+    }
+}

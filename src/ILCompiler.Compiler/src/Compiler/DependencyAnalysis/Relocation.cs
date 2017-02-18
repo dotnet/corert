@@ -9,6 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     public enum RelocType
     {
         IMAGE_REL_BASED_ABSOLUTE        = 0x00,     // No relocation required
+        IMAGE_REL_BASED_ADDR32NB        = 0x02,     // The 32-bit address without an image base (RVA)
         IMAGE_REL_BASED_HIGHLOW         = 0x03,     // 32 bit address base
         IMAGE_REL_BASED_DIR64           = 0x0A,     // 64 bit address base
         IMAGE_REL_BASED_REL32           = 0x10,     // 32-bit relative address from byte following reloc
@@ -42,6 +43,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                 case RelocType.IMAGE_REL_BASED_HIGHLOW:
                 case RelocType.IMAGE_REL_BASED_REL32:
+                case RelocType.IMAGE_REL_BASED_ADDR32NB:
                     *(int*)location = (int)value;
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
@@ -58,6 +60,7 @@ namespace ILCompiler.DependencyAnalysis
             switch (relocType)
             {
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_BASED_HIGHLOW:
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:

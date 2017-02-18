@@ -24,14 +24,14 @@ namespace ILCompiler.DependencyAnalysis
         private CompilerTypeSystemContext _context;
         private CompilationModuleGroup _compilationModuleGroup;
 
-        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
+        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager)
         {
             _target = context.Target;
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             CreateNodeCaches();
 
-            MetadataManager = new CompilerGeneratedMetadataManager(this);
+            MetadataManager = metadataManager;
             ThreadStaticsRegion = new ThreadStaticsRegionNode(
                 "__ThreadStaticRegionStart", "__ThreadStaticRegionEnd", null, _target.Abi);
         }
