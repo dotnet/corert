@@ -12,6 +12,7 @@
 
 #ifndef __DWARF_PARSER_HPP__
 #define __DWARF_PARSER_HPP__
+#define __STDC_FORMAT_MACROS
 
 #include <inttypes.h>
 #include <stdint.h>
