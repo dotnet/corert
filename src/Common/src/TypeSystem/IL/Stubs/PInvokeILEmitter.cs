@@ -24,7 +24,7 @@ namespace Internal.IL.Stubs
         private readonly Marshaller[] _marshallers;
         private PInvokeILEmitter(MethodDesc targetMethod, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration)
         {
-            Debug.Assert(targetMethod.IsPInvoke);
+            Debug.Assert(targetMethod.IsPInvoke || targetMethod is DelegateMarshallingMethodThunk);
 
             _methodData = new PInvokeMethodData(targetMethod, pinvokeILEmitterConfiguration);
             _marshallers = InitializeMarshallers(_methodData);
@@ -38,6 +38,8 @@ namespace Internal.IL.Stubs
             Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
             int parameterIndex = 0;
             ParameterMetadata parameterMetadata = new ParameterMetadata();
+
+            bool isDelegate = targetMethod is DelegateMarshallingMethodThunk;
             for (int i = 0; i < marshallers.Length; i++)
             {
                 Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
@@ -51,7 +53,11 @@ namespace Internal.IL.Stubs
                     parameterMetadata = parameterMetadataArray[parameterIndex++];
                 }
                 TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
-                marshallers[i] = Marshaller.CreateMarshaller(parameterType, pInvokeMethodData, parameterMetadata, marshallers);
+                marshallers[i] = Marshaller.CreateMarshaller(parameterType, 
+                                                    pInvokeMethodData, 
+                                                    parameterMetadata, 
+                                                    marshallers,
+                                                    isDelegate ? MarshalDirection.Reverse : MarshalDirection.Forward);
             }
 
             return marshallers;
@@ -91,7 +97,19 @@ namespace Internal.IL.Stubs
                             _methodData.PInvokeMarshal.GetKnownMethod("ClearLastWin32Error", null)));
             }
 
-            if (MarshalHelpers.UseLazyResolution(targetMethod, importMetadata.Module, pinvokeILEmitterConfiguration))
+            if (targetMethod is DelegateMarshallingMethodThunk)
+            {
+                MethodSignature nativeCalliSig = new MethodSignature(MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
+                ((DelegateMarshallingMethodThunk)targetMethod).SetNativeCallableSignature(nativeCalliSig);
+
+                fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(targetMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod("GetDelegateFunctionPointer", null)));
+                ILLocalVariable vDelegateStub = emitter.NewLocal(targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
+                fnptrLoadStream.EmitStLoc(vDelegateStub);
+                callsiteSetupCodeStream.EmitLdLoc(vDelegateStub);
+                callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethod.Signature));
+            }
+
+            else if (MarshalHelpers.UseLazyResolution(targetMethod, importMetadata.Module, pinvokeILEmitterConfiguration))
             {
                 MetadataType lazyHelperType = targetMethod.Context.GetHelperType("InteropHelpers");
                 FieldDesc lazyDispatchCell = new PInvokeLazyFixupField((DefType)targetMethod.OwningType, importMetadata);
@@ -179,7 +197,12 @@ namespace Internal.IL.Stubs
         private bool IsStubRequired()
         {
             MethodDesc method = _methodData.TargetMethod;
-            Debug.Assert(method.IsPInvoke);
+            Debug.Assert(method.IsPInvoke || method is DelegateMarshallingMethodThunk);
+
+            if (method is DelegateMarshallingMethodThunk)
+            {
+                return true;
+            }
 
             if (MarshalHelpers.UseLazyResolution(method, _methodData.ImportMetadata.Module, _methodData.PInvokeILEmitterConfiguration))
             {

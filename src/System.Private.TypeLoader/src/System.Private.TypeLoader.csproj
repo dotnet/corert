@@ -399,6 +399,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.ConstructedGenericMethodsLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.ConstructedGenericsRegistration.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.ConstructedGenericTypesLookup.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.DelegateMarshallerLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.FieldAccess.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.GVMResolution.cs" />

@@ -42,6 +42,7 @@ namespace ILCompiler
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
+        internal Dictionary<DelegateInvokeMethodSignature, MethodDesc> DelegateMarshalingThunks = new Dictionary<DelegateInvokeMethodSignature, MethodDesc>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
@@ -86,6 +87,9 @@ namespace ILCompiler
 
             var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
+
+            var delegateMapNode = new DelegateMarshallingStubMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DelegateMarshallingStubMap), delegateMapNode, delegateMapNode, delegateMapNode.EndSymbol);
 
             var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
@@ -318,6 +322,18 @@ namespace ILCompiler
 
             MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
             return instantiatedDynamicInvokeMethod;
+        }
+
+        public MethodDesc GetDelegateMarshallingStub(TypeDesc del)
+        {
+            MethodDesc thunk;
+            var lookupSig = new DelegateInvokeMethodSignature(del);
+            if (!DelegateMarshalingThunks.TryGetValue(lookupSig, out thunk))
+            {
+                thunk = new DelegateMarshallingMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), del);
+                DelegateMarshalingThunks.Add(lookupSig, thunk);
+            }
+            return thunk;
         }
 
         protected virtual void AddGeneratedType(TypeDesc type)

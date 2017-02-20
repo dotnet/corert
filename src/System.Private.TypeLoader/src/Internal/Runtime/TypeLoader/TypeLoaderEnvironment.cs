@@ -66,6 +66,11 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetGenericVirtualTargetForTypeAndSlot(targetHandle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out methodPointer, out dictionaryPointer, out slotUpdated);
         }
 
+        public override IntPtr TryGetMarshallerForDelegate(RuntimeTypeHandle delegateTypeHandle)
+        {
+            return TypeLoaderEnvironment.Instance.TryGetMarshallerForDelegate(delegateTypeHandle);
+        }
+
         /// <summary>
         /// Register a new runtime-allocated code thunk in the diagnostic stream.
         /// </summary>

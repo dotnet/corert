@@ -83,6 +83,25 @@ namespace ILCompiler.DependencyAnalysis
 
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
+            if (_method.IsPInvoke)
+            {
+                MethodSignature methodSig = _method.Signature;
+                if (methodSig.ReturnType.IsDelegate)
+                {
+                    var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(methodSig.ReturnType);
+                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub"));
+                }
+
+                for (int i=0; i < methodSig.Length; i++)
+                {
+                    if (methodSig[i].IsDelegate)
+                    {
+                        var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(methodSig[i]);
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub"));
+                    }
+                }
+            }
+
             return dependencies;
         }
 

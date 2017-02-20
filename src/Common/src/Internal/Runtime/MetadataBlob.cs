@@ -22,7 +22,7 @@ namespace Internal.Runtime
         DefaultConstructorMap                       = 14,
         UnboxingAndInstantiatingStubMap             = 15,
         InvokeInstantiations                        = 16, // unused
-        PointerTypeMap                              = 17, // unused
+        DelegateMarshallingStubMap                  = 17,
         GenericVirtualMethodTable                   = 18,
         InterfaceGenericVirtualMethodTable          = 19,
 

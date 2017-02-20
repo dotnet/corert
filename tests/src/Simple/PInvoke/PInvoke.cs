@@ -55,6 +55,10 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         public static extern bool LastErrorTest();
 
+        delegate int Delegate_Int(int a);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_Int(Delegate_Int del);
+
         public static int Main(string[] args)
         {
             TestBlittableType();
@@ -68,6 +72,9 @@ namespace PInvokeTests
             TestSafeHandle();
             TestStringArray();
             TestSizeParamIndex();
+#if !CODEGEN_CPP && Windows_NT
+            TestDelegate();
+#endif            
             return 100;
         }
 
@@ -196,7 +203,18 @@ namespace PInvokeTests
                 }
             }
             ThrowIfNotEquals(true, pass, "SizeParamIndex failed.");
-        } 
+        }
+
+        private static void TestDelegate()
+        {
+            Console.WriteLine("Testing Delegate");
+            Delegate_Int del = new Delegate_Int(Cube);
+            ThrowIfNotEquals(true, ReversePInvoke_Int(del), "Delegate marshalling failed.");
+        }
+        static int Cube(int a)
+        {
+            return a*a*a;
+        }
     }
 
     public class SafeMemoryHandle : SafeHandle //SafeHandle subclass

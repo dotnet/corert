@@ -440,3 +440,16 @@ COOP_PINVOKE_HELPER(bool, RhpETWShouldWalkCom, ())
     ASSERT_UNCONDITIONALLY("NYI");
     return false;
 }
+#ifdef USE_PORTABLE_HELPERS
+COOP_PINVOKE_HELPER(void *, RhpGetCommonStubAddress, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(void *, RhpGetCurrentThunkContext, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+#endif

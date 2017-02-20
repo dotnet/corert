@@ -185,6 +185,11 @@ namespace Internal.IL
                 return new InstantiatedMethodIL(method, methodDefinitionIL);
             }
             else
+            if (method is DelegateMarshallingMethodThunk)
+            {
+                return _pinvokeILProvider.EmitIL(method);
+            }
+            else
             if (method is ILStubMethod)
             {
                 return ((ILStubMethod)method).EmitIL();
