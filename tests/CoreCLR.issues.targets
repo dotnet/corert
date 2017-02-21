@@ -1296,6 +1296,14 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_speed_dbgarrres\_speed_dbgarrres.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_relarrres\_relarrres.*" />
 
+    <!-- Tests that fail after RyuJIT update -->
+    <!-- https://github.com/dotnet/corert/issues/2782 -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinkstay\doublinkstay.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinkgen\doublinkgen.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\nstructresur\nstructresur.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\NDPin\ndpinfinal\ndpinfinal.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinning\object-pin\object-pin\object-pin.*" />
+
     <!-- Variant interface method resolution -->
     <!-- https://github.com/dotnet/corert/issues/2358 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\dev10_bug719093\variancesmall\variancesmall.*" />
