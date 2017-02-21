@@ -341,6 +341,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
+            if (_compilationModuleGroup.ShouldProduceFullType(type))
+            {
+                return ConstructedTypeSymbol(type);
+            }
+
             return _typeSymbols.GetOrAdd(type);
         }
 
