@@ -7,7 +7,7 @@ if [ "$BUILDVARS_DONE" != 1 ]; then
 fi
 
 pushd ${__ProjectRoot}/tests
-source ${__ProjectRoot}/tests/runtest.sh $__BuildOS $__BuildArch $__BuildType -dotnetclipath $__dotnetclipath
+source ${__ProjectRoot}/tests/runtest.sh $__BuildOS $__BuildArch $__BuildType -cross $__CrossBuild -dotnetclipath $__dotnetclipath
 TESTERRORLEVEL=$?
 popd
 if [ $TESTERRORLEVEL != 0 ]; then

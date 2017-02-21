@@ -78,7 +78,7 @@ namespace ILCompiler
 
         public override bool ShouldProduceFullType(TypeDesc type)
         {
-            return true;
+            return ConstructedEETypeNode.CreationAllowed(type);
         }
     }
 

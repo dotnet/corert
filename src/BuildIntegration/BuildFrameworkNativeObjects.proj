@@ -10,7 +10,9 @@
   
   <Import Project="Microsoft.NETCore.Native.targets" />
 
-  <Target Name="BuildAllFrameworkLibraries">
+  <Target Name="BuildAllFrameworkLibraries"
+    Inputs="@(IlcReference)"
+    Outputs="@(IlcReference->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
     <ItemGroup>
       <ProjectToBuild Include="$(MSBuildProjectFullPath)">
         <AdditionalProperties>
@@ -25,7 +27,7 @@
     DependsOnTargets="BuildAllFrameworkLibraries">
 
     <ItemGroup>
-      <LibInputs Include="$(NativeIntermediateOutputPath)\*.obj" />
+      <LibInputs Include="$(NativeIntermediateOutputPath)\*$(NativeObjectExt)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -37,6 +39,7 @@
   <Target Name="BuildOneFrameworkLibrary">
     <ItemGroup>
         <ManagedBinary Include="$(LibraryToCompile)" />
+        <IlcCompileInput Include="@(ManagedBinary)" />
     </ItemGroup>
   </Target>
   

@@ -171,6 +171,36 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     return pObject;
 }
 
+#ifdef _ARM_
+COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Object *, RhpNewFastMisalign, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numElements))
+{
+    Array * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+#endif
+
 //
 // PInvoke
 //

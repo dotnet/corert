@@ -515,6 +515,11 @@ namespace Internal.JitInterface
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
+
+            if (method.HasInstantiation)
+            {
+                sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_GENERIC;
+            }
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
@@ -2273,6 +2278,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER_STATIC: id = ReadyToRunHelper.MonitorEnterStatic; break;
                 case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC: id = ReadyToRunHelper.MonitorExitStatic; break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT: id = ReadyToRunHelper.GVMLookupForSlot; break;
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -2323,8 +2330,14 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("embedModuleHandle"); }
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedClassHandle"); }
+
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedMethodHandle"); }
+        {
+            MethodDesc method = HandleToObject(handle);
+            ppIndirection = null;
+            return (CORINFO_METHOD_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeMethodHandle(method));
+        }
+
         private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedFieldHandle"); }
 
@@ -2380,11 +2393,12 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    // TODO: Handle should actually point to a dependency node (we don't have one yet)
-                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)pResult.compileTimeHandle;
+                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
+                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeFieldHandle(fd));
                 }
                 else
                 {
+                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
                     pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
                 }
             }
@@ -2617,7 +2631,7 @@ namespace Internal.JitInterface
 
             bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
-            if (directCall && !allowInstParam && targetMethod.RequiresInstArg())
+            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
             {
                 // JIT needs a single address to call this method but the method needs a hidden argument.
                 // We need a fat function pointer for this that captures both things.
@@ -2626,10 +2640,10 @@ namespace Internal.JitInterface
                 // JIT won't expect fat function pointers unless this is e.g. delegate creation
                 Debug.Assert((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0);
 
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
@@ -2647,9 +2661,9 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    // Probably just grab a fat function pointer from the node factory and return it as the address.
-                    // Couldn't really test this so leaving it to throw. We'll also need to set the right bit.
-                    throw new NotImplementedException();
+                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.FatFunctionPointer(targetMethod));
                 }
             }
             else if (directCall)
@@ -2763,11 +2777,23 @@ namespace Internal.JitInterface
             else if (method.HasInstantiation)
             {
                 // GVM Call Support
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveGenericVirtualMethod, targetMethod));
-                pResult.nullInstanceCheck = false;
+                pResult.nullInstanceCheck = true;
+
+                if (pResult.exactContextNeedsRuntimeLookup)
+                {
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod != MethodBeingCompiled)
+                        return;
+
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                }
             }
             else if((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {
@@ -3160,13 +3186,11 @@ namespace Internal.JitInterface
                     // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject((IntPtr)target);
 
-                    if (targetObject is FieldDesc)
-                    {
-                        // We only support FieldDesc for InitializeArray intrinsic right now.
-                        throw new NotImplementedException("RuntimeFieldHandle is not implemented");
-                    }
-
                     relocTarget = (ISymbolNode)targetObject;
+
+                    if (relocTarget is FatFunctionPointerNode)
+                        relocDelta = Runtime.FatFunctionPointerConstants.Offset;
+
                     break;
             }
 

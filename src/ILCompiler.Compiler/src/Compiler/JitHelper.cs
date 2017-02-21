@@ -102,8 +102,8 @@ namespace ILCompiler
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeMethodHandle");
                     break;
-                case ReadyToRunHelper.GetRuntimeFieldHandle: // TODO: Reflection
-                    mangledName = "__fail_fast";
+                case ReadyToRunHelper.GetRuntimeFieldHandle:
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
@@ -172,6 +172,10 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.MonitorExitStatic:
                     methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExitStatic");
+                    break;
+
+                case ReadyToRunHelper.GVMLookupForSlot:
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot", null);
                     break;
 
                 default:

@@ -269,7 +269,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _runtimeMethodHandles = new NodeCache<MethodDesc, RuntimeMethodHandleNode>((MethodDesc method) =>
             {
-                return new RuntimeMethodHandleNode(this, method);
+                return new RuntimeMethodHandleNode(method);
+            });
+
+            _runtimeFieldHandles = new NodeCache<FieldDesc, RuntimeFieldHandleNode>((FieldDesc field) =>
+            {
+                return new RuntimeFieldHandleNode(field);
             });
 
             _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
@@ -336,6 +341,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
+            if (_compilationModuleGroup.ShouldProduceFullType(type))
+            {
+                return ConstructedTypeSymbol(type);
+            }
+
             return _typeSymbols.GetOrAdd(type);
         }
 
@@ -426,6 +436,13 @@ namespace ILCompiler.DependencyAnalysis
         internal RuntimeMethodHandleNode RuntimeMethodHandle(MethodDesc method)
         {
             return _runtimeMethodHandles.GetOrAdd(method);
+        }
+
+        private NodeCache<FieldDesc, RuntimeFieldHandleNode> _runtimeFieldHandles;
+
+        internal RuntimeFieldHandleNode RuntimeFieldHandle(FieldDesc field)
+        {
+            return _runtimeFieldHandles.GetOrAdd(field);
         }
 
         private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<Utf8String, byte[], int>>

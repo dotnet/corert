@@ -86,7 +86,7 @@ set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 :: multi-module test results are visible to the CI tooling
 if NOT "%CoreRT_MultiFileConfiguration%" == "" (
     set CoreRT_TestLogFileName=%CoreRT_MultiFileConfiguration%\%CoreRT_TestLogFileName%
-    mkdir %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%
+    if not exist %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%\ mkdir %__CoreRTTestBinDir%\%CoreRT_MultiFileConfiguration%
 )
 
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
@@ -207,9 +207,9 @@ goto :eof
         )
     )
 
-    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0\..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0\..\bin\obj\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
+    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
     echo.
-    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0\..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0\..\bin\obj\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
+    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
@@ -218,7 +218,7 @@ goto :eof
     if "%__SavedErrorLevel%"=="0" (
         echo.
         echo Running test !__SourceFileName!
-        call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\native !__SourceFileName!.exe
+        call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.exe
         set __SavedErrorLevel=!ErrorLevel!
     )
 
@@ -290,13 +290,21 @@ goto :eof
 
     if not exist "%CoreRT_TestExtRepo%" ((call :Fail "%CoreRT_TestExtRepo% does not exist") & exit /b 1)
 
+    if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
+        set IlcMultiModule=true
+        REM Pre-compile shared framework assembly
+        echo Compiling framework library
+        echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
+        msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
+    )
+
     echo.
     set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo!
     set CORE_ROOT=%CoreRT_TestRoot%\..\Tools\dotnetcli\shared\Microsoft.NETCore.App\1.0.0
     echo CORE_ROOT IS NOW %CORE_ROOT%
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
- 
+    
     msbuild "/p:RepoLocalBuild=true" src\TestWrappersConfig\XUnitTooling.depproj
     if errorlevel 1 (
         exit /b 1

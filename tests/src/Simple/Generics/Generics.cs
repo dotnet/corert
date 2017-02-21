@@ -25,6 +25,7 @@ class Program
         TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestUnusedGVMsDoNotCrashCompiler.Run();
+        TestSimpleGVMScenarios.Run();
 
         return 100;
     }
@@ -131,6 +132,22 @@ class Program
     /// </summary>
     class TestDelegateFatFunctionPointers
     {
+        struct SmallStruct
+        {
+            public int X;
+        }
+
+        struct MediumStruct
+        {
+            public int X, Y, Z, W;
+        }
+
+        unsafe struct BigStruct
+        {
+            public const int Length = 128;
+            public fixed byte Bytes[Length];
+        }
+
         T Generic<T>(object o) where T : class
         {
             Func<object, T> f = OtherGeneric<T>;
@@ -142,12 +159,74 @@ class Program
             return o as T;
         }
 
+        delegate void VoidGenericDelegate<T>(ref T x, T val);
+        void VoidGeneric<T>(ref T x, T val)
+        {
+            x = val;
+        }
+
+        SmallStruct SmallStructGeneric<T>(SmallStruct x)
+        {
+            return x;
+        }
+
+        MediumStruct MediumStructGeneric<T>(MediumStruct x)
+        {
+            return x;
+        }
+
+        BigStruct BigStructGeneric<T>(BigStruct x)
+        {
+            return x;
+        }
+
         public static void Run()
         {
+            var o = new TestDelegateFatFunctionPointers();
+
             string hw = "Hello World";
-            string roundtrip = new TestDelegateFatFunctionPointers().Generic<string>(hw);
+            string roundtrip = o.Generic<string>(hw);
             if (roundtrip != hw)
                 throw new Exception();
+
+            {
+                VoidGenericDelegate<object> f = o.VoidGeneric;
+                object obj = new object();
+                object location = null;
+                f(ref location, obj);
+                if (location != obj)
+                    throw new Exception();
+            }
+
+            {
+                Func<SmallStruct, SmallStruct> f = o.SmallStructGeneric<object>;
+                SmallStruct x = new SmallStruct { X = 12345 };
+                SmallStruct result = f(x);
+                if (result.X != x.X)
+                    throw new Exception();
+            }
+
+            {
+                Func<MediumStruct, MediumStruct> f = o.MediumStructGeneric<object>;
+                MediumStruct x = new MediumStruct { X = 12, Y = 34, Z = 56, W = 78 };
+                /*MediumStruct result = f(x);
+                if (result.X != x.X || result.Y != x.Y || result.Z != x.Z || result.W != x.W)
+                    throw new Exception();*/
+            }
+
+            unsafe
+            {
+                Func<BigStruct, BigStruct> f = o.BigStructGeneric<object>;
+                BigStruct x = new BigStruct();
+                for (int i = 0; i < BigStruct.Length; i++)
+                    x.Bytes[i] = (byte)(i * 2);
+
+                /*BigStruct result = f(x);
+
+                for (int i = 0; i < BigStruct.Length; i++)
+                    if (x.Bytes[i] != result.Bytes[i])
+                        throw new Exception();*/
+            }
         }
     }
 
@@ -624,6 +703,218 @@ class Program
         {
             HasGvm hasGvm = new HasGvm();
             if (hasGvm.DoubleString("Hello") != "HelloHello")
+                throw new Exception();
+        }
+    }
+
+    class TestSimpleGVMScenarios
+    {
+        interface IFoo<out U>
+        {
+            string IMethod1<T>(T t1, T t2);
+        }
+
+        class Base : IFoo<string>, IFoo<int>
+        {
+            public virtual string GMethod1<T>(T t1, T t2) { return "Base.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+            public virtual string IMethod1<T>(T t1, T t2) { return "Base.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+        class Derived : Base, IFoo<string>, IFoo<int>
+        {
+            public override string GMethod1<T>(T t1, T t2) { return "Derived.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+            string IFoo<string>.IMethod1<T>(T t1, T t2) { return "Derived.IFoo<string>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+        class SuperDerived : Derived, IFoo<string>, IFoo<int>
+        {
+            string IFoo<int>.IMethod1<T>(T t1, T t2) { return "SuperDerived.IFoo<int>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+        
+
+        class GenBase<A> : IFoo<string>, IFoo<int>
+        {
+            public virtual string GMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+            public virtual string IMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+        class GenDerived<A> : GenBase<A>, IFoo<string>, IFoo<int>
+        {
+            public override string GMethod1<T>(T t1, T t2) { return "GenDerived<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+            string IFoo<string>.IMethod1<T>(T t1, T t2) { return "GenDerived<" + typeof(A) + ">.IFoo<string>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+        class GenSuperDerived<A> : GenDerived<A>, IFoo<string>, IFoo<int>
+        {
+            string IFoo<int>.IMethod1<T>(T t1, T t2) { return "GenSuperDerived<" + typeof(A) + ">.IFoo<int>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+
+        struct MyStruct1 : IFoo<string>, IFoo<int>
+        {
+            string IFoo<string>.IMethod1<T>(T t1, T t2) { return "MyStruct1.IFoo<string>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+            string IFoo<int>.IMethod1<T>(T t1, T t2) { return "MyStruct1.IFoo<int>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+        struct MyStruct2 : IFoo<string>, IFoo<int>
+        {
+            string IFoo<string>.IMethod1<T>(T t1, T t2) { return "MyStruct2.IFoo<string>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+            public string IMethod1<T>(T t1, T t2) { return "MyStruct2.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+        struct MyStruct3 : IFoo<string>, IFoo<int>
+        {
+            string IFoo<int>.IMethod1<T>(T t1, T t2) { return "MyStruct3.IFoo<int>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+            public string IMethod1<T>(T t1, T t2) { return "MyStruct3.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+
+        static string s_GMethod1;
+        static string s_IFooString;
+        static string s_IFooObject;
+        static string s_IFooInt;
+
+        static int s_NumErrors = 0;
+
+        private static void TestWithStruct(IFoo<string> ifooStr, IFoo<object> ifooObj, IFoo<int> ifooInt)
+        {
+            var res = ifooStr.IMethod1<int>(1, 2);
+            WriteLineWithVerification(res, s_IFooString);
+
+            res = ifooObj.IMethod1<int>(3, 4);
+            WriteLineWithVerification(res, s_IFooObject);
+
+            res = ifooInt.IMethod1<int>(5, 6);
+            WriteLineWithVerification(res, s_IFooInt);
+        }
+
+        private static void TestWithClass(object o)
+        {
+            Base b = o as Base;
+            var res = b.GMethod1<int>(1, 2);
+            WriteLineWithVerification(res, s_GMethod1);
+
+            IFoo<string> ifoo1 = o as IFoo<string>;
+            res = ifoo1.IMethod1<int>(3, 4);
+            WriteLineWithVerification(res, s_IFooString);
+
+            IFoo<object> ifoo2 = o as IFoo<object>;
+            res = ifoo2.IMethod1<int>(5, 6);
+            WriteLineWithVerification(res, s_IFooObject);
+
+            IFoo<int> ifoo3 = o as IFoo<int>;
+            res = ifoo3.IMethod1<int>(7, 8);
+            WriteLineWithVerification(res, s_IFooInt);
+        }
+
+        private static void TestWithGenClass<T>(object o)
+        {
+            GenBase<T> b = o as GenBase<T>;
+            var res = b.GMethod1<int>(1, 2);
+            WriteLineWithVerification(res, s_GMethod1);
+
+            IFoo<string> ifoo1 = o as IFoo<string>;
+            res = ifoo1.IMethod1<int>(3, 4);
+            WriteLineWithVerification(res, s_IFooString);
+
+            IFoo<object> ifoo2 = o as IFoo<object>;
+            res = ifoo2.IMethod1<int>(5, 6);
+            WriteLineWithVerification(res, s_IFooObject);
+
+            IFoo<int> ifoo3 = o as IFoo<int>;
+            res = ifoo3.IMethod1<int>(7, 8);
+            WriteLineWithVerification(res, s_IFooInt);
+        }
+
+        private static void WriteLineWithVerification(string actual, string expected)
+        {
+            if (actual != expected)
+            {
+                Console.WriteLine("ACTUAL   : " + actual);
+                Console.WriteLine("EXPECTED : " + expected);
+                s_NumErrors++;
+            }
+            else
+            {
+                Console.WriteLine(actual);
+            }
+        }
+
+        public static void Run()
+        {
+            {
+                s_GMethod1 = "Base.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "Base.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "Base.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
+                TestWithClass(new Base());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
+                TestWithClass(new Derived());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "SuperDerived.IFoo<int>.IMethod1<System.Int32>(7,8)";
+                TestWithClass(new SuperDerived());
+                Console.WriteLine("====================");
+            }
+
+            {
+                s_GMethod1 = "GenBase<System.Byte>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenBase<System.Byte>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenBase<System.Byte>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<byte>(new GenBase<byte>());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<byte>(new GenDerived<byte>());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "GenDerived<System.String>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenBase<System.String>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<String>(new GenDerived<String>());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenSuperDerived<System.Byte>.IFoo<int>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<byte>(new GenSuperDerived<byte>());
+                Console.WriteLine("====================");
+            }
+
+            {
+                s_IFooString = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(1,2)";
+                s_IFooObject = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooInt = "MyStruct1.IFoo<int>.IMethod1<System.Int32>(5,6)";
+                TestWithStruct(new MyStruct1(), new MyStruct1(), new MyStruct1());
+                Console.WriteLine("====================");
+
+
+                s_IFooString = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(1,2)";
+                s_IFooObject = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooInt = "MyStruct2.IMethod1<System.Int32>(5,6)";
+                TestWithStruct(new MyStruct2(), new MyStruct2(), new MyStruct2());
+                Console.WriteLine("====================");
+
+
+                s_IFooString = "MyStruct3.IMethod1<System.Int32>(1,2)";
+                s_IFooObject = "MyStruct3.IMethod1<System.Int32>(3,4)";
+                s_IFooInt = "MyStruct3.IFoo<int>.IMethod1<System.Int32>(5,6)";
+                TestWithStruct(new MyStruct3(), new MyStruct3(), new MyStruct3());
+                Console.WriteLine("====================");
+            }
+
+            if (s_NumErrors != 0)
                 throw new Exception();
         }
     }

@@ -49,7 +49,7 @@ namespace System.Threading
 
             public static WaitableObject NewEvent(bool initiallySignaled, EventResetMode resetMode)
             {
-                Debug.Assert(Enum.IsDefined(typeof(EventResetMode), resetMode));
+                Debug.Assert((resetMode == EventResetMode.AutoReset) || (resetMode == EventResetMode.ManualReset));
 
                 return
                     new WaitableObject(

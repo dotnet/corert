@@ -697,6 +697,13 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return moduleHandle;
 }
 
+REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
+{
+    // Write the message using lowest-level OS API available. This is used to print the stack overflow
+    // message, so there is not much that can be done here.
+    write(STDERR_FILENO, message, sizeof(message));
+}
+
 bool QueryCacheSize()
 {
     bool success = true;

@@ -433,6 +433,12 @@ namespace Internal.NativeFormat
             return Unify(sig);
         }
 
+        public Vertex GetFieldSignature(Vertex containingType, string name)
+        {
+            FieldSignature sig = new FieldSignature(containingType, name);
+            return Unify(sig);
+        }
+
         public Vertex GetMethodSigSignature(uint callingConvention, uint genericArgCount, Vertex returnType, Vertex[] parameters)
         {
             MethodSigSignature sig = new MethodSigSignature(callingConvention, genericArgCount, returnType, parameters);
@@ -964,6 +970,53 @@ namespace Internal.NativeFormat
 
 #if NATIVEFORMAT_PUBLICWRITER
     public
+#else
+    internal
+#endif
+    class FieldSignature : Vertex
+    {
+        private Vertex _containingType;
+        private string _name;
+
+        public FieldSignature(Vertex containingType, string name)
+        {
+            _containingType = containingType;
+            _name = name;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            _containingType.Save(writer);
+            writer.WriteString(_name);
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 113 + 97 * _containingType.GetHashCode();
+            foreach (char c in _name)
+                hash += (hash << 5) + c * 19;
+
+            return hash;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as FieldSignature;
+            if (other == null)
+                return false;
+
+            if (!Object.Equals(other._containingType, _containingType))
+                return false;
+
+            if (!Object.Equals(other._name, _name))
+                return false;
+
+            return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+        public
 #else
     internal
 #endif

@@ -56,6 +56,7 @@ See the LICENSE file in the project root for more information.
   </ItemGroup>
 
   <ItemGroup>
+    <IlcCompileInput Include="@(ManagedBinary)" />
     <IlcReference Include="$(IlcPath)\sdk\*.dll" />
     <IlcReference Include="$(IlcPath)\framework\*.dll" />
   </ItemGroup>
@@ -69,7 +70,7 @@ See the LICENSE file in the project root for more information.
     BuildFrameworkLib is invoked before IlcCompile in multi-module builds to 
     produce the shared framework library on demand
   -->
-  <Target Name="BuildFrameworkLib">
+  <Target Name="BuildFrameworkLib" Condition="'$(DisableFrameworkLibGeneration)' != 'true'">
     <ItemGroup>
       <ProjectToBuild Include="$(MSBuildThisFileDirectory)\BuildFrameworkNativeObjects.proj">
         <AdditionalProperties>
@@ -83,12 +84,12 @@ See the LICENSE file in the project root for more information.
   </Target>
 
   <Target Name="IlcCompile" 
-      Inputs="@(ManagedBinary)"
+      Inputs="@(IlcCompileInput)"
       Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
     <ItemGroup>
-      <IlcArg Include="@(ManagedBinary)" />
+      <IlcArg Include="@(IlcCompileInput)" />
       <IlcArg Include="-o:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)" />
       <IlcArg Include="@(IlcReference->'-r:%(Identity)')" />
       <IlcArg Condition="$(NativeCodeGen) != ''" Include="--$(NativeCodeGen)" />

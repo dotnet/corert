@@ -8,7 +8,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\native\</IntermediateOutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\native\</IntermediateOutputPath>
     <OutputName>PInvokeNative</OutputName>
     <NativeObjectExt Condition="'$(OS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(OS)' != 'Windows_NT'">.o</NativeObjectExt>
