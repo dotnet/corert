@@ -18,7 +18,7 @@ namespace System.Reflection
         public virtual int MDStreamVersion { get { throw NotImplemented.ByDesign; } }
         public virtual Guid ModuleVersionId { get { throw NotImplemented.ByDesign; } }
         public virtual string ScopeName { get { throw NotImplemented.ByDesign; } }
-        public ModuleHandle ModuleHandle => ModuleHandle.EmptyHandle;
+        public ModuleHandle ModuleHandle => new ModuleHandle(this);
         public virtual void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw NotImplemented.ByDesign; }
         public virtual bool IsResource() { throw NotImplemented.ByDesign; }
 
