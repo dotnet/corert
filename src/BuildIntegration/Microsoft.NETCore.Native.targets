@@ -28,6 +28,8 @@ See the LICENSE file in the project root for more information.
   <PropertyGroup>
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
+    <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
+    <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
 
     <IlcOutputFileExt>$(NativeObjectExt)</IlcOutputFileExt>
     <IlcOutputFileExt Condition="$(NativeCodeGen) == 'cpp'">.cpp</IlcOutputFileExt>
@@ -158,11 +160,13 @@ See the LICENSE file in the project root for more information.
     DependsOnTargets="$(CreateLibDependsOn)">
 
     <ItemGroup>
+      <CustomLibArg Include="/out:$(SharedLibrary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLibArg Include="-crs $(SharedLibrary)" Condition="'$(OS)' != 'Windows_NT'" />
       <CustomLibArg Include="@(LibInputs->'%(Identity)')" />
-      <CustomLibArg Include="/out:$(SharedLibrary)" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
     <Exec Command="$(CppLibCreator) @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
 </Project>

@@ -31,7 +31,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <SharedLibrary>$(FrameworkLibPath)\Framework.lib</SharedLibrary>
+      <SharedLibrary Condition="'$(OS)' == 'Windows_NT'">$(FrameworkLibPath)\Framework$(LibFileExt)</SharedLibrary>
+      <SharedLibrary Condition="'$(OS)' != 'Windows_NT'">$(FrameworkLibPath)\libframework$(LibFileExt)</SharedLibrary>
     </PropertyGroup>
 
   </Target>
