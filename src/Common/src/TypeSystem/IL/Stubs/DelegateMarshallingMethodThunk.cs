@@ -13,26 +13,24 @@ using Interlocked = System.Threading.Interlocked;
 namespace Internal.IL.Stubs
 {
     /// <summary>
-    /// Thunk to dynamically invoke a method using reflection. The method accepts an object[] of parameters
-    /// to target method, lays them out on the stack, and calls the target method. This thunk has heavy
-    /// dependencies on the general dynamic invocation infrastructure in System.InvokeUtils and gets called from there
-    /// at runtime. See comments in System.InvokeUtils for a more thorough explanation.
+    /// Thunk to marshal delegate parameters and invoke the appropriate delegate function pointer
     /// </summary>
     internal class DelegateMarshallingMethodThunk : ILStubMethod
     {
         private TypeDesc _owningType;
-        private static int s_stubMethodIdCounter;
-        private string _name;
-        private MethodSignature _signature;
+        private MethodSignature _delegateSignature; // signature of the delegate
+        private MethodSignature _signature;         // signature of the native callable marshalling stub
         private TypeDesc _delegateType;
+        private MethodIL _methodIL;
 
         public DelegateMarshallingMethodThunk(TypeDesc owningType, TypeDesc delegateType)
         {
             _owningType = owningType;
             _delegateType = delegateType;
             MethodDesc invokeMethod = delegateType.GetMethod("Invoke", null);
-            _signature = invokeMethod.Signature;
-            _name = "ReverseDelegateStub" + GetNextStubMethodId();
+            _delegateSignature = invokeMethod.Signature;
+            _methodIL = PInvokeILEmitter.EmitIL(this, null);
+            _signature = ((PInvokeILStubMethodIL)_methodIL).NativeCallableSignature;
         }
 
         public override TypeSystemContext Context
@@ -66,27 +64,27 @@ namespace Internal.IL.Stubs
                 return _signature;
             }
         }
-        private int GetNextStubMethodId()
+
+        public MethodSignature DelegateSignature
         {
-            return System.Threading.Interlocked.Increment(ref s_stubMethodIdCounter);
+            get
+            {
+                return _delegateSignature;
+            }
         }
 
-        public void SetNativeCallableSignature(MethodSignature signature)
-        {
-            _signature = signature;
-        }
 
         public override string Name
         {
             get
             {
-                return _name;
+                return "ReverseDelegateStub__" + ILCompiler.DependencyAnalysis.NodeFactory.NameMangler.GetMangledTypeName(_delegateType);
             }
         }
 
         public override MethodIL EmitIL()
         {
-            return null;
+            return _methodIL;
         }
     }
 
