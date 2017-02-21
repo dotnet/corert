@@ -193,7 +193,7 @@ namespace ILCompiler
                     var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                     inputFilePaths.Add(inputFile.Key, inputFile.Value);
                 }
-                catch (Exception)
+                catch (InvalidOperationException)
                 {
                     // Keep calm and carry on.
                 }

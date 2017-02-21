@@ -309,7 +309,7 @@ goto :eof
     )
 
     if not "%CoreRT_CoreCLRTest%" == "" (
-        if not exist %CoreRT_CoreCLRTest% (
+        if not exist "%CoreRT_CoreCLRTest%" (
             echo Target test file not found: %CoreRT_CoreCLRTest%
             exit /b 1
         )
@@ -318,9 +318,8 @@ goto :eof
             set TestFolderName=%%~dpi
             set TestFileName=%%~nxi
         )
-        %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
-    )
-    else (
+        call %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
+    ) else (
         echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
         call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
     )
