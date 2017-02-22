@@ -45,6 +45,7 @@ if /i "%1" == "/coreclr"  (
 :ExtRepoTestsOk
     goto ArgLoop
 )
+if /i "%1" == "/coreclrsingletest" (set CoreRT_RunCoreCLRTests=true&set CoreRT_CoreCLRTest=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
@@ -60,6 +61,8 @@ echo     flavor        : debug / release
 echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit. Default: both
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
+echo     /coreclrsingletest ^<absolute\path\to\test.exe^>
+echo                   : Run a single CoreCLR repo test
 echo     /multimodule  : Compile the framework as a .lib and link tests against it (only supports ryujit)
 echo.
 echo     --- CoreCLR Subset ---
@@ -309,8 +312,23 @@ goto :eof
     if errorlevel 1 (
         exit /b 1
     )
-    echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
-    call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+
+    if not "%CoreRT_CoreCLRTest%" == "" (
+        if not exist "%CoreRT_CoreCLRTest%" (
+            echo Target test file not found: %CoreRT_CoreCLRTest%
+            exit /b 1
+        )
+
+        for %%i in (%CoreRT_CoreCLRTest%) do (
+            set TestFolderName=%%~dpi
+            set TestFileName=%%~nxi
+        )
+        call %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
+    ) else (
+        echo runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+        call runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+    )
+    
     set __SavedErrorLevel=%ErrorLevel%
     popd
     exit /b %__SavedErrorLevel%
