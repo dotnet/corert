@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <IlsArg Include="--targetarch=$(Platform)" />
+    <IlcArg Include="--targetarch=$(Platform)" />
   </ItemGroup>
 
 </Project>

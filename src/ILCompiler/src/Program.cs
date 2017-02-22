@@ -177,29 +177,29 @@ namespace ILCompiler
             //
             if (_targetArchitectureStr != null)
             {
-                if (_targetArchitectureStr.Equals("x86"))
+                if (_targetArchitectureStr.Equals("x86", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.X86;
-                else if (_targetArchitectureStr.Equals("x64"))
+                else if (_targetArchitectureStr.Equals("x64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.X64;
-                else if (_targetArchitectureStr.Equals("arm"))
+                else if (_targetArchitectureStr.Equals("arm", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM;
-                else if (_targetArchitectureStr.Equals("armel"))
+                else if (_targetArchitectureStr.Equals("armel", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARMEL;
-                else if (_targetArchitectureStr.Equals("arm64"))
+                else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
                 else
-                    throw new NotImplementedException();
+                    throw new CommandLineException("Target architecture is not supported");
             }
             if (_targetOSStr != null)
             {
-                if (_targetOSStr.Equals("windows"))
+                if (_targetOSStr.Equals("windows", StringComparison.OrdinalIgnoreCase))
                     _targetOS = TargetOS.Windows;
-                else if (_targetOSStr.Equals("linux"))
+                else if (_targetOSStr.Equals("linux", StringComparison.OrdinalIgnoreCase))
                     _targetOS = TargetOS.Linux;
-                else if (_targetOSStr.Equals("osx"))
+                else if (_targetOSStr.Equals("osx", StringComparison.OrdinalIgnoreCase))
                     _targetOS = TargetOS.OSX;
                 else
-                    throw new NotImplementedException();
+                    throw new CommandLineException("Target OS is not supported");
             }
 
             //
