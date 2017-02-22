@@ -50,6 +50,11 @@ namespace Internal.Runtime.CompilerHelpers
             throw new NotSupportedException();
         }
 
+        public static void ThrowBadImageFormatException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateBadImageFormatException(id);
+        }
+
         public static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName)
         {
             throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName);
