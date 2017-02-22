@@ -63,7 +63,7 @@ namespace ILCompiler
         {
             if (metadataFile == null)
             {
-                return new CompilerGeneratedMetadataManager(compilationModuleGroup, context);
+                return new EmptyMetadataManager(compilationModuleGroup, context);
             }
             else
             {
