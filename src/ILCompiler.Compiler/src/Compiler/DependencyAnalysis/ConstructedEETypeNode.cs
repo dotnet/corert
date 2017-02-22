@@ -13,7 +13,7 @@ using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class ConstructedEETypeNode : EETypeNode
+    public class ConstructedEETypeNode : EETypeNode
     {
         public ConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
