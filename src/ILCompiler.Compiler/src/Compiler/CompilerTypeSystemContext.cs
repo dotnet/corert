@@ -144,6 +144,8 @@ namespace ILCompiler
 
         public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
+            // TODO: catch typesystem BadImageFormatException and throw a new one that also captures the
+            // assembly name that caused the failure. (Along with the reason, which makes this rather annoying).
             return GetModuleForSimpleName(name.Name, throwIfNotFound);
         }
 

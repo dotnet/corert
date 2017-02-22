@@ -193,7 +193,7 @@ namespace ILCompiler
                     var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                     inputFilePaths.Add(inputFile.Key, inputFile.Value);
                 }
-                catch (InvalidOperationException)
+                catch (TypeSystemException.BadImageFormatException)
                 {
                     // Keep calm and carry on.
                 }

@@ -53,6 +53,10 @@ namespace Internal.IL.Stubs
             {
                 helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
             }
+            else if (exceptionType == typeof(TypeSystemException.BadImageFormatException))
+            {
+                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException");
+            }
             else
             {
                 throw new NotImplementedException();
