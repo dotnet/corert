@@ -47,7 +47,7 @@ run_test_dir()
         __extra_args="${__extra_args} /p:IlcMultiModule=true"
     fi
 
-    rm -rf ${__dir_path}/bin ${__dir_path}/obj
+    rm -rf ${__dir_path}/bin/${CoreRT_BuildArch} ${__dir_path}/obj/${CoreRT_BuildArch}
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
 

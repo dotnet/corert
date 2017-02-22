@@ -704,74 +704,100 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     write(STDERR_FILENO, message, sizeof(message));
 }
 
+#ifdef __linux__
+size_t
+GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cacheSize = 0;
+
+#ifdef _SC_LEVEL1_DCACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL2_CACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL3_CACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL3_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL4_CACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
+#endif
+    return cacheSize;
+}
+#endif
+
 bool QueryCacheSize()
 {
     bool success = true;
     g_cbLargestOnDieCache = 0;
 
 #ifdef __linux__
-    DIR* cpuDir = opendir("/sys/devices/system/cpu");
-    if (cpuDir == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("opendir on /sys/devices/system/cpu failed\n");
-        return false;
-    }
+    g_cbLargestOnDieCache = GetLogicalProcessorCacheSizeFromOS();
 
-    dirent* cpuEntry;
-    // Process entries starting with "cpu" (cpu0, cpu1, ...) in the directory
-    while (success && (cpuEntry = readdir(cpuDir)) != nullptr)
+    if (g_cbLargestOnDieCache == 0)
     {
-        if ((strncmp(cpuEntry->d_name, "cpu", 3) == 0) && isdigit(cpuEntry->d_name[3]))
+        DIR* cpuDir = opendir("/sys/devices/system/cpu");
+        if (cpuDir == nullptr)
         {
-            char cpuCachePath[64] = "/sys/devices/system/cpu/";
-            strcat(cpuCachePath, cpuEntry->d_name);
-            strcat(cpuCachePath, "/cache");
-            DIR* cacheDir = opendir(cpuCachePath);
-            if (cacheDir == nullptr)
-            {
-                success = false;
-                break;
-            }
-
-            strcat(cpuCachePath, "/");
-            int cpuCacheBasePathLength = strlen(cpuCachePath);
-
-            dirent* cacheEntry;
-            // For all entries in the directory
-            while ((cacheEntry = readdir(cacheDir)) != nullptr)
-            {
-                if (strncmp(cacheEntry->d_name, "index", 5) == 0)
-                {
-                    cpuCachePath[cpuCacheBasePathLength] = '\0';
-                    strcat(cpuCachePath, cacheEntry->d_name);
-                    strcat(cpuCachePath, "/size");
-
-                    int fd = open(cpuCachePath, O_RDONLY);
-                    if (fd < 0)
-                    {
-                        success = false;
-                        break;
-                    }
-
-                    char cacheSizeStr[16];
-                    int bytesRead = read(fd, cacheSizeStr, sizeof(cacheSizeStr) - 1);
-                    cacheSizeStr[bytesRead] = '\0';
-
-                    // Parse the cache size that is formatted as a number followed by the K letter
-                    char* lastChar;
-                    int cacheSize = strtol(cacheSizeStr, &lastChar, 10) * 1024;
-                    ASSERT(*lastChar == 'K');
-                    g_cbLargestOnDieCache = max(g_cbLargestOnDieCache, cacheSize);
-
-                    close(fd);
-                }
-            }
-
-            closedir(cacheDir);
+            ASSERT_UNCONDITIONALLY("opendir on /sys/devices/system/cpu failed\n");
+            return false;
         }
-    }
-    closedir(cpuDir);
 
+        dirent* cpuEntry;
+        // Process entries starting with "cpu" (cpu0, cpu1, ...) in the directory
+        while (success && (cpuEntry = readdir(cpuDir)) != nullptr)
+        {
+            if ((strncmp(cpuEntry->d_name, "cpu", 3) == 0) && isdigit(cpuEntry->d_name[3]))
+            {
+                char cpuCachePath[64] = "/sys/devices/system/cpu/";
+                strcat(cpuCachePath, cpuEntry->d_name);
+                strcat(cpuCachePath, "/cache");
+                DIR* cacheDir = opendir(cpuCachePath);
+                if (cacheDir == nullptr)
+                {
+                    success = false;
+                    break;
+                }
+
+                strcat(cpuCachePath, "/");
+                int cpuCacheBasePathLength = strlen(cpuCachePath);
+
+                dirent* cacheEntry;
+                // For all entries in the directory
+                while ((cacheEntry = readdir(cacheDir)) != nullptr)
+                {
+                    if (strncmp(cacheEntry->d_name, "index", 5) == 0)
+                    {
+                        cpuCachePath[cpuCacheBasePathLength] = '\0';
+                        strcat(cpuCachePath, cacheEntry->d_name);
+                        strcat(cpuCachePath, "/size");
+
+                        int fd = open(cpuCachePath, O_RDONLY);
+                        if (fd < 0)
+                        {
+                            success = false;
+                            break;
+                        }
+
+                        char cacheSizeStr[16];
+                        int bytesRead = read(fd, cacheSizeStr, sizeof(cacheSizeStr) - 1);
+                        cacheSizeStr[bytesRead] = '\0';
+
+                        // Parse the cache size that is formatted as a number followed by the K letter
+                        char* lastChar;
+                        int cacheSize = strtol(cacheSizeStr, &lastChar, 10) * 1024;
+                        ASSERT(*lastChar == 'K');
+                        g_cbLargestOnDieCache = max(g_cbLargestOnDieCache, cacheSize);
+
+                        close(fd);
+                    }
+                }
+
+                closedir(cacheDir);
+            }
+        }
+        closedir(cpuDir);
+    }
 #elif HAVE_SYSCTL
 
     int64_t g_cbLargestOnDieCache;
@@ -791,11 +817,16 @@ bool QueryCacheSize()
         }
     }
 #else
-#error Don't know how to get cache size on this platform
+#error Do not know how to get cache size on this platform
 #endif // __linux__
 
     // TODO: implement adjusted cache size
     g_cbLargestOnDieCacheAdjusted = g_cbLargestOnDieCache;
+
+#ifdef _ARM_
+    // TODO Some system on arm32 does not give the info about cache sizes by these methods so we need to find another ways
+    success = true;
+#endif
 
     return success;
 }

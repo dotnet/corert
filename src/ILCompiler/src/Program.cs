@@ -28,7 +28,9 @@ namespace ILCompiler
         private bool _generateFullDgmlLog;
 
         private TargetArchitecture _targetArchitecture;
+        private string _targetArchitectureStr;
         private TargetOS _targetOS;
+        private string _targetOSStr;
         private OptimizationMode _optimizationMode;
         private bool _enableDebugInfo;
         private string _systemModuleName = "System.Private.CoreLib";
@@ -130,6 +132,9 @@ namespace ILCompiler
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
 
+                syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
+                syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
+
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
                 syntax.DefineOptionList("singlemethodgenericarg", ref _singleMethodGenericArgs, "Single method compilation: generic arguments to the method");
@@ -166,6 +171,36 @@ namespace ILCompiler
             
             if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
+
+            //
+            // Set target Architecture and OS
+            //
+            if (_targetArchitectureStr != null)
+            {
+                if (_targetArchitectureStr.Equals("x86"))
+                    _targetArchitecture = TargetArchitecture.X86;
+                else if (_targetArchitectureStr.Equals("x64"))
+                    _targetArchitecture = TargetArchitecture.X64;
+                else if (_targetArchitectureStr.Equals("arm"))
+                    _targetArchitecture = TargetArchitecture.ARM;
+                else if (_targetArchitectureStr.Equals("armel"))
+                    _targetArchitecture = TargetArchitecture.ARMEL;
+                else if (_targetArchitectureStr.Equals("arm64"))
+                    _targetArchitecture = TargetArchitecture.ARM64;
+                else
+                    throw new NotImplementedException();
+            }
+            if (_targetOSStr != null)
+            {
+                if (_targetOSStr.Equals("windows"))
+                    _targetOS = TargetOS.Windows;
+                else if (_targetOSStr.Equals("linux"))
+                    _targetOS = TargetOS.Linux;
+                else if (_targetOSStr.Equals("osx"))
+                    _targetOS = TargetOS.OSX;
+                else
+                    throw new NotImplementedException();
+            }
 
             //
             // Initialize type system context

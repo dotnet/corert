@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ARM
             switch (os)
             {
                 case TargetOS.Windows:
+                case TargetOS.Linux:
                     Arg0 = Register.R0;
                     Arg1 = Register.R1;
                     Result = Register.R0;
