@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
-        public override bool IsShareable => false;
+        public override bool IsShareable => true;
 
         public override bool StaticDependenciesAreComputed => true;
 
