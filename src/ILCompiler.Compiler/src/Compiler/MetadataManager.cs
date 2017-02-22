@@ -256,9 +256,10 @@ namespace ILCompiler
                 {
                     // strip ByRefType off the parameter (the method already has ByRef in the signature)
                     parameterType = ((ByRefType)parameterType).ParameterType;
-                }
 
-                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    Debug.Assert(!parameterType.IsPointer); // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
+                }
+                else if (parameterType.IsPointer || parameterType.IsFunctionPointer)
                 {
                     // For pointer typed parameters, instantiate the method over IntPtr
                     parameterType = context.GetWellKnownType(WellKnownType.IntPtr);
