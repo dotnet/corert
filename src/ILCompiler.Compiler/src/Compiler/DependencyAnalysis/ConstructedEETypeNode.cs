@@ -216,6 +216,11 @@ namespace ILCompiler.DependencyAnalysis
                     // Generic definition EETypes can't be allocated
                     if (type.IsGenericDefinition)
                         return false;
+
+                    // Full EEtype of System.Canon should never be used.
+                    if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                        return false;
+
                     break;
             }
 
