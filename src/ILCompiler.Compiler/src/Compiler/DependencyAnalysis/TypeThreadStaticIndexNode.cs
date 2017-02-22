@@ -26,7 +26,16 @@ namespace ILCompiler.DependencyAnalysis
         }
         public int Offset => 0;
         protected override string GetName() => this.GetMangledName();
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (_type.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
         public override bool IsShareable => true;
         public override bool StaticDependenciesAreComputed => true;
 
