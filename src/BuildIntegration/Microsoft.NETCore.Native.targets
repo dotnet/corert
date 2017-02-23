@@ -51,6 +51,9 @@ See the LICENSE file in the project root for more information.
 
     <FrameworkLibPath Condition="'$(FrameworkLibPath)' == ''">$(NativeOutputPath)</FrameworkLibPath>
     <FrameworkObjPath Condition="'$(FrameworkObjPath)' == ''">$(NativeIntermediateOutputPath)</FrameworkObjPath>
+
+    <SharedLibrary Condition="'$(OS)' == 'Windows_NT'">$(FrameworkLibPath)\Framework$(LibFileExt)</SharedLibrary>
+    <SharedLibrary Condition="'$(OS)' != 'Windows_NT'">$(FrameworkLibPath)\libframework$(LibFileExt)</SharedLibrary>
   </PropertyGroup>
 
   <ItemGroup Condition="$(BuildingFrameworkLibrary) != 'true'">

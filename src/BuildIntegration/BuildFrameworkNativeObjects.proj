@@ -29,12 +29,6 @@
     <ItemGroup>
       <LibInputs Include="$(NativeIntermediateOutputPath)\*$(NativeObjectExt)" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <SharedLibrary Condition="'$(OS)' == 'Windows_NT'">$(FrameworkLibPath)\Framework$(LibFileExt)</SharedLibrary>
-      <SharedLibrary Condition="'$(OS)' != 'Windows_NT'">$(FrameworkLibPath)\libframework$(LibFileExt)</SharedLibrary>
-    </PropertyGroup>
-
   </Target>
 
   <Target Name="BuildOneFrameworkLibrary">
