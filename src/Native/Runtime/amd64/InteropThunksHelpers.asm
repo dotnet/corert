@@ -61,7 +61,7 @@ LEAF_ENTRY RhpCommonStub, _TEXT
         ;; rax = base address of TLS data
         ;; r10 = address of context cell in thunk's data
         ;; r11 = trashed
-        ;; r12 = trashed
+        ;; r8 = trashed
 
         ;; store thunk address in thread static
         mov     r11, [r10]

@@ -1,26 +1,51 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 
 using System;
-using System.Runtime;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
-
-using Internal.Runtime;
 using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-
 using Internal.NativeFormat;
-using Internal.TypeSystem;
+using Internal.Runtime.TypeLoader;
+using Internal.Reflection.Execution;
 
-namespace Internal.Runtime.TypeLoader
+namespace Internal.Runtime.CompilerHelpers
 {
-    public sealed partial class TypeLoaderEnvironment
+    internal class Callbacks : InteropCallbacks
     {
+        public override IntPtr TryGetMarshallerForDelegate(RuntimeTypeHandle delegateTypeHandle)
+        {
+            return InteropCallbackManager.Instance.TryGetMarshallerForDelegate(delegateTypeHandle);
+        }
+    }
+
+    [CLSCompliant(false)]
+    public sealed class InteropCallbackManager
+    {
+        public static InteropCallbackManager Instance { get; private set; }
+
+        // Eager initialization called from LibraryInitializer for the assembly.
+        internal static void Initialize()
+        {
+            Instance = new InteropCallbackManager();
+            RuntimeAugments.InitializeInteropLookups(new Callbacks());
+        }
+
+        private static unsafe bool TryGetNativeReaderForBlob(NativeFormatModuleInfo module, ReflectionMapBlob blob, out NativeReader reader)
+        {
+            byte* pBlob;
+            uint cbBlob;
+
+            if (module.TryFindBlob((int)blob, out pBlob, out cbBlob))
+            {
+                reader = new NativeReader(pBlob, cbBlob);
+                return true;
+            }
+
+            reader = default(NativeReader);
+            return false;
+        }
+
         public unsafe IntPtr TryGetMarshallerForDelegate(RuntimeTypeHandle delegateTypeHandle)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();

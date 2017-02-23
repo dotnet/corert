@@ -204,3 +204,9 @@ DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)
         val[i] = (unsigned short)str[i];
     val[i] = 0;
 }
+
+
+DLL_EXPORT int* __stdcall ReversePInvoke_Unused(void(__stdcall *fnPtr) (void))
+{
+    return 0;
+}

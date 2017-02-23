@@ -1155,6 +1155,9 @@ namespace Internal.TypeSystem.Interop
         protected override void EmitMarshalReturnValueManagedToNative()
         {
         }
+        protected override void EmitMarshalReturnValueNativeToManaged()
+        {
+        }
     }
 
     class BlittableValueMarshaller : BlittableByRefMarshaller
@@ -1187,9 +1190,21 @@ namespace Internal.TypeSystem.Interop
                 _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
             }
         }
+
+        protected override void EmitMarshalArgumentNativeToManaged()
+        {
+            if (Out)
+            {
+                base.EmitMarshalArgumentNativeToManaged();
+            }
+            else
+            {
+                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+            }
+        }
     }
 
-    class ArrayMarshaller : Marshaller
+        class ArrayMarshaller : Marshaller
     {
         
         private Marshaller _elementMarshaller;

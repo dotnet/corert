@@ -42,7 +42,7 @@ namespace ILCompiler
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
-        internal Dictionary<DelegateInvokeMethodSignature, MethodDesc> DelegateMarshalingThunks = new Dictionary<DelegateInvokeMethodSignature, MethodDesc>();
+        internal Dictionary<DelegateInvokeMethodSignature, DelegateMarshallingMethodThunk> DelegateMarshalingThunks = new Dictionary<DelegateInvokeMethodSignature, DelegateMarshallingMethodThunk>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
@@ -324,13 +324,14 @@ namespace ILCompiler
             return instantiatedDynamicInvokeMethod;
         }
 
-        public MethodDesc GetDelegateMarshallingStub(TypeDesc del)
+        internal MethodDesc GetDelegateMarshallingStub(TypeDesc delegateType)
         {
-            MethodDesc thunk;
-            var lookupSig = new DelegateInvokeMethodSignature(del);
+            DelegateMarshallingMethodThunk thunk;
+            var lookupSig = new DelegateInvokeMethodSignature(delegateType);
             if (!DelegateMarshalingThunks.TryGetValue(lookupSig, out thunk))
             {
-                thunk = new DelegateMarshallingMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), del);
+                string stubName = "ReverseDelegateStub__" + NodeFactory.NameMangler.GetMangledTypeName(delegateType);
+                thunk = new DelegateMarshallingMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), delegateType, stubName);
                 DelegateMarshalingThunks.Add(lookupSig, thunk);
             }
             return thunk;

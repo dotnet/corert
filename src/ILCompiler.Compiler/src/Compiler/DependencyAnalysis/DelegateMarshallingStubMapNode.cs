@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var delegateEntry in factory.MetadataManager.DelegateMarshalingThunks)
             {
-                Internal.TypeSystem.TypeDesc delegateType = ((Internal.IL.Stubs.DelegateMarshallingMethodThunk)delegateEntry.Value).DelegateType;
+                Internal.TypeSystem.TypeDesc delegateType = delegateEntry.Value.DelegateType;
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(delegateType))),
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Value)))

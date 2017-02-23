@@ -3,12 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
-
 using Internal.TypeSystem;
-
-using Debug = System.Diagnostics.Debug;
-using Interlocked = System.Threading.Interlocked;
 
 namespace Internal.IL.Stubs
 {
@@ -22,12 +17,14 @@ namespace Internal.IL.Stubs
         private MethodSignature _signature;         // signature of the native callable marshalling stub
         private TypeDesc _delegateType;
         private MethodIL _methodIL;
+        private string _name;
 
-        public DelegateMarshallingMethodThunk(TypeDesc owningType, TypeDesc delegateType)
+        public DelegateMarshallingMethodThunk(TypeDesc owningType, TypeDesc delegateType, string name)
         {
             _owningType = owningType;
             _delegateType = delegateType;
             MethodDesc invokeMethod = delegateType.GetMethod("Invoke", null);
+            _name = name;
             _delegateSignature = invokeMethod.Signature;
             _methodIL = PInvokeILEmitter.EmitIL(this, null);
             _signature = ((PInvokeILStubMethodIL)_methodIL).NativeCallableSignature;
@@ -38,6 +35,14 @@ namespace Internal.IL.Stubs
             get
             {
                 return _owningType.Context;
+            }
+        }
+
+        public override bool IsNativeCallable
+        {
+            get
+            {
+                return true;
             }
         }
 
@@ -78,7 +83,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "ReverseDelegateStub__" + ILCompiler.DependencyAnalysis.NodeFactory.NameMangler.GetMangledTypeName(_delegateType);
+                return _name;
             }
         }
 
@@ -88,42 +93,10 @@ namespace Internal.IL.Stubs
         }
     }
 
-
-    internal enum DelegateInvokeMethodParameterKind
-    {
-        None,
-        Value,
-        Reference
-    }
-
+    
     internal struct DelegateInvokeMethodSignature : IEquatable<DelegateInvokeMethodSignature>
     {
-        public MethodSignature Signature;
-        public bool HasReturnValue
-        {
-            get
-            {
-                return !Signature.ReturnType.IsVoid;
-            }
-        }
-
-        public int Length
-        {
-            get
-            {
-                return Signature.Length;
-            }
-        }
-
-        public DelegateInvokeMethodParameterKind this[int index]
-        {
-            get
-            {
-                return Signature[index].IsByRef ?
-                    DelegateInvokeMethodParameterKind.Reference :
-                    DelegateInvokeMethodParameterKind.Value;
-            }
-        }
+        public  readonly MethodSignature Signature;
 
         public DelegateInvokeMethodSignature(TypeDesc delegateType)
         {
@@ -133,28 +106,21 @@ namespace Internal.IL.Stubs
 
         public override int GetHashCode()
         {
-            int hashCode = HasReturnValue ? 17 : 23;
-
-            for (int i = 0; i < Length; i++)
-            {
-                int value = (int)this[i] * 0x5498341 + 0x832424;
-                hashCode = hashCode * 31 + value;
-            }
-
-            return hashCode;
+            return Signature.GetHashCode();
         }
 
+        // TODO: Use the MarshallerKind for each parameter to compare whether two signatures are similar(ie. whether two delegates can share marshalling stubs)
         public bool Equals(DelegateInvokeMethodSignature other)
         {
-            if (HasReturnValue != other.HasReturnValue)
+            if (Signature.ReturnType != other.Signature.ReturnType)
                 return false;
 
-            if (Length != other.Length)
+            if (Signature.Length != other.Signature.Length)
                 return false;
 
-            for (int i = 0; i < Length; i++)
+            for (int i = 0; i < Signature.Length; i++)
             {
-                if (this[i] != other[i])
+                if (Signature[i] != other.Signature[i])
                     return false;
             }
 

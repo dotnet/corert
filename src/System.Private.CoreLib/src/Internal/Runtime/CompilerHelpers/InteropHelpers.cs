@@ -262,7 +262,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
             else
             {
-                IntPtr pTarget = RuntimeAugments.TypeLoaderCallbacks.TryGetMarshallerForDelegate(del.GetTypeHandle());
+                IntPtr pTarget = RuntimeAugments.InteropCallbacks.TryGetMarshallerForDelegate(del.GetTypeHandle());
                 IntPtr pContext;
                 unsafe
                 {

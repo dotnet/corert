@@ -88,21 +88,30 @@ namespace ILCompiler.DependencyAnalysis
                 MethodSignature methodSig = _method.Signature;
                 if (methodSig.ReturnType.IsDelegate)
                 {
-                    var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(methodSig.ReturnType);
-                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub"));
+                    AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
                 }
 
                 for (int i=0; i < methodSig.Length; i++)
                 {
                     if (methodSig[i].IsDelegate)
                     {
-                        var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(methodSig[i]);
-                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub"));
+                        AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig[i]);
                     }
                 }
             }
 
             return dependencies;
+        }
+
+        private void AddPInvokeDelegateParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
+        {
+            if (dependencies == null)
+                dependencies = new DependencyList();
+
+            dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
+
+            var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(parameter);
+            dependencies.Add(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub");
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

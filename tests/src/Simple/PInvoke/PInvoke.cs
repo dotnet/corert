@@ -59,6 +59,10 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Int(Delegate_Int del);
 
+        delegate void Delegate_Unused();
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern unsafe int* ReversePInvoke_Unused(Delegate_Unused del);
+
         public static int Main(string[] args)
         {
             TestBlittableType();
@@ -210,7 +214,17 @@ namespace PInvokeTests
             Console.WriteLine("Testing Delegate");
             Delegate_Int del = new Delegate_Int(Cube);
             ThrowIfNotEquals(true, ReversePInvoke_Int(del), "Delegate marshalling failed.");
+            unsafe
+            {
+                //
+                // We haven't instantiated Delegate_Unused and nobody
+                // allocates it. If a EEType is not constructed for Delegate_Unused
+                // it will fail during linking.
+                //
+                ReversePInvoke_Unused(null);
+            }
         }
+
         static int Cube(int a)
         {
             return a*a*a;
