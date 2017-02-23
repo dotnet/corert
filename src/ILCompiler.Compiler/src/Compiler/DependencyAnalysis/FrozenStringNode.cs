@@ -44,13 +44,15 @@ namespace ILCompiler.DependencyAnalysis
             // The GC requires a direct reference to frozen objects' EETypes. If System.String will be compiled into a separate
             // binary, it must be cloned into this one.
             //
-            if (factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(systemStringType))
+            IEETypeNode stringSymbol = factory.ConstructedTypeSymbol(systemStringType);
+
+            if (stringSymbol.RepresentsIndirectionCell)
             {
                 return factory.ConstructedClonedTypeSymbol(systemStringType);
             }
             else
             {
-                return factory.ConstructedTypeSymbol(systemStringType);
+                return stringSymbol;
             }
         }
 

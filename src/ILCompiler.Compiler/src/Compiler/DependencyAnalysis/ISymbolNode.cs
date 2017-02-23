@@ -12,6 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         int Offset { get; }
+        bool RepresentsIndirectionCell { get; }
     }
 
     public static class ISymbolNodeExtensions

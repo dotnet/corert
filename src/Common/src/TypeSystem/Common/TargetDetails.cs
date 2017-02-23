@@ -43,7 +43,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Windows-specific UWP model
         /// </summary>
-        ProjectN
+        ProjectN,
+        /// <summary>
+        /// Jit runtime ABI
+        /// </summary>
+        Jit
     }
 
     /// <summary>

@@ -26,6 +26,8 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ISymbolNode[] DefinedSymbols;
         }
 
+        public virtual bool RepresentsIndirectionCell => false;
+
         public abstract ObjectData GetData(NodeFactory factory, bool relocsOnly = false);
 
         public abstract ObjectNodeSection Section { get; }
