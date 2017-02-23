@@ -249,7 +249,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _indirectionNodes = new NodeCache<ISymbolNode, IndirectionNode>(symbol =>
             {
-                return new IndirectionNode(symbol);
+                return new IndirectionNode(Target, symbol);
             });
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
