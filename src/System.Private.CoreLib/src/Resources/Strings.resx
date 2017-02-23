@@ -1095,8 +1095,14 @@
   <data name="InvalidOperation_ReadOnly" xml:space="preserve">
     <value>Instance is read-only.</value>
   </data>
+  <data name="InvalidOperation_ThreadWrongThreadStart" xml:space="preserve">
+    <value>The thread was created with a ThreadStart delegate that does not accept a parameter.</value>
+  </data>
   <data name="InvalidOperation_UnknownEnumType" xml:space="preserve">
     <value>Unknown enum type.</value>
+  </data>
+  <data name="InvalidOperation_WriteOnce" xml:space="preserve">
+    <value>This property has already been set and cannot be modified.</value>
   </data>
   <data name="InvalidOperation_ArrayCreateInstance_NotARuntimeType" xml:space="preserve">
     <value>Array.CreateInstance() can only accept Type objects created by the runtime.</value>
@@ -2154,5 +2160,20 @@
   </data>
   <data name="DelegateSer_InsufficientMetadata" xml:space="preserve">
     <value>The delegate cannot be serialized properly due to missing metadata for the target method.</value>
+  </data>
+  <data name="ThreadState_AlreadyStarted" xml:space="preserve">
+    <value>Thread is running or terminated; it cannot restart.</value>
+  </data>
+  <data name="ThreadState_Dead_Priority" xml:space="preserve">
+    <value>Thread is dead; priority cannot be accessed.</value>
+  </data>
+  <data name="ThreadState_Dead_State" xml:space="preserve">
+    <value>Thread is dead; state cannot be accessed.</value>
+  </data>
+  <data name="ThreadState_NotStarted" xml:space="preserve">
+    <value>Thread has not been started.</value>
+  </data>
+  <data name="ThreadState_SetPriorityFailed" xml:space="preserve">
+    <value>Unable to set thread priority.</value>
   </data>
 </root>

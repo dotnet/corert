@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -17,6 +18,7 @@ namespace System.Threading
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
         {
+            RuntimeThread.InitializeThreadPoolThread();
             Debug.Assert(s_work == work);
             ThreadPoolWorkQueue.Dispatch();
         }
@@ -41,6 +43,8 @@ namespace System.Threading
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void LongRunningWorkCallback(IntPtr instance, IntPtr context)
         {
+            RuntimeThread.InitializeThreadPoolThread();
+
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Action callback = (Action)gcHandle.Target;
             gcHandle.Free();
