@@ -33,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis
         
         public sealed override bool StaticDependenciesAreComputed => true;
 
+        public sealed override bool IsShareable => true;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             return new DependencyList
@@ -98,7 +100,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledTypeName(_owningType));
         }
         public override int Offset => 0;
-        public override bool IsShareable => false;
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
         public override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
@@ -155,7 +156,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledMethodName(_owningMethod));
         }
         public override int Offset => _owningMethod.Context.Target.PointerSize;
-        public override bool IsShareable => false;
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;

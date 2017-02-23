@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override bool IsShareable => IsTypeNodeShareable(_type);
+        public override bool IsShareable => true;
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory) => null;
         protected override int GCDescSize => 0;
 

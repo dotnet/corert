@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -12,10 +13,12 @@ namespace ILCompiler.DependencyAnalysis
     public class IndirectionNode : ObjectNode, ISymbolNode
     {
         private ISymbolNode _indirectedNode;
+        private TargetDetails _target;
 
-        public IndirectionNode(ISymbolNode indirectedNode)
+        public IndirectionNode(TargetDetails target, ISymbolNode indirectedNode)
         {
             _indirectedNode = indirectedNode;
+            _target = target;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -25,8 +28,18 @@ namespace ILCompiler.DependencyAnalysis
         }
         public int Offset => 0;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
-        public override bool IsShareable => false;
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (_target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
+
+        public override bool IsShareable => true;
 
         public override bool StaticDependenciesAreComputed => true;
 
