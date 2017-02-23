@@ -27,7 +27,6 @@ namespace Internal.Runtime.Augments
         private Lock _lock;
 
         private Delegate _threadStart;
-        private object _threadStartArg;
         private int _maxStackSize;
 
         /// <summary>
@@ -41,6 +40,10 @@ namespace Internal.Runtime.Augments
             _threadState = (int)ThreadState.Unstarted;
             _priority = ThreadPriority.Normal;
             _lock = new Lock();
+
+#if PLATFORM_UNIX
+            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+#endif
 
             PlatformSpecificInitialize();
         }

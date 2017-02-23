@@ -21,6 +21,7 @@ namespace Internal.Runtime.Augments
         [ThreadStatic]
         private static ApartmentType t_apartmentType;
 
+        private object _threadStartArg;
         private SafeWaitHandle _osHandle;
 
         /// <summary>
