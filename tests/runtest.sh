@@ -139,7 +139,7 @@ CoreRT_CliBinDir=${CoreRT_TestRoot}/../Tools/dotnetcli
 CoreRT_BuildArch=x64
 CoreRT_BuildType=Debug
 CoreRT_TestRun=true
-CoreRT_TestCompileMode=ryujit
+CoreRT_TestCompileMode=
 CoreRT_CrossRootFS=
 CoreRT_CrossCXXFlags=
 CoreRT_CrossLinkerFlags=
@@ -291,7 +291,7 @@ __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 for csproj in $(find src -name "*.csproj")
 do
     if [ ! -e `dirname ${csproj}`/no_unix ]; then
-        if [ ! "${CoreRT_TestCompileMode}" == "cpp" ]; then
+        if [ "${CoreRT_TestCompileMode}" != "cpp" ]; then
             run_test_dir ${csproj} "Jit"
         fi
         if [ ! -e `dirname ${csproj}`/no_cpp ]; then
