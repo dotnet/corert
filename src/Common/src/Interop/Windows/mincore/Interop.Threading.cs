@@ -44,7 +44,7 @@ internal static partial class Interop
         internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 
         [DllImport(Libraries.Kernel32)]
-        internal extern static uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+        internal extern static uint WaitForSingleObject(SafeWaitHandle hHandle, uint dwMilliseconds);
 
         [DllImport(Libraries.Kernel32)]
         internal extern static uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, bool bAlertable);
@@ -64,13 +64,13 @@ internal static partial class Interop
         internal delegate uint ThreadProc(IntPtr lpParameter);
 
         [DllImport(Libraries.Kernel32)]
-        private extern static IntPtr GetCurrentProcess();
+        internal extern static IntPtr GetCurrentProcess();
 
         [DllImport(Libraries.Kernel32)]
-        private extern static IntPtr GetCurrentThread();
+        internal extern static IntPtr GetCurrentThread();
 
-        [DllImport(Libraries.Kernel32)]
-        private extern static bool DuplicateHandle(
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        internal extern static bool DuplicateHandle(
             IntPtr hSourceProcessHandle,
             IntPtr hSourceHandle,
             IntPtr hTargetProcessHandle,
@@ -78,13 +78,6 @@ internal static partial class Interop
             uint dwDesiredAccess,
             bool bInheritHandle,
             uint dwOptions);
-
-        internal static bool GetCurrentThreadHandle(out SafeWaitHandle threadHandle)
-        {
-            IntPtr currentProcHandle = GetCurrentProcess();
-            return DuplicateHandle(currentProcHandle, GetCurrentThread(), currentProcHandle,
-                out threadHandle, 0, false, (uint)Constants.DuplicateSameAccess);
-        }
 
         internal enum ThreadPriority : int
         {
@@ -100,7 +93,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.Kernel32)]
-        internal extern static int GetThreadPriority(SafeWaitHandle hThread);
+        internal extern static ThreadPriority GetThreadPriority(SafeWaitHandle hThread);
 
         [DllImport(Libraries.Kernel32)]
         internal extern static bool SetThreadPriority(SafeWaitHandle hThread, int nPriority);

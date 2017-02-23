@@ -21,6 +21,7 @@ namespace Internal.Runtime.Augments
         [ThreadStatic]
         private static ApartmentType t_apartmentType;
 
+        private object _threadStartArg;
         private SafeWaitHandle _osHandle;
 
         /// <summary>
@@ -44,20 +45,24 @@ namespace Internal.Runtime.Augments
         private void PlatformSpecificInitializeExistingThread()
         {
             _osHandle = GetOSHandleForCurrentThread();
-            _priority = MapFromOSPriority((OSThreadPriority)Interop.mincore.GetThreadPriority(_osHandle));
+            _priority = MapFromOSPriority(Interop.mincore.GetThreadPriority(_osHandle));
         }
 
         private static SafeWaitHandle GetOSHandleForCurrentThread()
         {
+            IntPtr currentProcHandle = Interop.mincore.GetCurrentProcess();
+            IntPtr currentThreadHandle = Interop.mincore.GetCurrentThread();
             SafeWaitHandle threadHandle;
-            if (Interop.mincore.GetCurrentThreadHandle(out threadHandle))
+
+            if (Interop.mincore.DuplicateHandle(currentProcHandle, currentThreadHandle, currentProcHandle,
+                out threadHandle, 0, false, (uint)Interop.Constants.DuplicateSameAccess))
             {
                 return threadHandle;
             }
 
             // Throw an ApplicationException for compatibility with CoreCLR
             var ex = new ApplicationException();
-            ex.SetErrorCode((int)Interop.mincore.GetLastError());
+            ex.SetErrorCode(Marshal.GetLastWin32Error());
             throw ex;
         }
 
@@ -130,19 +135,7 @@ namespace Internal.Runtime.Augments
         /// </summary>
         private bool HasFinishedExecution()
         {
-            SafeWaitHandle waitHandle = _osHandle;
-            uint result;
-
-            waitHandle.DangerousAddRef();
-            try
-            {
-                result = Interop.mincore.WaitForSingleObject(waitHandle.DangerousGetHandle(), dwMilliseconds: 0);
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
-            }
-
+            uint result = Interop.mincore.WaitForSingleObject(_osHandle, dwMilliseconds: 0);
             return result == (uint)Interop.Constants.WaitObject0;
         }
 
@@ -222,7 +215,8 @@ namespace Internal.Runtime.Augments
                 object threadStartArg = thread._threadStartArg;
                 thread._threadStart = null;
                 thread._threadStartArg = null;
-#if !CORERT
+
+#if ENABLE_WINRT
                 Interop.WinRT.RoInitialize(Interop.WinRT.RO_INIT_TYPE.RO_INIT_MULTITHREADED);
 #endif
 

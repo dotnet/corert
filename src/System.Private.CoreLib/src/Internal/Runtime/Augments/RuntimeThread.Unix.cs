@@ -12,10 +12,7 @@ namespace Internal.Runtime.Augments
     {
         private readonly WaitSubsystem.ThreadWaitInfo _waitInfo;
 
-        private void PlatformSpecificInitialize()
-        {
-            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
-        }
+        private void PlatformSpecificInitialize() { }
 
         private void PlatformSpecificInitializeExistingThread() { }
 
@@ -26,6 +23,12 @@ namespace Internal.Runtime.Augments
         private bool HasFinishedExecution()
         {
             // TODO: Return true if the thread has finished execution
+            return false;
+        }
+
+        private bool JoinCore(int millisecondsTimeout)
+        {
+            // TODO: Join the thread
             return false;
         }
 
