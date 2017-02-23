@@ -56,6 +56,28 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhpGetGcTotalMemory()
     return ret;
 }
 
+EXTERN_C REDHAWK_API Int32 __cdecl RhpStartNoGCRegion(Int64 totalSize, Boolean hasLohSize, Int64 lohSize, Boolean disallowFullBlockingGC)
+{
+    Thread *pCurThread = GetThread();
+    ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
+
+    pCurThread->SetupHackPInvokeTunnel();
+    pCurThread->DisablePreemptiveMode();
+
+    int result = GCHeapUtilities::GetGCHeap()->StartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+
+    pCurThread->EnablePreemptiveMode();
+
+    return result;
+}
+
+EXTERN_C REDHAWK_API Int32 __cdecl RhpEndNoGCRegion()
+{
+    ASSERT(!GetThread()->IsCurrentThreadInCooperativeMode());
+
+    return GCHeapUtilities::GetGCHeap()->EndNoGCRegion();
+}
+
 COOP_PINVOKE_HELPER(void, RhSuppressFinalize, (OBJECTREF refObj))
 {
     if (!refObj->get_EEType()->HasFinalizer())
@@ -90,9 +112,9 @@ COOP_PINVOKE_HELPER(Int32, RhGetGcLatencyMode, ())
     return GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
 }
 
-COOP_PINVOKE_HELPER(void, RhSetGcLatencyMode, (Int32 newLatencyMode))
+COOP_PINVOKE_HELPER(Int32, RhSetGcLatencyMode, (Int32 newLatencyMode))
 {
-    GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
+    return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhIsServerGc, ())
@@ -143,4 +165,35 @@ COOP_PINVOKE_HELPER(Int64, RhGetLastGCStartTime, (Int32 generation))
 COOP_PINVOKE_HELPER(Int64, RhGetLastGCDuration, (Int32 generation))
 {
     return GCHeapUtilities::GetGCHeap()->GetLastGCDuration(generation);
+}
+
+COOP_PINVOKE_HELPER(Boolean, RhRegisterForFullGCNotification, (Int32 maxGenerationThreshold, Int32 largeObjectHeapThreshold))
+{
+    ASSERT(maxGenerationThreshold >= 1 && maxGenerationThreshold <= 99);
+    ASSERT(largeObjectHeapThreshold >= 1 && largeObjectHeapThreshold <= 99);
+    return GCHeapUtilities::GetGCHeap()->RegisterForFullGCNotification(maxGenerationThreshold, largeObjectHeapThreshold)
+        ? Boolean_true : Boolean_false;
+}
+
+COOP_PINVOKE_HELPER(Boolean, RhCancelFullGCNotification, ())
+{
+    return GCHeapUtilities::GetGCHeap()->CancelFullGCNotification() ? Boolean_true : Boolean_false;
+}
+
+COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCApproach, (Int32 millisecondsTimeout))
+{
+    ASSERT(millisecondsTimeout >= -1);
+    ASSERT(GetThread()->IsCurrentThreadInCooperativeMode());
+
+    int timeout = millisecondsTimeout == -1 ? INFINITE : millisecondsTimeout;
+    return GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(millisecondsTimeout);
+}
+
+COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCComplete, (Int32 millisecondsTimeout))
+{
+    ASSERT(millisecondsTimeout >= -1);
+    ASSERT(GetThread()->IsCurrentThreadInCooperativeMode());
+
+    int timeout = millisecondsTimeout == -1 ? INFINITE : millisecondsTimeout;
+    return GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(millisecondsTimeout);
 }

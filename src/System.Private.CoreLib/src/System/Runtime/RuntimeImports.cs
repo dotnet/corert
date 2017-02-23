@@ -81,7 +81,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetGcLatencyMode")]
-        internal static extern void RhSetGcLatencyMode(GCLatencyMode newLatencyMode);
+        internal static extern int RhSetGcLatencyMode(GCLatencyMode newLatencyMode);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhIsServerGc")]
@@ -118,6 +118,30 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
         internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhRegisterForFullGCNotification")]
+        internal static extern bool RhRegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhWaitForFullGCApproach")]
+        internal static extern int RhWaitForFullGCApproach(int millisecondsTimeout);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhWaitForFullGCComplete")]
+        internal static extern int RhWaitForFullGCComplete(int millisecondsTimeout);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhCancelFullGCNotification")]
+        internal static extern bool RhCancelFullGCNotification();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhStartNoGCRegion")]
+        internal static extern int RhStartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhEndNoGCRegion")]
+        internal static extern int RhEndNoGCRegion();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpShutdown")]

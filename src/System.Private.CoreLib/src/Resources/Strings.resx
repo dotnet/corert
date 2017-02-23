@@ -2155,4 +2155,25 @@
   <data name="DelegateSer_InsufficientMetadata" xml:space="preserve">
     <value>The delegate cannot be serialized properly due to missing metadata for the target method.</value>
   </data>
+  <data name="ArgumentOutOfRangeException_NoGCRegionSizeTooLarge" xml:space="preserve">
+    <value>totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in http://go.microsoft.com/fwlink/?LinkId=522706.</value>
+  </data>
+  <data name="InvalidOperationException_AlreadyInNoGCRegion" xml:space="preserve">
+    <value>The NoGCRegion mode was already in progress.</value>
+  </data>
+  <data name="InvalidOperationException_NoGCRegionAllocationExceeded" xml:space="preserve">
+    <value>Allocated memory exceeds specified memory for NoGCRegion mode.</value>
+  </data>
+  <data name="InvalidOperationException_NoGCRegionInduced" xml:space="preserve">
+    <value>Garbage collection was induced in NoGCRegion mode.</value>
+  </data>
+  <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
+    <value>NoGCRegion mode must be set.</value>
+  </data>
+  <data name="InvalidOperationException_SetLatencyModeNoGC" xml:space="preserve">
+    <value>The NoGCRegion mode is in progress. End it and then set a different mode.</value>
+  </data>
+  <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">
+    <value>This API is not available when the concurrent GC is enabled.</value>
+  </data>
 </root>
