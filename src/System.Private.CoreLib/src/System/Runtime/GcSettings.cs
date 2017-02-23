@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Security;
+using System.Diagnostics;
 
 namespace System.Runtime
 {
@@ -22,7 +23,15 @@ namespace System.Runtime
         Batch = 0,
         Interactive = 1,
         LowLatency = 2,
-        SustainedLowLatency = 3
+        SustainedLowLatency = 3,
+        NoGCRegion = 4
+    }
+
+    // See gc/gcpriv.h for these values.
+    internal enum SetLatencyModeStatus
+    {
+        Success = 0,
+        FailureNoGC = 1
     }
 
     public static class GCSettings
@@ -40,7 +49,13 @@ namespace System.Runtime
                     throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum);
                 }
 
-                RuntimeImports.RhSetGcLatencyMode(value);
+                SetLatencyModeStatus status = (SetLatencyModeStatus)RuntimeImports.RhSetGcLatencyMode(value);
+                if (status == SetLatencyModeStatus.FailureNoGC)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperationException_SetLatencyModeNoGC);
+                }
+
+                Debug.Assert(status == SetLatencyModeStatus.Success, $"Unexpected return value {status} from the GC: RhSetGcLatencyMode");
             }
         }
 
