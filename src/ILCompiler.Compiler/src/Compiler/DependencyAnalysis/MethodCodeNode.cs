@@ -83,7 +83,35 @@ namespace ILCompiler.DependencyAnalysis
 
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
+            if (_method.IsPInvoke)
+            {
+                MethodSignature methodSig = _method.Signature;
+                if (methodSig.ReturnType.IsDelegate)
+                {
+                    AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
+                }
+
+                for (int i=0; i < methodSig.Length; i++)
+                {
+                    if (methodSig[i].IsDelegate)
+                    {
+                        AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig[i]);
+                    }
+                }
+            }
+
             return dependencies;
+        }
+
+        private void AddPInvokeDelegateParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
+        {
+            if (dependencies == null)
+                dependencies = new DependencyList();
+
+            dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
+
+            var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(parameter);
+            dependencies.Add(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub");
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

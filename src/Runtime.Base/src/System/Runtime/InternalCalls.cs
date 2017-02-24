@@ -375,6 +375,14 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCurrentThunkContext")]
+        public static extern IntPtr GetCurrentInteropThunkContext();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetCommonStubAddress")]
+        public static extern IntPtr GetInteropCommonStubAddress();
+
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
         //
