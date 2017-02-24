@@ -25,7 +25,7 @@ internal static partial class Interop
 
         [SecurityCritical]
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOf")]
-        internal unsafe static extern int IndexOf(SafeSortHandle sortHandle, string target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options);
+        internal unsafe static extern int IndexOf(SafeSortHandle sortHandle, string target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, int* matchLengthPtr);
 
         [SecurityCritical]
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_LastIndexOf")]

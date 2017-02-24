@@ -32,7 +32,8 @@ internal static partial class Interop
                     int* pcchFound,
                     void* lpVersionInformation,
                     void* lpReserved,
-                    IntPtr sortHandle);
+                    IntPtr sortHandle,
+                    int* matchLengthPtr);
 
         [DllImport("api-ms-win-core-string-l1-1-0.dll", EntryPoint = "CompareStringEx")]
         internal extern static unsafe int CompareStringEx(
