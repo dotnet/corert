@@ -14,6 +14,6 @@
     "netstandard1.3": { }
   },
   "supports": {
-    "coreFx.Test.netcoreapp1.0": { }
+    "coreFx.Test.netcoreapp1.1": { }
   }
 }

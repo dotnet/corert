@@ -56,17 +56,17 @@ namespace System.Runtime
 #endif
         }
 
+#if FEATURE_GC_STRESS
         ~GCStress()
         {
-#if FEATURE_GC_STRESS
             // drop the first element
             Head = Head.Next;
 
             // create and link a new element at the end of the list 
             Tail.Next = new GCStress();
             Tail = Tail.Next;
-#endif // FEATURE_GC_STRESS
         }
+#endif // FEATURE_GC_STRESS
 
 #if FEATURE_GC_STRESS
         internal static bool Initialized { get; private set; }

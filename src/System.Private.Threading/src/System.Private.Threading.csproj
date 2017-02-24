@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{AD10E5A4-FBA5-4135-9BA4-008723F319B8}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SharedOpenSourcePath>$(FxOpenSourceRootPath)System.Threading\src</SharedOpenSourcePath>
+    <CLSCompliant>true</CLSCompliant>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->

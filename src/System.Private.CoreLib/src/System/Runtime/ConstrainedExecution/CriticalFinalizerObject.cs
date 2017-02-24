@@ -20,6 +20,7 @@ namespace System.Runtime.ConstrainedExecution
         {
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~CriticalFinalizerObject()
         {
         }

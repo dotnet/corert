@@ -7,7 +7,6 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{F36495F7-8CF5-474D-A92D-40317AE2439C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
