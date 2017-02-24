@@ -215,12 +215,20 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     IGCToCLR* gcToClr = nullptr;
 #endif // FEATURE_STANDALONE_GC
 
-    IGCHeap *pGCHeap = InitializeGarbageCollector(gcToClr);
-    if (!pGCHeap)
+    IGCHeap *pGCHeap;
+    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &g_gc_dac_vars))
         return false;
 
+    assert(pGCHeap != nullptr);
     g_pGCHeap = pGCHeap;
+    g_gcDacGlobals = &g_gc_dac_vars;
 
+    // Apparently the Windows linker removes global variables if they are never
+    // read from, which is a problem for g_gcDacGlobals since it's expected that
+    // only the DAC will read from it. This forces the linker to include
+    // g_gcDacGlobals.
+    volatile void* _dummy = g_gcDacGlobals;
+    
     // Initialize the GC subsystem.
     HRESULT hr = pGCHeap->Initialize();
     if (FAILED(hr))
