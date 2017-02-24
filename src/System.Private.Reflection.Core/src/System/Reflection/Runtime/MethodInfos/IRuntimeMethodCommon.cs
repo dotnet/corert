@@ -55,5 +55,7 @@ namespace System.Reflection.Runtime.MethodInfos
         RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<TRuntimeMethodCommon> owningMethod);
 
         int MetadataToken { get; }
+
+        RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs);
     }
 }

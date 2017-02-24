@@ -20,6 +20,7 @@ namespace System.Reflection.Runtime.MethodInfos
     {
         protected internal abstract String ComputeToString(RuntimeMethodInfo contextMethod);
         internal abstract MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
+        internal abstract RuntimeMethodHandle GetRuntimeMethodHandle(Type[] methodArguments);
     }
 
     //
@@ -189,6 +190,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.GetHashCode();
         }
 
+        public sealed override RuntimeMethodHandle MethodHandle => GetRuntimeMethodHandle(Array.Empty<Type>());
+
         protected internal sealed override String ComputeToString(RuntimeMethodInfo contextMethod)
         {
             return RuntimeMethodHelpers.ComputeToString(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
@@ -256,6 +259,11 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
+        }
+
+        internal sealed override RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
+        {
+            return _common.GetRuntimeMethodHandle(genericArgs);
         }
 
         private TRuntimeMethodCommon _common;

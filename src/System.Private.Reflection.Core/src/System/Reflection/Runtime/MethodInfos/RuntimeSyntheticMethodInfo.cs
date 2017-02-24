@@ -136,6 +136,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeMethodHelpers.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParameters, RuntimeReturnParameter);
         }
 
+        public sealed override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         protected sealed override MethodInvoker UncachedMethodInvoker
         {
             get

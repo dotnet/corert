@@ -884,11 +884,7 @@ namespace Internal.Runtime.TypeLoader
                         return false;
                     }
 
-                    RuntimeMethodHandle gvmSlot;
-                    if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(declaringTypeOfVirtualInvoke, methodName.NativeLayoutSignature(), methodSignature, genericArgs, out gvmSlot))
-                    {
-                        return false;
-                    }
+                    RuntimeMethodHandle gvmSlot = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeOfVirtualInvoke, methodName.NativeLayoutSignature(), methodSignature, genericArgs);
 
                     lookupResult = new VirtualResolveDataResult
                     {
