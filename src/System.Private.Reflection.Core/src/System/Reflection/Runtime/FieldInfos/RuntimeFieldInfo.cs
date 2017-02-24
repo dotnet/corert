@@ -165,6 +165,7 @@ namespace System.Reflection.Runtime.FieldInfos
         public abstract override String ToString();
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
+        public abstract override RuntimeFieldHandle FieldHandle { get; }
 
         /// <summary>
         /// Get the default value if exists for a field by parsing metadata. Return false if there is no default value.

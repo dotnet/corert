@@ -134,6 +134,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return _genericMethodDefinition.ComputeToString(this);
         }
 
+        public sealed override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                return _genericMethodDefinition.GetRuntimeMethodHandle(GetGenericArguments());
+            }
+        }
+
         protected sealed override MethodInvoker UncachedMethodInvoker
         {
             get

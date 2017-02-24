@@ -132,6 +132,16 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             return _fieldHandle.GetHashCode();
         }
 
+        public sealed override RuntimeFieldHandle FieldHandle
+        {
+            get
+            {
+                return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
+                    DeclaringType.TypeHandle,
+                    Name);
+            }
+        }
+
         protected sealed override bool TryGetDefaultValue(out object defaultValue)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(

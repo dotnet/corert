@@ -212,6 +212,23 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             }
         }
 
+        public RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgHandles)
+        {
+            Debug.Assert(genericArgs != null);
+
+            RuntimeTypeHandle[] genericArgHandles = new RuntimeTypeHandle[genericArgs.Length];
+            for (int i = 0; i < genericArgHandles.Length; i++)
+                genericArgHandles[i] = genericArgs[i].TypeHandle;
+
+            TypeManagerHandle typeManager = Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(Reader);
+
+            return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
+                DeclaringType.TypeHandle,
+                Name,
+                RuntimeSignature.CreateFromMethodHandle(typeManager, MethodHandle.AsInt()),
+                genericArgHandles);
+        }
+
         //
         // Returns the ParameterInfo objects for the method parameters and return parameter.
         //
