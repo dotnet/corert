@@ -842,6 +842,7 @@ namespace System.Threading
 #if DEBUG
         private volatile int executed;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~QueueUserWorkItemCallback()
         {
             Debug.Assert(
@@ -904,6 +905,7 @@ namespace System.Threading
 #if DEBUG
         private volatile int executed;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~QueueUserWorkItemCallbackDefaultContext()
         {
             Debug.Assert(
