@@ -13,6 +13,11 @@
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
 
+  <!-- CoreRT projects are not CLSCompliant by default -->
+  <PropertyGroup>
+    <CLSCompliant Condition="'$(CLSCompliant)'==''">false</CLSCompliant>
+  </PropertyGroup>
+
   <Import Project="$(ToolsDir)/Build.Common.targets" />
 
   <!-- Override corefx multi targeting support -->

@@ -6,9 +6,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>ILCompiler.MetadataWriter</AssemblyName>
-    <FileAlignment>512</FileAlignment>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);NATIVEFORMAT_PUBLICWRITER;NETFX_45</DefineConstants>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>

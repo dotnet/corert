@@ -12,9 +12,6 @@
     <!-- Note that we can't change the OutputType to be library - there is no entry point -->
     <TargetExt>.dll</TargetExt>
     <AssemblyName>ilc</AssemblyName>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <FileAlignment>512</FileAlignment>
-    <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <DefineConstants>$(DefineConstants);FXCORE</DefineConstants>
