@@ -252,8 +252,8 @@
   </Choose>
 
   <PropertyGroup>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netcoreapp1.2</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netcoreapp2.0</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
   </PropertyGroup>
 
