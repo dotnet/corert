@@ -213,7 +213,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal static IntPtr GetDelegateFunctionPointer()
         {
-            IntPtr pContext = InternalCalls.GetCurrentInteropThunkContext();
+            IntPtr pContext = RuntimeImports.GetCurrentInteropThunkContext();
             Debug.Assert(pContext != null);
 
             IntPtr fnPtr;
@@ -247,7 +247,7 @@ namespace Internal.Runtime.CompilerHelpers
 
             if (s_thunkPoolHeap == null)
             {
-                s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(InternalCalls.GetInteropCommonStubAddress());
+                s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
                 Debug.Assert(s_thunkPoolHeap != null);
             }
 

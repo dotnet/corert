@@ -512,6 +512,14 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
         internal static unsafe extern bool RhSetThreadStaticStorageForModule(Array storage, Int32 moduleIndex);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpGetCurrentThunkContext")]
+        internal static extern IntPtr GetCurrentInteropThunkContext();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpGetCommonStubAddress")]
+        internal static extern IntPtr GetInteropCommonStubAddress();
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
