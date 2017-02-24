@@ -602,7 +602,7 @@ class SchemaDef
             name: "ConstantBoxedEnumValue",
             members: new MemberDef[] {
                 new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Type", TypeDefOrRef, MemberDefFlags.RecordRef)
+                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
             }
         ),
         new RecordDef(
