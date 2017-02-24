@@ -327,6 +327,9 @@ namespace Internal.JitInterface
                                 RelocType.IMAGE_REL_BASED_ABSOLUTE :
                                 RelocType.IMAGE_REL_BASED_REL32;
 
+                            if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
+                                rel = RelocType.IMAGE_REL_BASED_REL32;
+
                             builder.EmitReloc(typeSymbol, rel);
                         }
                         break;
@@ -1315,8 +1318,6 @@ namespace Internal.JitInterface
 
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
-            pLookup.accessType = InfoAccessType.IAT_VALUE;
-
             switch (id)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
@@ -1326,7 +1327,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -1336,7 +1337,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
@@ -1349,7 +1350,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
@@ -1362,7 +1363,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
@@ -1371,7 +1372,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
@@ -1385,7 +1386,7 @@ namespace Internal.JitInterface
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
                         ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, helperArg);
-                        pLookup.addr = (void*)ObjectToHandle(helper);
+                        pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
@@ -1395,7 +1396,7 @@ namespace Internal.JitInterface
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
                         object helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
                         ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
-                        pLookup.addr = (void*)ObjectToHandle(helper);
+                        pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
                 default:
@@ -1411,8 +1412,7 @@ namespace Internal.JitInterface
 
             DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method);
 
-            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
-            pLookup.accessType = InfoAccessType.IAT_VALUE;
+            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)
@@ -1712,8 +1712,7 @@ namespace Internal.JitInterface
                                 helperId, runtimeDeterminedField.OwningType, contextMethod);
                         }
 
-                        pResult.fieldLookup.addr = (void*)ObjectToHandle(helper);
-                        pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                        pResult.fieldLookup = CreateConstLookupToSymbol(helper);
                     }
                 }
                 else
@@ -1748,8 +1747,7 @@ namespace Internal.JitInterface
 
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
-                        pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
-                        pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                        pResult.fieldLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
                     }
                 }
             }
@@ -2306,8 +2304,7 @@ namespace Internal.JitInterface
             if (method.IsVirtual)
                 throw new NotImplementedException("getFunctionEntryPoint");
 
-            pResult.accessType = InfoAccessType.IAT_VALUE;
-            pResult.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(method));
+            pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
         }
 
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
@@ -2317,7 +2314,20 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
             TypeDesc type = method.OwningType;
-            return (void*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(type));
+            ISymbolNode methodSync = _compilation.NodeFactory.NecessaryTypeSymbol(type);
+
+            void *result = (void*)ObjectToHandle(methodSync);
+
+            if (methodSync.RepresentsIndirectionCell)
+            {
+                ppIndirection = result;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return result;
+            }
         }
 
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
@@ -2334,8 +2344,19 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
         {
             MethodDesc method = HandleToObject(handle);
-            ppIndirection = null;
-            return (CORINFO_METHOD_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeMethodHandle(method));
+            ISymbolNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
+            CORINFO_METHOD_STRUCT_* result = (CORINFO_METHOD_STRUCT_*)ObjectToHandle(methodHandleSymbol);
+
+            if (methodHandleSymbol.RepresentsIndirectionCell)
+            {
+                ppIndirection = result;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return result;
+            }
         }
 
         private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
@@ -2367,7 +2388,7 @@ namespace Internal.JitInterface
                 if (!runtimeLookup)
                 {
                     if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
-                        pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeMethodHandle(md));
+                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.RuntimeMethodHandle(md));
                     else
                         throw new NotImplementedException();
                 }
@@ -2394,7 +2415,7 @@ namespace Internal.JitInterface
                 if (!runtimeLookup)
                 {
                     Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
-                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.RuntimeFieldHandle(fd));
+                    pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.RuntimeFieldHandle(fd));
                 }
                 else
                 {
@@ -2414,9 +2435,9 @@ namespace Internal.JitInterface
                 if (!runtimeLookup)
                 {
                     if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj)
-                        pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ConstructedTypeSymbol(td));
+                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(td));
                     else
-                        pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
+                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.NecessaryTypeSymbol(td));
                 }
                 else
                 {
@@ -2446,8 +2467,6 @@ namespace Internal.JitInterface
                 // If the target is not shared then we've already got our result and
                 // can simply do a static look up
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
-
-                pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
             }
         }
 
@@ -2494,8 +2513,7 @@ namespace Internal.JitInterface
             string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
             Debug.Assert(externName != null);
 
-            pLookup.accessType = InfoAccessType.IAT_VALUE;
-            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(externName));
+            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
         }
 
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
@@ -2509,6 +2527,17 @@ namespace Internal.JitInterface
         }
         private void GetProfilingHandle(ref bool pbHookFunction, ref void* pProfilerHandle, ref bool pbIndirectedHandles)
         { throw new NotImplementedException("GetProfilingHandle"); }
+
+        /// <summary>
+        /// Create a CORINFO_CONST_LOOKUP to a symbol and put the address into the addr field
+        /// </summary>
+        private CORINFO_CONST_LOOKUP CreateConstLookupToSymbol(ISymbolNode symbol)
+        {
+            CORINFO_CONST_LOOKUP constLookup = new CORINFO_CONST_LOOKUP();
+            constLookup.addr = (void*)ObjectToHandle(symbol);
+            constLookup.accessType = symbol.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+            return constLookup;
+        }
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult)
         {
@@ -2661,9 +2690,8 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.FatFunctionPointer(targetMethod));
+                    pResult.codePointerOrStubLookup.constLookup = 
+                        CreateConstLookupToSymbol(_compilation.NodeFactory.FatFunctionPointer(targetMethod));
                 }
             }
             else if (directCall)
@@ -2688,13 +2716,12 @@ namespace Internal.JitInterface
                 targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
-                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.StringAllocator(targetMethod));
+                    pResult.codePointerOrStubLookup.constLookup = 
+                        CreateConstLookupToSymbol(_compilation.NodeFactory.StringAllocator(targetMethod));
                 }
                 else if (pResult.exactContextNeedsRuntimeLookup)
                 {
@@ -2717,14 +2744,14 @@ namespace Internal.JitInterface
                     if (targetMethod.IsSharedByGenericInstantiations && !inlining && !resolvedConstraint && !referencingArrayAddressMethod)
                     {
                         MethodDesc runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.RuntimeDeterminedMethod(runtimeDeterminedMethod));
+                        pResult.codePointerOrStubLookup.constLookup = 
+                            CreateConstLookupToSymbol(_compilation.NodeFactory.RuntimeDeterminedMethod(runtimeDeterminedMethod));
                     }
                     else
                     {
                         Debug.Assert(!forceUseRuntimeLookup);
-                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                        pResult.codePointerOrStubLookup.constLookup = 
+                            CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
                     }
                 }
                 else
@@ -2743,32 +2770,31 @@ namespace Internal.JitInterface
 
                     if (instParam != null)
                     {
-                        pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
-                        pResult.instParamLookup.addr = (void*)ObjectToHandle(instParam);
+                        pResult.instParamLookup = CreateConstLookupToSymbol(instParam);
 
                         if (!referencingArrayAddressMethod)
                         {
-                            pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                                _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                            pResult.codePointerOrStubLookup.constLookup = 
+                                CreateConstLookupToSymbol(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
                         }
                         else
                         {
                             // We don't want array Address method to be modeled in the generic dependency analysis.
                             // The method doesn't actually have runtime determined dependencies (won't do
                             // any generic lookups).
-                            pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                                _compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                            pResult.codePointerOrStubLookup.constLookup = 
+                                CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
                         }
                     }
                     else if (targetMethod.AcquiresInstMethodTableFromThis())
                     {
-                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
+                        pResult.codePointerOrStubLookup.constLookup = 
+                            CreateConstLookupToSymbol(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod));
                     }
                     else
                     {
-                        pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                            _compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                        pResult.codePointerOrStubLookup.constLookup = 
+                            CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
                     }
                 }
 
@@ -2823,15 +2849,15 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult.exactContextNeedsRuntimeLookup = false;
-                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                     // Get the slot defining method to make sure our virtual method use tracking gets this right.
                     // For normal C# code the targetMethod will always be newslot.
                     MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
 
-                    pResult.codePointerOrStubLookup.constLookup.addr =
-                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, slotDefiningMethod));
+                    pResult.codePointerOrStubLookup.constLookup = 
+                        CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, slotDefiningMethod));
                 }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
@@ -2868,15 +2894,14 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult.exactContextNeedsRuntimeLookup = false;
-                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                     // Get the slot defining method to make sure our virtual method use tracking gets this right.
                     // For normal C# code the targetMethod will always be newslot.
                     MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
 
-                    pResult.codePointerOrStubLookup.constLookup.addr =
-                            (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, slotDefiningMethod));
+                    pResult.codePointerOrStubLookup.constLookup =
+                            CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, slotDefiningMethod));
                 }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks

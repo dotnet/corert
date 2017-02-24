@@ -251,20 +251,12 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
-            TypeDesc relatedType = null;
-            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
-            {
-                relatedType = ((ParameterizedType)_type).ParameterType;
-            }
-            else
-            {
-                relatedType = _type.BaseType;
-            }
+            ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
             // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
             // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
             // that it should indirect through the import address table
-            if (relatedType != null && factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(relatedType))
+            if (relatedTypeNode != null && relatedTypeNode.RepresentsIndirectionCell)
             {
                 flags |= (UInt16)EETypeFlags.RelatedTypeViaIATFlag;
             }
@@ -334,7 +326,7 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
-        protected virtual void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
+        private ISymbolNode GetRelatedTypeNode(NodeFactory factory)
         {
             ISymbolNode relatedTypeNode = null;
 
@@ -351,6 +343,13 @@ namespace ILCompiler.DependencyAnalysis
                     relatedTypeNode = GetBaseTypeNode(factory);
                 }
             }
+
+            return relatedTypeNode;
+        }
+
+        protected virtual void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
             if (relatedTypeNode != null)
             {

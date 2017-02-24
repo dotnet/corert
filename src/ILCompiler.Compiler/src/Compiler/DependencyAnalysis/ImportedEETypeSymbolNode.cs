@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
+        public override bool RepresentsIndirectionCell => true;
+
         public TypeDesc Type
         {
             get
