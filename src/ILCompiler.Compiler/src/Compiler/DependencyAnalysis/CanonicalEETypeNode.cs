@@ -35,13 +35,13 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => IsTypeNodeShareable(_type);
         public override bool HasConditionalStaticDependencies => false;
         protected override bool EmitVirtualSlotsAndInterfaces => true;
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
 
             DefType closestDefType = _type.GetClosestDefType();
-
-            DependencyList dependencyList = new DependencyList();
 
             if (_type.RuntimeInterfaces.Length > 0)
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Canonical interface dispatch map");
@@ -53,6 +53,11 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: other dependencies needed by the dynamic type loader?
 
             return dependencyList;
+        }
+
+        protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
+        {
+            return _type.BaseType != null ? factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(_type.BaseType)) : null;
         }
 
         protected override int GCDescSize

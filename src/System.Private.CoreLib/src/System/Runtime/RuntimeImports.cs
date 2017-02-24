@@ -457,7 +457,12 @@ namespace System.Runtime
 
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhGetModuleSection(TypeManagerHandle module, ReadyToRunSectionType section, out int length);
+        private static extern IntPtr RhGetModuleSection(ref TypeManagerHandle module, ReadyToRunSectionType section, out int length);
+
+        internal static IntPtr RhGetModuleSection(TypeManagerHandle module, ReadyToRunSectionType section, out int length)
+        {
+            return RhGetModuleSection(ref module, section, out length);
+        }
 
 #if CORERT
         internal static uint RhGetLoadedOSModules(IntPtr[] resultArray)

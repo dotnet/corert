@@ -740,9 +740,9 @@ COOP_PINVOKE_HELPER(Boolean, RhpRegisterFrozenSegment, (void* pSegmentStart, UIn
     return RedhawkGCInterface::RegisterFrozenSection(pSegmentStart, length) != NULL;
 }
 
-COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManagerHandle pModule, Int32 headerId, Int32* length))
+COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManagerHandle *pModule, Int32 headerId, Int32* length))
 {
-    return pModule.AsTypeManager()->GetModuleSection((ReadyToRunSectionType)headerId, length);
+    return pModule->AsTypeManager()->GetModuleSection((ReadyToRunSectionType)headerId, length);
 }
 
 COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, (PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh))

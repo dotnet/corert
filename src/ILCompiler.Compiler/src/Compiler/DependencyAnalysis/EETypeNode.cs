@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             // If there is a constructed version of this node in the graph, emit that instead
-            if (ConstructedEETypeNode.CreationAllowed(_type))
+                if (ConstructedEETypeNode.CreationAllowed(_type))
                 return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
 
             return false;
@@ -135,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
-        
+
         public int Offset => GCDescSize;
         public override bool IsShareable => IsTypeNodeShareable(_type);
 
@@ -146,17 +146,22 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = new DependencyList();
+
+            // Include the optional fields by default. We don't know if optional fields will be needed until
+            // all of the interface usage has been stabilized. If we end up not needing it, the EEType node will not
+            // generate any relocs to it, and the optional fields node will instruct the object writer to skip
+            // emitting it.
+            dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
+
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
                 // We need to make sure this is possible.
-                return new DependencyList
-                {
-                    new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor")
-                };
+                dependencies.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
-            return null;
+            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -319,6 +324,22 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             objData.EmitInt(objectSize);
+        }
+
+        protected static TypeDesc GetFullCanonicalTypeForCanonicalType(TypeDesc type)
+        {
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific))
+            {
+                return type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            }
+            else if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                return type.ConvertToCanonForm(CanonicalFormKind.Universal);
+            }
+            else
+            {
+                return type;
+            }
         }
 
         protected virtual ISymbolNode GetBaseTypeNode(NodeFactory factory)
@@ -630,14 +651,14 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(baseType);
+                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(baseType));
             }
             
             // We need EETypes for interfaces
             foreach (var intf in type.RuntimeInterfaces)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(intf);
+                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(intf));
             }
 
             // Validate classes, structs, enums, interfaces, and delegates
