@@ -8,7 +8,6 @@
 
 /*============================================================
 **
-** Class:  CriticalHandle
 **
 **
 ** A specially designed handle wrapper to ensure we never leak

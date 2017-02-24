@@ -4,7 +4,6 @@
 
 /*============================================================
 **
-** Class:  SynchronizationContext
 **
 **
 ** Purpose: Capture synchronization semantics for asynchronous callbacks

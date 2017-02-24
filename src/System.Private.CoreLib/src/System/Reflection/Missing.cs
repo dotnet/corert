@@ -16,7 +16,7 @@ namespace System.Reflection
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
-    
+
             UnitySerializationHolder.GetUnitySerializationInfo(info, this);
         }
     }

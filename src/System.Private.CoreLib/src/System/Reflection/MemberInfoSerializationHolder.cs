@@ -136,172 +136,171 @@ namespace System.Reflection
             {
                 #region case MemberTypes.Field:
                 case MemberTypes.Field:
-                {
-                    FieldInfo[] fields = m_reflectedType.GetMember(m_memberName, MemberTypes.Field, bindingFlags) as FieldInfo[];
+                    {
+                        FieldInfo[] fields = m_reflectedType.GetMember(m_memberName, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
-                    if (fields.Length == 0)
-                        throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
+                        if (fields.Length == 0)
+                            throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
 
-                    return fields[0];
-                }
+                        return fields[0];
+                    }
                 #endregion
 
                 #region case MemberTypes.Event:
                 case MemberTypes.Event:
-                {
-                    EventInfo[] events = m_reflectedType.GetMember(m_memberName, MemberTypes.Event, bindingFlags) as EventInfo[];
+                    {
+                        EventInfo[] events = m_reflectedType.GetMember(m_memberName, MemberTypes.Event, bindingFlags) as EventInfo[];
 
-                    if (events.Length == 0)
-                        throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
+                        if (events.Length == 0)
+                            throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
 
-                    return events[0];
-                }
+                        return events[0];
+                    }
                 #endregion
 
                 #region case MemberTypes.Property:
                 case MemberTypes.Property:
-                {
-                    PropertyInfo[] properties = m_reflectedType.GetMember(m_memberName, MemberTypes.Property, bindingFlags) as PropertyInfo[];
-
-                    if (properties.Length == 0)
-                        throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
-
-                    if (properties.Length == 1)
-                        return properties[0];
-
-                    if (properties.Length > 1)
                     {
-                        for (int i = 0; i < properties.Length; i++)
+                        PropertyInfo[] properties = m_reflectedType.GetMember(m_memberName, MemberTypes.Property, bindingFlags) as PropertyInfo[];
+
+                        if (properties.Length == 0)
+                            throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
+
+                        if (properties.Length == 1)
+                            return properties[0];
+
+                        if (properties.Length > 1)
                         {
-                            if (m_signature2 != null)
+                            for (int i = 0; i < properties.Length; i++)
                             {
-                                if (properties[i].SerializationToString().Equals(m_signature2))
-                                    return properties[i];
-                            }
-                            else
-                            {
-                                if ((properties[i]).ToString().Equals(m_signature))
-                                    return properties[i];
+                                if (m_signature2 != null)
+                                {
+                                    if (properties[i].SerializationToString().Equals(m_signature2))
+                                        return properties[i];
+                                }
+                                else
+                                {
+                                    if ((properties[i]).ToString().Equals(m_signature))
+                                        return properties[i];
+                                }
                             }
                         }
-                    }
 
-                    throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
-                }
+                        throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
+                    }
                 #endregion
 
                 #region case MemberTypes.Constructor:
                 case MemberTypes.Constructor:
-                {
-                    if (m_signature == null)
-                        throw new SerializationException(SR.Serialization_NullSignature);
-
-                    ConstructorInfo[] constructors = m_reflectedType.GetMember(m_memberName, MemberTypes.Constructor, bindingFlags) as ConstructorInfo[];
-
-                    if (constructors.Length == 1)
-                        return constructors[0];
-
-                    if (constructors.Length > 1)
                     {
-                        for (int i = 0; i < constructors.Length; i++)
+                        if (m_signature == null)
+                            throw new SerializationException(SR.Serialization_NullSignature);
+
+                        ConstructorInfo[] constructors = m_reflectedType.GetMember(m_memberName, MemberTypes.Constructor, bindingFlags) as ConstructorInfo[];
+
+                        if (constructors.Length == 1)
+                            return constructors[0];
+
+                        if (constructors.Length > 1)
                         {
-                            if (m_signature2 != null)
+                            for (int i = 0; i < constructors.Length; i++)
                             {
-                                if (constructors[i].SerializationToString().Equals(m_signature2))
-                                    return constructors[i];
-                            }
-                            else
-                            {
-                                if (constructors[i].ToString().Equals(m_signature))
-                                    return constructors[i];
+                                if (m_signature2 != null)
+                                {
+                                    if (constructors[i].SerializationToString().Equals(m_signature2))
+                                        return constructors[i];
+                                }
+                                else
+                                {
+                                    if (constructors[i].ToString().Equals(m_signature))
+                                        return constructors[i];
+                                }
                             }
                         }
-                    }
 
-                    throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
-                }
+                        throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
+                    }
                 #endregion
 
                 #region case MemberTypes.Method:
                 case MemberTypes.Method:
-                {
-                    MethodInfo methodInfo = null;
-
-                    if (m_signature == null)
-                        throw new SerializationException(SR.Serialization_NullSignature);
-
-                    Type[] genericArguments = m_info.GetValueNoThrow("GenericArguments", typeof(Type[])) as Type[];
-
-                    MethodInfo[] methods = m_reflectedType.GetMember(m_memberName, MemberTypes.Method, bindingFlags) as MethodInfo[];
-
-                    if (methods.Length == 1)
-                        methodInfo = methods[0];
-
-                    else if (methods.Length > 1)
                     {
-                        for (int i = 0; i < methods.Length; i++)
+                        MethodInfo methodInfo = null;
+
+                        if (m_signature == null)
+                            throw new SerializationException(SR.Serialization_NullSignature);
+
+                        Type[] genericArguments = m_info.GetValueNoThrow("GenericArguments", typeof(Type[])) as Type[];
+
+                        MethodInfo[] methods = m_reflectedType.GetMember(m_memberName, MemberTypes.Method, bindingFlags) as MethodInfo[];
+
+                        if (methods.Length == 1)
+                            methodInfo = methods[0];
+
+                        else if (methods.Length > 1)
                         {
-                            if (m_signature2 != null)
+                            for (int i = 0; i < methods.Length; i++)
                             {
-                                if (methods[i].SerializationToString().Equals(m_signature2))
+                                if (m_signature2 != null)
                                 {
-                                    methodInfo = methods[i];
-                                    break;
-                                }
-                            }
-                            else
-                            {
-
-                                if (methods[i].ToString().Equals(m_signature))
-                                {
-                                    methodInfo = methods[i];
-                                    break;
-                                }
-                            }
-
-                            // Handle generic methods specially since the signature match above probably won't work (the candidate
-                            // method info hasn't been instantiated). If our target method is generic as well we can skip this.
-                            if (genericArguments != null && methods[i].IsGenericMethod)
-                            {
-                                if (methods[i].GetGenericArguments().Length == genericArguments.Length)
-                                {
-                                    MethodInfo candidateMethod = methods[i].MakeGenericMethod(genericArguments);
-
-                                    if (m_signature2 != null)
+                                    if (methods[i].SerializationToString().Equals(m_signature2))
                                     {
-                                        if (candidateMethod.SerializationToString().Equals(m_signature2))
-                                        {
-                                            methodInfo = candidateMethod;
-                                            break;
-                                        }
+                                        methodInfo = methods[i];
+                                        break;
                                     }
-                                    else
+                                }
+                                else
+                                {
+                                    if (methods[i].ToString().Equals(m_signature))
                                     {
-                                        if (candidateMethod.ToString().Equals(m_signature))
+                                        methodInfo = methods[i];
+                                        break;
+                                    }
+                                }
+
+                                // Handle generic methods specially since the signature match above probably won't work (the candidate
+                                // method info hasn't been instantiated). If our target method is generic as well we can skip this.
+                                if (genericArguments != null && methods[i].IsGenericMethod)
+                                {
+                                    if (methods[i].GetGenericArguments().Length == genericArguments.Length)
+                                    {
+                                        MethodInfo candidateMethod = methods[i].MakeGenericMethod(genericArguments);
+
+                                        if (m_signature2 != null)
                                         {
-                                            methodInfo = candidateMethod;
-                                            break;
+                                            if (candidateMethod.SerializationToString().Equals(m_signature2))
+                                            {
+                                                methodInfo = candidateMethod;
+                                                break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (candidateMethod.ToString().Equals(m_signature))
+                                            {
+                                                methodInfo = candidateMethod;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+
+                        if (methodInfo == null)
+                            throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
+
+                        if (!methodInfo.IsGenericMethodDefinition)
+                            return methodInfo;
+
+                        if (genericArguments == null)
+                            return methodInfo;
+
+                        if (genericArguments[0] == null)
+                            return null;
+
+                        return methodInfo.MakeGenericMethod(genericArguments);
                     }
-
-                    if (methodInfo == null)
-                        throw new SerializationException(SR.Format(SR.Serialization_UnknownMember, m_memberName));
-
-                    if (!methodInfo.IsGenericMethodDefinition)
-                        return methodInfo;
-
-                    if (genericArguments == null)
-                        return methodInfo;
-
-                    if (genericArguments[0] == null)
-                        return null;
-
-                    return methodInfo.MakeGenericMethod(genericArguments);
-                }
                 #endregion
 
                 default:

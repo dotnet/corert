@@ -6,9 +6,9 @@ using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 
-partial class Interop
+internal partial class Interop
 {
-    partial class mincore
+    internal partial class mincore
     {
         [DllImport(Libraries.CoreFile_L1_2, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern uint GetTempPathW(int bufferLen, [Out]StringBuilder buffer);

@@ -97,7 +97,7 @@ namespace Internal.Runtime.CompilerServices
                 return _readerGCHandle.Target;
             }
         }
-        
+
         public int Handle
         {
             get

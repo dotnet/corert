@@ -21,7 +21,7 @@ namespace System.Threading
         // Binary tree used to keep track of active thread ids. Each node of the tree keeps track of 32 consecutive ids.
         // Implemented as immutable collection to avoid locks. Each modification creates a new top level node.
         // 
-        class ImmutableIdDispenser
+        private class ImmutableIdDispenser
         {
             private readonly ImmutableIdDispenser _left; // Child nodes
             private readonly ImmutableIdDispenser _right;

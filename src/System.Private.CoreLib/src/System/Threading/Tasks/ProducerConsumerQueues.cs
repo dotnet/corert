@@ -4,7 +4,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// ProducerConsumerQueues.cs
 //
 
 //
@@ -13,7 +12,6 @@
 //
 // ************<IMPORTANT NOTE>*************
 //
-// There are two exact copies of this file:
 //  src\ndp\clr\src\bcl\system\threading\tasks\producerConsumerQueue.cs
 //  src\ndp\fx\src\dataflow\system\threading\tasks\dataflow\internal\producerConsumerQueue.cs
 // Keep both of them consistent by changing the other file when you change this one, also avoid:
@@ -541,7 +539,7 @@ namespace System.Threading.Tasks
 
 
     /// <summary>A placeholder class for common padding constants and eventually routines.</summary>
-    static class PaddingHelpers
+    internal static class PaddingHelpers
     {
         /// <summary>A size greater than or equal to the size of the most common CPU cache lines.</summary>
         internal const int CACHE_LINE_SIZE = 128;
@@ -549,7 +547,7 @@ namespace System.Threading.Tasks
 
     /// <summary>Padding structure used to minimize false sharing in SingleProducerSingleConsumerQueue{T}.</summary>
     [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE - sizeof(Int32))] // Based on common case of 64-byte cache lines
-    struct PaddingFor32
+    internal struct PaddingFor32
     {
     }
 }

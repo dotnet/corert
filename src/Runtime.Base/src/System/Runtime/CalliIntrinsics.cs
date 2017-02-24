@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Runtime.InteropServices;
+
 namespace System.Runtime
 {
-    using System.Runtime.InteropServices;
-
     [McgIntrinsics]
     internal static unsafe partial class CalliIntrinsics
     {

@@ -99,11 +99,11 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if PLATFORM_UNIX
             const string PAL_SHLIB_PREFIX = "lib";
-    #if PLATFORM_OSX
+#if PLATFORM_OSX
             const string PAL_SHLIB_SUFFIX = ".dylib";
-    #else
+#else
             const string PAL_SHLIB_SUFFIX = ".so";
-    #endif
+#endif
 
              // Try prefix+name+suffix
             hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName + PAL_SHLIB_SUFFIX);
@@ -131,7 +131,7 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
 
             return hModule;
-        }   
+        }
 
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
@@ -140,13 +140,13 @@ namespace Internal.Runtime.CompilerHelpers
 #else
             Interop.Sys.FreeLibrary(hModule);
 #endif
-        }   
-    
+        }
+
         internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
         {
-            byte *pModuleName = (byte *)pCell->ModuleName;
+            byte* pModuleName = (byte*)pCell->ModuleName;
             string moduleName = Encoding.UTF8.GetString(pModuleName, strlen(pModuleName));
-            
+
             IntPtr hModule = TryResolveModule(moduleName);
             if (hModule != IntPtr.Zero)
             {
@@ -280,21 +280,21 @@ namespace Internal.Runtime.CompilerHelpers
 
                 return pThunk;
             }
-    }
+        }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct ModuleFixupCell
-    {
-        public IntPtr Handle;
-        public IntPtr ModuleName;
-    }
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct ModuleFixupCell
+        {
+            public IntPtr Handle;
+            public IntPtr ModuleName;
+        }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct MethodFixupCell
-    {
-        public IntPtr Target;
-        public IntPtr MethodName;
-        public ModuleFixupCell* Module;
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct MethodFixupCell
+        {
+            public IntPtr Target;
+            public IntPtr MethodName;
+            public ModuleFixupCell* Module;
+        }
     }
-}
 }

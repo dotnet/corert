@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Helper methods for using Tasks to implement the APM pattern.
 //
 // Code is duplicated from CoreFX repo. Please keep it in sync
 

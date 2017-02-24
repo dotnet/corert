@@ -1002,7 +1002,7 @@ namespace System
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
             fixed (int* ptr = &_a)
-                 return ptr[0] ^ ptr[1] ^ ptr[2] ^ ptr[3];
+                return ptr[0] ^ ptr[1] ^ ptr[2] ^ ptr[3];
         }
 
         // Returns true if and only if the guid represented

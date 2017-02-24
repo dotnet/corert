@@ -39,7 +39,6 @@ namespace Internal.Runtime
             storage[typeTlsIndex] = threadStaticBase;
 
             return threadStaticBase;
-
         }
 
         /// <summary>

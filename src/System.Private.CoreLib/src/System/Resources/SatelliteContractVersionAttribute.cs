@@ -14,12 +14,12 @@
 **
 ===========================================================*/
 
+using Internal.Runtime.CompilerServices;
+using System;
+using System.Diagnostics.Contracts;
+
 namespace System.Resources
 {
-    using Internal.Runtime.CompilerServices;
-    using System;
-    using System.Diagnostics.Contracts;
-
     [RelocatedType("System.Resources.ResourceManager")]
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
     [System.Runtime.InteropServices.ComVisible(true)]

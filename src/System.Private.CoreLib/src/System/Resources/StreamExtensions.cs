@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -72,7 +73,7 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.Resources_StreamNotValid);
             }
 
-            if(stringLength == 0) { return string.Empty; }
+            if (stringLength == 0) { return string.Empty; }
 
             byte[] buffer = new byte[stringLength];
             int totalRead = 0;
@@ -80,7 +81,7 @@ namespace System.Resources
             do
             {
                 int justRead = stream.Read(buffer, totalRead, stringLength - totalRead);
-                if(justRead == 0)
+                if (justRead == 0)
                 {
                     throw new EndOfStreamException(SR.BadImageFormat_ResourceNameCorrupted_NameIndex + position);
                 }
@@ -88,10 +89,12 @@ namespace System.Resources
             }
             while (totalRead != stringLength);
 
-            if (utf16) {
+            if (utf16)
+            {
                 return Encoding.Unicode.GetString(buffer, 0, buffer.Length);
             }
-            else {
+            else
+            {
                 return Encoding.UTF8.GetString(buffer, 0, buffer.Length);
             }
         }
@@ -99,17 +102,20 @@ namespace System.Resources
         internal static bool StartsWith(this Stream stream, byte[] value, bool advance = false)
         {
             long originalPosition = stream.Position;
-            foreach(var b in value)
+            foreach (var b in value)
             {
                 int read = stream.ReadByte();
-                if(b != read) {
-                    if (!advance) {
+                if (b != read)
+                {
+                    if (!advance)
+                    {
                         stream.Position = originalPosition;
                     }
                     return false;
                 }
             }
-            if (!advance) {
+            if (!advance)
+            {
                 stream.Position = originalPosition;
             }
             return true;

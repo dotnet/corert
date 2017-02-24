@@ -21,7 +21,7 @@ namespace System
         public Nullable(T value)
         {
             this.value = value;
-            this.hasValue = true;
+            hasValue = true;
         }
 
         public bool HasValue
