@@ -13,7 +13,7 @@
     Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
   -->
   <PropertyGroup>
-    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
+    <BuildToolsTargetsDesktop Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargetsDesktop>
   </PropertyGroup>
 
   <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
@@ -81,7 +81,7 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
     <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargetsDesktop)' == 'true'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
     <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
   </PropertyGroup>
