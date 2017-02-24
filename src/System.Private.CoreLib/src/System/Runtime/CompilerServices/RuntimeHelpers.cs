@@ -158,10 +158,20 @@ namespace System.Runtime.CompilerServices
             IntPtr lower, upper;
             RuntimeImports.RhGetCurrentThreadStackBounds(out lower, out upper);
 
-            //
-            // We consider half of the stack to be "sufficient."
-            //
-            return (t_sufficientStackLimit = (byte*)lower + (((byte*)upper - (byte*)lower) / 2));
+            // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. This minimum
+            // stack size should be sufficient to allow a typical non-recursive call chain to execute, including
+            // potential exception handling and garbage collection.
+
+#if BIT64
+            const int MinExecutionStackSize = 128 * 1024;
+#else
+            const int MinExecutionStackSize = 64 * 1024;
+#endif
+
+            byte* limit = (((byte*)upper - (byte*)lower > MinExecutionStackSize)) ?
+                ((byte*)lower + MinExecutionStackSize) : ((byte*)upper);
+
+            return (t_sufficientStackLimit = limit);
         }
 
         [Intrinsic]

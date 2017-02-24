@@ -39,6 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(_name);
         }
         public int Offset => _offset;
+        public bool RepresentsIndirectionCell => false;
 
         public void SetSymbolOffset(int offset)
         {

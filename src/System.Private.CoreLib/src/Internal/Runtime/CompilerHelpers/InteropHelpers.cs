@@ -5,8 +5,12 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 using Interlocked = System.Threading.Interlocked;
+using Internal.Runtime.Augments;
+using System.Runtime;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -95,11 +99,11 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if PLATFORM_UNIX
             const string PAL_SHLIB_PREFIX = "lib";
-    #if PLATFORM_OSX
+#if PLATFORM_OSX
             const string PAL_SHLIB_SUFFIX = ".dylib";
-    #else
+#else
             const string PAL_SHLIB_SUFFIX = ".so";
-    #endif
+#endif
 
              // Try prefix+name+suffix
             hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName + PAL_SHLIB_SUFFIX);
@@ -127,7 +131,7 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
 
             return hModule;
-        }        
+        }
 
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
@@ -136,13 +140,13 @@ namespace Internal.Runtime.CompilerHelpers
 #else
             Interop.Sys.FreeLibrary(hModule);
 #endif
-        }        
-        
+        }
+
         internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
         {
-            byte *pModuleName = (byte *)pCell->ModuleName;
+            byte* pModuleName = (byte*)pCell->ModuleName;
             string moduleName = Encoding.UTF8.GetString(pModuleName, strlen(pModuleName));
-            
+
             IntPtr hModule = TryResolveModule(moduleName);
             if (hModule != IntPtr.Zero)
             {
@@ -189,7 +193,7 @@ namespace Internal.Runtime.CompilerHelpers
             ptr = PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(void*)size).ToPointer();
 
             // PInvokeMarshal.CoTaskMemAlloc will throw OOMException if out of memory
-            System.Diagnostics.Debug.Assert(ptr != null);
+            Debug.Assert(ptr != null);
 
             Buffer.ZeroMemory((byte*)ptr, size.ToInt64());
             return ptr;
@@ -198,6 +202,84 @@ namespace Internal.Runtime.CompilerHelpers
         internal unsafe static void CoTaskMemFree(void* p)
         {
             PInvokeMarshal.CoTaskMemFree((IntPtr)p);
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        internal unsafe struct ThunkContextData
+        {
+            public GCHandle Handle;        //  A weak GCHandle to the delegate
+            public IntPtr FunctionPtr;     // Function pointer for open static delegates
+        };
+
+        internal static IntPtr GetDelegateFunctionPointer()
+        {
+            IntPtr pContext = RuntimeImports.GetCurrentInteropThunkContext();
+            Debug.Assert(pContext != null);
+
+            IntPtr fnPtr;
+            unsafe
+            {
+                // Pull out function pointer for open static delegate
+                fnPtr = (*((ThunkContextData*)pContext)).FunctionPtr;
+                
+                // free the memory here
+                CoTaskMemFree((void*)pContext);
+            }
+
+            Debug.Assert(fnPtr != null);
+            return fnPtr;
+        }
+
+        internal static IntPtr GetStubForPInvokeDelegate(Delegate del)
+        {
+            if (del == null)
+                return IntPtr.Zero;
+
+            return AllocateThunk(del);
+        }
+
+        private static object s_thunkPoolHeap;
+
+
+        private static IntPtr AllocateThunk(Delegate del)
+        {
+            //TODO: cache del->thunk here
+
+            if (s_thunkPoolHeap == null)
+            {
+                s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
+                Debug.Assert(s_thunkPoolHeap != null);
+            }
+
+            IntPtr pThunk = RuntimeAugments.AllocateThunk(s_thunkPoolHeap);
+            Debug.Assert(pThunk != IntPtr.Zero);
+
+            if (pThunk == IntPtr.Zero)
+            {
+                // We've either run out of memory, or failed to allocate a new thunk due to some other bug. Now we should fail fast
+                Environment.FailFast("Insufficient number of thunks.");
+                return IntPtr.Zero;
+            }
+            else
+            {
+                IntPtr pTarget = RuntimeAugments.InteropCallbacks.TryGetMarshallerForDelegate(del.GetTypeHandle());
+                IntPtr pContext;
+                unsafe
+                {
+                    //
+                    // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
+                    // We will store this pointer on the context slot of thunk data
+                    //
+                    pContext = (IntPtr)CoTaskMemAllocAndZeroMemory((System.IntPtr)(2 * (IntPtr.Size)));
+                    ThunkContextData* thunkData = (ThunkContextData*)pContext;
+
+                    (*thunkData).Handle = GCHandle.Alloc(del, GCHandleType.Weak);
+                    (*thunkData).FunctionPtr = del.GetRawFunctionPointerForOpenStaticDelegate();
+                }
+                RuntimeAugments.SetThunkData(s_thunkPoolHeap, pThunk, pContext, pTarget);
+
+                return pThunk;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

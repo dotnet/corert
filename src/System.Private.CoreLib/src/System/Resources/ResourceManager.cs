@@ -175,9 +175,8 @@ namespace System.Resources
     //
     [RelocatedType("System.Resources.ResourceManager")]
     [Serializable]
-    public class ResourceManager 
+    public class ResourceManager
     {
-
         internal class CultureNameResourceSetPair
         {
             public String lastCultureName;
@@ -201,11 +200,11 @@ namespace System.Resources
         private bool _ignoreCase;   // Whether case matters in GetString & GetObject
 
         private bool UseManifest;  // Use Assembly manifest, or grovel disk.
-        
+
 #if RESOURCE_SATELLITE_CONFIG
         private static volatile Dictionary<string, string[]> _installedSatelliteInfo;  // Give the user the option  
-                                                                    // to prevent certain satellite assembly probes via a config file.
-                                                                    // Note that config files are per-appdomain, not per-assembly nor process
+                                                                                       // to prevent certain satellite assembly probes via a config file.
+                                                                                       // Note that config files are per-appdomain, not per-assembly nor process
         private static volatile bool _checkedConfigFile;  // Did we read the app's config file?
 #endif
 
@@ -259,12 +258,12 @@ namespace System.Resources
         internal static readonly int DEBUG = 0; //Making this const causes C# to consider all of the code that it guards unreachable.
 
         [ThreadStatic]
-        static int ts_recursionCount = 0;
+        private static int ts_recursionCount = 0;
 
 #if FEATURE_APPX
         private static volatile bool s_IsAppXModel;
 #endif
-        
+
         private void Init()
         {
         }
@@ -324,7 +323,7 @@ namespace System.Resources
 
             CommonAssemblyInit();
         }
-        
+
         public ResourceManager(String baseName, Assembly assembly, Type usingResourceSet)
         {
             if (null == baseName)
@@ -341,7 +340,7 @@ namespace System.Resources
 
             CommonAssemblyInit();
         }
-        
+
         public ResourceManager(Type resourceSource)
         {
             if (null == resourceSource)
@@ -359,9 +358,9 @@ namespace System.Resources
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            this._resourceSets = null;
-            this.resourceGroveler = null;
-            this._lastUsedResourceCache = null;
+            _resourceSets = null;
+            resourceGroveler = null;
+            _lastUsedResourceCache = null;
         }
 
         [OnDeserialized]
@@ -382,7 +381,7 @@ namespace System.Resources
             }
 
             // v2 does this lazily
-            if (UseManifest && this._neutralResourcesCulture == null)
+            if (UseManifest && _neutralResourcesCulture == null)
             {
                 _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
             }
@@ -392,7 +391,7 @@ namespace System.Resources
         private void OnSerializing(StreamingContext ctx)
         {
         }
-        
+
 
         // Trying to unify code as much as possible, even though having to do a
         // security check in each constructor prevents it.
@@ -583,7 +582,7 @@ namespace System.Resources
                     if (localResourceSets.TryGetValue(culture.Name, out rs))
                         return rs;
                 }
-            }            
+            }
 
             if (UseManifest && culture.Name == CultureInfo.InvariantCulture.Name)
             {
@@ -646,7 +645,6 @@ namespace System.Resources
                     foundCulture = currentCultureInfo;
                     break;
                 }
-
             }
 
             if (rs != null && foundCulture != null)
@@ -708,7 +706,7 @@ namespace System.Resources
             {
                 throw new ArgumentNullException(nameof(a), SR.ArgumentNull_Assembly);
             }
-            
+
             String v = null;
             IEnumerable<SatelliteContractVersionAttribute> attrs = a.GetCustomAttributes<SatelliteContractVersionAttribute>();
 
@@ -744,7 +742,7 @@ namespace System.Resources
             }
             return ver;
         }
-        
+
         protected static CultureInfo GetNeutralResourcesLanguage(Assembly a)
         {
             // This method should be obsolete - replace it with the one below.
@@ -1017,7 +1015,7 @@ namespace System.Resources
             Contract.EndContractBlock();
 
             // Recursion guard so framework resource lookups can't stack overflow
-            if(ts_recursionCount > 10)
+            if (ts_recursionCount > 10)
             {
                 Debug.Fail("Infinite recursion during resource lookup. This may be a bug or missing framework resource.");
                 throw new MissingManifestResourceException("Could not look up the resource due to an internal error.");
@@ -1216,12 +1214,12 @@ namespace System.Resources
 
             return null;
         }
-        
+
         public UnmanagedMemoryStream GetStream(String name)
         {
             return GetStream(name, (CultureInfo)null);
         }
-        
+
         public UnmanagedMemoryStream GetStream(String name, CultureInfo culture)
         {
             Object obj = GetObject(name, culture, false);

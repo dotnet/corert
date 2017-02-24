@@ -31,6 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_allocationMethod));
         }
         public int Offset => 0;
+        public bool RepresentsIndirectionCell => false;
 
         public StringAllocatorMethodNode(MethodDesc constructorMethod)
         {

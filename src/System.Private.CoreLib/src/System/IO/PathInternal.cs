@@ -98,7 +98,7 @@ namespace System.IO
             builder.Length = end + 1;
             return builder;
         }
-        
+
         /// <summary>
         /// Returns the start index of the filename
         /// in the given path, or 0 if no directory
@@ -198,7 +198,7 @@ namespace System.IO
             return firstRootLength == secondRootLength
                 && string.Compare(
                     strA: first,
-                    indexA: 0, 
+                    indexA: 0,
                     strB: second,
                     indexB: 0,
                     length: firstRootLength,
@@ -224,7 +224,6 @@ namespace System.IO
 
                 searchPattern = searchPattern.Substring(index + 2);
             }
-
         }
     }
 }

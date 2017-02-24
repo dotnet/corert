@@ -6,9 +6,9 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
-partial class Interop
+internal partial class Interop
 {
-    partial class mincore
+    internal partial class mincore
     {
         [DllImport(Libraries.CoreFile_L1, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern uint GetTempFileNameW(string tmpPath, string prefix, uint uniqueIdOrZero, [Out]StringBuilder tmpFileName);

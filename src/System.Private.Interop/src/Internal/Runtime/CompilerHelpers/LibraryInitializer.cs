@@ -17,8 +17,12 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static void InitializeLibrary()
         {
+#if CORERT
+            InteropCallbackManager.Initialize();
+#else 
             __vtable_IUnknown.Initialize();
             McgModuleManager.Initialize();
+#endif
         }
     }
 }

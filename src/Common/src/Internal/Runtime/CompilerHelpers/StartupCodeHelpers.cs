@@ -38,7 +38,7 @@ namespace Internal.Runtime.CompilerHelpers
             // We are now at a stage where we can use GC statics - publish the list of modules
             // so that the eager constructors can access it.
             Modules = modules;
-            OSModules = new IntPtr [] { osModule };
+            OSModules = new IntPtr[] { osModule };
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module

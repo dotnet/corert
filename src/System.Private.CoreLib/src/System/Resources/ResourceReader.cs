@@ -14,6 +14,7 @@
 **         Version 2 support on October 6, 2003
 ** 
 ===========================================================*/
+
 namespace System.Resources
 {
     using System;
@@ -104,7 +105,7 @@ namespace System.Resources
 #if RESOURCE_FILE_FORMAT_DEBUG
         private bool _debug;   // Whether this file has debugging stuff in it.
 #endif
-        
+
         public ResourceReader(String fileName)
         {
             throw new NotImplementedException();
@@ -137,7 +138,7 @@ namespace System.Resources
             _store = new BinaryReader(stream, Encoding.UTF8);
             // We have a faster code path for reading resource files from an assembly.
             _ums = stream as UnmanagedMemoryStream;
-            
+
             ReadResources();
         }
 
@@ -155,7 +156,7 @@ namespace System.Resources
             _store = new BinaryReader(stream, Encoding.UTF8);
 
             _ums = stream as UnmanagedMemoryStream;
-            
+
             ReadResources();
         }
 
@@ -169,7 +170,7 @@ namespace System.Resources
         {
             Close();
         }
-        
+
         private unsafe void Dispose(bool disposing)
         {
             if (_store != null)
@@ -192,7 +193,7 @@ namespace System.Resources
                 _nameHashesPtr = null;
             }
         }
-        
+
         internal static unsafe int ReadUnalignedI4(int* p)
         {
             byte* buffer = (byte*)p;
@@ -570,7 +571,7 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch, e);
             }
         }
-        
+
         private Object _LoadObjectV1(int pos)
         {
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
@@ -645,11 +646,11 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch, e);
             }
         }
-        
+
         private Object _LoadObjectV2(int pos, out ResourceTypeCode typeCode)
         {
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
-            typeCode = (ResourceTypeCode)Read7BitEncodedInt();            
+            typeCode = (ResourceTypeCode)Read7BitEncodedInt();
 
             switch (typeCode)
             {
@@ -798,7 +799,7 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted, e);
             }
         }
-        
+
         private void _ReadResources()
         {
             // Read ResourceManager header
@@ -866,7 +867,7 @@ namespace System.Resources
                 // Skip over the Strings in the file.  Don't create types.
                 SkipString();
             }
-            
+
             // Prepare to read in the array of name hashes
             //  Note that the name hashes array is aligned to 8 bytes so 
             //  we can use pointers into it on 64 bit machines. (4 bytes 

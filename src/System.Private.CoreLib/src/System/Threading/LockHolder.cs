@@ -8,7 +8,7 @@ namespace System.Threading
 {
     public struct LockHolder : IDisposable
     {
-        Lock _lock;
+        private Lock _lock;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LockHolder Hold(Lock l)

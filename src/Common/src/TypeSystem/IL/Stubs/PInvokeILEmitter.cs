@@ -24,7 +24,7 @@ namespace Internal.IL.Stubs
         private readonly Marshaller[] _marshallers;
         private PInvokeILEmitter(MethodDesc targetMethod, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration)
         {
-            Debug.Assert(targetMethod.IsPInvoke);
+            Debug.Assert(targetMethod.IsPInvoke || targetMethod is DelegateMarshallingMethodThunk);
 
             _methodData = new PInvokeMethodData(targetMethod, pinvokeILEmitterConfiguration);
             _marshallers = InitializeMarshallers(_methodData);
@@ -33,11 +33,13 @@ namespace Internal.IL.Stubs
         private static Marshaller[] InitializeMarshallers(PInvokeMethodData pInvokeMethodData)
         {
             MethodDesc targetMethod = pInvokeMethodData.TargetMethod;
-            MethodSignature methodSig = targetMethod.Signature;
+            bool isDelegate = targetMethod is DelegateMarshallingMethodThunk;
+            MethodSignature methodSig = isDelegate ? ((DelegateMarshallingMethodThunk)targetMethod).DelegateSignature : targetMethod.Signature;
             ParameterMetadata[] parameterMetadataArray = targetMethod.GetParameterMetadata();
             Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
             int parameterIndex = 0;
             ParameterMetadata parameterMetadata = new ParameterMetadata();
+
             for (int i = 0; i < marshallers.Length; i++)
             {
                 Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
@@ -51,7 +53,11 @@ namespace Internal.IL.Stubs
                     parameterMetadata = parameterMetadataArray[parameterIndex++];
                 }
                 TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
-                marshallers[i] = Marshaller.CreateMarshaller(parameterType, pInvokeMethodData, parameterMetadata, marshallers);
+                marshallers[i] = Marshaller.CreateMarshaller(parameterType, 
+                                                    pInvokeMethodData, 
+                                                    parameterMetadata, 
+                                                    marshallers,
+                                                    isDelegate ? MarshalDirection.Reverse : MarshalDirection.Forward);
             }
 
             return marshallers;
@@ -83,7 +89,7 @@ namespace Internal.IL.Stubs
             MethodDesc targetMethod = _methodData.TargetMethod;
             PInvokeMetadata importMetadata = _methodData.ImportMetadata;
             PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration = _methodData.PInvokeILEmitterConfiguration;
-
+            MethodSignature nativeSig;
             // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke 
             if ((importMetadata.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
             {
@@ -91,7 +97,22 @@ namespace Internal.IL.Stubs
                             _methodData.PInvokeMarshal.GetKnownMethod("ClearLastWin32Error", null)));
             }
 
-            if (MarshalHelpers.UseLazyResolution(targetMethod, importMetadata.Module, pinvokeILEmitterConfiguration))
+            if (targetMethod is DelegateMarshallingMethodThunk)
+            {
+                nativeSig = new MethodSignature(MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
+                TypeDesc[] parameters = new TypeDesc[_marshallers.Length - 1];
+                for (int i = 1; i < _marshallers.Length; i++)
+                {
+                    parameters[i - 1] = _marshallers[i].ManagedParameterType;
+                }
+                MethodSignature managedSignature = new MethodSignature(MethodSignatureFlags.Static, 0, _marshallers[0].ManagedParameterType, parameters);
+                fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(targetMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod("GetDelegateFunctionPointer", null)));
+                ILLocalVariable vDelegateStub = emitter.NewLocal(targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
+                fnptrLoadStream.EmitStLoc(vDelegateStub);
+                callsiteSetupCodeStream.EmitLdLoc(vDelegateStub);
+                callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(managedSignature));
+            }
+            else if (MarshalHelpers.UseLazyResolution(targetMethod, importMetadata.Module, pinvokeILEmitterConfiguration))
             {
                 MetadataType lazyHelperType = targetMethod.Context.GetHelperType("InteropHelpers");
                 FieldDesc lazyDispatchCell = new PInvokeLazyFixupField((DefType)targetMethod.OwningType, importMetadata);
@@ -100,13 +121,13 @@ namespace Internal.IL.Stubs
 
                 MethodSignatureFlags unmanagedCallConv = PInvokeMetadata.GetUnmanagedCallingConvention(importMetadata.Attributes);
 
-                MethodSignature nativeCalliSig = new MethodSignature(
+                nativeSig = new MethodSignature(
                     targetMethod.Signature.Flags | unmanagedCallConv, 0, nativeReturnType, nativeParameterTypes);
 
                 ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
                 fnptrLoadStream.EmitStLoc(vNativeFunctionPointer);
                 callsiteSetupCodeStream.EmitLdLoc(vNativeFunctionPointer);
-                callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeCalliSig));
+                callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
             }
             else
             {
@@ -114,7 +135,7 @@ namespace Internal.IL.Stubs
                 PInvokeMetadata nativeImportMetadata =
                     new PInvokeMetadata(importMetadata.Module, importMetadata.Name ?? targetMethod.Name, importMetadata.Attributes);
 
-                MethodSignature nativeSig = new MethodSignature(
+                nativeSig = new MethodSignature(
                     targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
 
                 MethodDesc nativeMethod =
@@ -133,7 +154,7 @@ namespace Internal.IL.Stubs
 
             unmarshallingCodestream.Emit(ILOpcode.ret);
 
-            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(targetMethod), IsStubRequired());
+            return new  PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(targetMethod), IsStubRequired(), nativeSig);
         }
 
         //TODO: https://github.com/dotnet/corert/issues/2675
@@ -154,7 +175,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.throw_);
             codeStream.Emit(ILOpcode.ret);
 
-            return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), true);
+            return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(method), true, null);
         }
 
         public static MethodIL EmitIL(MethodDesc method, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration)
@@ -179,7 +200,12 @@ namespace Internal.IL.Stubs
         private bool IsStubRequired()
         {
             MethodDesc method = _methodData.TargetMethod;
-            Debug.Assert(method.IsPInvoke);
+            Debug.Assert(method.IsPInvoke || method is DelegateMarshallingMethodThunk);
+
+            if (method is DelegateMarshallingMethodThunk)
+            {
+                return true;
+            }
 
             if (MarshalHelpers.UseLazyResolution(method, _methodData.ImportMetadata.Module, _methodData.PInvokeILEmitterConfiguration))
             {
@@ -400,9 +426,11 @@ namespace Internal.IL.Stubs
     internal sealed class PInvokeILStubMethodIL : ILStubMethodIL
     {
         public bool IsStubRequired { get; }
-        public PInvokeILStubMethodIL(ILStubMethodIL methodIL, bool isStubRequired) : base(methodIL)
+        public MethodSignature NativeCallableSignature { get; }
+        public PInvokeILStubMethodIL(ILStubMethodIL methodIL, bool isStubRequired, MethodSignature signature) : base(methodIL)
         {
             IsStubRequired = isStubRequired;
+            NativeCallableSignature = signature;
         }
     }
 }

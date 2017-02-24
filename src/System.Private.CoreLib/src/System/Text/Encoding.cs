@@ -547,12 +547,12 @@ namespace System.Text
         public int GetByteCount(string s, int index, int count)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s), 
+                throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
-            if (index< 0)
+            if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count< 0)
+            if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > s.Length - count)
@@ -562,7 +562,7 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char * pChar = s)
+                fixed (char* pChar = s)
                 {
                     return GetByteCount(pChar + index, count);
                 }
@@ -671,10 +671,10 @@ namespace System.Text
             if (s == null)
                 throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
-            if (index< 0)
+            if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count< 0)
+            if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > s.Length - count)
@@ -684,14 +684,14 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char * pChar = s)
+                fixed (char* pChar = s)
                 {
                     int byteCount = GetByteCount(pChar + index, count);
                     if (byteCount == 0)
                         return Array.Empty<byte>();
 
                     byte[] bytes = new byte[byteCount];
-                    fixed (byte * pBytes = &bytes[0])
+                    fixed (byte* pBytes = &bytes[0])
                     {
                         int bytesReceived = GetBytes(pChar + index, count, pBytes, byteCount);
                         Debug.Assert(byteCount == bytesReceived);

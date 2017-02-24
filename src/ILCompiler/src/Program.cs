@@ -163,10 +163,7 @@ namespace ILCompiler
                 Help(syntax.GetHelpText());
                 return 1;
             }
-
-            if (_inputFilePaths.Count == 0)
-                throw new CommandLineException("No input files specified");
-
+            
             if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
@@ -178,10 +175,37 @@ namespace ILCompiler
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT), genericsMode);
-            typeSystemContext.InputFilePaths = _inputFilePaths;
+
+            //
+            // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
+            // some tests contain a mixture of both managed and native binaries.
+            //
+            // See: https://github.com/dotnet/corert/issues/2785
+            //
+            // When we undo this this hack, replace this foreach with
+            //  typeSystemContext.InputFilePaths = _inputFilePaths;
+            //
+            Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
+            foreach (var inputFile in _inputFilePaths)
+            {
+                try
+                {
+                    var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                    inputFilePaths.Add(inputFile.Key, inputFile.Value);
+                }
+                catch (TypeSystemException.BadImageFormatException)
+                {
+                    // Keep calm and carry on.
+                }
+            }
+
+            typeSystemContext.InputFilePaths = inputFilePaths;
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
-            typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));           
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
+
+            if (typeSystemContext.InputFilePaths.Count == 0)
+                throw new CommandLineException("No input files specified");
 
             //
             // Initialize compilation group and compilation roots

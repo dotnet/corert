@@ -4,7 +4,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// SemaphoreSlim.cs
 //
 
 //
@@ -792,7 +791,7 @@ namespace System.Threading
 
                 // Signal to any synchronous waiters
                 int waitCount = m_waitCount;
-                
+
                 int waitersToNotify = Math.Min(releaseCount, waitCount);
                 for (int i = 0; i < waitersToNotify; i++)
                 {

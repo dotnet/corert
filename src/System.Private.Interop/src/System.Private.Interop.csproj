@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
   </ItemGroup>
   <!-- TODO  We should not include anything from CompilerServices directly -->
   <ItemGroup>
@@ -142,6 +143,12 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Interop\Interop.Memory.cs" />
+  </ItemGroup>
+  <ItemGroup  Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="Internal\Runtime\CompilerHelpers\InteropCallbackManager.cs"/>
+    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
+      <Link>MetadataBlob.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />

@@ -42,7 +42,6 @@ namespace System.Resources
     //
     internal class ManifestBasedResourceGroveler : IResourceGroveler
     {
-
         private ResourceManager.ResourceManagerMediator _mediator;
 
         public ManifestBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
@@ -52,7 +51,7 @@ namespace System.Resources
             Contract.Requires(mediator != null, "mediator shouldn't be null; check caller");
             _mediator = mediator;
         }
-        
+
         public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
         {
             Contract.Assert(culture != null, "culture shouldn't be null; check caller");
@@ -147,9 +146,8 @@ namespace System.Resources
             }
 
             return returnCulture;
-
         }
-        
+
         internal static CultureInfo GetNeutralResourcesLanguage(Assembly a, ref UltimateResourceFallbackLocation fallbackLocation)
         {
             Contract.Assert(a != null, "assembly != null");
@@ -285,7 +283,6 @@ namespace System.Resources
                 {
                     store.Position = startPos;
                 }
-
             }
 
             if (_mediator.UserResourceSet == null)
@@ -322,7 +319,7 @@ namespace System.Resources
                 }
             }
         }
-        
+
         private Stream GetManifestResourceStream(Assembly satellite, String fileName)
         {
             Contract.Requires(satellite != null, "satellite shouldn't be null; check caller");
@@ -385,7 +382,7 @@ namespace System.Resources
 
             return s;
         }
-        
+
         private Assembly GetSatelliteAssembly(CultureInfo lookForCulture)
         {
             if (!_mediator.LookedForSatelliteContractVersion)
@@ -460,7 +457,7 @@ namespace System.Resources
             satAssemblyName += ".resources";
             return satAssemblyName;
         }
-        
+
         private void HandleSatelliteMissing()
         {
             String satAssemName = _mediator.MainAssembly.GetName().Name + ".resources.dll";
@@ -488,7 +485,7 @@ namespace System.Resources
             }
             throw new MissingSatelliteAssemblyException(SR.Format(SR.MissingSatelliteAssembly_Culture_Name, _mediator.NeutralResourcesCulture, satAssemName), missingCultureName);
         }
-        
+
         private void HandleResourceStreamMissing(String fileName)
         {
             // Keep people from bothering me about resources problems

@@ -30,5 +30,8 @@ namespace Internal.TypeSystem
         InvalidProgramSpecific,
         InvalidProgramVararg,
         InvalidProgramCallVirtFinalize,
+
+        // BadImageFormatException
+        BadImageFormatGeneric,
     }
 }

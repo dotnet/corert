@@ -23,13 +23,13 @@ namespace System.Runtime
         {
             get
             {
-                unsafe 
+                unsafe
                 {
                     return (((int)(byte*)_handleValue) & 0x1) == 0x1;
                 }
             }
         }
-        
+
         private IntPtr AsOsModuleIntPtr
         {
             get

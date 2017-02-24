@@ -824,18 +824,18 @@ namespace System
             return new Decimal(value);
         }
 
-        public static explicit operator byte (Decimal value)
+        public static explicit operator byte(Decimal value)
         {
             return ToByte(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator sbyte (Decimal value)
+        public static explicit operator sbyte(Decimal value)
         {
             return ToSByte(value);
         }
 
-        public static explicit operator char (Decimal value)
+        public static explicit operator char(Decimal value)
         {
             UInt16 temp;
             try
@@ -849,45 +849,45 @@ namespace System
             return (char)temp;
         }
 
-        public static explicit operator short (Decimal value)
+        public static explicit operator short(Decimal value)
         {
             return ToInt16(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator ushort (Decimal value)
+        public static explicit operator ushort(Decimal value)
         {
             return ToUInt16(value);
         }
 
-        public static explicit operator int (Decimal value)
+        public static explicit operator int(Decimal value)
         {
             return ToInt32(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator uint (Decimal value)
+        public static explicit operator uint(Decimal value)
         {
             return ToUInt32(value);
         }
 
-        public static explicit operator long (Decimal value)
+        public static explicit operator long(Decimal value)
         {
             return ToInt64(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator ulong (Decimal value)
+        public static explicit operator ulong(Decimal value)
         {
             return ToUInt64(value);
         }
 
-        public static explicit operator float (Decimal value)
+        public static explicit operator float(Decimal value)
         {
             return ToSingle(value);
         }
 
-        public static explicit operator double (Decimal value)
+        public static explicit operator double(Decimal value)
         {
             return ToDouble(value);
         }

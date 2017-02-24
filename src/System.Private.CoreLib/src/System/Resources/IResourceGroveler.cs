@@ -16,6 +16,7 @@ using System.Globalization;
 **
 ** 
 ===========================================================*/
+
 namespace System.Resources
 {
     internal interface IResourceGroveler

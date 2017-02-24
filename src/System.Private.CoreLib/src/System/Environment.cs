@@ -77,11 +77,11 @@ namespace System
         // TODO: Consider flushing the executionIdCache on Wait operations or similar 
         // actions that are likely to result in changing the executing core
         [ThreadStatic]
-        static int t_executionIdCache;
+        private static int t_executionIdCache;
 
-        const int ExecutionIdCacheShift = 16;
-        const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
-        const int ExecutionIdRefreshRate = 5000;
+        private const int ExecutionIdCacheShift = 16;
+        private const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
+        private const int ExecutionIdRefreshRate = 5000;
 
         private static int RefreshExecutionId()
         {

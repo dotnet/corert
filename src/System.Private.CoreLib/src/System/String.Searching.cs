@@ -61,10 +61,10 @@ namespace System
 
                 return -1;
 
-                ReturnIndex3: pCh++;
-                ReturnIndex2: pCh++;
-                ReturnIndex1: pCh++;
-                ReturnIndex:
+            ReturnIndex3: pCh++;
+            ReturnIndex2: pCh++;
+            ReturnIndex1: pCh++;
+            ReturnIndex:
                 return (int)(pCh - pChars);
             }
         }
@@ -295,10 +295,10 @@ namespace System
 
                 return -1;
 
-                ReturnIndex3: pCh--;
-                ReturnIndex2: pCh--;
-                ReturnIndex1: pCh--;
-                ReturnIndex:
+            ReturnIndex3: pCh--;
+            ReturnIndex2: pCh--;
+            ReturnIndex1: pCh--;
+            ReturnIndex:
                 return (int)(pCh - pChars);
             }
         }

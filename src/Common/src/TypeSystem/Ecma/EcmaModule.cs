@@ -187,6 +187,11 @@ namespace Internal.TypeSystem.Ecma
 
         private static MetadataReader CreateMetadataReader(TypeSystemContext context, PEReader peReader)
         {
+            if (!peReader.HasMetadata)
+            {
+                throw new TypeSystemException.BadImageFormatException();
+            }
+
             var stringDecoderProvider = context as IMetadataStringDecoderProvider;
 
             MetadataReader metadataReader = peReader.GetMetadataReader(MetadataReaderOptions.None /* MetadataReaderOptions.ApplyWindowsRuntimeProjections */,

@@ -29,6 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(_name);
         }
         public int Offset => 0;
+        public virtual bool RepresentsIndirectionCell => false;
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;

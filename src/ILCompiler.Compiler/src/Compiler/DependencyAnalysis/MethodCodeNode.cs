@@ -51,9 +51,9 @@ namespace ILCompiler.DependencyAnalysis
         
         public override bool StaticDependenciesAreComputed => _methodCode != null;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
         public int Offset => 0;
         public override bool IsShareable => _method is InstantiatedMethod || EETypeNode.IsTypeNodeShareable(_method.OwningType);
@@ -83,7 +83,35 @@ namespace ILCompiler.DependencyAnalysis
 
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
+            if (_method.IsPInvoke)
+            {
+                MethodSignature methodSig = _method.Signature;
+                if (methodSig.ReturnType.IsDelegate)
+                {
+                    AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
+                }
+
+                for (int i=0; i < methodSig.Length; i++)
+                {
+                    if (methodSig[i].IsDelegate)
+                    {
+                        AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig[i]);
+                    }
+                }
+            }
+
             return dependencies;
+        }
+
+        private void AddPInvokeDelegateParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
+        {
+            if (dependencies == null)
+                dependencies = new DependencyList();
+
+            dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
+
+            var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(parameter);
+            dependencies.Add(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub");
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -126,6 +154,22 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_debugVarInfos == null);
             _debugVarInfos = debugVarInfos;
+        }
+    }
+
+    internal class UnboxingThunkMethodCodeNode : MethodCodeNode
+    {
+        private MethodDesc _targetMethod;
+
+        public UnboxingThunkMethodCodeNode(MethodDesc method, MethodDesc targetMethod)
+            : base(method)
+        {
+            _targetMethod = targetMethod;
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("__unbox_").Append(nameMangler.GetMangledMethodName(_targetMethod));
         }
     }
 }

@@ -24,6 +24,6 @@ namespace System.Reflection
             HResult = __HResults.COR_E_TARGET;
         }
 
-        protected TargetException(SerializationInfo info, StreamingContext context) : base (info, context) { }
+        protected TargetException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

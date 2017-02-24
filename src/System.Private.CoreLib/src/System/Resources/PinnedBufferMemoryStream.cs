@@ -13,6 +13,7 @@
 **
 **
 ===========================================================*/
+
 using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
@@ -23,9 +24,9 @@ namespace System.IO
     {
         private byte[] _array;
         private GCHandle _pinningHandle;
-        
+
         private PinnedBufferMemoryStream() : base() { }
-        
+
         internal PinnedBufferMemoryStream(byte[] array)
         {
             Contract.Assert(array != null, "Array can't be null");
@@ -50,7 +51,7 @@ namespace System.IO
         {
             Dispose(false);
         }
-        
+
         protected override void Dispose(bool disposing)
         {
             if (_pinningHandle.IsAllocated)

@@ -4,7 +4,6 @@
 
 /*============================================================
 **
-** Class:  ExecutionContext
 **
 **
 ** Purpose: Capture execution  context for a thread
@@ -36,7 +35,7 @@ namespace System.Threading
         public static readonly ExecutionContext Default = new ExecutionContext();
 
         [ThreadStatic]
-        static ExecutionContext t_currentMaybeNull;
+        private static ExecutionContext t_currentMaybeNull;
 
         private readonly LowLevelDictionaryWithIEnumerable<IAsyncLocal, object> m_localValues;
         private readonly LowLevelListWithIList<IAsyncLocal> m_localChangeNotifications;

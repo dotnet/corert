@@ -194,7 +194,7 @@ namespace System.Reflection
             info.AddValue("_Name", Name);
             info.AddValue("_PublicKey", _publicKey, typeof(byte[]));
             info.AddValue("_PublicKeyToken", _publicKeyToken, typeof(byte[]));
-            info.AddValue("_CultureInfo", (CultureInfo == null) ? -1 :CultureInfo.LCID);
+            info.AddValue("_CultureInfo", (CultureInfo == null) ? -1 : CultureInfo.LCID);
             info.AddValue("_CodeBase", CodeBase);
             info.AddValue("_Version", Version);
             info.AddValue("_HashAlgorithm", HashAlgorithm, typeof(AssemblyHashAlgorithm));

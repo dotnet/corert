@@ -202,43 +202,7 @@ namespace ILCompiler
 
             public override string Name => "Boxed_" + ValueTypeRepresented.Name;
 
-            public override string Namespace
-            {
-                get
-                {
-                    // Mangle the namespace in the hopes that it won't conflict with anything else.
-
-                    StringBuilder sb = new StringBuilder();
-
-                    ArrayBuilder<string> prefixes = new ArrayBuilder<string>();
-
-                    DefType currentType = ValueTypeRepresented;
-                    if (currentType.ContainingType != null)
-                    {
-                        while (currentType.ContainingType != null)
-                        {
-                            prefixes.Add(currentType.Name);
-                            currentType = currentType.ContainingType;
-                        }
-
-                        prefixes.Add(currentType.Name);
-                    }
-
-                    sb.Append(((IAssemblyDesc)((MetadataType)currentType).Module).GetName().Name);
-                    sb.Append('_');
-                    sb.Append(currentType.Namespace);
-
-                    for (int i = prefixes.Count - 1; i >= 0; i--)
-                    {
-                        sb.Append(prefixes[i]);
-
-                        if (i > 0)
-                            sb.Append('+');
-                    }
-
-                    return sb.ToString();
-                }
-            }
+            public override string Namespace => ValueTypeRepresented.Namespace;
 
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;

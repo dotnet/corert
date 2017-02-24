@@ -428,6 +428,19 @@ COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (UIntNative* pRet
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+
+COOP_PINVOKE_HELPER(void *, RhpGetCommonStubAddress, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(void *, RhpGetCurrentThunkContext, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
 #endif
 
 COOP_PINVOKE_HELPER(void, RhpETWLogLiveCom, (Int32 eventType, void * ccwHandle, void * objectId, void * typeRawValue, void * iUnknown, void * vTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags))

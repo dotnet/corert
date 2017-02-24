@@ -105,6 +105,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeGVMEntriesNode.cs" />
@@ -304,6 +305,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
       <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
       <Link>TypeSystem\Interop\IL\Marshaller.cs</Link>
