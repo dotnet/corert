@@ -24,7 +24,7 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
             CppCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), new NameMangler(true), logger)
+            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), new CoreRTNameMangler(true), logger)
         {
             Options = options;
         }
