@@ -126,6 +126,7 @@ namespace Internal.Runtime.Augments
         {
             if (_osHandle.IsInvalid)
             {
+                // We will set the priority (saved in _priority) when we create an OS thread
                 return true;
             }
             return Interop.mincore.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
@@ -204,6 +205,7 @@ namespace Internal.Runtime.Augments
         {
             GCHandle threadHandle = (GCHandle)parameter;
             RuntimeThread thread = (RuntimeThread)threadHandle.Target;
+            // TODO: OOM hardening
             t_currentThread = thread;
             System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
             threadHandle.Free();

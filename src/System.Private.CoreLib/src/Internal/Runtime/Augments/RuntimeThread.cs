@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -15,19 +14,22 @@ namespace Internal.Runtime.Augments
     {
         // Extra bits used in _threadState
         private const ThreadState ThreadPoolThread = (ThreadState)0x1000;
+
+        // Bits of _threadState that are returned by the ThreadState property
         private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
 
         [ThreadStatic]
         private static RuntimeThread t_currentThread;
 
-        private int _threadState;
+        private volatile int _threadState;
         private ThreadPriority _priority;
         private ManagedThreadId _managedThreadId;
         private string _name;
-        private Lock _lock;
-
         private Delegate _threadStart;
         private int _maxStackSize;
+
+        // Protects starting the thread and setting its priority
+        private Lock _lock;
 
         /// <summary>
         /// Used by <see cref="WaitHandle"/>'s multi-wait functions
@@ -181,15 +183,11 @@ namespace Internal.Runtime.Augments
             }
             set
             {
-                using (LockHolder.Hold(_lock))
+                if (Interlocked.CompareExchange(ref _name, value, null) != null)
                 {
-                    if (_name != null)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
-                    }
-                    _name = value;
-                    // TODO: Inform the debugger and the profiler
+                    throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
                 }
+                // TODO: Inform the debugger and the profiler
             }
         }
 
@@ -214,7 +212,7 @@ namespace Internal.Runtime.Augments
                     throw new ThreadStateException(SR.ThreadState_Dead_Priority);
                 }
 
-                // Possible race condition with starting this thread
+                // Prevent race condition with starting this thread
                 using (LockHolder.Hold(_lock))
                 {
                     if (!SetPriority(value))
@@ -226,17 +224,17 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        public ThreadState ThreadState => GetThreadState();
+        public ThreadState ThreadState => (GetThreadState() & PublicThreadStateMask);
 
         private ThreadState GetThreadState()
         {
-            int state = Volatile.Read(ref _threadState);
+            int state = _threadState;
             // If the thread is marked as alive, check if it has finished execution
             if ((state & (int)(ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0)
             {
                 if (HasFinishedExecution())
                 {
-                    state = Volatile.Read(ref _threadState);
+                    state = _threadState;
                     if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
                     {
                         SetThreadStateBit(ThreadState.Stopped);
@@ -244,13 +242,13 @@ namespace Internal.Runtime.Augments
                     }
                 }
             }
-            return (ThreadState)state & PublicThreadStateMask;
+            return (ThreadState)state;
         }
 
         private bool GetThreadStateBit(ThreadState bit)
         {
             Debug.Assert((bit & ThreadState.Stopped) == 0, "ThreadState.Stopped bit may be stale; use GetThreadState instead.");
-            return (Volatile.Read(ref _threadState) & (int)bit) != 0;
+            return (_threadState & (int)bit) != 0;
         }
 
         private void SetThreadStateBit(ThreadState bit)
