@@ -150,7 +150,7 @@ internal static void System.Runtime.RuntimeImports.RhReRegisterForFinalize(objec
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhResolveDispatch(object pObject, System.EETypePtr pInterfaceType, ushort slot)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhResolveDispatchOnType(System.EETypePtr instanceType, System.EETypePtr interfaceType, ushort slot)
 internal static extern void* System.Runtime.RuntimeImports.RhSetErrorInfoBuffer(void* pNewBuffer)
-internal static extern void System.Runtime.RuntimeImports.RhSetGcLatencyMode(System.Runtime.GCLatencyMode newLatencyMode)
+internal static extern int System.Runtime.RuntimeImports.RhSetGcLatencyMode(System.Runtime.GCLatencyMode newLatencyMode)
 internal static extern void System.Runtime.RuntimeImports.RhSetLohCompactionMode(int newLohCompactionMode)
 internal static extern void System.Runtime.RuntimeImports.RhSpinWait(int iterations)
 internal static extern void System.Runtime.RuntimeImports.RhSuppressFinalize(object obj)
