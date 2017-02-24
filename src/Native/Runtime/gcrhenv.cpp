@@ -1385,7 +1385,13 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->card_table != nullptr);
         assert(args->lowest_address != nullptr);
         assert(args->highest_address != nullptr);
+
         g_card_table = args->card_table;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        assert(args->card_bundle_table != nullptr);
+        g_card_bundle_table = args->card_bundle_table;
+#endif
 
         // We need to make sure that other threads executing checked write barriers
         // will see the g_card_table update before g_lowest/highest_address updates.
@@ -1418,6 +1424,12 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
 
         g_card_table = args->card_table;
+        
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        assert(g_card_bundle_table == nullptr);
+        g_card_bundle_table = args->card_bundle_table;
+#endif
+
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
         g_ephemeral_low = args->ephemeral_low;

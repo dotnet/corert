@@ -20,6 +20,10 @@ GPTR_DECL(uint32_t,g_card_table);
 }
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+extern "C" uint32_t* g_card_bundle_table;
+#endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+
 extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;
 
