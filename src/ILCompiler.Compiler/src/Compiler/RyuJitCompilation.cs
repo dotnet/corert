@@ -25,7 +25,7 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
             JitConfigProvider configProvider)
-            : base(dependencyGraph, nodeFactory, roots, new NameMangler(false), logger)
+            : base(dependencyGraph, nodeFactory, roots, new CoreRTNameMangler(false), logger)
         {
             _jitConfigProvider = configProvider;
         }
