@@ -55,6 +55,11 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
+        protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
+        {
+            return _type.BaseType != null ? factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(_type.BaseType)) : null;
+        }
+
         protected override int GCDescSize
         {
             get

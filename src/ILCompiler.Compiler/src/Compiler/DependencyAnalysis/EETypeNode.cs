@@ -326,6 +326,22 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitInt(objectSize);
         }
 
+        protected static TypeDesc GetFullCanonicalTypeForCanonicalType(TypeDesc type)
+        {
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific))
+            {
+                return type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            }
+            else if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                return type.ConvertToCanonForm(CanonicalFormKind.Universal);
+            }
+            else
+            {
+                return type;
+            }
+        }
+
         protected virtual ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
@@ -635,14 +651,14 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(baseType);
+                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(baseType));
             }
             
             // We need EETypes for interfaces
             foreach (var intf in type.RuntimeInterfaces)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(intf);
+                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(intf));
             }
 
             // Validate classes, structs, enums, interfaces, and delegates
