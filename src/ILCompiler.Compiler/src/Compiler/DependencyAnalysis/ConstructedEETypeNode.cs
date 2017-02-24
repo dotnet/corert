@@ -37,9 +37,10 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
+
             DefType closestDefType = _type.GetClosestDefType();
 
-            DependencyList dependencyList = new DependencyList();
             if (_type.RuntimeInterfaces.Length > 0)
             {
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
@@ -97,19 +98,6 @@ namespace ILCompiler.DependencyAnalysis
                 // Generic dictionary pointer is part of the vtable and as such it gets only laid out
                 // at the final data emission phase. We need to report it as a non-relocation dependency.
                 dependencyList.Add(factory.TypeGenericDictionary(closestDefType), "Type generic dictionary");
-            }
-
-            // Include the optional fields by default. We don't know if optional fields will be needed until
-            // all of the interface usage has been stabilized. If we end up not needing it, the EEType node will not
-            // generate any relocs to it, and the optional fields node will instruct the object writer to skip
-            // emitting it.
-            dependencyList.Add(_optionalFieldsNode, "Optional fields");
-
-            // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
-            // We need to make sure this is possible - we need the class constructor context.
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
-            {
-                dependencyList.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor");
             }
 
             // Generated type contains generic virtual methods that will get added to the GVM tables

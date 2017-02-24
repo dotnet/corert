@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             // If there is a constructed version of this node in the graph, emit that instead
-            if (ConstructedEETypeNode.CreationAllowed(_type))
+                if (ConstructedEETypeNode.CreationAllowed(_type))
                 return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
 
             return false;
@@ -135,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
-        
+
         public int Offset => GCDescSize;
         public override bool IsShareable => IsTypeNodeShareable(_type);
 
@@ -146,17 +146,22 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = new DependencyList();
+
+            // Include the optional fields by default. We don't know if optional fields will be needed until
+            // all of the interface usage has been stabilized. If we end up not needing it, the EEType node will not
+            // generate any relocs to it, and the optional fields node will instruct the object writer to skip
+            // emitting it.
+            dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
+
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
                 // We need to make sure this is possible.
-                return new DependencyList
-                {
-                    new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor")
-                };
+                dependencies.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
-            return null;
+            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
