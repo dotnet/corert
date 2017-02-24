@@ -46,8 +46,8 @@ run_test_dir()
     rm -rf ${__dir_path}/bin ${__dir_path}/obj
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
-    echo ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.exe /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.exe /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
+    echo ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
 
     local __exitcode=$?
 
