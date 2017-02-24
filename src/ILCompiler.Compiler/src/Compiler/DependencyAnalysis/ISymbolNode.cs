@@ -12,6 +12,12 @@ namespace ILCompiler.DependencyAnalysis
     {
         void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         int Offset { get; }
+        /// <summary>
+        /// Set the return value of this property to true to indicate that this symbol
+        /// is an indirection cell to data that is needed, not the actual data itself.
+        /// Most commonly affects the code generation which accesses symbols such
+        /// Types which may require an indirection to access or not.
+        /// </summary>
         bool RepresentsIndirectionCell { get; }
     }
 
