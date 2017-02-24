@@ -5,9 +5,6 @@
 //
 // Exposes features of the Garbage Collector to managed code.
 //
-// This is an extremely simple initial version that only exposes a small fraction of the API that the CLR
-// version does.
-//
 
 using System;
 using System.Threading;
@@ -30,12 +27,37 @@ namespace System
         Optimized = 2
     }
 
+    public enum GCNotificationStatus
+    {
+        Succeeded     = 0,
+        Failed        = 1,
+        Canceled      = 2,
+        Timeout       = 3,
+        NotApplicable = 4
+    }
+
     internal enum InternalGCCollectionMode
     {
         NonBlocking = 0x00000001,
         Blocking = 0x00000002,
         Optimized = 0x00000004,
         Compacting = 0x00000008,
+    }
+
+    internal enum StartNoGCRegionStatus
+    {
+        Succeeded = 0,
+        NotEnoughMemory = 1,
+        AmountTooLarge = 2,
+        AlreadyInProgress = 3
+    }
+
+    internal enum EndNoGCRegionStatus
+    {
+        Succeeded = 0,
+        NotInProgress = 1,
+        GCInduced = 2,
+        AllocationExceeded = 3
     }
 
     public static class GC
@@ -48,6 +70,30 @@ namespace System
             }
 
             return RuntimeImports.RhGetGeneration(obj);
+        }
+
+        /// <summary>
+        /// Returns the current generation number of the target 
+        /// of a specified <see cref="System.WeakReference"/>.  
+        /// </summary>
+        /// <param name="wr">The WeakReference whose target is the object
+        /// whose generation will be returned</param>
+        /// <returns>The generation of the target of the WeakReference</returns>
+        /// <exception cref="ArgumentNullException">The target of the weak reference
+        /// has already been garbage collected.</exception>
+        public static int GetGeneration(WeakReference wr)
+        {
+            // note - this throws an NRE if given a null weak reference. This isn't
+            // documented, but it's the behavior of Desktop and CoreCLR.
+            Object handleRef = RuntimeImports.RhHandleGet(wr.m_handle);
+            if (handleRef == null)
+            {
+                throw new ArgumentNullException(nameof(wr));
+            }
+
+            int result = RuntimeImports.RhGetGeneration(handleRef);
+            KeepAlive(wr);
+            return result;
         }
 
         // Forces a collection of all generations from 0 through Generation.
@@ -107,6 +153,223 @@ namespace System
             }
 
             RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes);
+        }
+
+        /// <summary>
+        /// Specifies that a garbage collection notification should be raised when conditions are favorable
+        /// for a full garbage collection and when the collection has been completed.
+        /// </summary>
+        /// <param name="maxGenerationThreshold">A number between 1 and 99 that specifies when the notification
+        /// should be raised based on the objects allocated in Gen 2.</param>
+        /// <param name="largeObjectHeapThreshold">A number between 1 and 99 that specifies when the notification
+        /// should be raised based on the objects allocated in the large object heap.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If either of the two arguments are not between 1 and 99</exception>
+        /// <exception cref="InvalidOperationException">If Concurrent GC is enabled</exception>"
+        public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
+        {
+            if (maxGenerationThreshold < 1 || maxGenerationThreshold > 99)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maxGenerationThreshold),
+                    String.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+            }
+
+            if (largeObjectHeapThreshold < 1 || largeObjectHeapThreshold > 99)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(largeObjectHeapThreshold),
+                    String.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, 99));
+            }
+
+            // This is not documented on MSDN, but CoreCLR throws when the GC's
+            // RegisterForFullGCNotification returns false
+            if (!RuntimeImports.RhRegisterForFullGCNotification(maxGenerationThreshold, largeObjectHeapThreshold))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotWithConcurrentGC);
+            }
+        }
+
+        /// <summary>
+        /// Returns the status of a registered notification about whether a blocking garbage collection
+        /// is imminent. May wait indefinitely for a full collection.
+        /// </summary>
+        /// <returns>The status of a registered full GC notification</returns>
+        public static GCNotificationStatus WaitForFullGCApproach()
+        {
+            return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCApproach(-1);
+        }
+
+        /// <summary>
+        /// Returns the status of a registered notification about whether a blocking garbage collection
+        /// is imminent. May wait up to a given timeout for a full collection.
+        /// </summary>
+        /// <param name="millisecondsTimeout">The timeout on waiting for a full collection</param>
+        /// <returns>The status of a registered full GC notification</returns>
+        public static GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout),
+                    SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCApproach(millisecondsTimeout);
+        }
+
+        /// <summary>
+        /// Returns the status of a registered notification about whether a blocking garbage collection
+        /// has completed. May wait indefinitely for a full collection.
+        /// </summary>
+        /// <returns>The status of a registered full GC notification</returns>
+        public static GCNotificationStatus WaitForFullGCComplete()
+        {
+            return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCComplete(-1);
+        }
+
+        /// <summary>
+        /// Returns the status of a registered notification about whether a blocking garbage collection
+        /// has completed. May wait up to a specified timeout for a full collection.
+        /// </summary>
+        /// <param name="millisecondsTimeout">The timeout on waiting for a full collection</param>
+        /// <returns></returns>
+        public static GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout),
+                    SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCComplete(millisecondsTimeout);
+        }
+
+        /// <summary>
+        /// Cancels an outstanding full GC notification.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Raised if called
+        /// with concurrent GC enabled</exception>
+        public static void CancelFullGCNotification()
+        {
+            if (!RuntimeImports.RhCancelFullGCNotification())
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotWithConcurrentGC);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to disallow garbage collection during execution of a critical path.
+        /// </summary>
+        /// <param name="totalSize">Disallows garbage collection if a specified amount of
+        /// of memory is available.</param>
+        /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
+        /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
+        /// is too large for the GC to accomodate</exception>
+        /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
+        public static bool TryStartNoGCRegion(long totalSize)
+        {
+            return StartNoGCRegionWorker(totalSize, false, 0, false);
+        }
+
+        /// <summary>
+        /// Attempts to disallow garbage collection during execution of a critical path.
+        /// </summary>
+        /// <param name="totalSize">Disallows garbage collection if a specified amount of
+        /// of memory is available.</param>
+        /// <param name="lohSize">Disallows garbagte collection if a specified amount of
+        /// large object heap space is available.</param>
+        /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
+        /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
+        /// is too large for the GC to accomodate</exception>
+        /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
+        public static bool TryStartNoGCRegion(long totalSize, long lohSize)
+        {
+            return StartNoGCRegionWorker(totalSize, true, lohSize, false);
+        }
+
+        /// <summary>
+        /// Attempts to disallow garbage collection during execution of a critical path.
+        /// </summary>
+        /// <param name="totalSize">Disallows garbage collection if a specified amount of
+        /// of memory is available.</param>
+        /// <param name="disallowFullBlockingGC">Controls whether or not a full blocking GC
+        /// is performed if the requested amount of memory is not available</param>
+        /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
+        /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
+        /// is too large for the GC to accomodate</exception>
+        /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
+        public static bool TryStartNoGCRegion(long totalSize, bool disallowFullBlockingGC)
+        {
+            return StartNoGCRegionWorker(totalSize, false, 0, disallowFullBlockingGC);
+        }
+
+        /// <summary>
+        /// Attempts to disallow garbage collection during execution of a critical path.
+        /// </summary>
+        /// <param name="totalSize">Disallows garbage collection if a specified amount of
+        /// of memory is available.</param>
+        /// <param name="lohSize">Disallows garbagte collection if a specified amount of
+        /// large object heap space is available.</param>
+        /// <param name="disallowFullBlockingGC">Controls whether or not a full blocking GC
+        /// is performed if the requested amount of memory is not available</param>
+        /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
+        /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
+        /// is too large for the GC to accomodate</exception>
+        /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
+        public static bool TryStartNoGCRegion(long totalSize, long lohSize, bool disallowFullBlockingGC)
+        {
+            return StartNoGCRegionWorker(totalSize, true, lohSize, disallowFullBlockingGC);
+        }
+
+        private static bool StartNoGCRegionWorker(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
+        {
+            StartNoGCRegionStatus status =
+                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+            if (status == StartNoGCRegionStatus.AmountTooLarge)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(totalSize),
+                    SR.ArgumentOutOfRangeException_NoGCRegionSizeTooLarge);
+            }
+            else if (status == StartNoGCRegionStatus.AlreadyInProgress)
+            {
+                throw new InvalidOperationException(
+                    SR.InvalidOperationException_AlreadyInNoGCRegion);
+            }
+            else if (status == StartNoGCRegionStatus.NotEnoughMemory)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Exits the current no GC region.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">If the GC is not in a no GC region</exception>
+        /// <exception cref="InvalidOperationException">If the no GC region was exited due to an induced GC</exception>
+        /// <exception cref="InvalidOperationException">If the no GC region was exited due to memory allocations
+        /// exceeding the amount given to <see cref="TryStartNoGCRegion(long)"/></exception>
+        public static void EndNoGCRegion()
+        {
+            EndNoGCRegionStatus status = (EndNoGCRegionStatus)RuntimeImports.RhEndNoGCRegion();
+            if (status == EndNoGCRegionStatus.NotInProgress)
+            {
+                throw new InvalidOperationException(
+                    SR.InvalidOperationException_NoGCRegionNotInProgress);
+            }
+            else if (status == EndNoGCRegionStatus.GCInduced)
+            {
+                throw new InvalidOperationException(
+                    SR.InvalidOperationException_NoGCRegionInduced);
+            }
+            else if (status == EndNoGCRegionStatus.AllocationExceeded)
+            {
+                throw new InvalidOperationException(
+                    SR.InvalidOperationException_NoGCRegionAllocationExceeded);
+            }
         }
 
         // Block until the next finalization pass is complete.

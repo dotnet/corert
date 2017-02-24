@@ -39,6 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             CanonicalMethodNode.AppendMangledName(nameMangler, sb);
         }
         public int Offset => CanonicalMethodNode.Offset;
+        public bool RepresentsIndirectionCell => CanonicalMethodNode.RepresentsIndirectionCell;
 
         public override bool StaticDependenciesAreComputed
             => CanonicalMethodNode.StaticDependenciesAreComputed;

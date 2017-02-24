@@ -31,6 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             _canonicalMethodNode.AppendMangledName(nameMangler, sb);
         }
         public int Offset => _canonicalMethodNode.Offset;
+        public bool RepresentsIndirectionCell => _canonicalMethodNode.RepresentsIndirectionCell;
 
         public RuntimeDeterminedMethodNode(MethodDesc method, IMethodNode canonicalMethod)
         {

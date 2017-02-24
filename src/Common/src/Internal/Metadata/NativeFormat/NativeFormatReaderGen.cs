@@ -498,7 +498,7 @@ namespace Internal.Metadata.NativeFormat
         } // Value
 
         internal Handle _value;
-        /// One of: TypeDefinition, TypeReference
+        /// One of: TypeDefinition, TypeReference, TypeSpecification
 
         public Handle Type
         {

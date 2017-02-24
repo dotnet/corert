@@ -364,7 +364,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(Value);
             Debug.Assert(Type == null ||
                 Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference);
+                Type.HandleType == HandleType.TypeReference ||
+                Type.HandleType == HandleType.TypeSpecification);
             writer.Write(Type);
         } // Save
 

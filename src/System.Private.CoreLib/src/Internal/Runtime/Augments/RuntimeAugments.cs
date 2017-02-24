@@ -62,6 +62,12 @@ namespace Internal.Runtime.Augments
         }
 
         [CLSCompliant(false)]
+        public static void InitializeInteropLookups(InteropCallbacks callbacks)
+        {
+            s_interopCallbacks = callbacks;
+        }
+
+        [CLSCompliant(false)]
         public static void InitializeDesktopSupport(DesktopSupportCallbacks callbacks)
         {
             s_desktopSupportCallbacks = callbacks;
@@ -770,8 +776,20 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        internal static InteropCallbacks InteropCallbacks
+        {
+            get
+            {
+                InteropCallbacks callbacks = s_interopCallbacks;
+                if (callbacks != null)
+                    return callbacks;
+                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+            }
+        }
+
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
+        private static InteropCallbacks s_interopCallbacks;
 
         public static void ReportUnhandledException(Exception exception)
         {

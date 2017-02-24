@@ -57,6 +57,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
         }
         public int Offset => 0;
+        public bool RepresentsIndirectionCell => false;
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;

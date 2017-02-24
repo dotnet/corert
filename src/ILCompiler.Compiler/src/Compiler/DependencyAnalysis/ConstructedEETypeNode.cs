@@ -13,7 +13,7 @@ using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class ConstructedEETypeNode : EETypeNode
+    public class ConstructedEETypeNode : EETypeNode
     {
         public ConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
@@ -216,6 +216,11 @@ namespace ILCompiler.DependencyAnalysis
                     // Generic definition EETypes can't be allocated
                     if (type.IsGenericDefinition)
                         return false;
+
+                    // Full EEtype of System.Canon should never be used.
+                    if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                        return false;
+
                     break;
             }
 
