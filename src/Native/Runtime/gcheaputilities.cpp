@@ -18,3 +18,6 @@ GPTR_IMPL_INIT(uint8_t,  g_lowest_address,  nullptr);
 GPTR_IMPL_INIT(uint8_t,  g_highest_address, nullptr);
 uint8_t* g_ephemeral_low  = (uint8_t*)1;
 uint8_t* g_ephemeral_high = (uint8_t*)~0;
+
+GcDacVars g_gc_dac_vars;
+GPTR_IMPL(GcDacVars, g_gcDacGlobals);
