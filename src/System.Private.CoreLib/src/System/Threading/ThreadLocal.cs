@@ -5,7 +5,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// ThreadLocal.cs
 //
 
 //
@@ -48,10 +47,10 @@ namespace System.Threading
         // the ThreadLocal<T> instance.
         //
         [ThreadStatic]
-        static LinkedSlotVolatile[] ts_slotArray;
+        private static LinkedSlotVolatile[] ts_slotArray;
 
         [ThreadStatic]
-        static FinalizationHelper ts_finalizationHelper;
+        private static FinalizationHelper ts_finalizationHelper;
 
         // Slot ID of this ThreadLocal<> instance. We store a bitwise complement of the ID (that is ~ID), which allows us to distinguish
         // between the case when ID is 0 and an incompletely initialized object, either due to a thread abort in the constructor, or
@@ -576,7 +575,7 @@ namespace System.Threading
             table = newTable;
         }
 
-        const int MaxArrayLength = int.MaxValue;
+        private const int MaxArrayLength = int.MaxValue;
 
         /// <summary>
         /// Chooses the next larger table size

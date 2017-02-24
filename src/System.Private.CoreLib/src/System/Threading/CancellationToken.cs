@@ -289,7 +289,7 @@ namespace System.Threading
                 true   // useExecutionContext=true
              );
         }
-        
+
         // helper for internal registration needs that don't require an EC capture (e.g. creating linked token sources, or registering unstarted TPL tasks)
         // has a handy signature, and skips capturing execution context.
         internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, Object state)

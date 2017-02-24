@@ -43,12 +43,12 @@ namespace System.Runtime
             return _handleValue == ((TypeManagerHandle)o)._handleValue;
         }
 
-        public static bool operator==(TypeManagerHandle left, TypeManagerHandle right)
+        public static bool operator ==(TypeManagerHandle left, TypeManagerHandle right)
         {
             return left._handleValue == right._handleValue;
         }
 
-        public static bool operator!=(TypeManagerHandle left, TypeManagerHandle right)
+        public static bool operator !=(TypeManagerHandle left, TypeManagerHandle right)
         {
             return left._handleValue != right._handleValue;
         }

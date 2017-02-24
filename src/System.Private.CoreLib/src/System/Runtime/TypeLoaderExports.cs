@@ -469,7 +469,7 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static T Call<T>(IntPtr pfn, string[] arg0) 
+        public static T Call<T>(IntPtr pfn, string[] arg0)
         {
             return default(T);
         }

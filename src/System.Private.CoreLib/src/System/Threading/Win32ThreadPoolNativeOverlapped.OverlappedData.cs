@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    partial struct Win32ThreadPoolNativeOverlapped
+    internal partial struct Win32ThreadPoolNativeOverlapped
     {
         internal class OverlappedData
         {

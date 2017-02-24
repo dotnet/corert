@@ -12,6 +12,7 @@
 **
 ** 
 ===========================================================*/
+
 namespace System.Resources
 {
     using System;
@@ -184,7 +185,7 @@ namespace System.Resources
         // If we're not using our custom reader, then enumerate through all
         // the resources once, adding them into the table.
         private bool _haveReadFromReader;
-        
+
         internal RuntimeResourceSet(String fileName) : base(false)
         {
             throw new NotImplementedException();

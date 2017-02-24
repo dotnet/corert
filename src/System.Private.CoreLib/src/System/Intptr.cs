@@ -126,7 +126,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator int (IntPtr value)
+        public static unsafe explicit operator int(IntPtr value)
         {
 #if BIT64
             long l = (long)value._value;
@@ -138,7 +138,7 @@ namespace System
 
         [Intrinsic]
         [NonVersionable]
-        public static unsafe explicit operator long (IntPtr value)
+        public static unsafe explicit operator long(IntPtr value)
         {
 #if BIT64
             return (long)value._value;

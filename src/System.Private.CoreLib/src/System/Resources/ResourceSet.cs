@@ -12,19 +12,20 @@
 **
 ** 
 ===========================================================*/
+
+using System;
+using System.Collections;
+using System.IO;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
+using System.Diagnostics.Contracts;
+using System.Collections.Generic;
+
 namespace System.Resources
 {
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Reflection;
-    using System.Runtime.Serialization;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
-    using System.Collections.Generic;
-
     // A ResourceSet stores all the resources defined in one particular CultureInfo.
     // 
     // The method used to load resources is straightforward - this class

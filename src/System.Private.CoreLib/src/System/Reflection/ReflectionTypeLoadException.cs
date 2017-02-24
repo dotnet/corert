@@ -33,7 +33,7 @@ namespace System.Reflection
             HResult = __HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
-        internal ReflectionTypeLoadException(SerializationInfo info, StreamingContext context) : base (info, context)
+        internal ReflectionTypeLoadException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             _classes = (Type[])(info.GetValue("Types", typeof(Type[])));
             _exceptions = (Exception[])(info.GetValue("Exceptions", typeof(Exception[])));

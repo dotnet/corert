@@ -5,9 +5,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-partial class Interop
+internal partial class Interop
 {
-    partial class mincore
+    internal partial class mincore
     {
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use GetFullPath/PathHelper.

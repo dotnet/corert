@@ -44,7 +44,6 @@ namespace Internal.Runtime.CompilerHelpers
             }
             Monitor.TryAcquireContended(lck, obj, Timeout.Infinite);
             lockTaken = true;
-
         }
         private static void MonitorExitStatic(IntPtr pEEType, ref bool lockTaken)
         {

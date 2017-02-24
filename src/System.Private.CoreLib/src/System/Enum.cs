@@ -1249,7 +1249,7 @@ namespace System
         private static EnumInfoUnifier s_enumInfoCache = new EnumInfoUnifier();
 
 
-#region IConvertible
+        #region IConvertible
         TypeCode IConvertible.GetTypeCode()
         {
             Type enumType = this.GetType();
@@ -1398,7 +1398,7 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
-#endregion
+        #endregion
     }
 }
 

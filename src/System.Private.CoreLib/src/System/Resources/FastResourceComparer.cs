@@ -13,13 +13,14 @@
 **
 ** 
 ===========================================================*/
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+
 namespace System.Resources
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics.Contracts;
-
     internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<String>, IEqualityComparer<String>
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
@@ -95,7 +96,6 @@ namespace System.Resources
                 return (a.Length == 0) ? 0 : -1;
             fixed (byte* pb = bytes)
             {
-
                 byte* pChar = pb;
                 while (i < numChars && r == 0)
                 {
@@ -108,7 +108,7 @@ namespace System.Resources
             if (r != 0) return r;
             return a.Length - bCharLength;
         }
-        
+
         public static int CompareOrdinal(byte[] bytes, int aCharLength, String b)
         {
             return -CompareOrdinal(b, bytes, aCharLength);

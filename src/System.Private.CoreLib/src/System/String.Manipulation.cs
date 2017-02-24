@@ -19,7 +19,7 @@ namespace System
             }
 
             fixed (char* pDest = &dest._firstChar)
-                fixed (char* pSrc = &src._firstChar)
+            fixed (char* pSrc = &src._firstChar)
             {
                 wstrcpy(pDest + destPos, pSrc, src.Length);
             }
@@ -1505,7 +1505,7 @@ namespace System
             String result = FastAllocateString(length);
 
             fixed (char* dest = &result._firstChar)
-                fixed (char* src = &_firstChar)
+            fixed (char* src = &_firstChar)
             {
                 wstrcpy(dest, src + startIndex, length);
             }

@@ -456,7 +456,7 @@ namespace System.Runtime
         internal static extern unsafe IntPtr RhpRegisterOsModule(IntPtr osModule);
 
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)] 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr RhGetModuleSection(TypeManagerHandle module, ReadyToRunSectionType section, out int length);
 
 #if CORERT
@@ -598,10 +598,10 @@ namespace System.Runtime
         // simply let it be pulled off the stack.
         internal struct ConservativelyReportedRegionDesc
         {
-            IntPtr ptr1;
-            IntPtr ptr2;
-            IntPtr ptr3;
-            IntPtr ptr4;
+            private IntPtr ptr1;
+            private IntPtr ptr2;
+            private IntPtr ptr3;
+            private IntPtr ptr4;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -699,7 +699,7 @@ namespace System.Threading
 
                 // Record the threadID being used for running the callbacks.
                 ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
-                
+
                 // Set the event if it's been lazily initialized and hasn't yet been disposed of.  Dispose may
                 // be running concurrently, in which case either it'll have set m_kernelEvent back to null and
                 // we won't see it here, or it'll see that we've transitioned to NOTIFYING and will skip disposing it,
@@ -1019,7 +1019,6 @@ namespace System.Threading
             {
                 TargetSyncContext = targetSyncContext;
             }
-
         }
 
         internal CancellationCallbackInfo(

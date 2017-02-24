@@ -128,11 +128,11 @@ namespace System.Text
 
             // Just call pointer version
             fixed (char* pChars = &chars[0])
-                fixed (byte* pBytes = &bytes[0])
+            fixed (byte* pBytes = &bytes[0])
 
-                    // Remember that charCount is # to decode, not size of array.
-                    return GetBytes(pChars + charIndex, charCount,
-                                    pBytes + byteIndex, byteCount, flush);
+                // Remember that charCount is # to decode, not size of array.
+                return GetBytes(pChars + charIndex, charCount,
+                                pBytes + byteIndex, byteCount, flush);
         }
 
         internal unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)

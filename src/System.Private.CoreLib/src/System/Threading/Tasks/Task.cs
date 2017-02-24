@@ -4,7 +4,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// Task.cs
 //
 
 //
@@ -212,9 +211,9 @@ namespace System.Threading.Tasks
         internal class ContingentProperties
         {
             // Additional context
- 
+
             internal ExecutionContext m_capturedContext; // The execution context to run the task within, if any.
- 
+
             // Completion fields (exceptions and event)
 
             internal volatile ManualResetEventSlim m_completionEvent; // Lazily created if waiting is required.
@@ -1718,7 +1717,7 @@ namespace System.Threading.Tasks
                 //else do nothing, this is the default context
             }
         }
-        
+
         /// <summary>
         /// Schedules the task for execution.
         /// </summary>
@@ -4147,7 +4146,7 @@ namespace System.Threading.Tasks
         {
             AddCompletionAction(action, addBeforeOthers: false);
         }
-        
+
         private void AddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers)
         {
             if (!AddTaskContinuation(action, addBeforeOthers))
@@ -5955,7 +5954,7 @@ namespace System.Threading.Tasks
         [DependencyReductionRoot]
         internal virtual Delegate[] GetDelegateContinuationsForDebugger()
         {
-            return GetDelegatesFromContinuationObject(this.m_continuationObject);
+            return GetDelegatesFromContinuationObject(m_continuationObject);
         }
 
         private static Delegate[] GetDelegatesFromContinuationObject(object continuationObject)
@@ -6280,7 +6279,6 @@ namespace System.Threading.Tasks
             // do the right thing just in case...
             if (m_inliningDepth < 0) m_inliningDepth = 0;
         }
-
     }  // class StackGuard
 
     // Special internal struct that we use to signify that we are not interested in
@@ -6302,18 +6300,18 @@ namespace System.Threading.Tasks
     // TaskFactory.CompleteOnCountdownPromise<T>, and TaskFactory.CompleteOnInvokePromise.
     internal interface ITaskCompletionAction
     {
-         /// <summary>Invoked to run the completion action.</summary>
-         void Invoke(Task completingTask);
-  
-         /// <summary>
-         /// Some completion actions are considered internal implementation details of tasks,
-         /// using the continuation mechanism only for performance reasons.  Such actions perform
-         /// known quantities and types of work, and can be invoked safely as a continuation even
-         /// if the system wants to prevent arbitrary continuations from running synchronously.
-         /// This should only return false for a limited set of implementations where a small amount
-         /// of work is guaranteed to be performed, e.g. setting a ManualResetEventSlim.
-         /// </summary>
-         bool InvokeMayRunArbitraryCode { get; }
+        /// <summary>Invoked to run the completion action.</summary>
+        void Invoke(Task completingTask);
+
+        /// <summary>
+        /// Some completion actions are considered internal implementation details of tasks,
+        /// using the continuation mechanism only for performance reasons.  Such actions perform
+        /// known quantities and types of work, and can be invoked safely as a continuation even
+        /// if the system wants to prevent arbitrary continuations from running synchronously.
+        /// This should only return false for a limited set of implementations where a small amount
+        /// of work is guaranteed to be performed, e.g. setting a ManualResetEventSlim.
+        /// </summary>
+        bool InvokeMayRunArbitraryCode { get; }
     }
 
     // This class encapsulates all "unwrap" logic, and also implements ITaskCompletionAction,

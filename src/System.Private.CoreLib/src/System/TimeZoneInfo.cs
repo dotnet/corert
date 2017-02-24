@@ -168,7 +168,7 @@ namespace System
 
             public struct OrdinalIgnoreCaseString : IEquatable<OrdinalIgnoreCaseString>
             {
-                public static implicit operator string (OrdinalIgnoreCaseString ignoreCaseString)
+                public static implicit operator string(OrdinalIgnoreCaseString ignoreCaseString)
                 {
                     return ignoreCaseString._string;
                 }

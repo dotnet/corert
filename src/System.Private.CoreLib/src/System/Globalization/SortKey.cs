@@ -11,14 +11,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Globalization
 {
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
     public partial class SortKey
     {

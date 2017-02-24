@@ -125,7 +125,7 @@ namespace System.IO
         {
             return _unmanagedStream.Seek(offset, loc);
         }
-        
+
         public unsafe override byte[] ToArray()
         {
             byte[] buffer = new byte[_unmanagedStream.Length];
@@ -157,7 +157,6 @@ namespace System.IO
 
         public override void SetLength(Int64 value)
         {
-
             // This was probably meant to call _unmanagedStream.SetLength(value), but it was forgotten in V.4.0.
             // Now this results in a call to the base which touches the underlying array which is never actually used.
             // We cannot fix it due to compat now, but we should fix this at the next SxS release oportunity.
@@ -167,7 +166,6 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
         {
-
             // The parameter checks must be in sync with the base version:
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
@@ -195,24 +193,20 @@ namespace System.IO
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-
             return _unmanagedStream.FlushAsync(cancellationToken);
         }
 
 
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
-
             return _unmanagedStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
 
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
-
             return _unmanagedStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
-
     }  // class UnmanagedMemoryStreamWrapper
 }  // namespace
 

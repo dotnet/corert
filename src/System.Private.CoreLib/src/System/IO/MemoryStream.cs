@@ -493,7 +493,7 @@ namespace System.IO
                 base.CopyTo(destination, bufferSize);
                 return;
             }
-            
+
             int originalPosition = _position;
 
             // Seek to the end of the MemoryStream.
@@ -511,7 +511,7 @@ namespace System.IO
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // This implementation offers better performance compared to the base class version.
-            
+
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             // If we have been inherited into a subclass, the following implementation could be incorrect

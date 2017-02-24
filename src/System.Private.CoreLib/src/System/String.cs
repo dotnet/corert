@@ -336,8 +336,8 @@ namespace System
             if (count > 0)
             {
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = destination)
-                        wstrcpy(dest + destinationIndex, src + sourceIndex, count);
+                fixed (char* dest = destination)
+                    wstrcpy(dest + destinationIndex, src + sourceIndex, count);
             }
         }
 
@@ -350,7 +350,7 @@ namespace System
             {
                 char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = &chars[0])
+                fixed (char* dest = &chars[0])
                 {
                     wstrcpy(dest, src, length);
                 }
@@ -373,7 +373,7 @@ namespace System
             {
                 char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = &chars[0])
+                fixed (char* dest = &chars[0])
                 {
                     wstrcpy(dest, src + startIndex, length);
                 }

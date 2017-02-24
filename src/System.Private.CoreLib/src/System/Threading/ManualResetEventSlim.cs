@@ -233,7 +233,7 @@ namespace System.Threading
         /// <param name="spinCount">The spin count that decides when the event will block.</param>
         private void Initialize(bool initialState, int spinCount)
         {
-            this.m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
+            m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
             //the spinCount argument has been validated by the ctors.
             //but we now sanity check our predefined constants.
             Debug.Assert(DEFAULT_SPIN_SP >= 0, "Internal error - DEFAULT_SPIN_SP is outside the legal range.");

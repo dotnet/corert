@@ -268,7 +268,7 @@ namespace System.Runtime.CompilerServices
             public int HoldingThread;
             private int _refCount;
             private StaticClassConstructionContext* _pContext;
-            
+
             //==========================================================================================================
             // Gets the Cctor entry associated with a specific class constructor context (creating it if necessary.)
             //==========================================================================================================
@@ -485,7 +485,7 @@ namespace System.Runtime.CompilerServices
             s_cctorArrays = new Cctor[10][];
             s_cctorGlobalLock = new Lock();
         }
-        
+
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]
         private static void NoisyLog(string format, IntPtr cctorMethod, int threadId)
         {

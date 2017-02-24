@@ -212,7 +212,7 @@ namespace System
 
                 return true;
 
-                ReturnFalse:
+            ReturnFalse:
                 return false;
             }
         }
@@ -267,7 +267,7 @@ namespace System
                 // this compare can include the zero terminator. Bitwise OR avoids a branch.
                 return length == 0 | *a == *b;
 
-                ReturnFalse:
+            ReturnFalse:
                 return false;
             }
         }
@@ -364,17 +364,17 @@ namespace System
                 DiffOffset8: a += 4; b += 4;
                 DiffOffset4: a += 4; b += 4;
 #else // BIT64
-                // Use jumps instead of falling through, since
-                // otherwise going to DiffOffset8 will involve
-                // 8 add instructions before getting to DiffNextInt
-                DiffOffset8: a += 8; b += 8; goto DiffOffset0;
-                DiffOffset6: a += 6; b += 6; goto DiffOffset0;
-                DiffOffset4: a += 2; b += 2;
-                DiffOffset2: a += 2; b += 2;
+            // Use jumps instead of falling through, since
+            // otherwise going to DiffOffset8 will involve
+            // 8 add instructions before getting to DiffNextInt
+            DiffOffset8: a += 8; b += 8; goto DiffOffset0;
+            DiffOffset6: a += 6; b += 6; goto DiffOffset0;
+            DiffOffset4: a += 2; b += 2;
+            DiffOffset2: a += 2; b += 2;
 #endif // BIT64
-                
-                DiffOffset0:
-                // If we reached here, we already see a difference in the unrolled loop above
+
+            DiffOffset0:
+            // If we reached here, we already see a difference in the unrolled loop above
 #if BIT64
                 if (*(int*)a == *(int*)b)
                 {
@@ -382,7 +382,7 @@ namespace System
                 }
 #endif // BIT64
 
-                DiffNextInt:
+            DiffNextInt:
                 if (*a != *b) return *a - *b;
 
                 DiffOffset1:
