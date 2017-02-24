@@ -138,6 +138,7 @@ CoreRT_TestCompileMode=ryujit
 CoreRT_CrossRootFS=
 CoreRT_CrossCXXFlags=
 CoreRT_CrossLinkerFlags=
+CoreRT_CrossBuild=0
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
