@@ -60,9 +60,10 @@ namespace Internal.Runtime.Augments
                 return threadHandle;
             }
 
-            // Throw an ApplicationException for compatibility with CoreCLR
+            // Throw an ApplicationException for compatibility with CoreCLR. First save the error code.
+            int errorCode = Marshal.GetLastWin32Error();
             var ex = new ApplicationException();
-            ex.SetErrorCode(Marshal.GetLastWin32Error());
+            ex.SetErrorCode(errorCode);
             throw ex;
         }
 
