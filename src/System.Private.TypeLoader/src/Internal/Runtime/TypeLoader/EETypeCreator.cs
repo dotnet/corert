@@ -165,6 +165,7 @@ namespace Internal.Runtime.TypeLoader
                 ushort flags;
                 ushort runtimeInterfacesLength = 0;
                 bool isGenericEETypeDef = false;
+                bool isAbstractClass;
 #if EETYPE_TYPE_MANAGER
                 IntPtr typeManager = IntPtr.Zero;
 #endif
@@ -187,6 +188,7 @@ namespace Internal.Runtime.TypeLoader
                     flags = pTemplateEEType->Flags;
                     isArray = pTemplateEEType->IsArray;
                     isGeneric = pTemplateEEType->IsGeneric;
+                    isAbstractClass = pTemplateEEType->IsAbstract && !pTemplateEEType->IsInterface;
 #if EETYPE_TYPE_MANAGER
                     typeManager = pTemplateEEType->PointerToTypeManager;
 #endif
@@ -206,6 +208,7 @@ namespace Internal.Runtime.TypeLoader
                     isNullable = false;
                     isGeneric = false;
                     isGenericEETypeDef = true;
+                    isAbstractClass = false;
                     componentSize = checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
                     baseSize = 0;
                 }
@@ -217,6 +220,10 @@ namespace Internal.Runtime.TypeLoader
                     flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
                     isArray = false;
                     isGeneric = state.TypeBeingBuilt.HasInstantiation;
+
+                    isAbstractClass = (state.TypeBeingBuilt is MetadataType)
+                        && ((MetadataType)state.TypeBeingBuilt).IsAbstract
+                        && !state.TypeBeingBuilt.IsInterface;
 
                     if (state.TypeBeingBuilt.HasVariance)
                     {
@@ -310,6 +317,11 @@ namespace Internal.Runtime.TypeLoader
                         rareFlags |= (uint)EETypeRareFlags.HasCctorFlag;
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.HasCctorFlag;
+
+                    if (isAbstractClass)
+                        rareFlags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
+                    else
+                        rareFlags &= ~(uint)EETypeRareFlags.IsAbstractClassFlag;
 
                     rareFlags |= (uint)EETypeRareFlags.HasDynamicModuleFlag;
 

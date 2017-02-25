@@ -547,6 +547,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if ((_type is MetadataType) && !_type.IsInterface && ((MetadataType)_type).IsAbstract)
+            {
+                flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
+            }
+
             if (flags != 0)
             {
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, flags);
