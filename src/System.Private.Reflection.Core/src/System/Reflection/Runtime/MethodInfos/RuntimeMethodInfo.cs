@@ -259,6 +259,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override String ToString();
 
+        public abstract override RuntimeMethodHandle MethodHandle { get; }
+
         Type ITraceableTypeMember.ContainingType
         {
             get

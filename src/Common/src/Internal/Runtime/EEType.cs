@@ -499,6 +499,14 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsAbstract
+        {
+            get
+            {
+                return IsInterface || (RareFlags & EETypeRareFlags.IsAbstractClassFlag) != 0;
+            }
+        }
+
         internal bool IsDynamicType
         {
             get

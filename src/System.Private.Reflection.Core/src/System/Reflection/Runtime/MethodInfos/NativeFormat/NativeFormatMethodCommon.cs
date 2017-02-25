@@ -7,6 +7,7 @@ using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
@@ -16,7 +17,7 @@ using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-
+using Internal.Runtime.CompilerServices;
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos.NativeFormat
@@ -203,6 +204,23 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             {
                 throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
             }
+        }
+
+        public RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
+        {
+            Debug.Assert(genericArgs != null);
+
+            RuntimeTypeHandle[] genericArgHandles = new RuntimeTypeHandle[genericArgs.Length];
+            for (int i = 0; i < genericArgHandles.Length; i++)
+                genericArgHandles[i] = genericArgs[i].TypeHandle;
+
+            TypeManagerHandle typeManager = Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(Reader);
+
+            return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
+                DeclaringType.TypeHandle,
+                Name,
+                RuntimeSignature.CreateFromMethodHandle(typeManager, MethodHandle.AsInt()),
+                genericArgHandles);
         }
 
         //
