@@ -25,7 +25,7 @@
             <CoreFxPackageVersion>4.4.0-beta-24913-02</CoreFxPackageVersion>
             <NetCoreAppPackageVersion>2.0.0-beta-001368-00</NetCoreAppPackageVersion>
 
-            <JitPackageVersion>2.0.0-beta-25015-04</JitPackageVersion>
+            <JitPackageVersion>2.0.0-beta-25025-03</JitPackageVersion>
 
             <MicrosoftNetCoreNativePackageVersion>2.0.0-beta-25021-03</MicrosoftNetCoreNativePackageVersion>
 
