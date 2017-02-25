@@ -482,6 +482,9 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 
 #endif // HAVE_THREAD_LOCAL
 
+// This thread local variable is used for delegate marshalling
+DECLSPEC_THREAD intptr_t tls_thunkData;
+
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
 // It fails fast if a different thread was already registered.

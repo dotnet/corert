@@ -65,7 +65,6 @@ LEAF_ENTRY RhpCommonStub, _TEXT
 
         ;; store thunk address in thread static
         mov     r11, [r10]
-        xor     r8, r8
         mov     r8d, SECTIONREL ThunkParamSlot
         mov     [rax + r8], r11                 ;;   ThunkParamSlot <- context slot data
 
@@ -91,7 +90,6 @@ LEAF_ENTRY RhpGetCurrentThunkContext, _TEXT
         mov     r10d, [_tls_index]
         mov     r11, gs:[_tls_array]
         mov     r10, [r11 + r10 * POINTER_SIZE]
-        xor     r8, r8 
         mov     r8d, SECTIONREL ThunkParamSlot
         mov     rax, [r10 + r8]                 ;;   rax <- ThunkParamSlot
         ret

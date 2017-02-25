@@ -76,7 +76,7 @@ namespace PInvokeTests
             TestSafeHandle();
             TestStringArray();
             TestSizeParamIndex();
-#if !CODEGEN_CPP && Windows_NT
+#if !CODEGEN_CPP
             TestDelegate();
 #endif            
             return 100;

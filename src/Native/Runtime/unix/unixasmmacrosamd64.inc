@@ -249,6 +249,20 @@ C_FUNC(\Name):
 #define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 #define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
 
+.macro INLINE_GET_TLS_VAR
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _tls_thunkData@TLVP(%rip), %rdi
+        callq   *(%rdi)
+#else
+        leaq    tls_thunkData@TLSLD(%rip), %rdi
+        callq   __tls_get_addr@PLT
+        addq    $tls_thunkData@DTPOFF, %rax
+#endif 
+       .intel_syntax noprefix
+.endm
+
+
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
        .att_syntax
