@@ -11,6 +11,8 @@
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
     <IsCoreAssembly>true</IsCoreAssembly>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Hack to disable analyzers. Replace once https://github.com/dotnet/buildtools/issues/1349 is fixed. -->
+    <CodeAnalyzerDir>$(MSBuildThisFileDirectory)/Documentation</CodeAnalyzerDir>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->

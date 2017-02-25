@@ -12,26 +12,50 @@ namespace Internal.Runtime.Augments
 {
     public sealed partial class RuntimeThread
     {
+        // Extra bits used in _threadState
+        private const ThreadState ThreadPoolThread = (ThreadState)0x1000;
+
+        // Bits of _threadState that are returned by the ThreadState property
+        private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
+
         [ThreadStatic]
         private static RuntimeThread t_currentThread;
+
+        private volatile int _threadState;
+        private ThreadPriority _priority;
+        private ManagedThreadId _managedThreadId;
+        private string _name;
+        private Delegate _threadStart;
+        private int _maxStackSize;
+
+        // Protects starting the thread and setting its priority
+        private Lock _lock;
 
         /// <summary>
         /// Used by <see cref="WaitHandle"/>'s multi-wait functions
         /// </summary>
         private WaitHandleArray<SafeWaitHandle> _waitedSafeWaitHandles;
 
-        private int _threadState;
-
         private RuntimeThread()
         {
             _waitedSafeWaitHandles = new WaitHandleArray<SafeWaitHandle>(elementInitializer: null);
             _threadState = (int)ThreadState.Unstarted;
+            _priority = ThreadPriority.Normal;
+            _lock = new Lock();
 
 #if PLATFORM_UNIX
             _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
 #endif
 
             PlatformSpecificInitialize();
+        }
+
+        private RuntimeThread(Delegate threadStart, int maxStackSize)
+            : this()
+        {
+            _threadStart = threadStart;
+            _maxStackSize = maxStackSize;
+            _managedThreadId = new ManagedThreadId();
         }
 
         /// <summary>
@@ -46,54 +70,221 @@ namespace Internal.Runtime.Augments
             return _waitedSafeWaitHandles.Items;
         }
 
-        public static RuntimeThread Create(ThreadStart start) { throw null; }
-        public static RuntimeThread Create(ThreadStart start, int maxStackSize) { throw null; }
-        public static RuntimeThread Create(ParameterizedThreadStart start) { throw null; }
-        public static RuntimeThread Create(ParameterizedThreadStart start, int maxStackSize) { throw null; }
+        public static RuntimeThread Create(ThreadStart start) => new RuntimeThread(start, 0);
+        public static RuntimeThread Create(ThreadStart start, int maxStackSize) => new RuntimeThread(start, maxStackSize);
+
+        public static RuntimeThread Create(ParameterizedThreadStart start) => new RuntimeThread(start, 0);
+        public static RuntimeThread Create(ParameterizedThreadStart start, int maxStackSize) => new RuntimeThread(start, maxStackSize);
 
         public static RuntimeThread CurrentThread
         {
             get
             {
                 RuntimeThread currentThread = t_currentThread;
-                if (currentThread != null)
-                {
-                    return currentThread;
-                }
-
-                t_currentThread = currentThread = new RuntimeThread();
-                Debug.Assert(currentThread._threadState == (int)ThreadState.Unstarted);
-                currentThread._threadState = (int)(ThreadState.Running | ThreadState.Background);
-                return currentThread;
+                return t_currentThread ?? InitializeExistingThread();
             }
         }
 
-        public bool IsAlive { get { throw null; } }
-        public bool IsBackground { get { throw null; } set { throw null; } }
-        public bool IsThreadPoolThread { get { throw null; } }
-        public int ManagedThreadId { get { throw null; } }
-        public string Name { get { throw null; } set { throw null; } }
-        public ThreadPriority Priority { get { throw null; } set { throw null; } }
+        // Slow path executed once per thread
+        private static RuntimeThread InitializeExistingThread()
+        {
+            var currentThread = new RuntimeThread();
+            currentThread._managedThreadId = System.Threading.ManagedThreadId.GetCurrentThreadId();
+            Debug.Assert(currentThread._threadState == (int)ThreadState.Unstarted);
+            // The main thread is foreground, other ones are background
+            if (currentThread._managedThreadId.Id == System.Threading.ManagedThreadId.IdMainThread)
+            {
+                currentThread._threadState = (int)(ThreadState.Running);
+            }
+            else
+            {
+                currentThread._threadState = (int)(ThreadState.Running | ThreadState.Background);
+            }
+            currentThread.PlatformSpecificInitializeExistingThread();
+            t_currentThread = currentThread;
+            return currentThread;
+        }
 
-        public ThreadState ThreadState => (ThreadState)Volatile.Read(ref _threadState);
+        public static void InitializeThreadPoolThread()
+        {
+            if (t_currentThread == null)
+            {
+                InitializeExistingThread().SetThreadStateBit(ThreadPoolThread);
+            }
+        }
+
+        public bool IsAlive
+        {
+            get
+            {
+                // Refresh ThreadState.Stopped bit if necessary
+                ThreadState state = GetThreadState();
+                return (state & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
+            }
+        }
+
+        public bool IsDead
+        {
+            get
+            {
+                // Refresh ThreadState.Stopped bit if necessary
+                ThreadState state = GetThreadState();
+                return (state & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
+            }
+        }
+
+        public bool IsBackground
+        {
+            get
+            {
+                if (IsDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                return GetThreadStateBit(ThreadState.Background);
+            }
+            set
+            {
+                if (IsDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                // TODO: Keep a counter of running foregroung threads so we can wait on process exit
+                if (value)
+                {
+                    SetThreadStateBit(ThreadState.Background);
+                }
+                else
+                {
+                    ClearThreadStateBit(ThreadState.Background);
+                }
+            }
+        }
+
+        public bool IsThreadPoolThread
+        {
+            get
+            {
+                if (IsDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                return GetThreadStateBit(ThreadPoolThread);
+            }
+        }
+
+        public int ManagedThreadId => _managedThreadId.Id;
+
+        public string Name
+        {
+            get
+            {
+                return _name;
+            }
+            set
+            {
+                if (Interlocked.CompareExchange(ref _name, value, null) != null)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
+                }
+                // TODO: Inform the debugger and the profiler
+            }
+        }
+
+        public ThreadPriority Priority
+        {
+            get
+            {
+                if (IsDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
+                }
+                return _priority;
+            }
+            set
+            {
+                if ((value < ThreadPriority.Lowest) || (ThreadPriority.Highest < value))
+                {
+                    throw new ArgumentOutOfRangeException(SR.Argument_InvalidFlag);
+                }
+                if (IsDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
+                }
+
+                // Prevent race condition with starting this thread
+                using (LockHolder.Hold(_lock))
+                {
+                    if (!SetPriority(value))
+                    {
+                        throw new ThreadStateException(SR.ThreadState_SetPriorityFailed);
+                    }
+                    _priority = value;
+                }
+            }
+        }
+
+        public ThreadState ThreadState => (GetThreadState() & PublicThreadStateMask);
+
+        private ThreadState GetThreadState()
+        {
+            int state = _threadState;
+            // If the thread is marked as alive, check if it has finished execution
+            if ((state & (int)(ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0)
+            {
+                if (HasFinishedExecution())
+                {
+                    state = _threadState;
+                    if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+                    {
+                        SetThreadStateBit(ThreadState.Stopped);
+                        state = _threadState;
+                    }
+                }
+            }
+            return (ThreadState)state;
+        }
+
+        private bool GetThreadStateBit(ThreadState bit)
+        {
+            Debug.Assert((bit & ThreadState.Stopped) == 0, "ThreadState.Stopped bit may be stale; use GetThreadState instead.");
+            return (_threadState & (int)bit) != 0;
+        }
+
+        private void SetThreadStateBit(ThreadState bit)
+        {
+            int oldState, newState;
+            do
+            {
+                oldState = _threadState;
+                newState = oldState | (int)bit;
+            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+        }
+
+        private void ClearThreadStateBit(ThreadState bit)
+        {
+            int oldState, newState;
+            do
+            {
+                oldState = _threadState;
+                newState = oldState & ~(int)bit;
+            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+        }
 
         internal void SetWaitSleepJoinState()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert((_threadState & (int)ThreadState.WaitSleepJoin) == 0);
+            Debug.Assert(!GetThreadStateBit(ThreadState.WaitSleepJoin));
 
-            _threadState |= (int)ThreadState.WaitSleepJoin;
-            // A memory barrier is not necessary to make this change visible to other threads immediately, since a system wait
-            // call will soon follow
+            SetThreadStateBit(ThreadState.WaitSleepJoin);
         }
 
         internal void ClearWaitSleepJoinState()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert((_threadState & (int)ThreadState.WaitSleepJoin) != 0);
+            Debug.Assert(GetThreadStateBit(ThreadState.WaitSleepJoin));
 
-            _threadState ^= (int)ThreadState.WaitSleepJoin;
-            Interlocked.MemoryBarrier(); // make the change visible to other threads immediately
+            ClearThreadStateBit(ThreadState.WaitSleepJoin);
         }
 
         private static int VerifyTimeoutMilliseconds(int millisecondsTimeout)
@@ -108,13 +299,35 @@ namespace Internal.Runtime.Augments
             return millisecondsTimeout;
         }
 
-        public void Join() { throw null; }
-        public bool Join(int millisecondsTimeout) { throw null; }
+        public void Join() => Join(Timeout.Infinite);
+
+        public bool Join(int millisecondsTimeout)
+        {
+            VerifyTimeoutMilliseconds(millisecondsTimeout);
+            if (GetThreadStateBit(ThreadState.Unstarted))
+            {
+                throw new ThreadStateException(SR.ThreadState_NotStarted);
+            }
+            if (millisecondsTimeout == 0)
+            {
+                return HasFinishedExecution();
+            }
+            return JoinCore(millisecondsTimeout);
+        }
+
         public static void Sleep(int millisecondsTimeout) => SleepCore(VerifyTimeoutMilliseconds(millisecondsTimeout));
         public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
         public static bool Yield() => RuntimeImports.RhYield();
 
-        public void Start() { throw null; }
-        public void Start(object parameter) { throw null; }
+        public void Start() => StartCore(null);
+
+        public void Start(object parameter)
+        {
+            if (_threadStart is ThreadStart)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
+            }
+            StartCore(parameter);
+        }
     }
 }

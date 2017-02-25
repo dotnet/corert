@@ -14,7 +14,28 @@ namespace Internal.Runtime.Augments
 
         private void PlatformSpecificInitialize() { }
 
+        private void PlatformSpecificInitializeExistingThread() { }
+
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
+
+        private static bool SetPriority(ThreadPriority priority) { return true; }
+
+        private bool HasFinishedExecution()
+        {
+            // TODO: Return true if the thread has finished execution
+            return false;
+        }
+
+        private bool JoinCore(int millisecondsTimeout)
+        {
+            // TODO: Join the thread
+            return false;
+        }
+
+        private void StartCore(object parameter)
+        {
+            // TODO: Start a new thread using _threadStart and parameter
+        }
 
         public ApartmentState GetApartmentState()
         {

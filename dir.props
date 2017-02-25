@@ -13,7 +13,7 @@
     Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
   -->
   <PropertyGroup>
-    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
+    <BuildToolsTargetsDesktop Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargetsDesktop>
   </PropertyGroup>
 
   <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
@@ -81,7 +81,7 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
     <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargetsDesktop)' == 'true'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
     <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
   </PropertyGroup>
@@ -152,27 +152,7 @@
     <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
 
-  <!--
-    On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
-  -->
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
-    <!--
-      Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
-    -->
-    <DebugType>Portable</DebugType>
-
-    <!--
-      Delay signing with the ECMA key currently doesn't work.
-      https://github.com/dotnet/roslyn/issues/2444
-    -->
-    <UseECMAKey>false</UseECMAKey>
-
-    <!--
-      Full signing with Open key doesn't work with Portable Csc.
-      https://github.com/dotnet/roslyn/issues/8210
-    -->
-    <UseOpenKey>false</UseOpenKey>
-  </PropertyGroup>
+  <Import Project="$(ToolsDir)Roslyn.Common.props" />
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
@@ -272,8 +252,8 @@
   </Choose>
 
   <PropertyGroup>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netcoreapp1.2</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netcoreapp2.0</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
   </PropertyGroup>
 

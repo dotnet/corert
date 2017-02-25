@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-__scriptpath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __init_tools_log=$__scriptpath/init-tools.log
 __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools
@@ -70,11 +70,13 @@ OSName=$(uname -s)
         Darwin)
             OS=OSX
             __DOTNET_PKG=dotnet-dev-osx-x64
+            __NETCORE11_PKG=dotnet-osx-x64
             ulimit -n 2048
             ;;
 
         Linux)
             __DOTNET_PKG="dotnet-dev-$(get_current_linux_name)-x64"
+            __NETCORE11_PKG="dotnet-$(get_current_linux_name)-x64"
             OS=Linux
             ;;
 
@@ -82,6 +84,7 @@ OSName=$(uname -s)
             echo "Unsupported OS '$OSName' detected. Downloading ubuntu-x64 tools."
             OS=Linux
             __DOTNET_PKG=dotnet-dev-ubuntu-x64
+            __NETCORE11_PKG=dotnet-ubuntu-x64
             ;;
   esac
 fi
@@ -89,19 +92,30 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
     echo "Running: $__scriptpath/init-tools.sh" > $__init_tools_log
     if [ ! -e $__DOTNET_PATH ]; then
+
+        mkdir -p "$__DOTNET_PATH"
+    
         echo "Installing dotnet cli..."
         __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
         # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
         echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
-        which curl > /dev/null 2> /dev/null
-        if [ $? -ne 0 ]; then
-            mkdir -p "$__DOTNET_PATH"
-            wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
-        else
+        if command -v curl > /dev/null; then
             curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+        else
+            wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
         fi
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
+
+        # Install .NET Core 1.1 until we get CLI updated to a version that has it bundled in
+        echo "Installing .NETCore 1.1..."
+        __NETCORE11_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/1.1.0/${__NETCORE11_PKG}.1.1.0.tar.gz"
+        if command -v curl > /dev/null; then
+            curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/netcore11.tar ${__NETCORE11_LOCATION}
+        else
+            wget -q -O $__DOTNET_PATH/netcore11.tar ${__NETCORE11_LOCATION}
+        fi
+        tar -xf $__DOTNET_PATH/netcore11.tar
 
         cd $__scriptpath
     fi

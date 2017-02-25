@@ -6,12 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{FBA029C3-B184-4457-AEEC-38D0C2523067}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <AssemblyName>repro</AssemblyName>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <FileAlignment>512</FileAlignment>
-    <CLSCompliant>false</CLSCompliant>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
   </PropertyGroup>

@@ -7,7 +7,6 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{999BB20D-A032-4836-A587-627D243C1668}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>

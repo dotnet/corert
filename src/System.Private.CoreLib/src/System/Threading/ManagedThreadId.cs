@@ -9,9 +9,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
+using Internal.Runtime.Augments;
 using System.Diagnostics;
-using System.Runtime;
 
 namespace System.Threading
 {
@@ -86,7 +85,7 @@ namespace System.Threading
                 {
                     // The empty dispenser has the id=0 allocated, so it is not really empty.
                     // It saves us from dealing with the corner case of true empty dispenser,
-                    // and it ensures that ManagedThreadIdNone will not be ever given out.
+                    // and it ensures that IdNone will not be ever given out.
                     return new ImmutableIdDispenser(null, null, 1, BitsPerNode, 1);
                 }
             }
@@ -177,6 +176,16 @@ namespace System.Threading
             }
         }
 
+        public const int IdNone = 0;
+
+        // The main thread takes the first available id, which is 1. This id will not be recycled until the process exit.
+        // We use this id to detect the main thread and report it as a foreground one.
+        public const int IdMainThread = 1;
+
+        // We store ManagedThreadId both here and in the Thread.CurrentThread object. We store it here,
+        // because we may need the id very early in the process lifetime (e.g., in ClassConstructorRunner),
+        // when a Thread object cannot be created yet. We also store it in the Thread.CurrentThread object,
+        // because that object may have longer lifetime than the OS thread.
         [ThreadStatic]
         private static ManagedThreadId t_currentThreadId;
         [ThreadStatic]
@@ -195,21 +204,9 @@ namespace System.Threading
 
         private int _managedThreadId;
 
-        internal const int ManagedThreadIdNone = 0;
+        public int Id => _managedThreadId;
 
-        public static int Current
-        {
-            get
-            {
-                int currentManagedThreadId = t_currentManagedThreadId;
-                if (currentManagedThreadId == ManagedThreadIdNone)
-                    return MakeForCurrentThread();
-                else
-                    return currentManagedThreadId;
-            }
-        }
-
-        private static int MakeForCurrentThread()
+        public static int AllocateId()
         {
             if (s_idDispenser == null)
                 Interlocked.CompareExchange(ref s_idDispenser, ImmutableIdDispenser.Empty, null);
@@ -226,22 +223,14 @@ namespace System.Threading
                 priorIdDispenser = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
 
-            Debug.Assert(id != ManagedThreadIdNone);
-
-            t_currentThreadId = new ManagedThreadId(id);
-            t_currentManagedThreadId = id;
+            Debug.Assert(id != IdNone);
 
             return id;
         }
 
-        private ManagedThreadId(int managedThreadId)
+        public static void RecycleId(int id)
         {
-            _managedThreadId = managedThreadId;
-        }
-
-        ~ManagedThreadId()
-        {
-            if (_managedThreadId == ManagedThreadIdNone)
+            if (id == IdNone)
             {
                 return;
             }
@@ -249,12 +238,54 @@ namespace System.Threading
             var priorIdDispenser = Volatile.Read(ref s_idDispenser);
             for (;;)
             {
-                var updatedIdDispenser = s_idDispenser.RecycleId(_managedThreadId);
+                var updatedIdDispenser = s_idDispenser.RecycleId(id);
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
                 if (Object.ReferenceEquals(priorIdDispenser, interlockedResult))
                     break;
                 priorIdDispenser = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
+        }
+
+        public static int Current
+        {
+            get
+            {
+                int currentManagedThreadId = t_currentManagedThreadId;
+                if (currentManagedThreadId == IdNone)
+                    return MakeForCurrentThread();
+                else
+                    return currentManagedThreadId;
+            }
+        }
+
+        public static ManagedThreadId GetCurrentThreadId()
+        {
+            if (t_currentManagedThreadId == IdNone)
+                MakeForCurrentThread();
+
+            return t_currentThreadId;
+        }
+
+        private static int MakeForCurrentThread()
+        {
+            return SetForCurrentThread(new ManagedThreadId());
+        }
+
+        public static int SetForCurrentThread(ManagedThreadId threadId)
+        {
+            t_currentThreadId = threadId;
+            t_currentManagedThreadId = threadId.Id;
+            return threadId.Id;
+        }
+
+        public ManagedThreadId()
+        {
+            _managedThreadId = AllocateId();
+        }
+
+        ~ManagedThreadId()
+        {
+            RecycleId(_managedThreadId);
         }
     }
 }

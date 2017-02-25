@@ -29,11 +29,6 @@
     <ItemGroup>
       <LibInputs Include="$(NativeIntermediateOutputPath)\*$(NativeObjectExt)" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <SharedLibrary>$(FrameworkLibPath)\Framework.lib</SharedLibrary>
-    </PropertyGroup>
-
   </Target>
 
   <Target Name="BuildOneFrameworkLibrary">
