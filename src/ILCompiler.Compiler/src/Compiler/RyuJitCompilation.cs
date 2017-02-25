@@ -38,13 +38,13 @@ namespace ILCompiler
             }
         }
 
-        protected override void CompileInternal(string outputFile)
+        protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _corInfo = new CorInfoImpl(this, _jitConfigProvider);
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
-            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory);
+            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, dumper);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

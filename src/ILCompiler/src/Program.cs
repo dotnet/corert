@@ -34,6 +34,7 @@ namespace ILCompiler
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
+        private string _mapFileName;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -129,6 +130,7 @@ namespace ILCompiler
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -308,7 +310,9 @@ namespace ILCompiler
                 .UseDebugInfo(_enableDebugInfo)
                 .ToCompilation();
 
-            compilation.Compile(_outputFilePath);
+            ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName, false) : null;
+
+            compilation.Compile(_outputFilePath, dumper);
 
             if (_dgmlLogFileName != null)
                 compilation.WriteDependencyLog(_dgmlLogFileName);
