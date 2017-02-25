@@ -331,6 +331,9 @@ public:
         // This EEType was constructed from a module where the open type is defined in
         // a dynamically loaded type
         HasDynamicModuleFlag    = 0x00002000,
+
+        // This EEType is for an abstract (but non-interface) type
+        IsAbstractClassFlag     = 0x00004000,        
     };
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
