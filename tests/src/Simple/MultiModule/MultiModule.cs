@@ -16,7 +16,10 @@ public class ReflectionTest
     {
         if (TestStaticBases() == Fail)
             return Fail;
-        
+
+        if (TestSharedGenerics() == Fail)
+            return Fail;
+
         return Pass;
     }
     
@@ -33,6 +36,25 @@ public class ReflectionTest
         if (MultiModuleLibrary.ReturnValue + MultiModuleLibrary.ThreadStaticInt != 100)
             return Fail;
         
+        return Pass;
+    }
+
+    public static int TestSharedGenerics()
+    {
+        // Use a generic dictionary that also exists in the library
+        if (!MultiModuleLibrary.GenericClass<string>.IsT("Hello"))
+            return Fail;
+        if (!MultiModuleLibrary.GenericClass<string>.IsMdArrayOfT(new string[0, 0]))
+            return Fail;
+
+        if (!MultiModuleLibrary.GenericClass<MultiModuleLibrary.GenericStruct<string>>.IsArrayOfT(new MultiModuleLibrary.GenericStruct<string>[0]))
+            return Fail;
+        if (!MultiModuleLibrary.GenericClass<MultiModuleLibrary.GenericStruct<string>>.IsT(new MultiModuleLibrary.GenericStruct<string>()))
+            return Fail;
+
+        if (!MultiModuleLibrary.MethodThatUsesGenerics())
+            return Fail;
+
         return Pass;
     }
 }
