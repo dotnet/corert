@@ -15,4 +15,36 @@ public class MultiModuleLibrary
     public static string StaticString;
     [ThreadStatic]
     public static int ThreadStaticInt;
+
+    public static bool MethodThatUsesGenerics()
+    {
+        // Force the existence of a generic dictionary for GenericClass<string>
+        // It's important we only use one canonical method and that method is not used from the consumption EXE.
+        if (GenericClass<string>.IsArrayOfT(null))
+            return false;
+        if (!GenericClass<string>.IsArrayOfT(new string[0]))
+            return false;
+
+        // Force the existence of a generic dictionary for GenericClass<GenericStruct<string>>
+        // Here we test a canonical method that will be used from the consumption EXE too.
+        if (!GenericClass<GenericStruct<string>>.IsT(new GenericStruct<string>()))
+            return false;
+
+        return true;
+    }
+
+    public class GenericClass<T>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsT(object o) => o is T;
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsArrayOfT(object o) => o is T[];
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsMdArrayOfT(object o) => o is T[,];
+    }
+
+    public struct GenericStruct<T>
+    {
+        public T Value;
+    }
 }
