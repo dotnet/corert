@@ -95,6 +95,21 @@ namespace ILCompiler.DependencyAnalysis
             _currentSection = section;
         }
 
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void SetCodeSectionAttribute(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes = 0, string comdatName = null);
+
+        public void SetCodeSectionAttribute(ObjectNodeSection section)
+        {
+            if (!section.IsStandardSection)
+            {
+                SetCodeSectionAttribute(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
+            }
+            else
+            {
+                SetCodeSectionAttribute(_nativeObjectWriter, section.Name);
+            }
+        }
+
         public void EnsureCurrentSection()
         {
             SetSection(_currentSection);
@@ -689,7 +704,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 throw new IOException("Fail to initialize Native Object Writer");
             }
-
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
         }
@@ -746,9 +760,10 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
+                ObjectNodeSection managedCodeSection;
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    objectWriter.SetSection(MethodCodeNode.WindowsContentSection);
+                    managedCodeSection = MethodCodeNode.WindowsContentSection;
 
                     // Emit sentinels for managed code section.
                     ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
@@ -766,9 +781,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
+                    managedCodeSection = MethodCodeNode.UnixContentSection;
+                    // TODO 2916: managed code section has to be created here, switch is not necessary.
                     objectWriter.SetSection(MethodCodeNode.UnixContentSection);
                     objectWriter.SetSection(LsdaSection);
                 }
+                objectWriter.SetCodeSectionAttribute(managedCodeSection);
 
                 // Build file info map.
                 objectWriter.BuildFileInfoMap(nodes);
