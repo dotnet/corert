@@ -20,6 +20,7 @@ See the LICENSE file in the project root for more information.
     <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.9</CppCompilerAndLinker>
     <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
+    <CppLibCreator>ar</CppLibCreator>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +32,7 @@ See the LICENSE file in the project root for more information.
   </ItemGroup>
 
   <ItemGroup>
+    <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
     <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
     <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libRuntime.a" />
     <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />

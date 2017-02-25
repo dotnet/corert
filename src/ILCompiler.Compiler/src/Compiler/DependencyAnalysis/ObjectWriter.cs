@@ -441,7 +441,12 @@ namespace ILCompiler.DependencyAnalysis
                 int len = frameInfo.BlobData.Length;
                 byte[] blob = frameInfo.BlobData;
 
-                SwitchSection(_nativeObjectWriter, LsdaSection.Name);
+                ObjectNodeSection lsdaSection = LsdaSection;
+                if (ShouldShareSymbol(node))
+                {
+                    lsdaSection = lsdaSection.GetSharedSection(((ISymbolNode)node).GetMangledName());
+                }
+                SwitchSection(_nativeObjectWriter, lsdaSection.Name, GetCustomSectionAttributes(lsdaSection), lsdaSection.ComdatName);
 
                 _sb.Clear().Append("_lsda").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName);
                 byte[] blobSymbolName = _sb.ToUtf8String().UnderlyingArray;
@@ -719,7 +724,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_nodeFactory.CompilationModuleGroup.IsSingleFileCompilation)
                 return false;
 
-            if (!_targetPlatform.IsWindows)
+            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
                 return false;
 
             // Types and methods from the compiler generated assembly are always shareable
