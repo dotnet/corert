@@ -41,6 +41,8 @@ public class ReflectionTest
 
     public static int TestSharedGenerics()
     {
+        Console.WriteLine("Testing generic dictionaries can be folded properly..");
+
         // Use a generic dictionary that also exists in the library
         if (!MultiModuleLibrary.GenericClass<string>.IsT("Hello"))
             return Fail;
