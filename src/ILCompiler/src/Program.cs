@@ -310,7 +310,7 @@ namespace ILCompiler
                 .UseDebugInfo(_enableDebugInfo)
                 .ToCompilation();
 
-            ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName, false) : null;
+            ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 
             compilation.Compile(_outputFilePath, dumper);
 
