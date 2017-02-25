@@ -20,6 +20,7 @@ internal partial class Interop
         CreateEventInitialSet = 0x2u,
         SemaphoreModifyState = 0x2u,
         EventModifyState = 0x2u,
+        DuplicateSameAccess = 0x2u,
         FileTypeChar = 0x2u,
         WaitAbandoned0 = 0x80u,
         WaitTimeout = 0x102u,
