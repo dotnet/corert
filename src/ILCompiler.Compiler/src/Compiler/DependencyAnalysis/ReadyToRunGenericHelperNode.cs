@@ -120,9 +120,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             Utf8String mangledContextName;
             if (_dictionaryOwner is MethodDesc)
-                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
+                mangledContextName = nameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
             else
-                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
+                mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
             sb.Append("__GenericLookupFromDict_").Append(mangledContextName).Append("_");
             _lookupSignature.AppendMangledName(nameMangler, sb);
@@ -140,9 +140,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             Utf8String mangledContextName;
             if (_dictionaryOwner is MethodDesc)
-                mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
+                mangledContextName = nameMangler.GetMangledMethodName((MethodDesc)_dictionaryOwner);
             else
-                mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
+                mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
             sb.Append("__GenericLookupFromType_").Append(mangledContextName).Append("_");
             _lookupSignature.AppendMangledName(nameMangler, sb);

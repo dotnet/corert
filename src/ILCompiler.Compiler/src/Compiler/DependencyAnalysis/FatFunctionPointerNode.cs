@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__fatpointer_").Append(NodeFactory.NameMangler.GetMangledMethodName(Method));
+            sb.Append("__fatpointer_").Append(nameMangler.GetMangledMethodName(Method));
         }
         public int Offset => 0;
         public override bool IsShareable => true;

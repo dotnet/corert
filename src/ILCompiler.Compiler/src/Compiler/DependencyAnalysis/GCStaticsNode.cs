@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__GCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
+            sb.Append("__GCStaticBase_").Append(nameMangler.GetMangledTypeName(_type));
         }
 
         public int Offset => 0;
