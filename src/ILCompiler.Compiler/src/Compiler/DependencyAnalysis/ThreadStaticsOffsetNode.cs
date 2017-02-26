@@ -27,12 +27,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type));
+            sb.Append(GetMangledName(nameMangler, _type));
         }
 
-        public static string GetMangledName(TypeDesc type)
+        public static string GetMangledName(NameMangler nameMangler, TypeDesc type)
         {
-           return "__ThreadStaticBaseOffset_" + NodeFactory.NameMangler.GetMangledTypeName(type);
+           return "__ThreadStaticBaseOffset_" + nameMangler.GetMangledTypeName(type);
         }            
 
         protected override void OnMarked(NodeFactory factory)

@@ -30,13 +30,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type, _isThreadStatic));
+            sb.Append(GetMangledName(nameMangler, _type, _isThreadStatic));
         }
 
-        public static string GetMangledName(MetadataType type, bool isThreadStatic)
+        public static string GetMangledName(NameMangler nameMangler, MetadataType type, bool isThreadStatic)
         {
             string prefix = isThreadStatic ? "__ThreadStaticGCDesc_" : "__GCStaticDesc_";
-            return prefix + NodeFactory.NameMangler.GetMangledTypeName(type);
+            return prefix + nameMangler.GetMangledTypeName(type);
         }
 
         public int NumSeries

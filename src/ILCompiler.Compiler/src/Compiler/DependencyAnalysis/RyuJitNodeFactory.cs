@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class RyuJitNodeFactory : NodeFactory
     {
         public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
-            : base(context, compilationModuleGroup, new CompilerGeneratedMetadataManager(compilationModuleGroup, context))
+            : base(context, compilationModuleGroup, new CompilerGeneratedMetadataManager(compilationModuleGroup, context), new CoreRTNameMangler(false))
         {
         }
 
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return new ExternMethodSymbolNode(method);
+                return new ExternMethodSymbolNode(this, method);
             }
         }
 

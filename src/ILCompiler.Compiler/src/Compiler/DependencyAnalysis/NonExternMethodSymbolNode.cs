@@ -17,7 +17,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _method;
 
-        public NonExternMethodSymbolNode(MethodDesc method) : base(NodeFactory.NameMangler.GetMangledMethodName(method))
+        public NonExternMethodSymbolNode(NodeFactory factory, MethodDesc method)
+            : base(factory.NameMangler.GetMangledMethodName(method))
         {
             _method = method;
         }

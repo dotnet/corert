@@ -26,15 +26,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_targetMethod, _callSiteIdentifier));
+            sb.Append(GetMangledName(nameMangler, _targetMethod, _callSiteIdentifier));
         }
         public int Offset => 0;
 
         public override bool IsShareable => false;
 
-        public static string GetMangledName(MethodDesc method, string callSiteIdentifier)
+        public static string GetMangledName(NameMangler nameMangler, MethodDesc method, string callSiteIdentifier)
         {
-            string name = NodeFactory.NameMangler.CompilationUnitPrefix + "__InterfaceDispatchCell_" + NodeFactory.NameMangler.GetMangledMethodName(method);
+            string name = nameMangler.CompilationUnitPrefix + "__InterfaceDispatchCell_" + nameMangler.GetMangledMethodName(method);
 
             if (!string.IsNullOrEmpty(callSiteIdentifier))
             {

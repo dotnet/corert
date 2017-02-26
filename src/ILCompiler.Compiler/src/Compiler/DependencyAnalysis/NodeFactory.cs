@@ -24,11 +24,13 @@ namespace ILCompiler.DependencyAnalysis
         private CompilerTypeSystemContext _context;
         private CompilationModuleGroup _compilationModuleGroup;
 
-        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager)
+        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup,
+            MetadataManager metadataManager, NameMangler nameMangler)
         {
             _target = context.Target;
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
+            NameMangler = nameMangler;
             CreateNodeCaches();
 
             MetadataManager = metadataManager;
@@ -61,6 +63,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public MetadataManager MetadataManager
+        {
+            get;
+        }
+
+        public NameMangler NameMangler
         {
             get;
         }
@@ -113,7 +120,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
                 {
-                    return new ImportedEETypeSymbolNode(type);
+                    return new ImportedEETypeSymbolNode(this, type);
                 }
                 else
                 {
@@ -136,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
                 {
-                    return new ImportedEETypeSymbolNode(type);
+                    return new ImportedEETypeSymbolNode(this, type);
                 }
                 else
                 {
@@ -373,7 +380,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return ExternSymbol(NonGCStaticsNode.GetMangledName(type, NodeFactory.NameMangler));
+                return ExternSymbol(NonGCStaticsNode.GetMangledName(type, NameMangler));
             }
         }
         
@@ -387,7 +394,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return ExternSymbol(GCStaticsNode.GetMangledName(type, NodeFactory.NameMangler));
+                return ExternSymbol(GCStaticsNode.GetMangledName(type, NameMangler));
             }
         }
 
@@ -762,7 +769,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
-        public static NameMangler NameMangler;
+        /// <summary>
+        /// New code should use <see cref="NameMangler"/> instance property.
+        /// This global variable is only to support existing code and will be going away.
+        /// Do not add new references to it, unless it's from a GetName override.
+        /// </summary>
+        public static NameMangler NameManglerDoNotUse;
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

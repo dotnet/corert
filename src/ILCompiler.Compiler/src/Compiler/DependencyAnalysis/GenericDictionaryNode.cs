@@ -162,9 +162,9 @@ namespace ILCompiler.DependencyAnalysis
 				
 		public MethodDesc OwningMethod => _owningMethod;
 
-		public static string GetMangledName(MethodDesc owningMethod)
+		public static string GetMangledName(NameMangler nameMangler, MethodDesc owningMethod)
         {
-            return MangledNamePrefix + NodeFactory.NameMangler.GetMangledMethodName(owningMethod);
+            return MangledNamePrefix + nameMangler.GetMangledMethodName(owningMethod);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
