@@ -70,13 +70,13 @@ OSName=$(uname -s)
         Darwin)
             OS=OSX
             __DOTNET_PKG=dotnet-dev-osx-x64
-            __NETCORE11_PKG=dotnet-osx-x64
+            __DOTNET_RUNTIME_PKG=dotnet-osx-x64
             ulimit -n 2048
             ;;
 
         Linux)
             __DOTNET_PKG="dotnet-dev-$(get_current_linux_name)-x64"
-            __NETCORE11_PKG="dotnet-$(get_current_linux_name)-x64"
+            __DOTNET_RUNTIME_PKG="dotnet-$(get_current_linux_name)-x64"
             OS=Linux
             ;;
 
@@ -84,7 +84,7 @@ OSName=$(uname -s)
             echo "Unsupported OS '$OSName' detected. Downloading ubuntu-x64 tools."
             OS=Linux
             __DOTNET_PKG=dotnet-dev-ubuntu-x64
-            __NETCORE11_PKG=dotnet-ubuntu-x64
+            __DOTNET_RUNTIME_PKG=dotnet-ubuntu-x64
             ;;
   esac
 fi
@@ -107,9 +107,22 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
 
-        # Install .NET Core 1.1 until we get CLI updated to a version that has it bundled in
-        echo "Installing .NETCore 1.1..."
-        __NETCORE11_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/1.1.0/${__NETCORE11_PKG}.1.1.0.tar.gz"
+        # Delete the bundled in runtime. 
+        rm -rf $__DOTNET_PATH/shared
+
+        # Install .NET Core 1.0.4 until we get CLI updated to a version that has it bundled in
+        echo "Installing .NETCore 1.0.4..."
+        __NETCORE10_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/1.0.4/${__DOTNET_RUNTIME_PKG}.1.0.4.tar.gz"
+        if command -v curl > /dev/null; then
+            curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/netcore10.tar ${__NETCORE10_LOCATION}
+        else
+            wget -q -O $__DOTNET_PATH/netcore10.tar ${__NETCORE10_LOCATION}
+        fi
+        tar -xf $__DOTNET_PATH/netcore10.tar
+
+        # Install .NET Core 1.1.0 until we get CLI updated to a version that has it bundled in
+        echo "Installing .NETCore 1.1.0..."
+        __NETCORE11_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/1.1.0/${__DOTNET_RUNTIME_PKG}.1.1.0.tar.gz"
         if command -v curl > /dev/null; then
             curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/netcore11.tar ${__NETCORE11_LOCATION}
         else
