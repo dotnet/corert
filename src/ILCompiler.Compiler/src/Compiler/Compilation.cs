@@ -22,11 +22,10 @@ namespace ILCompiler
     public abstract class Compilation : ICompilation
     {
         protected readonly DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
-        protected readonly NameMangler _nameMangler;
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
 
-        public NameMangler NameMangler => _nameMangler;
+        public NameMangler NameMangler => _nodeFactory.NameMangler;
         public NodeFactory NodeFactory => _nodeFactory;
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         internal Logger Logger => _logger;
@@ -40,19 +39,17 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> compilationRoots,
-            NameMangler nameMangler,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
-            _nameMangler = nameMangler;
             _logger = logger;
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
             // TODO: hacky static field
-            NodeFactory.NameMangler = nameMangler;
+            NodeFactory.NameManglerDoNotUse = _nodeFactory.NameMangler;
 
             var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
             foreach (var rootProvider in compilationRoots)
@@ -162,7 +159,7 @@ namespace ILCompiler
         void ICompilation.Compile(string outputFile)
         {
             // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
-            _nameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : Path.GetFileNameWithoutExtension(outputFile);
+            NameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : Path.GetFileNameWithoutExtension(outputFile);
             CompileInternal(outputFile);
         }
 

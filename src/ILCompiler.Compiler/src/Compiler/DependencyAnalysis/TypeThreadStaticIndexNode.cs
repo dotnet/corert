@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__TypeThreadStaticIndex_")
-              .Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
+              .Append(nameMangler.GetMangledTypeName(_type));
         }
         public int Offset => 0;
         protected override string GetName() => this.GetMangledName();

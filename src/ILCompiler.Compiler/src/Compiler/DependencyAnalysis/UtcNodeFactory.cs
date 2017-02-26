@@ -72,7 +72,7 @@ namespace ILCompiler
         }
 
         public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile))
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), null /* pick name mangler */)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = Path.GetFileNameWithoutExtension(outputFile);
@@ -108,7 +108,7 @@ namespace ILCompiler
 
             _nonExternMethodSymbols = new NodeCache<MethodDesc, NonExternMethodSymbolNode>((MethodDesc method) =>
             {
-                return new NonExternMethodSymbolNode(method);
+                return new NonExternMethodSymbolNode(this, method);
             });
         }
 
@@ -155,7 +155,7 @@ namespace ILCompiler
                 return new RuntimeImportMethodNode(method);
             }
 
-            return new ExternMethodSymbolNode(method);
+            return new ExternMethodSymbolNode(this, method);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
@@ -209,7 +209,7 @@ namespace ILCompiler
             }
             else
             {
-                return ExternSymbol(GCStaticDescNode.GetMangledName(type, false));
+                return ExternSymbol(GCStaticDescNode.GetMangledName(NameMangler, type, false));
             }
         }
 
@@ -223,7 +223,7 @@ namespace ILCompiler
             }
             else
             {
-                return ExternSymbol(GCStaticDescNode.GetMangledName(type, true));
+                return ExternSymbol(GCStaticDescNode.GetMangledName(NameMangler, type, true));
             }
         }
 
@@ -237,7 +237,7 @@ namespace ILCompiler
             }
             else
             {
-                return ExternSymbol(ThreadStaticsOffsetNode.GetMangledName(type));
+                return ExternSymbol(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
             }
         }
 
@@ -249,7 +249,7 @@ namespace ILCompiler
             }
             else
             {
-                return ExternSymbol(ThreadStaticsOffsetNode.GetMangledName(type));
+                return ExternSymbol(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
             }
         }
 

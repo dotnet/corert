@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledTypeName(_owningType));
+            sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledTypeName(_owningType));
         }
         public override int Offset => 0;
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
@@ -153,7 +153,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledMethodName(_owningMethod));
+            sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledMethodName(_owningMethod));
         }
         public override int Offset => _owningMethod.Context.Target.PointerSize;
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
@@ -162,9 +162,9 @@ namespace ILCompiler.DependencyAnalysis
 				
 		public MethodDesc OwningMethod => _owningMethod;
 
-		public static string GetMangledName(MethodDesc owningMethod)
+		public static string GetMangledName(NameMangler nameMangler, MethodDesc owningMethod)
         {
-            return MangledNamePrefix + NodeFactory.NameMangler.GetMangledMethodName(owningMethod);
+            return MangledNamePrefix + nameMangler.GetMangledMethodName(owningMethod);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

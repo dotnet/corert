@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__Str_").Append(NodeFactory.NameMangler.GetMangledStringName(_data));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__Str_").Append(nameMangler.GetMangledStringName(_data));
         }
 
         public override bool StaticDependenciesAreComputed => true;
