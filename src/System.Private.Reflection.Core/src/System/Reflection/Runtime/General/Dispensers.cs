@@ -159,6 +159,17 @@ namespace System.Reflection.Runtime.MethodInfos
     }
 
     //-----------------------------------------------------------------------------------------------------------
+    // Nullary constructor for types manufactured by Type.GetTypeFromCLSID().
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class RuntimeCLSIDNullaryConstructorInfo : RuntimeConstructorInfo
+    {
+        internal static RuntimeCLSIDNullaryConstructorInfo GetRuntimeCLSIDNullaryConstructorInfo(RuntimeCLSIDTypeInfo declaringType)
+        {
+            return new RuntimeCLSIDNullaryConstructorInfo(declaringType);
+        }
+    }
+
+    //-----------------------------------------------------------------------------------------------------------
     // MethodInfos for method definitions (i.e. Foo.Moo() or Foo.Moo<>() but not Foo.Moo<int>)
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeNamedMethodInfo<TRuntimeMethodCommon>

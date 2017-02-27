@@ -67,5 +67,7 @@ namespace Internal.Runtime.Augments
         public abstract bool SupportsReflection(Type type);
 
         public abstract MethodInfo GetDelegateMethod(Delegate del);
+
+        public abstract Exception GetExceptionForHR(int hr);
     }
 }
