@@ -786,7 +786,7 @@ namespace ILCompiler.DependencyAnalysis
                     ObjectData nodeContents = node.GetData(factory);
 
                     if (dumper != null)
-                        dumper.DumpObjectNode(NodeFactory.NameMangler, node, nodeContents);
+                        dumper.DumpObjectNode(factory.NameMangler, node, nodeContents);
 
 #if DEBUG
                     foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
