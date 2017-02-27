@@ -46,7 +46,7 @@ namespace ILCompiler
                 yield return existingRoot;
         }
 
-        protected override void CompileInternal(string outputFile)
+        protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _cppWriter = new CppWriter(this, outputFile);
 

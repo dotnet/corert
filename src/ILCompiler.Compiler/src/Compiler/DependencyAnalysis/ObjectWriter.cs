@@ -14,6 +14,8 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.JitInterface;
 
+using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -350,7 +352,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] gcInfo = nodeWithCodeInfo.GCInfo;
-            ObjectNode.ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+            ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
 
             for (int i = 0; i < frameInfos.Length; i++)
             {
@@ -430,7 +432,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] gcInfo = nodeWithCodeInfo.GCInfo;
-            ObjectNode.ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+            ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
 
             for (int i = 0; i < frameInfos.Length; i++)
             {
@@ -738,7 +740,7 @@ namespace ILCompiler.DependencyAnalysis
             return node.IsShareable;
         }
 
-        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
+        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, IObjectDumper dumper)
         {
             ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
             bool succeeded = false;
@@ -781,7 +783,10 @@ namespace ILCompiler.DependencyAnalysis
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
-                    ObjectNode.ObjectData nodeContents = node.GetData(factory);
+                    ObjectData nodeContents = node.GetData(factory);
+
+                    if (dumper != null)
+                        dumper.DumpObjectNode(factory.NameMangler, node, nodeContents);
 
 #if DEBUG
                     foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)

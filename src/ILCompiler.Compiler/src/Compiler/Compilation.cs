@@ -15,7 +15,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
-using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
@@ -80,7 +79,7 @@ namespace ILCompiler
 
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
 
-        protected abstract void CompileInternal(string outputFile);
+        protected abstract void CompileInternal(string outputFile, ObjectDumper dumper);
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target)
         {
@@ -92,9 +91,9 @@ namespace ILCompiler
         /// </summary>
         public ObjectNode GetFieldRvaData(FieldDesc field)
         {
-            if (field.GetType() == typeof(Internal.IL.Stubs.PInvokeLazyFixupField))
+            if (field.GetType() == typeof(PInvokeLazyFixupField))
             {
-                var pInvokeFixup = (Internal.IL.Stubs.PInvokeLazyFixupField)field;
+                var pInvokeFixup = (PInvokeLazyFixupField)field;
                 PInvokeMetadata metadata = pInvokeFixup.PInvokeMetadata;
                 return NodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name);
             }
@@ -156,11 +155,21 @@ namespace ILCompiler
             return intrinsicMethod;
         }
 
-        void ICompilation.Compile(string outputFile)
+        void ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
+            if (dumper != null)
+            {
+                dumper.Begin();
+            }
+
             // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
             NameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : Path.GetFileNameWithoutExtension(outputFile);
-            CompileInternal(outputFile);
+            CompileInternal(outputFile, dumper);
+
+            if (dumper != null)
+            {
+                dumper.End();
+            }
         }
 
         void ICompilation.WriteDependencyLog(string fileName)
@@ -235,7 +244,7 @@ namespace ILCompiler
     // Interface under which Compilation is exposed externally.
     public interface ICompilation
     {
-        void Compile(string outputFileName);
+        void Compile(string outputFileName, ObjectDumper dumper);
         void WriteDependencyLog(string outputFileName);
     }
 }
