@@ -37,11 +37,27 @@ namespace ILCompiler
             _writer.WriteStartElement("ObjectNodes");
         }
 
+        private static string GetObjectNodeName(ObjectNode node)
+        {
+            string name = node.GetType().Name;
+
+            // Some nodes are generic and their type name contains "`". Strip it.
+            int indexOfAccent = name.LastIndexOf('`');
+            if (indexOfAccent > 0)
+                name = name.Substring(0, indexOfAccent);
+
+            // Node type names generally end with "Node", but that's redundant.
+            if (name.EndsWith("Node"))
+                name = name.Substring(0, name.Length - 4);
+
+            return name;
+        }
+
         void IObjectDumper.DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
         {
             string name = null;
 
-            _writer.WriteStartElement(node.GetType().Name.Replace('`', '_'));
+            _writer.WriteStartElement(GetObjectNodeName(node));
 
             var symbolNode = node as ISymbolNode;
             if (symbolNode != null)
