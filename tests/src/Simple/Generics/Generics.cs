@@ -327,12 +327,32 @@ class Program
             }
         }
 
+        class NonGeneric
+        {
+            public static readonly string Message;
+
+            static NonGeneric()
+            {
+                Message = "Hi there";
+            }
+
+            public static string Get<T>(object o)
+            {
+                if (o is T[])
+                    return Message;
+                return null;
+            }
+        }
+
         public static void Run()
         {
             if (Gen2<string>.GetFromClassParam() != "Hello")
                 throw new Exception();
 
             if (Gen2<string>.GetFromMethodParam() != "World")
+                throw new Exception();
+
+            if (NonGeneric.Get<object>(new object[0]) != "Hi there")
                 throw new Exception();
         }
     }
