@@ -335,7 +335,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
 
-        public void PublishUnwindInfo(NodeFactory factory, ObjectNode node)
+        public void PublishUnwindInfo(ObjectNode node)
         {
             INodeWithCodeInfo nodeWithCodeInfo = node as INodeWithCodeInfo;
             if (nodeWithCodeInfo == null)
@@ -361,7 +361,7 @@ namespace ILCompiler.DependencyAnalysis
                 int len = frameInfo.BlobData.Length;
                 byte[] blob = frameInfo.BlobData;
                 
-                _sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_unwind").Append(i.ToStringInvariant());
+                _sb.Clear().Append(_nodeFactory.NameMangler.CompilationUnitPrefix).Append("_unwind").Append(i.ToStringInvariant());
 
                 ObjectNodeSection section = ObjectNodeSection.XDataSection;
                 SwitchSection(_nativeObjectWriter, section.Name);
@@ -383,7 +383,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (ehInfo != null)
                 {
-                    EmitSymbolRef(_sb.Clear().Append(NodeFactory.NameMangler.CompilationUnitPrefix).Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                    EmitSymbolRef(_sb.Clear().Append(_nodeFactory.NameMangler.CompilationUnitPrefix).Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_ABSOLUTE);
                 }
 
                 if (gcInfo != null)
@@ -581,7 +581,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _sb.Clear();
                 AppendExternCPrefix(_sb);
-                symbolNode.AppendMangledName(NodeFactory.NameMangler, _sb);
+                symbolNode.AppendMangledName(_nodeFactory.NameMangler, _sb);
                 _currentNodeZeroTerminatedName = _sb.Append('\0').ToUtf8String();
             }
             else
@@ -605,7 +605,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _sb.Clear();
             AppendExternCPrefix(_sb);
-            target.AppendMangledName(NodeFactory.NameMangler, _sb);
+            target.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
             return EmitSymbolRef(_sb, relocType, delta);
         }
@@ -661,7 +661,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     _sb.Clear();
                     AppendExternCPrefix(_sb);
-                    name.AppendMangledName(NodeFactory.NameMangler, _sb);
+                    name.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
                     EmitSymbolDef(_sb);
 
@@ -871,7 +871,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     // Publish Windows unwind info.
                     if (factory.Target.IsWindows)
-                        objectWriter.PublishUnwindInfo(factory, node);
+                        objectWriter.PublishUnwindInfo(node);
 
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);

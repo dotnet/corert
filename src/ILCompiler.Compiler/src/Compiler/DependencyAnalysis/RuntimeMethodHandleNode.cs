@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
               .Append("__RuntimeMethodHandle_")
-              .Append(NodeFactory.NameMangler.GetMangledMethodName(_targetMethod));
+              .Append(nameMangler.GetMangledMethodName(_targetMethod));
         }
         public int Offset => 0;
         protected override string GetName() => this.GetMangledName();

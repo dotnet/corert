@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
         public int Offset => 0;
         public bool RepresentsIndirectionCell => false;

@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
             if (sb == null)
                 sb = new Utf8StringBuilder();
 
-            symbolNode.AppendMangledName(NodeFactory.NameMangler, sb);
+            symbolNode.AppendMangledName(NodeFactory.NameManglerDoNotUse, sb);
             string ret = sb.ToString();
 
             sb.Clear();
