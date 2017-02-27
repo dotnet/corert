@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 using Internal.Metadata.NativeFormat;
 
@@ -385,6 +386,11 @@ namespace Internal.Reflection.Execution
         public sealed override MethodInfo GetDelegateMethod(Delegate del)
         {
             return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
+        }
+
+        public sealed override Exception GetExceptionForHR(int hr)
+        {
+            return Marshal.GetExceptionForHR(hr);
         }
 
         private ExecutionDomain _executionDomain;

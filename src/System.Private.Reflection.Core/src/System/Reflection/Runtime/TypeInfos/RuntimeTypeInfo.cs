@@ -758,6 +758,8 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Returns the base type as a typeDef, Ref, or Spec. Default behavior is to QTypeDefRefOrSpec.Null, which causes BaseType to return null.
         //
+        // If you override this method, there is no need to override BaseTypeWithoutTheGenericParameterQuirk.
+        //
         internal virtual QTypeDefRefOrSpec TypeRefDefOrSpecForBaseType
         {
             get
@@ -836,7 +838,11 @@ namespace System.Reflection.Runtime.TypeInfos
         // To implement this with the least amount of code smell, we'll implement the idealized version of BaseType here
         // and make the special-case adjustment in the public version of BaseType.
         //
-        private RuntimeTypeInfo BaseTypeWithoutTheGenericParameterQuirk
+        // If you override this method, there is no need to overrride TypeRefDefOrSpecForBaseType.  
+        //
+        // This method is left unsealed so that RuntimeCLSIDTypeInfo can override. 
+        //
+        internal virtual Type BaseTypeWithoutTheGenericParameterQuirk
         {
             get
             {
