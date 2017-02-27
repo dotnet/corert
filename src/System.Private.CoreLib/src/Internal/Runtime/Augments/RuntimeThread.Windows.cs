@@ -2,13 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Internal.Runtime.Augments
 {
     using Interop = global::Interop; /// due to the existence of <see cref="Internal.Interop"/>
+    using OSThreadPriority = Interop.mincore.ThreadPriority;
 
     public sealed partial class RuntimeThread
     {
@@ -17,6 +20,9 @@ namespace Internal.Runtime.Augments
 
         [ThreadStatic]
         private static ApartmentType t_apartmentType;
+
+        private object _threadStartArg;
+        private SafeWaitHandle _osHandle;
 
         /// <summary>
         /// Used by <see cref="WaitHandle"/>'s multi-wait functions
@@ -34,6 +40,204 @@ namespace Internal.Runtime.Augments
 
             _waitedHandles.EnsureCapacity(requiredCapacity);
             return _waitedHandles.Items;
+        }
+
+        private void PlatformSpecificInitializeExistingThread()
+        {
+            _osHandle = GetOSHandleForCurrentThread();
+            _priority = MapFromOSPriority(Interop.mincore.GetThreadPriority(_osHandle));
+        }
+
+        private static SafeWaitHandle GetOSHandleForCurrentThread()
+        {
+            IntPtr currentProcHandle = Interop.mincore.GetCurrentProcess();
+            IntPtr currentThreadHandle = Interop.mincore.GetCurrentThread();
+            SafeWaitHandle threadHandle;
+
+            if (Interop.mincore.DuplicateHandle(currentProcHandle, currentThreadHandle, currentProcHandle,
+                out threadHandle, 0, false, (uint)Interop.Constants.DuplicateSameAccess))
+            {
+                return threadHandle;
+            }
+
+            // Throw an ApplicationException for compatibility with CoreCLR. First save the error code.
+            int errorCode = Marshal.GetLastWin32Error();
+            var ex = new ApplicationException();
+            ex.SetErrorCode(errorCode);
+            throw ex;
+        }
+
+        private static ThreadPriority MapFromOSPriority(OSThreadPriority priority)
+        {
+            switch (priority)
+            {
+                case OSThreadPriority.Idle:
+                case OSThreadPriority.Lowest:
+                    return ThreadPriority.Lowest;
+
+                case OSThreadPriority.BelowNormal:
+                    return ThreadPriority.BelowNormal;
+
+                case OSThreadPriority.Normal:
+                    return ThreadPriority.Normal;
+
+                case OSThreadPriority.AboveNormal:
+                    return ThreadPriority.AboveNormal;
+
+                case OSThreadPriority.Highest:
+                case OSThreadPriority.TimeCritical:
+                    return ThreadPriority.Highest;
+
+                case OSThreadPriority.ErrorReturn:
+                    Debug.Fail("GetThreadPriority failed");
+                    return ThreadPriority.Normal;
+
+                default:
+                    return ThreadPriority.Normal;
+            }
+        }
+
+        private static OSThreadPriority MapToOSPriority(ThreadPriority priority)
+        {
+            switch (priority)
+            {
+                case ThreadPriority.Lowest:
+                    return OSThreadPriority.Lowest;
+
+                case ThreadPriority.BelowNormal:
+                    return OSThreadPriority.BelowNormal;
+
+                case ThreadPriority.Normal:
+                    return OSThreadPriority.Normal;
+
+                case ThreadPriority.AboveNormal:
+                    return OSThreadPriority.AboveNormal;
+
+                case ThreadPriority.Highest:
+                    return OSThreadPriority.Highest;
+
+                default:
+                    Environment.FailFast("Unreached");
+                    return OSThreadPriority.Normal;
+            }
+        }
+
+        private bool SetPriority(ThreadPriority priority)
+        {
+            if (_osHandle.IsInvalid)
+            {
+                // We will set the priority (saved in _priority) when we create an OS thread
+                return true;
+            }
+            return Interop.mincore.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
+        }
+
+        /// <summary>
+        /// Checks if the underlying OS thread has finished execution.
+        /// </summary>
+        private bool HasFinishedExecution()
+        {
+            uint result = Interop.mincore.WaitForSingleObject(_osHandle, dwMilliseconds: 0);
+            return result == (uint)Interop.Constants.WaitObject0;
+        }
+
+        private bool JoinCore(int millisecondsTimeout)
+        {
+            SafeWaitHandle waitHandle = _osHandle;
+            int result;
+
+            waitHandle.DangerousAddRef();
+            try
+            {
+                result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
+
+            return result == (int)Interop.Constants.WaitObject0;
+        }
+
+        private void StartCore(object parameter)
+        {
+            using (LockHolder.Hold(_lock))
+            {
+                if (!GetThreadStateBit(ThreadState.Unstarted))
+                {
+                    throw new ThreadStateException(SR.ThreadState_AlreadyStarted);
+                }
+
+                // TODO: OOM hardening, _maxStackSize
+                GCHandle threadHandle = GCHandle.Alloc(this);
+                _threadStartArg = parameter;
+
+                try
+                {
+                    uint threadId;
+
+                    _osHandle = new SafeWaitHandle(Interop.mincore.CreateThread(IntPtr.Zero, IntPtr.Zero,
+                        AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(StartThread), (IntPtr)threadHandle, 0, out threadId),
+                        ownsHandle: true);
+
+                    // Ignore errors (as in CoreCLR)
+                    SetPriority(_priority);
+
+                    // Wait until the new thread is started (as in CoreCLR)
+                    while (GetThreadStateBit(ThreadState.Unstarted))
+                    {
+                        Yield();
+                    }
+                }
+                finally
+                {
+                    if (_osHandle == null)
+                    {
+                        threadHandle.Free();
+                        _threadStartArg = null;
+                    }
+                }
+            }
+        }
+
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static uint StartThread(IntPtr parameter)
+        {
+            GCHandle threadHandle = (GCHandle)parameter;
+            RuntimeThread thread = (RuntimeThread)threadHandle.Target;
+            // TODO: OOM hardening
+            t_currentThread = thread;
+            System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
+            threadHandle.Free();
+
+            thread.ClearThreadStateBit(ThreadState.Unstarted);
+
+            try
+            {
+                Delegate threadStart = thread._threadStart;
+                object threadStartArg = thread._threadStartArg;
+                thread._threadStart = null;
+                thread._threadStartArg = null;
+
+#if ENABLE_WINRT
+                Interop.WinRT.RoInitialize(Interop.WinRT.RO_INIT_TYPE.RO_INIT_MULTITHREADED);
+#endif
+
+                ParameterizedThreadStart paramThreadStart = threadStart as ParameterizedThreadStart;
+                if (paramThreadStart != null)
+                {
+                    paramThreadStart(threadStartArg);
+                }
+                else
+                {
+                    ((ThreadStart)threadStart)();
+                }
+            }
+            finally
+            {
+                thread.SetThreadStateBit(ThreadState.Stopped);
+            }
+            return 0;
         }
 
         public ApartmentState GetApartmentState() { throw null; }

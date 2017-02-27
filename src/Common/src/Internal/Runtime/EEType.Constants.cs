@@ -184,6 +184,11 @@ namespace Internal.Runtime
         /// This EEType contains a pointer to dynamic module information
         /// </summary>
         HasDynamicModuleFlag = 0x00002000,
+
+        /// <summary>
+        /// This EEType is an abstract class (but not an interface).
+        /// </summary>
+        IsAbstractClassFlag = 0x00004000,
     }
 
     internal enum EETypeField

@@ -42,16 +42,25 @@ namespace Internal.Runtime.TypeLoader
 
 
         #region Field Ldtoken Functions
-        public unsafe IntPtr TryGetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr fieldName)
+        public RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string fieldName)
+        {
+            IntPtr nameAsIntPtr = GetNativeFormatStringForString(fieldName);
+            return GetRuntimeFieldHandleForComponents(declaringTypeHandle, nameAsIntPtr);
+        }
+
+        public unsafe RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr fieldName)
         {
             IntPtr runtimeFieldHandleValue = MemoryHelpers.AllocateMemory(sizeof(DynamicFieldHandleInfo));
+            if (runtimeFieldHandleValue == IntPtr.Zero)
+                throw new OutOfMemoryException();
 
             DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)runtimeFieldHandleValue.ToPointer();
             fieldData->DeclaringType = *(IntPtr*)&declaringTypeHandle;
             fieldData->FieldName = fieldName;
 
             // Special flag (lowest bit set) in the handle value to indicate it was dynamically allocated
-            return runtimeFieldHandleValue + 1;
+            runtimeFieldHandleValue = runtimeFieldHandleValue + 1;
+            return *(RuntimeFieldHandle*)&runtimeFieldHandleValue;
         }
         public bool TryGetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
         {
@@ -165,13 +174,15 @@ namespace Internal.Runtime.TypeLoader
         /// is constructed from a metadata token, the methodName should be IntPtr.Zero, as it already encodes the method
         /// name.
         /// </summary>
-        internal unsafe IntPtr TryGetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
+        public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
         {
             // TODO! Consider interning these!, but if we do remember this function is called from code which isn't under the type builder lock 
             int sizeToAllocate = sizeof(DynamicMethodHandleInfo);
             // Use checked arithmetics to ensure there aren't any overflows/truncations
             sizeToAllocate = checked(sizeToAllocate + (genericMethodArgs.Length > 0 ? sizeof(IntPtr) * (genericMethodArgs.Length - 1) : 0));
             IntPtr runtimeMethodHandleValue = MemoryHelpers.AllocateMemory(sizeToAllocate);
+            if (runtimeMethodHandleValue == IntPtr.Zero)
+                throw new OutOfMemoryException();
 
             DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)runtimeMethodHandleValue.ToPointer();
             methodData->DeclaringType = *(IntPtr*)&declaringTypeHandle;
@@ -186,18 +197,13 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Special flag in the handle value to indicate it was dynamically allocated, and doesn't point into the InvokeMap blob
-            return runtimeMethodHandleValue + 1;
+            runtimeMethodHandleValue = runtimeMethodHandleValue + 1;
+            return *(RuntimeMethodHandle*)&runtimeMethodHandleValue;
         }
-
-        public unsafe bool TryGetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs, out RuntimeMethodHandle handle)
+        public RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
         {
-            handle = default(RuntimeMethodHandle);
-            fixed (RuntimeMethodHandle* pRMH = &handle)
-            {
-                IntPtr rmhAsPointer = TryGetRuntimeMethodHandleForComponents(declaringTypeHandle, methodName, methodSignature, genericMethodArgs);
-                *((IntPtr*)pRMH) = rmhAsPointer;
-                return rmhAsPointer != IntPtr.Zero;
-            }
+            IntPtr nameAsIntPtr = GetNativeFormatStringForString(methodName);
+            return GetRuntimeMethodHandleForComponents(declaringTypeHandle, nameAsIntPtr, methodSignature, genericMethodArgs);
         }
 
         public bool TryGetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs)

@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("unbox_").Append(NodeFactory.NameMangler.GetMangledMethodName(_target));
+            sb.Append("unbox_").Append(nameMangler.GetMangledMethodName(_target));
         }
 
         public override bool IsShareable => true;

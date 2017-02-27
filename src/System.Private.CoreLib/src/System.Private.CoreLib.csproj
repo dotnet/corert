@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
+    <CLSCompliant>true</CLSCompliant>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
@@ -248,6 +249,7 @@
     <Compile Include="System\ArrayTypeMismatchException.cs" />
     <Compile Include="System\AsyncCallback.cs" />
     <Compile Include="System\BadImageFormatException.cs" />
+    <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />

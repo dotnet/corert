@@ -330,7 +330,7 @@ namespace ILCompiler
             var lookupSig = new DelegateInvokeMethodSignature(delegateType);
             if (!DelegateMarshalingThunks.TryGetValue(lookupSig, out thunk))
             {
-                string stubName = "ReverseDelegateStub__" + NodeFactory.NameMangler.GetMangledTypeName(delegateType);
+                string stubName = "ReverseDelegateStub__" + NodeFactory.NameManglerDoNotUse.GetMangledTypeName(delegateType);
                 thunk = new DelegateMarshallingMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), delegateType, stubName);
                 DelegateMarshalingThunks.Add(lookupSig, thunk);
             }

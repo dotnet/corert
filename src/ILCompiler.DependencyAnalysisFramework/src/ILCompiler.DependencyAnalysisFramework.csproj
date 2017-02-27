@@ -9,7 +9,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ILCompiler.DependencyAnalysisFramework</RootNamespace>
     <AssemblyName>ILCompiler.DependencyAnalysisFramework</AssemblyName>
-    <FileAlignment>512</FileAlignment>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
@@ -20,7 +19,7 @@
   <ItemGroup>
     <PackageDestination Include="Tools">
       <InProject>false</InProject>
-      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+      <TargetFramework>.NetCoreApp,Version=2.0</TargetFramework>
     </PackageDestination>
   </ItemGroup>
   <ItemGroup>

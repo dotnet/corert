@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = 0; i < _details.Instantiation.Length; i++)
             {
                 sb.Append('_');
-                sb.Append(NodeFactory.NameMangler.GetMangledTypeName(_details.Instantiation[i]));
+                sb.Append(nameMangler.GetMangledTypeName(_details.Instantiation[i]));
 
                 hasVariance |= _details.Variance[i] != 0;
             }

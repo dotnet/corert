@@ -193,16 +193,13 @@ namespace Internal.Runtime.TypeLoader
 
             override internal IntPtr Create(TypeBuilder builder)
             {
-                RuntimeMethodHandle rmh;
-                TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(
+                RuntimeMethodHandle rmh = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                     builder.GetRuntimeTypeHandle(ConstrainedMethod.OwningType),
                     MethodName,
                     MethodSignature,
-                    builder.GetRuntimeTypeHandles(ConstrainedMethod.Instantiation),
-                    out rmh);
+                    builder.GetRuntimeTypeHandles(ConstrainedMethod.Instantiation));
 
-                return ConstrainedCallSupport.GenericConstrainedCallDesc.Get(builder.GetRuntimeTypeHandle(ConstraintType),
-                                                                             rmh);
+                return ConstrainedCallSupport.GenericConstrainedCallDesc.Get(builder.GetRuntimeTypeHandle(ConstraintType), rmh);
             }
         }
 
@@ -302,9 +299,11 @@ namespace Internal.Runtime.TypeLoader
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleForComponents(
+                RuntimeFieldHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
                     builder.GetRuntimeTypeHandle(ContainingType),
                     FieldName);
+
+                return *(IntPtr*)&handle;
             }
         }
 
@@ -331,11 +330,13 @@ namespace Internal.Runtime.TypeLoader
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(
+                RuntimeMethodHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                     builder.GetRuntimeTypeHandle(Method.OwningType),
                     MethodName,
                     MethodSignature,
                     builder.GetRuntimeTypeHandles(Method.Instantiation));
+
+                return *(IntPtr*)&handle;
             }
         }
 

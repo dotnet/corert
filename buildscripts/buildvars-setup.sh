@@ -13,7 +13,7 @@ usage()
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
-
+    echo "skiptests - optional argument to skip running tests after building."
     exit 1
 }
 
@@ -221,6 +221,9 @@ while [ "$1" != "" ]; do
         -officialbuildid)
             shift
             export __ExtraMsBuildArgs="$__ExtraMsBuildArgs /p:OfficialBuildId=$1"
+            ;;
+        skiptests)
+            export __SkipTests=true
             ;;
         *)
           export __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"

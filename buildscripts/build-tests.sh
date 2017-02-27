@@ -2,6 +2,10 @@
 
 scriptRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+if [ "$__SkipTests" == "true" ]; then
+    exit 0
+fi
+
 if [ "$BUILDVARS_DONE" != 1 ]; then
     . $scriptRoot/buildvars-setup.sh $*
 fi

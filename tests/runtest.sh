@@ -6,6 +6,7 @@ usage()
     echo "    -mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit"
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
     echo "    -coreclr      : Download and run the CoreCLR repo tests"
+    echo "    -multimodule  : Compile the framework as a .so and link tests against it (ryujit only)"
     echo ""
     echo "    --- CoreCLR Subset ---"
     echo "       top200     : Runs broad coverage / CI validation (~200 tests)."
@@ -42,12 +43,16 @@ run_test_dir()
     if [ -n "${__extra_cxxflags}" ]; then
         __extra_linkflags="/p:AdditionalLinkerFlags=\"${__extra_linkflags}\""
     fi
+    if [ "${CoreRT_MultiFileConfiguration}" = "MultiModule" ]; then
+        __extra_args="${__extra_args} /p:IlcMultiModule=true"
+    fi
 
-    rm -rf ${__dir_path}/bin ${__dir_path}/obj
+    rm -rf ${__dir_path}/bin/${CoreRT_BuildArch} ${__dir_path}/obj/${CoreRT_BuildArch}
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
-    echo ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.exe /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.exe /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
+
+    echo ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/Product/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/Product/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
 
     local __exitcode=$?
 
@@ -134,7 +139,7 @@ CoreRT_CliBinDir=${CoreRT_TestRoot}/../Tools/dotnetcli
 CoreRT_BuildArch=x64
 CoreRT_BuildType=Debug
 CoreRT_TestRun=true
-CoreRT_TestCompileMode=ryujit
+CoreRT_TestCompileMode=
 CoreRT_CrossRootFS=
 CoreRT_CrossCXXFlags=
 CoreRT_CrossLinkerFlags=
@@ -195,6 +200,9 @@ while [ "$1" != "" ]; do
                 exit -1
             fi
             ;;
+        -multimodule)
+            CoreRT_MultiFileConfiguration=MultiModule;
+            ;;
         *)
             ;;
     esac
@@ -252,6 +260,11 @@ __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
 __LogDir=${CoreRT_TestRoot}/../bin/Logs/${__BuildStr}/tests
 __build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 
+
+if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
+    CoreRT_TestCompileMode=ryujit
+fi
+
 if [ ! -d $__LogDir ]; then
     mkdir -p $__LogDir
 fi
@@ -278,9 +291,13 @@ __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 for csproj in $(find src -name "*.csproj")
 do
     if [ ! -e `dirname ${csproj}`/no_unix ]; then
-        run_test_dir ${csproj} "Jit"
+        if [ "${CoreRT_TestCompileMode}" != "cpp" ]; then
+            run_test_dir ${csproj} "Jit"
+        fi
         if [ ! -e `dirname ${csproj}`/no_cpp ]; then
-            run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
+            if [ "${CoreRT_TestCompileMode}" != "ryujit" ]; then
+                run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
+            fi
         fi
     fi
 done
@@ -289,14 +306,23 @@ __TotalTests=$((${__JitTotalTests} + ${__CppTotalTests}))
 __PassedTests=$((${__JitPassedTests} + ${__CppPassedTests}))
 __FailedTests=$((${__TotalTests} - ${__PassedTests}))
 
-echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > ${__CoreRTTestBinDir}/testResults.xml
-echo "<assemblies>"  >> ${__CoreRTTestBinDir}/testResults.xml
-echo "<assembly name=\"ILCompiler\" total=\"${__TotalTests}\" passed=\"${__PassedTests}\" failed=\"${__FailedTests}\" skipped=\"0\">"  >> ${__CoreRTTestBinDir}/testResults.xml
-echo "<collection total=\"${__TotalTests}\" passed=\"${__PassedTests}\" failed=\"${__FailedTests}\" skipped=\"0\">"  >> ${__CoreRTTestBinDir}/testResults.xml
-cat "${__CoreRTTestBinDir}/testResults.tmp" >> ${__CoreRTTestBinDir}/testResults.xml
-echo "</collection>"  >> ${__CoreRTTestBinDir}/testResults.xml
-echo "</assembly>"  >> ${__CoreRTTestBinDir}/testResults.xml
-echo "</assemblies>"  >> ${__CoreRTTestBinDir}/testResults.xml
+if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
+    __TestResultsLog=${__CoreRTTestBinDir}/${CoreRT_MultiFileConfiguration}/testResults.xml
+    if [ ! -d ${__CoreRTTestBinDir}/${CoreRT_MultiFileConfiguration} ]; then
+        mkdir -p ${__CoreRTTestBinDir}/${CoreRT_MultiFileConfiguration}
+    fi
+else
+    __TestResultsLog=${__CoreRTTestBinDir}/testResults.xml
+fi
+
+echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > ${__TestResultsLog}
+echo "<assemblies>"  >> ${__TestResultsLog}
+echo "<assembly name=\"ILCompiler\" total=\"${__TotalTests}\" passed=\"${__PassedTests}\" failed=\"${__FailedTests}\" skipped=\"0\">"  >> ${__TestResultsLog}
+echo "<collection total=\"${__TotalTests}\" passed=\"${__PassedTests}\" failed=\"${__FailedTests}\" skipped=\"0\">"  >> ${__TestResultsLog}
+cat "${__CoreRTTestBinDir}/testResults.tmp" >> ${__TestResultsLog}
+echo "</collection>"  >> ${__TestResultsLog}
+echo "</assembly>"  >> ${__TestResultsLog}
+echo "</assemblies>"  >> ${__TestResultsLog}
 
 
 echo "JIT - TOTAL: ${__JitTotalTests} PASSED: ${__JitPassedTests}"

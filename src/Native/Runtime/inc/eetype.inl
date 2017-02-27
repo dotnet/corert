@@ -602,7 +602,9 @@ inline DynamicModule * EEType::get_DynamicModule()
         pMT->IsNullable() ||
         (pMT->HasStaticClassConstructor() && !pMT->HasEagerStaticClassConstructor() ||
         // need a rare flag to indicate presence of sealed virtuals
-        fHasSealedVirtuals);
+        fHasSealedVirtuals ||
+        // Is this an abstract class?
+        (!pMT->IsInterface() && pMT->GetClass()->IsAbstract()));
 }
 #endif
 

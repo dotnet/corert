@@ -9,7 +9,7 @@
     <AssemblyName>ILCompiler.MetadataTransform.Tests</AssemblyName>
     <RootNamespace>MetadataTransformTests</RootNamespace>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
-    <TestTFM>netcoreapp1.0</TestTFM>
+    <TestTFM>netcoreapp1.1</TestTFM>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

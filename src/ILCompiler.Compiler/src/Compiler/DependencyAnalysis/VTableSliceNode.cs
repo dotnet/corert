@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        protected override string GetName() => $"__vtable_{NodeFactory.NameMangler.GetMangledTypeName(_type).ToString()}";
+        protected override string GetName() => $"__vtable_{NodeFactory.NameManglerDoNotUse.GetMangledTypeName(_type).ToString()}";
 
         public override bool StaticDependenciesAreComputed => true;
 

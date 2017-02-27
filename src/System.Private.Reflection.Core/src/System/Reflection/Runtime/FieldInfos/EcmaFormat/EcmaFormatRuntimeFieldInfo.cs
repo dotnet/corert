@@ -150,6 +150,16 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             return _fieldHandle.GetHashCode();
         }
 
+        public sealed override RuntimeFieldHandle FieldHandle
+        {
+            get
+            {
+                return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
+                    DeclaringType.TypeHandle,
+                    Name);
+            }
+        }
+
         public sealed override Type[] GetOptionalCustomModifiers() { throw new NotImplementedException(); }
 
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }

@@ -118,6 +118,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeMethodHelpers.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParameters, returnParameter: null);
         }
 
+        public sealed override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {
             get

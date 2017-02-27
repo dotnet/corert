@@ -12,7 +12,7 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
+        internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
         {
             return WaitForMultipleObjects(&handle, 1, false, millisecondsTimeout);
         }

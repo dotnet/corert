@@ -7,7 +7,6 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{999BB20D-A032-4836-A587-627D243C1668}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
@@ -106,7 +105,6 @@
     <Compile Include="System\Reflection\Runtime\FieldInfos\NativeFormat\NativeFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\LiteralFieldAccessor.cs" />
-    <Compile Include="System\Reflection\Runtime\General\ApiToDoList.cs" />
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
