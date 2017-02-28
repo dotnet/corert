@@ -556,7 +556,6 @@ namespace Internal.Runtime
                 _uBaseSize = value;
             }
 #endif
-
         }
 
         internal bool IsRelatedTypeViaIAT
