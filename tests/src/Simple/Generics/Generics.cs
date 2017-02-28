@@ -24,7 +24,6 @@ class Program
         TestInstantiatingUnboxingStubs.Run();
         TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
-        TestUnusedGVMsDoNotCrashCompiler.Run();
         TestSimpleGVMScenarios.Run();
 
         return 100;
@@ -691,39 +690,6 @@ class Program
             g1[0] = new Gen1<object[]>(new object[] {new object[1]});
 
             Gen1<object[][]> g2 = new Gen1<object[][]>(new object[1][]);
-        }
-    }
-
-    class TestUnusedGVMsDoNotCrashCompiler
-    {
-        interface GvmItf
-        {
-            T Bar<T>(T t);
-        }
-
-        class HasGvm : GvmItf
-        {
-            public virtual T Foo<T>(T t)
-            {
-                return t;
-            }
-
-            public virtual T Bar<T>(T t)
-            {
-                return t;
-            }
-
-            public virtual string DoubleString(string s)
-            {
-                return s + s;
-            }
-        }
-
-        public static void Run()
-        {
-            HasGvm hasGvm = new HasGvm();
-            if (hasGvm.DoubleString("Hello") != "HelloHello")
-                throw new Exception();
         }
     }
 
