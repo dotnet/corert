@@ -319,13 +319,7 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
         {
-#if CORERT
-            throw new NotImplementedException();
-#else
-            // Project N is not capable of emitting EETypes for ByRefs.
-            byRefTypeHandle = default(RuntimeTypeHandle);
-            return false;
-#endif
+            return TypeLoaderEnvironment.Instance.TryGetByRefTypeForTargetType(targetTypeHandle, out byRefTypeHandle);
         }
 
         //

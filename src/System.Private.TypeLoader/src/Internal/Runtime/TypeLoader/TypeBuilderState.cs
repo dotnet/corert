@@ -568,7 +568,8 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else if (TypeBeingBuilt.RetrieveRuntimeTypeHandleIfPossible() ||
                              TypeBeingBuilt.IsTemplateCanonical() ||
-                             (TypeBeingBuilt is PointerType))
+                             (TypeBeingBuilt is PointerType) ||
+                             (TypeBeingBuilt is ByRefType))
                     {
                         _instanceGCLayout = s_emptyLayout;
                     }
@@ -969,7 +970,7 @@ namespace Internal.Runtime.TypeLoader
                         return (ushort)arrayType.Context.Target.PointerSize;
                     }
                 }
-                else if (TypeBeingBuilt is PointerType)
+                else if (TypeBeingBuilt is PointerType || TypeBeingBuilt is ByRefType)
                 {
                     return (ushort)TypeBeingBuilt.Context.Target.PointerSize;
                 }

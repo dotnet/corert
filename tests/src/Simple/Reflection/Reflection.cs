@@ -177,14 +177,13 @@ public class ReflectionTest
                 return Fail;
         }
 
-        // TODO: Can't be tested temporarily since it would end up calling into type loader to load a ByRef type.
-        //{
-        //    MethodInfo helloByRefMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloByRef");
-        //    object[] args = new object[] { "world", null };
-        //    helloByRefMethod.Invoke(null, args);
-        //    if ((string)args[1] != "Hello world")
-        //        return Fail;
-        //}
+        {
+            MethodInfo helloByRefMethod = typeof(InvokeTests).GetTypeInfo().GetDeclaredMethod("GetHelloByRef");
+            object[] args = new object[] { "world", null };
+            helloByRefMethod.Invoke(null, args);
+            if ((string)args[1] != "Hello world")
+                return Fail;
+        }
 
         return Pass;
     }
