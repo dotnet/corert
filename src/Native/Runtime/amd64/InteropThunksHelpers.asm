@@ -56,17 +56,16 @@ LEAF_ENTRY RhpCommonStub, _TEXT
         mov     r11, gs:[_tls_array]
         mov     rax, [r11 + rcx * POINTER_SIZE]
 
-        mov     rcx, [rsp + 8]                                     ;; Restore rcx
-        
         ;; rax = base address of TLS data
         ;; r10 = address of context cell in thunk's data
         ;; r11 = trashed
-        ;; r8 = trashed
 
         ;; store thunk address in thread static
         mov     r11, [r10]
-        mov     r8d, SECTIONREL ThunkParamSlot
-        mov     [rax + r8], r11                 ;;   ThunkParamSlot <- context slot data
+        mov     ecx, SECTIONREL ThunkParamSlot
+        mov     [rax + rcx], r11                 ;;   ThunkParamSlot <- context slot data
+
+        mov     rcx, [rsp + 8]                                     ;; Restore rcx
 
         ;; jump to the target
         mov     rax, [r10 + POINTER_SIZE]
