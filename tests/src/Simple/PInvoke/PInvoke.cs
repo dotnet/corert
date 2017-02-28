@@ -55,7 +55,7 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         public static extern bool LastErrorTest();
 
-        delegate int Delegate_Int(int a);
+        delegate int Delegate_Int(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Int(Delegate_Int del);
 
@@ -76,7 +76,7 @@ namespace PInvokeTests
             TestSafeHandle();
             TestStringArray();
             TestSizeParamIndex();
-#if !CODEGEN_CPP && Windows_NT
+#if !CODEGEN_CPP
             TestDelegate();
 #endif            
             return 100;
@@ -212,7 +212,7 @@ namespace PInvokeTests
         private static void TestDelegate()
         {
             Console.WriteLine("Testing Delegate");
-            Delegate_Int del = new Delegate_Int(Cube);
+            Delegate_Int del = new Delegate_Int(Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(del), "Delegate marshalling failed.");
             unsafe
             {
@@ -225,9 +225,9 @@ namespace PInvokeTests
             }
         }
 
-        static int Cube(int a)
+        static int Sum(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
         {
-            return a*a*a;
+            return a + b + c + d + e + f + g + h + i + j;
         }
     }
 

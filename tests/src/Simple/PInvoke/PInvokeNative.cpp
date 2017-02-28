@@ -191,9 +191,9 @@ DLL_EXPORT long __stdcall SafeHandleOutTest(HANDLE **sh)
     return (long)((size_t)(*sh));
 }
 
-DLL_EXPORT bool __stdcall ReversePInvoke_Int(int(__stdcall *fnPtr) (int))
+DLL_EXPORT bool __stdcall ReversePInvoke_Int(int(__stdcall *fnPtr) (int, int, int, int, int, int, int, int, int, int))
 {
-	return fnPtr(10) == 1000;
+    return fnPtr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) == 55;
 }
 
 DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)
