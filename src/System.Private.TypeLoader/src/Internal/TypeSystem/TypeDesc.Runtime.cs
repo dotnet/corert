@@ -167,15 +167,11 @@ namespace Internal.TypeSystem
                           (TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth) ||
                            TypeLoaderEnvironment.Instance.TryGetArrayTypeHandleForNonDynamicArrayTypeFromTemplateTable(type as ArrayType, out rtth)))
                            ||
-                        (type is PointerType && TypeSystemContext.PointerTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
+                        (type is PointerType && TypeSystemContext.PointerTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
+                           ||
+                        (type is ByRefType && TypeSystemContext.ByRefTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
                     {
                         typeAsParameterType.SetRuntimeTypeHandleUnsafe(rtth);
-                        return true;
-                    }
-                    else if (type is ByRefType)
-                    {
-                        // Byref types don't have any associated type handles, so return success at this point
-                        // since we were able to resolve the typehandle of the element type
                         return true;
                     }
                 }

@@ -550,6 +550,13 @@ namespace Internal.Runtime
             {
                 return _uBaseSize;
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _uBaseSize = value;
+            }
+#endif
+
         }
 
         internal bool IsRelatedTypeViaIAT
