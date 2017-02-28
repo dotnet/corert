@@ -35,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        protected virtual bool TrackInterfaceDispatchMapDepenendency => true;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
@@ -43,7 +45,10 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.RuntimeInterfaces.Length > 0)
             {
-                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+                if (TrackInterfaceDispatchMapDepenendency)
+                {
+                    dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+                }
 
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
