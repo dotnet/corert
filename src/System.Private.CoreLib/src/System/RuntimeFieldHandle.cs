@@ -29,6 +29,9 @@ namespace System
 
         public bool Equals(RuntimeFieldHandle handle)
         {
+            if (_value == handle._value)
+                return true;
+
             string fieldName1, fieldName2;
             RuntimeTypeHandle declaringType1, declaringType2;
 
