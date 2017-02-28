@@ -705,7 +705,7 @@
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CLSIDFromProgID.cs">
       <Link>Interop\Windows\mincore\Interop.CLSIDFromProgID.cs</Link>
     </Compile>
-    <Complle Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
+    <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeAccessException.cs" />
     <Compile Include="System\TypeCode.cs" />
