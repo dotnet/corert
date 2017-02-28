@@ -429,6 +429,25 @@ namespace System.Reflection.Runtime.TypeInfos
             public static readonly ConstructedGenericTypeTable Table = new ConstructedGenericTypeTable();
         }
     }
+
+    internal sealed partial class RuntimeCLSIDTypeInfo
+    {
+        public static RuntimeCLSIDTypeInfo GetRuntimeCLSIDTypeInfo(Guid clsid, string server)
+        {
+            UnificationKey key = new UnificationKey(clsid, server);
+            return ClsIdTypeTable.Table.GetOrAdd(key);
+        }
+
+        private sealed class ClsIdTypeTable : ConcurrentUnifierWKeyed<UnificationKey, RuntimeCLSIDTypeInfo>
+        {
+            protected sealed override RuntimeCLSIDTypeInfo Factory(UnificationKey key)
+            {
+                return new RuntimeCLSIDTypeInfo(key.ClsId, key.Server);
+            }
+
+            public static readonly ClsIdTypeTable Table = new ClsIdTypeTable();
+        }
+    }
 }
 
 

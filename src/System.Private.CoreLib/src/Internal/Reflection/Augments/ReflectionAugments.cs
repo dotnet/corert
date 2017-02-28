@@ -141,5 +141,7 @@ namespace Internal.Reflection.Augments
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public abstract Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure);
+
+        public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
     }
 }

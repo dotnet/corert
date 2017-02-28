@@ -290,12 +290,26 @@ namespace System
         public static Type GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
         public static Type GetTypeFromCLSID(Guid clsid, bool throwOnError) => GetTypeFromCLSID(clsid, null, throwOnError: throwOnError);
         public static Type GetTypeFromCLSID(Guid clsid, string server) => GetTypeFromCLSID(clsid, server, throwOnError: false);
-        public static Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError) { throw new NotImplementedException(); }
+        public static Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError) => ReflectionAugments.ReflectionCoreCallbacks.GetTypeFromCLSID(clsid, server, throwOnError);
 
         public static Type GetTypeFromProgID(string progID) => GetTypeFromProgID(progID, null, throwOnError: false);
         public static Type GetTypeFromProgID(string progID, bool throwOnError) => GetTypeFromProgID(progID, null, throwOnError: throwOnError);
         public static Type GetTypeFromProgID(string progID, string server) => GetTypeFromProgID(progID, server, throwOnError: false);
-        public static Type GetTypeFromProgID(string progID, string server, bool throwOnError) { throw new NotImplementedException(); }
+        public static Type GetTypeFromProgID(string progID, string server, bool throwOnError)
+        {
+            if (progID == null)
+                throw new ArgumentNullException(nameof(progID));
+
+            Guid clsid;
+            Exception exception = GetCLSIDFromProgID(progID, out clsid);
+            if (exception != null)
+            {
+                if (throwOnError)
+                    throw exception;
+                return null;
+            }
+            return Type.GetTypeFromCLSID(clsid, server, throwOnError);
+        }
 
         public abstract Type BaseType { get; }
         public object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args) => InvokeMember(name, invokeAttr, binder, target, args, null, null, null);

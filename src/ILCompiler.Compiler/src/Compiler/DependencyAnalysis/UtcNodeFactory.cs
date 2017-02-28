@@ -71,8 +71,8 @@ namespace ILCompiler
             }
         }
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), null /* pick name mangler */)
+        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, NameMangler nameMangler) 
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = Path.GetFileNameWithoutExtension(outputFile);

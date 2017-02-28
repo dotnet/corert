@@ -28,10 +28,12 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <!-- TODO: We should always include this -->
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
   </ItemGroup>
@@ -130,6 +132,7 @@
     <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeClsIdNullaryConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeDummyMethodInfo.cs" />
@@ -158,6 +161,8 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeArrayTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeByRefTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfo.cs" />

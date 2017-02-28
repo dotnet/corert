@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
@@ -64,14 +64,49 @@ namespace System
             return !left.Equals(right);
         }
 
+        public RuntimeFieldHandle(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+
+            try
+            {
+                FieldInfo field = (FieldInfo)info.GetValue("FieldObj", typeof(FieldInfo));
+                if (field == null)
+                    throw new SerializationException(SR.Serialization_InsufficientState);
+
+                this = field.FieldHandle;
+            }
+            catch (Exception e) when (!(e is SerializationException))
+            {
+                throw new SerializationException(e.Message, e);
+            }
+        }
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
 
-            // TODO
-            throw new PlatformNotSupportedException();
+            try
+            {
+                if (_value == IntPtr.Zero)
+                    throw new SerializationException(SR.Serialization_InvalidFieldState);
+
+                string fieldName;
+                RuntimeTypeHandle declaringType;
+                RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleComponents(this, out declaringType, out fieldName);
+
+                FieldInfo field = FieldInfo.GetFieldFromHandle(this, declaringType);
+                if (field == null)
+                    throw new SerializationException(SR.RuntimeFieldHandleSer_InsufficientMetadata);
+
+                info.AddValue("FieldObj", field, typeof(FieldInfo));
+            }
+            catch (Exception e) when (!(e is SerializationException))
+            {
+                throw new SerializationException(e.Message, e);
+            }
         }
     }
 }

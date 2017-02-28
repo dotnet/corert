@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
@@ -97,14 +97,51 @@ namespace System
             return !left.Equals(right);
         }
 
+        public RuntimeMethodHandle(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+
+            try
+            {
+                MethodBase method = (MethodBase)info.GetValue("MethodObj", typeof(MethodBase));
+                if (method == null)
+                    throw new SerializationException(SR.Serialization_InsufficientState);
+
+                this = method.MethodHandle;
+            }
+            catch (Exception e) when (!(e is SerializationException))
+            {
+                throw new SerializationException(e.Message, e);
+            }
+        }
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
 
-            // TODO
-            throw new PlatformNotSupportedException();
+            try
+            {
+                if (_value == IntPtr.Zero)
+                    throw new SerializationException(SR.Serialization_InvalidFieldState);
+
+                RuntimeTypeHandle declaringType;
+                MethodNameAndSignature nameAndSignature;
+                RuntimeTypeHandle[] genericArgs;
+                RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
+
+                // This is either a RuntimeMethodInfo or a RuntimeConstructorInfo
+                MethodBase method = MethodInfo.GetMethodFromHandle(this, declaringType);
+                if (method == null)
+                    throw new SerializationException(SR.RuntimeMethodHandleSer_InsufficientMetadata);
+
+                info.AddValue("MethodObj", method, typeof(MethodBase));
+            }
+            catch (Exception e) when (!(e is SerializationException))
+            {
+                throw new SerializationException(e.Message, e);
+            }
         }
     }
 }

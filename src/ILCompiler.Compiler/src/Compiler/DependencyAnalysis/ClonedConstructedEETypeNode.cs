@@ -15,6 +15,10 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName() => this.GetMangledName() + " cloned";
 
+        // Cloned EEType does not have its own interface dispatch map. The runtime dispatching
+        // routine will use its primary type's dispatch map instead.
+        protected override bool TrackInterfaceDispatchMapDepenendency => false;
+
         //
         // A cloned type must be named differently than the type it is a clone of so the linker
         // will have an unambiguous symbol to resolve

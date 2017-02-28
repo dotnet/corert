@@ -700,6 +700,12 @@
     <Compile Include="System\Type.Enum.cs" />
     <Compile Include="System\Type.Helpers.cs" />
     <Compile Include="System\Type.Internal.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="System\Type.Win32.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CLSIDFromProgID.cs">
+      <Link>Interop\Windows\mincore\Interop.CLSIDFromProgID.cs</Link>
+    </Compile>
+    <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeAccessException.cs" />
     <Compile Include="System\TypeCode.cs" />
