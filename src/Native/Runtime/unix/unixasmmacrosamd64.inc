@@ -194,7 +194,7 @@ C_FUNC(\Name):
 
 .endm
 
-#define SIZEOF_MAX_FP_ARG_SPILL  0x80
+#define SIZEOF_FP_REGS 0x80
 
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS ofs
 
