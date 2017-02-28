@@ -11,10 +11,18 @@ LEAF_ENTRY RhpCommonStub, _TEXT
 
     PUSH_ARGUMENT_REGISTERS
 
-    INLINE_GET_TLS_VAR
+    // +8 for alignment
+    alloc_stack    (SIZEOF_MAX_FP_ARG_SPILL + 8)
+    SAVE_FLOAT_ARGUMENT_REGISTERS 0 
+
+    INLINE_GET_TLS_VAR  tls_thunkData
 
     mov    r11, [r10]
     mov    qword ptr [rax], r11
+
+
+    RESTORE_FLOAT_ARGUMENT_REGISTERS 0 
+    free_stack    (SIZEOF_MAX_FP_ARG_SPILL + 8)
 
     POP_ARGUMENT_REGISTERS
 
@@ -31,7 +39,7 @@ LEAF_END RhpGetCommonStubAddress, _TEXT
 
 LEAF_ENTRY RhpGetCurrentThunkContext, _TEXT
 
-    INLINE_GET_TLS_VAR
+    INLINE_GET_TLS_VAR  tls_thunkData
 
     mov    rax, qword ptr [rax]   
     ret
