@@ -209,9 +209,9 @@ class Program
             {
                 Func<MediumStruct, MediumStruct> f = o.MediumStructGeneric<object>;
                 MediumStruct x = new MediumStruct { X = 12, Y = 34, Z = 56, W = 78 };
-                /*MediumStruct result = f(x);
+                MediumStruct result = f(x);
                 if (result.X != x.X || result.Y != x.Y || result.Z != x.Z || result.W != x.W)
-                    throw new Exception();*/
+                    throw new Exception();
             }
 
             unsafe
@@ -221,11 +221,11 @@ class Program
                 for (int i = 0; i < BigStruct.Length; i++)
                     x.Bytes[i] = (byte)(i * 2);
 
-                /*BigStruct result = f(x);
+                BigStruct result = f(x);
 
                 for (int i = 0; i < BigStruct.Length; i++)
                     if (x.Bytes[i] != result.Bytes[i])
-                        throw new Exception();*/
+                        throw new Exception();
             }
         }
     }
