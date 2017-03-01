@@ -63,6 +63,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             throw new PlatformNotSupportedException();
         }
 
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+        
         private InvokerOptions _options;
         private Func<Object, Object[], Object> _invoker;
         private RuntimeTypeHandle _thisType;

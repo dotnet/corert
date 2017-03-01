@@ -347,6 +347,8 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        internal IntPtr LdFtnResult => MethodInvoker.LdFtnResult;
+
         private volatile MethodInvoker _lazyMethodInvoker = null;
 
         /// <summary>

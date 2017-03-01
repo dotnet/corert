@@ -97,6 +97,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             throw NotImplemented.ByDesign;
         }
 
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         private void CheckArgumentCount(Object[] arguments, int expected)
         {
             if (arguments.Length != expected)
