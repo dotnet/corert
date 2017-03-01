@@ -1403,8 +1403,10 @@ namespace Internal.TypeSystem.Interop
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
+                case TypeFlags.Boolean:
                     codestream.Emit(ILOpcode.ldind_i1);
                     break;
+                case TypeFlags.Char:
                 case TypeFlags.UInt16:
                 case TypeFlags.Int16:
                     codestream.Emit(ILOpcode.ldind_i2);
@@ -1417,8 +1419,26 @@ namespace Internal.TypeSystem.Interop
                 case TypeFlags.Int64:
                     codestream.Emit(ILOpcode.ldind_i8);
                     break;
-                default:
+                case TypeFlags.Single:
+                    codestream.Emit(ILOpcode.ldind_r4);
+                    break;
+                case TypeFlags.Double:
+                    codestream.Emit(ILOpcode.ldind_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
                     codestream.Emit(ILOpcode.ldind_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    codestream.Emit(ILOpcode.ldind_ref);
+                    break;
+                default:
+                    codestream.Emit(ILOpcode.ldobj, _ilCodeStreams.Emitter.NewToken(type));
                     break;
             }
         }
@@ -1428,8 +1448,10 @@ namespace Internal.TypeSystem.Interop
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
+                case TypeFlags.Boolean:
                     codestream.Emit(ILOpcode.stind_i1);
                     break;
+                case TypeFlags.Char:
                 case TypeFlags.UInt16:
                 case TypeFlags.Int16:
                     codestream.Emit(ILOpcode.stind_i2);
@@ -1442,8 +1464,26 @@ namespace Internal.TypeSystem.Interop
                 case TypeFlags.Int64:
                     codestream.Emit(ILOpcode.stind_i8);
                     break;
-                default:
+                case TypeFlags.Single:
+                    codestream.Emit(ILOpcode.stind_r4);
+                    break;
+                case TypeFlags.Double:
+                    codestream.Emit(ILOpcode.stind_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
                     codestream.Emit(ILOpcode.stind_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    codestream.Emit(ILOpcode.stind_ref);
+                    break;
+                default:
+                    codestream.Emit(ILOpcode.stobj, _ilCodeStreams.Emitter.NewToken(type));
                     break;
             }
         }
@@ -1454,8 +1494,10 @@ namespace Internal.TypeSystem.Interop
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
+                case TypeFlags.Boolean:
                     codestream.Emit(ILOpcode.stelem_i1);
                     break;
+                case TypeFlags.Char:
                 case TypeFlags.UInt16:
                 case TypeFlags.Int16:
                     codestream.Emit(ILOpcode.stelem_i2);
@@ -1468,20 +1510,40 @@ namespace Internal.TypeSystem.Interop
                 case TypeFlags.Int64:
                     codestream.Emit(ILOpcode.stelem_i8);
                     break;
-                default:
+                case TypeFlags.Single:
+                    codestream.Emit(ILOpcode.stelem_r4);
+                    break;
+                case TypeFlags.Double:
+                    codestream.Emit(ILOpcode.stelem_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    codestream.Emit(ILOpcode.stelem_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:                    
+                case TypeFlags.Interface:
                     codestream.Emit(ILOpcode.stelem_ref);
+                    break;
+                default:
+                    codestream.Emit(ILOpcode.stelem, _ilCodeStreams.Emitter.NewToken(type));
                     break;
             }
         }
 
-       private void EmitLdElem(ILCodeStream codestream, TypeDesc type)
+        private void EmitLdElem(ILCodeStream codestream, TypeDesc type)
         {
             switch (type.Category)
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
+                case TypeFlags.Boolean:
                     codestream.Emit(ILOpcode.ldelem_i1);
                     break;
+                case TypeFlags.Char:
                 case TypeFlags.UInt16:
                 case TypeFlags.Int16:
                     codestream.Emit(ILOpcode.ldelem_i2);
@@ -1494,8 +1556,26 @@ namespace Internal.TypeSystem.Interop
                 case TypeFlags.Int64:
                     codestream.Emit(ILOpcode.ldelem_i8);
                     break;
-                default:
+                case TypeFlags.Single:
+                    codestream.Emit(ILOpcode.ldelem_r4);
+                    break;
+                case TypeFlags.Double:
+                    codestream.Emit(ILOpcode.ldelem_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    codestream.Emit(ILOpcode.ldelem_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
                     codestream.Emit(ILOpcode.ldelem_ref);
+                    break;
+                default:
+                    codestream.Emit(ILOpcode.ldelem, _ilCodeStreams.Emitter.NewToken(type));
                     break;
             }
         }
