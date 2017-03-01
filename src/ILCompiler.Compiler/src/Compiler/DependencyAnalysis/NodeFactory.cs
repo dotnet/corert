@@ -214,9 +214,9 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
-            _fatFunctionPointers = new NodeCache<MethodDesc, FatFunctionPointerNode>(method =>
+            _fatFunctionPointers = new NodeCache<MethodKey, FatFunctionPointerNode>(method =>
             {
-                return new FatFunctionPointerNode(method);
+                return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub);
             });
 
             _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
@@ -229,7 +229,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
-            _shadowConcreteMethods = new NodeCache<MethodDesc, IMethodNode>(CreateShadowConcreteMethodNode);
+            _shadowConcreteMethods = new NodeCache<MethodKey, IMethodNode>(CreateShadowConcreteMethodNode);
 
             _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
@@ -342,7 +342,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected abstract ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, Object> helperCall);
 
-        protected abstract IMethodNode CreateShadowConcreteMethodNode(MethodDesc method);
+        protected abstract IMethodNode CreateShadowConcreteMethodNode(MethodKey method);
 
         private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
 
@@ -565,11 +565,11 @@ namespace ILCompiler.DependencyAnalysis
             return _methodEntrypoints.GetOrAdd(method);
         }
 
-        private NodeCache<MethodDesc, FatFunctionPointerNode> _fatFunctionPointers;
+        private NodeCache<MethodKey, FatFunctionPointerNode> _fatFunctionPointers;
 
-        public IMethodNode FatFunctionPointer(MethodDesc method)
+        public IMethodNode FatFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            return _fatFunctionPointers.GetOrAdd(method);
+            return _fatFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
@@ -584,11 +584,11 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmTableEntries.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, IMethodNode> _shadowConcreteMethods;
+        private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
 
-        public IMethodNode ShadowConcreteMethod(MethodDesc method)
+        public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
         {
-            return _shadowConcreteMethods.GetOrAdd(method);
+            return _shadowConcreteMethods.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
         private NodeCache<MethodDesc, IMethodNode> _runtimeDeterminedMethods;
@@ -799,6 +799,22 @@ namespace ILCompiler.DependencyAnalysis
 
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
             MetadataManager.AttachToDependencyGraph(graph);
+        }
+
+        protected struct MethodKey : IEquatable<MethodKey>
+        {
+            public readonly MethodDesc Method;
+            public readonly bool IsUnboxingStub;
+
+            public MethodKey(MethodDesc method, bool isUnboxingStub)
+            {
+                Method = method;
+                IsUnboxingStub = isUnboxingStub;
+            }
+
+            public bool Equals(MethodKey other) => Method == other.Method && IsUnboxingStub == other.IsUnboxingStub;
+            public override bool Equals(object obj) => obj is MethodKey && Equals((MethodKey)obj);
+            public override int GetHashCode() => Method.GetHashCode();
         }
     }
 
