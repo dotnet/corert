@@ -42,6 +42,25 @@ DLL_EXPORT int __stdcall CheckIncremental(int *array, int sz)
     return 0;
 }
 
+struct Foo
+{
+    int a;
+    float b;
+};
+
+DLL_EXPORT int __stdcall CheckIncremental_Foo(Foo *array, int sz)
+{
+    if (array == NULL)
+        return 1;
+
+    for (int i = 0; i < sz; i++)
+    {
+        if (array[i].a != i || array[i].b != i)
+            return 1;
+    }
+    return 0;
+}  
+
 DLL_EXPORT int __stdcall Inc(int *val)
 {
     if (val == NULL)
