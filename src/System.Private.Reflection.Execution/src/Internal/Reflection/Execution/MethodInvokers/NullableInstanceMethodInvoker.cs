@@ -162,6 +162,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             throw new ArgumentException(SR.Arg_DlgtTargMeth);
         }
 
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         private void CheckArgumentCount(Object[] arguments, int expected)
         {
             if (arguments.Length != expected)

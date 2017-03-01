@@ -41,6 +41,8 @@ namespace Internal.Reflection.Execution.MethodInvokers
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
+
+        public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
     }
 }
 

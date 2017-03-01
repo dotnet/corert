@@ -24,5 +24,13 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
+
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+            }
+        }
     }
 }

@@ -179,6 +179,8 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        internal IntPtr LdFtnResult => MethodInvoker.LdFtnResult;
+
         protected abstract RuntimeParameterInfo[] RuntimeParameters { get; }
 
         protected abstract MethodInvoker UncachedMethodInvoker { get; }

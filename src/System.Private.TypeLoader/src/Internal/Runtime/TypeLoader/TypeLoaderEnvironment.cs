@@ -118,7 +118,6 @@ namespace Internal.Runtime.TypeLoader
         {
             Instance = new TypeLoaderEnvironment();
             RuntimeAugments.InitializeLookups(new Callbacks());
-            s_nativeFormatStrings = new LowLevelDictionary<string, IntPtr>();
             NoStaticsData = (IntPtr)1;
         }
 

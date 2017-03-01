@@ -65,6 +65,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
+        public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
 
         private RuntimeTypeHandle _declaringTypeHandle;
     }
