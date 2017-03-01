@@ -25,6 +25,7 @@ class Program
         TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
+        TestGvmDependencies.Run();
 
         return 100;
     }
@@ -902,6 +903,40 @@ class Program
 
             if (s_NumErrors != 0)
                 throw new Exception();
+        }
+    }
+
+    class TestGvmDependencies
+    {
+        class Atom { }
+
+        class Foo
+        {
+            public virtual object Frob<T>()
+            {
+                return new T[0, 0];
+            }
+        }
+
+        class Bar : Foo
+        {
+            public override object Frob<T>()
+            {
+                return new T[0, 0, 0];
+            }
+        }
+
+        public static void Run()
+        {
+            {
+                Foo x = new Foo();
+                x.Frob<Atom>();
+            }
+
+            {
+                Foo x = new Bar();
+                x.Frob<Atom>();
+            }
         }
     }
 }
