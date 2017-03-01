@@ -60,7 +60,7 @@ namespace Internal.Runtime.TypeLoader
             using (LockHolder.Hold(_typeLoaderLock))
             {
                 IntPtr result;
-                if (s_nativeFormatStrings.TryGetValue(str, out result))
+                if (_nativeFormatStrings.TryGetValue(str, out result))
                     return result;
 
                 NativePrimitiveEncoder stringEncoder = new NativePrimitiveEncoder();
@@ -75,12 +75,12 @@ namespace Internal.Runtime.TypeLoader
                 {
                     stringEncoder.Save((byte*)allocatedNativeFormatString.ToPointer(), stringEncoder.Size);
                 }
-                s_nativeFormatStrings.Add(str, allocatedNativeFormatString);
+                _nativeFormatStrings.Add(str, allocatedNativeFormatString);
                 return allocatedNativeFormatString;
             }
         }
 
-        private static LowLevelDictionary<string, IntPtr> s_nativeFormatStrings;
+        private LowLevelDictionary<string, IntPtr> _nativeFormatStrings = new LowLevelDictionary<string, IntPtr>();
         #endregion
 
 
@@ -163,8 +163,8 @@ namespace Internal.Runtime.TypeLoader
             public override int GetHashCode() { return _hashcode; }
         }
 
-        private static LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle> s_runtimeFieldHandles;
-        private static LowLevelDictionary<RuntimeMethodHandleKey, RuntimeMethodHandle> s_runtimeMethodHandles;
+        private LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle> _runtimeFieldHandles = new LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle>();
+        private LowLevelDictionary<RuntimeMethodHandleKey, RuntimeMethodHandle> _runtimeMethodHandles = new LowLevelDictionary<RuntimeMethodHandleKey, RuntimeMethodHandle>();
         #endregion
 
 
@@ -182,9 +182,9 @@ namespace Internal.Runtime.TypeLoader
             RuntimeFieldHandleKey key = new RuntimeFieldHandleKey(declaringTypeHandle, fieldNameStr);
             RuntimeFieldHandle runtimeFieldHandle = default(RuntimeFieldHandle);
 
-            lock (s_runtimeFieldHandles)
+            lock (_runtimeFieldHandles)
             {
-                if (!s_runtimeFieldHandles.TryGetValue(key, out runtimeFieldHandle))
+                if (!_runtimeFieldHandles.TryGetValue(key, out runtimeFieldHandle))
                 {
                     IntPtr runtimeFieldHandleValue = MemoryHelpers.AllocateMemory(sizeof(DynamicFieldHandleInfo));
                     if (runtimeFieldHandleValue == IntPtr.Zero)
@@ -198,7 +198,7 @@ namespace Internal.Runtime.TypeLoader
                     runtimeFieldHandleValue = runtimeFieldHandleValue + 1;
                     runtimeFieldHandle = *(RuntimeFieldHandle*)&runtimeFieldHandleValue;
 
-                    s_runtimeFieldHandles.Add(key, runtimeFieldHandle);
+                    _runtimeFieldHandles.Add(key, runtimeFieldHandle);
                 }
 
                 return runtimeFieldHandle;
@@ -285,9 +285,9 @@ namespace Internal.Runtime.TypeLoader
             RuntimeMethodHandleKey key = new RuntimeMethodHandleKey(declaringTypeHandle, methodNameStr, methodSignature, genericMethodArgs);
             RuntimeMethodHandle runtimeMethodHandle = default(RuntimeMethodHandle);
 
-            lock (s_runtimeMethodHandles)
+            lock (_runtimeMethodHandles)
             {
-                if (!s_runtimeMethodHandles.TryGetValue(key, out runtimeMethodHandle))
+                if (!_runtimeMethodHandles.TryGetValue(key, out runtimeMethodHandle))
                 {
                     int sizeToAllocate = sizeof(DynamicMethodHandleInfo);
                     // Use checked arithmetics to ensure there aren't any overflows/truncations
@@ -312,7 +312,7 @@ namespace Internal.Runtime.TypeLoader
                     runtimeMethodHandleValue = runtimeMethodHandleValue + 1;
                     runtimeMethodHandle = * (RuntimeMethodHandle*)&runtimeMethodHandleValue;
 
-                    s_runtimeMethodHandles.Add(key, runtimeMethodHandle);
+                    _runtimeMethodHandles.Add(key, runtimeMethodHandle);
                 }
 
                 return runtimeMethodHandle;
