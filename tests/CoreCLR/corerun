@@ -20,7 +20,7 @@ cp *.dll native/ 2>/dev/null
 # Remove the test executable from the arg list so it isn't passed to test execution
 shift
 
-native/${TestFileName} $*
+native/${TestFileName} "$@"
 
 testScriptExitCode=$?
 
