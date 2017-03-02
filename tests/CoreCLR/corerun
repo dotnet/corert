@@ -14,9 +14,6 @@ __msbuild_dir=${CoreRT_TestRoot}/../Tools
 echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
 ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
 
-# Some tests (interop) have native artifacts they depend on. Copy all DLLs to be sure we have them.
-cp *.dll native/ 2>/dev/null
-
 # Remove the test executable from the arg list so it isn't passed to test execution
 shift
 
