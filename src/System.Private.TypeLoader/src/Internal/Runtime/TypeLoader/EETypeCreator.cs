@@ -76,6 +76,11 @@ namespace Internal.Runtime.TypeLoader
             rtth.ToEETypePtr()->RelatedParameterType = relatedTypeHandle.ToEETypePtr();
         }
 
+        public static unsafe void SetParameterizedTypeShape(this RuntimeTypeHandle rtth, uint value)
+        {
+            rtth.ToEETypePtr()->ParameterizedTypeShape = value;
+        }
+
         public static unsafe void SetBaseType(this RuntimeTypeHandle rtth, RuntimeTypeHandle baseTypeHandle)
         {
             rtth.ToEETypePtr()->BaseType = baseTypeHandle.ToEETypePtr();
@@ -976,6 +981,24 @@ namespace Internal.Runtime.TypeLoader
             return state.HalfBakedRuntimeTypeHandle;
         }
 
+        public static RuntimeTypeHandle CreateByRefEEType(UInt32 hashCodeOfNewType, RuntimeTypeHandle pointeeTypeHandle, TypeDesc byRefType)
+        {
+            TypeBuilderState state = new TypeBuilderState(byRefType);
+
+            // ByRef and pointer types look similar enough that we can use void* as a template.
+            // Ideally this should be typeof(void&) but C# doesn't support that syntax. We adjust for this below.
+            CreateEETypeWorker(typeof(void*).TypeHandle.ToEETypePtr(), hashCodeOfNewType, 0, false, state);
+            Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
+
+            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->RelatedParameterType = pointeeTypeHandle.ToEETypePtr();
+
+            // We used a pointer as a template. We need to make this a byref.
+            Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
+            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape = ParameterizedTypeShapeConstants.ByRef;
+
+            return state.HalfBakedRuntimeTypeHandle;
+        }
+
         public static RuntimeTypeHandle CreateEEType(TypeDesc type, TypeBuilderState state)
         {
             Debug.Assert(type != null && state != null);
@@ -983,7 +1006,7 @@ namespace Internal.Runtime.TypeLoader
             EEType* pTemplateEEType = null;
             bool requireVtableSlotMapping = false;
 
-            if (type is PointerType)
+            if (type is PointerType || type is ByRefType)
             {
                 Debug.Assert(0 == state.NonGcDataSize);
                 Debug.Assert(false == state.HasStaticConstructor);
@@ -992,7 +1015,10 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(0 == state.NumSealedVTableEntries);
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
+
+                // Pointers and ByRefs only differ by the ParameterizedTypeShape value.
                 RuntimeTypeHandle templateTypeHandle = typeof(void*).TypeHandle;
+
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();
             }
             else if ((type is MetadataType) && (state.TemplateType == null || !state.TemplateType.RetrieveRuntimeTypeHandleIfPossible()))

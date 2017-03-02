@@ -10,21 +10,21 @@
 LEAF_ENTRY RhpCommonStub, _TEXT
 
     PUSH_ARGUMENT_REGISTERS
+    push_register    r10
 
-    // +8 for alignment
-    alloc_stack    (SIZEOF_MAX_FP_ARG_SPILL + 8)
+    alloc_stack    SIZEOF_FP_REGS 
     SAVE_FLOAT_ARGUMENT_REGISTERS 0 
 
     INLINE_GET_TLS_VAR  tls_thunkData
 
+    RESTORE_FLOAT_ARGUMENT_REGISTERS 0 
+    free_stack    SIZEOF_FP_REGS
+
+    pop_register    r10
+    POP_ARGUMENT_REGISTERS
+
     mov    r11, [r10]
     mov    qword ptr [rax], r11
-
-
-    RESTORE_FLOAT_ARGUMENT_REGISTERS 0 
-    free_stack    (SIZEOF_MAX_FP_ARG_SPILL + 8)
-
-    POP_ARGUMENT_REGISTERS
 
     mov    rax, [r10 + POINTER_SIZE]
     jmp    rax

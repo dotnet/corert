@@ -613,6 +613,11 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().IsPointer;
         }
 
+        public static bool IsByRefType(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToEETypePtr().IsByRef;
+        }
+
         public static bool IsGenericTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsGenericTypeDefinition;

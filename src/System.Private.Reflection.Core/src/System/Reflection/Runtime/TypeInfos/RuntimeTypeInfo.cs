@@ -543,9 +543,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!typeHandle.IsNull())
                     return typeHandle;
 
-                if (IsByRef)
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_NoTypeHandleForByRef);
-
                 // If a constructed type doesn't have an type handle, it's either because the reducer tossed it (in which case,
                 // we would thrown a MissingMetadataException when attempting to construct the type) or because one of
                 // component types contains open type parameters. Since we eliminated the first case, it must be the second.

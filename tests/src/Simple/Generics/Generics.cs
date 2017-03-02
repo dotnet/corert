@@ -24,7 +24,6 @@ class Program
         TestInstantiatingUnboxingStubs.Run();
         TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
-        TestUnusedGVMsDoNotCrashCompiler.Run();
         TestSimpleGVMScenarios.Run();
 
         return 100;
@@ -209,9 +208,9 @@ class Program
             {
                 Func<MediumStruct, MediumStruct> f = o.MediumStructGeneric<object>;
                 MediumStruct x = new MediumStruct { X = 12, Y = 34, Z = 56, W = 78 };
-                /*MediumStruct result = f(x);
+                MediumStruct result = f(x);
                 if (result.X != x.X || result.Y != x.Y || result.Z != x.Z || result.W != x.W)
-                    throw new Exception();*/
+                    throw new Exception();
             }
 
             unsafe
@@ -221,11 +220,11 @@ class Program
                 for (int i = 0; i < BigStruct.Length; i++)
                     x.Bytes[i] = (byte)(i * 2);
 
-                /*BigStruct result = f(x);
+                BigStruct result = f(x);
 
                 for (int i = 0; i < BigStruct.Length; i++)
                     if (x.Bytes[i] != result.Bytes[i])
-                        throw new Exception();*/
+                        throw new Exception();
             }
         }
     }
@@ -327,12 +326,32 @@ class Program
             }
         }
 
+        class NonGeneric
+        {
+            public static readonly string Message;
+
+            static NonGeneric()
+            {
+                Message = "Hi there";
+            }
+
+            public static string Get<T>(object o)
+            {
+                if (o is T[])
+                    return Message;
+                return null;
+            }
+        }
+
         public static void Run()
         {
             if (Gen2<string>.GetFromClassParam() != "Hello")
                 throw new Exception();
 
             if (Gen2<string>.GetFromMethodParam() != "World")
+                throw new Exception();
+
+            if (NonGeneric.Get<object>(new object[0]) != "Hi there")
                 throw new Exception();
         }
     }
@@ -671,39 +690,6 @@ class Program
             g1[0] = new Gen1<object[]>(new object[] {new object[1]});
 
             Gen1<object[][]> g2 = new Gen1<object[][]>(new object[1][]);
-        }
-    }
-
-    class TestUnusedGVMsDoNotCrashCompiler
-    {
-        interface GvmItf
-        {
-            T Bar<T>(T t);
-        }
-
-        class HasGvm : GvmItf
-        {
-            public virtual T Foo<T>(T t)
-            {
-                return t;
-            }
-
-            public virtual T Bar<T>(T t)
-            {
-                return t;
-            }
-
-            public virtual string DoubleString(string s)
-            {
-                return s + s;
-            }
-        }
-
-        public static void Run()
-        {
-            HasGvm hasGvm = new HasGvm();
-            if (hasGvm.DoubleString("Hello") != "HelloHello")
-                throw new Exception();
         }
     }
 

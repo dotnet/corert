@@ -213,9 +213,6 @@
   <data name="ArgumentException_InvalidArrayElementType" xml:space="preserve">
     <value>The type '{0}' may not be used as an array element type.</value>
   </data>
-  <data name="PlatformNotSupported_NoTypeHandleForByRef" xml:space="preserve">
-    <value>TypeHandles are not supported for types that return true for IsByRef.</value>
-  </data>
   <data name="PlatformNotSupported_NoTypeHandleForOpenTypes" xml:space="preserve">
     <value>TypeHandles are not supported for types that return true for ContainsGenericParameters.</value>
   </data>

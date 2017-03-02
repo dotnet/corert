@@ -96,6 +96,12 @@ namespace Internal.TypeSystem
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable PointerTypesCache { get; } =
             new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
 
+        /// <summary>
+        /// Cache of ByRef types created by the builder to prevent duplication
+        /// </summary>
+        internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable ByRefTypesCache { get; } =
+            new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
+
         internal TypeDesc GetTypeFromCorElementType(CorElementType corElementType)
         {
             switch (corElementType)
@@ -260,6 +266,12 @@ namespace Internal.TypeSystem
                 RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(rtth);
                 TypeDesc targetType = ResolveRuntimeTypeHandle(targetTypeHandle);
                 returnedType = GetPointerType(targetType);
+            }
+            else if (RuntimeAugments.IsByRefType(rtth))
+            {
+                RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(rtth);
+                TypeDesc targetType = ResolveRuntimeTypeHandle(targetTypeHandle);
+                returnedType = GetByRefType(targetType);
             }
             else
             {
