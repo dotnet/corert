@@ -14,6 +14,7 @@ class Program
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
         TestDelegateFatFunctionPointers.Run();
+        TestDelegateToCanonMethods.Run();
         TestVirtualMethodUseTracking.Run();
         TestSlotsInHierarchy.Run();
         TestReflectionInvoke.Run();
@@ -25,6 +26,7 @@ class Program
         TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
+        TestGvmDependencies.Run();
 
         return 100;
     }
@@ -226,6 +228,151 @@ class Program
                     if (x.Bytes[i] != result.Bytes[i])
                         throw new Exception();
             }
+        }
+    }
+
+    class TestDelegateToCanonMethods
+    {
+        class Foo
+        {
+            public readonly int Value;
+            public Foo(int value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+
+        class Bar
+        {
+            public readonly int Value;
+            public Bar(int value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+
+        class GenClass<T>
+        {
+            public readonly T X;
+
+            public GenClass(T x)
+            {
+                X = x;
+            }
+
+            public string MakeString()
+            {
+                // Use a constructed type that is not used elsewhere
+                return typeof(T[,]).GetElementType().Name + ": " + X.ToString();
+            }
+
+            public string MakeGenString<U>()
+            {
+                // Use a constructed type that is not used elsewhere
+                return typeof(T[,,]).GetElementType().Name + ", " + 
+                    typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
+            }
+        }
+
+        struct GenStruct<T>
+        {
+            public readonly T X;
+
+            public GenStruct(T x)
+            {
+                X = x;
+            }
+
+            public string MakeString()
+            {
+                // Use a constructed type that is not used elsewhere
+                return typeof(T[,]).GetElementType().Name + ": " + X.ToString();
+            }
+
+            public string MakeGenString<U>()
+            {
+                // Use a constructed type that is not used elsewhere
+                return typeof(T[,,]).GetElementType().Name + ", " +
+                    typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
+            }
+        }
+
+        public static void Run()
+        {
+            // Delegate to a shared nongeneric reference type instance method
+            {
+                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
+                Func<string> f = g.MakeString;
+                if (f() != "Foo: 42")
+                    throw new Exception();
+            }
+
+            // Delegate to a unshared nongeneric reference type instance method
+            {
+                GenClass<int> g = new GenClass<int>(85);
+                Func<string> f = g.MakeString;
+                if (f() != "Int32: 85")
+                    throw new Exception();
+            }
+
+            // Delegate to a shared generic reference type instance method
+            {
+                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
+                Func<string> f = g.MakeGenString<Foo>;
+                if (f() != "Foo, Foo: 42")
+                    throw new Exception();
+            }
+
+            // Delegate to a unshared generic reference type instance method
+            {
+                GenClass<int> g = new GenClass<int>(85);
+                Func<string> f = g.MakeGenString<int>;
+                if (f() != "Int32, Int32: 85")
+                    throw new Exception();
+            }
+
+            // Delegate to a shared nongeneric value type instance method
+            /*{
+                GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
+                Func<string> f = g.MakeString;
+                if (f() != "Bar: 42")
+                    throw new Exception();
+            }*/
+
+            // Delegate to a unshared nongeneric value type instance method
+            {
+                GenStruct<int> g = new GenStruct<int>(85);
+                Func<string> f = g.MakeString;
+                if (f() != "Int32: 85")
+                    throw new Exception();
+            }
+
+            // Delegate to a shared generic value type instance method
+            /*{
+                GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
+                Func<string> f = g.MakeGenString<Bar>;
+                if (f() != "Bar, Bar: 42")
+                    throw new Exception();
+            }*/
+
+            // Delegate to a unshared generic value type instance method
+            {
+                GenStruct<int> g = new GenStruct<int>(85);
+                Func<string> f = g.MakeGenString<int>;
+                if (f() != "Int32, Int32: 85")
+                    throw new Exception();
+            }
+
         }
     }
 
@@ -902,6 +1049,40 @@ class Program
 
             if (s_NumErrors != 0)
                 throw new Exception();
+        }
+    }
+
+    class TestGvmDependencies
+    {
+        class Atom { }
+
+        class Foo
+        {
+            public virtual object Frob<T>()
+            {
+                return new T[0, 0];
+            }
+        }
+
+        class Bar : Foo
+        {
+            public override object Frob<T>()
+            {
+                return new T[0, 0, 0];
+            }
+        }
+
+        public static void Run()
+        {
+            {
+                Foo x = new Foo();
+                x.Frob<Atom>();
+            }
+
+            {
+                Foo x = new Bar();
+                x.Frob<Atom>();
+            }
         }
     }
 }

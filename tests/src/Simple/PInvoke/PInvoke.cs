@@ -22,6 +22,9 @@ namespace PInvokeTests
         private static extern int CheckIncremental(int[] array, int sz);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        private static extern int CheckIncremental_Foo(Foo[] array, int sz);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int Inc(ref int value);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
@@ -118,16 +121,34 @@ namespace PInvokeTests
             ThrowIfNotEquals('b', c, "Unichar marshalling failed.");
         }
 
+        struct Foo
+        {
+            public int a;
+            public float b;
+        }
+
         private static void TestArrays()
         {
-            Console.WriteLine("Testing marshalling arrays");
+            Console.WriteLine("Testing marshalling int arrays");
+
             const int ArraySize = 100;
             int[] arr = new int[ArraySize];
             for (int i = 0; i < ArraySize; i++)
                 arr[i] = i;
 
-           ThrowIfNotEquals(0, CheckIncremental(arr, ArraySize), "Array marshalling failed");
-        }
+            ThrowIfNotEquals(0, CheckIncremental(arr, ArraySize), "Array marshalling failed");
+
+            Console.WriteLine("Testing marshalling blittable struct arrays");
+
+            Foo[] arr_foo = new Foo[ArraySize];
+            for (int i = 0; i < ArraySize; i++)
+            {
+                arr_foo[i].a = i;
+                arr_foo[i].b = i;
+            }
+
+            ThrowIfNotEquals(0, CheckIncremental_Foo(arr_foo, ArraySize), "Array marshalling failed");
+       }
 
         private static void TestByRef()
         {

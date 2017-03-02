@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
+using Internal.Reflection.Augments;
 
 namespace System
 {
@@ -95,6 +96,16 @@ namespace System
         public static bool operator !=(RuntimeMethodHandle left, RuntimeMethodHandle right)
         {
             return !left.Equals(right);
+        }
+
+        public IntPtr GetFunctionPointer()
+        {
+            RuntimeTypeHandle declaringType;
+            MethodNameAndSignature nameAndSignature;
+            RuntimeTypeHandle[] genericArgs;
+            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
+
+            return ReflectionAugments.ReflectionCoreCallbacks.GetFunctionPointer(this, declaringType);
         }
 
         public RuntimeMethodHandle(SerializationInfo info, StreamingContext context)

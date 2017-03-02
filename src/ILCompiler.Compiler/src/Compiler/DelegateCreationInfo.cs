@@ -56,8 +56,8 @@ namespace ILCompiler
         /// </summary>
         public static DelegateCreationInfo Create(TypeDesc delegateType, MethodDesc targetMethod, NodeFactory factory)
         {
-            var context = (CompilerTypeSystemContext)delegateType.Context;
-            var systemDelegate = targetMethod.Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
+            CompilerTypeSystemContext context = factory.TypeSystemContext;
+            DefType systemDelegate = targetMethod.Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
 
             int paramCountTargetMethod = targetMethod.Signature.Length;
             if (!targetMethod.Signature.IsStatic)
@@ -128,21 +128,43 @@ namespace ILCompiler
 
                 bool useUnboxingStub = targetMethod.OwningType.IsValueType;
 
+                IMethodNode targetMethodNode;
                 string initializeMethodName = "InitializeClosedInstance";
+                MethodDesc targetCanonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (targetMethod.HasInstantiation)
                 {
                     Debug.Assert(!targetMethod.IsVirtual, "TODO: delegate to generic virtual method");
 
-                    // Closed delegates to generic instance methods need to be constructed through a slow helper that
-                    // checks for the fat function pointer case (function pointer + instantiation argument in a single
-                    // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
-                    // the invocation if necessary.
-                    initializeMethodName = "InitializeClosedInstanceSlow";
+                    if (targetMethod != targetCanonMethod)
+                    {
+                        // Closed delegates to generic instance methods need to be constructed through a slow helper that
+                        // checks for the fat function pointer case (function pointer + instantiation argument in a single
+                        // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
+                        // the invocation if necessary.
+                        initializeMethodName = "InitializeClosedInstanceSlow";
+                        targetMethodNode = factory.FatFunctionPointer(targetMethod, useUnboxingStub);
+                    }
+                    else
+                    {
+                        targetMethodNode = factory.MethodEntrypoint(targetMethod, useUnboxingStub);
+                    }
+                }
+                else
+                {
+                    // If the method can be canonicalized, point to the canon method body, but track the dependencies.
+                    if (targetMethod != targetCanonMethod)
+                    {
+                        targetMethodNode = factory.ShadowConcreteMethod(targetMethod, useUnboxingStub);
+                    }
+                    else
+                    {
+                        targetMethodNode = factory.MethodEntrypoint(targetMethod, useUnboxingStub);
+                    }
                 }
 
                 return new DelegateCreationInfo(
                     factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
-                    factory.MethodEntrypoint(targetMethod, useUnboxingStub));
+                    targetMethodNode);
             }
         }
 

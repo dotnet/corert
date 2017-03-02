@@ -167,10 +167,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (canonMethodTarget != derivedMethodInstantiation)
                 {
-                    // Dependency includes the generic method dictionary of the instantiation
+                    // Dependency includes the generic method dictionary of the instantiation, and all its dependencies. This is done by adding the 
+                    // ShadowConcreteMethod to the list of dynamic dependencies. The generic dictionary will be reported as a dependency of the ShadowConcreteMethod
                     // TODO: detect large recursive generics and fallback to USG templates
                     Debug.Assert(!derivedMethodInstantiation.IsCanonicalMethod(CanonicalFormKind.Any));
-                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.MethodGenericDictionary(derivedMethodInstantiation), null, "DerivedMethodInstantiation dictionary"));
+                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.ShadowConcreteMethod(derivedMethodInstantiation), null, "DerivedMethodInstantiation dictionary"));
                 }
             }
             else

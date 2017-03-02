@@ -25,11 +25,6 @@ namespace ILCompiler
             {
                 try
                 {
-                    // Skip delegates (since their Invoke methods have no IL)
-                    // Note that this check can fail with TypeSystemException as well.
-                    if (type.IsDelegate)
-                        continue;
-
                     rootProvider.AddCompilationRoot(type, "Library module type");
                 }
                 catch (TypeSystemException)

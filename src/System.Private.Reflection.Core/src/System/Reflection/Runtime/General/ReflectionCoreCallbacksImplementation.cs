@@ -324,5 +324,20 @@ namespace System.Reflection.Runtime.General
             // on the Activator.CreateInstance() call. GetTypeFromCLSID() merely wraps the data in a Type object without any validation.
             return RuntimeCLSIDTypeInfo.GetRuntimeCLSIDTypeInfo(clsid, server);
         }
+
+        public sealed override IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle)
+        {
+            MethodBase method = GetMethodFromHandle(runtimeMethodHandle, declaringTypeHandle);
+
+            switch (method)
+            {
+                case RuntimeMethodInfo methodInfo:
+                    return methodInfo.LdFtnResult;
+                case RuntimeConstructorInfo constructorInfo:
+                    return constructorInfo.LdFtnResult;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
+        }
     }
 }

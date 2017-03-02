@@ -729,15 +729,14 @@ namespace ILCompiler.DependencyAnalysis
             if (_targetPlatform.OperatingSystem == TargetOS.OSX)
                 return false;
 
-            // Types and methods from the compiler generated assembly are always shareable
-            MetadataType type = (node is EETypeNode ? ((EETypeNode)node).Type : (node as MethodCodeNode)?.Method.OwningType) as MetadataType;
-            if (type != null &&
-                type.Module == _nodeFactory.CompilationModuleGroup.GeneratedAssembly)
-            {
-                return true;
-            }
-            
-            return node.IsShareable;
+            if (!(node is ISymbolNode))
+                return false;
+
+            // These intentionally clash with one another, but are merged with linker directives so should not be Comdat folded
+            if (node is ModulesSectionNode)
+                return false;
+
+            return true;
         }
 
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, IObjectDumper dumper)

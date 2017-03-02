@@ -75,6 +75,23 @@ namespace Internal.Reflection.Execution.MethodInvokers
             return result;
         }
 
+        // On CoreCLR/Desktop, we do not attempt to resolve the target virtual method based on the type of the 'this' pointer.
+        // For compatibility reasons, we'll do the same here.
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                if (RuntimeAugments.IsInterface(_declaringTypeHandle))
+                    throw new PlatformNotSupportedException();
+
+                // Must be an abstract method
+                if (MethodInvokeInfo.LdFtnResult == IntPtr.Zero && MethodInvokeInfo.VirtualResolveData != IntPtr.Zero)
+                    throw new PlatformNotSupportedException();
+
+                return MethodInvokeInfo.LdFtnResult;
+            }
+        }
+
         private RuntimeTypeHandle _declaringTypeHandle;
     }
 }

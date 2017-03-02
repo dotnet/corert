@@ -143,5 +143,7 @@ namespace Internal.Reflection.Augments
         public abstract Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure);
 
         public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
+
+        public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
     }
 }

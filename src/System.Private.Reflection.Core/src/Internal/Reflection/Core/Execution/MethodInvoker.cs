@@ -25,6 +25,9 @@ namespace Internal.Reflection.Core.Execution
         }
         public abstract Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle);
         public abstract Delegate CreateDelegate(RuntimeTypeHandle delegateType, Object target, bool isStatic, bool isVirtual, bool isOpen);
+
+        // This property is used to retrieve the target method pointer. It is used by the RuntimeMethodHandle.GetFunctionPointer API
+        public abstract IntPtr LdFtnResult { get; }
     }
 }
 
