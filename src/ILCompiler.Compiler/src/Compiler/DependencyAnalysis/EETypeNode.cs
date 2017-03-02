@@ -256,6 +256,14 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
+            if (IsGenericInterfaceImplementedByArray(_type))
+            {
+                // Runtime casting logic relies on all interface types implemented on arrays
+                // to have the variant flag set (even if all the arguments are non-variant).
+                // This supports e.g. casting uint[] to ICollection<int>
+                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+            }
+
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
             // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
@@ -483,6 +491,25 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        /// <summary>
+        /// Returns true if <paramref name="type"/> is an interface type that could be implemented by an array.
+        /// </summary>
+        private static bool IsGenericInterfaceImplementedByArray(TypeDesc type)
+        {
+            // As a quick test we can use the fact that interfaces implemented by array are all non-generic.
+            if (!type.IsInterface || type.Instantiation.Length != 1)
+                return false;
+
+            TypeDesc elementType = type.Instantiation[0];
+            foreach (var interfaceType in elementType.MakeArrayType().RuntimeInterfaces)
+            {
+                if (interfaceType == type)
+                    return true;
+            }
+
+            return false;
+        }
+
         private void OutputGenericInstantiationDetails(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             if (_type.HasInstantiation && !_type.IsTypeDefinition)
@@ -494,6 +521,13 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Generic array enumerators use special variance rules recognized by the runtime
                     details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
+                }
+                else if (IsGenericInterfaceImplementedByArray(_type))
+                {
+                    // Runtime casting logic relies on all interface types implemented on arrays
+                    // to have the variant flag set (even if all the arguments are non-variant).
+                    // This supports e.g. casting uint[] to ICollection<int>
+                    details = new GenericCompositionDetails(_type, forceVarianceInfo: true);
                 }
                 else
                     details = new GenericCompositionDetails(_type);

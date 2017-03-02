@@ -25,6 +25,9 @@ public class BringUpTest
         if (TestVariantInterfaces() == Fail)
             return Fail;
 
+        if (TestSpecialArrayInterfaces() == Fail)
+            return Fail;
+
         return Pass;
     }
 
@@ -332,6 +335,24 @@ public class BringUpTest
             sum += e;
 
         if (sum != 30)
+            return Fail;
+
+        return Pass;
+    }
+
+    class SpecialArrayBase { }
+    class SpecialArrayDerived : SpecialArrayBase { }
+
+    // NOTE: ICollection is not a variant interface, but arrays can cast with it as if it was
+    static ICollection<SpecialArrayBase> s_specialDerived = new SpecialArrayDerived[42];
+    static ICollection<uint> s_specialInt = (ICollection<uint>)(object)new int[85];
+
+    private static int TestSpecialArrayInterfaces()
+    {
+        if (s_specialDerived.Count != 42)
+            return Fail;
+
+        if (s_specialInt.Count != 85)
             return Fail;
 
         return Pass;
