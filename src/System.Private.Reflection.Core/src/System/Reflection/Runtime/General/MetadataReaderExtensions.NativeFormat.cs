@@ -159,7 +159,7 @@ namespace System.Reflection.Runtime.General
         // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
         // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
         // safe for returning to api callers.
-        public static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, bool optional)
+        public static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
         {
             HandleType handleType = handle.HandleType;
             Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
@@ -172,8 +172,7 @@ namespace System.Reflection.Runtime.General
                 ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 if (optional == modifiedType.IsOptional)
                 {
-                    // The modifier type handle can only be TypeDef or TypeRef, never a TypeSpec. So the passed in type context will be never be consulted for type variable lookups..
-                    Type customModifier = modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null));
+                    Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext);
                     customModifiers.Add(customModifier);
                 }
 
