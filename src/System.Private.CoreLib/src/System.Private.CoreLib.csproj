@@ -976,6 +976,9 @@
     <Compile Include="System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
+      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
     </Compile>
