@@ -44,20 +44,20 @@ class FinalizeTest
     public static int Run()
     {
         int iterationCount = 0;
-        while (!visited && iterationCount++ < 1000000)
+        while (!visited && iterationCount++ < 10000)
         {
-           GC.KeepAlive(new Dummy());
-           GC.Collect();
+            GC.KeepAlive(new Dummy());
+            GC.Collect();
         }
 
         if (visited)
         {
-            Console.WriteLine("Test for Finalize() & WaitForPendingFinalizers() passed!");
+            Console.WriteLine("FinalizeTest passed");
             return Program.Pass;
         }
         else
         {
-            Console.WriteLine("Test for Finalize() & WaitForPendingFinalizers() failed!");
+            Console.WriteLine("FinalizeTest failed");
             return Program.Fail;
         }
     }
@@ -188,7 +188,7 @@ class ThreadStaticsTestWithTasks
 
 class ThreadTest
 {
-    private static List<Thread> s_startedThreads = new List<Thread>();
+    private static readonly List<Thread> s_startedThreads = new List<Thread>();
 
     private static int s_passed;
     private static int s_failed;
@@ -216,6 +216,11 @@ class ThreadTest
         catch (Exception e)
         {
             ex = e;
+        }
+
+        if (!(ex is T))
+        {
+            message += string.Format(" (caught {0})", (ex == null) ? "no exception" : ex.GetType().Name);
         }
         Expect(ex is T, message);
     }
@@ -256,13 +261,24 @@ class ThreadTest
         t4.Start(42);
         s_startedThreads.Add(t4);
 
+        // Start an unstarted resurrected thread.
+        // CoreCLR: ThreadStateException, CoreRT: no exception.
+        Thread unstartedResurrected = Resurrector.CreateUnstartedResurrected();
+        unstartedResurrected.Start();
+        s_startedThreads.Add(unstartedResurrected);
+
         // Threads cannot started more than once
         t1.Join();
         ExpectException<ThreadStateException>(() => t1.Start(), "Expected ThreadStateException for t1.Start()");
 
-        ExpectException<ThreadStateException>(() => Thread.CurrentThread.Start(), "Expected ThreadStateException for CurrentThread.Start()");
-        
-        ExpectPassed(nameof(TestStartMethod), 6);
+        ExpectException<ThreadStateException>(() => Thread.CurrentThread.Start(),
+            "Expected ThreadStateException for CurrentThread.Start()");
+
+        Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
+        ExpectException<ThreadStateException>(() => stoppedResurrected.Start(),
+            "Expected ThreadStateException for stoppedResurrected.Start()");
+
+        ExpectPassed(nameof(TestStartMethod), 7);
     }
 
     private static void TestJoinMethod()
@@ -318,20 +334,29 @@ class ThreadTest
         Expect(!t.IsBackground, "Expected t.IsBackground == false");
         t_event.Set();
         t.Join();
-        ExpectException<ThreadStateException>(() => Console.WriteLine(t.IsBackground), "Expected ThreadStateException for t.IsBackground");
+        ExpectException<ThreadStateException>(() => Console.WriteLine(t.IsBackground),
+            "Expected ThreadStateException for t.IsBackground");
 
         // Thread pool thread
         Task.Factory.StartNew(() => Expect(Thread.CurrentThread.IsBackground, "Expected IsBackground == true")).Wait();
 
+        // Resurrected threads
+        Thread unstartedResurrected = Resurrector.CreateUnstartedResurrected();
+        Expect(unstartedResurrected.IsBackground == false, "Expected unstartedResurrected.IsBackground == false");
+
+        Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
+        ExpectException<ThreadStateException>(() => Console.WriteLine(stoppedResurrected.IsBackground),
+            "Expected ThreadStateException for stoppedResurrected.IsBackground");
+
         // Main thread
         Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
 
-        ExpectPassed(nameof(TestIsBackgroundProperty), 4);
+        ExpectPassed(nameof(TestIsBackgroundProperty), 6);
     }
 
     private static void TestIsThreadPoolThreadProperty()
     {
-#if false   // The IsThreadPoolThread property is not present in the contract version we compile against at present
+#if false   // The IsThreadPoolThread property is not in the contract version we compile against at present
         var t = new Thread(() => { });
 
         Expect(!t.IsThreadPoolThread, "Expected t.IsThreadPoolThread == false");
@@ -358,7 +383,14 @@ class ThreadTest
         t.Start();
         s_startedThreads.Add(t);
 
-        ExpectPassed(nameof(TestManagedThreadIdProperty), 5);
+        // Resurrected threads
+        Thread unstartedResurrected = Resurrector.CreateUnstartedResurrected();
+        Expect(unstartedResurrected.ManagedThreadId != 0, "Expected unstartedResurrected.ManagedThreadId != 0");
+
+        Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
+        Expect(stoppedResurrected.ManagedThreadId != 0, "Expected stoppedResurrected.ManagedThreadId != 0");
+
+        ExpectPassed(nameof(TestManagedThreadIdProperty), 7);
     }
 
     private static void TestThreadStateProperty()
@@ -376,7 +408,34 @@ class ThreadTest
         t.Join();
         Expect(t.ThreadState == ThreadState.Stopped, "Expected t.ThreadState == ThreadState.Stopped");
 
-        ExpectPassed(nameof(TestThreadStateProperty), 3);
+        // Resurrected threads
+        Thread unstartedResurrected = Resurrector.CreateUnstartedResurrected();
+        Expect(unstartedResurrected.ThreadState == ThreadState.Unstarted,
+            "Expected unstartedResurrected.ThreadState == ThreadState.Unstarted");
+
+        Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
+        Expect(stoppedResurrected.ThreadState == ThreadState.Stopped,
+            "Expected stoppedResurrected.ThreadState == ThreadState.Stopped");
+
+        ExpectPassed(nameof(TestThreadStateProperty), 5);
+    }
+
+    private static unsafe void DoStackAlloc(int size)
+    {
+        byte* buffer = stackalloc byte[size];
+        Volatile.Write(ref buffer[0], 0);
+    }
+
+    private static void TestMaxStackSize()
+    {
+#if false   // The constructors with maxStackSize are not in the contract version we compile against at present
+        // Allocate a 3 MiB buffer on the 4 MiB stack
+        var t = new Thread(() => DoStackAlloc(3 << 20), 4 << 20);
+        t.Start();
+        s_startedThreads.Add(t);
+#endif
+
+        ExpectPassed(nameof(TestMaxStackSize), 0);
     }
 
     public static int Run()
@@ -391,6 +450,82 @@ class ThreadTest
         TestManagedThreadIdProperty();
         TestThreadStateProperty();
 
+        TestMaxStackSize();
+
         return (s_failed == 0) ? Program.Pass : Program.Fail;
+    }
+
+    /// <summary>
+    /// Creates resurrected Thread objects.
+    /// </summary>
+    class Resurrector
+    {
+        static Thread s_unstartedResurrected;
+        static Thread s_stoppedResurrected;
+
+        bool _unstarted;
+        Thread _thread = new Thread(() => { });
+
+        Resurrector(bool unstarted)
+        {
+            _unstarted = unstarted;
+            if (!unstarted)
+            {
+                _thread.Start();
+                _thread.Join();
+            }
+        }
+
+        ~Resurrector()
+        {
+            if (_unstarted)
+            {
+                s_unstartedResurrected = _thread;
+            }
+            else
+            {
+                s_stoppedResurrected = _thread;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void CreateInstance(bool unstarted)
+        {
+            GC.KeepAlive(new Resurrector(unstarted));
+        }
+
+        public static Thread CreateUnstartedResurrected()
+        {
+            s_unstartedResurrected = null;
+
+            while (s_unstartedResurrected == null)
+            {
+                // Call twice to override the address of the first allocation on the stack (for conservative GC)
+                CreateInstance(unstarted: true);
+                CreateInstance(unstarted: true);
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            return s_unstartedResurrected;
+        }
+
+        public static Thread CreateStoppedResurrected()
+        {
+            s_stoppedResurrected = null;
+
+            while (s_stoppedResurrected == null)
+            {
+                // Call twice to override the address of the first allocation on the stack (for conservative GC)
+                CreateInstance(unstarted: false);
+                CreateInstance(unstarted: false);
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            return s_stoppedResurrected;
+        }
     }
 }

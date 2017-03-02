@@ -18,6 +18,8 @@ namespace Internal.Runtime.Augments
 
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
 
+        private static ThreadPriority GetPriority() { return ThreadPriority.Normal; }
+
         private static bool SetPriority(ThreadPriority priority) { return true; }
 
         private bool HasFinishedExecution()
