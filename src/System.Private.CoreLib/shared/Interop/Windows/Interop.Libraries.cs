@@ -6,6 +6,9 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-        internal const string CoreLibNative = "System.Private.CoreLib.Native";
+        internal const string Crypt32 = "crypt32.dll";
+        internal const string Kernel32 = "kernel32.dll";
+        internal const string NtDll = "ntdll.dll";
+        internal const string OleAut32 = "oleaut32.dll";
     }
 }

@@ -14,6 +14,6 @@ namespace Microsoft.Win32.SafeHandles
     sealed partial class SafeRegistryHandle : SafeHandle
     {
         protected override bool ReleaseHandle() =>
-            Interop.mincore.RegCloseKey(handle) == Interop.mincore.Errors.ERROR_SUCCESS;
+            Interop.mincore.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS;
     }
 }
