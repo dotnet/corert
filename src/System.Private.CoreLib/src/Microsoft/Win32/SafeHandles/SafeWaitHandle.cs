@@ -39,7 +39,7 @@ namespace Microsoft.Win32.SafeHandles
 #if PLATFORM_UNIX
             WaitSubsystem.DeleteHandle(handle);
 #else
-            Interop.mincore.CloseHandle(handle);
+            Interop.Kernel32.CloseHandle(handle);
 #endif
             return true;
         }
