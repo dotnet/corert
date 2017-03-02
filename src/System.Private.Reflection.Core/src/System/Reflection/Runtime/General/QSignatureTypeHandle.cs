@@ -51,12 +51,12 @@ namespace System.Reflection.Runtime.General
         // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
         // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
         // safe for returning to api callers.
-        internal Type[] GetCustomModifiers(bool optional)
+        internal Type[] GetCustomModifiers(TypeContext typeContext, bool optional)
         {
 #if ECMA_METADATA_SUPPORT
             throw new NotImplementedException();
 #else
-            return _handle.GetCustomModifiers((global::Internal.Metadata.NativeFormat.MetadataReader)Reader, optional);
+            return _handle.GetCustomModifiers((global::Internal.Metadata.NativeFormat.MetadataReader)Reader, typeContext, optional);
 #endif
         }
 

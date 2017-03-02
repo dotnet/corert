@@ -447,7 +447,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<FieldDesc, RuntimeFieldHandleNode> _runtimeFieldHandles;
 
-        internal RuntimeFieldHandleNode RuntimeFieldHandle(FieldDesc field)
+        public RuntimeFieldHandleNode RuntimeFieldHandle(FieldDesc field)
         {
             return _runtimeFieldHandles.GetOrAdd(field);
         }
