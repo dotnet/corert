@@ -194,7 +194,7 @@ namespace Internal.Runtime.Augments
                     throw new ThreadStateException(SR.ThreadState_AlreadyStarted);
                 }
 
-                const int AllocationGranularity = (int)System.Runtime.Constants.AllocationGranularity;
+                const int AllocationGranularity = (int)0x10000; // 64k
 
                 int stackSize = _maxStackSize;
                 if ((0 < stackSize) && (stackSize < AllocationGranularity))
