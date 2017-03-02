@@ -141,9 +141,9 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
-        public sealed override Type[] GetOptionalCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(optional: true);
+        public sealed override Type[] GetOptionalCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: true);
 
-        public sealed override Type[] GetRequiredCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(optional: false);
+        public sealed override Type[] GetRequiredCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: false);
 
         public sealed override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
