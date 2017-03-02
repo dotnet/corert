@@ -123,21 +123,18 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        public bool IsDead
+        private bool IsDead()
         {
-            get
-            {
-                // Refresh ThreadState.Stopped bit if necessary
-                ThreadState state = GetThreadState();
-                return (state & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
-            }
+            // Refresh ThreadState.Stopped bit if necessary
+            ThreadState state = GetThreadState();
+            return (state & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
         }
 
         public bool IsBackground
         {
             get
             {
-                if (IsDead)
+                if (IsDead())
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
                 }
@@ -145,7 +142,7 @@ namespace Internal.Runtime.Augments
             }
             set
             {
-                if (IsDead)
+                if (IsDead())
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
                 }
@@ -165,7 +162,7 @@ namespace Internal.Runtime.Augments
         {
             get
             {
-                if (IsDead)
+                if (IsDead())
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
                 }
@@ -195,11 +192,11 @@ namespace Internal.Runtime.Augments
         {
             get
             {
-                if (IsDead)
+                if (IsDead())
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_Priority);
                 }
-                return _priority;
+                return GetPriority();
             }
             set
             {
@@ -207,7 +204,7 @@ namespace Internal.Runtime.Augments
                 {
                     throw new ArgumentOutOfRangeException(SR.Argument_InvalidFlag);
                 }
-                if (IsDead)
+                if (IsDead())
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_Priority);
                 }

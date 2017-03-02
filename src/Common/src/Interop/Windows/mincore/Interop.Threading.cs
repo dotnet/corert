@@ -53,7 +53,7 @@ internal static partial class Interop
         internal extern static void Sleep(uint milliseconds);
 
         [DllImport(Libraries.Kernel32)]
-        internal extern static unsafe IntPtr CreateThread(
+        internal extern static unsafe SafeWaitHandle CreateThread(
             IntPtr lpThreadAttributes,
             IntPtr dwStackSize,
             IntPtr lpStartAddress,
@@ -62,6 +62,9 @@ internal static partial class Interop
             out uint lpThreadId);
 
         internal delegate uint ThreadProc(IntPtr lpParameter);
+
+        [DllImport(Libraries.Kernel32)]
+        internal extern static uint ResumeThread(SafeWaitHandle hThread);
 
         [DllImport(Libraries.Kernel32)]
         internal extern static IntPtr GetCurrentProcess();
