@@ -470,7 +470,12 @@ namespace Internal.Runtime.TypeLoader
 
                     Debug.Assert(targetMethodNameAndSignature != null);
 
-                    return TryGetGenericVirtualMethodPointer(targetTypeHandle, targetMethodNameAndSignature, genericArguments, out methodPointer, out dictionaryPointer);
+                    if (!TryGetGenericVirtualMethodPointer(targetTypeHandle, targetMethodNameAndSignature, genericArguments, out methodPointer, out dictionaryPointer))
+                    {
+                        Environment.FailFast("GVM method pointer lookup failure");
+                    }
+
+                    return true;
                 }
             }
 
