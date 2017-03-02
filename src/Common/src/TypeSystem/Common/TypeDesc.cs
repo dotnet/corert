@@ -451,6 +451,12 @@ namespace Internal.TypeSystem
             }
         }
 
+        public TypeDesc GetParameterType()
+        {
+            ParameterizedType paramType = (ParameterizedType) this;
+            return paramType.ParameterType;
+        }
+
         /// <summary>
         /// Gets a value indicating whether this type has a class constructor method.
         /// Use <see cref="GetStaticConstructor"/> to retrieve it.
