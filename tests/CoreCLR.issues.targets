@@ -1415,5 +1415,9 @@
     <!-- Expectations about inlining being enabled -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ddb\87766\ddb87766\ddb87766.*" />
 
+    <!-- These tests use CultureInfo so do not work if we are using dummy globalization -->
+    <ExcludeList Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'" Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\b04914.*" />
+    <ExcludeList Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'" Include="$(XunitTestBinBase)\Regressions\common\ThreadCulture\ThreadCulture.*" />
+
   </ItemGroup>
 </Project>
