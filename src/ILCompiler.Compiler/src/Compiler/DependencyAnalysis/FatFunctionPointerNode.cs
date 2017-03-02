@@ -16,17 +16,21 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class FatFunctionPointerNode : ObjectNode, IMethodNode
     {
-        public FatFunctionPointerNode(MethodDesc methodRepresented)
+        private bool _isUnboxingStub;
+
+        public FatFunctionPointerNode(MethodDesc methodRepresented, bool isUnboxingStub)
         {
             // We should not create these for methods that don't have a canonical method body
             Debug.Assert(methodRepresented.GetCanonMethodTarget(CanonicalFormKind.Specific) != methodRepresented);
 
             Method = methodRepresented;
+            _isUnboxingStub = isUnboxingStub;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__fatpointer_").Append(nameMangler.GetMangledMethodName(Method));
+            string prefix = _isUnboxingStub ? "__fatunboxpointer_" : "__fatpointer_";
+            sb.Append(prefix).Append(nameMangler.GetMangledMethodName(Method));
         }
         public int Offset => 0;
         public override bool IsShareable => true;
@@ -51,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList result = new DependencyList();
-            result.Add(new DependencyListEntry(factory.ShadowConcreteMethod(Method), "Method represented"));
+            result.Add(new DependencyListEntry(factory.ShadowConcreteMethod(Method, _isUnboxingStub), "Method represented"));
             return result;
         }
 
@@ -67,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             // Pointer to the canonical body of the method
-            builder.EmitPointerReloc(factory.MethodEntrypoint(canonMethod));
+            builder.EmitPointerReloc(factory.MethodEntrypoint(canonMethod, _isUnboxingStub));
 
             // Find out what's the context to use
             ISymbolNode contextParameter;
