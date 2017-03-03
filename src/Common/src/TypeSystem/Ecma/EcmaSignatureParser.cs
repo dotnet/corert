@@ -291,12 +291,12 @@ namespace Internal.TypeSystem.Ecma
 
         public MarshalAsDescriptor ParseMarshalAsDescriptor()
         {
-            NativeType type = (NativeType)_reader.ReadByte();
-            NativeType arraySubType = NativeType.Invalid;
+            NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
+            NativeTypeKind arraySubType = NativeTypeKind.Invalid;
             uint? paramNum = null , numElem = null;
             if (_reader.RemainingBytes != 0)
             {
-                arraySubType = (NativeType)_reader.ReadByte();
+                arraySubType = (NativeTypeKind)_reader.ReadByte();
                 if (_reader.RemainingBytes != 0)
                 {
                     paramNum = (uint)_reader.ReadCompressedInteger();

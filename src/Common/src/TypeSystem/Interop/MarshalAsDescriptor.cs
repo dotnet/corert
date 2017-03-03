@@ -8,7 +8,7 @@ using System;
 namespace Internal.TypeSystem
 {
     [Flags]
-    public enum NativeType : byte
+    public enum NativeTypeKind : byte
     {
         Boolean = 0x2,
         I1 = 0x3,
@@ -38,12 +38,12 @@ namespace Internal.TypeSystem
 
     public class MarshalAsDescriptor
     {
-        public NativeType Type { get; }
-        public NativeType ArraySubType { get; }
+        public NativeTypeKind Type { get; }
+        public NativeTypeKind ArraySubType { get; }
         public uint? SizeParamIndex { get; }
         public uint? SizeConst { get; }
 
-        public MarshalAsDescriptor(NativeType type, NativeType arraySubType, uint? sizeParamIndex, uint? sizeConst)
+        public MarshalAsDescriptor(NativeTypeKind type, NativeTypeKind arraySubType, uint? sizeParamIndex, uint? sizeConst)
         {
             Type = type;
             ArraySubType = arraySubType;
