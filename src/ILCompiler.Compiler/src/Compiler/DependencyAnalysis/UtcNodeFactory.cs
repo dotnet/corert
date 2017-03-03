@@ -71,12 +71,12 @@ namespace ILCompiler
             }
         }
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, NameMangler nameMangler) 
+        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler) 
             : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler)
         {
             CreateHostedNodeCaches();
-            CompilationUnitPrefix = Path.GetFileNameWithoutExtension(outputFile);
-            ThreadStaticsIndex = new ThreadStaticsIndexNode(CompilationUnitPrefix);
+            CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
+            ThreadStaticsIndex = new ThreadStaticsIndexNode(nameMangler.GetCurrentModuleTlsIndexPrefix());
             ThreadStaticsStartOffset = new ThreadStaticsStartNode();
             targetPrefix = context.Target.Architecture == TargetArchitecture.X86 ? "_" : "";
             TLSDirectory = new ThreadStaticsDirectoryNode(targetPrefix);
@@ -241,15 +241,15 @@ namespace ILCompiler
             }
         }
 
-        public ISymbolNode ThreadStaticsOffsetSymbol(MetadataType type)
+        public ISymbolNode TypeThreadStaticsIndexSymbol(TypeDesc type)
         {
             if (CompilationModuleGroup.ContainsType(type))
             {
-                return _threadStaticsOffset.GetOrAdd(type);
+                return ThreadStaticsIndex;
             }
             else
             {
-                return ExternSymbol(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
+                return ExternSymbol(ThreadStaticsIndexNode.GetMangledName((NameMangler as UTCNameMangler).GetImportedTlsIndexPrefix()));
             }
         }
 

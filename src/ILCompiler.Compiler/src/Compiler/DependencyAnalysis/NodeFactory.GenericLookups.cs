@@ -81,6 +81,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new ArrayAllocatorGenericLookupResult(type);
                 });
+
+                _tlsIndices = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new ThreadStaticIndexLookupResult(type);
+                });
+
+                _tlsOffsets = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new ThreadStaticOffsetLookupResult(type);
+                });
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -165,6 +175,20 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult ArrayAlloctor(TypeDesc type)
             {
                 return _arrayAllocators.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _tlsIndices;
+
+            public GenericLookupResult TlsIndexLookupResult(TypeDesc type)
+            {
+                return _tlsIndices.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _tlsOffsets;
+
+            public GenericLookupResult TlsOffsetLookupResult(TypeDesc type)
+            {
+                return _tlsOffsets.GetOrAdd(type);
             }
         }
 
