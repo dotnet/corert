@@ -26,6 +26,9 @@ namespace PInvokeTests
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int Inc(ref int value);
+ 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        private static extern int VerifyByRefFoo(ref Foo value);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern bool GetNextChar(ref char c);
@@ -85,12 +88,12 @@ namespace PInvokeTests
             return 100;
         }
 
-        public static void ThrowIfNotEquals(int expected, int actual, string message)
+        public static void ThrowIfNotEquals<T>(T expected, T actual, string message)
         {
-            if (expected != actual)
+            if (!expected.Equals(actual))
             {
-                message += "\nExpected: " + expected + "\n";
-                message += "Actual: " + actual + "\n";
+                message += "\nExpected: " + expected.ToString() + "\n";
+                message += "Actual: " + actual.ToString() + "\n";
                 throw new Exception(message);
             }
         }
@@ -148,14 +151,24 @@ namespace PInvokeTests
             }
 
             ThrowIfNotEquals(0, CheckIncremental_Foo(arr_foo, ArraySize), "Array marshalling failed");
-       }
+        }
 
         private static void TestByRef()
         {
             Console.WriteLine("Testing marshalling by ref");
+
             int value = 100;
             ThrowIfNotEquals(0, Inc(ref value), "By ref marshalling failed");
             ThrowIfNotEquals(101, value, "By ref marshalling failed");
+
+            Foo foo = new Foo();
+            foo.a = 10;
+            foo.b = 20;
+            int ret = VerifyByRefFoo(ref foo);            
+            ThrowIfNotEquals(0, ret, "By ref struct marshalling failed");
+
+            ThrowIfNotEquals(foo.a, 11, "By ref struct unmarshalling failed");
+            ThrowIfNotEquals(foo.b, 21.0f, "By ref struct unmarshalling failed");
         }
 
         private static void TestString()

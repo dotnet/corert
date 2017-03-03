@@ -70,6 +70,19 @@ DLL_EXPORT int __stdcall Inc(int *val)
     return 0;
 }
 
+DLL_EXPORT int __stdcall VerifyByRefFoo(Foo *val)
+{
+    if (val->a != 10)
+        return -1;
+    if (val->b != 20)
+        return -1;
+
+    val->a++;
+    val->b++;
+
+    return 0;
+}    
+
 DLL_EXPORT bool __stdcall GetNextChar(short *value)
 {
     if (value == NULL)
