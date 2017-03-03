@@ -91,6 +91,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new ThreadStaticOffsetLookupResult(type);
                 });
+
+                _defaultCtors = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new DefaultConstructorLookupResult(type);
+                });                
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -189,6 +194,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult TlsOffsetLookupResult(TypeDesc type)
             {
                 return _tlsOffsets.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _defaultCtors;
+
+            public GenericLookupResult DefaultCtorLookupResult(TypeDesc type)
+            {
+                return _defaultCtors.GetOrAdd(type);
             }
         }
 
