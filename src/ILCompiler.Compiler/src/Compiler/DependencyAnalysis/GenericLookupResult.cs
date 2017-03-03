@@ -405,4 +405,59 @@ namespace ILCompiler.DependencyAnalysis
 
         public override string ToString() => $"AllocArray: {_type}";
     }
+
+    internal sealed class ThreadStaticIndexLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public ThreadStaticIndexLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
+            Debug.Assert(utcNodeFactory != null);
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("TlsIndex_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"ThreadStaticIndex: {_type}";
+    }
+
+    internal sealed class ThreadStaticOffsetLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public ThreadStaticOffsetLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
+            Debug.Assert(utcNodeFactory != null);
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            Debug.Assert(instantiatedType is MetadataType);
+            return utcNodeFactory.TypeThreadStaticsOffsetSymbol(instantiatedType as MetadataType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("TlsOffset_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"ThreadStaticOffset: {_type}";
+    }
 }

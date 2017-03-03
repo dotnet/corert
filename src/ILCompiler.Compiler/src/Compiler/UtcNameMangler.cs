@@ -18,6 +18,8 @@ namespace ILCompiler
 {
     public class ImportExportOrdinals
     {
+        public bool isImport;
+        public uint tlsIndexOrdinal;
         public ReadOnlyDictionary<TypeDesc, uint> typeOrdinals;
         public ReadOnlyDictionary<MethodDesc, uint> methodOrdinals;
     }
@@ -28,29 +30,62 @@ namespace ILCompiler
         private string _compilationUnitPrefix;
         private string OrdinalPrefix => "_[O]_";
         private string deDuplicatePrefix => "_[D]_";
-        private ImportExportOrdinals _importExportOrdinals;
-        public bool OrdinalReceived { get; private set; }
 
-        public UTCNameMangler(bool ordinalBased)
+        private ImportExportOrdinals _importOrdinals;
+        private ImportExportOrdinals _exportOrdinals;
+
+        private bool HasImport { get; set; }
+        private bool HasExport { get; set; }
+
+        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals)
         {
-            if (!ordinalBased)
+            // Do not support both imports and exports for one module
+            Debug.Assert(!hasImport || !hasExport);
+            HasImport = hasImport;
+            HasExport = hasExport;
+
+            if (hasImport)
             {
-                OrdinalReceived = true;
-                _importExportOrdinals = new ImportExportOrdinals();
-                _importExportOrdinals.typeOrdinals = new ReadOnlyDictionary<TypeDesc, uint>(new Dictionary<TypeDesc, uint>());
-                _importExportOrdinals.methodOrdinals = new ReadOnlyDictionary<MethodDesc, uint>(new Dictionary<MethodDesc, uint>());
+                _importOrdinals = ordinals;
             }
-            else
+            else if (hasExport)
             {
-                OrdinalReceived = false;
-            }            
+                _exportOrdinals = ordinals;
+            }
         }
 
-        public void ReceiveImportExportOrdinals(ImportExportOrdinals ordinals)
+        private bool GetMethodOrdinal(MethodDesc method, out uint ordinal)
         {
-            Debug.Assert(!OrdinalReceived);
-            _importExportOrdinals = ordinals;
-            OrdinalReceived = true;
+            if (HasImport && _importOrdinals.methodOrdinals.TryGetValue(method, out ordinal))
+            {
+                return true;
+            }
+
+            if (HasExport && _exportOrdinals.methodOrdinals.TryGetValue(method, out ordinal))
+            {
+                return true;
+            }
+
+            ordinal = 0;
+            return false;
+        }
+
+        private bool GetTlsIndexOrdinal(out uint ordinal)
+        {
+            if (HasImport)
+            {
+                ordinal = _importOrdinals.tlsIndexOrdinal;
+                return true;
+            }
+
+            if (HasExport)
+            {
+                ordinal = _exportOrdinals.tlsIndexOrdinal;
+                return true;
+            }
+
+            ordinal = 0;
+            return false;
         }
 
         public override string CompilationUnitPrefix
@@ -186,8 +221,6 @@ namespace ILCompiler
         /// <returns>Mangled name for <param name="type"/>.</returns>
         private string ComputeMangledTypeName(TypeDesc type)
         {
-            Debug.Assert(OrdinalReceived);
-
             if (type is EcmaType)
             {
                 EcmaType ecmaType = (EcmaType)type;
@@ -335,7 +368,7 @@ namespace ILCompiler
                         uint ordinal;
 
                         // Ensure that name is unique and update our tables accordingly.
-                        if (_importExportOrdinals.methodOrdinals.TryGetValue(m, out ordinal))
+                        if (GetMethodOrdinal(m, out ordinal))
                         {
                             name += OrdinalPrefix + ordinal;
                         }
@@ -360,8 +393,6 @@ namespace ILCompiler
 
         private Utf8String ComputeMangledMethodName(MethodDesc method)
         {
-            Debug.Assert(OrdinalReceived);
-
             // Method is either a generic method instantiation or an instance method of a generic type instantiation
             var methodDefinition = method.GetMethodDefinition();
             Utf8String utf8MangledName = ComputeMangledNameMethodWithoutInstantiation(methodDefinition);
@@ -385,7 +416,7 @@ namespace ILCompiler
 
                 // Do not need the deDuplicator (which is not stable across builds) if the method has an importExport ordinal
                 uint ordinal;
-                if (_importExportOrdinals.methodOrdinals.TryGetValue(method, out ordinal))
+                if (GetMethodOrdinal(method, out ordinal))
                 {
                     mangledName = RemoveDeduplicatePrefix(mangledName);
                     mangledName += mangledInstantiation;
@@ -420,8 +451,6 @@ namespace ILCompiler
 
         private Utf8String ComputeMangledFieldName(FieldDesc field)
         {
-            Debug.Assert(OrdinalReceived);
-
             string prependTypeName = null;
             prependTypeName = GetMangledTypeName(field.OwningType);
 
@@ -474,8 +503,6 @@ namespace ILCompiler
 
         public override string GetMangledStringName(string literal)
         {
-            Debug.Assert(OrdinalReceived);
-
             string mangledName;
             if (_mangledStringLiterals.TryGetValue(literal, out mangledName))
                 return mangledName;
@@ -489,6 +516,36 @@ namespace ILCompiler
             }
 
             return mangledName;
+        }
+
+        public string GetImportedTlsIndexPrefix()
+        {
+            uint ordinal;
+
+            if (HasImport && GetTlsIndexOrdinal(out ordinal))
+            {
+                return OrdinalPrefix + ordinal;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public string GetCurrentModuleTlsIndexPrefix()
+        {
+            uint ordinal;
+
+            if (HasExport && GetTlsIndexOrdinal(out ordinal))
+            {
+                return ordinal.ToString();
+            }
+            else
+            {
+                // A module that doesn't have imports or exports, e.g, a single app binary, uses its CompilationUnitPrefix
+                // as the tls index a prefix.
+                return CompilationUnitPrefix;
+            }
         }
     }
 }
