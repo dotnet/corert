@@ -6,7 +6,6 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-        internal const string BCrypt = "BCrypt.dll";
         internal const string CoreFile_L1 = "api-ms-win-core-file-l1-1-0.dll";
         internal const string CoreFile_L1_2 = "api-ms-win-core-file-l1-2-0.dll";
         internal const string CoreFile_L2 = "api-ms-win-core-file-l2-1-0.dll";
