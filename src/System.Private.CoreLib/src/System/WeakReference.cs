@@ -12,6 +12,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Diagnostics;
 
@@ -19,7 +20,8 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    public class WeakReference
+    [Serializable]
+    public class WeakReference : ISerializable
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
 
@@ -41,6 +43,23 @@ namespace System
         //
         public WeakReference(Object target, bool trackResurrection)
         {
+            m_IsLongReference = trackResurrection;
+            m_handle = GCHandle.ToIntPtr(GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak));
+
+            // Set the conditional weak table if the target is a __ComObject.
+            TrySetComTarget(target);
+        }
+
+        protected WeakReference(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            Object target = info.GetValue("TrackedObject", typeof(Object));
+            bool trackResurrection = info.GetBoolean("TrackResurrection");
+
             m_IsLongReference = trackResurrection;
             m_handle = GCHandle.ToIntPtr(GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak));
 
@@ -202,6 +221,17 @@ namespace System
                 Debug.Assert(false, "WinRTInteropCallback is null");
             }
 #endif // ENABLE_WINRT
+        }
+
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue("TrackedObject", Target, typeof(Object));
+            info.AddValue("TrackResurrection", m_IsLongReference);
         }
 
         // Free all system resources associated with this reference.
