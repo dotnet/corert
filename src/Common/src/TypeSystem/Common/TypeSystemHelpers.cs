@@ -60,6 +60,12 @@ namespace Internal.TypeSystem
             return type.Context.GetPointerType(type);
         }
 
+        public static TypeDesc GetParameterType(this TypeDesc type)
+        {
+            ParameterizedType paramType = (ParameterizedType) type;
+            return paramType.ParameterType;
+        }
+
         public static int GetElementSize(this TypeDesc type)
         {
             if (type.IsValueType)

@@ -75,15 +75,20 @@ namespace Internal.TypeSystem.Interop
         private TypeDesc _nativeType;
         private TypeDesc _nativeParamType;
 
+        /// <summary>
+        /// Native Type of the value being marshalled
+        /// For by-ref scenarios (ref T), Native Type is T
+        /// </summary>
         public TypeDesc NativeType
         {
             get
             {
                 if (_nativeType == null)
                 {
-                    _nativeType = GetNativeTypeFromMarshallerKind(ManagedType,
-                                                        MarshallerKind, ElementMarshallerKind,
-                                                    PInvokeParameterMetadata.MarshalAsDescriptor);
+                    _nativeType = GetNativeTypeFromMarshallerKind(
+                        ManagedType,
+                        MarshallerKind, ElementMarshallerKind,
+                        PInvokeParameterMetadata.MarshalAsDescriptor);
                     Debug.Assert(_nativeType != null);
                 }
 
@@ -93,6 +98,7 @@ namespace Internal.TypeSystem.Interop
 
         /// <summary>
         /// NativeType appears in function parameters
+        /// For by-ref scenarios (ref T), NativeParameterType is T*
         /// </summary>
         public TypeDesc NativeParameterType
         {
@@ -114,8 +120,10 @@ namespace Internal.TypeSystem.Interop
         public bool Out;
         public bool Return;
         public bool Optional;
-        public bool IsManagedByRef;
-        public bool IsNativeByRef;
+        public bool IsManagedByRef;                     // Whether managed argument is passed by ref
+        public bool IsNativeByRef;                      // Whether native argument is passed by byref
+                                                        // There are special cases (such as LpStruct, and class) that 
+                                                        // isNativeByRef != IsManagedByRef
         public MarshalDirection MarshalDirection;
         protected PInvokeILCodeStreams _ilCodeStreams;
         protected Home _vManaged;
@@ -130,6 +138,9 @@ namespace Internal.TypeSystem.Interop
             ByRefLocal
         }
 
+        /// <summary>
+        /// Abstraction for handling by-ref and non-by-ref locals/arguments
+        /// </summary>
         internal class Home
         {
             public Home(ILLocalVariable var, TypeDesc type, bool isByRef)
@@ -226,6 +237,7 @@ namespace Internal.TypeSystem.Interop
         protected Marshaller()
         {
         }
+
         /// <summary>
         /// Create a marshaller
         /// </summary>
@@ -1149,6 +1161,11 @@ namespace Internal.TypeSystem.Interop
         {
             _vManaged.LoadAddr(stream);
         }
+
+        /// <summary>
+        /// Loads the argument to be passed to managed functions
+        /// In by-ref scenarios (ref T), it is &T
+        /// </summary>
         protected void LoadManagedArg(ILCodeStream stream)
         {
             if (IsManagedByRef)
@@ -1167,6 +1184,10 @@ namespace Internal.TypeSystem.Interop
             _vNative.LoadValue(stream);
         }
 
+        /// <summary>
+        /// Loads the argument to be passed to native functions
+        /// In by-ref scenarios (ref T), it is T*
+        /// </summary>
         protected void LoadNativeArg(ILCodeStream stream)
         {
             if (IsNativeByRef)
@@ -1185,6 +1206,12 @@ namespace Internal.TypeSystem.Interop
             _vNative.StoreValue(stream);
         }
 
+
+        /// <summary>
+        /// Propagate by-ref arg to corresponding local
+        /// We can't load value + ldarg + ldind in the expected order, so 
+        /// we had to use a non-by-ref local and manually propagate the value
+        /// </summary>
         protected void PropagateFromByRefArg(ILCodeStream stream, Home home)
         {
             stream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
@@ -1192,6 +1219,11 @@ namespace Internal.TypeSystem.Interop
             home.StoreValue(stream);
         }
 
+        /// <summary>
+        /// Propagate local to corresponding by-ref arg
+        /// We can't load value + ldarg + ldind in the expected order, so 
+        /// we had to use a non-by-ref local and manually propagate the value
+        /// </summary>
         protected void PropagateToByRefArg(ILCodeStream stream, Home home)
         {
             stream.EmitLdArg(PInvokeParameterMetadata.Index - 1);

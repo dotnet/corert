@@ -105,7 +105,7 @@ namespace Internal.IL.Stubs
                 {
                     parameters[i - 1] = _marshallers[i].ManagedParameterType;
                 }
-                MethodSignature managedSignature = new MethodSignature(MethodSignatureFlags.Static, 0, _marshallers[0].ManagedType, parameters);
+                MethodSignature managedSignature = new MethodSignature(MethodSignatureFlags.Static, 0, _marshallers[0].ManagedParameterType, parameters);
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(targetMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod("GetDelegateFunctionPointer", null)));
                 ILLocalVariable vDelegateStub = emitter.NewLocal(targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
                 fnptrLoadStream.EmitStLoc(vDelegateStub);
