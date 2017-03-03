@@ -126,8 +126,8 @@ namespace Internal.TypeSystem.Interop
                                                         // isNativeByRef != IsManagedByRef
         public MarshalDirection MarshalDirection;
         protected PInvokeILCodeStreams _ilCodeStreams;
-        protected Home _vManaged;
-        protected Home _vNative;
+        protected Home _managedHome;
+        protected Home _nativeHome;
         #endregion
 
         enum HomeType
@@ -1114,7 +1114,6 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
-            bool isForwardInterop = MarshalDirection == MarshalDirection.Forward;
             if (MarshalDirection == MarshalDirection.Forward)
             {
                 // Due to StInd order (address, value), we can't do the following:
@@ -1122,15 +1121,15 @@ namespace Internal.TypeSystem.Interop
                 //   StoreManagedValue (LdArg + StInd)
                 // The way to work around this is to put it in a local
                 if (IsManagedByRef)
-                    _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, false);
+                    _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, false);
                 else
-                    _vManaged = new Home(PInvokeParameterMetadata.Index - 1, ManagedType, false);
-                _vNative = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+                    _managedHome = new Home(PInvokeParameterMetadata.Index - 1, ManagedType, false);
+                _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
             }
             else
             {
-                _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
-                _vNative = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+                _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
+                _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
             }
         }
 
@@ -1139,8 +1138,8 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
-            _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
-            _vNative = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+            _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
+            _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
         }
 
         protected virtual void SetupArgumentsForReturnValueMarshalling()
@@ -1148,18 +1147,18 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
-            _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
-            _vNative = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+            _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
+            _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
         }
 
         protected void LoadManagedValue(ILCodeStream stream)
         {
-            _vManaged.LoadValue(stream);
+            _managedHome.LoadValue(stream);
         }
 
         protected void LoadManagedAddr(ILCodeStream stream)
         {
-            _vManaged.LoadAddr(stream);
+            _managedHome.LoadAddr(stream);
         }
 
         /// <summary>
@@ -1169,19 +1168,19 @@ namespace Internal.TypeSystem.Interop
         protected void LoadManagedArg(ILCodeStream stream)
         {
             if (IsManagedByRef)
-                _vManaged.LoadAddr(stream);
+                _managedHome.LoadAddr(stream);
             else
-                _vManaged.LoadValue(stream);
+                _managedHome.LoadValue(stream);
         }
 
         protected void StoreManagedValue(ILCodeStream stream)
         {
-            _vManaged.StoreValue(stream);
+            _managedHome.StoreValue(stream);
         }
 
         protected void LoadNativeValue(ILCodeStream stream)
         {
-            _vNative.LoadValue(stream);
+            _nativeHome.LoadValue(stream);
         }
 
         /// <summary>
@@ -1191,19 +1190,19 @@ namespace Internal.TypeSystem.Interop
         protected void LoadNativeArg(ILCodeStream stream)
         {
             if (IsNativeByRef)
-                _vNative.LoadAddr(stream);
+                _nativeHome.LoadAddr(stream);
             else
-                _vNative.LoadValue(stream);
+                _nativeHome.LoadValue(stream);
         }
 
        protected void LoadNativeAddr(ILCodeStream stream)
         {
-            _vNative.LoadAddr(stream);
+            _nativeHome.LoadAddr(stream);
         }
 
         protected void StoreNativeValue(ILCodeStream stream)
         {
-            _vNative.StoreValue(stream);
+            _nativeHome.StoreValue(stream);
         }
 
 
@@ -1238,7 +1237,7 @@ namespace Internal.TypeSystem.Interop
             if (IsManagedByRef && In)
             {
                 // Propagate byref arg to local
-                PropagateFromByRefArg(_ilCodeStreams.MarshallingCodeStream, _vManaged);
+                PropagateFromByRefArg(_ilCodeStreams.MarshallingCodeStream, _managedHome);
             }
 
             //
@@ -1275,7 +1274,7 @@ namespace Internal.TypeSystem.Interop
                 if (IsManagedByRef)
                 {
                     // Propagate back to byref arguments
-                    PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _vManaged);
+                    PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _managedHome);
                 }
             }
             EmitCleanupManagedToNative();
@@ -1344,7 +1343,7 @@ namespace Internal.TypeSystem.Interop
             if (IsNativeByRef && In)
             {
                 // Propagate byref arg to local
-                PropagateFromByRefArg(_ilCodeStreams.MarshallingCodeStream, _vNative);
+                PropagateFromByRefArg(_ilCodeStreams.MarshallingCodeStream, _nativeHome);
             }
 
             AllocAndTransformNativeToManaged(_ilCodeStreams.MarshallingCodeStream);
@@ -1358,7 +1357,7 @@ namespace Internal.TypeSystem.Interop
                 if (IsNativeByRef)
                 {
                     // Propagate back to byref arguments
-                    PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _vNative);
+                    PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _nativeHome);
                 }
             }
         }
@@ -1849,9 +1848,9 @@ namespace Internal.TypeSystem.Interop
 
             // back up the managed types 
             TypeDesc tempType  = ManagedType;
-            Home vTemp = _vManaged;
+            Home vTemp = _managedHome;
             ManagedType = context.GetWellKnownType(WellKnownType.Byte).MakeArrayType();
-            _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
+            _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             StoreManagedValue(codeStream);
             
             // Call the Array marshaller MarshalArgument
@@ -1859,7 +1858,7 @@ namespace Internal.TypeSystem.Interop
 
             //restore the types
             ManagedType = tempType;
-            _vManaged = vTemp;
+            _managedHome = vTemp;
         }
 
         protected override void AllocAndTransformNativeToManaged(ILCodeStream codeStream)
@@ -1886,7 +1885,7 @@ namespace Internal.TypeSystem.Interop
 
             if (IsManagedByRef && In)
             {
-                PropagateFromByRefArg(marshallingCodeStream, _vManaged);
+                PropagateFromByRefArg(marshallingCodeStream, _managedHome);
             }
 
             // we don't support [IN,OUT] together yet, either IN or OUT
@@ -1917,7 +1916,7 @@ namespace Internal.TypeSystem.Interop
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
                 StoreManagedValue(unmarshallingCodeStream);
 
-                PropagateToByRefArg(unmarshallingCodeStream, _vManaged);
+                PropagateToByRefArg(unmarshallingCodeStream, _managedHome);
             }
             else
             {
@@ -1973,10 +1972,10 @@ namespace Internal.TypeSystem.Interop
 
             // back up the managed types 
             TypeDesc tempType = ManagedType;
-            Home vTemp = _vManaged;
+            Home vTemp = _managedHome;
 
             ManagedType = context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
-            _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
+            _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             StoreManagedValue(codeStream);
 
             // Call the Array marshaller MarshalArgument
@@ -1984,7 +1983,7 @@ namespace Internal.TypeSystem.Interop
 
             //restore the types
             ManagedType = tempType;
-            _vManaged = vTemp;
+            _managedHome = vTemp;
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)

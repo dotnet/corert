@@ -244,8 +244,16 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Interface:
                     Emit(ILOpcode.ldind_ref);
                     break;
-                default:
+                case TypeFlags.Enum:
+                    // Use more efficient encoding for enum
+                    EmitLdInd(type.UnderlyingType);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     Emit(ILOpcode.ldobj, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
                     break;
             }
         }
@@ -289,8 +297,16 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Interface:
                     Emit(ILOpcode.stind_ref);
                     break;
-                default:
+                case TypeFlags.Enum:
+                    // Use more efficient encoding for enum
+                    EmitStInd(type.UnderlyingType);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     Emit(ILOpcode.stobj, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
                     break;
             }
         }
@@ -335,8 +351,16 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Interface:
                     Emit(ILOpcode.stelem_ref);
                     break;
-                default:
+                case TypeFlags.Enum:
+                    // Use more efficient encoding for enum
+                    EmitStElem(type.UnderlyingType);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     Emit(ILOpcode.stelem, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
                     break;
             }
         }
@@ -381,8 +405,16 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Interface:
                     Emit(ILOpcode.ldelem_ref);
                     break;
-                default:
+                case TypeFlags.Enum:
+                    // Use more efficient encoding for enum
+                    EmitLdElem(type.UnderlyingType);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
                     Emit(ILOpcode.ldelem, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
                     break;
             }
         }
