@@ -78,6 +78,10 @@ namespace ILCompiler.DependencyAnalysis
                             if (interfaceMethod.Signature.IsStatic)
                                 continue;
 
+                            // Generic virtual methods are tracked by an orthogonal mechanism.
+                            if (interfaceMethod.HasInstantiation)
+                                continue;
+
                             MethodDesc implMethod = closestDefType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                             if (implMethod != null)
                             {
@@ -141,6 +145,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
             {
+                // Generic virtual methods are tracked by an orthogonal mechanism.
                 if (decl.HasInstantiation)
                     continue;
 
@@ -167,6 +172,10 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (MethodDesc interfaceMethod in interfaceType.GetAllMethods())
                 {
                     if (interfaceMethod.Signature.IsStatic)
+                        continue;
+
+                    // Generic virtual methods are tracked by an orthogonal mechanism.
+                    if (interfaceMethod.HasInstantiation)
                         continue;
 
                     MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
