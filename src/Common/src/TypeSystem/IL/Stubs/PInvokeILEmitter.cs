@@ -40,7 +40,7 @@ namespace Internal.IL.Stubs
             int parameterIndex = 0;
             ParameterMetadata parameterMetadata = new ParameterMetadata();
 
-            if (pInvokeMethodData.TargetMethod.Name.Contains("VerifyAnsiString"))
+            if (pInvokeMethodData.TargetMethod.Name.Contains("DuplicateHandle"))
             {
                 int x = 0; x++;
             }

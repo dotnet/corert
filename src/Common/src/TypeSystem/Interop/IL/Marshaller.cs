@@ -1802,18 +1802,6 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.call, emitter.NewToken(ansiToString));
             StoreManagedValue(codeStream);
         }
-
-        protected override void EmitCleanupManagedToNative()
-        {
-            ILCodeStream codeStream;
-            if (Return)
-                codeStream = _ilCodeStreams.ReturnValueMarshallingCodeStream;
-            else
-                codeStream = _ilCodeStreams.UnmarshallingCodestream;
-            LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                                PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
-        }
     }
 
     class SafeHandleMarshaller : Marshaller
@@ -1897,7 +1885,6 @@ namespace Internal.TypeSystem.Interop
     {
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
-            /*
             ILEmitter emitter = _ilCodeStreams.Emitter;
             TypeSystemContext context = PInvokeMethodData.Context;
             // TODO: Handles [out] marshalling only for now
@@ -1910,10 +1897,10 @@ namespace Internal.TypeSystem.Interop
 
             // back up the managed types 
             TypeDesc tempType = ManagedType;
-            ILLocalVariable vTemp = _vManaged;
+            Home vTemp = _vManaged;
 
             ManagedType = context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
-            _vManaged = emitter.NewLocal(ManagedType);
+            _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             StoreManagedValue(codeStream);
 
             // Call the Array marshaller MarshalArgument
@@ -1922,7 +1909,6 @@ namespace Internal.TypeSystem.Interop
             //restore the types
             ManagedType = tempType;
             _vManaged = vTemp;
-            */
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
