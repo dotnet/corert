@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 
+using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -459,5 +460,45 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"ThreadStaticOffset: {_type}";
+    }
+
+    internal sealed class DefaultConstructorLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public DefaultConstructorLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            MethodDesc defaultCtor = instantiatedType.GetDefaultConstructor();
+
+            if (defaultCtor == null)
+            {
+                // If there isn't a default constructor, use the fallback one.
+                MetadataType missingCtorType = factory.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
+                missingCtorType = missingCtorType.GetNestedType("ClassWithMissingConstructor");                
+                Debug.Assert(missingCtorType != null);
+                defaultCtor = missingCtorType.GetParameterlessConstructor();
+            }
+            else
+            {
+                defaultCtor = defaultCtor.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            }
+
+            return factory.MethodEntrypoint(defaultCtor);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("DefaultCtor_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"DefaultConstructor: {_type}";
     }
 }
