@@ -28,6 +28,7 @@ namespace System
         // If you fix bugs here, please fix them in WeakReference at the same time.
 
         internal volatile IntPtr m_handle;
+        private bool m_trackResurrection;
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
@@ -41,6 +42,26 @@ namespace System
         //
         public WeakReference(T target, bool trackResurrection)
         {
+            m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            m_trackResurrection = trackResurrection;
+
+            if (target != null)
+            {
+                // Set the conditional weak table if the target is a __ComObject.
+                TrySetComTarget(target);
+            }
+        }
+
+        internal WeakReference(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            T target = (T)info.GetValue("TrackedObject", typeof(T));
+            bool trackResurrection = info.GetBoolean("TrackResurrection");
+
             m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
 
             if (target != null)
@@ -170,6 +191,7 @@ namespace System
             }
 
             info.AddValue("TrackedObject", this.GetTarget(), typeof(T));
+            info.AddValue("TrackResurrection", m_trackResurrection);
         }
     }
 }
