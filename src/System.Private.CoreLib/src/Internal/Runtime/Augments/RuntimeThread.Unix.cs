@@ -2,62 +2,133 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Internal.Runtime.Augments
 {
     public sealed partial class RuntimeThread
     {
+        private static bool s_setThreadExitCallback;
+
+        // Event signaling that the thread has stopped
+        private ManualResetEvent _stopped;
+
         private readonly WaitSubsystem.ThreadWaitInfo _waitInfo;
-
-        private void PlatformSpecificInitialize() { }
-
-        private void PlatformSpecificInitializeExistingThread() { }
 
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
 
-        private static ThreadPriority GetPriority() { return ThreadPriority.Normal; }
-
-        private static bool SetPriority(ThreadPriority priority) { return true; }
-
-        private bool HasFinishedExecution()
+        private void PlatformSpecificInitialize()
         {
-            // TODO: Return true if the thread has finished execution
-            return false;
+            // Race condition is OK here since we set to the same value
+            if (!s_setThreadExitCallback)
+            {
+                Interop.Sys.RuntimeThread_SetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
+                s_setThreadExitCallback = true;
+            }
         }
 
-        private bool JoinCore(int millisecondsTimeout)
+        private void PlatformSpecificInitializeExistingThread()
         {
-            // TODO: Join the thread
-            return false;
+            _stopped = new ManualResetEvent(false);
         }
 
-        private void StartCore(object parameter)
+        /// <summary>
+        /// Returns true if the thread is started or being started in StartInternal.
+        /// </summary>
+        private bool HasStarted()
         {
-            // TODO: Start a new thread using _threadStart and parameter
+            return _stopped != null;
         }
 
-        public ApartmentState GetApartmentState()
+        private ThreadPriority GetPriorityLive()
         {
-            Environment.FailFast(
-                "Should not reach here because CoreFX's Thread class should not forward to this function on Unix");
-            return ApartmentState.Unknown;
+            return ThreadPriority.Normal;
         }
 
-        public bool TrySetApartmentState(ApartmentState state)
+        private bool SetPriorityLive(ThreadPriority priority)
         {
-            Environment.FailFast(
-                "Should not reach here because CoreFX's Thread class should not forward to this function on Unix");
-            return false;
+            return true;
         }
 
-        public void DisableComObjectEagerCleanup() { }
+        [NativeCallable]
+        private static void OnThreadExit()
+        {
+            // Set the Stopped bit and signal the current thread as stopped
+            RuntimeThread currentThread = t_currentThread;
+            if (currentThread != null)
+            {
+                int state = currentThread._threadState;
+                if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+                {
+                    currentThread.SetThreadStateBit(ThreadState.Stopped);
+                }
+                currentThread._stopped.Set();
+            }
+        }
+
+        private ThreadState GetThreadState() => (ThreadState)_threadState;
+
+        private bool JoinInternal(int millisecondsTimeout)
+        {
+            // This method assumes the thread has been started
+            Debug.Assert(!GetThreadStateBit(ThreadState.Unstarted) || (millisecondsTimeout == 0));
+            SafeWaitHandle waitHandle = _stopped.SafeWaitHandle;
+
+            // If an OS thread is terminated and its Thread object is resurrected, waitHandle may be finalized and closed
+            if (waitHandle.IsClosed)
+            {
+                return true;
+            }
+
+            // Prevent race condition with the finalizer
+            try
+            {
+                waitHandle.DangerousAddRef();
+            }
+            catch (ObjectDisposedException)
+            {
+                return true;
+            }
+
+            try
+            {
+                return _stopped.WaitOne(millisecondsTimeout);
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
+        }
+
+        private bool CreateThread(GCHandle thisThreadHandle)
+        {
+            // Avoid OOM after creating the thread
+            var stopped = new ManualResetEvent(false);
+
+            if (!Interop.Sys.RuntimeThread_CreateThread((IntPtr)_maxStackSize,
+                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(StartThread), (IntPtr)thisThreadHandle))
+            {
+                return false;
+            }
+
+            // This marks the thread as being started
+            _stopped = stopped;
+
+            // CoreCLR ignores OS errors while setting the priority, so do we
+            SetPriorityLive(_priority);
+
+            return true;
+        }
 
         public void Interrupt() => WaitSubsystem.Interrupt(this);
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();
-        private static void SleepCore(int millisecondsTimeout) => WaitSubsystem.Sleep(millisecondsTimeout);
+        private static void SleepInternal(int millisecondsTimeout) => WaitSubsystem.Sleep(millisecondsTimeout);
+
+        internal const bool ReentrantWaitsEnabled = false;
 
         internal static void SuppressReentrantWaits()
         {
@@ -68,7 +139,5 @@ namespace Internal.Runtime.Augments
         {
             throw new PlatformNotSupportedException();
         }
-
-        internal const bool ReentrantWaitsEnabled = false;
     }
 }

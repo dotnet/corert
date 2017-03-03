@@ -44,7 +44,7 @@ internal static partial class Interop
         internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 
         [DllImport(Libraries.Kernel32)]
-        internal extern static uint WaitForSingleObject(SafeWaitHandle hHandle, uint dwMilliseconds);
+        internal extern static uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
         [DllImport(Libraries.Kernel32)]
         internal extern static uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, bool bAlertable);

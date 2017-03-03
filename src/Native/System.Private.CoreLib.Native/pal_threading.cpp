@@ -6,6 +6,7 @@
 #include "pal_threading.h"
 #include "pal_time.h"
 
+#include <limits.h>
 #include <sched.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,4 +165,50 @@ extern "C" void CoreLibNative_LowLevelMonitor_Signal_Release(LowLevelMonitor *mo
 
     monitor->Signal();
     monitor->Release();
+}
+
+extern void(*g_threadDetachCallback)();
+
+extern "C" void CoreLibNative_RuntimeThread_SetThreadExitCallback(void(*threadExitCallback)())
+{
+    g_threadDetachCallback = threadExitCallback;
+}
+
+extern "C" bool CoreLibNative_RuntimeThread_CreateThread(size_t stackSize, void *(*startAddress)(void*), void *parameter)
+{
+    bool result = false;
+    pthread_attr_t attrs;
+
+    int error = pthread_attr_init(&attrs);
+    if (error != 0)
+    {
+        // Do not call pthread_attr_destroy
+        return false;
+    }
+
+    error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+    assert(error == 0);
+
+    if (stackSize > 0)
+    {
+        if (stackSize < PTHREAD_STACK_MIN)
+        {
+            stackSize = PTHREAD_STACK_MIN;
+        }
+
+        error = pthread_attr_setstacksize(&attrs, stackSize);
+        if (error != 0) goto CreateThreadExit;
+    }
+
+    pthread_t threadId;
+    error = pthread_create(&threadId, &attrs, startAddress, parameter);
+    if (error != 0) goto CreateThreadExit;
+
+    result = true;
+
+CreateThreadExit:
+    error = pthread_attr_destroy(&attrs);
+    assert(error == 0);
+
+    return result;
 }

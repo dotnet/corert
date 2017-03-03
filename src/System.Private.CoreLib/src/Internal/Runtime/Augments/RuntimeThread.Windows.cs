@@ -21,7 +21,6 @@ namespace Internal.Runtime.Augments
         [ThreadStatic]
         private static ApartmentType t_apartmentType;
 
-        private object _threadStartArg;
         private SafeWaitHandle _osHandle;
 
         /// <summary>
@@ -45,7 +44,6 @@ namespace Internal.Runtime.Augments
         private void PlatformSpecificInitializeExistingThread()
         {
             _osHandle = GetOSHandleForCurrentThread();
-            _priority = MapFromOSPriority(Interop.mincore.GetThreadPriority(_osHandle));
         }
 
         private static SafeWaitHandle GetOSHandleForCurrentThread()
@@ -124,190 +122,125 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        private ThreadPriority GetPriority()
+        /// <summary>
+        /// Returns true if the thread is started or being started in StartInternal.
+        /// </summary>
+        private bool HasStarted()
         {
-            if (_osHandle.IsInvalid)
-            {
-                // The thread has not been started yet; return the value assigned to the Priority property.
-                // Race condition with setting the priority or starting the thread is OK, we may return an old value.
-                return _priority;
-            }
-
-            // The priority might have been changed by external means. Obtain the actual value from the OS
-            // rather than using the value saved in _priority.
-            OSThreadPriority osPriority = Interop.mincore.GetThreadPriority(_osHandle);
-            return MapFromOSPriority(osPriority);
+            return !_osHandle.IsInvalid;
         }
 
-        private bool SetPriority(ThreadPriority priority)
+        private ThreadPriority GetPriorityLive()
         {
-            if (_osHandle.IsInvalid)
-            {
-                Debug.Assert(GetThreadStateBit(ThreadState.Unstarted));
-                // We will set the priority (saved in _priority) when we create an OS thread
-                return true;
-            }
+            Debug.Assert(HasStarted());
+            return MapFromOSPriority(Interop.mincore.GetThreadPriority(_osHandle));
+        }
+
+        private bool SetPriorityLive(ThreadPriority priority)
+        {
+            Debug.Assert(HasStarted());
             return Interop.mincore.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
         }
 
-        /// <summary>
-        /// Checks if the underlying OS thread has finished execution.
-        /// </summary>
-        /// <remarks>
-        /// Use this method only on started threads and threads being started in StartCore.
-        /// </remarks>
-        private bool HasFinishedExecution()
+        private ThreadState GetThreadState()
         {
-            // If an external thread dies and its Thread object is resurrected, _osHandle will be finalized, i.e. invalid
-            if (_osHandle.IsInvalid)
+            int state = _threadState;
+            // If the thread is marked as alive, check if it has finished execution
+            if ((state & (int)(ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0)
+            {
+                if (JoinInternal(0))
+                {
+                    state = _threadState;
+                    if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+                    {
+                        SetThreadStateBit(ThreadState.Stopped);
+                        state = _threadState;
+                    }
+                }
+            }
+            return (ThreadState)state;
+        }
+
+        private bool JoinInternal(int millisecondsTimeout)
+        {
+            // This method assumes the thread has been started
+            Debug.Assert(!GetThreadStateBit(ThreadState.Unstarted) || (millisecondsTimeout == 0));
+            SafeWaitHandle waitHandle = _osHandle;
+
+            // If an OS thread is terminated and its Thread object is resurrected, _osHandle may be finalized and closed
+            if (waitHandle.IsClosed)
             {
                 return true;
             }
-            uint result = Interop.mincore.WaitForSingleObject(_osHandle, dwMilliseconds: 0);
-            return result == (uint)Interop.Constants.WaitObject0;
-        }
 
-        private bool JoinCore(int millisecondsTimeout)
-        {
-            SafeWaitHandle waitHandle = _osHandle;
-            int result;
-
-            waitHandle.DangerousAddRef();
+            // Handle race condition with the finalizer
             try
             {
-                result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                waitHandle.DangerousAddRef();
+            }
+            catch (ObjectDisposedException)
+            {
+                return true;
+            }
+
+            try
+            {
+                int result;
+
+                if (millisecondsTimeout == 0)
+                {
+                    result = (int)Interop.mincore.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
+                }
+                else
+                {
+                    result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                }
+
+                return result == (int)Interop.Constants.WaitObject0;
             }
             finally
             {
                 waitHandle.DangerousRelease();
             }
-
-            return result == (int)Interop.Constants.WaitObject0;
         }
 
-        private void StartCore(object parameter)
+        private bool CreateThread(GCHandle thisThreadHandle)
         {
-            using (LockHolder.Hold(_lock))
+            const int AllocationGranularity = (int)System.Runtime.Constants.AllocationGranularity;
+
+            int stackSize = _maxStackSize;
+            if ((0 < stackSize) && (stackSize < AllocationGranularity))
             {
-                if (!GetThreadStateBit(ThreadState.Unstarted))
-                {
-                    throw new ThreadStateException(SR.ThreadState_AlreadyStarted);
-                }
-
-                const int AllocationGranularity = (int)System.Runtime.Constants.AllocationGranularity;
-
-                int stackSize = _maxStackSize;
-                if ((0 < stackSize) && (stackSize < AllocationGranularity))
-                {
-                    // If StackSizeParamIsAReservation flag is set and the reserve size specified by CreateThread's
-                    // dwStackSize parameter is less than or equal to the initially committed stack size specified in
-                    // the executable header, the reserve size will be set to the initially committed size rounded up
-                    // to the nearest multiple of 1 MiB. In all cases the reserve size is rounded up to the nearest
-                    // multiple of the system's allocation granularity (typically 64 KiB).
-                    //
-                    // To prevent overreservation of stack memory for small stackSize values, we increase stackSize to
-                    // the allocation granularity. We assume that the SizeOfStackCommit field of IMAGE_OPTIONAL_HEADER
-                    // is strictly smaller than the allocation granularity (the field's default value is 4 KiB);
-                    // otherwise, at least 1 MiB of memory will be reserved. Note that the desktop CLR increases
-                    // stackSize to 256 KiB if it is smaller than that.
-                    stackSize = AllocationGranularity;
-                }
-
-                bool waitingForThreadStart = false;
-                GCHandle threadHandle = GCHandle.Alloc(this);
-                _threadStartArg = parameter;
-                uint threadId;
-
-                try
-                {
-                    _osHandle = Interop.mincore.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                        AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(StartThread), (IntPtr)threadHandle,
-                        (uint)(Interop.Constants.CreateSuspended | Interop.Constants.StackSizeParamIsAReservation),
-                        out threadId);
-
-                    // CoreCLR ignores OS errors while setting the priority, so do we
-                    SetPriority(_priority);
-
-                    Interop.mincore.ResumeThread(_osHandle);
-
-                    // Skip cleanup if any asynchronous exception happens while waiting for the thread start
-                    waitingForThreadStart = true;
-
-                    // Wait until the new thread either dies or reports itself as started
-                    while (GetThreadStateBit(ThreadState.Unstarted) && !HasFinishedExecution())
-                    {
-                        Yield();
-                    }
-
-                    waitingForThreadStart = false;
-                }
-                finally
-                {
-                    Debug.Assert(!waitingForThreadStart, "Leaked threadHandle");
-                    if (!waitingForThreadStart)
-                    {
-                        threadHandle.Free();
-                        _threadStartArg = null;
-                    }
-                }
-
-                if (GetThreadStateBit(ThreadState.Unstarted))
-                {
-                    // Lack of memory is the only expected reason for thread creation failure
-                    throw new ThreadStartException(new OutOfMemoryException());
-                }
-            }
-        }
-
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static uint StartThread(IntPtr parameter)
-        {
-            GCHandle threadHandle = (GCHandle)parameter;
-            RuntimeThread thread = (RuntimeThread)threadHandle.Target;
-            Delegate threadStart = thread._threadStart;
-            // Get the value before clearing the ThreadState.Unstarted bit
-            object threadStartArg = thread._threadStartArg;
-
-            try
-            {
-                t_currentThread = thread;
-                System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
-            }
-            catch (OutOfMemoryException)
-            {
-                // Terminate the current thread. The creator thread will throw a ThreadStartException.
-                return 0;
+                // If StackSizeParamIsAReservation flag is set and the reserve size specified by CreateThread's
+                // dwStackSize parameter is less than or equal to the initially committed stack size specified in
+                // the executable header, the reserve size will be set to the initially committed size rounded up
+                // to the nearest multiple of 1 MiB. In all cases the reserve size is rounded up to the nearest
+                // multiple of the system's allocation granularity (typically 64 KiB).
+                //
+                // To prevent overreservation of stack memory for small stackSize values, we increase stackSize to
+                // the allocation granularity. We assume that the SizeOfStackCommit field of IMAGE_OPTIONAL_HEADER
+                // is strictly smaller than the allocation granularity (the field's default value is 4 KiB);
+                // otherwise, at least 1 MiB of memory will be reserved. Note that the desktop CLR increases
+                // stackSize to 256 KiB if it is smaller than that.
+                stackSize = AllocationGranularity;
             }
 
-            // Report success to the creator thread, which will free threadHandle and _threadStartArg
-            thread.ClearThreadStateBit(ThreadState.Unstarted);
+            uint threadId;
+            _osHandle = Interop.mincore.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
+                AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(StartThread), (IntPtr)thisThreadHandle,
+                (uint)(Interop.Constants.CreateSuspended | Interop.Constants.StackSizeParamIsAReservation),
+                out threadId);
 
-            try
+            if (_osHandle.IsInvalid)
             {
-                // The Thread cannot be started more than once, so we may clean up the delegate
-                thread._threadStart = null;
-
-#if ENABLE_WINRT
-                // If this call fails, COM and WinRT calls on this thread will fail with CO_E_NOTINITIALIZED.
-                // We may continue and fail on the actual call.
-                Interop.WinRT.RoInitialize(Interop.WinRT.RO_INIT_TYPE.RO_INIT_MULTITHREADED);
-#endif
-
-                ParameterizedThreadStart paramThreadStart = threadStart as ParameterizedThreadStart;
-                if (paramThreadStart != null)
-                {
-                    paramThreadStart(threadStartArg);
-                }
-                else
-                {
-                    ((ThreadStart)threadStart)();
-                }
+                return false;
             }
-            finally
-            {
-                thread.SetThreadStateBit(ThreadState.Stopped);
-            }
-            return 0;
+
+            // CoreCLR ignores OS errors while setting the priority, so do we
+            SetPriorityLive(_priority);
+
+            Interop.mincore.ResumeThread(_osHandle);
+            return true;
         }
 
         public ApartmentState GetApartmentState() { throw null; }
@@ -320,7 +253,7 @@ namespace Internal.Runtime.Augments
             Interop.mincore.Sleep(0);
         }
 
-        private static void SleepCore(int millisecondsTimeout)
+        private static void SleepInternal(int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
             Interop.mincore.Sleep((uint)millisecondsTimeout);
