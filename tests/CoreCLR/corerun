@@ -8,11 +8,22 @@
 export TestExecutable=$1
 export TestFileName=${TestExecutable%.*}
 
+source "$CoreRT_TestRoot/coredump_handling.sh"
+
+if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
+    set_up_core_dump_generation
+fi
+
 cp $CoreRT_TestRoot/CoreCLR/Test.csproj .
 
 __msbuild_dir=${CoreRT_TestRoot}/../Tools
 echo ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
 ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} Test.csproj
+
+if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
+    # Handle any core files generated when running the test IL through the toolchain.
+    inspect_and_delete_core_files $CoreRT_ToolchainDir/corerun "$CoreRT_ToolchainDir"
+fi
 
 # Remove the test executable from the arg list so it isn't passed to test execution
 shift
@@ -24,6 +35,11 @@ fi
 
 native/${TestFileName} "$@"
 testScriptExitCode=$?
+
+if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
+    # Handle any core files generated when running the test.
+    inspect_and_delete_core_files native/$TestFileName "$CoreRT_ToolchainDir"
+fi
 
 # Clean up test binary artifacts to save space
 rm -r native 2>/dev/null
