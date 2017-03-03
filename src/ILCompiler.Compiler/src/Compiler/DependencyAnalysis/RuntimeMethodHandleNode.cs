@@ -35,13 +35,31 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = new DependencyList();
+
+            if (_targetMethod.IsAbstract && !_targetMethod.HasInstantiation)
+            {
+                dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(_targetMethod), "NONE"));
+            }
+            else if (!_targetMethod.IsAbstract)
+            {
+                if (_targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != _targetMethod)
+                {
+                    dependencies.Add(new DependencyListEntry(factory.ShadowConcreteMethod(_targetMethod), "NONE"));
+                }
+                else
+                {
+                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(_targetMethod), "NONE"));
+                }
+            }
+
             if (_targetMethod.HasInstantiation && _targetMethod.IsVirtual)
             {
-                DependencyList dependencies = new DependencyList();
                 dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_targetMethod), "GVM dependencies for runtime method handle"));
-                return dependencies;
+                
             }
-            return null;
+
+            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
