@@ -199,18 +199,13 @@ namespace Internal.TypeSystem.Interop
                     case HomeType.Arg:
                         Debug.Assert(false, "Unexpectting setting value on non-byref arg");
                         break;
-                    case HomeType.ByRefArg:
-                        stream.EmitLdArg(_argIndex);
-                        stream.EmitStInd(_type);
-                        break;
                     case HomeType.Local:
                         stream.EmitStLoc(_var);
                         break;
-                    case HomeType.ByRefLocal:
-                        stream.EmitLdLoc(_var);
-                        stream.EmitStInd(_type);
-                        break;
                     default:
+                        // Storing by-ref arg/local is not supported because StInd require
+                        // address to be pushed first. Instead we need to introduce a non-byref 
+                        // local and propagate value as needed for by-ref arguments
                         Debug.Assert(false);
                         break;
                 }
@@ -1110,7 +1105,14 @@ namespace Internal.TypeSystem.Interop
             bool isForwardInterop = MarshalDirection == MarshalDirection.Forward;
             if (MarshalDirection == MarshalDirection.Forward)
             {
-                _vManaged = new Home(PInvokeParameterMetadata.Index - 1, ManagedType,  IsManagedByRef);
+                // Due to StInd order (address, value), we can't do the following:
+                //   LoadValue
+                //   StoreManagedValue (LdArg + StInd)
+                // The way to work around this is to put it in a local
+                if (IsManagedByRef)
+                    _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, false);
+                else
+                    _vManaged = new Home(PInvokeParameterMetadata.Index - 1, ManagedType, false);
                 _vNative = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
             }
             else
@@ -1135,7 +1137,7 @@ namespace Internal.TypeSystem.Interop
             ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
             _vManaged = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
-            _vNative = new Home(emitter.NewLocal(NativeType), NativeType, IsNativeByRef);
+            _vNative = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
         }
 
         protected void LoadManagedValue(ILCodeStream stream)
@@ -1183,9 +1185,29 @@ namespace Internal.TypeSystem.Interop
             _vNative.StoreValue(stream);
         }
 
+        protected void PropagateFromByRefArg(ILCodeStream stream, Home home)
+        {
+            stream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+            stream.EmitLdInd(ManagedType);
+            home.StoreValue(stream);
+        }
+
+        protected void PropagateToByRefArg(ILCodeStream stream, Home home)
+        {
+            stream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+            home.LoadValue(stream);
+            stream.EmitStInd(ManagedType);
+        }
+
         protected virtual void EmitMarshalArgumentManagedToNative()
         {
             SetupArguments();
+
+            if (IsManagedByRef && In)
+            {
+                // Propagate byref arg to local
+                PropagateFromByRefArg(_ilCodeStreams.MarshallingCodeStream, _vManaged);
+            }
 
             //
             // marshal
@@ -1217,6 +1239,12 @@ namespace Internal.TypeSystem.Interop
                 }
 
                 TransformNativeToManaged(_ilCodeStreams.UnmarshallingCodestream);
+
+                if (IsManagedByRef)
+                {
+                    // Propagate back to byref arguments
+                    PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _vManaged);
+                }
             }
             EmitCleanupManagedToNative();
         }
@@ -1281,6 +1309,12 @@ namespace Internal.TypeSystem.Interop
         {
             SetupArguments();
 
+            if (IsNativeByRef && In)
+            {
+                // Propagate byref arg to local
+                PropagateFromByRefArg(_ilCodeStreams.MarshallingCodeStream, _vNative);
+            }
+
             AllocAndTransformNativeToManaged(_ilCodeStreams.MarshallingCodeStream);
 
             LoadManagedArg(_ilCodeStreams.CallsiteSetupCodeStream);
@@ -1288,6 +1322,12 @@ namespace Internal.TypeSystem.Interop
             if (Out)
             {
                 TransformManagedToNative(_ilCodeStreams.UnmarshallingCodestream);
+                
+                if (IsNativeByRef)
+                {
+                    // Propagate back to byref arguments
+                    PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _vNative);
+                }
             }
         }
 
@@ -1359,8 +1399,7 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                SetupArguments();
-                LoadManagedArg(_ilCodeStreams.CallsiteSetupCodeStream);
+                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
             }
         }
 
@@ -1372,8 +1411,7 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                SetupArguments();
-                LoadNativeArg(_ilCodeStreams.CallsiteSetupCodeStream);
+                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
             }
         }
     }
@@ -1457,9 +1495,9 @@ namespace Internal.TypeSystem.Interop
                             throw new InvalidProgramException("Invalid SizeParamIndex, parameter must be  of type int/uint");
                     }
 
+                    // @TODO - We can use LoadManagedValue, but that requires byref arg propagation happen in a special setup stream
+                    // otherwise there is an ordering issue
                     codeStream.EmitLdArg(Marshallers[index].PInvokeParameterMetadata.Index - 1);
-
-                    // TODO - Abstract this into LoadArg/LoadLocal variants
                     if (Marshallers[index].IsManagedByRef)
                         codeStream.EmitLdInd(indexType);
 
@@ -1633,10 +1671,9 @@ namespace Internal.TypeSystem.Interop
             ArrayType arrayType = (ArrayType) ManagedType;
 
             var elementType = arrayType.ElementType;
-            LoadManagedValue(codeStream);
             EmitElementCount(codeStream, MarshalDirection.Reverse);
             codeStream.Emit(ILOpcode.newarr, emitter.NewToken(elementType));
-            codeStream.Emit(ILOpcode.stind_ref);
+            StoreManagedValue(codeStream);
         }
 
         protected override void EmitCleanupManagedToNative()
@@ -1815,6 +1852,11 @@ namespace Internal.TypeSystem.Interop
 
             SetupArguments();
 
+            if (IsManagedByRef && In)
+            {
+                PropagateFromByRefArg(marshallingCodeStream, _vManaged);
+            }
+
             // we don't support [IN,OUT] together yet, either IN or OUT
             Debug.Assert(!(PInvokeParameterMetadata.Out && PInvokeParameterMetadata.In));
 
@@ -1842,6 +1884,8 @@ namespace Internal.TypeSystem.Interop
 
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
                 StoreManagedValue(unmarshallingCodeStream);
+
+                PropagateToByRefArg(unmarshallingCodeStream, _vManaged);
             }
             else
             {

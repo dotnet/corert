@@ -40,10 +40,6 @@ namespace Internal.IL.Stubs
             int parameterIndex = 0;
             ParameterMetadata parameterMetadata = new ParameterMetadata();
 
-            if (pInvokeMethodData.TargetMethod.Name.Contains("DuplicateHandle"))
-            {
-                int x = 0; x++;
-            }
             for (int i = 0; i < marshallers.Length; i++)
             {
                 Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
