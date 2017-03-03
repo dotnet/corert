@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 
 using Internal.Runtime.CompilerServices;
 
@@ -139,10 +138,6 @@ namespace System
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
             Delegate[] invocationList = m_helperObject as Delegate[];
             if (invocationList == null)
             {
