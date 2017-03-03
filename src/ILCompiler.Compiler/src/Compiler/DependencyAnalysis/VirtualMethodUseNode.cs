@@ -8,6 +8,8 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     // This node represents the concept of a virtual method being used.
@@ -22,6 +24,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public VirtualMethodUseNode(MethodDesc decl)
         {
+            // Generic virtual methods are tracked by an orthogonal mechanism.
+            Debug.Assert(!decl.HasInstantiation);
             _decl = decl;
         }
 

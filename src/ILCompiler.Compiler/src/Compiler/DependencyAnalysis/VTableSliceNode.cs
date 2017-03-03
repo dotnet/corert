@@ -170,6 +170,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!method.IsVirtual)
                     continue;
+                
+                // Generic virtual methods are tracked by an orthogonal mechanism.
+                if (method.HasInstantiation)
+                    continue;
 
                 yield return new CombinedDependencyListEntry(
                     factory.VirtualMethodUse(method),
