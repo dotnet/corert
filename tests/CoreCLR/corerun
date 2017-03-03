@@ -17,8 +17,12 @@ ${__msbuild_dir}/msbuild.sh /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuratio
 # Remove the test executable from the arg list so it isn't passed to test execution
 shift
 
-native/${TestFileName} "$@"
+if [[ ! -f native/${TestFileName} ]]; then
+    echo "ERROR: Native binary not found. Unable to run test."
+    exit -1
+fi
 
+native/${TestFileName} "$@"
 testScriptExitCode=$?
 
 # Clean up test binary artifacts to save space
