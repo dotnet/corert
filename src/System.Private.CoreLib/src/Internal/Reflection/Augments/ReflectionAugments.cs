@@ -145,5 +145,7 @@ namespace Internal.Reflection.Augments
         public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
 
         public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
+
+        public abstract void RunModuleConstructor(Module module);
     }
 }

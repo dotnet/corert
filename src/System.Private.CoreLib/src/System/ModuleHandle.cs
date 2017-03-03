@@ -13,6 +13,8 @@ namespace System
 
         private Module _ptr;
 
+        internal Module AssociatedModule => _ptr;
+
         internal ModuleHandle(Module module)
         {
             _ptr = module;
