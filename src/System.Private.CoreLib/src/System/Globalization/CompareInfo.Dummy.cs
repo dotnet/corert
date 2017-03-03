@@ -61,9 +61,13 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int IndexOfCore(string source, string value, int startIndex, int count, CompareOptions options)
+        private unsafe int IndexOfCore(string source, string value, int startIndex, int count, CompareOptions options, int *matchLengthPtr)
         {
-            return IndexOfOrdinal(source, value, startIndex, count, (options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0);
+            int index = IndexOfOrdinal(source, value, startIndex, count, (options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0);
+            if  ((index != -1) && (matchLengthPtr != null))
+                *matchLengthPtr = value.Length;
+
+            return index;
         }
 
         private unsafe int LastIndexOfCore(string source, string value, int startIndex, int count, CompareOptions options)
