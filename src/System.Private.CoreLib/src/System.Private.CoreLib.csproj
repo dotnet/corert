@@ -904,9 +904,6 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -919,14 +916,17 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Threading.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
+      <Link>Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Interop\Unix\System.Native\Interop.SysConf.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
