@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.CoreLib", "System.Private.CoreLib.csproj", "{BE95C560-B508-4588-8907-F9FC5BC1A0CF}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "System.Private.CoreLib.Shared", "..\shared\System.Private.CoreLib.Shared.shproj", "{C5ED3C1D-B572-46F1-8F96-522A85CE1179}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\shared\System.Private.CoreLib.Shared.projitems*{be95c560-b508-4588-8907-f9fc5bc1a0cf}*SharedItemsImports = 4
+		..\shared\System.Private.CoreLib.Shared.projitems*{c5ed3c1d-b572-46f1-8f96-522a85ce1179}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|arm = Debug|arm
 		Debug|arm64 = Debug|arm64

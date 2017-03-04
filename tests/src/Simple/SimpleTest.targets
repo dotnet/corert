@@ -40,4 +40,8 @@
     <CustomLinkerArg Include="$(AdditionalLinkerFlags)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <IlcArg Include="--targetarch=$(Platform)" />
+  </ItemGroup>
+
 </Project>

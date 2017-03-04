@@ -16,8 +16,6 @@
 #define SIZEOF_RETURN_BLOCK         0x10    // for 16 bytes of conservatively reported space that the callee can
                                             // use to manage the return value that the call eventually generates
 
-#define SIZEOF_FP_REGS              0x80    // xmm0-7
-
 #define SIZEOF_ARGUMENT_REGISTERS   0x30    // Callee register spill
 
 //

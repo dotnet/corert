@@ -44,10 +44,10 @@ namespace System.Threading
             if (threadPoolHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)         // Bad handle
+                if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)         // Bad handle
                     throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
-                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)     // Handle already bound or sync handle
+                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)     // Handle already bound or sync handle
                     throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, nameof(handle));
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);

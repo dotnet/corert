@@ -28,12 +28,12 @@ namespace System.Threading
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 throw ExceptionFromCreationError(errorCode, name);
             }
 
-            createdNew = errorCode != Interop.mincore.Errors.ERROR_ALREADY_EXISTS;
+            createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             SafeWaitHandle = mutexHandle;
         }
 
@@ -50,7 +50,7 @@ namespace System.Threading
                     break;
                 }
 
-                if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                 {
                     // If a mutex with the name already exists, OS will try to open it with FullAccess.
                     // It might fail if we don't have enough access. In that case, we try to open the mutex will modify and synchronize access.
@@ -58,7 +58,7 @@ namespace System.Threading
                     mutexHandle = new SafeWaitHandle(Interop.mincore.OpenMutex((uint)(Interop.Constants.MutexModifyState | Interop.Constants.Synchronize), false, name), true);
                     if (!mutexHandle.IsInvalid)
                     {
-                        errorCode = Interop.mincore.Errors.ERROR_ALREADY_EXISTS;
+                        errorCode = Interop.Errors.ERROR_ALREADY_EXISTS;
                     }
                     else
                     {
@@ -67,11 +67,11 @@ namespace System.Threading
 
                     // There could be a race here, the other owner of the mutex can free the mutex,
                     // We need to retry creation in that case.
-                    if (errorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                    if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
                     {
-                        if (errorCode == Interop.mincore.Errors.ERROR_SUCCESS)
+                        if (errorCode == Interop.Errors.ERROR_SUCCESS)
                         {
-                            errorCode = Interop.mincore.Errors.ERROR_ALREADY_EXISTS;
+                            errorCode = Interop.Errors.ERROR_ALREADY_EXISTS;
                         }
                         break;
                     }
@@ -114,11 +114,11 @@ namespace System.Threading
             {
                 errorCode = (int)Interop.mincore.GetLastError();
 
-                if (Interop.mincore.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.mincore.Errors.ERROR_INVALID_NAME == errorCode)
+                if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
-                if (Interop.mincore.Errors.ERROR_PATH_NOT_FOUND == errorCode)
+                if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
                     return OpenExistingResult.PathNotFound;
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
 
                 // this is for passed through Win32Native Errors

@@ -1756,6 +1756,9 @@
   <data name="PlatformNotSupported_ReflectionOnly" xml:space="preserve">
     <value>ReflectionOnly loading is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_OSXFileLocking" xml:space="preserve">
+    <value>Locking/unlocking file regions is not supported on this platform. Use FileShare on the entire file instead.</value>
+  </data>
   <data name="MissingMember_Name" xml:space="preserve">
     <value>Member '{0}' not found.</value>
   </data>

@@ -6,7 +6,6 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-        internal const string BCrypt = "BCrypt.dll";
         internal const string CoreFile_L1 = "api-ms-win-core-file-l1-1-0.dll";
         internal const string CoreFile_L1_2 = "api-ms-win-core-file-l1-2-0.dll";
         internal const string CoreFile_L2 = "api-ms-win-core-file-l2-1-0.dll";
@@ -18,7 +17,6 @@ internal static partial class Interop
         internal const string ProcessThreads = "api-ms-win-core-processthreads-l1-1-0.dll";
         internal const string RealTime = "api-ms-win-core-realtime-l1-1-0.dll";
         internal const string SysInfo = "api-ms-win-core-sysinfo-l1-2-0.dll";
-        internal const string Kernel32 = "kernel32.dll";
         internal const string Registry_L1 = "api-ms-win-core-registry-l1-1-0.dll";
         internal const string ThreadPool = "api-ms-win-core-threadpool-l1-2-0.dll";
         internal const string Localization = "api-ms-win-core-localization-l1-2-1.dll";

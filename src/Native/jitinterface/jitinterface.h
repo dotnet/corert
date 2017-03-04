@@ -22,6 +22,7 @@ struct JitInterfaceCallbacks
     void* (__stdcall * getMethodClass)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (__stdcall * getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
     void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection);
+    void* (__stdcall * resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass);
     int (__stdcall * getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
     bool (__stdcall * isInSIMDModule)(void * thisHandle, CorInfoException** ppException, void* classHnd);
     int (__stdcall * getUnmanagedCallConv)(void * thisHandle, CorInfoException** ppException, void* method);
@@ -289,6 +290,15 @@ public:
         _callbacks->getMethodVTableOffset(_thisHandle, &pException, method, offsetOfIndirection, offsetAfterIndirection);
         if (pException != nullptr)
             throw pException;
+    }
+
+    virtual void* resolveVirtualMethod(void* virtualMethod, void* implementingClass)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->resolveVirtualMethod(_thisHandle, &pException, virtualMethod, implementingClass);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
     }
 
     virtual int getIntrinsicID(void* method, bool* pMustExpand)

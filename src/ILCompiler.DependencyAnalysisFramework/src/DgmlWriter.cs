@@ -4,16 +4,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using System.IO;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public class DgmlWriter : IDisposable, IDependencyAnalyzerLogEdgeVisitor, IDependencyAnalyzerLogNodeVisitor
+    public class DgmlWriter
+    {
+        public static void WriteDependencyGraphToStream<DependencyContextType>(Stream stream, DependencyAnalyzerBase<DependencyContextType> analysis)
+        {
+            DgmlWriter<DependencyContextType>.WriteDependencyGraphToStream(stream, analysis);
+        }
+    }
+
+    internal class DgmlWriter<DependencyContextType> : IDisposable, IDependencyAnalyzerLogEdgeVisitor, IDependencyAnalyzerLogNodeVisitor
     {
         private XmlWriter _xmlWrite;
         private bool _done = false;
@@ -24,22 +29,22 @@ namespace ILCompiler.DependencyAnalysisFramework
             _xmlWrite.WriteStartElement("DirectedGraph", "http://schemas.microsoft.com/vs/2009/dgml");
         }
 
-        public void WriteNodesAndEdges(Action<Action<object>> nodeWriter, Action<Action<object, object, string>> edgeWriter)
+        public void WriteNodesAndEdges(Action nodeWriter, Action edgeWriter)
         {
             _xmlWrite.WriteStartElement("Nodes");
             {
-                nodeWriter(AddNode);
+                nodeWriter();
             }
             _xmlWrite.WriteEndElement();
 
             _xmlWrite.WriteStartElement("Links");
             {
-                edgeWriter(AddReason);
+                edgeWriter();
             }
             _xmlWrite.WriteEndElement();
         }
 
-        public static void WriteDependencyGraphToStream<DependencyContextType>(Stream stream, DependencyAnalyzerBase<DependencyContextType> analysis)
+        public static void WriteDependencyGraphToStream(Stream stream, DependencyAnalyzerBase<DependencyContextType> analysis)
         {
             XmlWriterSettings writerSettings = new XmlWriterSettings();
             writerSettings.Indent = true;
@@ -47,13 +52,13 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             using (XmlWriter xmlWriter = XmlWriter.Create(stream, writerSettings))
             {
-                using (DgmlWriter dgmlWriter = new DgmlWriter(xmlWriter))
+                using (var dgmlWriter = new DgmlWriter<DependencyContextType>(xmlWriter))
                 {
-                    dgmlWriter.WriteNodesAndEdges((Action<Object> writeNode) =>
+                    dgmlWriter.WriteNodesAndEdges(() =>
                     {
                         analysis.VisitLogNodes(dgmlWriter);
                     },
-                    (Action<object, object, string> writeEdge) =>
+                    () =>
                     {
                         analysis.VisitLogEdges(dgmlWriter);
                     }
@@ -96,7 +101,12 @@ namespace ILCompiler.DependencyAnalysisFramework
         private Dictionary<object, int> _nodeMappings = new Dictionary<object, int>();
         private int _nodeNextId = 0;
 
-        private void AddNode(object node)
+        private void AddNode(DependencyNode node)
+        {
+            AddNode(node, node.GetName());
+        }
+
+        private void AddNode(object node, string label)
         {
             int nodeId = _nodeNextId++;
             Debug.Assert(!_nodeMappings.ContainsKey(node));
@@ -105,7 +115,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             _xmlWrite.WriteStartElement("Node");
             _xmlWrite.WriteAttributeString("Id", nodeId.ToString());
-            _xmlWrite.WriteAttributeString("Label", node.ToString());
+            _xmlWrite.WriteAttributeString("Label", label);
             _xmlWrite.WriteEndElement();
         }
 
@@ -135,7 +145,10 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         void IDependencyAnalyzerLogNodeVisitor.VisitCombinedNode(Tuple<DependencyNode, DependencyNode> node)
         {
-            AddNode(node);
+            string label1 = node.Item1.GetName();
+            string label2 = node.Item2.GetName();
+
+            AddNode(node, string.Concat("(", label1, ", ", label2, ")"));
         }
 
         private HashSet<Tuple<DependencyNode, DependencyNode>> _combinedNodesEdgeVisited = new HashSet<Tuple<DependencyNode, DependencyNode>>();
@@ -177,7 +190,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         void IDependencyAnalyzerLogNodeVisitor.VisitRootNode(string rootName)
         {
-            AddNode(rootName);
+            AddNode(rootName, rootName);
         }
     }
 }

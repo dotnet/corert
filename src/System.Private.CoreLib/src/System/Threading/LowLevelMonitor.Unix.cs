@@ -127,6 +127,7 @@ namespace System.Threading
 
         public void Signal_Release()
         {
+            ResetOwnerThread();
             Interop.Sys.LowLevelMonitor_Signal_Release(_nativeMonitor);
         }
 

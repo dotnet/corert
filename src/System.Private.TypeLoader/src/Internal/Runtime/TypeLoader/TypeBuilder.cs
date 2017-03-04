@@ -221,16 +221,9 @@ namespace Internal.Runtime.TypeLoader
 
         private void InsertIntoNeedsTypeHandleList(TypeBuilderState state, TypeDesc type)
         {
-            if ((type is DefType) || (type is ArrayType) || (type is PointerType))
+            if ((type is DefType) || (type is ArrayType) || (type is PointerType) || (type is ByRefType))
             {
                 _typesThatNeedTypeHandles.Add(type);
-            }
-            else if (type is ByRefType)
-            {
-                // Byref types do not have associated EETypes in the runtime, so we won't
-                // add the type to the _typesThatNeedTypeHandles list because it doesn't need
-                // a handle
-                state.NeedsTypeHandle = false;
             }
         }
 
@@ -985,7 +978,7 @@ namespace Internal.Runtime.TypeLoader
         {
             TypeBuilderState state = type.GetTypeBuilderState();
 
-            Debug.Assert(type is DefType || type is ArrayType || type is PointerType);
+            Debug.Assert(type is DefType || type is ArrayType || type is PointerType || type is ByRefType);
 
             if (state.ThreadDataSize != 0)
                 state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue();
@@ -1375,8 +1368,14 @@ namespace Internal.Runtime.TypeLoader
 
                     // Nothing else to do for pointer types
                 }
+                else if (type is ByRefType)
+                {
+                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(((ByRefType)type).ParameterType));
 
-                // Nothing to process for byref types because they don't have typehandles in the system.
+                    // We used a pointer type for the template because they're similar enough. Adjust this to be a ByRef.
+                    unsafe { Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer); }
+                    state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
+                }
             }
             else
             {
@@ -1508,6 +1507,7 @@ namespace Internal.Runtime.TypeLoader
 
             int newArrayTypesCount = 0;
             int newPointerTypesCount = 0;
+            int newByRefTypesCount = 0;
             int[] mdArrayNewTypesCount = null;
 
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
@@ -1520,6 +1520,8 @@ namespace Internal.Runtime.TypeLoader
                     newArrayTypesCount++;
                 else if (typeAsParameterizedType.IsPointer)
                     newPointerTypesCount++;
+                else if (typeAsParameterizedType.IsByRef)
+                    newByRefTypesCount++;
                 else if (typeAsParameterizedType.IsMdArray)
                 {
                     if (mdArrayNewTypesCount == null)
@@ -1544,7 +1546,8 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            TypeSystemContext.PointerTypesCache.Reserve(TypeSystemContext.PointerTypesCache.Count + newArrayTypesCount);
+            TypeSystemContext.PointerTypesCache.Reserve(TypeSystemContext.PointerTypesCache.Count + newPointerTypesCount);
+            TypeSystemContext.ByRefTypesCache.Reserve(TypeSystemContext.ByRefTypesCache.Count + newByRefTypesCount);
 
             // Finally, register all generic types and methods atomically with the runtime
             RegisterGenericTypesAndMethods();
@@ -1571,6 +1574,14 @@ namespace Internal.Runtime.TypeLoader
                     TypeSystemContext.GetArrayTypesCache(true, ((ArrayType)typeAsParameterizedType).Rank).AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 else if (typeAsParameterizedType.IsSzArray)
                     TypeSystemContext.GetArrayTypesCache(false, -1).AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
+                else if (typeAsParameterizedType.IsByRef)
+                {
+                    unsafe
+                    {
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRefType);
+                    }
+                    TypeSystemContext.ByRefTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
+                }
                 else
                 {
                     Debug.Assert(typeAsParameterizedType is PointerType);
@@ -1882,7 +1893,27 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
-                // Recycle the context only if we succesfully built the method. The state may be partially initialized otherwise.
+                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                TypeSystemContextFactory.Recycle(context);
+            }
+
+            return true;
+        }
+
+        public static bool TryBuildByRefType(RuntimeTypeHandle pointeeTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
+        {
+            if (!TypeSystemContext.ByRefTypesCache.TryGetValue(pointeeTypeHandle, out byRefTypeHandle))
+            {
+                TypeSystemContext context = TypeSystemContextFactory.Create();
+                TypeDesc byRefType = context.GetByRefType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
+                byRefTypeHandle = EETypeCreator.CreateByRefEEType((uint)byRefType.GetHashCode(), pointeeTypeHandle, byRefType);
+                unsafe
+                {
+                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRefType);
+                }
+                TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
+
+                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 

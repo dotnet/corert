@@ -119,7 +119,7 @@
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionExecutionDomainCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
-    <Compile Include="Internal\Runtime\Augments\InteropCallbacks.cs" />	
+    <Compile Include="Internal\Runtime\Augments\InteropCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DesktopSupportCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
@@ -237,17 +237,11 @@
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
-    <Compile Include="System\Action.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\AggregateException.cs" />
-    <Compile Include="System\ApplicationException.cs" />
     <Compile Include="System\ArgumentException.cs" />
-    <Compile Include="System\ArgumentNullException.cs" />
     <Compile Include="System\ArgumentOutOfRangeException.cs" />
-    <Compile Include="System\ArithmeticException.cs" />
     <Compile Include="System\ArraySegment.cs" />
-    <Compile Include="System\ArrayTypeMismatchException.cs" />
-    <Compile Include="System\AsyncCallback.cs" />
     <Compile Include="System\BadImageFormatException.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Boolean.cs" />
@@ -255,13 +249,7 @@
     <Compile Include="System\ByReference.cs" />
     <Compile Include="System\Byte.cs" />
     <Compile Include="System\Char.cs" />
-    <Compile Include="System\CharEnumerator.cs" />
-    <Compile Include="System\CLSCompliantAttribute.cs" />
-    <Compile Include="System\Buffers\ArrayPool.cs" />
     <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
-    <Compile Include="System\Buffers\ConfigurableArrayPool.cs" />
-    <Compile Include="System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
-    <Compile Include="System\Buffers\Utilities.cs" />
     <Compile Include="System\Collections\DictionaryEntry.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
@@ -292,23 +280,18 @@
     <Compile Include="System\Collections\IEnumerator.cs" />
     <Compile Include="System\Collections\IEqualityComparer.cs" />
     <Compile Include="System\Collections\IList.cs" />
-    <Compile Include="System\Collections\IStructuralComparable.cs" />
-    <Compile Include="System\Collections\IStructuralEquatable.cs" />
     <Compile Include="System\Collections\LowLevelListDictionary.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
-    <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="System\Convert.cs" />
     <Compile Include="System\ContextBoundObject.cs" />
-    <Compile Include="System\DataMisalignedException.cs" />
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
     <Compile Include="System\Empty.cs" />
-    <Compile Include="System\FormattableString.cs" />
     <Compile Include="System\Globalization\FormatProvider.cs" />
     <Compile Include="System\Globalization\CalendarWeekRule.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
@@ -336,20 +319,16 @@
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
-    <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\FileAccess.cs" />
     <Compile Include="System\IO\FileLoadException.cs" />
     <Compile Include="System\IO\FileMode.cs" />
     <Compile Include="System\IO\FileNotFoundException.cs" />
     <Compile Include="System\IO\FileShare.cs" />
     <Compile Include="System\IO\FileOptions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\FileStream.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="System\IO\PathTooLongException.cs" />
     <!-- TODO: Enable System.Path in ProjectN TFS build -->
-    <Compile Include="System\IO\Path.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathInternal.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\IO\SeekOrigin.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
@@ -358,9 +337,7 @@
     <Compile Include="System\Random.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\DateTime.cs" />
-    <Compile Include="System\DateTimeKind.cs" />
     <Compile Include="System\DateTimeOffset.cs" />
-    <Compile Include="System\DayOfWeek.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
@@ -369,17 +346,10 @@
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
-    <Compile Include="System\DivideByZeroException.cs" />
     <Compile Include="System\Double.cs" />
-    <Compile Include="System\DuplicateWaitObjectException.cs" />
     <Compile Include="System\Enum.cs" />
-    <Compile Include="System\EntryPointNotFoundException.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\Environment.EnvironmentVariables.cs" />
-    <Compile Include="System\EventArgs.cs" />
-    <Compile Include="System\EventHandler.cs" />
-    <Compile Include="System\ExecutionEngineException.cs" />
-    <Compile Include="System\FormatException.cs" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="System\Globalization\Calendar.cs" />
@@ -414,56 +384,26 @@
     <Compile Include="System\Globalization\UnicodeCategory.cs" />
     <Compile Include="System\Guid.cs" />
     <Compile Include="System\Helpers.cs" />
-    <Compile Include="System\IAsyncResult.cs" />
-    <Compile Include="System\IComparable.cs" />
-    <Compile Include="System\IConvertible.cs" />
-    <Compile Include="System\ICustomFormatter.cs" />
-    <Compile Include="System\IEquatable.cs" />
-    <Compile Include="System\IFormatProvider.cs" />
-    <Compile Include="System\IFormattable.cs" />
-    <Compile Include="System\IndexOutOfRangeException.cs" />
-    <Compile Include="System\InsufficientExecutionStackException.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Int16.cs" />
     <Compile Include="System\Int32.cs" />
     <Compile Include="System\Int64.cs" />
     <Compile Include="System\Intptr.cs" />
-    <Compile Include="System\InvalidCastException.cs" />
-    <Compile Include="System\InvalidOperationException.cs" />
-    <Compile Include="System\InvalidProgramException.cs" />
-    <Compile Include="System\InvalidTimeZoneException.cs" />
-    <Compile Include="System\IObservable.cs" />
-    <Compile Include="System\IObserver.cs" />
-    <Compile Include="System\IProgress.cs" />
     <Compile Include="System\Lazy.cs" />
     <Compile Include="System\Math.cs" />
-    <Compile Include="System\MemberAccessException.cs" />
-    <Compile Include="System\MethodAccessException.cs" />
-    <Compile Include="System\FieldAccessException.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MissingMethodException.cs" />
-    <Compile Include="System\MidpointRounding.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
-    <Compile Include="System\MulticastNotSupportedException.cs" />
-    <Compile Include="System\NotFiniteNumberException.cs" />
-    <Compile Include="System\NotImplementedException.cs" />
-    <Compile Include="System\NotSupportedException.cs" />
     <Compile Include="System\Nullable.cs" />
-    <Compile Include="System\NullReferenceException.cs" />
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.cs" />
     <Compile Include="System\Object.cs" />
-    <Compile Include="System\ObjectDisposedException.cs" />
-    <Compile Include="System\ObsoleteAttribute.cs" />
     <Compile Include="System\OperationCanceledException.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
-    <Compile Include="System\OverflowException.cs" />
     <Compile Include="System\ParamsArray.cs" />
     <Compile Include="System\ParseNumbers.cs" />
-    <Compile Include="System\PlatformNotSupportedException.cs" />
     <Compile Include="System\Progress.cs" />
-    <Compile Include="System\RankException.cs" />
     <Compile Include="System\Reflection\AssemblyAttributes.cs" />
     <Compile Include="System\Reflection\AssemblyNameFlags.cs" />
     <Compile Include="System\Reflection\DefaultMemberAttribute.cs" />
@@ -487,14 +427,11 @@
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionTypeRemoved.cs" />
     <Compile Include="System\Runtime\CompilerServices\DisablePrivateReflectionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\FormattableStringFactory.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ExtensionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ILTransformInjectedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ITuple.cs" />
     <Compile Include="System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\InitializedDataAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\InternalCompilerAttributes.cs" />
@@ -506,7 +443,6 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
     <Compile Include="System\Runtime\CompilerServices\StateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\Unsafe.cs" />
@@ -556,22 +492,17 @@
     <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
     <Compile Include="System\SByte.cs" />
     <Compile Include="System\Security\Attributes.cs" />
-    <Compile Include="System\Security\CryptographicException.cs" />
     <Compile Include="System\Security\SecureString.cs" />
     <Compile Include="System\Security\SecurityException.cs" />
     <Compile Include="System\Security\VerificationException.cs" />
     <Compile Include="System\Single.cs" />
-    <Compile Include="System\StackOverflowException.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
     <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\String.Searching.cs" />
     <Compile Include="System\StringComparer.cs" />
-    <Compile Include="System\StringSplitOptions.cs" />
-    <Compile Include="System\SystemException.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="System\IDisposable.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Delegate.DefaultParameters.cs" />
     <Compile Include="System\DelegateSerializationHolder.cs" />
@@ -581,12 +512,7 @@
     <Compile Include="System\EETypePtr.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Attribute.cs" />
-    <Compile Include="System\AttributeTargets.cs" />
-    <Compile Include="System\AttributeUsageAttribute.cs" />
-    <Compile Include="System\FlagsAttribute.cs" />
-    <Compile Include="System\MarshalByRefObject.cs" />
     <Compile Include="System\ModuleHandle.cs" />
-    <Compile Include="System\ParamArrayAttribute.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
     <Compile Include="System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
@@ -614,13 +540,11 @@
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\Latin1Encoding.cs" />
     <Compile Include="System\Text\StringBuilder.cs" />
-    <Compile Include="System\Text\Normalization.cs" />
     <Compile Include="System\Text\StringBuilderCache.cs" />
     <Compile Include="System\Text\UnicodeEncoding.cs" />
     <Compile Include="System\Text\UTF32Encoding.cs" />
     <Compile Include="System\Text\UTF7Encoding.cs" />
     <Compile Include="System\Text\UTF8Encoding.cs" />
-    <Compile Include="System\ThreadAttributes.cs" />
     <Compile Include="System\Threading\AbandonedMutexException.cs" />
     <Compile Include="System\Threading\ApartmentState.cs" />
     <Compile Include="System\Threading\AsyncLocal.cs" />
@@ -682,20 +606,15 @@
     <Compile Include="System\Threading\ThreadStartException.cs" />
     <Compile Include="System\Threading\ThreadState.cs" />
     <Compile Include="System\Threading\ThreadStateException.cs" />
-    <Compile Include="System\Threading\Timeout.cs" />
     <Compile Include="System\Threading\TimeoutHelper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
     <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\Threading\WaitHandleCannotBeOpenedException.cs" />
-    <Compile Include="System\ThreadStaticAttribute.cs" />
-    <Compile Include="System\TimeoutException.cs" />
     <Compile Include="System\TimeSpan.cs" />
     <Compile Include="System\TimeZoneInfo.cs" />
-    <Compile Include="System\TimeZoneNotFoundException.cs" />
     <Compile Include="System\Tuple.cs" />
-    <Compile Include="System\TupleExtensions.cs" />
     <Compile Include="System\Type.cs" />
     <Compile Include="System\Type.Enum.cs" />
     <Compile Include="System\Type.Helpers.cs" />
@@ -707,22 +626,15 @@
     </Compile>
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
-    <Compile Include="System\TypeAccessException.cs" />
-    <Compile Include="System\TypeCode.cs" />
-    <Compile Include="System\TypeInitializationException.cs" />
     <Compile Include="System\TypeLoadException.cs" />
     <Compile Include="System\UInt16.cs" />
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntptr.cs" />
-    <Compile Include="System\UnauthorizedAccessException.cs" />
-    <Compile Include="System\UnhandledExceptionEventArgs.cs" />
-    <Compile Include="System\UnhandledExceptionEventHandler.cs" />
     <Compile Include="System\UnitySerializationHolder.cs" />
     <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
-    <Compile Include="System\Void.cs" />
     <Compile Include="System\Collections\IEnumerable.cs" />
     <Compile Include="System\Reflection\TargetInvocationException.cs" />
     <Compile Include="System\Reflection\TargetParameterCountException.cs" />
@@ -730,7 +642,6 @@
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.NonPortable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\IsVolatile.cs" />
     <Compile Include="System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConvention.cs" />
@@ -782,22 +693,15 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
       <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
     <Compile Include="System\DateTime.Windows.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs">
-      <Link>Interop\Windows\Interop.BOOL.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
@@ -849,15 +753,6 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="System\IO\FileStream.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\FileStreamCompletionSource.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\Path.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathHelper.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathInternal.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathInternal.Windows.StringBuffer.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\Runtime\InteropServices\StringBuffer.cs" />
-    <Compile Include="System\IO\Win32Marshal.cs" />
-    <Compile Include="System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\Mutex.Windows.cs" />
@@ -869,74 +764,8 @@
     <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CancelIoEx.cs">
-      <Link>Interop\Windows\mincore\Interop.CancelIoEx.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CreateFile.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
-      <Link>Interop\Windows\mincore\Interop.CreateFile.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FileTypes.cs">
-      <Link>Interop\Windows\mincore\Interop.FileTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FlushFileBuffers.cs">
-      <Link>Interop\Windows\mincore\Interop.FlushFileBuffers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
-      <Link>Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs">
-      <Link>Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTempPathW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.LockFile.cs">
-      <Link>Interop\Windows\mincore\Interop.LockFile.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs">
-      <Link>Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SecurityOptions.cs">
-      <Link>Interop\Windows\mincore\Interop.SecurityOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetEndOfFile.cs">
-      <Link>Interop\Windows\mincore\Interop.SetEndOfFile.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetErrorMode.cs">
-      <Link>Interop\Windows\mincore\Interop.SetErrorMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetFileInformationByHandle.cs">
-      <Link>Interop\Windows\mincore\Interop.SetFileInformationByHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetFilePointerEx.cs">
-      <Link>Interop\Windows\mincore\Interop.SetFilePointerEx.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPoolIO.cs">
       <Link>Interop\Windows\mincore\Interop.ThreadPoolIO.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs">
-      <Link>Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
@@ -966,14 +795,8 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs">
-      <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CloseHandle.cs">
-      <Link>Interop\Windows\mincore\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
       <Link>Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
@@ -1050,14 +873,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="System\TimeZoneInfo.Unix.cs" />
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
-    <Compile Include="System\IO\FileStream.Unix.cs" />
-    <Compile Include="System\IO\Path.Unix.cs" />
-    <Compile Include="System\IO\PathInternal.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
@@ -1073,12 +892,6 @@
     <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\Interop.IOErrors.cs">
-      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
@@ -1115,57 +928,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.FLock.cs">
-      <Link>Interop\Unix\System.Native\Interop.FLock.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.FSync.cs">
-      <Link>Interop\Unix\System.Native\Interop.FSync.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.FTruncate.cs">
-      <Link>Interop\Unix\System.Native\Interop.FTruncate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Fcntl.cs">
-      <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetCwd.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.LSeek.cs">
-      <Link>Interop\Unix\System.Native\Interop.LSeek.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.MksTemps.cs">
-      <Link>Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Open.cs">
-      <Link>Interop\Unix\System.Native\Interop.Open.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.OpenFlags.cs">
-      <Link>Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.PathConf.cs">
-      <Link>Interop\Unix\System.Native\Interop.PathConf.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Permissions.cs">
-      <Link>Interop\Unix\System.Native\Interop.Permissions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
-      <Link>Interop\Unix\System.Native\Interop.PosixFAdvise.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Read.cs">
-      <Link>Interop\Unix\System.Native\Interop.Read.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Interop\Unix\System.Native\Interop.Stat.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Unlink.cs">
-      <Link>Interop\Unix\System.Native\Interop.Unlink.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Write.cs">
-      <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -1299,5 +1061,6 @@
       <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+  <Import Project="..\shared\System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

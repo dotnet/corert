@@ -28,12 +28,15 @@ namespace ILCompiler
         private bool _generateFullDgmlLog;
 
         private TargetArchitecture _targetArchitecture;
+        private string _targetArchitectureStr;
         private TargetOS _targetOS;
+        private string _targetOSStr;
         private OptimizationMode _optimizationMode;
         private bool _enableDebugInfo;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
+        private string _mapFileName;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -129,6 +132,10 @@ namespace ILCompiler
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
+
+                syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
+                syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -166,6 +173,36 @@ namespace ILCompiler
             
             if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
+
+            //
+            // Set target Architecture and OS
+            //
+            if (_targetArchitectureStr != null)
+            {
+                if (_targetArchitectureStr.Equals("x86", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.X86;
+                else if (_targetArchitectureStr.Equals("x64", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.X64;
+                else if (_targetArchitectureStr.Equals("arm", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.ARM;
+                else if (_targetArchitectureStr.Equals("armel", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.ARMEL;
+                else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.ARM64;
+                else
+                    throw new CommandLineException("Target architecture is not supported");
+            }
+            if (_targetOSStr != null)
+            {
+                if (_targetOSStr.Equals("windows", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.Windows;
+                else if (_targetOSStr.Equals("linux", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.Linux;
+                else if (_targetOSStr.Equals("osx", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.OSX;
+                else
+                    throw new CommandLineException("Target OS is not supported");
+            }
 
             //
             // Initialize type system context
@@ -308,7 +345,9 @@ namespace ILCompiler
                 .UseDebugInfo(_enableDebugInfo)
                 .ToCompilation();
 
-            compilation.Compile(_outputFilePath);
+            ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
+
+            compilation.Compile(_outputFilePath, dumper);
 
             if (_dgmlLogFileName != null)
                 compilation.WriteDependencyLog(_dgmlLogFileName);

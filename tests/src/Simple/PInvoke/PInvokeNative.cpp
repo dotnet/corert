@@ -42,6 +42,25 @@ DLL_EXPORT int __stdcall CheckIncremental(int *array, int sz)
     return 0;
 }
 
+struct Foo
+{
+    int a;
+    float b;
+};
+
+DLL_EXPORT int __stdcall CheckIncremental_Foo(Foo *array, int sz)
+{
+    if (array == NULL)
+        return 1;
+
+    for (int i = 0; i < sz; i++)
+    {
+        if (array[i].a != i || array[i].b != i)
+            return 1;
+    }
+    return 0;
+}  
+
 DLL_EXPORT int __stdcall Inc(int *val)
 {
     if (val == NULL)
@@ -50,6 +69,19 @@ DLL_EXPORT int __stdcall Inc(int *val)
     *val = *val + 1;
     return 0;
 }
+
+DLL_EXPORT int __stdcall VerifyByRefFoo(Foo *val)
+{
+    if (val->a != 10)
+        return -1;
+    if (val->b != 20)
+        return -1;
+
+    val->a++;
+    val->b++;
+
+    return 0;
+}    
 
 DLL_EXPORT bool __stdcall GetNextChar(short *value)
 {
@@ -191,9 +223,9 @@ DLL_EXPORT long __stdcall SafeHandleOutTest(HANDLE **sh)
     return (long)((size_t)(*sh));
 }
 
-DLL_EXPORT bool __stdcall ReversePInvoke_Int(int(__stdcall *fnPtr) (int))
+DLL_EXPORT bool __stdcall ReversePInvoke_Int(int(__stdcall *fnPtr) (int, int, int, int, int, int, int, int, int, int))
 {
-	return fnPtr(10) == 1000;
+    return fnPtr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) == 55;
 }
 
 DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)

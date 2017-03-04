@@ -71,11 +71,17 @@ namespace ILCompiler.DependencyAnalysis
                     // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
                     // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
                     // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                    if (implementedInterface.HasVariance)
+                    // NOTE: we need to also do this for generic interfaces on arrays because they have a weird casting rule
+                    // that doesn't require the implemented interface to be variant to consider it castable.
+                    if (implementedInterface.HasVariance || (_type.IsArray && implementedInterface.HasInstantiation))
                     {
                         foreach (var interfaceMethod in implementedInterface.GetAllMethods())
                         {
                             if (interfaceMethod.Signature.IsStatic)
+                                continue;
+
+                            // Generic virtual methods are tracked by an orthogonal mechanism.
+                            if (interfaceMethod.HasInstantiation)
                                 continue;
 
                             MethodDesc implMethod = closestDefType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
@@ -141,6 +147,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
             {
+                // Generic virtual methods are tracked by an orthogonal mechanism.
                 if (decl.HasInstantiation)
                     continue;
 
@@ -167,6 +174,10 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (MethodDesc interfaceMethod in interfaceType.GetAllMethods())
                 {
                     if (interfaceMethod.Signature.IsStatic)
+                        continue;
+
+                    // Generic virtual methods are tracked by an orthogonal mechanism.
+                    if (interfaceMethod.HasInstantiation)
                         continue;
 
                     MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);

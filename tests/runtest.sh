@@ -47,7 +47,7 @@ run_test_dir()
         __extra_args="${__extra_args} /p:IlcMultiModule=true"
     fi
 
-    rm -rf ${__dir_path}/bin ${__dir_path}/obj
+    rm -rf ${__dir_path}/bin/${CoreRT_BuildType} ${__dir_path}/obj/${CoreRT_BuildType}
 
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
 
@@ -143,6 +143,7 @@ CoreRT_TestCompileMode=
 CoreRT_CrossRootFS=
 CoreRT_CrossCXXFlags=
 CoreRT_CrossLinkerFlags=
+CoreRT_CrossBuild=0
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
