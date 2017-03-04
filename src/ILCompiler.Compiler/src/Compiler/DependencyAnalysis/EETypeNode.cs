@@ -256,6 +256,14 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
+            if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+            {
+                // Runtime casting logic relies on all interface types implemented on arrays
+                // to have the variant flag set (even if all the arguments are non-variant).
+                // This supports e.g. casting uint[] to ICollection<int>
+                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+            }
+
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
             // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
@@ -494,6 +502,13 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Generic array enumerators use special variance rules recognized by the runtime
                     details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
+                }
+                else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+                {
+                    // Runtime casting logic relies on all interface types implemented on arrays
+                    // to have the variant flag set (even if all the arguments are non-variant).
+                    // This supports e.g. casting uint[] to ICollection<int>
+                    details = new GenericCompositionDetails(_type, forceVarianceInfo: true);
                 }
                 else
                     details = new GenericCompositionDetails(_type);
