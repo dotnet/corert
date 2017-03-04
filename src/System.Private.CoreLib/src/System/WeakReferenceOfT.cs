@@ -13,6 +13,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Diagnostics;
 
@@ -21,11 +22,13 @@ using Internal.Runtime.Augments;
 namespace System
 {
     // This class is sealed to mitigate security issues caused by Object::MemberwiseClone.
-    public sealed class WeakReference<T> where T : class
+    [Serializable]
+    public sealed class WeakReference<T> : ISerializable where T : class
     {
         // If you fix bugs here, please fix them in WeakReference at the same time.
 
         internal volatile IntPtr m_handle;
+        private bool m_trackResurrection;
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
@@ -39,6 +42,26 @@ namespace System
         //
         public WeakReference(T target, bool trackResurrection)
         {
+            m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            m_trackResurrection = trackResurrection;
+
+            if (target != null)
+            {
+                // Set the conditional weak table if the target is a __ComObject.
+                TrySetComTarget(target);
+            }
+        }
+
+        internal WeakReference(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            T target = (T)info.GetValue("TrackedObject", typeof(T));
+            bool trackResurrection = info.GetBoolean("TrackResurrection");
+
             m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
 
             if (target != null)
@@ -157,6 +180,18 @@ namespace System
                 if (old_handle == Interlocked.CompareExchange(ref m_handle, default(IntPtr), old_handle))
                     ((GCHandle)old_handle).Free();
             }
+        }
+
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue("TrackedObject", this.GetTarget(), typeof(T));
+            info.AddValue("TrackResurrection", m_trackResurrection);
         }
     }
 }
