@@ -16,6 +16,7 @@
 
 using System.Reflection;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Internal.LowLevelLinq;
 
 namespace System
@@ -36,23 +37,23 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(Assembly element) => CustomAttributeExtensions.GetCustomAttributes(element).ToArray();
         public static Attribute[] GetCustomAttributes(Assembly element, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element).ToArray(); // "inherit" is meaningless for assemblies
-        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).ToArray();
-        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).ToArray(); // "inherit" is meaningless for modules
+        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).AsAttributeArray();
+        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).AsAttributeArray(); // "inherit" is meaningless for modules
 
         public static Attribute[] GetCustomAttributes(MemberInfo element) => CustomAttributeExtensions.GetCustomAttributes(element).ToArray();
         public static Attribute[] GetCustomAttributes(MemberInfo element, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, inherit).ToArray();
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type) => CustomAttributeExtensions.GetCustomAttributes(element, type).ToArray();
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, type, inherit).ToArray();
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type) => CustomAttributeExtensions.GetCustomAttributes(element, type).AsAttributeArray();
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, type, inherit).AsAttributeArray();
 
         public static Attribute[] GetCustomAttributes(Module element) => CustomAttributeExtensions.GetCustomAttributes(element).ToArray();
         public static Attribute[] GetCustomAttributes(Module element, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element).ToArray(); // "inherit" is meaningless for assemblies
-        public static Attribute[] GetCustomAttributes(Module element, Type attributeType) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).ToArray();
-        public static Attribute[] GetCustomAttributes(Module element, Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).ToArray(); // "inherit" is meaningless for modules
+        public static Attribute[] GetCustomAttributes(Module element, Type attributeType) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).AsAttributeArray();
+        public static Attribute[] GetCustomAttributes(Module element, Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).AsAttributeArray(); // "inherit" is meaningless for modules
 
         public static Attribute[] GetCustomAttributes(ParameterInfo element) => CustomAttributeExtensions.GetCustomAttributes(element).ToArray();
         public static Attribute[] GetCustomAttributes(ParameterInfo element, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, inherit).ToArray();
-        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).ToArray();
-        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType, inherit).ToArray();
+        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType).AsAttributeArray();
+        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType, bool inherit) => CustomAttributeExtensions.GetCustomAttributes(element, attributeType, inherit).AsAttributeArray();
 
         public static bool IsDefined(Assembly element, Type attributeType) => CustomAttributeExtensions.IsDefined(element, attributeType);
         public static bool IsDefined(Assembly element, Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(element, attributeType); // "inherit" is meaningless for assemblies
@@ -65,6 +66,15 @@ namespace System
 
         public static bool IsDefined(ParameterInfo element, Type attributeType) => CustomAttributeExtensions.IsDefined(element, attributeType);
         public static bool IsDefined(ParameterInfo element, Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(element, attributeType, inherit);
+    }
+
+    internal static class AttributeHelper
+    {
+        // This is used to "convert" the output of CustomAttributeExtensions.GetCustomAttributes() from IEnumerable<Attribute> to Attribute[].
+        // This relies on the fact that CustomAttributeExtensions.GetCustomAttribute()'s actual return type is an array whose element type is that of the specific attributeType searched on.
+        // (Though this isn't explicitly promised, real world code does in fact rely on this so this is a compat thing we're stuck with now.)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Attribute[] AsAttributeArray(this IEnumerable<Attribute> attributes) => (Attribute[])attributes;
     }
 }
 

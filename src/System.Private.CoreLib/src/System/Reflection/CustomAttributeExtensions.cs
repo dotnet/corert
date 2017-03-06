@@ -330,8 +330,9 @@ namespace System.Reflection
 
         //==============================================================================================================================
         // Helper for the GetCustomAttributes() methods that take a specific attribute type. For desktop compatibility, 
-        // we return an array of the specific attribute type even though the api's return type promises only an IEnumerable<Attribute>.
-        // There are known store apps that cast the results of apis and expect the cast to work.
+        // we return a freshly allocated array of the specific attribute type even though the api's return type promises only an IEnumerable<Attribute>.
+        // There are known store apps that cast the results of apis and expect the cast to work. The implementation of Attribute.GetCustomAttribute()
+        // also relies on this (it performs an unsafe cast to Attribute[] and does not re-copy the array.)
         //==============================================================================================================================
         private static IEnumerable<Attribute> Instantiate(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
         {
