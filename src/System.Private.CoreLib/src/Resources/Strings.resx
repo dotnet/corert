@@ -2215,4 +2215,10 @@
   <data name="RuntimeFieldHandleSer_InsufficientMetadata" xml:space="preserve">
     <value>The RuntimeFieldHandle cannot be serialized properly due to missing reflection metadata.</value>
   </data>
+  <data name="PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod" xml:space="preserve">
+    <value>ResourceManager method '{0}' is not supported when reading from .resw resource files.</value>
+  </data>
+  <data name="PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty" xml:space="preserve">
+    <value>ResourceManager property '{0}' is not supported when reading from .resw resource files.</value>
+  </data>
 </root>
