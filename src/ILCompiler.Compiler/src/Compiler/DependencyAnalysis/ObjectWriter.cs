@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.JitInterface;
+using Internal.JitInterface.TypesDebugInfo;
 
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
@@ -241,13 +242,24 @@ namespace ILCompiler.DependencyAnalysis
             EmitDebugLoc(_nativeObjectWriter, nativeOffset, fileId, linueNumber, colNumber);
         }
 
+        private uint GetVariableTypeIndex(TypeDesc type)
+        {
+            uint typeIndex = 0;
+            if (type.IsPrimitive)
+            {
+                typeIndex = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
+            }
+            return typeIndex;
+        }
+
         [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitDebugVar(IntPtr objWriter, string name, UInt32 typeIndex, bool isParam, Int32 rangeCount, NativeVarInfo[] range);
 
         public void EmitDebugVar(DebugVarInfo debugVar)
         {
             int rangeCount = debugVar.Ranges.Count;
-            EmitDebugVar(_nativeObjectWriter, debugVar.Name, debugVar.TypeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
+            uint typeIndex = GetVariableTypeIndex(debugVar.Type);
+            EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
         public void EmitDebugVarInfo(ObjectNode node)

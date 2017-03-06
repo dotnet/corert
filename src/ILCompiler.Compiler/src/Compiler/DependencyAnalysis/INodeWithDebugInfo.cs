@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Internal.JitInterface;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -40,14 +41,14 @@ namespace ILCompiler.DependencyAnalysis
     public struct DebugVarInfo
     {
         public readonly string Name;
-        public readonly uint TypeIndex;
         public readonly bool IsParam;
+        public readonly TypeDesc Type;
         public List<NativeVarInfo> Ranges;
 
-        public DebugVarInfo(string name, bool isParam, uint typeIndex)
+        public DebugVarInfo(string name, bool isParam, TypeDesc type)
         {
             this.Name = name;
-            this.TypeIndex = typeIndex;
+            this.Type = type;
             this.IsParam = isParam;
             this.Ranges = new List<NativeVarInfo>();
         }

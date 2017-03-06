@@ -209,25 +209,25 @@ namespace Internal.JitInterface
                     SetParameterNames(parameters);
                 }
 
-                ArrayBuilder<uint> variableToTypeIndex = new ArrayBuilder<uint>();
+                ArrayBuilder<TypeDesc> variableToTypeIndex = new ArrayBuilder<TypeDesc>();
 
                 var signature = MethodBeingCompiled.Signature;
                 if (!signature.IsStatic)
                 {
                     TypeDesc type = MethodBeingCompiled.OwningType;
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeIndex.Add(type);
                 }
 
                 for (int i = 0; i < signature.Length; ++i)
                 {
                     TypeDesc type = signature[i];
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeIndex.Add(type);
                 }
                 var locals = methodIL.GetLocals();
                 for (int i = 0; i < locals.Length; ++i)
                 {
                     TypeDesc type = locals[i].Type;
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeIndex.Add(type);
                 }
                 _variableToTypeIndex = variableToTypeIndex.ToArray();
             }
@@ -1819,16 +1819,6 @@ namespace Internal.JitInterface
             _parameterIndexToNameMap = parameterIndexToNameMap;
         }
 
-        private uint GetVariableTypeIndex(TypeDesc type)
-        {
-            uint typeIndex = 0;
-            if (type.IsPrimitive)
-            {
-                typeIndex = TypesDebugInfo.PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);               
-            }
-            return typeIndex;
-        }
-
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
@@ -3030,7 +3020,7 @@ namespace Internal.JitInterface
         private Dictionary<uint, string> _parameterIndexToNameMap;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
-        private uint[] _variableToTypeIndex;
+        private TypeDesc[] _variableToTypeIndex;
 
         private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
