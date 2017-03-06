@@ -1145,7 +1145,7 @@ namespace ILCompiler.CppCodeGen
         private String GetCodeForReadyToRunHeader(ReadyToRunHeaderNode headerNode, NodeFactory factory)
         {
             CppGenerationBuffer rtrHeader = new CppGenerationBuffer();
-            int size = _compilation.TypeSystemContext.Target.PointerSize;
+            int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
 
             rtrHeader.Append(GetCodeForObjectNode(headerNode, factory));
             rtrHeader.AppendLine();
@@ -1154,14 +1154,14 @@ namespace ILCompiler.CppCodeGen
             rtrHeader.AppendLine();
             rtrHeader.Append("static struct {");
             rtrHeader.AppendLine();
-            if (size == 8)
+            if (pointerSize == 8)
                 rtrHeader.Append("unsigned char leftPadding[8];");
             else
                 rtrHeader.Append("unsigned char leftPadding[4];");
             rtrHeader.AppendLine();
             rtrHeader.Append("void* rtrHeader;");
             rtrHeader.AppendLine();
-            if (size == 8)
+            if (pointerSize == 8)
                 rtrHeader.Append("unsigned char rightPadding[8];");
             else
                 rtrHeader.Append("unsigned char rightPadding[4];");
@@ -1169,7 +1169,7 @@ namespace ILCompiler.CppCodeGen
             rtrHeader.Append("} rtrHeaderWrapper = {");
             rtrHeader.Indent();
             rtrHeader.AppendLine();
-            if (size == 8)
+            if (pointerSize == 8)
                 rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },");
             else
                 rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
@@ -1178,7 +1178,7 @@ namespace ILCompiler.CppCodeGen
             rtrHeader.Append(headerNode.GetMangledName());
             rtrHeader.Append("(),");
             rtrHeader.AppendLine();
-            if (size == 8)
+            if (pointerSize == 8)
                 rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }");
             else
                 rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
