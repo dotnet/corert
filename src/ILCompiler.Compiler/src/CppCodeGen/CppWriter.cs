@@ -1152,22 +1152,38 @@ namespace ILCompiler.CppCodeGen
             rtrHeader.AppendLine();
             rtrHeader.Append("static struct {");
             rtrHeader.AppendLine();
+#if BIT64
             rtrHeader.Append("unsigned char leftPadding[8];");
+#else
+            rtrHeader.Append("unsigned char leftPadding[4];");
+#endif
             rtrHeader.AppendLine();
             rtrHeader.Append("void* rtrHeader;");
             rtrHeader.AppendLine();
+#if BIT64
             rtrHeader.Append("unsigned char rightPadding[8];");
+#else
+            rtrHeader.Append("unsigned char rightPadding[4];");
+#endif
             rtrHeader.AppendLine();
             rtrHeader.Append("} rtrHeaderWrapper = {");
             rtrHeader.Indent();
             rtrHeader.AppendLine();
+#if BIT64
             rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },");
+#else
+            rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
+#endif
             rtrHeader.AppendLine();
             rtrHeader.Append("(void*)");
             rtrHeader.Append(headerNode.GetMangledName());
             rtrHeader.Append("(),");
             rtrHeader.AppendLine();
+#if BIT64
             rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }");
+#else
+            rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
+#endif
             rtrHeader.AppendLine();
             rtrHeader.Append("};");
             rtrHeader.Exdent();
