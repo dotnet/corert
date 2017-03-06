@@ -1688,8 +1688,6 @@ namespace System
             
                 Debug.Assert(genericInterfaceType.IsGenericType());
 
-                InsertIntoCache(interfaceType, ContextCookie.Current, ref pComPtr, true);
-
                 interfaceType = genericInterfaceType;
             }
 
