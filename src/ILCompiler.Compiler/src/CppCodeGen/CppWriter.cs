@@ -1145,6 +1145,8 @@ namespace ILCompiler.CppCodeGen
         private String GetCodeForReadyToRunHeader(ReadyToRunHeaderNode headerNode, NodeFactory factory)
         {
             CppGenerationBuffer rtrHeader = new CppGenerationBuffer();
+            int size = _compilation.TypeSystemContext.Target.PointerSize;
+
             rtrHeader.Append(GetCodeForObjectNode(headerNode, factory));
             rtrHeader.AppendLine();
             rtrHeader.Append("void* RtRHeaderWrapper() {");
@@ -1152,38 +1154,34 @@ namespace ILCompiler.CppCodeGen
             rtrHeader.AppendLine();
             rtrHeader.Append("static struct {");
             rtrHeader.AppendLine();
-#if BIT64
-            rtrHeader.Append("unsigned char leftPadding[8];");
-#else
-            rtrHeader.Append("unsigned char leftPadding[4];");
-#endif
+            if (size == 8)
+                rtrHeader.Append("unsigned char leftPadding[8];");
+            else
+                rtrHeader.Append("unsigned char leftPadding[4];");
             rtrHeader.AppendLine();
             rtrHeader.Append("void* rtrHeader;");
             rtrHeader.AppendLine();
-#if BIT64
-            rtrHeader.Append("unsigned char rightPadding[8];");
-#else
-            rtrHeader.Append("unsigned char rightPadding[4];");
-#endif
+            if (size == 8)
+                rtrHeader.Append("unsigned char rightPadding[8];");
+            else
+                rtrHeader.Append("unsigned char rightPadding[4];");
             rtrHeader.AppendLine();
             rtrHeader.Append("} rtrHeaderWrapper = {");
             rtrHeader.Indent();
             rtrHeader.AppendLine();
-#if BIT64
-            rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },");
-#else
-            rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
-#endif
+            if (size == 8)
+                rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },");
+            else
+                rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
             rtrHeader.AppendLine();
             rtrHeader.Append("(void*)");
             rtrHeader.Append(headerNode.GetMangledName());
             rtrHeader.Append("(),");
             rtrHeader.AppendLine();
-#if BIT64
-            rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }");
-#else
-            rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
-#endif
+            if (size == 8)
+                rtrHeader.Append("{ 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }");
+            else
+                rtrHeader.Append("{ 0x00,0x00,0x00,0x00 },");
             rtrHeader.AppendLine();
             rtrHeader.Append("};");
             rtrHeader.Exdent();
