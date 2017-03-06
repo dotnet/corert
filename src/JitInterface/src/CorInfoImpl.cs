@@ -2436,7 +2436,11 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj)
+                    // We could use pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
+                    // to distinguish between "necessary" and "constructed" symbols, but reflection and various
+                    // uses of "RhNewObject"/"RuntimeHelpers.RunClassConstructor" with the returned type handle
+                    // really give us no chance but to consider this a constructed type.
+                    if (ConstructedEETypeNode.CreationAllowed(td))
                         pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(td));
                     else
                         pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.NecessaryTypeSymbol(td));

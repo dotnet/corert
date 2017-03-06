@@ -1320,11 +1320,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\539509\test1\test1.*" />
 
-    <!-- Complex variant casts -->
-    <!-- https://github.com/dotnet/corert/issues/2380 -->
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\IsInst004\IsInst004.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox004\Unbox004.*" />
-
     <!-- InvalidCastException doesn't include type names -->
     <!-- https://github.com/dotnet/corert/issues/2369 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\347422\b347422\b347422.*" />
