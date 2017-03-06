@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using Internal.Reflection.Extensions.NonPortable;
 
 using Internal.LowLevelLinq;
@@ -348,5 +349,16 @@ namespace System.Reflection
             attributes.CopyTo(result, 0);
             return result;
         }
+
+        //==============================================================================================================================
+        // This is used to "convert" the output of CustomAttributeExtensions.GetCustomAttributes() from IEnumerable<Attribute> to Attribute[] 
+        // as required by the Attribute.GetCustomAttributes() members.
+        //
+        // This relies on the fact that CustomAttributeExtensions.GetCustomAttribute()'s actual return type is an array whose element type is that 
+        // of the specific attributeType searched on. (Though this isn't explicitly promised, real world code does in fact rely on this so 
+        // this is a compat thing we're stuck with now.)
+        //==============================================================================================================================
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Attribute[] AsAttributeArray(this IEnumerable<Attribute> attributes) => (Attribute[])attributes;
     }
 }

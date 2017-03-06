@@ -16,7 +16,6 @@
 
 using System.Reflection;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Internal.LowLevelLinq;
 
 namespace System
@@ -66,15 +65,6 @@ namespace System
 
         public static bool IsDefined(ParameterInfo element, Type attributeType) => CustomAttributeExtensions.IsDefined(element, attributeType);
         public static bool IsDefined(ParameterInfo element, Type attributeType, bool inherit) => CustomAttributeExtensions.IsDefined(element, attributeType, inherit);
-    }
-
-    internal static class AttributeHelper
-    {
-        // This is used to "convert" the output of CustomAttributeExtensions.GetCustomAttributes() from IEnumerable<Attribute> to Attribute[].
-        // This relies on the fact that CustomAttributeExtensions.GetCustomAttribute()'s actual return type is an array whose element type is that of the specific attributeType searched on.
-        // (Though this isn't explicitly promised, real world code does in fact rely on this so this is a compat thing we're stuck with now.)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Attribute[] AsAttributeArray(this IEnumerable<Attribute> attributes) => (Attribute[])attributes;
     }
 }
 
