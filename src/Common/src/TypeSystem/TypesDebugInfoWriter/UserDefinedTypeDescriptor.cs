@@ -26,24 +26,23 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         private uint GetNewTypeIndex(TypeDesc type)
         {
-            switch (type.Category)
+
+            if (type.IsEnum)
             {
-                case TypeFlags.ValueType:
-                case TypeFlags.Class:
-                    return GetClassTypeIndex(type);
-                case TypeFlags.Enum:
-                    return GetEnumTypeIndex(type);
+                return GetEnumTypeIndex(type);
+            }
+            else if (type.IsDefType)
+            {
+                return GetClassTypeIndex(type);
             }
             return 0;
         }
 
         public uint GetEnumTypeIndex(TypeDesc type)
         {
+            System.Diagnostics.Debug.Assert(type.IsEnum, "GetEnumTypeIndex was called with wrong type");
             DefType defType = type as DefType;
-            if (defType == null)
-            {
-                return 0;
-            }
+            System.Diagnostics.Debug.Assert(defType != null, "GetEnumTypeIndex was called with non def type");
             EnumTypeDescriptor enumTypeDescriptor = new EnumTypeDescriptor();
             List<FieldDesc> fieldsDescriptors = new List<FieldDesc>();
             foreach (var field in defType.GetFields())
@@ -116,10 +115,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
         public uint GetClassTypeIndex(TypeDesc type)
         {
             DefType defType = type as DefType;
-            if (defType == null)
-            {
-                return 0;
-            }
+            System.Diagnostics.Debug.Assert(defType != null, "GetClassTypeIndex was called with non def type");
             ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor();
             classTypeDescriptor.IsStruct = type.IsValueType? 1:0;
             classTypeDescriptor.Name = defType.Name;
