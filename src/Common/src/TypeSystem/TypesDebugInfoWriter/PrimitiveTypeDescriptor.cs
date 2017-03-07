@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
 using System.Diagnostics;
 
-namespace Internal.JitInterface.TypesDebugInfo
+namespace Internal.TypeSystem.TypesDebugInfo
 {
     public class PrimitiveTypeDescriptor
     {
@@ -208,10 +207,9 @@ namespace Internal.JitInterface.TypesDebugInfo
             T_64PBOOL64 = 0x0633,   // 64 bit pointer to 64 bit boolean
         };
 
-
         public static uint GetPrimitiveTypeIndex(TypeDesc type)
         {
-            Debug.Assert(type.IsPrimitive, "it is not primitive type");
+            Debug.Assert(type.IsPrimitive, "it is not a primitive type");
             switch (type.Category)
             {
                 case TypeFlags.Void:
@@ -254,6 +252,5 @@ namespace Internal.JitInterface.TypesDebugInfo
                     return 0;
             }
         }
-
     }
 }

@@ -48,8 +48,8 @@ namespace ILCompiler.DependencyAnalysis
         public DebugVarInfo(string name, bool isParam, TypeDesc type)
         {
             this.Name = name;
-            this.Type = type;
             this.IsParam = isParam;
+            this.Type = type;
             this.Ranges = new List<NativeVarInfo>();
         }
     }

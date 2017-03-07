@@ -12,9 +12,8 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.TypesDebugInfo;
 using Internal.JitInterface;
-using Internal.JitInterface.TypesDebugInfo;
-
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.DependencyAnalysis
@@ -22,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Object writer using https://github.com/dotnet/llilc
     /// </summary>
-    internal class ObjectWriter : IDisposable
+    internal class ObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();
@@ -68,6 +67,8 @@ namespace ILCompiler.DependencyAnalysis
 
         // Unix section containing LSDA data, like EH Info and GC Info
         public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
+
+        private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 
 #if DEBUG
         static Dictionary<string, ISymbolNode> _previouslyWrittenNodeNames = new Dictionary<string, ISymbolNode>();
@@ -242,12 +243,40 @@ namespace ILCompiler.DependencyAnalysis
             EmitDebugLoc(_nativeObjectWriter, nativeOffset, fileId, linueNumber, colNumber);
         }
 
-        private uint GetVariableTypeIndex(TypeDesc type)
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetEnumTypeIndex(IntPtr objWriter, EnumTypeDescriptor enumTypeDescriptor, EnumRecordTypeDescriptor[] typeRecords);
+
+        public uint GetEnumTypeIndex(EnumTypeDescriptor enumTypeDescriptor, EnumRecordTypeDescriptor[] typeRecords)
+        {
+            return GetEnumTypeIndex(_nativeObjectWriter, enumTypeDescriptor, typeRecords);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor);
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void CompleteClassDescription(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
+
+        public uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor)
+        {
+            return GetClassTypeIndex(_nativeObjectWriter, classTypeDescriptor);
+        }
+
+        public void CompleteClassDescription(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
+        {
+            CompleteClassDescription(_nativeObjectWriter, classTypeDescriptor, classFieldsTypeDescriptior, fields);
+        }
+
+        public uint GetVariableTypeIndex(TypeDesc type)
         {
             uint typeIndex = 0;
             if (type.IsPrimitive)
             {
                 typeIndex = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
+            }
+            else
+            {
+                typeIndex = _userDefinedTypeDescriptor.GetTypeIndex(type);
             }
             return typeIndex;
         }
@@ -718,6 +747,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
+            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this);
         }
 
         public void Dispose()
