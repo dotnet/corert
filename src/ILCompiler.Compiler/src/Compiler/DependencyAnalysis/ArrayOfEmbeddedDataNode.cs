@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -36,9 +37,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AddEmbeddedObject(TEmbedded symbol)
         {
-            if (_nestedNodes.Add(symbol))
+            lock (_nestedNodes)
             {
-                _nestedNodesList.Add(symbol);
+                if (_nestedNodes.Add(symbol))
+                {
+                    _nestedNodesList.Add(symbol);
+                }
             }
         }
 
@@ -74,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialPointerAlignment();
 
             if (_sorter != null)
@@ -94,6 +98,15 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             return _nestedNodesList.Count == 0;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(StartSymbol, "StartSymbol");
+            dependencies.Add(EndSymbol, "EndSymbol");
+
+            return dependencies;
         }
     }
 

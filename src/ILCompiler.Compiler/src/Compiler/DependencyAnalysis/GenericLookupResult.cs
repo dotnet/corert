@@ -30,6 +30,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             builder.EmitPointerReloc(GetTarget(factory, typeInstantiation, methodInstantiation, dictionary));
         }
+
+        public abstract NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory);
     }
 
     /// <summary>
@@ -59,6 +61,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"TypeHandle: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeHandleDictionarySlot(_type);
+        }
     }
 
     /// <summary>
@@ -87,6 +94,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"MethodHandle: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodLdTokenDictionarySlot(_method);
+        }
     }
 
     /// <summary>
@@ -115,6 +127,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"FieldHandle: {_field}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.FieldLdTokenDictionarySlot(_field);
+        }
     }
 
     /// <summary>
@@ -143,6 +160,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"MethodDictionary: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodDictionaryDictionarySlot(_method);
+        }
     }
 
     /// <summary>
@@ -176,6 +198,12 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"MethodEntry: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodEntrypointDictionarySlot
+                        (_method, unboxing: true, functionPointerTarget: factory.MethodEntrypoint(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+        }
     }
 
     /// <summary>
@@ -217,6 +245,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"VirtualCall: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            }
+        }
     }
 
     /// <summary>
@@ -261,6 +301,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"VirtualResolve: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            }
+        }
     }
 
     /// <summary>
@@ -280,6 +332,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            // TODO The ProjectN abi should have an indirection here.
             return factory.TypeNonGCStaticsSymbol(instantiatedType);
         }
 
@@ -290,6 +343,19 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"NonGCStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // CoreRT abi doesn't currently have the extra indirection that the runtime expects for multifile support.
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.NonGcStaticDictionarySlot(_type);
+            }
+        }
     }
 
     /// <summary>
@@ -319,6 +385,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"ThreadStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     /// <summary>
@@ -338,6 +409,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            // TODO The ProjectN abi should have an indirection here.
             return factory.TypeGCStaticsSymbol(instantiatedType);
         }
 
@@ -348,6 +420,19 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"GCStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // CoreRT abi doesn't currently have the extra indirection that the runtime expects for multifile support.
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.GcStaticDictionarySlot(_type);
+            }
+        }
     }
 
     /// <summary>
@@ -376,6 +461,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"AllocObject: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.AllocateObjectDictionarySlot(_type);
+        }
     }
 
     /// <summary>
@@ -405,6 +495,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"AllocArray: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.AllocateArrayDictionarySlot(_type);
+        }
     }
 
     internal sealed class ThreadStaticIndexLookupResult : GenericLookupResult
@@ -432,6 +527,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"ThreadStaticIndex: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TlsIndexDictionarySlot(_type);
+        }
     }
 
     internal sealed class ThreadStaticOffsetLookupResult : GenericLookupResult
@@ -460,6 +560,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"ThreadStaticOffset: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TlsOffsetDictionarySlot(_type);
+        }
     }
 
     internal sealed class DefaultConstructorLookupResult : GenericLookupResult
@@ -500,5 +605,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"DefaultConstructor: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.DefaultConstructorDictionarySlot(_type);
+        }
     }
 }

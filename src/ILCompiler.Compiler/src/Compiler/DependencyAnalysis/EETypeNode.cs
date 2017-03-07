@@ -166,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
@@ -195,7 +195,8 @@ namespace ILCompiler.DependencyAnalysis
             if (EmitVirtualSlotsAndInterfaces)
             {
                 // Avoid consulting VTable slots until they're guaranteed complete during final data emission
-                if (!relocsOnly)
+                // or if we know they must be complete as a matter of policy
+                if (!relocsOnly || factory.CompilationModuleGroup.ShouldProduceFullType(_type))
                 {
                     OutputVirtualSlots(factory, ref objData, _type, _type);
                 }

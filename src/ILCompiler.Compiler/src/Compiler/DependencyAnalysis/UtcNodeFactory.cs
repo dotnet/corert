@@ -144,7 +144,7 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticStartOffset, ThreadStaticsStartOffset, ThreadStaticsStartOffset);
 
-            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
+            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
             MetadataManager.AttachToDependencyGraph(graph);
         }
 

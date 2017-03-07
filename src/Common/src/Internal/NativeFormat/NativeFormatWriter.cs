@@ -439,6 +439,24 @@ namespace Internal.NativeFormat
             return Unify(sig);
         }
 
+        public Vertex GetFixupSignature(FixupSignatureKind kind, Vertex signature)
+        {
+            FixupSignature sig = new FixupSignature(kind, signature);
+            return Unify(sig);
+        }
+
+        public Vertex GetStaticDataSignature(Vertex type, StaticDataKind staticDataKind)
+        {
+            StaticDataSignature sig = new StaticDataSignature(type, staticDataKind);
+            return Unify(sig);
+        }
+
+        public Vertex GetMethodSlotSignature(Vertex type, uint slot)
+        {
+            MethodSlotSignature sig = new MethodSlotSignature(type, slot);
+            return Unify(sig);
+        }
+
         public Vertex GetMethodSigSignature(uint callingConvention, uint genericArgCount, Vertex returnType, Vertex[] parameters)
         {
             MethodSigSignature sig = new MethodSigSignature(callingConvention, genericArgCount, returnType, parameters);
@@ -1016,7 +1034,137 @@ namespace Internal.NativeFormat
     }
 
 #if NATIVEFORMAT_PUBLICWRITER
-        public
+    public
+#else
+    internal
+#endif
+    class FixupSignature : Vertex
+    {
+        private FixupSignatureKind _kind;
+        private Vertex _signature;
+
+        public FixupSignature(FixupSignatureKind kind, Vertex signature)
+        {
+            _kind = kind;
+            _signature = signature;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.WriteUnsigned((uint)_kind);
+            if (_signature != null)
+                _signature.Save(writer);
+        }
+
+        public override int GetHashCode()
+        {
+            return 53345 + 97 * (int)_kind + ((_signature != null) ? _signature.GetHashCode() : 0);
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as FixupSignature;
+            if (other == null)
+                return false;
+
+            if (other._kind != _kind)
+                return false;
+
+            if (!Object.Equals(other._signature, _signature))
+                return false;
+
+            return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class StaticDataSignature : Vertex
+    {
+        private Vertex _type;
+        private StaticDataKind _staticDataKind;
+
+        public StaticDataSignature(Vertex type, StaticDataKind staticDataKind)
+        {
+            _type = type;
+            _staticDataKind = staticDataKind;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            _type.Save(writer);
+            writer.WriteUnsigned((uint)_staticDataKind);
+        }
+
+        public override int GetHashCode()
+        {
+            return 456789 + 101 * (int)_staticDataKind + _type.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as StaticDataSignature;
+            if (other == null)
+                return false;
+
+            if (!Object.Equals(other._type, _type))
+                return false;
+
+            if (other._staticDataKind != _staticDataKind)
+                return false;
+
+            return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class MethodSlotSignature : Vertex
+    {
+        private Vertex _type;
+        private uint _slot;
+
+        public MethodSlotSignature(Vertex type, uint slot)
+        {
+            _type = type;
+            _slot = slot;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            _type.Save(writer);
+            writer.WriteUnsigned(_slot);
+        }
+
+        public override int GetHashCode()
+        {
+            return 124121 + 47 * (int)_slot + _type.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as MethodSlotSignature;
+            if (other == null)
+                return false;
+
+            if (!Object.Equals(other._type, _type))
+                return false;
+
+            if (other._slot != _slot)
+                return false;
+
+            return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
 #else
     internal
 #endif
