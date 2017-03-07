@@ -2,13 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.ComponentModel;
 using System.Text;
 
 namespace System.Collections.Generic
 {
-    internal static partial class Toolbox
+    // Provides the Create factory method for KeyValuePair<TKey, TValue>.
+    public static class KeyValuePair
     {
+        // Creates a new KeyValuePair<TKey, TValue> from the given values.
+        public static KeyValuePair<TKey, TValue> Create<TKey, TValue>(TKey key, TValue value)
+        {
+            return new KeyValuePair<TKey, TValue>(key, value);
+        }
+
         /// <summary>
         /// Used by KeyValuePair.ToString to reduce generic code
         /// </summary>
@@ -35,10 +42,10 @@ namespace System.Collections.Generic
         }
     }
 
-
     // A KeyValuePair holds a key and a value from a dictionary.
     // It is used by the IEnumerable<T> implementation for both IDictionary<TKey, TValue>
     // and IReadOnlyDictionary<TKey, TValue>.
+    [Serializable]
     public struct KeyValuePair<TKey, TValue>
     {
         private TKey key;       // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
@@ -62,7 +69,14 @@ namespace System.Collections.Generic
 
         public override string ToString()
         {
-            return Toolbox.PairToString(Key, Value);
+            return KeyValuePair.PairToString(Key, Value);
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out TKey key, out TValue value)
+        {
+            key = Key;
+            value = Value;
         }
     }
 }
