@@ -66,9 +66,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             UtcNodeFactory hostedFactory = factory as UtcNodeFactory;
             Debug.Assert(hostedFactory != null);
-            DependencyListEntry[] result = new DependencyListEntry[2];           
+            bool refersToGCStaticsSymbol = !_type.IsCanonicalSubtype(CanonicalFormKind.Any);
+            DependencyListEntry[] result = new DependencyListEntry[refersToGCStaticsSymbol ? 2 : 1];           
             result[0] = new DependencyListEntry(hostedFactory.GCStaticDescRegion, "GCStaticDesc Region");
-            result[1] = new DependencyListEntry(hostedFactory.TypeGCStaticsSymbol(_type), "GC Static Base Symbol");
+            if (refersToGCStaticsSymbol)
+                result[1] = new DependencyListEntry(hostedFactory.TypeGCStaticsSymbol(_type), "GC Static Base Symbol");
             return result;
         }
 
@@ -97,13 +99,20 @@ namespace ILCompiler.DependencyAnalysis
                     // The cell ends the current series
                     builder.EmitInt(gcFieldCount);
 
-                    if (_isThreadStatic)
+                    if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
-                        builder.EmitReloc((factory as UtcNodeFactory).TlsStart, RelocType.IMAGE_REL_SECREL, startIndex * factory.Target.PointerSize);
+                        builder.EmitInt(0);
                     }
                     else
                     {
-                        builder.EmitReloc(factory.TypeGCStaticsSymbol(_type), RelocType.IMAGE_REL_BASED_RELPTR32, startIndex * factory.Target.PointerSize);
+                        if (_isThreadStatic)
+                        {
+                            builder.EmitReloc((factory as UtcNodeFactory).TlsStart, RelocType.IMAGE_REL_SECREL, startIndex * factory.Target.PointerSize);
+                        }
+                        else
+                        {
+                            builder.EmitReloc(factory.TypeGCStaticsSymbol(_type), RelocType.IMAGE_REL_BASED_RELPTR32, startIndex * factory.Target.PointerSize);
+                        }
                     }
 
                     gcFieldCount = 0;
@@ -138,6 +147,7 @@ namespace ILCompiler.DependencyAnalysis
                     node.Offset = builder.CountBytes;
 
                 node.EncodeData(ref builder, factory, relocsOnly);
+                builder.AddSymbol(node);
             }
         }
     }

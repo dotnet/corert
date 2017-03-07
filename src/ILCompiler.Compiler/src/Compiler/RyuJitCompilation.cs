@@ -44,6 +44,7 @@ namespace ILCompiler
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
+            NodeFactory.SetMarkingComplete();
             ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, dumper);
         }
 

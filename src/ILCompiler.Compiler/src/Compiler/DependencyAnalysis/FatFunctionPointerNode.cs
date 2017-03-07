@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            var builder = new ObjectDataBuilder(factory);
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
 
             // These need to be aligned the same as methods because they show up in same contexts
             builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);

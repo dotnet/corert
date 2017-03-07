@@ -67,7 +67,8 @@ namespace ILCompiler
             return _metadataPolicy.IsBlocked(type);
         }
 
-        protected override void ComputeMetadata(out byte[] metadataBlob, 
+        protected override void ComputeMetadata(NodeFactory factory,
+                                                out byte[] metadataBlob, 
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings)

@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
 
 #if DEBUG
-        static HashSet<string> _previouslyWrittenNodeNames = new HashSet<string>();
+        static Dictionary<string, ISymbolNode> _previouslyWrittenNodeNames = new Dictionary<string, ISymbolNode>();
 #endif
 
         [DllImport(NativeObjectWriterFileName)]
@@ -789,8 +789,18 @@ namespace ILCompiler.DependencyAnalysis
 
 #if DEBUG
                     foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
-                        Debug.Assert(_previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName()), "Duplicate node name emitted to file", 
-                            $"Symbol {definedSymbol.GetMangledName()} has already been written to the output object file {objectFilePath}");
+                    {
+                        try
+                        {
+                            _previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName(), definedSymbol);
+                        }
+                        catch (ArgumentException)
+                        {
+                            ISymbolNode alreadyWrittenSymbol = _previouslyWrittenNodeNames[definedSymbol.GetMangledName()];
+                            Debug.Assert(false, "Duplicate node name emitted to file",
+                            $"Symbol {definedSymbol.GetMangledName()} has already been written to the output object file {objectFilePath} with symbol {alreadyWrittenSymbol}");
+                        }
+                    }
 #endif
 
 

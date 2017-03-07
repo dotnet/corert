@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
         
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             // The interface dispatch cell has an alignment requirement of 2 * [Pointer size] as part of the 
             // synchronization mechanism of the two values in the runtime.
             objData.RequireInitialAlignment(_targetMethod.Context.Target.PointerSize * 2);

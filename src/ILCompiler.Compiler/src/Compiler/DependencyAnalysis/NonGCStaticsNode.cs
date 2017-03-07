@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
             // If the type has a class constructor, its non-GC statics section is prefixed  
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.

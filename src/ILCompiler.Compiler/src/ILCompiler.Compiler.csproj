@@ -85,11 +85,9 @@
     </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\EmptyMetadataManager.cs" />
     <Compile Include="Compiler\ILStreamReader.cs" />
+    <Compile Include="Compiler\INonEmittableType.cs" />
     <Compile Include="Compiler\LibraryInitializers.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
@@ -103,9 +101,11 @@
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeGVMEntriesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GVMDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
@@ -113,6 +113,7 @@
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutVertexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutSignatureNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericTypesHashtableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericTypesTemplateMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsTemplateMap.cs" />
@@ -140,6 +141,7 @@
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedEETypeSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />

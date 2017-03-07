@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
             // Ensure native layout is saved to get valid Vertex offsets
             factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);
 
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
 
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);

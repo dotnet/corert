@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public struct ObjectDataBuilder : Internal.Runtime.ITargetBinaryWriter
     {
-        public ObjectDataBuilder(NodeFactory factory)
+        public ObjectDataBuilder(NodeFactory factory, bool relocsOnly)
         {
             _target = factory.Target;
             _data = new ArrayBuilder<byte>();
@@ -21,6 +21,7 @@ namespace ILCompiler.DependencyAnalysis
             _definedSymbols = new ArrayBuilder<ISymbolNode>();
 #if DEBUG
             _numReservations = 0;
+            _checkAllSymbolDependenciesMustBeMarked = !relocsOnly;
 #endif
         }
 
@@ -32,6 +33,7 @@ namespace ILCompiler.DependencyAnalysis
 
 #if DEBUG
         private int _numReservations;
+        private bool _checkAllSymbolDependenciesMustBeMarked;
 #endif
 
         public int CountBytes
@@ -229,6 +231,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
         {
+#if DEBUG
+            if (_checkAllSymbolDependenciesMustBeMarked)
+            {
+                var node = symbol as ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>;
+                if (node != null)
+                    Debug.Assert(node.Marked);
+            }
+#endif
+
             _relocs.Add(new Relocation(relocType, _data.Count, symbol));
 
             // And add space for the reloc
