@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a symbol that is defined externally but modelled as a method
+    /// Represents a symbol that is defined externally but modeled as a method
     /// in the DependencyAnalysis infrastructure during compilation that is compiled 
     /// in the current compilation process
     /// </summary>
@@ -17,8 +17,9 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _method;
 
-        public NonExternMethodSymbolNode(NodeFactory factory, MethodDesc method)
-            : base(factory.NameMangler.GetMangledMethodName(method))
+        public NonExternMethodSymbolNode(NodeFactory factory, MethodDesc method, bool isUnboxing)
+            : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
+                  factory.NameMangler.GetMangledMethodName(method))
         {
             _method = method;
         }
