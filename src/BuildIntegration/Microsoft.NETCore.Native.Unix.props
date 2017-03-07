@@ -25,7 +25,7 @@ See the LICENSE file in the project root for more information.
 
   <ItemGroup>
     <CppCompilerAndLinkerArg Include="-I $(IlcPath)/inc" />
-    <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-O0" />
+    <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-g -O0" />
     <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="-O2" />
     <CppCompilerAndLinkerArg Include="-c -Wno-invalid-offsetof" />
     <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
