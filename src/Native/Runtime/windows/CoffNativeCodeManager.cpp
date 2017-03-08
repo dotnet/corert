@@ -270,26 +270,42 @@ PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
     return NULL;
 }
 
-// void EnumGCRefs(PTR_VOID pGCInfo, UINT32 curOffs, REGDISPLAY * pRD, GCEnumContext * hCallback, bool executionAborted);
-
 void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo, 
                                        PTR_VOID        safePointAddress,
                                        REGDISPLAY *    pRegisterSet,
                                        GCEnumContext * hCallback)
 {
-    // @TODO: CORERT: PInvoke transitions
-
-#if 0
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
-    SIZE_T nUnwindDataSize;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(dac_cast<TADDR>(m_pvStartRange), &pNativeMethodInfo->mainRuntimeFunction, &nUnwindDataSize);
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);
 
-    // GCInfo immediatelly follows unwind data
-    PTR_VOID pGCInfo = dac_cast<PTR_VOID>(dac_cast<TADDR>(pUnwindData) + nUnwindDataSize + 1);
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
 
-    ::EnumGCRefs(pGCInfo, codeOffset, pRegisterSet, hCallback, pNativeMethodInfo->executionAborted);
-#endif
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    TADDR methodStartAddress = m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress;
+    UInt32 codeOffset = (UInt32)(dac_cast<TADDR>(safePointAddress) - methodStartAddress);
+
+    GcInfoDecoder decoder(
+        GCInfoToken(p),
+        GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+        codeOffset - 1 // TODO: Is this adjustment correct?
+        );
+
+    if (!decoder.EnumerateLiveSlots(
+        pRegisterSet,
+        false /* reportScratchSlots */, 
+        pNativeMethodInfo->executionAborted ? ICodeManagerFlags::ExecutionAborted : 0, // TODO: Flags?
+        hCallback->pCallback,
+        hCallback
+        ))
+    {
+        assert(false);
+    }
 }
 
 UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
