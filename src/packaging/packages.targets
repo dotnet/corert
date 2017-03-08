@@ -29,7 +29,7 @@
 
             <MicrosoftNetCoreNativePackageVersion>2.0.0-beta-25021-03</MicrosoftNetCoreNativePackageVersion>
 
-            <ObjectWriterPackageVersion>1.0.15-prerelease-00001</ObjectWriterPackageVersion>
+            <ObjectWriterPackageVersion>1.0.16-prerelease-00001</ObjectWriterPackageVersion>
             <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
             <ObjectWriterNuPkgRid Condition="'$(ObjectWriterNuPkgRid)'==''">$(NuPkgRid)</ObjectWriterNuPkgRid>
         </PropertyGroup>
