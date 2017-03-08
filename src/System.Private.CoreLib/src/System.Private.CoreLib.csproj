@@ -573,6 +573,7 @@
     <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
     <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
+    <Compile Include="System\Threading\Tasks\TaskExtensions.cs" />
     <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
     <Compile Include="System\Threading\Tasks\TaskSchedulerException.cs" />
