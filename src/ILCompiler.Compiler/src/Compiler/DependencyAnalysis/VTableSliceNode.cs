@@ -120,7 +120,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_slots == null)
                 {
-                    // Sort the lazily populated slots in metadata order.
+                    // Sort the lazily populated slots in metadata order (the order in which they show up
+                    // in GetAllMethods()).
                     // This ensures that Foo<string> and Foo<object> will end up with the same vtable
                     // no matter the order in which VirtualMethodUse nodes populated it.
                     ArrayBuilder<MethodDesc> slotsBuilder = new ArrayBuilder<MethodDesc>();
@@ -146,12 +147,9 @@ namespace ILCompiler.DependencyAnalysis
             // GVMs are not emitted in the type's vtable.
             Debug.Assert(!virtualMethod.HasInstantiation);
             Debug.Assert(virtualMethod.IsVirtual);
-            Debug.Assert(_slots == null);
+            Debug.Assert(_slots == null && _usedMethods != null);
 
-            if (!_usedMethods.Contains(virtualMethod))
-            {
-                _usedMethods.Add(virtualMethod);
-            }
+            _usedMethods.Add(virtualMethod);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
