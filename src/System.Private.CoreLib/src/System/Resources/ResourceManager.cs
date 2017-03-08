@@ -272,9 +272,14 @@ namespace System.Resources
         {
             Init();
 
-            _lastUsedResourceCache = new CultureNameResourceSetPair();
-            ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            resourceGroveler = new ManifestBasedResourceGroveler(mediator);
+            SetAppXConfiguration();
+
+            if (_bUsingModernResourceManagement == false)
+            {
+                _lastUsedResourceCache = new CultureNameResourceSetPair();
+                ResourceManagerMediator mediator = new ResourceManagerMediator(this);
+                resourceGroveler = new ManifestBasedResourceGroveler(mediator);
+            }
         }
 
         // Constructs a Resource Manager for files beginning with 
@@ -337,6 +342,8 @@ namespace System.Resources
             if (usingResourceSet != null && (usingResourceSet != _minResourceSet) && !(usingResourceSet.GetTypeInfo().IsSubclassOf(_minResourceSet)))
                 throw new ArgumentException(SR.Arg_ResMgrNotResSet, nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
+
+            SetAppXConfiguration();
 
             CommonAssemblyInit();
         }
@@ -416,28 +423,88 @@ namespace System.Resources
         // Gets the base name for the ResourceManager.
         public virtual String BaseName
         {
-            get { return BaseNameField; }
+            get
+            {
+                if (_bUsingModernResourceManagement)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty, nameof(BaseName)));
+                }
+                else
+                {
+                    return BaseNameField;
+                }
+            }
         }
 
         // Whether we should ignore the capitalization of resources when calling
         // GetString or GetObject.
         public virtual bool IgnoreCase
         {
-            get { return _ignoreCase; }
-            set { _ignoreCase = value; }
+            get
+            {
+                if (_bUsingModernResourceManagement)
+                {
+                    return false;
+                }
+                else
+                {
+                    return _ignoreCase;
+                }
+            }
+            set
+            {
+                if (_bUsingModernResourceManagement)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty, nameof(IgnoreCase)));
+                }
+                else
+                {
+                    _ignoreCase = value;
+                }
+            }
         }
 
         // Returns the Type of the ResourceSet the ResourceManager uses
         // to construct ResourceSets.
         public virtual Type ResourceSetType
         {
-            get { return (_userResourceSet == null) ? typeof(RuntimeResourceSet) : _userResourceSet; }
+            get
+            {
+                if (_bUsingModernResourceManagement)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty, nameof(ResourceSetType)));
+                }
+                else
+                {
+                    return (_userResourceSet == null) ? typeof(RuntimeResourceSet) : _userResourceSet;
+                }
+            }
         }
 
         protected UltimateResourceFallbackLocation FallbackLocation
         {
-            get { return _fallbackLoc; }
-            set { _fallbackLoc = value; }
+            get
+            {
+                if (_bUsingModernResourceManagement)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty, nameof(FallbackLocation)));
+                }
+                else
+                {
+                    return _fallbackLoc;
+                }
+            }
+            set
+            {
+                if (_bUsingModernResourceManagement)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty, nameof(FallbackLocation)));
+                }
+                else
+                {
+                    _fallbackLoc = value;
+                }
+            }
         }
 
         // Tells the ResourceManager to call Close on all ResourceSets and 
@@ -486,6 +553,9 @@ namespace System.Resources
         // such as ".ResX", or a completely different format for naming files.
         protected virtual String GetResourceFileName(CultureInfo culture)
         {
+            if (_bUsingModernResourceManagement)
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod, nameof(GetResourceFileName)));
+
             StringBuilder sb = new StringBuilder(255);
             sb.Append(BaseNameField);
             // If this is the neutral culture, don't append culture name.
@@ -570,6 +640,9 @@ namespace System.Resources
         //         
         public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
+            if (_bUsingModernResourceManagement)
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod, nameof(GetResourceSet)));
+
             if (null == culture)
                 throw new ArgumentNullException(nameof(culture));
 
@@ -605,6 +678,9 @@ namespace System.Resources
         // This will take a minimal number of locks.
         protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
+            if (_bUsingModernResourceManagement)
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod, nameof(InternalGetResourceSet)));
+
             Dictionary<String, ResourceSet> localResourceSets = _resourceSets;
             ResourceSet rs = null;
             CultureInfo foundCulture = null;
@@ -1123,6 +1199,9 @@ namespace System.Resources
         // 
         public virtual Object GetObject(String name)
         {
+            if (_bUsingModernResourceManagement)
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod, nameof(GetObject)));
+
             return GetObject(name, (CultureInfo)null, true);
         }
 
@@ -1131,6 +1210,9 @@ namespace System.Resources
         // Returns null if the resource wasn't found.
         public virtual Object GetObject(String name, CultureInfo culture)
         {
+            if (_bUsingModernResourceManagement)
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod, nameof(GetObject)));
+
             return GetObject(name, culture, true);
         }
 
@@ -1217,11 +1299,17 @@ namespace System.Resources
 
         public UnmanagedMemoryStream GetStream(String name)
         {
+            if (_bUsingModernResourceManagement)
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod, nameof(GetStream)));
+
             return GetStream(name, (CultureInfo)null);
         }
 
         public UnmanagedMemoryStream GetStream(String name, CultureInfo culture)
         {
+            if (_bUsingModernResourceManagement)
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod, nameof(GetStream)));
+
             Object obj = GetObject(name, culture, false);
             UnmanagedMemoryStream ums = obj as UnmanagedMemoryStream;
             if (ums == null && obj != null)

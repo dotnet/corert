@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
             hashTableSection.Place(typeMapHashTable);
 
             // Get a list of all methods that have a method body and metadata from the metadata manager.
-            foreach (var mappingEntry in factory.MetadataManager.GetMethodMapping())
+            foreach (var mappingEntry in factory.MetadataManager.GetMethodMapping(factory))
             {
                 MethodDesc method = mappingEntry.Entity;
 

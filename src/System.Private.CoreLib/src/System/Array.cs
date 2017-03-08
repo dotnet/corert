@@ -80,6 +80,8 @@ namespace System
             Contract.Ensures(Contract.Result<Array>().Rank == 1);
             Contract.EndContractBlock();
 
+            elementType = elementType.UnderlyingSystemType;
+
             return CreateSzArray(elementType, length);
         }
 
@@ -96,6 +98,8 @@ namespace System
             Contract.Ensures(Contract.Result<Array>().Rank == 2);
             Contract.Ensures(Contract.Result<Array>().GetLength(0) == length1);
             Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
+
+            elementType = elementType.UnderlyingSystemType;
 
             Type arrayType = GetArrayTypeFromElementType(elementType, true, 2);
             int* pLengths = stackalloc int[2];
@@ -121,6 +125,8 @@ namespace System
             Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
             Contract.Ensures(Contract.Result<Array>().GetLength(2) == length3);
 
+            elementType = elementType.UnderlyingSystemType;
+
             Type arrayType = GetArrayTypeFromElementType(elementType, true, 3);
             int* pLengths = stackalloc int[3];
             pLengths[0] = length1;
@@ -141,6 +147,8 @@ namespace System
             Contract.Ensures(Contract.Result<Array>() != null);
             Contract.Ensures(Contract.Result<Array>().Rank == lengths.Length);
             Contract.EndContractBlock();
+
+            elementType = elementType.UnderlyingSystemType;
 
             if (lengths.Length == 1)
             {
@@ -168,6 +176,8 @@ namespace System
             Contract.Ensures(Contract.Result<Array>() != null);
             Contract.Ensures(Contract.Result<Array>().Rank == lengths.Length);
             Contract.EndContractBlock();
+
+            elementType = elementType.UnderlyingSystemType;
 
             if (lengths.Length == 1 && lowerBounds[0] == 0)
             {

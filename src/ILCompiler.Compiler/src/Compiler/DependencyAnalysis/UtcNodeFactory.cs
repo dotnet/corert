@@ -106,9 +106,9 @@ namespace ILCompiler
                 return new UtcDictionaryLayoutNode(methodOrType);
             });
 
-            _nonExternMethodSymbols = new NodeCache<MethodDesc, NonExternMethodSymbolNode>((MethodDesc method) =>
+            _nonExternMethodSymbols = new NodeCache<MethodKey, NonExternMethodSymbolNode>((MethodKey method) =>
             {
-                return new NonExternMethodSymbolNode(this, method);
+                return new NonExternMethodSymbolNode(this, method.Method, method.IsUnboxingStub);
             });
         }
 
@@ -144,7 +144,7 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticStartOffset, ThreadStaticsStartOffset, ThreadStaticsStartOffset);
 
-            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
+            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
             MetadataManager.AttachToDependencyGraph(graph);
         }
 
@@ -160,7 +160,18 @@ namespace ILCompiler
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            return new UnboxingStubNode(method);
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any) && !method.HasInstantiation)
+            {
+                // Unboxing stubs to canonical instance methods need a special unboxing instantiating stub that unboxes
+                // 'this' and also provides an instantiation argument (we do a calling convention conversion).
+                // The unboxing instantiating stub is emitted by UTC.
+                return new ExternMethodSymbolNode(this, method, true);
+            }
+            else
+            {
+                // Otherwise we just unbox 'this' and don't touch anything else.
+                return new UnboxingStubNode(method);
+            }
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
@@ -262,11 +273,11 @@ namespace ILCompiler
             return _hostedGenericDictionaryLayouts.GetOrAdd(methodOrType);
         }
 
-        private NodeCache<MethodDesc, NonExternMethodSymbolNode> _nonExternMethodSymbols;
+        private NodeCache<MethodKey, NonExternMethodSymbolNode> _nonExternMethodSymbols;
 
-        public NonExternMethodSymbolNode NonExternMethodSymbol(MethodDesc method)
+        public NonExternMethodSymbolNode NonExternMethodSymbol(MethodDesc method, bool isUnboxingStub)
         {
-            return _nonExternMethodSymbols.GetOrAdd(method);
+            return _nonExternMethodSymbols.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
     }
 }

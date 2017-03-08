@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // TODO: define _tls_index as "comdat select any" when multiple object files present.
 
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
@@ -127,7 +127,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // TODO: define _tls_used as comdat select any when multiple object files present.
             UtcNodeFactory hostedFactory = factory as UtcNodeFactory;
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
@@ -214,7 +214,7 @@ namespace ILCompiler.DependencyAnalysis
             
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
             objData.EmitReloc(factory.ThreadStaticsRegion.StartSymbol, RelocType.IMAGE_REL_SECREL);

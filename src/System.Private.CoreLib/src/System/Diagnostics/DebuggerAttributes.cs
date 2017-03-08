@@ -74,12 +74,31 @@ namespace System.Diagnostics
             EnableEditAndContinue = 0x4
         }
 
-        private DebuggingModes _debuggingModes;
+        public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled)
+        {
+            DebuggingFlags = 0;
+
+            if (isJITTrackingEnabled)
+            {
+                DebuggingFlags |= DebuggingModes.Default;
+            }
+
+            if (isJITOptimizerDisabled)
+            {
+                DebuggingFlags |= DebuggingModes.DisableOptimizations;
+            }
+        }
 
         public DebuggableAttribute(DebuggingModes modes)
         {
-            _debuggingModes = modes;
+            DebuggingFlags = modes;
         }
+
+        public bool IsJITTrackingEnabled => (DebuggingFlags & DebuggingModes.Default) != 0;
+
+        public bool IsJITOptimizerDisabled => (DebuggingFlags & DebuggingModes.DisableOptimizations) != 0;
+
+        public DebuggingModes DebuggingFlags { get; }
     }
 
     //  DebuggerBrowsableState states are defined as follows:

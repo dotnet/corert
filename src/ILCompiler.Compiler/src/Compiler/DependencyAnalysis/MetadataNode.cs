@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
 
-            byte[] blob = factory.MetadataManager.GetMetadataBlob();
+            byte[] blob = factory.MetadataManager.GetMetadataBlob(factory);
             _endSymbol.SetSymbolOffset(blob.Length);
 
             return new ObjectData(
