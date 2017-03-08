@@ -17,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
+        private ExternalReferencesTableNode _staticsReferences;
 
         private NativeWriter _writer;
         private byte[] _writerSavedBytes;
@@ -27,10 +28,11 @@ namespace ILCompiler.DependencyAnalysis
 
         private List<NativeLayoutVertexNode> _vertexNodesToWrite;
 
-        public NativeLayoutInfoNode(ExternalReferencesTableNode externalReferences)
+        public NativeLayoutInfoNode(ExternalReferencesTableNode externalReferences, ExternalReferencesTableNode staticsReferences)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__nativelayoutinfo_End", true);
             _externalReferences = externalReferences;
+            _staticsReferences = staticsReferences;
 
             _writer = new NativeWriter();
             _signaturesSection = _writer.NewSection();
@@ -55,6 +57,7 @@ namespace ILCompiler.DependencyAnalysis
         public Section SignaturesSection => _signaturesSection;
         public Section TemplatesSection => _templatesSection;
         public ExternalReferencesTableNode ExternalReferences => _externalReferences;
+        public ExternalReferencesTableNode StaticsReferences => _staticsReferences;
         public NativeWriter Writer => _writer;
 
         public void AddVertexNodeToNativeLayout(NativeLayoutVertexNode vertexNode)

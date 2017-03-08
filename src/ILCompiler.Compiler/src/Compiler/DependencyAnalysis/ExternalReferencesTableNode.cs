@@ -15,20 +15,20 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node that points to various symbols and can be sequentially addressed.
     /// </summary>
-    internal sealed class ExternalReferencesTableNode : ObjectNode, ISymbolNode
+    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolNode
     {
         private readonly ObjectAndOffsetSymbolNode _endSymbol;
         private readonly string _blobName;
-        private readonly TargetDetails _target;
+        private readonly NodeFactory _nodeFactory;
 
         private Dictionary<SymbolAndDelta, uint> _insertedSymbolsDictionary = new Dictionary<SymbolAndDelta, uint>();
         private List<SymbolAndDelta> _insertedSymbols = new List<SymbolAndDelta>();
 
-        public ExternalReferencesTableNode(string blobName, TargetDetails targetDetails)
+        public ExternalReferencesTableNode(string blobName, NodeFactory nodeFactory)
         {
             _blobName = blobName;
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__external_" + blobName + "_references_End", true);
-            _target = targetDetails;
+            _nodeFactory = nodeFactory;
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
@@ -46,6 +46,15 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public uint GetIndex(ISymbolNode symbol, int delta = 0)
         {
+#if DEBUG
+            if (_nodeFactory.MarkingComplete)
+            {
+                var node = symbol as ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>;
+                if (node != null)
+                    Debug.Assert(node.Marked);
+            }
+#endif
+
             SymbolAndDelta key = new SymbolAndDelta(symbol, delta);
 
             uint index;
@@ -63,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_target.IsWindows)
+                if (_nodeFactory.Target.IsWindows)
                     return ObjectNodeSection.ReadOnlyDataSection;
                 else
                     return ObjectNodeSection.DataSection;
@@ -83,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
             // Zero out the dictionary so that we AV if someone tries to insert after we're done.
             _insertedSymbolsDictionary = null;
 
-            var builder = new ObjectDataBuilder(factory);
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
 
             foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {

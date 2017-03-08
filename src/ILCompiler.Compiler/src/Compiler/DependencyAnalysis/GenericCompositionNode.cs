@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             bool hasVariance = _details.Variance != null;
 
-            var builder = new ObjectDataBuilder(factory);
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
             builder.RequireInitialPointerAlignment();

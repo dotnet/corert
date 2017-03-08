@@ -35,6 +35,11 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("unbox_").Append(nameMangler.GetMangledMethodName(_target));
         }
 
+        public static string GetMangledName(NameMangler nameMangler, MethodDesc method)
+        {
+            return "unbox_" + nameMangler.GetMangledMethodName(method);
+        }
+
         public override bool IsShareable => true;
 
         protected override string GetName() => this.GetMangledName();

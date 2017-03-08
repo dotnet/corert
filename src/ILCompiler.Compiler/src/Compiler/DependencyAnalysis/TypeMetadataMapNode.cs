@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping())
+            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping(factory))
             {
                 if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
                     continue;

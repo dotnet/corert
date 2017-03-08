@@ -41,6 +41,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
 
+            // Ensure that we track the necessary type symbol if we are working with a constructed type symbol.
+            // The emitter will ensure we don't emit both, but this allows us assert that we only generate
+            // relocs to nodes we emit.
+            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "Necessary type symbol related to CanonicalEETypeNode");
+
             DefType closestDefType = _type.GetClosestDefType();
 
             if (_type.RuntimeInterfaces.Length > 0)
