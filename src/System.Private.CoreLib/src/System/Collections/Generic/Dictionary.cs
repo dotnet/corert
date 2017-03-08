@@ -12,6 +12,27 @@ using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
+    /// <summary>
+    /// Used internally to control behavior of insertion into a <see cref="Dictionary{TKey, TValue}"/>.
+    /// </summary>
+    internal enum InsertionBehavior : byte
+    {
+        /// <summary>
+        /// The default insertion behavior.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Specifies that an existing entry with the same key should be overwritten if encountered.
+        /// </summary>
+        OverwriteExisting = 1,
+
+        /// <summary>
+        /// Specifies that if an existing entry with the same key is encountered, an exception should be thrown.
+        /// </summary>
+        ThrowOnExisting = 2
+    }
+
     [RelocatedType("System.Collections")]
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
@@ -196,13 +217,15 @@ namespace System.Collections.Generic
             }
             set
             {
-                Insert(key, value, false);
+                bool modified = TryInsert(key, value, InsertionBehavior.OverwriteExisting);
+                Debug.Assert(modified);
             }
         }
 
         public void Add(TKey key, TValue value)
         {
-            Insert(key, value, true);
+            bool modified = TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
+            Debug.Assert(modified); // If there was an existing key and the Add failed, an exception will already have been thrown.
         }
 
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair)
@@ -353,7 +376,7 @@ namespace System.Collections.Generic
             freeList = -1;
         }
 
-        private void Insert(TKey key, TValue value, bool add)
+        private bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
         {
             if (key == null)
             {
@@ -372,13 +395,19 @@ namespace System.Collections.Generic
             {
                 if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
                 {
-                    if (add)
+                    if (behavior == InsertionBehavior.OverwriteExisting)
                     {
-                        throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
+                        entries[i].value = value;
+                        version++;
+                        return true;
                     }
-                    entries[i].value = value;
-                    version++;
-                    return;
+
+                    if (behavior == InsertionBehavior.ThrowOnExisting)
+                    {
+                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                    }
+
+                    return false;
                 }
 #if FEATURE_RANDOMIZED_STRING_HASHING
                 collisionCount++;
@@ -417,6 +446,8 @@ namespace System.Collections.Generic
                 Resize(entries.Length, true);
             }
 #endif
+
+            return true;
         }
 
         public virtual void OnDeserialization(object sender)
@@ -455,7 +486,7 @@ namespace System.Collections.Generic
                     {
                         throw new SerializationException(SR.Serialization_NullKey);
                     }
-                    Insert(array[i].Key, array[i].Value, true);
+                    Add(array[i].Key, array[i].Value);
                 }
             }
             else
@@ -569,6 +600,8 @@ namespace System.Collections.Generic
             }
             return default(TValue);
         }
+
+        public bool TryAdd(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.None);
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
         {
