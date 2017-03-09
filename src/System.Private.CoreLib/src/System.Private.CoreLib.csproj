@@ -471,7 +471,6 @@
     <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
     <Compile Include="System\SByte.cs" />
-    <Compile Include="System\Security\Attributes.cs" />
     <Compile Include="System\Security\SecureString.cs" />
     <Compile Include="System\Security\SecurityException.cs" />
     <Compile Include="System\Security\VerificationException.cs" />

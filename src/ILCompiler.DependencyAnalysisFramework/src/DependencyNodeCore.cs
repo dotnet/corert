@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode
+    public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode, IDependencyNode<DependencyContextType>
     {
         public struct DependencyListEntry
         {
