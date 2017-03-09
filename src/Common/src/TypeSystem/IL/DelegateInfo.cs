@@ -99,6 +99,7 @@ namespace Internal.IL
         private MethodDesc _invokeThunk;
         private MethodDesc _closedInstanceOverGeneric;
         private MethodDesc _reversePInvokeThunk;
+        private MethodDesc _invokeObjectArrayThunk;
 
         internal DelegateThunkCollection(DelegateInfo owningDelegate)
         {
@@ -107,6 +108,7 @@ namespace Internal.IL
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
             _invokeThunk = new DelegateDynamicInvokeThunk(owningDelegate);
             _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
+            _invokeObjectArrayThunk = new DelegateInvokeObjectArrayThunk(owningDelegate);
 
             if (!owningDelegate.Type.HasInstantiation && IsNativeCallingConventionCompatible(owningDelegate.Signature))
                 _reversePInvokeThunk = new DelegateReversePInvokeThunk(owningDelegate);
@@ -176,6 +178,8 @@ namespace Internal.IL
                         return _closedInstanceOverGeneric;
                     case DelegateThunkKind.ReversePinvokeThunk:
                         return _reversePInvokeThunk;
+                    case DelegateThunkKind.ObjectArrayThunk:
+                        return _invokeObjectArrayThunk;
                     default:
                         return null;
                 }

@@ -111,10 +111,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (closestDefType.HasGenericDictionarySlot())
             {
-                // Generic dictionary pointer is part of the vtable and as such it gets only laid out
-                // at the final data emission phase. We need to report it as a non-relocation dependency.
-                dependencyList.Add(factory.TypeGenericDictionary(closestDefType), "Type generic dictionary");
-
                 // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
                 DefType templateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, _type.ConvertToCanonForm(CanonicalFormKind.Specific));
 
@@ -126,6 +122,13 @@ namespace ILCompiler.DependencyAnalysis
             if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
             {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
+            }
+
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            {
+                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
+                // We need to make sure this is possible.
+                dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
             return dependencyList;

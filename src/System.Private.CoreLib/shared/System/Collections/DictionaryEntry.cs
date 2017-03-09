@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+
 namespace System.Collections
 {
     // A DictionaryEntry holds a key and a value from a dictionary.
     // It is returned by IDictionaryEnumerator::GetEntry().
+    [Serializable]
     public struct DictionaryEntry
     {
         private Object _key;
@@ -43,6 +46,13 @@ namespace System.Collections
             {
                 _value = value;
             }
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out object key, out object value)
+        {
+            key = Key;
+            value = Value;
         }
     }
 }

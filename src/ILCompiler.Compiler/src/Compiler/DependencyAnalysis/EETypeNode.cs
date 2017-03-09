@@ -154,13 +154,6 @@ namespace ILCompiler.DependencyAnalysis
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
-                // We need to make sure this is possible.
-                dependencies.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
-            }
-
             return dependencies;
         }
 
@@ -194,13 +187,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (EmitVirtualSlotsAndInterfaces)
             {
-                // Avoid consulting VTable slots until they're guaranteed complete during final data emission
-                // or if we know they must be complete as a matter of policy
-                if (!relocsOnly || factory.CompilationModuleGroup.ShouldProduceFullType(_type))
-                {
-                    OutputVirtualSlots(factory, ref objData, _type, _type);
-                }
-
+                OutputVirtualSlots(factory, ref objData, _type, _type, relocsOnly);
                 OutputInterfaceMap(factory, ref objData);
             }
 
@@ -411,7 +398,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitShort(checked((short)_type.RuntimeInterfaces.Length));
         }
 
-        protected virtual void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType)
+        protected virtual void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, bool relocsOnly)
         {
             Debug.Assert(EmitVirtualSlotsAndInterfaces);
 
@@ -419,7 +406,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var baseType = declType.BaseType;
             if (baseType != null)
-                OutputVirtualSlots(factory, ref objData, implType, baseType);
+                OutputVirtualSlots(factory, ref objData, implType, baseType, relocsOnly);
 
             // The generic dictionary pointer occupies the first slot of each type vtable slice
             if (declType.HasGenericDictionarySlot())
@@ -430,6 +417,11 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
             }
+
+            // It's only okay to touch the actual list of slots if we're in the final emission phase
+            // or the vtable is not built lazily.
+            if (relocsOnly && !factory.CompilationModuleGroup.ShouldProduceFullType(declType))
+                return;
 
             // Actual vtable slots follow
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;

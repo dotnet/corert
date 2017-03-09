@@ -61,6 +61,7 @@
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\ThreadingHelpers.cs" />
@@ -250,36 +251,16 @@
     <Compile Include="System\Byte.cs" />
     <Compile Include="System\Char.cs" />
     <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
-    <Compile Include="System\Collections\DictionaryEntry.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="System\Collections\Generic\Comparer.cs" />
     <Compile Include="System\Collections\Generic\DebugView.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\Collections\Generic\ICollection.cs" />
     <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
-    <Compile Include="System\Collections\Generic\IComparer.cs" />
-    <Compile Include="System\Collections\Generic\IDictionary.cs" />
-    <Compile Include="System\Collections\Generic\IEnumerable.cs" />
-    <Compile Include="System\Collections\Generic\IEnumerator.cs" />
-    <Compile Include="System\Collections\Generic\IEqualitycomparer.cs" />
-    <Compile Include="System\Collections\Generic\IList.cs" />
-    <Compile Include="System\Collections\Generic\IReadOnlyCollection.cs" />
-    <Compile Include="System\Collections\Generic\IReadOnlyDictionary.cs" />
-    <Compile Include="System\Collections\Generic\IReadOnlyList.cs" />
-    <Compile Include="System\Collections\Generic\KeyNotFoundException.cs" />
-    <Compile Include="System\Collections\Generic\KeyValuePair.cs" />
     <Compile Include="System\Collections\Generic\List.cs" />
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
     <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
-    <Compile Include="System\Collections\ICollection.cs" />
-    <Compile Include="System\Collections\IComparer.cs" />
-    <Compile Include="System\Collections\IDictionary.cs" />
-    <Compile Include="System\Collections\IDictionaryEnumerator.cs" />
-    <Compile Include="System\Collections\IEnumerator.cs" />
-    <Compile Include="System\Collections\IEqualityComparer.cs" />
-    <Compile Include="System\Collections\IList.cs" />
     <Compile Include="System\Collections\LowLevelListDictionary.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
@@ -389,7 +370,6 @@
     <Compile Include="System\Int32.cs" />
     <Compile Include="System\Int64.cs" />
     <Compile Include="System\Intptr.cs" />
-    <Compile Include="System\Lazy.cs" />
     <Compile Include="System\Math.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
@@ -594,6 +574,7 @@
     <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
     <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
+    <Compile Include="System\Threading\Tasks\TaskExtensions.cs" />
     <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
     <Compile Include="System\Threading\Tasks\TaskSchedulerException.cs" />
@@ -635,7 +616,6 @@
     <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
-    <Compile Include="System\Collections\IEnumerable.cs" />
     <Compile Include="System\Reflection\TargetInvocationException.cs" />
     <Compile Include="System\Reflection\TargetParameterCountException.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
@@ -905,9 +885,6 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -920,14 +897,17 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Threading.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
+      <Link>Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Interop\Unix\System.Native\Interop.SysConf.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
