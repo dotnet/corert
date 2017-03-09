@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface ISymbolNode
+    public interface ISymbolNode : IDependencyNode<NodeFactory>
     {
         void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         int Offset { get; }

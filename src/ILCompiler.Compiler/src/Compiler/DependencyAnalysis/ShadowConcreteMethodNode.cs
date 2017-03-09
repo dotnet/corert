@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
     /// method for convenience.
     /// </summary>
     internal class ShadowConcreteMethodNode<T> : DependencyNodeCore<NodeFactory>, IMethodNode
-        where T : DependencyNodeCore<NodeFactory>, IMethodNode
+        where T : IMethodNode
     {
         /// <summary>
         /// Gets the canonical method body that defines the dependencies of this node.
