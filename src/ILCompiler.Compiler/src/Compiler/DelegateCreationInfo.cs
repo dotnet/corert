@@ -5,7 +5,6 @@
 using System;
 
 using Internal.IL;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
@@ -19,6 +18,17 @@ namespace ILCompiler
     /// </summary>
     public sealed class DelegateCreationInfo
     {
+        private enum TargetKind
+        {
+            Direct,
+            ShadowMethod,
+            FatPointer,
+            InterfaceDispatch,
+            VTableLookup,
+        }
+
+        private TargetKind _targetKind;
+
         /// <summary>
         /// Gets the node corresponding to the method that initializes the delegate.
         /// </summary>
@@ -27,12 +37,49 @@ namespace ILCompiler
             get;
         }
 
+        public MethodDesc TargetMethod
+        {
+            get;
+        }
+
+        public bool TargetNeedsVTableLookup => _targetKind == TargetKind.VTableLookup;
+
         /// <summary>
         /// Gets the node representing the target method of the delegate.
         /// </summary>
-        public ISymbolNode Target
+        public ISymbolNode GetTargetNode(NodeFactory factory)
         {
-            get;
+            bool useUnboxingThunk = TargetMethod.OwningType.IsValueType && !TargetMethod.Signature.IsStatic;
+            MethodDesc canonTargetMethod = TargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            switch (_targetKind)
+            {
+                case TargetKind.Direct:
+                    return factory.MethodEntrypoint(TargetMethod, useUnboxingThunk);
+
+                case TargetKind.FatPointer:
+                    if (TargetMethod != canonTargetMethod)
+                        return factory.FatFunctionPointer(TargetMethod, useUnboxingThunk);
+                    else
+                        return factory.MethodEntrypoint(TargetMethod, useUnboxingThunk);
+
+                case TargetKind.InterfaceDispatch:
+                    return factory.InterfaceDispatchCell(TargetMethod);
+
+                case TargetKind.ShadowMethod:
+                    if (TargetMethod != canonTargetMethod)
+                        return factory.ShadowConcreteMethod(TargetMethod, useUnboxingThunk);
+                    else
+                        return factory.MethodEntrypoint(TargetMethod, useUnboxingThunk);
+
+                case TargetKind.VTableLookup:
+                    Debug.Assert(false, "Need to do runtime lookup");
+                    return null;
+
+                default:
+                    Debug.Assert(false);
+                    return null;
+            }
         }
 
         /// <summary>
@@ -43,10 +90,11 @@ namespace ILCompiler
             get;
         }
 
-        private DelegateCreationInfo(IMethodNode constructor, ISymbolNode target, IMethodNode thunk = null)
+        private DelegateCreationInfo(IMethodNode constructor, MethodDesc targetMethod, TargetKind targetKind, IMethodNode thunk = null)
         {
             Constructor = constructor;
-            Target = target;
+            TargetMethod = targetMethod;
+            _targetKind = targetKind;
             Thunk = thunk;
         }
 
@@ -54,7 +102,7 @@ namespace ILCompiler
         /// Constructs a new instance of <see cref="DelegateCreationInfo"/> set up to construct a delegate of type
         /// '<paramref name="delegateType"/>' pointing to '<paramref name="targetMethod"/>'.
         /// </summary>
-        public static DelegateCreationInfo Create(TypeDesc delegateType, MethodDesc targetMethod, NodeFactory factory)
+        public static DelegateCreationInfo Create(TypeDesc delegateType, MethodDesc targetMethod, NodeFactory factory, bool followVirtualDispatch)
         {
             CompilerTypeSystemContext context = factory.TypeSystemContext;
             DefType systemDelegate = targetMethod.Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
@@ -118,7 +166,8 @@ namespace ILCompiler
 
                 return new DelegateCreationInfo(
                     factory.MethodEntrypoint(initMethod),
-                    factory.MethodEntrypoint(targetMethod),
+                    targetMethod,
+                    TargetKind.FatPointer,
                     factory.MethodEntrypoint(invokeThunk));
             }
             else
@@ -126,11 +175,9 @@ namespace ILCompiler
                 if (!closed)
                     throw new NotImplementedException("Open instance delegates");
 
-                bool useUnboxingStub = targetMethod.OwningType.IsValueType;
-
-                IMethodNode targetMethodNode;
                 string initializeMethodName = "InitializeClosedInstance";
                 MethodDesc targetCanonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                TargetKind kind;
                 if (targetMethod.HasInstantiation)
                 {
                     Debug.Assert(!targetMethod.IsVirtual, "TODO: delegate to generic virtual method");
@@ -142,42 +189,49 @@ namespace ILCompiler
                         // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
                         // the invocation if necessary.
                         initializeMethodName = "InitializeClosedInstanceSlow";
-                        targetMethodNode = factory.FatFunctionPointer(targetMethod, useUnboxingStub);
+                        kind = TargetKind.FatPointer;
                     }
                     else
                     {
-                        targetMethodNode = factory.MethodEntrypoint(targetMethod, useUnboxingStub);
+                        kind = TargetKind.Direct;
                     }
                 }
                 else
                 {
-                    // If the method can be canonicalized, point to the canon method body, but track the dependencies.
-                    if (targetMethod != targetCanonMethod)
+                    if (followVirtualDispatch && targetMethod.IsVirtual)
                     {
-                        targetMethodNode = factory.ShadowConcreteMethod(targetMethod, useUnboxingStub);
+                        if (targetMethod.OwningType.IsInterface)
+                        {
+                            kind = TargetKind.InterfaceDispatch;
+                            initializeMethodName = "InitializeClosedInstanceToInterface";
+                        }
+                        else
+                            kind = TargetKind.VTableLookup;
                     }
                     else
-                    {
-                        targetMethodNode = factory.MethodEntrypoint(targetMethod, useUnboxingStub);
-                    }
+                        kind = TargetKind.ShadowMethod;
                 }
 
                 return new DelegateCreationInfo(
                     factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
-                    targetMethodNode);
+                    targetMethod,
+                    kind);
             }
         }
 
         public override bool Equals(object obj)
         {
             var other = obj as DelegateCreationInfo;
-            return other != null && Constructor == other.Constructor
-                && Target == other.Target && Thunk == other.Thunk;
+            return other != null
+                && Constructor == other.Constructor
+                && TargetMethod == other.TargetMethod
+                && _targetKind == other._targetKind
+                && Thunk == other.Thunk;
         }
 
         public override int GetHashCode()
         {
-            return Constructor.GetHashCode() ^ Target.GetHashCode();
+            return Constructor.GetHashCode() ^ TargetMethod.GetHashCode();
         }
     }
 }

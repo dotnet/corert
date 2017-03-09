@@ -169,7 +169,23 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)Target;
 
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.Target);
+                        if (target.TargetNeedsVTableLookup)
+                        {
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg2, ref loadFromThisPtr);
+
+                            int slot = 0;
+                            if (!relocsOnly)
+                                slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, target.TargetMethod);
+
+                            Debug.Assert(slot != -1);
+                            AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Arg2, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg2, ref loadFromSlot);
+                        }
+                        else
+                        {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.GetTargetNode(factory));
+                        }
 
                         if (target.Thunk != null)
                         {

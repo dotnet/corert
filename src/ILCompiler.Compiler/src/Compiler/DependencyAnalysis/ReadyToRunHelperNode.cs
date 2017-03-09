@@ -126,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis
                         sb.Append("__DelegateCtor_");
                         createInfo.Constructor.AppendMangledName(nameMangler, sb);
                         sb.Append("__");
-                        createInfo.Target.AppendMangledName(nameMangler, sb);
+                        sb.Append(nameMangler.GetMangledMethodName(createInfo.TargetMethod));
                         if (createInfo.Thunk != null)
                         {
                             sb.Append("__");

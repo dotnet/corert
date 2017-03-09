@@ -346,6 +346,10 @@ namespace System.Runtime
         internal static extern IntPtr RhResolveDispatch(object pObject, EETypePtr pInterfaceType, ushort slot);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpResolveInterfaceMethod")]
+        internal static extern IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetNonGcStaticFieldData")]
         internal static extern unsafe IntPtr RhGetNonGcStaticFieldData(EETypePtr pEEType);
 

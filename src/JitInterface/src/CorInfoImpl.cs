@@ -1412,7 +1412,9 @@ namespace Internal.JitInterface
             MethodDesc method = HandleToObject(pTargetMethod.hMethod);
             TypeDesc type = HandleToObject(delegateType);
 
-            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method);
+            // TODO: we need a flag whether to do virtual resolution
+
+            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method, followVirtualDispatch: true);
 
             pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
         }
