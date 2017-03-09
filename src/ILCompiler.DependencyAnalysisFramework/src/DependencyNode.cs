@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public abstract class DependencyNode
+    public abstract class DependencyNode: IDependencyNode
     {
         private object _mark;
 
