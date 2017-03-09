@@ -404,7 +404,7 @@ namespace System.Collections.Generic
 
                     if (behavior == InsertionBehavior.ThrowOnExisting)
                     {
-                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                        throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                     }
 
                     return false;
