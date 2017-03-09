@@ -57,7 +57,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return HasCompiledBody;
+                // TODO Change this to
+                // return HasCompiledBody;
+                // when we fix up creation of NonExternMethodSymbolNode to be correctly handled
+                return true;
             }
         }
 
