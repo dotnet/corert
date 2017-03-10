@@ -2221,4 +2221,7 @@
   <data name="PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty" xml:space="preserve">
     <value>ResourceManager property '{0}' is not supported when reading from .resw resource files.</value>
   </data>
+  <data name="Serialization_NonSerType" xml:space="preserve">
+    <value>Type '{0}' in Assembly '{1}' is not marked as serializable.</value>
+  </data>
 </root>
