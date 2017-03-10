@@ -143,7 +143,7 @@ namespace ILCompiler
 
             IMethodNode methodNode = obj as MethodCodeNode;
             if (methodNode == null)
-                methodNode = obj as ShadowConcreteMethodNode<MethodCodeNode>;
+                methodNode = obj as ShadowConcreteMethodNode;
 
             if (methodNode == null)
                 methodNode = obj as NonExternMethodSymbolNode;

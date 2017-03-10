@@ -86,8 +86,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             // If there is a constructed version of this node in the graph, emit that instead
-                if (ConstructedEETypeNode.CreationAllowed(_type))
-                return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
+            if (ConstructedEETypeNode.CreationAllowed(_type))
+                return factory.ConstructedTypeSymbol(_type).Marked;
 
             return false;
         }
