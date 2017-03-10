@@ -156,6 +156,8 @@ namespace Internal.IL.Stubs
 
         public override MethodIL EmitIL()
         {
+            Debug.Assert(Signature.Length > 0);
+
             var emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
