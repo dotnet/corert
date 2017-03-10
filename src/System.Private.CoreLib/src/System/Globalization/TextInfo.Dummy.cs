@@ -15,6 +15,10 @@ namespace System.Globalization
             _textInfoName = _cultureData.STEXTINFO;
         }
 
+        private unsafe void FinishInitialization(string textInfoName)
+        {
+        }
+
         private unsafe string ChangeCase(string s, bool toUpper)
         {
             if (s.Length == 0)

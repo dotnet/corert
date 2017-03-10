@@ -48,6 +48,13 @@ namespace System.Runtime.Serialization
             _converter = converter;
         }
 
+        [CLSCompliant(false)]
+        public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust)
+            : this(type, converter)
+        {
+            // requireSameTokenInPartialTrust is a vacuous parameter in a platform that does not support partial trust.
+        }
+
         public string FullTypeName
         {
             get { return _rootTypeName; }
