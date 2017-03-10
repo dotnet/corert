@@ -143,7 +143,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
             if ((t1.IsArray && t2.IsArray) || (t1.IsByRef && t2.IsByRef) || (t1.IsPointer && t2.IsPointer))
             {
-                if (t1.IsSzArray != t2.IsSzArray)
+                if (t1.IsSZArray != t2.IsSZArray)
                     return false;
 
                 if (t1.IsArray && (t1.GetArrayRank() != t2.GetArrayRank()))

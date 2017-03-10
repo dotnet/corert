@@ -347,11 +347,25 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsSzArray
+        //
+        // Left unsealed as array types must override.
+        //
+        public override bool IsSZArray
         {
             get
             {
-                return IsArrayImpl() && !InternalIsMultiDimArray;
+                return false;
+            }
+        }
+
+        //
+        // Left unsealed as array types must override.
+        //
+        public override bool IsMultiDimensionalArray
+        {
+            get
+            {
+                return false;
             }
         }
 
@@ -669,15 +683,6 @@ namespace System.Reflection.Runtime.TypeInfos
         internal abstract string InternalFullNameOfAssembly { get; }
 
         public abstract override string InternalGetNameIfAvailable(ref Type rootCauseForFailure);
-
-        // Left unsealed so that multidim arrays can override.
-        internal virtual bool InternalIsMultiDimArray
-        {
-            get
-            {
-                return false;
-            }
-        }
 
         //
         // Left unsealed as HasElement types must override this.
