@@ -41,8 +41,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateShadowConcreteMethodNode(MethodKey methodKey)
         {
-            return new ShadowConcreteMethodNode<CppMethodCodeNode>(methodKey.Method,
-                (CppMethodCodeNode)MethodEntrypoint(
+            return new ShadowConcreteMethodNode(methodKey.Method,
+                MethodEntrypoint(
                     methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific),
                     methodKey.IsUnboxingStub));
         }

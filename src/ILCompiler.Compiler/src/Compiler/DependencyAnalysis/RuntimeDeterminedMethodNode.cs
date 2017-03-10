@@ -37,7 +37,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.IsSharedByGenericInstantiations);
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
-            Debug.Assert(canonicalMethod is DependencyNodeCore<NodeFactory>);
             Method = method;
             _canonicalMethodNode = canonicalMethod;
         }

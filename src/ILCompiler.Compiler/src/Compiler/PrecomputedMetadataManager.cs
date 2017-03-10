@@ -268,7 +268,7 @@ namespace ILCompiler
                     // See the ProjectN abi specific code in there.
                     if (!method.HasInstantiation && method.OwningType.IsValueType && method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) && !method.Signature.IsStatic)
                     {
-                        if (!((DependencyNode)factory.MethodEntrypoint(method, true)).Marked)
+                        if (!factory.MethodEntrypoint(method, true).Marked)
                             continue;
                     }
 
