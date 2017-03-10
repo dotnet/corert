@@ -162,7 +162,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        return new CanonicalDefinitionEETypeNode(this, type);
+                    }
+                    else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
                         return new CanonicalEETypeNode(this, type);
                     }
