@@ -508,6 +508,37 @@ namespace Internal.TypeSystem.Ecma
             return result;
         }
 
+        public override MarshalAsDescriptor[] GetFieldMarshalAsDescriptors()
+        {
+            var fieldDefinitionHandles = _typeDefinition.GetFields();
+
+            MarshalAsDescriptor[] marshalAsDescriptors = new MarshalAsDescriptor[fieldDefinitionHandles.Count];
+            int index = 0;
+            foreach (var handle in fieldDefinitionHandles)
+            {
+                var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
+                MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(fieldDefinition);
+                marshalAsDescriptors[index++] = marshalAsDescriptor;
+            }
+
+            return marshalAsDescriptors;
+        }
+
+        private MarshalAsDescriptor GetMarshalAsDescriptor(FieldDefinition fieldDefinition)
+        {
+            if ((fieldDefinition.Attributes & FieldAttributes.HasFieldMarshal) == FieldAttributes.HasFieldMarshal)
+            {
+                MetadataReader metadataReader = MetadataReader;
+                BlobReader marshalAsReader = metadataReader.GetBlobReader(fieldDefinition.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(EcmaModule, marshalAsReader);
+                MarshalAsDescriptor marshalAs =  parser.ParseMarshalAsDescriptor(isParameter:false);
+                Debug.Assert(marshalAs != null);
+                return marshalAs;
+            }
+            return null;
+        }
+
+
         public override bool IsExplicitLayout
         {
             get

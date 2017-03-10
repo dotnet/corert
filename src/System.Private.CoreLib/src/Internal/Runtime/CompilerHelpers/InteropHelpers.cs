@@ -19,7 +19,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class InteropHelpers
     {
-        internal static unsafe byte[] StringToAnsi(String str)
+        internal static unsafe byte* StringToAnsi(String str)
         {
             if (str == null)
                 return null;
@@ -31,12 +31,10 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 int stringLength = str.Length;
                 int bufferLength = encoding.GetByteCount(pStr, stringLength);
-                var buffer = new byte[bufferLength + 1];
-                fixed (byte* pBuffer = &buffer[0])
-                {
-                    encoding.GetBytes(pStr, stringLength, pBuffer, bufferLength);
-                    return buffer;
-                }
+                byte *buffer = (byte*)PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(void*)(bufferLength+1)).ToPointer();
+                encoding.GetBytes(pStr, stringLength, buffer, bufferLength);
+                *(buffer + bufferLength) = 0;
+                return buffer;
             }
         }
 

@@ -61,7 +61,7 @@ namespace ILCompiler
             // https://github.com/dotnet/corert/issues/2454
             // https://github.com/dotnet/corert/issues/2149
             if (this is CppCodegenCompilation) forceLazyPInvokeResolution = false;
-            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution));
+            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
 
             _methodILCache = new ILProvider(PInvokeILProvider);
         }

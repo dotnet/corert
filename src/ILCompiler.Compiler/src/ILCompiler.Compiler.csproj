@@ -226,6 +226,7 @@
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\CompilerGeneratedMetadataManager.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
+	<Compile Include="Compiler\InteropStubManager.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
@@ -309,8 +310,17 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
       <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropStateManager.cs">
+      <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropTypes.cs">
+      <Link>TypeSystem\Interop\InteropTypes.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
       <Link>TypeSystem\Interop\IL\Marshaller.cs</Link>
@@ -318,8 +328,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>TypeSystem\Interop\IL\MarshalHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeMethodData.cs">
-      <Link>TypeSystem\Interop\IL\PInvokeMethodData.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>

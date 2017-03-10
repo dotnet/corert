@@ -32,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             NameMangler = nameMangler;
+            InteropStubManager = new InteropStubManager(compilationModuleGroup, context, new InteropStateManager(compilationModuleGroup.GeneratedAssembly));
             CreateNodeCaches();
 
             MetadataManager = metadataManager;
@@ -76,6 +77,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
+        {
+            get;
+        }
+
+        public InteropStubManager InteropStubManager
         {
             get;
         }

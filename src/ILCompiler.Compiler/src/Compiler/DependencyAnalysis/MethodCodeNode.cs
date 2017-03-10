@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -85,33 +86,37 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_method.IsPInvoke)
             {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
                 MethodSignature methodSig = _method.Signature;
-                if (methodSig.ReturnType.IsDelegate)
-                {
-                    AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
-                }
+                AddPInvokeParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
 
                 for (int i=0; i < methodSig.Length; i++)
                 {
-                    if (methodSig[i].IsDelegate)
-                    {
-                        AddPInvokeDelegateParameterDependencies(ref dependencies, factory, methodSig[i]);
-                    }
+                    AddPInvokeParameterDependencies(ref dependencies, factory, methodSig[i]);
                 }
             }
 
             return dependencies;
         }
 
-        private void AddPInvokeDelegateParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
+        private void AddPInvokeParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
         {
-            if (dependencies == null)
-                dependencies = new DependencyList();
+            if (parameter.IsDelegate)
+            {
+                dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
 
-            dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
-
-            var stubMethod = factory.MetadataManager.GetDelegateMarshallingStub(parameter);
-            dependencies.Add(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub");
+                var stubMethod = factory.InteropStubManager.GetDelegateMarshallingStub(parameter);
+                dependencies.Add(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub");
+            }
+            else if (MarshalHelpers.IsStructMarshallingRequired(parameter))
+            {
+                dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetStructMarshallingType(parameter)), "Struct Marshalling Type");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingManagedToNativeStub(parameter)), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingNativeToManagedStub(parameter)), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingCleanupStub(parameter)), "Struct Marshalling stub");
+            }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

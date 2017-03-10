@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Reflection;
-using Internal.TypeSystem;
 using Internal.IL.Stubs;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 using ILLocalVariable = Internal.IL.Stubs.ILLocalVariable;
+
 
 namespace Internal.TypeSystem.Interop
 {
@@ -28,6 +27,7 @@ namespace Internal.TypeSystem.Interop
         ByValAnsiCharArray, // Particular case of ByValArray because the conversion between wide Char and Byte need special treatment.
         AnsiString,
         UnicodeString,
+        ByValUnicodeString,
         AnsiStringBuilder,
         UnicodeStringBuilder,
         FunctionPointer,
@@ -63,17 +63,20 @@ namespace Internal.TypeSystem.Interop
     // and also argument specific marshalling informaiton
     abstract class Marshaller
     {
-        public PInvokeMethodData PInvokeMethodData;
         #region Instance state information
-        public ParameterMetadata PInvokeParameterMetadata;
+        public TypeSystemContext Context;
+        public InteropStateManager InteropStateManager;
         public MarshallerKind MarshallerKind;
         public MarshallerType MarshallerType;
+        public MarshalAsDescriptor MarshalAsDescriptor;
         public MarshallerKind ElementMarshallerKind;
+        public int Index;
         public TypeDesc ManagedType;
         public TypeDesc ManagedParameterType;
         protected Marshaller[] Marshallers;
         private TypeDesc _nativeType;
         private TypeDesc _nativeParamType;
+
 
         /// <summary>
         /// Native Type of the value being marshalled
@@ -85,10 +88,12 @@ namespace Internal.TypeSystem.Interop
             {
                 if (_nativeType == null)
                 {
-                    _nativeType = GetNativeTypeFromMarshallerKind(
+                    _nativeType = MarshalHelpers.GetNativeTypeFromMarshallerKind(
                         ManagedType,
-                        MarshallerKind, ElementMarshallerKind,
-                        PInvokeParameterMetadata.MarshalAsDescriptor);
+                        MarshallerKind,
+                        ElementMarshallerKind,
+                        InteropStateManager,
+                        MarshalAsDescriptor);
                     Debug.Assert(_nativeType != null);
                 }
 
@@ -116,10 +121,21 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        /// <summary>
+        ///  Indicates whether cleanup is necessay if this marshaller is used
+        ///  as an element of an array marshaller
+        /// </summary>
+        internal virtual bool CleanupRequired
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public bool In;
         public bool Out;
         public bool Return;
-        public bool Optional;
         public bool IsManagedByRef;                     // Whether managed argument is passed by ref
         public bool IsNativeByRef;                      // Whether native argument is passed by byref
                                                         // There are special cases (such as LpStruct, and class) that 
@@ -242,37 +258,45 @@ namespace Internal.TypeSystem.Interop
         /// Create a marshaller
         /// </summary>
         /// <param name="parameterType">type of the parameter to marshal</param>
-        /// <param name="pInvokeMethodData">PInvoke Method specific marshal data</param>
-        /// <param name="pInvokeParameterdata">PInvoke parameter specific marshal data</param>
-        /// <returns>The  created Marshaller</returns>
-        public static Marshaller CreateMarshaller(TypeDesc parameterType, PInvokeMethodData pInvokeMethodData,
-            ParameterMetadata pInvokeParameterdata,
+        /// <returns>The created Marshaller</returns>
+        public static Marshaller CreateMarshaller(TypeDesc parameterType,
+            MarshallerType marshallerType,
+            MarshalAsDescriptor marshalAs,
+            MarshalDirection direction,
             Marshaller[] marshallers,
-            MarshalDirection direction)
+            InteropStateManager interopStateManager,
+            int index,
+            bool isAnsi,
+            bool isIn,
+            bool isOut,
+            bool isReturn)
         {
             MarshallerKind elementMarshallerKind;
-            MarshallerKind marshallerKind = GetMarshallerKind(parameterType,
-                                                pInvokeParameterdata,
-                                                pInvokeMethodData,
-                                                MarshallerType.Argument,      /* isField*/
+            MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(parameterType,
+                                                marshalAs,
+                                                isReturn,
+                                                isAnsi,
+                                                marshallerType,
                                                 out elementMarshallerKind);
 
+            TypeSystemContext context = parameterType.Context;
             // Create the marshaller based on MarshallerKind
             Marshaller marshaller = Marshaller.CreateMarshaller(marshallerKind);
-            marshaller.PInvokeMethodData = pInvokeMethodData;
-            marshaller.PInvokeParameterMetadata = pInvokeParameterdata;
+            marshaller.Context = context;
+            marshaller.InteropStateManager = interopStateManager;
             marshaller.MarshallerKind = marshallerKind;
-            marshaller.MarshallerType = MarshallerType.Argument;
+            marshaller.MarshallerType = marshallerType;
             marshaller.ElementMarshallerKind = elementMarshallerKind;
             marshaller.ManagedParameterType = parameterType;
             marshaller.ManagedType = parameterType.IsByRef? parameterType.GetParameterType() : parameterType;
-            marshaller.Optional = pInvokeParameterdata.Optional;
-            marshaller.Return = pInvokeParameterdata.Return;
+            marshaller.Return = isReturn;
             marshaller.IsManagedByRef = parameterType.IsByRef;
             marshaller.IsNativeByRef = marshaller.IsManagedByRef /* || isRetVal || LpStruct /etc */;
-            marshaller.In = pInvokeParameterdata.In;
+            marshaller.In = isIn;
             marshaller.MarshalDirection = direction;
+            marshaller.MarshalAsDescriptor = marshalAs;
             marshaller.Marshallers = marshallers;
+            marshaller.Index = index;
 
             //
             // Desktop ignores [Out] on marshaling scenarios where they don't make sense (such as passing
@@ -281,13 +305,13 @@ namespace Internal.TypeSystem.Interop
             if (marshaller.IsManagedByRef)
             {
                 // Passing as [Out] by ref is valid
-                marshaller.Out = pInvokeParameterdata.Out;
+                marshaller.Out = isOut;
             }
             else
             {
                 // Passing as [Out] is valid only if it is not ValueType nor string
                 if (!parameterType.IsValueType && !parameterType.IsString)
-                    marshaller.Out = pInvokeParameterdata.Out;
+                    marshaller.Out = isOut;
             }
 
             if (!marshaller.In && !marshaller.Out)
@@ -303,7 +327,7 @@ namespace Internal.TypeSystem.Interop
                     marshaller.In = true;
                     marshaller.Out = true;
                 }
-                else if (pInvokeMethodData.IsStringBuilder(parameterType))
+                else if (InteropTypes.IsStringBuilder(context, parameterType))
                 {
                     marshaller.In = true;
                     marshaller.Out = true;
@@ -351,6 +375,8 @@ namespace Internal.TypeSystem.Interop
                     return new VoidReturnMarshaller();
                 case MarshallerKind.FunctionPointer:
                     return new DelegateMarshaller();
+                case MarshallerKind.Struct:
+                    return new StructMarshaller();
                 default:
                     throw new NotSupportedException();
             }
@@ -372,660 +398,6 @@ namespace Internal.TypeSystem.Interop
             }
             return true;
         }
-        private TypeDesc GetNativeTypeFromMarshallerKind(TypeDesc type, MarshallerKind kind, MarshallerKind elementMarshallerKind,
-                MarshalAsDescriptor marshalAs)
-        {
-            TypeSystemContext context = PInvokeMethodData.Context;
-            NativeTypeKind nativeType = NativeTypeKind.Invalid;
-            if (marshalAs != null)
-                nativeType = marshalAs.Type;
-
-            switch (kind)
-            {
-                case MarshallerKind.BlittableValue:
-                    {
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.I1:
-                                return context.GetWellKnownType(WellKnownType.SByte);
-                            case NativeTypeKind.U1:
-                                return context.GetWellKnownType(WellKnownType.Byte);
-                            case NativeTypeKind.I2:
-                                return context.GetWellKnownType(WellKnownType.Int16);
-                            case NativeTypeKind.U2:
-                                return context.GetWellKnownType(WellKnownType.UInt16);
-                            case NativeTypeKind.I4:
-                                return context.GetWellKnownType(WellKnownType.Int32);
-                            case NativeTypeKind.U4:
-                                return context.GetWellKnownType(WellKnownType.UInt32);
-                            case NativeTypeKind.I8:
-                                return context.GetWellKnownType(WellKnownType.Int64);
-                            case NativeTypeKind.U8:
-                                return context.GetWellKnownType(WellKnownType.UInt64);
-                            case NativeTypeKind.R4:
-                                return context.GetWellKnownType(WellKnownType.Single);
-                            case NativeTypeKind.R8:
-                                return context.GetWellKnownType(WellKnownType.Double);
-                            default:
-                                return type.UnderlyingType;
-                        }
-                    }
-
-                case MarshallerKind.Bool:
-                    return context.GetWellKnownType(WellKnownType.Int32);
-
-                case MarshallerKind.Enum:
-                case MarshallerKind.BlittableStruct:
-                case MarshallerKind.Struct:
-                case MarshallerKind.Decimal:
-                case MarshallerKind.VoidReturn:
-                    return type;
-
-                case MarshallerKind.BlittableStructPtr:
-                    return type.MakePointerType();
-
-                case MarshallerKind.HandleRef:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
-
-                case MarshallerKind.UnicodeChar:
-                    if (nativeType == NativeTypeKind.U2)
-                        return context.GetWellKnownType(WellKnownType.UInt16);
-                    else
-                        return context.GetWellKnownType(WellKnownType.Int16);
-
-                case MarshallerKind.OleDateTime:
-                    return context.GetWellKnownType(WellKnownType.Double);
-
-                case MarshallerKind.SafeHandle:
-                case MarshallerKind.CriticalHandle:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
-
-                case MarshallerKind.UnicodeString:
-                case MarshallerKind.UnicodeStringBuilder:
-                    return context.GetWellKnownType(WellKnownType.Char).MakePointerType();
-
-                case MarshallerKind.AnsiString:
-                case MarshallerKind.AnsiStringBuilder:
-                    return context.GetWellKnownType(WellKnownType.Byte).MakePointerType();
-
-                case MarshallerKind.CBool:
-                    return context.GetWellKnownType(WellKnownType.Byte);
-
-                case MarshallerKind.BlittableArray:
-                case MarshallerKind.Array:
-                case MarshallerKind.AnsiCharArray:
-                    {
-                        ArrayType arrayType = type as ArrayType;
-                        Debug.Assert(arrayType != null, "Expecting array");
-
-                        //
-                        // We need to construct the unsafe array from the right unsafe array element type
-                        //
-                        TypeDesc elementNativeType = GetNativeTypeFromMarshallerKind(
-                            arrayType.ElementType,
-                            ElementMarshallerKind,
-                            MarshallerKind.Unknown, null);
-
-                        return elementNativeType.MakePointerType();
-                    }
-
-                case MarshallerKind.AnsiChar:
-                    return context.GetWellKnownType(WellKnownType.Byte);
-
-                case MarshallerKind.FunctionPointer:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
-
-                case MarshallerKind.ByValArray:
-                case MarshallerKind.ByValAnsiCharArray:
-                case MarshallerKind.Unknown:
-                default:
-                    Debug.Assert(false, "unknown/unexpected marshaller kind: " + kind);
-                    return null;
-            }
-        }
-
-
-        private static MarshallerKind GetMarshallerKind(
-            TypeDesc type,
-            ParameterMetadata parameterData,
-            PInvokeMethodData methodData,
-            MarshallerType marshallerType,
-            out MarshallerKind elementMarshallerKind)
-        {
-            if (type.IsByRef)
-            {
-                type = type.GetParameterType();
-            }
-
-            NativeTypeKind nativeType = NativeTypeKind.Invalid;
-            bool isReturn = parameterData.Return;
-            MarshalAsDescriptor marshalAs = parameterData.MarshalAsDescriptor;
-            bool isField = marshallerType == MarshallerType.Field;
-
-            if (marshalAs != null)
-                nativeType = (NativeTypeKind)marshalAs.Type;
-
-
-            bool isAnsi = (methodData.GetCharSet() & PInvokeAttributes.CharSetAnsi) == PInvokeAttributes.CharSetAnsi;
-            elementMarshallerKind = MarshallerKind.Invalid;
-
-            //
-            // Determine MarshalerKind
-            //
-            // This mostly resembles desktop CLR and .NET Native code as we need to match their behavior
-            // 
-            if (type.IsPrimitive)
-            {
-                switch (type.Category)
-                {
-                    case TypeFlags.Void:
-                        return MarshallerKind.VoidReturn;
-
-                    case TypeFlags.Boolean:
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.Invalid:
-                            case NativeTypeKind.Boolean:
-                                return MarshallerKind.Bool;
-
-                            case NativeTypeKind.U1:
-                            case NativeTypeKind.I1:
-                                return MarshallerKind.CBool;
-
-                            default:
-                                return MarshallerKind.Invalid;
-                        }
-
-                    case TypeFlags.Char:
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.I1:
-                            case NativeTypeKind.U1:
-                                return MarshallerKind.AnsiChar;
-
-                            case NativeTypeKind.I2:
-                            case NativeTypeKind.U2:
-                                return MarshallerKind.UnicodeChar;
-
-                            case NativeTypeKind.Invalid:
-                                if (isAnsi)
-                                    return MarshallerKind.AnsiChar;
-                                else
-                                    return MarshallerKind.UnicodeChar;
-                            default:
-                                return MarshallerKind.Invalid;
-                        }
-
-                    case TypeFlags.SByte:
-                    case TypeFlags.Byte:
-                        if (nativeType == NativeTypeKind.I1 || nativeType == NativeTypeKind.U1 || nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.BlittableValue;
-                        else
-                            return MarshallerKind.Invalid;
-
-                    case TypeFlags.Int16:
-                    case TypeFlags.UInt16:
-                        if (nativeType == NativeTypeKind.I2 || nativeType == NativeTypeKind.U2 || nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.BlittableValue;
-                        else
-                            return MarshallerKind.Invalid;
-
-                    case TypeFlags.Int32:
-                    case TypeFlags.UInt32:
-                        if (nativeType == NativeTypeKind.I4 || nativeType == NativeTypeKind.U4 || nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.BlittableValue;
-                        else
-                            return MarshallerKind.Invalid;
-
-                    case TypeFlags.Int64:
-                    case TypeFlags.UInt64:
-                        if (nativeType == NativeTypeKind.I8 || nativeType == NativeTypeKind.U8 || nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.BlittableValue;
-                        else
-                            return MarshallerKind.Invalid;
-
-                    case TypeFlags.IntPtr:
-                    case TypeFlags.UIntPtr:
-                        if (nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.BlittableValue;
-                        else
-                            return MarshallerKind.Invalid;
-
-                    case TypeFlags.Single:
-                        if (nativeType == NativeTypeKind.R4 || nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.BlittableValue;
-                        else
-                            return MarshallerKind.Invalid;
-
-                    case TypeFlags.Double:
-                        if (nativeType == NativeTypeKind.R8 || nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.BlittableValue;
-                        else
-                            return MarshallerKind.Invalid;
-
-                    default:
-                        return MarshallerKind.Invalid;
-                }
-            }
-            else if (type.IsValueType)
-            {
-                if (type.IsEnum)
-                    return MarshallerKind.Enum;
-
-                if (methodData.IsSystemDateTime(type))
-                {
-                    if (nativeType == NativeTypeKind.Invalid ||
-                        nativeType == NativeTypeKind.Struct)
-                        return MarshallerKind.OleDateTime;
-                    else
-                        return MarshallerKind.Invalid;
-                }
-                /*              
-                                TODO: Bring HandleRef to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                else if (methodData.IsHandleRef(type))
-                                {
-                                    if (nativeType == NativeType.Invalid)
-                                        return MarshallerKind.HandleRef;
-                                    else
-                                        return MarshallerKind.Invalid;
-                                }
-                */
-
-                switch (nativeType)
-                {
-                    case NativeTypeKind.Invalid:
-                    case NativeTypeKind.Struct:
-                        if (methodData.IsSystemDecimal(type))
-                            return MarshallerKind.Decimal;
-                        break;
-
-                    case NativeTypeKind.LPStruct:
-                        if (methodData.IsSystemGuid(type) ||
-                            methodData.IsSystemDecimal(type))
-                        {
-                            if (isField || isReturn)
-                                return MarshallerKind.Invalid;
-                            else
-                                return MarshallerKind.BlittableStructPtr;
-                        }
-                        break;
-
-                    default:
-                        return MarshallerKind.Invalid;
-                }
-
-                if (MarshalHelpers.IsBlittableType(type))
-                {
-                    return MarshallerKind.BlittableStruct;
-                }
-                else
-                {
-                    return MarshallerKind.Struct;
-                }
-            }
-            else                  // !ValueType
-            {
-                if (type.Category == TypeFlags.Class)
-                {
-                    if (type.IsString)
-                    {
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.LPWStr:
-                                return MarshallerKind.UnicodeString;
-
-                            case NativeTypeKind.LPStr:
-                                return MarshallerKind.AnsiString;
-
-                            case NativeTypeKind.Invalid:
-                                if (isAnsi)
-                                    return MarshallerKind.AnsiString;
-                                else
-                                    return MarshallerKind.UnicodeString;
-
-                            default:
-                                return MarshallerKind.Invalid;
-                        }
-                    }
-                    else if (type.IsDelegate)
-                    {
-                        if (nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.Func)
-                            return MarshallerKind.FunctionPointer;
-                        else
-                            return MarshallerKind.Invalid;
-                    }
-                    else if (type.IsObject)
-                    {
-                        if (nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.Variant;
-                        else
-                            return MarshallerKind.Invalid;
-                    }
-                    else if (methodData.IsStringBuilder(type))
-                    {
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.Invalid:
-                                if (isAnsi)
-                                {
-                                    return MarshallerKind.AnsiStringBuilder;
-                                }
-                                else
-                                {
-                                    return MarshallerKind.UnicodeStringBuilder;
-                                }
-
-                            case NativeTypeKind.LPStr:
-                                return MarshallerKind.AnsiStringBuilder;
-
-                            case NativeTypeKind.LPWStr:
-                                return MarshallerKind.UnicodeStringBuilder;
-                            default:
-                                return MarshallerKind.Invalid;
-                        }
-                    }
-                    else if (methodData.IsSafeHandle(type))
-                    {
-                        if (nativeType == NativeTypeKind.Invalid)
-                            return MarshallerKind.SafeHandle;
-                        else
-                            return MarshallerKind.Invalid;
-                    }
-                    /*
-                                        TODO: Bring CriticalHandle to CoreLib
-                                        https://github.com/dotnet/corert/issues/2570
-
-                                        else if (methodData.IsCriticalHandle(type))
-                                        {
-                                            if (nativeType != NativeType.Invalid || isField)
-                                            {
-                                                return MarshallerKind.Invalid;
-                                            }
-                                            else
-                                            {
-                                                return MarshallerKind.CriticalHandle;
-                                            }
-                                        }
-                    */
-                    return MarshallerKind.Invalid;
-                }
-                else if (methodData.IsSystemArray(type))
-                {
-                    return MarshallerKind.Invalid;
-                }
-                else if (type.IsSzArray)
-                {
-                    if (nativeType == NativeTypeKind.Invalid)
-                        nativeType = NativeTypeKind.Array;
-
-                    switch (nativeType)
-                    {
-                        case NativeTypeKind.Array:
-                            {
-                                if (isField || isReturn)
-                                    return MarshallerKind.Invalid;
-
-                                var arrayType = (ArrayType)type;
-
-                                elementMarshallerKind = GetArrayElementMarshallerKind(
-                                    arrayType,
-                                    marshalAs,
-                                    methodData);
-
-                                // If element is invalid type, the array itself is invalid
-                                if (elementMarshallerKind == MarshallerKind.Invalid)
-                                    return MarshallerKind.Invalid;
-
-                                if (elementMarshallerKind == MarshallerKind.AnsiChar)
-                                    return MarshallerKind.AnsiCharArray;
-                                else if (elementMarshallerKind == MarshallerKind.UnicodeChar    // Arrays of unicode char should be marshalled as blittable arrays
-                                    || elementMarshallerKind == MarshallerKind.Enum
-                                    || elementMarshallerKind == MarshallerKind.BlittableValue)
-                                    return MarshallerKind.BlittableArray;
-                                else
-                                    return MarshallerKind.Array;
-                            }
-
-                        case NativeTypeKind.ByValArray:         // fix sized array
-                            {
-                                var arrayType = (ArrayType)type;
-                                elementMarshallerKind = GetArrayElementMarshallerKind(
-                                    arrayType,
-                                    marshalAs,
-                                    methodData);
-
-                                // If element is invalid type, the array itself is invalid
-                                if (elementMarshallerKind == MarshallerKind.Invalid)
-                                    return MarshallerKind.Invalid;
-
-                                if (elementMarshallerKind == MarshallerKind.AnsiChar)
-                                    return MarshallerKind.ByValAnsiCharArray;
-                                else
-                                    return MarshallerKind.ByValArray;
-                            }
-
-                        default:
-                            return MarshallerKind.Invalid;
-                    }
-                }
-                else if (type.Category == TypeFlags.Pointer)
-                {
-                    //
-                    // @TODO - add checks for the pointee type in case the pointee type is not blittable
-                    // C# already does this and will emit compilation errors (can't declare pointers to 
-                    // managed type).
-                    //
-                    if (nativeType == NativeTypeKind.Invalid)
-                        return MarshallerKind.BlittableValue;
-                    else
-                        return MarshallerKind.Invalid;
-                }
-            }
-
-            return MarshallerKind.Invalid;
-        }
-
-        protected static MarshallerKind GetArrayElementMarshallerKind(
-                   ArrayType arrayType,
-                   MarshalAsDescriptor marshalAs,
-                   PInvokeMethodData methodData)
-        {
-            TypeDesc elementType = arrayType.ElementType;
-            bool isAnsi = (methodData.GetCharSet() & PInvokeAttributes.CharSetAnsi) == PInvokeAttributes.CharSetAnsi;
-            NativeTypeKind nativeType = NativeTypeKind.Invalid;
-
-            if (marshalAs != null)
-                nativeType = (NativeTypeKind)marshalAs.ArraySubType;
-
-            if (elementType.IsPrimitive)
-            {
-                switch (elementType.Category)
-                {
-                    case TypeFlags.Char:
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.I1:
-                            case NativeTypeKind.U1:
-                                return MarshallerKind.AnsiChar;
-                            case NativeTypeKind.I2:
-                            case NativeTypeKind.U2:
-                                return MarshallerKind.UnicodeChar;
-                            default:
-                                if (isAnsi)
-                                    return MarshallerKind.AnsiChar;
-                                else
-                                    return MarshallerKind.UnicodeChar;
-                        }
-
-                    case TypeFlags.Boolean:
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.Boolean:
-                                return MarshallerKind.Bool;
-                            case NativeTypeKind.I1:
-                            case NativeTypeKind.U1:
-                                return MarshallerKind.CBool;
-                            case NativeTypeKind.Invalid:
-                            default:
-                                return MarshallerKind.Bool;
-                        }
-                    case TypeFlags.IntPtr:
-                    case TypeFlags.UIntPtr:
-                        return MarshallerKind.BlittableValue;
-
-                    case TypeFlags.Void:
-                        return MarshallerKind.Invalid;
-
-                    case TypeFlags.SByte:
-                    case TypeFlags.Int16:
-                    case TypeFlags.Int32:
-                    case TypeFlags.Int64:
-                    case TypeFlags.Byte:
-                    case TypeFlags.UInt16:
-                    case TypeFlags.UInt32:
-                    case TypeFlags.UInt64:
-                    case TypeFlags.Single:
-                    case TypeFlags.Double:
-                        return MarshallerKind.BlittableValue;
-                    default:
-                        return MarshallerKind.Invalid;
-                }
-            }
-            else if (elementType.IsValueType)
-            {
-                if (elementType.IsEnum)
-                    return MarshallerKind.Enum;
-
-                if (methodData.IsSystemDecimal(elementType))
-                {
-                    switch (nativeType)
-                    {
-                        case NativeTypeKind.Invalid:
-                        case NativeTypeKind.Struct:
-                            return MarshallerKind.Decimal;
-
-                        case NativeTypeKind.LPStruct:
-                            return MarshallerKind.BlittableStructPtr;
-
-                        default:
-                            return MarshallerKind.Invalid;
-                    }
-                }
-                else if (methodData.IsSystemGuid(elementType))
-                {
-                    switch (nativeType)
-                    {
-                        case NativeTypeKind.Invalid:
-                        case NativeTypeKind.Struct:
-                            return MarshallerKind.BlittableValue;
-
-                        case NativeTypeKind.LPStruct:
-                            return MarshallerKind.BlittableStructPtr;
-
-                        default:
-                            return MarshallerKind.Invalid;
-                    }
-                }
-                else if (methodData.IsSystemDateTime(elementType))
-                {
-                    if (nativeType == NativeTypeKind.Invalid ||
-                        nativeType == NativeTypeKind.Struct)
-                    {
-                        return MarshallerKind.OleDateTime;
-                    }
-                    else
-                    {
-                        return MarshallerKind.Invalid;
-                    }
-                }
-                /*              
-                                TODO: Bring HandleRef to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                else if (methodData.IsHandleRef(elementType))
-                                {
-                                    return MarshallerKind.HandleRef;
-                                }
-                */
-                else
-                {
-
-                    if (MarshalHelpers.IsBlittableType(elementType))
-                    {
-                        switch (nativeType)
-                        {
-                            case NativeTypeKind.Invalid:
-                            case NativeTypeKind.Struct:
-                                return MarshallerKind.BlittableStruct;
-
-                            default:
-                                return MarshallerKind.Invalid;
-                        }
-                    }
-                    else
-                    {
-                        // TODO: Differentiate between struct and Union, we only need to support struct not union here
-                        return MarshallerKind.Struct;
-                    }
-                }
-            }
-            else                          //  !valueType
-            {
-                if (elementType.IsString)
-                {
-                    switch (nativeType)
-                    {
-                        case NativeTypeKind.Invalid:
-                            if (isAnsi)
-                                return MarshallerKind.AnsiString;
-                            else
-                                return MarshallerKind.UnicodeString;
-                        case NativeTypeKind.LPStr:
-                            return MarshallerKind.AnsiString;
-                        case NativeTypeKind.LPWStr:
-                            return MarshallerKind.UnicodeString;
-                        default:
-                            return MarshallerKind.Invalid;
-                    }
-                }
-
-                if (elementType.IsObject)
-                {
-                    if (nativeType == NativeTypeKind.Invalid)
-                        return MarshallerKind.Variant;
-                    else
-                        return MarshallerKind.Invalid;
-                }
-
-                if (elementType.IsSzArray)
-                {
-                    return MarshallerKind.Invalid;
-                }
-
-                if (elementType.IsPointer)
-                {
-                    return MarshallerKind.Invalid;
-                }
-
-                if (methodData.IsSafeHandle(elementType))
-                {
-                    return MarshallerKind.Invalid;
-                }
-                /*          
-                                TODO: Bring CriticalHandle to CoreLib
-                                https://github.com/dotnet/corert/issues/2570
-
-                                if (methodData.IsCriticalHandle(elementType))
-                                {
-                                    return MarshallerKind.Invalid;
-                                }
-                */
-            }
-
-            return MarshallerKind.Invalid;
-        }
         #endregion
 
         public virtual void EmitMarshallingIL(PInvokeILCodeStreams pInvokeILCodeStreams)
@@ -1036,6 +408,7 @@ namespace Internal.TypeSystem.Interop
             {
                 case MarshallerType.Argument: EmitArgumentMarshallingIL(); return;
                 case MarshallerType.Element: EmitElementMarshallingIL(); return;
+                case MarshallerType.Field: EmitFieldMarshallingIL(); return;
             }
         }
 
@@ -1054,6 +427,15 @@ namespace Internal.TypeSystem.Interop
             {
                 case MarshalDirection.Forward: EmitForwardElementMarshallingIL(); return;
                 case MarshalDirection.Reverse: EmitReverseElementMarshallingIL(); return;
+            }
+        }
+
+        public void EmitFieldMarshallingIL()
+        {
+            switch (MarshalDirection)
+            {
+                case MarshalDirection.Forward: EmitForwardFieldMarshallingIL(); return;
+                case MarshalDirection.Reverse: EmitReverseFieldMarshallingIL(); return;
             }
         }
 
@@ -1097,6 +479,23 @@ namespace Internal.TypeSystem.Interop
                 EmitMarshalElementManagedToNative();
         }
 
+        protected virtual void EmitForwardFieldMarshallingIL()
+        {
+            if (In)
+                EmitMarshalFieldManagedToNative();
+            else
+                EmitMarshalFieldNativeToManaged();
+        }
+
+        protected virtual void EmitReverseFieldMarshallingIL()
+        {
+            if (In)
+                EmitMarshalFieldNativeToManaged();
+            else
+                EmitMarshalFieldManagedToNative();
+        }
+
+
         protected virtual void EmitMarshalReturnValueManagedToNative()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
@@ -1123,7 +522,7 @@ namespace Internal.TypeSystem.Interop
                 if (IsManagedByRef)
                     _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, false);
                 else
-                    _managedHome = new Home(PInvokeParameterMetadata.Index - 1, ManagedType, false);
+                    _managedHome = new Home(Index - 1, ManagedType, false);
                 _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
             }
             else
@@ -1138,6 +537,18 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
 
+            _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
+            _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+        }
+
+        protected virtual void SetupArgumentsForFieldMarshalling()
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
+            
+            //
+            // these are temporary locals for propagating value
+            //
             _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
         }
@@ -1213,7 +624,7 @@ namespace Internal.TypeSystem.Interop
         /// </summary>
         protected void PropagateFromByRefArg(ILCodeStream stream, Home home)
         {
-            stream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+            stream.EmitLdArg(Index - 1);
             stream.EmitLdInd(ManagedType);
             home.StoreValue(stream);
         }
@@ -1225,7 +636,7 @@ namespace Internal.TypeSystem.Interop
         /// </summary>
         protected void PropagateToByRefArg(ILCodeStream stream, Home home)
         {
-            stream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+            stream.EmitLdArg(Index - 1);
             home.LoadValue(stream);
             stream.EmitStInd(ManagedType);
         }
@@ -1277,7 +688,7 @@ namespace Internal.TypeSystem.Interop
                     PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _managedHome);
                 }
             }
-            EmitCleanupManagedToNative();
+            EmitCleanupManagedToNative(_ilCodeStreams.UnmarshallingCodestream);
         }
 
         /// <summary>
@@ -1320,7 +731,7 @@ namespace Internal.TypeSystem.Interop
             StoreManagedValue(codeStream);
         }
 
-        protected virtual void EmitCleanupManagedToNative()
+        protected virtual void EmitCleanupManagedToNative(ILCodeStream codeStream)
         {
         }
 
@@ -1395,9 +806,45 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
         }
 
+        protected virtual void EmitMarshalFieldManagedToNative()
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
+
+            SetupArgumentsForFieldMarshalling();
+            //
+            // For field marshalling we expect the value of the field is already loaded
+            // in the stack. 
+            //
+            StoreManagedValue(marshallingCodeStream);
+
+            // marshal
+            AllocAndTransformManagedToNative(marshallingCodeStream);
+
+            LoadNativeValue(marshallingCodeStream);
+        }
+
+        protected virtual void EmitMarshalFieldNativeToManaged()
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            ILCodeStream codeStream = _ilCodeStreams.MarshallingCodeStream;
+
+            SetupArgumentsForFieldMarshalling();
+
+            StoreNativeValue(codeStream);
+
+            // unmarshal
+            AllocAndTransformNativeToManaged(codeStream);
+            LoadManagedValue(codeStream);
+        }
+
         protected virtual void ReInitNativeTransform()
         {
-        }        
+        }
+
+        internal virtual void EmitElementCleanup(ILCodeStream codestream, ILEmitter emitter)
+        {
+        }
     }
 
     class VoidReturnMarshaller : Marshaller
@@ -1418,10 +865,10 @@ namespace Internal.TypeSystem.Interop
             {
                 ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
                 ILEmitter emitter = _ilCodeStreams.Emitter;
-                ILLocalVariable native = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr));
+                ILLocalVariable native = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
 
                 ILLocalVariable vPinnedByRef = emitter.NewLocal(ManagedParameterType, true);
-                marshallingCodeStream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+                marshallingCodeStream.EmitLdArg(Index - 1);
                 marshallingCodeStream.EmitStLoc(vPinnedByRef);
                 marshallingCodeStream.EmitLdLoc(vPinnedByRef);
                 marshallingCodeStream.Emit(ILOpcode.conv_i);
@@ -1430,7 +877,7 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(Index - 1);
             }
         }
 
@@ -1442,7 +889,7 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(PInvokeParameterMetadata.Index - 1);
+                _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(Index - 1);
             }
         }
     }
@@ -1460,7 +907,7 @@ namespace Internal.TypeSystem.Interop
                 _elementMarshaller.MarshallerKind = ElementMarshallerKind;
                 _elementMarshaller.MarshallerType = MarshallerType.Element;
                 _elementMarshaller.Return = Return;
-                _elementMarshaller.PInvokeMethodData = PInvokeMethodData;
+                _elementMarshaller.Context = Context;
                 _elementMarshaller.ManagedType = ((ArrayType)ManagedType).ElementType;
             }
             _elementMarshaller.In = (direction == MarshalDirection);
@@ -1491,8 +938,8 @@ namespace Internal.TypeSystem.Interop
             else
             { 
 
-                uint? sizeParamIndex = PInvokeParameterMetadata.MarshalAsDescriptor.SizeParamIndex;
-                uint? sizeConst = PInvokeParameterMetadata.MarshalAsDescriptor.SizeConst;
+                uint? sizeParamIndex = MarshalAsDescriptor.SizeParamIndex;
+                uint? sizeConst = MarshalAsDescriptor.SizeConst;
 
                 if (sizeConst.HasValue)
                 {
@@ -1528,7 +975,7 @@ namespace Internal.TypeSystem.Interop
 
                     // @TODO - We can use LoadManagedValue, but that requires byref arg propagation happen in a special setup stream
                     // otherwise there is an ordering issue
-                    codeStream.EmitLdArg(Marshallers[index].PInvokeParameterMetadata.Index - 1);
+                    codeStream.EmitLdArg(Marshallers[index].Index - 1);
                     if (Marshallers[index].IsManagedByRef)
                         codeStream.EmitLdInd(indexType);
 
@@ -1549,10 +996,9 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             var arrayType = (ArrayType)ManagedType;
             var elementType = arrayType.ElementType;
-            TypeSystemContext context = PInvokeMethodData.Context;
 
-            ILLocalVariable vSizeOf = emitter.NewLocal(context.GetWellKnownType(WellKnownType.IntPtr));
-            ILLocalVariable vLength = emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
+            ILLocalVariable vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+            ILLocalVariable vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
             ILLocalVariable vNativeTemp = emitter.NewLocal(NativeType);
 
             ILCodeLabel lNullArray = emitter.NewCodeLabel();
@@ -1577,22 +1023,22 @@ namespace Internal.TypeSystem.Interop
             if (elementType.IsPrimitive)
                 codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
             else
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(context.GetWellKnownType(WellKnownType.IntPtr)));
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
 
             codeStream.Emit(ILOpcode.dup);
             codeStream.EmitStLoc(vSizeOf);
             codeStream.Emit(ILOpcode.mul_ovf);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                context.SystemModule.
+                                Context.SystemModule.
                                     GetKnownType("System", "IntPtr").
                                         GetKnownMethod("op_Explicit", null)));
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemAllocAndZeroMemory")));
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemAllocAndZeroMemory")));
             StoreNativeValue(codeStream);
 
             // initialize content
-            var vIndex = emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
+            var vIndex = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
 
             LoadNativeValue(codeStream);
             codeStream.EmitStLoc(vNativeTemp);
@@ -1636,10 +1082,9 @@ namespace Internal.TypeSystem.Interop
             ArrayType arrayType = (ArrayType)ManagedType;
 
             var elementType = arrayType.ElementType;
-            TypeSystemContext context = PInvokeMethodData.Context;
 
-            ILLocalVariable vSizeOf = emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
-            ILLocalVariable vLength = emitter.NewLocal(context.GetWellKnownType(WellKnownType.IntPtr));
+            ILLocalVariable vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+            ILLocalVariable vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
 
             ILCodeLabel lRangeCheck = emitter.NewCodeLabel();
             ILCodeLabel lLoopHeader = emitter.NewCodeLabel();
@@ -1651,11 +1096,11 @@ namespace Internal.TypeSystem.Interop
             if (elementType.IsPrimitive)
                 codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
             else 
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(context.GetWellKnownType(WellKnownType.IntPtr)));
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
 
             codeStream.EmitStLoc(vSizeOf);
 
-            var vIndex = emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
+            var vIndex = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
             ILLocalVariable vNativeTemp = emitter.NewLocal(NativeType);
 
             LoadNativeValue(codeStream);
@@ -1707,16 +1152,78 @@ namespace Internal.TypeSystem.Interop
             StoreManagedValue(codeStream);
         }
 
-        protected override void EmitCleanupManagedToNative()
+        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
         {
-            ILCodeStream codeStream;
-            if (Return)
-                codeStream = _ilCodeStreams.ReturnValueMarshallingCodeStream;
-            else
-                codeStream = _ilCodeStreams.UnmarshallingCodestream;
+            Marshaller elementMarshaller = GetElementMarshaller(MarshalDirection.Forward);
+
+            // generate cleanuo code only if it is necessary
+            if (elementMarshaller.CleanupRequired)
+            {
+                //
+                //     for (index=0; index< array.length; index++)
+                //         Cleanup(array[i]);
+                //
+                ILEmitter emitter = _ilCodeStreams.Emitter;
+                var vIndex = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+                ILLocalVariable vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+
+                ILCodeLabel lRangeCheck = emitter.NewCodeLabel();
+                ILCodeLabel lLoopHeader = emitter.NewCodeLabel();
+                ILLocalVariable vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+
+                ArrayType arrayType = (ArrayType)ManagedType;
+
+                var elementType = arrayType.ElementType;
+
+                 // calculate sizeof(array[i])
+                if (elementType.IsPrimitive)
+                    codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
+                else
+                    codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
+
+                codeStream.EmitStLoc(vSizeOf);
+
+
+                // calculate array.length
+                EmitElementCount(codeStream, MarshalDirection.Forward);
+                codeStream.EmitStLoc(vLength);
+
+                // load native value
+                ILLocalVariable vNativeTemp = emitter.NewLocal(NativeType);
+                LoadNativeValue(codeStream);
+                codeStream.EmitStLoc(vNativeTemp);
+
+                // index = 0
+                codeStream.EmitLdc(0);
+                codeStream.EmitStLoc(vIndex);
+                codeStream.Emit(ILOpcode.br, lRangeCheck);
+
+                codeStream.EmitLabel(lLoopHeader);
+                codeStream.EmitLdLoc(vNativeTemp);
+                codeStream.EmitLdInd(elementType);
+                // generate cleanup code for this element
+                elementMarshaller.EmitElementCleanup(codeStream, emitter);
+
+                codeStream.EmitLdLoc(vIndex);
+                codeStream.EmitLdc(1);
+                codeStream.Emit(ILOpcode.add);
+                codeStream.EmitStLoc(vIndex);
+                codeStream.EmitLdLoc(vNativeTemp);
+                codeStream.EmitLdLoc(vSizeOf);
+                codeStream.Emit(ILOpcode.add);
+                codeStream.EmitStLoc(vNativeTemp);
+
+                codeStream.EmitLabel(lRangeCheck);
+
+                codeStream.EmitLdLoc(vIndex);
+                codeStream.EmitLdLoc(vLength);
+                codeStream.Emit(ILOpcode.clt);
+                codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            }
+
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                                PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
     }
 
@@ -1765,10 +1272,10 @@ namespace Internal.TypeSystem.Interop
             if (IsManagedByRef && !In)
                 base.TransformNativeToManaged(codeStream);
         }
-        protected override void EmitCleanupManagedToNative()
+        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
         {
             if (IsManagedByRef && !In)
-                base.EmitCleanupManagedToNative();
+                base.EmitCleanupManagedToNative(codeStream);
         }
     }
 
@@ -1800,12 +1307,11 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            TypeSystemContext context = PInvokeMethodData.Context;
+
             //
             // Unicode marshalling. Pin the string and push a pointer to the first character on the stack.
             //
-
-            TypeDesc stringType = context.GetWellKnownType(WellKnownType.String);
+            TypeDesc stringType = Context.GetWellKnownType(WellKnownType.String);
 
             ILLocalVariable vPinnedString = emitter.NewLocal(stringType, true);
             ILCodeLabel lNullString = emitter.NewCodeLabel();
@@ -1821,7 +1327,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullString);
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                context.SystemModule.
+                Context.SystemModule.
                     GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers").
                         GetKnownMethod("get_OffsetToStringData", null)));
 
@@ -1831,45 +1337,55 @@ namespace Internal.TypeSystem.Interop
             StoreNativeValue(codeStream);
         }
     }
+  
 
-    class AnsiStringMarshaller : BlittableArrayMarshaller
+    class AnsiStringMarshaller : Marshaller
     {
+        internal override bool CleanupRequired
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        internal  override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
+        {
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+        }
+
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            TypeSystemContext context = PInvokeMethodData.Context;
-            //
-            // ANSI marshalling. Allocate a byte array, copy characters, pin first element.
-            //
 
-            var stringToAnsi = context.GetHelperEntryPoint("InteropHelpers", "StringToAnsi");
+            //
+            // ANSI marshalling. Allocate a byte array, copy characters
+            //
+            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsi");
             LoadManagedValue(codeStream);
+
             codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
 
-            // back up the managed types 
-            TypeDesc tempType  = ManagedType;
-            Home vTemp = _managedHome;
-            ManagedType = context.GetWellKnownType(WellKnownType.Byte).MakeArrayType();
-            _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
-            StoreManagedValue(codeStream);
-            
-            // Call the Array marshaller MarshalArgument
-            base.AllocAndTransformManagedToNative(codeStream);
-
-            //restore the types
-            ManagedType = tempType;
-            _managedHome = vTemp;
+            StoreNativeValue(codeStream);
         }
 
         protected override void AllocAndTransformNativeToManaged(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            TypeSystemContext context = PInvokeMethodData.Context;
-            var ansiToString = context.GetHelperEntryPoint("InteropHelpers", "AnsiStringToString");
+            var ansiToString = Context.GetHelperEntryPoint("InteropHelpers", "AnsiStringToString");
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(ansiToString));
             StoreManagedValue(codeStream);
         }
+
+        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
+        {
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+        }
+
     }
 
     class SafeHandleMarshaller : Marshaller
@@ -1889,9 +1405,9 @@ namespace Internal.TypeSystem.Interop
             }
 
             // we don't support [IN,OUT] together yet, either IN or OUT
-            Debug.Assert(!(PInvokeParameterMetadata.Out && PInvokeParameterMetadata.In));
+             Debug.Assert(!(Out && In));
 
-            var safeHandleType = PInvokeMethodData.SafeHandleType;
+            var safeHandleType = InteropTypes.GetSafeHandleType(Context);
 
             if (Out && IsManagedByRef)
             {
@@ -1902,7 +1418,7 @@ namespace Internal.TypeSystem.Interop
                 // 2) Initialize a local IntPtr that will be passed to the native call. 
                 // 3) After the native call, the new handle value is written into the output SafeHandle and that SafeHandle
                 //    is propagated back to the caller.
-                var vOutValue = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.IntPtr));
+                var vOutValue = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
                 var vSafeHandle = emitter.NewLocal(ManagedType);
                 marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(ManagedType.GetParameterlessConstructor()));
                 marshallingCodeStream.EmitStLoc(vSafeHandle);
@@ -1911,7 +1427,7 @@ namespace Internal.TypeSystem.Interop
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
                 unmarshallingCodeStream.EmitLdLoc(vOutValue);
                 unmarshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    PInvokeMethodData.SafeHandleType.GetKnownMethod("SetHandle", null)));
+                   safeHandleType.GetKnownMethod("SetHandle", null)));
 
                 unmarshallingCodeStream.EmitLdLoc(vSafeHandle);
                 StoreManagedValue(unmarshallingCodeStream);
@@ -1920,7 +1436,7 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                var vAddRefed = emitter.NewLocal(PInvokeMethodData.Context.GetWellKnownType(WellKnownType.Boolean));
+                var vAddRefed = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
                 LoadManagedValue(marshallingCodeStream);
                 marshallingCodeStream.EmitLdLoca(vAddRefed);
                 marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
@@ -1952,7 +1468,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-            PInvokeMethodData.SafeHandleType.GetKnownMethod("SetHandle", null)));
+            InteropTypes.GetSafeHandleType(Context).GetKnownMethod("SetHandle", null)));
         }
     }
 
@@ -1961,20 +1477,19 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            TypeSystemContext context = PInvokeMethodData.Context;
             // TODO: Handles [out] marshalling only for now
 
-            var stringBuilderType = context.SystemModule.GetKnownType("System.Text", "StringBuilder");
+            var stringBuilderType = Context.SystemModule.GetKnownType("System.Text", "StringBuilder");
 
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                context.GetHelperEntryPoint("InteropHelpers", "GetEmptyStringBuilderBuffer")));
+                Context.GetHelperEntryPoint("InteropHelpers", "GetEmptyStringBuilderBuffer")));
 
             // back up the managed types 
             TypeDesc tempType = ManagedType;
             Home vTemp = _managedHome;
 
-            ManagedType = context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
+            ManagedType = Context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
             _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
             StoreManagedValue(codeStream);
 
@@ -1991,7 +1506,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                PInvokeMethodData.StringBuilder.GetKnownMethod("ReplaceBuffer", null)));
+                InteropTypes.GetStringBuilder(Context).GetKnownMethod("ReplaceBuffer", null)));
         }
     }
 
@@ -2001,8 +1516,42 @@ namespace Internal.TypeSystem.Interop
         {
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-            PInvokeMethodData.Context.GetHelperEntryPoint("InteropHelpers", "GetStubForPInvokeDelegate")));
+            Context.GetHelperEntryPoint("InteropHelpers", "GetStubForPInvokeDelegate")));
             StoreNativeValue(codeStream);
         }
     }
+
+    class StructMarshaller : Marshaller
+    {
+
+        protected override void AllocManagedToNative(ILCodeStream codeStream)
+        {
+            LoadNativeAddr(codeStream);
+            codeStream.Emit(ILOpcode.initobj, _ilCodeStreams.Emitter.NewToken(NativeType));
+        }
+
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            LoadManagedAddr(codeStream);
+            LoadNativeAddr(codeStream);
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                InteropStateManager.GetStructMarshallingManagedToNativeThunk(ManagedType)));
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            LoadManagedAddr(codeStream);
+            LoadNativeAddr(codeStream);
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                InteropStateManager.GetStructMarshallingNativeToManagedThunk(ManagedType)));
+        }
+
+        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
+        {
+            LoadNativeAddr(codeStream);
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                InteropStateManager.GetStructMarshallingCleanupThunk(ManagedType)));
+        }
+    }
+
 }
