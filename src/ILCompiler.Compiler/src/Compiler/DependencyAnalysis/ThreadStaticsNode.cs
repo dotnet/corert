@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.CompilationUnitPrefix + "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
         }
  
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
