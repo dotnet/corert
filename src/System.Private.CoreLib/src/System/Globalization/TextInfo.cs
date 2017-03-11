@@ -14,11 +14,13 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Text;
+
 
 namespace System.Globalization
 {
-    public partial class TextInfo : ICloneable
+    public partial class TextInfo : ICloneable, IDeserializationCallback
     {
         ////--------------------------------------------------------------------//
         ////                        Internal Information                        //
@@ -49,8 +51,8 @@ namespace System.Globalization
         ////      
 
         private readonly String _cultureName;      // Name of the culture that created this text info
-        private readonly CultureData _cultureData;      // Data record for the culture that made us, not for this textinfo
-        private readonly String _textInfoName;     // Name of the text info we're using (ie: m_cultureData.STEXTINFO)
+        private CultureData _cultureData;      // Data record for the culture that made us, not for this textinfo
+        private String _textInfoName;     // Name of the text info we're using (ie: m_cultureData.STEXTINFO)
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
@@ -64,6 +66,23 @@ namespace System.Globalization
             }
         }
         internal volatile static TextInfo s_Invariant;
+
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            OnDeserialized();
+        }
+
+        private void OnDeserialized()
+        {
+            // this method will be called twice because of the support of IDeserializationCallback
+            if (_cultureData == null)
+            {
+                // Get the text info name belonging to that culture
+                _cultureData = CultureInfo.GetCultureInfo(_cultureName).m_cultureData;
+                _textInfoName = _cultureData.STEXTINFO;
+                FinishInitialization(_textInfoName);
+            }
+        }
 
         //
         // Internal ordinal comparison functions
