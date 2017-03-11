@@ -777,6 +777,9 @@
   <data name="ArgumentNull_String" xml:space="preserve">
     <value>String reference not set to an instance of a String.</value>
   </data>
+  <data name="ArgumentNull_Type" xml:space="preserve">
+    <value>Type cannot be null.</value>
+  </data>
   <data name="ArgumentNull_Waithandles" xml:space="preserve">
     <value>The waitHandles parameter cannot be null.</value>
   </data>
@@ -1283,6 +1286,9 @@
   </data>
   <data name="Serialization_InvalidEscapeSequence" xml:space="preserve">
     <value>The serialized data contained an invalid escape sequence '\\{0}'.</value>
+  </data>
+    <data name="Serialization_InvalidType" xml:space="preserve">
+    <value>Only system-provided types can be passed to the GetUninitializedObject method. '{0}' is not a valid instance of a type.</value>
   </data>
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
@@ -2167,6 +2173,9 @@
   <data name="DelegateSer_InsufficientMetadata" xml:space="preserve">
     <value>The delegate cannot be serialized properly due to missing metadata for the target method.</value>
   </data>
+  <data name="Argument_NoUninitializedStrings" xml:space="preserve">
+    <value>Uninitialized Strings cannot be created.</value>
+  </data>
   <data name="ArgumentOutOfRangeException_NoGCRegionSizeTooLarge" xml:space="preserve">
     <value>totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in http://go.microsoft.com/fwlink/?LinkId=522706.</value>
   </data>
@@ -2214,6 +2223,18 @@
   </data>
   <data name="RuntimeFieldHandleSer_InsufficientMetadata" xml:space="preserve">
     <value>The RuntimeFieldHandle cannot be serialized properly due to missing reflection metadata.</value>
+  </data>
+  <data name="Acc_CreateAbst" xml:space="preserve">
+    <value>Cannot create an abstract class.</value>
+  </data>
+  <data name="Acc_CreateGeneric" xml:space="preserve">
+    <value>Cannot create a type for which Type.ContainsGenericParameters is true.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="NotSupported_ManagedActivation" xml:space="preserve">
+    <value>Cannot create uninitialized instances of types requiring managed activation.</value>
   </data>
   <data name="PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod" xml:space="preserve">
     <value>ResourceManager method '{0}' is not supported when reading from .resw resource files.</value>

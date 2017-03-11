@@ -10,7 +10,9 @@
 //
 
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
@@ -229,5 +231,57 @@ namespace System.Runtime.CompilerServices
 
         public delegate void TryCode(Object userData);
         public delegate void CleanupCode(Object userData, bool exceptionThrown);
+
+        public static object GetUninitializedObject(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
+            }
+            
+            if(!type.IsRuntimeImplemented())
+            {
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
+            }
+
+            if (type.IsArray || type.IsByRef || type.IsPointer)
+            {
+                throw new ArgumentException(SR.Argument_InvalidValue);
+            }
+
+            if (type.ContainsGenericParameters)
+            {
+                throw new MemberAccessException(SR.Acc_CreateGeneric);
+            }
+
+            if (type.IsCOMObject)
+            {
+                throw new NotSupportedException(SR.NotSupported_ManagedActivation);
+            }
+
+            EETypePtr eeTypePtr = type.TypeHandle.EETypePtr;
+
+            if (eeTypePtr == EETypePtr.EETypePtrOf<string>())
+            {
+                throw new ArgumentException(SR.Argument_NoUninitializedStrings);
+            }
+
+            if (eeTypePtr.IsAbstract)
+            {
+                throw new MemberAccessException(SR.Acc_CreateAbst);
+            }
+
+            if (eeTypePtr.IsNullable)
+            {
+                return GetUninitializedObject(ReflectionCoreNonPortable.GetRuntimeTypeForEEType(eeTypePtr.NullableType));
+            }
+
+            // Triggering the .cctor here is slightly different than desktop/CoreCLR, which 
+            // decide based on BeforeFieldInit, but we don't want to include BeforeFieldInit
+            // in EEType just for this API to behave slightly differently.
+            RunClassConstructor(type.TypeHandle);
+
+            return RuntimeImports.RhNewObject(eeTypePtr);
+        }
     }
 }
