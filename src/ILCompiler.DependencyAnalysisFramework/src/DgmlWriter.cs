@@ -12,9 +12,9 @@ namespace ILCompiler.DependencyAnalysisFramework
 {
     public class DgmlWriter
     {
-        public static void WriteDependencyGraphToStream<DependencyContextType>(Stream stream, DependencyAnalyzerBase<DependencyContextType> analysis)
+        public static void WriteDependencyGraphToStream<DependencyContextType>(Stream stream, DependencyAnalyzerBase<DependencyContextType> analysis, DependencyContextType context)
         {
-            DgmlWriter<DependencyContextType>.WriteDependencyGraphToStream(stream, analysis);
+            DgmlWriter<DependencyContextType>.WriteDependencyGraphToStream(stream, analysis, context);
         }
     }
 
@@ -22,11 +22,14 @@ namespace ILCompiler.DependencyAnalysisFramework
     {
         private XmlWriter _xmlWrite;
         private bool _done = false;
-        public DgmlWriter(XmlWriter xmlWrite)
+        private DependencyContextType _context;
+
+        public DgmlWriter(XmlWriter xmlWrite, DependencyContextType context)
         {
             _xmlWrite = xmlWrite;
             _xmlWrite.WriteStartDocument();
             _xmlWrite.WriteStartElement("DirectedGraph", "http://schemas.microsoft.com/vs/2009/dgml");
+            _context = context;
         }
 
         public void WriteNodesAndEdges(Action nodeWriter, Action edgeWriter)
@@ -44,7 +47,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             _xmlWrite.WriteEndElement();
         }
 
-        public static void WriteDependencyGraphToStream(Stream stream, DependencyAnalyzerBase<DependencyContextType> analysis)
+        public static void WriteDependencyGraphToStream(Stream stream, DependencyAnalyzerBase<DependencyContextType> analysis, DependencyContextType context)
         {
             XmlWriterSettings writerSettings = new XmlWriterSettings();
             writerSettings.Indent = true;
@@ -52,7 +55,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             using (XmlWriter xmlWriter = XmlWriter.Create(stream, writerSettings))
             {
-                using (var dgmlWriter = new DgmlWriter<DependencyContextType>(xmlWriter))
+                using (var dgmlWriter = new DgmlWriter<DependencyContextType>(xmlWriter, context))
                 {
                     dgmlWriter.WriteNodesAndEdges(() =>
                     {
@@ -103,7 +106,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         private void AddNode(DependencyNodeCore<DependencyContextType> node)
         {
-            AddNode(node, node.GetName());
+            AddNode(node, node.GetName(_context));
         }
 
         private void AddNode(object node, string label)
@@ -145,8 +148,8 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         void IDependencyAnalyzerLogNodeVisitor<DependencyContextType>.VisitCombinedNode(Tuple<DependencyNodeCore<DependencyContextType>, DependencyNodeCore<DependencyContextType>> node)
         {
-            string label1 = node.Item1.GetName();
-            string label2 = node.Item2.GetName();
+            string label1 = node.Item1.GetName(_context);
+            string label2 = node.Item2.GetName(_context);
 
             AddNode(node, string.Concat("(", label1, ", ", label2, ")"));
         }

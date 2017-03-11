@@ -140,6 +140,6 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         // Force all non-abstract nodes to provide a name
-        protected internal abstract string GetName();
+        protected internal abstract string GetName(DependencyContextType context);
     }
 }

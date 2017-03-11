@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
             CheckCanGenerateEEType(factory, type);
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {

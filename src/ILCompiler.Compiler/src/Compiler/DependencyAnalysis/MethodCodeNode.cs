@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method =>  _method;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section
         {

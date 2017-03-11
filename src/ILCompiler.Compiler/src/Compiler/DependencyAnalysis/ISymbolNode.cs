@@ -26,13 +26,13 @@ namespace ILCompiler.DependencyAnalysis
         [ThreadStatic]
         static Utf8StringBuilder s_cachedUtf8StringBuilder;
 
-        public static string GetMangledName(this ISymbolNode symbolNode)
+        public static string GetMangledName(this ISymbolNode symbolNode, NameMangler nameMangler)
         {
             Utf8StringBuilder sb = s_cachedUtf8StringBuilder;
             if (sb == null)
                 sb = new Utf8StringBuilder();
 
-            symbolNode.AppendMangledName(NodeFactory.NameManglerDoNotUse, sb);
+            symbolNode.AppendMangledName(nameMangler, sb);
             string ret = sb.ToString();
 
             sb.Clear();

@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode = futureParent;
             }
 
-            protected override string GetName() => $"Embedded pointer to {Target.GetMangledName()}";
+            protected override string GetName(NodeFactory factory) => $"Embedded pointer to {Target.GetMangledName(factory.NameMangler)}";
 
             protected override void OnMarked(NodeFactory factory)
             {
