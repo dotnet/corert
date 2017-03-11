@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     // Includes functionality for runtime type loading
     public partial class DefType
     {
-        internal const int MaximumAlignmentPossible = 8;
+        internal static readonly LayoutInt MaximumAlignmentPossible = new LayoutInt(8);
 
         public override IEnumerable<FieldDesc> GetFields()
         {

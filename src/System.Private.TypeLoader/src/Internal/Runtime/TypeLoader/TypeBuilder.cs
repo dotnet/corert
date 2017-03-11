@@ -1607,7 +1607,13 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderLogger.WriteLine("Computing offset of field #" + fieldOrdinal.LowLevelToString() + " on type " + declaringType.ToString());
 
             // Get the computed field offset result
-            fieldOffset = declaringType.GetFieldByNativeLayoutOrdinal(fieldOrdinal).Offset;
+            LayoutInt layoutFieldOffset = declaringType.GetFieldByNativeLayoutOrdinal(fieldOrdinal).Offset;
+            if (layoutFieldOffset.IsIndeterminate)
+            {
+                fieldOffset = 0;
+                return false;
+            }
+            fieldOffset = layoutFieldOffset.AsInt;
             return true;
         }
 

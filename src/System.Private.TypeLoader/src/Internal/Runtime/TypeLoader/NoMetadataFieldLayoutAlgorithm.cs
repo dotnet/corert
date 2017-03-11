@@ -44,9 +44,9 @@ namespace Internal.Runtime.TypeLoader
 
             ComputedInstanceFieldLayout layout = new ComputedInstanceFieldLayout()
             {
-                ByteCountAlignment = IntPtr.Size,
-                ByteCountUnaligned = eeType->IsInterface ? IntPtr.Size : checked((int)eeType->FieldByteCountNonGCAligned),
-                FieldAlignment = eeType->FieldAlignmentRequirement,
+                ByteCountAlignment = new LayoutInt(IntPtr.Size),
+                ByteCountUnaligned = new LayoutInt(eeType->IsInterface ? IntPtr.Size : checked((int)eeType->FieldByteCountNonGCAligned)),
+                FieldAlignment = new LayoutInt(eeType->FieldAlignmentRequirement),
                 Offsets = (layoutKind == InstanceLayoutKind.TypeOnly) ? null : Array.Empty<FieldAndOffset>(), // No fields in EETypes
                 PackValue = 0, // This isn't explicitly encoded, though FieldSize should take it into account
                 // TODO, as we add more metadata handling logic, find out if its necessary.
@@ -55,16 +55,16 @@ namespace Internal.Runtime.TypeLoader
             if (eeType->IsValueType)
             {
                 int valueTypeSize = checked((int)eeType->ValueTypeSize);
-                layout.FieldSize = valueTypeSize;
+                layout.FieldSize = new LayoutInt(valueTypeSize);
             }
             else
             {
-                layout.FieldSize = IntPtr.Size;
+                layout.FieldSize = new LayoutInt(IntPtr.Size);
             }
 
             if ((eeType->RareFlags & EETypeRareFlags.RequiresAlign8Flag) == EETypeRareFlags.RequiresAlign8Flag)
             {
-                layout.ByteCountAlignment = 8;
+                layout.ByteCountAlignment = new LayoutInt(8);
             }
 
             return layout;

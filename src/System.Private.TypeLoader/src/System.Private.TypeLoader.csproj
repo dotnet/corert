@@ -272,6 +272,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\Instantiation.cs">
       <Link>Internal\TypeSystem\Instantiation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\LayoutInt.cs">
+      <Link>Internal\TypeSystem\LayoutInt.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs">
       <Link>Internal\TypeSystem\MetadataFieldLayoutAlgorithm.cs</Link>
     </Compile>

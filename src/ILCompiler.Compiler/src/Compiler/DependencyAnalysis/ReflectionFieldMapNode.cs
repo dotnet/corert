@@ -119,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         case FieldTableFlags.Instance:
                             vertex = writer.GetTuple(vertex,
-                                writer.GetUnsignedConstant((uint)field.Offset));
+                                writer.GetUnsignedConstant((uint)field.Offset.AsInt));
                             break;
                     }
                 }
