@@ -74,8 +74,8 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment);
-                builder.EmitZeros(_type.GCStaticFieldSize);
+                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment.AsInt);
+                builder.EmitZeros(_type.GCStaticFieldSize.AsInt);
             }
 
             builder.AddSymbol(this);

@@ -132,7 +132,7 @@ namespace Internal.IL.Stubs
             for (int i = 0; i < _rank; i++)
             {
                 // The first two fields are EEType pointer and total length. Lengths for each dimension follows.
-                int lengthOffset = (2 * pointerSize + i * int32Type.GetElementSize());
+                int lengthOffset = (2 * pointerSize + i * sizeof(int));
 
                 EmitLoadInteriorAddress(codeStream, lengthOffset);
                 codeStream.Emit(ILOpcode.ldind_i4);
@@ -158,12 +158,12 @@ namespace Internal.IL.Stubs
 
             // Compute element offset
             // TODO: This leaves unused space for lower bounds to match CoreCLR...
-            int firstElementOffset = (2 * pointerSize + 2 * _rank * int32Type.GetElementSize());
+            int firstElementOffset = (2 * pointerSize + 2 * _rank * sizeof(int));
             EmitLoadInteriorAddress(codeStream, firstElementOffset);
 
             codeStream.EmitLdLoc(totalLocalNum);
 
-            int elementSize = _elementType.GetElementSize();
+            int elementSize = _elementType.GetElementSize().AsInt;
             if (elementSize != 1)
             {
                 codeStream.EmitLdc(elementSize);

@@ -493,11 +493,10 @@ namespace Internal.TypeSystem.Ecma
                     if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
                         continue;
 
-                    // Note: GetOffset() returns -1 when offset was not set in the metadata which maps nicely
-                    //       to FieldAndOffset.InvalidOffset.
-                    Debug.Assert(FieldAndOffset.InvalidOffset == -1);
+                    // Note: GetOffset() returns -1 when offset was not set in the metadata
+                    int specifiedOffset = fieldDefinition.GetOffset();
                     result.Offsets[index] =
-                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), fieldDefinition.GetOffset());
+                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
 
                     index++;
                 }

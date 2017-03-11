@@ -220,7 +220,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.IsArray)
             {
-                int elementSize = ((ArrayType)_type).ElementType.GetElementSize();
+                int elementSize = ((ArrayType)_type).ElementType.GetElementSize().AsInt;
                 // We validated that this will fit the short when the node was constructed. No need for nice messages.
                 objData.EmitShort((short)checked((ushort)elementSize));
             }
@@ -280,7 +280,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsDefType)
             {
                 objectSize = pointerSize +
-                    ((DefType)_type).InstanceByteCount; // +pointerSize for SyncBlock
+                    ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
 
                 if (_type.IsValueType)
                     objectSize += pointerSize; // + EETypePtr field inherited from System.Object
@@ -290,7 +290,7 @@ namespace ILCompiler.DependencyAnalysis
                 objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
                 if (_type.IsMdArray)
                     objectSize +=
-                        2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
+                        2 * sizeof(int) * ((ArrayType)_type).Rank;
             }
             else if (_type.IsPointer)
             {
@@ -315,8 +315,8 @@ namespace ILCompiler.DependencyAnalysis
                 // If this is a string, throw away objectSize we computed so far. Strings are special.
                 // SyncBlock + EETypePtr + length + firstChar
                 objectSize = 2 * pointerSize +
-                    _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() +
-                    _type.Context.GetWellKnownType(WellKnownType.Char).GetElementSize();
+                    sizeof(int) +
+                    sizeof(char);
             }
 
             objData.EmitInt(objectSize);
@@ -575,14 +575,17 @@ namespace ILCompiler.DependencyAnalysis
             if (!_type.IsNullable)
                 return;
 
-            var field = _type.GetKnownField("value");
+            if (!_type.Instantiation[0].IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                var field = _type.GetKnownField("value");
 
-            // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
-            Debug.Assert(field.Offset > 0);
+                // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
+                Debug.Assert(field.Offset.AsInt > 0);
 
-            // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
-            // to get a small encoding size win.
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset - 1);
+                // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
+                // to get a small encoding size win.
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset.AsInt - 1);
+            }
         }
 
         /// <summary>
@@ -628,8 +631,8 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type as DefType;
             Debug.Assert(defType != null);
 
-            uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount - defType.InstanceByteCountUnaligned));
-            uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment);
+            uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
+            uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
 
             if (valueTypeFieldPaddingEncoded != 0)
             {
@@ -729,7 +732,7 @@ namespace ILCompiler.DependencyAnalysis
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    int elementSize = parameterType.GetElementSize();
+                    int elementSize = parameterType.GetElementSize().AsInt;
                     if (elementSize >= ushort.MaxValue)
                     {
                         // Element size over 64k can't be encoded in the GCDesc

@@ -76,7 +76,7 @@ namespace Internal.Runtime
                 if (type.IsMdArray)
                 {
                     // Multi-dim arrays include upper and lower bounds for each rank
-                    baseSize += 2 * type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)type).Rank;
+                    baseSize += 2 * sizeof(int) * ((ArrayType)type).Rank;
                 }
 
                 if (elementType.IsGCPointer)
@@ -109,7 +109,7 @@ namespace Internal.Runtime
                     int offs = defType.IsValueType ? builder.TargetPointerSize : 0;
 
                     // Include syncblock
-                    int objectSize = defType.InstanceByteCount + offs + builder.TargetPointerSize;
+                    int objectSize = defType.InstanceByteCount.AsInt + offs + builder.TargetPointerSize;
 
                     EncodeStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
                 }

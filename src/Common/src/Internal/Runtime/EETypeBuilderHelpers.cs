@@ -148,12 +148,12 @@ namespace Internal.Runtime
             if (type.IsArray)
             {
                 var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment > 4)
+                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment.AsInt > 4)
                 {
                     return true;
                 }
             }
-            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment > 4)
+            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment.AsInt > 4)
             {
                 return true;
             }

@@ -514,7 +514,7 @@ namespace ILCompiler.CppCodeGen
                         sb.AppendLine();
                         sb.Append("struct {");
                         sb.Indent();
-                        int offset = classLayoutMetadata.Offsets[instanceFieldIndex].Offset;
+                        int offset = classLayoutMetadata.Offsets[instanceFieldIndex].Offset.AsInt;
                         if (offset > 0)
                         {
                             sb.AppendLine();

@@ -377,10 +377,10 @@ namespace Internal.Runtime.TypeLoader
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
                 if (Field != null)
-                    Offset = Field.Offset;
+                    Offset = Field.Offset.AsInt;
                 else
 #endif
-                    Offset = ContainingType.GetFieldByNativeLayoutOrdinal(Ordinal).Offset;
+                    Offset = ContainingType.GetFieldByNativeLayoutOrdinal(Ordinal).Offset.AsInt;
             }
 
             internal override unsafe IntPtr Create(TypeBuilder builder)

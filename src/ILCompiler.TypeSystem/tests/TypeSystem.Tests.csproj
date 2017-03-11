@@ -49,6 +49,7 @@
     <Compile Include="SyntheticVirtualOverrideTests.cs" />
     <Compile Include="TestMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="TypeNameParsingTests.cs" />
+    <Compile Include="UniversalGenericFieldLayoutTests.cs" />
     <Compile Include="ValueTypeShapeCharacteristicsTests.cs" />
     <Compile Include="VirtualFunctionOverrideTests.cs" />
     <Compile Include="InstanceFieldLayoutTests.cs" />
