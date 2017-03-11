@@ -7,6 +7,8 @@ usage()
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
     echo "    -coreclr      : Download and run the CoreCLR repo tests"
     echo "    -multimodule  : Compile the framework as a .so and link tests against it (ryujit only)"
+    echo "    -coredumps    : [For CI use] Enables core dump generation, and analyzes and possibly stores/uploads"
+    echo "                      dumps collected during test run."
     echo ""
     echo "    --- CoreCLR Subset ---"
     echo "       top200     : Runs broad coverage / CI validation (~200 tests)."
@@ -119,6 +121,7 @@ run_coreclr_tests()
     pushd ${CoreRT_TestRoot}/CoreCLR/runtest
 
     export CoreRT_TestRoot
+    export CoreRT_EnableCoreDumps
 
     CoreRT_TestSelectionArg=
     if [ "$SelectedTests" = "top200" ]; then
@@ -144,6 +147,7 @@ CoreRT_CrossRootFS=
 CoreRT_CrossCXXFlags=
 CoreRT_CrossLinkerFlags=
 CoreRT_CrossBuild=0
+CoreRT_EnableCoreDumps=0
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -203,6 +207,9 @@ while [ "$1" != "" ]; do
             ;;
         -multimodule)
             CoreRT_MultiFileConfiguration=MultiModule;
+            ;;
+        -coredumps)
+            CoreRT_EnableCoreDumps=1
             ;;
         *)
             ;;
