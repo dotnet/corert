@@ -221,17 +221,17 @@ namespace ILCompiler
                 MetadataType metadataType = type as MetadataType;
                 if (metadataType != null)
                 {
-                    if (metadataType.ThreadStaticFieldSize > 0)
+                    if (metadataType.ThreadStaticFieldSize.AsInt > 0)
                     {
                         _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
                     }
 
-                    if (metadataType.GCStaticFieldSize > 0)
+                    if (metadataType.GCStaticFieldSize.AsInt > 0)
                     {
                         _graph.AddRoot(_factory.TypeGCStaticsSymbol(metadataType), reason);
                     }
 
-                    if (metadataType.NonGCStaticFieldSize > 0)
+                    if (metadataType.NonGCStaticFieldSize.AsInt > 0)
                     {
                         _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
                     }

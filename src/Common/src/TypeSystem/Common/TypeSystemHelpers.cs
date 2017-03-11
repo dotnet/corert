@@ -66,7 +66,7 @@ namespace Internal.TypeSystem
             return paramType.ParameterType;
         }
 
-        public static int GetElementSize(this TypeDesc type)
+        public static LayoutInt GetElementSize(this TypeDesc type)
         {
             if (type.IsValueType)
             {
@@ -74,7 +74,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                return type.Context.Target.PointerSize;
+                return type.Context.Target.LayoutPointerSize;
             }
         }
 

@@ -77,8 +77,8 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireInitialAlignment(_type.ThreadStaticFieldAlignment);
-                builder.EmitZeros(_type.ThreadStaticFieldSize);
+                builder.RequireInitialAlignment(_type.ThreadStaticFieldAlignment.AsInt);
+                builder.EmitZeros(_type.ThreadStaticFieldSize.AsInt);
             }
         }
     }

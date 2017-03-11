@@ -100,6 +100,19 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets the maximum alignment to which something can be aligned
+        /// </summary>
+        public static int MaximumAlignment
+        {
+            get
+            {
+                return 8;
+            }
+        }
+
+        public LayoutInt LayoutPointerSize => new LayoutInt(PointerSize);
+
+        /// <summary>
         /// Gets the default field packing size.
         /// </summary>
         public int DefaultPackingSize
@@ -133,35 +146,35 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Retrieves the size of a well known type.
         /// </summary>
-        public int GetWellKnownTypeSize(DefType type)
+        public LayoutInt GetWellKnownTypeSize(DefType type)
         {
             switch (type.Category)
             {
                 case TypeFlags.Void:
-                    return PointerSize;
+                    return new LayoutInt(PointerSize);
                 case TypeFlags.Boolean:
-                    return 1;
+                    return new LayoutInt(1);
                 case TypeFlags.Char:
-                    return 2;
+                    return new LayoutInt(2);
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
-                    return 1;
+                    return new LayoutInt(1);
                 case TypeFlags.UInt16:
                 case TypeFlags.Int16:
-                    return 2;
+                    return new LayoutInt(2);
                 case TypeFlags.UInt32:
                 case TypeFlags.Int32:
-                    return 4;
+                    return new LayoutInt(4);
                 case TypeFlags.UInt64:
                 case TypeFlags.Int64:
-                    return 8;
+                    return new LayoutInt(8);
                 case TypeFlags.Single:
-                    return 4;
+                    return new LayoutInt(4);
                 case TypeFlags.Double:
-                    return 8;
+                    return new LayoutInt(8);
                 case TypeFlags.UIntPtr:
                 case TypeFlags.IntPtr:
-                    return PointerSize;
+                    return new LayoutInt(PointerSize);
             }
 
             // Add new well known types if necessary
@@ -172,7 +185,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Retrieves the alignment required by a well known type.
         /// </summary>
-        public int GetWellKnownTypeAlignment(DefType type)
+        public LayoutInt GetWellKnownTypeAlignment(DefType type)
         {
             // Size == Alignment for all platforms.
             return GetWellKnownTypeSize(type);
@@ -182,21 +195,24 @@ namespace Internal.TypeSystem
         /// Given an alignment of the fields of a type, determine the alignment that is necessary for allocating the object on the GC heap
         /// </summary>
         /// <returns></returns>
-        public int GetObjectAlignment(int fieldAlignment)
+        public LayoutInt GetObjectAlignment(LayoutInt fieldAlignment)
         {
             switch (Architecture)
             {
                 case TargetArchitecture.ARM:
                 case TargetArchitecture.ARMEL:
                     // ARM supports two alignments for objects on the GC heap (4 byte and 8 byte)
-                    if (fieldAlignment <= 4)
-                        return 4;
+                    if (fieldAlignment.IsIndeterminate)
+                        return LayoutInt.Indeterminate;
+
+                    if (fieldAlignment.AsInt <= 4)
+                        return new LayoutInt(4);
                     else
-                        return 8;
+                        return new LayoutInt(8);
                 case TargetArchitecture.X64:
-                    return 8;
+                    return new LayoutInt(8);
                 case TargetArchitecture.X86:
-                    return 4;
+                    return new LayoutInt(4);
                 default:
                     throw new NotImplementedException();
             }

@@ -57,6 +57,9 @@ namespace TypeSystemTests
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
+            if (type == UniversalCanonType)
+                return UniversalCanonLayoutAlgorithm.Instance;
+
             return _metadataFieldLayout;
         }
 
