@@ -86,8 +86,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             // If there is a constructed version of this node in the graph, emit that instead
-                if (ConstructedEETypeNode.CreationAllowed(_type))
-                return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
+            if (ConstructedEETypeNode.CreationAllowed(_type))
+                return factory.ConstructedTypeSymbol(_type).Marked;
 
             return false;
         }
@@ -171,24 +171,40 @@ namespace ILCompiler.DependencyAnalysis
             OutputBaseSize(ref objData);
             OutputRelatedType(factory, ref objData);
 
-            // Avoid consulting VTable slots until they're guaranteed complete during final data emission
-            if (EmitVirtualSlotsAndInterfaces && !relocsOnly)
-            {
-                OutputVirtualSlotAndInterfaceCount(factory, ref objData);
-            }
-            else
-            {
-                objData.EmitShort(0);
-                objData.EmitShort(0);
-            }
+            // Number of vtable slots will be only known later. Reseve the bytes for it.
+            var vtableSlotCountReservation = objData.ReserveShort();
+
+            // Number of interfaces will only be known later. Reserve the bytes for it.
+            var interfaceCountReservation = objData.ReserveShort();
 
             objData.EmitInt(_type.GetHashCode());
             objData.EmitPointerReloc(factory.TypeManagerIndirection);
 
             if (EmitVirtualSlotsAndInterfaces)
             {
+                // Emit VTable
+                Debug.Assert(objData.CountBytes - Offset == GetVTableOffset(objData.TargetPointerSize));
+                SlotCounter virtualSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
                 OutputVirtualSlots(factory, ref objData, _type, _type, relocsOnly);
+
+                // Update slot count
+                int numberOfVtableSlots = virtualSlotCounter.CountSlots(ref /* readonly */ objData);
+                objData.EmitShort(vtableSlotCountReservation, checked((short)numberOfVtableSlots));
+
+                // Emit interface map
+                SlotCounter interfaceSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
                 OutputInterfaceMap(factory, ref objData);
+
+                // Update slot count
+                int numberOfInterfaceSlots = interfaceSlotCounter.CountSlots(ref /* readonly */ objData);
+                objData.EmitShort(interfaceCountReservation, checked((short)numberOfInterfaceSlots));
+
+            }
+            else
+            {
+                // If we're not emitting any slots, the number of slots is zero.
+                objData.EmitShort(vtableSlotCountReservation, 0);
+                objData.EmitShort(interfaceCountReservation, 0);
             }
 
             OutputFinalizerMethod(factory, ref objData);
@@ -376,26 +392,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 objData.EmitZeroPointer();
             }
-        }
-
-        protected virtual void OutputVirtualSlotAndInterfaceCount(NodeFactory factory, ref ObjectDataBuilder objData)
-        {
-            Debug.Assert(EmitVirtualSlotsAndInterfaces);
-
-            int virtualSlotCount = 0;
-            TypeDesc currentTypeSlice = _type.GetClosestDefType();
-
-            while (currentTypeSlice != null)
-            {
-                if (currentTypeSlice.HasGenericDictionarySlot())
-                    virtualSlotCount++;
-
-                virtualSlotCount += factory.VTable(currentTypeSlice).Slots.Count;
-                currentTypeSlice = currentTypeSlice.BaseType;
-            }
-
-            objData.EmitShort(checked((short)virtualSlotCount));
-            objData.EmitShort(checked((short)_type.RuntimeInterfaces.Length));
         }
 
         protected virtual void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, bool relocsOnly)
@@ -762,6 +758,22 @@ namespace ILCompiler.DependencyAnalysis
             {
                 throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
+        }
+
+        private struct SlotCounter
+        {
+            private int _startBytes;
+
+            public static SlotCounter BeginCounting(ref /* readonly */ ObjectDataBuilder builder)
+                => new SlotCounter { _startBytes = builder.CountBytes };
+
+            public int CountSlots(ref /* readonly */ ObjectDataBuilder builder)
+            {
+                int bytesEmitted = builder.CountBytes - _startBytes;
+                Debug.Assert(bytesEmitted % builder.TargetPointerSize == 0);
+                return bytesEmitted / builder.TargetPointerSize;
+            }
+
         }
     }
 }

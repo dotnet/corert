@@ -34,6 +34,9 @@ public class ReflectionTest
         if (TestReflectionFieldAccess() == Fail)
             return Fail;
 
+        if (TestCreateDelegate() == Fail)
+            return Fail;
+
         return Pass;
     }
 
@@ -121,6 +124,12 @@ public class ReflectionTest
 
     internal class InvokeTests
     {
+        private string _world = "world";
+
+        public InvokeTests() { }
+
+        public InvokeTests(string message) { _world = message; }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string GetHello(string name)
         {
@@ -137,6 +146,12 @@ public class ReflectionTest
         public static string GetHelloGeneric<T>(T obj)
         {
             return "Hello " + obj;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public string GetHelloInstance()
+        {
+            return "Hello " + _world;
         }
     }
 
@@ -226,6 +241,38 @@ public class ReflectionTest
 
             return Pass;
         }
+    }
+
+    delegate string GetHelloInstanceDelegate(InvokeTests o);
+
+    private static int TestCreateDelegate()
+    {
+        Console.WriteLine("Testing MethodInfo.CreateDelegate");
+
+        // Dummy code to make sure the reflection targets are compiled.
+        if (String.Empty.Length > 0)
+        {
+            new InvokeTests().GetHelloInstance();
+            GetHelloInstanceDelegate d = null;
+            Func<InvokeTests, string> d2 = d.Invoke;
+            d = d2.Invoke;
+        }
+
+        TypeInfo ti = typeof(InvokeTests).GetTypeInfo();
+        MethodInfo mi = ti.GetDeclaredMethod("GetHelloInstance");
+        {
+            var d = (GetHelloInstanceDelegate)mi.CreateDelegate(typeof(GetHelloInstanceDelegate));
+            if (d(new InvokeTests("mom")) != "Hello mom")
+                return Fail;
+        }
+
+        {
+            var d = (Func<InvokeTests, string>)mi.CreateDelegate(typeof(Func<InvokeTests, string>));
+            if (d(new InvokeTests("pop")) != "Hello pop")
+                return Fail;
+        }
+
+        return Pass;
     }
 }
 

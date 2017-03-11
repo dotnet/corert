@@ -195,7 +195,7 @@ namespace ILCompiler
                     methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific),
                     methodKey.IsUnboxingStub);
 
-            return new ShadowConcreteMethodNode<IMethodNode>(methodKey.Method, methodCodeNode);
+            return new ShadowConcreteMethodNode(methodKey.Method, methodCodeNode);
         }
 
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(
