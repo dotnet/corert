@@ -9,9 +9,9 @@ namespace ILCompiler.DependencyAnalysis.X64
 {
     public struct X64Emitter
     {
-        public X64Emitter(NodeFactory factory)
+        public X64Emitter(NodeFactory factory, bool relocsOnly)
         {
-            Builder = new ObjectDataBuilder(factory);
+            Builder = new ObjectDataBuilder(factory, relocsOnly);
             TargetRegister = new TargetRegisterMap(factory.Target.OperatingSystem);
         }
 

@@ -60,7 +60,7 @@ namespace System.Threading
             if (result == WaitHandle.WaitFailed)
             {
                 int errorCode = Interop.mincore.GetLastError();
-                if (waitAll && errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
+                if (waitAll && errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
                     // Check for duplicate handles. This is a brute force O(n^2) search, which is intended since the typical
                     // array length is short enough that this would actually be faster than using a hash set. Also, the worst
@@ -215,14 +215,14 @@ namespace System.Threading
             int errorCode = Interop.mincore.GetLastError();
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     ThrowInvalidHandleException();
                     break;
 
-                case Interop.mincore.Errors.ERROR_TOO_MANY_POSTS:
+                case Interop.Errors.ERROR_TOO_MANY_POSTS:
                     throw new SemaphoreFullException();
 
-                case Interop.mincore.Errors.ERROR_NOT_OWNER:
+                case Interop.Errors.ERROR_NOT_OWNER:
                     throw new ApplicationException(SR.Arg_SynchronizationLockException);
 
                 default:
@@ -236,33 +236,33 @@ namespace System.Threading
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     ThrowInvalidHandleException();
                     break;
 
-                case Interop.mincore.Errors.ERROR_INVALID_PARAMETER:
+                case Interop.Errors.ERROR_INVALID_PARAMETER:
                     throw new ArgumentException();
 
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     throw new UnauthorizedAccessException();
 
-                case Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY:
+                case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
                     throw new OutOfMemoryException();
 
-                case Interop.mincore.Errors.ERROR_TOO_MANY_POSTS:
+                case Interop.Errors.ERROR_TOO_MANY_POSTS:
                     // Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/>. Note however, that
                     // if the semahpore already has the maximum signal count, the Windows SignalObjectAndWait function does not
                     // return an error, but this code is kept for historical reasons and to convey the intent, since ideally,
                     // that should be an error.
                     throw new InvalidOperationException(SR.Threading_SemaphoreFullException);
 
-                case Interop.mincore.Errors.ERROR_NOT_OWNER:
+                case Interop.Errors.ERROR_NOT_OWNER:
                     // Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/> when signaling a mutex
                     // that is locked by a different thread. Note that if the mutex is already unlocked, the Windows
                     // SignalObjectAndWait function does not return an error.
                     throw new ApplicationException(SR.Arg_SynchronizationLockException);
 
-                case Interop.mincore.Errors.ERROR_MUTANT_LIMIT_EXCEEDED:
+                case Interop.Errors.ERROR_MUTANT_LIMIT_EXCEEDED:
                     throw new OverflowException(SR.Overflow_MutexReacquireCount);
 
                 default:
@@ -276,16 +276,16 @@ namespace System.Threading
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_PATH_NOT_FOUND:
+                case Interop.Errors.ERROR_PATH_NOT_FOUND:
                     return new IOException(SR.Format(SR.IO_PathNotFound_Path, path));
 
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     return new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
 
-                case Interop.mincore.Errors.ERROR_ALREADY_EXISTS:
+                case Interop.Errors.ERROR_ALREADY_EXISTS:
                     return new IOException(SR.Format(SR.IO_AlreadyExists_Name, path));
 
-                case Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE:
+                case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
                     return new PathTooLongException();
 
                 default:

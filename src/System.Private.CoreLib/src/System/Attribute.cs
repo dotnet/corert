@@ -114,6 +114,11 @@ namespace System
             return type.GetHashCode();
         }
 
+        public virtual object TypeId => GetType();
+
+        public virtual bool Match(object obj) => Equals(obj);
+
+        public virtual bool IsDefaultAttribute() => false;
 
         //
         // This non-contract method is known to the IL transformer. See comments around _ILT_ReadFields() for more detail.

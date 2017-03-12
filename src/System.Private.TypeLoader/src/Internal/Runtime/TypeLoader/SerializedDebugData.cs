@@ -370,7 +370,7 @@ namespace Internal.Runtime.TypeLoader
                             continue;
 
                         encoder.WriteUnsigned(i);
-                        encoder.WriteUnsigned((uint)f.Offset);
+                        encoder.WriteUnsigned((uint)f.Offset.AsInt);
                         i++;
                     }
                 }
@@ -413,7 +413,7 @@ namespace Internal.Runtime.TypeLoader
 
                         encoder.WriteUnsigned(i);
                         encoder.WriteUnsigned((uint)fieldStorage);
-                        encoder.WriteUnsigned((uint)f.Offset);
+                        encoder.WriteUnsigned((uint)f.Offset.AsInt);
                         i++;
                     }
                 }

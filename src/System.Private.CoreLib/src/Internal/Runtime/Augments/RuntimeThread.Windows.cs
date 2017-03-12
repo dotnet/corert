@@ -206,7 +206,7 @@ namespace Internal.Runtime.Augments
 
         private bool CreateThread(GCHandle thisThreadHandle)
         {
-            const int AllocationGranularity = (int)System.Runtime.Constants.AllocationGranularity;
+            const int AllocationGranularity = 0x10000;  // 64 KiB
 
             int stackSize = _maxStackSize;
             if ((0 < stackSize) && (stackSize < AllocationGranularity))

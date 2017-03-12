@@ -143,11 +143,8 @@ namespace Internal.Runtime.TypeLoader
         {
             return GetIntPtrFromIndex(index);
         }
-    }
 
-    public static class ExternalReferencesTableExtentions
-    {
-        public static uint GetExternalNativeLayoutOffset(this ExternalReferencesTable extRefs, uint index)
+        public uint GetExternalNativeLayoutOffset(uint index)
         {
             // CoreRT is a bit more optimized than ProjectN. In ProjectN, some tables that reference data
             // in the native layout are constructed at NUTC compilation time, but the native layout is only 
@@ -158,15 +155,14 @@ namespace Internal.Runtime.TypeLoader
             // table, and the entries in the external references table will contain the offsets into the
             // native layout blob.
             //
-            // In CoreRT, since all tables and native layout blob are built together at the same time, we can
+            // In TypeManager based modules, since all tables and native layout blob are built together at the same time, we can
             // optimize by writing the native layout offsets directly into the table, without requiring the extra
             // lookup in the external references table.
             //
-#if CORERT
-            return index;
-#else
-            return extRefs.GetRvaFromIndex(index);
-#endif
+            if (_moduleHandle.IsTypeManager)
+                return index;
+            else
+                return GetRvaFromIndex(index);
         }
     }
 }

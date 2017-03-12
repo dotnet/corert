@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -30,17 +29,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__GenericInstance");
 
-            bool hasVariance = false;
-
             for (int i = 0; i < _details.Instantiation.Length; i++)
             {
                 sb.Append('_');
                 sb.Append(nameMangler.GetMangledTypeName(_details.Instantiation[i]));
-
-                hasVariance |= _details.Variance[i] != 0;
             }
 
-            if (hasVariance)
+            if (_details.Variance != null)
             {
                 for (int i = 0; i < _details.Variance.Length; i++)
                 {
@@ -75,17 +70,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            bool hasVariance = false;
-            foreach (var argVariance in _details.Variance)
-            {
-                if (argVariance != 0)
-                {
-                    hasVariance = true;
-                    break;
-                }
-            }
+            bool hasVariance = _details.Variance != null;
 
-            var builder = new ObjectDataBuilder(factory);
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
             builder.RequireInitialPointerAlignment();
@@ -120,28 +107,48 @@ namespace ILCompiler.DependencyAnalysis
 
         public readonly GenericVariance[] Variance;
 
-        public GenericCompositionDetails(TypeDesc genericTypeInstance)
+        public GenericCompositionDetails(TypeDesc genericTypeInstance, bool forceVarianceInfo = false)
         {
             Debug.Assert(!genericTypeInstance.IsTypeDefinition);
-
-            Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Contravariant == (byte)GenericVariance.Contravariant);
-            Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Covariant == (byte)GenericVariance.Covariant);
-
+            
             Instantiation = genericTypeInstance.Instantiation;
 
-            Variance = new GenericVariance[Instantiation.Length];
-            int i = 0;
-            foreach (GenericParameterDesc param in genericTypeInstance.GetTypeDefinition().Instantiation)
+            bool emitVarianceInfo = forceVarianceInfo;
+            if (!emitVarianceInfo)
             {
-                Variance[i++] = (GenericVariance)param.Variance;
+                foreach (GenericParameterDesc param in genericTypeInstance.GetTypeDefinition().Instantiation)
+                {
+                    if (param.Variance != Internal.TypeSystem.GenericVariance.None)
+                    {
+                        emitVarianceInfo = true;
+                        break;
+                    }
+                }
+            }
+
+            if (emitVarianceInfo)
+            {
+                Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Contravariant == (byte)GenericVariance.Contravariant);
+                Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Covariant == (byte)GenericVariance.Covariant);
+
+                Variance = new GenericVariance[Instantiation.Length];
+                int i = 0;
+                foreach (GenericParameterDesc param in genericTypeInstance.GetTypeDefinition().Instantiation)
+                {
+                    Variance[i++] = (GenericVariance)param.Variance;
+                }
+            }
+            else
+            {
+                Variance = null;
             }
         }
 
         public GenericCompositionDetails(Instantiation instantiation, GenericVariance[] variance)
         {
+            Debug.Assert(variance == null || instantiation.Length == variance.Length);
             Instantiation = instantiation;
             Variance = variance;
-            Debug.Assert(Instantiation.Length == Variance.Length);
         }
 
         public bool Equals(GenericCompositionDetails other)
@@ -149,13 +156,19 @@ namespace ILCompiler.DependencyAnalysis
             if (Instantiation.Length != other.Instantiation.Length)
                 return false;
 
+            if ((Variance == null) != (other.Variance == null))
+                return false;
+
             for (int i = 0; i < Instantiation.Length; i++)
             {
                 if (Instantiation[i] != other.Instantiation[i])
                     return false;
 
-                if (Variance[i] != other.Variance[i])
-                    return false;
+                if (Variance != null)
+                {
+                    if (Variance[i] != other.Variance[i])
+                        return false;
+                }
             }
 
             return true;
@@ -169,10 +182,14 @@ namespace ILCompiler.DependencyAnalysis
         public override int GetHashCode()
         {
             int hashCode = 13;
-            foreach (var element in Variance)
+
+            if (Variance != null)
             {
-                int value = (int)element * 0x5498341 + 0x832424;
-                hashCode = hashCode * 31 + value;
+                foreach (var element in Variance)
+                {
+                    int value = (int)element * 0x5498341 + 0x832424;
+                    hashCode = hashCode * 31 + value;
+                }
             }
 
             return Instantiation.ComputeGenericInstanceHashCode(hashCode);

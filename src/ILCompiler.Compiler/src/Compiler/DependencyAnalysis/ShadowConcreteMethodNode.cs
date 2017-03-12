@@ -20,13 +20,12 @@ namespace ILCompiler.DependencyAnalysis
     /// method body, as if it was generated. The node acts as a symbol for the canonical
     /// method for convenience.
     /// </summary>
-    internal class ShadowConcreteMethodNode<T> : DependencyNodeCore<NodeFactory>, IMethodNode
-        where T : DependencyNodeCore<NodeFactory>, IMethodNode
+    internal class ShadowConcreteMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
         /// <summary>
         /// Gets the canonical method body that defines the dependencies of this node.
         /// </summary>
-        public T CanonicalMethodNode { get; }
+        public IMethodNode CanonicalMethodNode { get; }
 
         /// <summary>
         /// Gets the concrete method represented by this node.
@@ -44,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed
             => CanonicalMethodNode.StaticDependenciesAreComputed;
 
-        public ShadowConcreteMethodNode(MethodDesc method, T canonicalMethod)
+        public ShadowConcreteMethodNode(MethodDesc method, IMethodNode canonicalMethod)
         {
             Debug.Assert(!method.IsSharedByGenericInstantiations);
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);

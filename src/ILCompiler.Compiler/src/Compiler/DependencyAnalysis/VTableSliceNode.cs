@@ -106,11 +106,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class LazilyBuiltVTableSliceNode : VTableSliceNode
     {
-        private List<MethodDesc> _slots = new List<MethodDesc>();
-
-#if DEBUG
-        bool _slotsCommitted;
-#endif
+        private HashSet<MethodDesc> _usedMethods = new HashSet<MethodDesc>();
+        private MethodDesc[] _slots;
 
         public LazilyBuiltVTableSliceNode(TypeDesc type)
             : base(type)
@@ -121,9 +118,26 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-#if DEBUG
-                _slotsCommitted = true;
-#endif
+                if (_slots == null)
+                {
+                    // Sort the lazily populated slots in metadata order (the order in which they show up
+                    // in GetAllMethods()).
+                    // This ensures that Foo<string> and Foo<object> will end up with the same vtable
+                    // no matter the order in which VirtualMethodUse nodes populated it.
+                    ArrayBuilder<MethodDesc> slotsBuilder = new ArrayBuilder<MethodDesc>();
+                    DefType defType = _type.GetClosestDefType();
+                    foreach (var method in defType.GetAllMethods())
+                    {
+                        if (_usedMethods.Contains(method))
+                            slotsBuilder.Add(method);
+                    }
+                    Debug.Assert(_usedMethods.Count == slotsBuilder.Count);
+                    _slots = slotsBuilder.ToArray();
+
+                    // Null out used methods so that we AV if someone tries to add now.
+                    _usedMethods = null;
+                }
+
                 return _slots;
             }
         }
@@ -133,14 +147,9 @@ namespace ILCompiler.DependencyAnalysis
             // GVMs are not emitted in the type's vtable.
             Debug.Assert(!virtualMethod.HasInstantiation);
             Debug.Assert(virtualMethod.IsVirtual);
-#if DEBUG
-            Debug.Assert(!_slotsCommitted);
-#endif
+            Debug.Assert(_slots == null && _usedMethods != null);
 
-            if (!_slots.Contains(virtualMethod))
-            {
-                _slots.Add(virtualMethod);
-            }
+            _usedMethods.Add(virtualMethod);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -169,6 +178,10 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var method in defType.GetAllMethods())
             {
                 if (!method.IsVirtual)
+                    continue;
+                
+                // Generic virtual methods are tracked by an orthogonal mechanism.
+                if (method.HasInstantiation)
                     continue;
 
                 yield return new CombinedDependencyListEntry(

@@ -23,6 +23,7 @@ namespace ILCompiler.DependencyAnalysis
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
         private CompilationModuleGroup _compilationModuleGroup;
+        private bool _markingComplete;
 
         public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup,
             MetadataManager metadataManager, NameMangler nameMangler)
@@ -37,6 +38,13 @@ namespace ILCompiler.DependencyAnalysis
             ThreadStaticsRegion = new ThreadStaticsRegionNode(
                 "__ThreadStaticRegionStart", "__ThreadStaticRegionEnd", null, _target.Abi);
         }
+
+        public void SetMarkingComplete()
+        {
+            _markingComplete = true;
+        }
+
+        public bool MarkingComplete => _markingComplete;
 
         public TargetDetails Target
         {
@@ -70,6 +78,28 @@ namespace ILCompiler.DependencyAnalysis
         public NameMangler NameMangler
         {
             get;
+        }
+
+        /// <summary>
+        /// Return true if the type is not permitted by the rules of the runtime to have an EEType.
+        /// The implementation here is not intended to be complete, but represents many conditions
+        /// which make a type ineligible to be an EEType. (This function is intended for use in assertions only)
+        /// </summary>
+        private static bool TypeCannotHaveEEType(TypeDesc type)
+        {
+            if (type.GetTypeDefinition() is INonEmittableType)
+                return true;
+
+            if (type.IsRuntimeDeterminedSubtype)
+                return true;
+
+            if (type.IsSignatureVariable)
+                return true;
+
+            if (type.IsGenericParameter)
+                return true;
+
+            return false;
         }
 
         protected struct NodeCache<TKey, TValue>
@@ -353,6 +383,8 @@ namespace ILCompiler.DependencyAnalysis
                 return ConstructedTypeSymbol(type);
             }
 
+            Debug.Assert(!TypeCannotHaveEEType(type));
+
             return _typeSymbols.GetOrAdd(type);
         }
 
@@ -360,6 +392,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
         {
+            Debug.Assert(!TypeCannotHaveEEType(type));
             return _constructedTypeSymbols.GetOrAdd(type);
         }
 
@@ -367,6 +400,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode ConstructedClonedTypeSymbol(TypeDesc type)
         {
+            Debug.Assert(!TypeCannotHaveEEType(type));
             return _clonedTypeSymbols.GetOrAdd(type);
         }
 
@@ -374,6 +408,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode TypeNonGCStaticsSymbol(MetadataType type)
         {
+            Debug.Assert(!TypeCannotHaveEEType(type));
             if (_compilationModuleGroup.ContainsType(type))
             {
                 return _nonGCStatics.GetOrAdd(type);
@@ -388,6 +423,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode TypeGCStaticsSymbol(MetadataType type)
         {
+            Debug.Assert(!TypeCannotHaveEEType(type));
             if (_compilationModuleGroup.ContainsType(type))
             {
                 return _GCStatics.GetOrAdd(type);
@@ -447,7 +483,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<FieldDesc, RuntimeFieldHandleNode> _runtimeFieldHandles;
 
-        internal RuntimeFieldHandleNode RuntimeFieldHandle(FieldDesc field)
+        public RuntimeFieldHandleNode RuntimeFieldHandle(FieldDesc field)
         {
             return _runtimeFieldHandles.GetOrAdd(field);
         }
@@ -797,7 +833,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
 
-            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
+            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
             MetadataManager.AttachToDependencyGraph(graph);
         }
 

@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.CompilationUnitPrefix + "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
         }
  
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -77,8 +77,8 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireInitialAlignment(_type.ThreadStaticFieldAlignment);
-                builder.EmitZeros(_type.ThreadStaticFieldSize);
+                builder.RequireInitialAlignment(_type.ThreadStaticFieldAlignment.AsInt);
+                builder.EmitZeros(_type.ThreadStaticFieldSize.AsInt);
             }
         }
     }

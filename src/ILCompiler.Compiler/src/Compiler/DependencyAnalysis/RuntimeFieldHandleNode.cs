@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class RuntimeFieldHandleNode : ObjectNode, ISymbolNode
+    public class RuntimeFieldHandleNode : ObjectNode, ISymbolNode
     {
         private FieldDesc _targetField;
 
@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
 
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);

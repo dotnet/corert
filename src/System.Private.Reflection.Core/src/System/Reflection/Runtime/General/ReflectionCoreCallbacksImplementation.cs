@@ -14,6 +14,7 @@ using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.Modules;
 
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
@@ -338,6 +339,12 @@ namespace System.Reflection.Runtime.General
                 default:
                     throw new PlatformNotSupportedException();
             }
+        }
+
+        public sealed override void RunModuleConstructor(Module module)
+        {
+            RuntimeAssembly assembly = (RuntimeAssembly)module.Assembly;
+            assembly.RunModuleConstructor();
         }
     }
 }

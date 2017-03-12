@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 
+using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -29,6 +30,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             builder.EmitPointerReloc(GetTarget(factory, typeInstantiation, methodInstantiation, dictionary));
         }
+
+        public abstract NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory);
     }
 
     /// <summary>
@@ -58,6 +61,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"TypeHandle: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeHandleDictionarySlot(_type);
+        }
     }
 
     /// <summary>
@@ -86,6 +94,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"MethodHandle: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodLdTokenDictionarySlot(_method);
+        }
     }
 
     /// <summary>
@@ -114,6 +127,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"FieldHandle: {_field}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.FieldLdTokenDictionarySlot(_field);
+        }
     }
 
     /// <summary>
@@ -142,6 +160,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"MethodDictionary: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodDictionaryDictionarySlot(_method);
+        }
     }
 
     /// <summary>
@@ -175,6 +198,12 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"MethodEntry: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodEntrypointDictionarySlot
+                        (_method, unboxing: true, functionPointerTarget: factory.MethodEntrypoint(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+        }
     }
 
     /// <summary>
@@ -216,6 +245,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"VirtualCall: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            }
+        }
     }
 
     /// <summary>
@@ -260,6 +301,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"VirtualResolve: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            }
+        }
     }
 
     /// <summary>
@@ -279,6 +332,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            // TODO The ProjectN abi should have an indirection here.
             return factory.TypeNonGCStaticsSymbol(instantiatedType);
         }
 
@@ -289,6 +343,19 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"NonGCStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // CoreRT abi doesn't currently have the extra indirection that the runtime expects for multifile support.
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.NonGcStaticDictionarySlot(_type);
+            }
+        }
     }
 
     /// <summary>
@@ -318,6 +385,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"ThreadStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     /// <summary>
@@ -337,6 +409,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            // TODO The ProjectN abi should have an indirection here.
             return factory.TypeGCStaticsSymbol(instantiatedType);
         }
 
@@ -347,6 +420,19 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"GCStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // CoreRT abi doesn't currently have the extra indirection that the runtime expects for multifile support.
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return factory.NativeLayout.GcStaticDictionarySlot(_type);
+            }
+        }
     }
 
     /// <summary>
@@ -375,6 +461,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"AllocObject: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.AllocateObjectDictionarySlot(_type);
+        }
     }
 
     /// <summary>
@@ -404,5 +495,120 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override string ToString() => $"AllocArray: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.AllocateArrayDictionarySlot(_type);
+        }
+    }
+
+    internal sealed class ThreadStaticIndexLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public ThreadStaticIndexLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
+            Debug.Assert(utcNodeFactory != null);
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("TlsIndex_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"ThreadStaticIndex: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TlsIndexDictionarySlot(_type);
+        }
+    }
+
+    internal sealed class ThreadStaticOffsetLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public ThreadStaticOffsetLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
+            Debug.Assert(utcNodeFactory != null);
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            Debug.Assert(instantiatedType is MetadataType);
+            return utcNodeFactory.TypeThreadStaticsOffsetSymbol(instantiatedType as MetadataType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("TlsOffset_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"ThreadStaticOffset: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TlsOffsetDictionarySlot(_type);
+        }
+    }
+
+    internal sealed class DefaultConstructorLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public DefaultConstructorLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            MethodDesc defaultCtor = instantiatedType.GetDefaultConstructor();
+
+            if (defaultCtor == null)
+            {
+                // If there isn't a default constructor, use the fallback one.
+                MetadataType missingCtorType = factory.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
+                missingCtorType = missingCtorType.GetNestedType("ClassWithMissingConstructor");                
+                Debug.Assert(missingCtorType != null);
+                defaultCtor = missingCtorType.GetParameterlessConstructor();
+            }
+            else
+            {
+                defaultCtor = defaultCtor.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            }
+
+            return factory.MethodEntrypoint(defaultCtor);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("DefaultCtor_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"DefaultConstructor: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.DefaultConstructorDictionarySlot(_type);
+        }
     }
 }

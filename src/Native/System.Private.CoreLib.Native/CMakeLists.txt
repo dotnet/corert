@@ -7,7 +7,6 @@ set(NATIVE_SOURCES
     pal_environment.cpp
     pal_errno.cpp
     pal_memory.cpp
-    pal_random.cpp
     pal_threading.cpp
     pal_time.cpp
 )

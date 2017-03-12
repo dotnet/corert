@@ -9,7 +9,10 @@
 //    This class defines a set of static methods that provide support for compilers.
 //
 
+using Internal.Reflection.Augments;
+using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
@@ -32,6 +35,14 @@ namespace System.Runtime.CompilerServices
             {
                 ClassConstructorRunner.EnsureClassConstructorRun((StaticClassConstructionContext*)pStaticClassConstructionContext);
             }
+        }
+
+        public static void RunModuleConstructor(ModuleHandle module)
+        {
+            if (module.AssociatedModule == null)
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
+
+            ReflectionAugments.ReflectionCoreCallbacks.RunModuleConstructor(module.AssociatedModule);
         }
 
         public static Object GetObjectValue(Object obj)
@@ -179,6 +190,98 @@ namespace System.Runtime.CompilerServices
         {
             var pEEType = EETypePtr.EETypePtrOf<T>();
             return !pEEType.IsValueType || pEEType.HasPointers;
+        }
+
+        // Constrained Execution Regions APIs are NOP's because we do not support CERs in .NET Core at all.
+        public static void ProbeForSufficientStack() { }
+        public static void PrepareConstrainedRegions() { }
+        public static void PrepareConstrainedRegionsNoOP() { }
+        public static void PrepareMethod(RuntimeMethodHandle method) { }
+        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation) { }
+        public static void PrepareContractedDelegate(Delegate d) { }
+        public static void PrepareDelegate(Delegate d)
+        {
+            if (d == null)
+                throw new ArgumentNullException(nameof(d));
+        }
+
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, Object userData)
+        {
+            if (code == null)
+                throw new ArgumentNullException(nameof(code));
+            if (backoutCode == null)
+                throw new ArgumentNullException(nameof(backoutCode));
+
+            bool exceptionThrown = false;
+
+            try
+            {
+                code(userData);
+            }
+            catch
+            {
+                exceptionThrown = true;
+                throw;
+            }
+            finally
+            {
+                backoutCode(userData, exceptionThrown);
+            }
+        }
+
+        public delegate void TryCode(Object userData);
+        public delegate void CleanupCode(Object userData, bool exceptionThrown);
+
+        public static object GetUninitializedObject(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
+            }
+            
+            if(!type.IsRuntimeImplemented())
+            {
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
+            }
+
+            if (type.IsArray || type.IsByRef || type.IsPointer)
+            {
+                throw new ArgumentException(SR.Argument_InvalidValue);
+            }
+
+            if (type.ContainsGenericParameters)
+            {
+                throw new MemberAccessException(SR.Acc_CreateGeneric);
+            }
+
+            if (type.IsCOMObject)
+            {
+                throw new NotSupportedException(SR.NotSupported_ManagedActivation);
+            }
+
+            EETypePtr eeTypePtr = type.TypeHandle.EETypePtr;
+
+            if (eeTypePtr == EETypePtr.EETypePtrOf<string>())
+            {
+                throw new ArgumentException(SR.Argument_NoUninitializedStrings);
+            }
+
+            if (eeTypePtr.IsAbstract)
+            {
+                throw new MemberAccessException(SR.Acc_CreateAbst);
+            }
+
+            if (eeTypePtr.IsNullable)
+            {
+                return GetUninitializedObject(ReflectionCoreNonPortable.GetRuntimeTypeForEEType(eeTypePtr.NullableType));
+            }
+
+            // Triggering the .cctor here is slightly different than desktop/CoreCLR, which 
+            // decide based on BeforeFieldInit, but we don't want to include BeforeFieldInit
+            // in EEType just for this API to behave slightly differently.
+            RunClassConstructor(type.TypeHandle);
+
+            return RuntimeImports.RhNewObject(eeTypePtr);
         }
     }
 }

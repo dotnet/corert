@@ -8,12 +8,13 @@ using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.IL;
+
+using Interlocked = System.Threading.Interlocked;
 
 namespace ILCompiler
 {
@@ -23,6 +24,8 @@ namespace ILCompiler
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
+
+        private TypeDesc[] _arrayOfTInterfaces;
         
         private MetadataStringDecoder _metadataStringDecoder;
 
@@ -295,6 +298,34 @@ namespace ILCompiler
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
+        }
+
+        /// <summary>
+        /// Returns true if <paramref name="type"/> is a generic interface type implemented by arrays.
+        /// </summary>
+        public bool IsGenericArrayInterfaceType(TypeDesc type)
+        {
+            // Hardcode the fact that all generic interfaces on array types have arity 1
+            if (!type.IsInterface || type.Instantiation.Length != 1)
+                return false;
+
+            if (_arrayOfTInterfaces == null)
+            {
+                DefType[] implementedInterfaces = SystemModule.GetKnownType("System", "Array`1").ExplicitlyImplementedInterfaces;
+                TypeDesc[] interfaceDefinitions = new TypeDesc[implementedInterfaces.Length];
+                for (int i = 0; i < interfaceDefinitions.Length; i++)
+                    interfaceDefinitions[i] = implementedInterfaces[i].GetTypeDefinition();
+                Interlocked.CompareExchange(ref _arrayOfTInterfaces, interfaceDefinitions, null);
+            }
+
+            TypeDesc interfaceDefinition = type.GetTypeDefinition();
+            foreach (var arrayInterfaceDefinition in _arrayOfTInterfaces)
+            {
+                if (interfaceDefinition == arrayInterfaceDefinition)
+                    return true;
+            }
+
+            return false;
         }
 
         public override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)

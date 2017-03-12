@@ -71,12 +71,12 @@ namespace ILCompiler
             }
         }
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, NameMangler nameMangler) 
+        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler) 
             : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler)
         {
             CreateHostedNodeCaches();
-            CompilationUnitPrefix = Path.GetFileNameWithoutExtension(outputFile);
-            ThreadStaticsIndex = new ThreadStaticsIndexNode(CompilationUnitPrefix);
+            CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
+            ThreadStaticsIndex = new ThreadStaticsIndexNode(nameMangler.GetCurrentModuleTlsIndexPrefix());
             ThreadStaticsStartOffset = new ThreadStaticsStartNode();
             targetPrefix = context.Target.Architecture == TargetArchitecture.X86 ? "_" : "";
             TLSDirectory = new ThreadStaticsDirectoryNode(targetPrefix);
@@ -106,9 +106,9 @@ namespace ILCompiler
                 return new UtcDictionaryLayoutNode(methodOrType);
             });
 
-            _nonExternMethodSymbols = new NodeCache<MethodDesc, NonExternMethodSymbolNode>((MethodDesc method) =>
+            _nonExternMethodSymbols = new NodeCache<MethodKey, NonExternMethodSymbolNode>((MethodKey method) =>
             {
-                return new NonExternMethodSymbolNode(this, method);
+                return new NonExternMethodSymbolNode(this, method.Method, method.IsUnboxingStub);
             });
         }
 
@@ -144,7 +144,7 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticStartOffset, ThreadStaticsStartOffset, ThreadStaticsStartOffset);
 
-            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
+            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
             MetadataManager.AttachToDependencyGraph(graph);
         }
 
@@ -155,12 +155,33 @@ namespace ILCompiler
                 return new RuntimeImportMethodNode(method);
             }
 
+            if (CompilationModuleGroup.ContainsMethod(method))
+            {
+                return NonExternMethodSymbol(method, false);
+            }
+
             return new ExternMethodSymbolNode(this, method);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            return new UnboxingStubNode(method);
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any) && !method.HasInstantiation)
+            {
+                // Unboxing stubs to canonical instance methods need a special unboxing instantiating stub that unboxes
+                // 'this' and also provides an instantiation argument (we do a calling convention conversion).
+                // The unboxing instantiating stub is emitted by UTC.
+                if (CompilationModuleGroup.ContainsMethod(method))
+                {
+                    return NonExternMethodSymbol(method, true);
+                }
+
+                return new ExternMethodSymbolNode(this, method, true);
+            }
+            else
+            {
+                // Otherwise we just unbox 'this' and don't touch anything else.
+                return new UnboxingStubNode(method);
+            }
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
@@ -170,11 +191,11 @@ namespace ILCompiler
 
         protected override IMethodNode CreateShadowConcreteMethodNode(MethodKey methodKey)
         {
-            // All methods are modeled as ExternMethodSymbolNode in ProjectX for now.
-            return new ShadowConcreteMethodNode<ExternMethodSymbolNode>(methodKey.Method,
-                (ExternMethodSymbolNode)MethodEntrypoint(
+            IMethodNode methodCodeNode = MethodEntrypoint(
                     methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific),
-                    methodKey.IsUnboxingStub));
+                    methodKey.IsUnboxingStub);
+
+            return new ShadowConcreteMethodNode(methodKey.Method, methodCodeNode);
         }
 
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(
@@ -243,15 +264,15 @@ namespace ILCompiler
             }
         }
 
-        public ISymbolNode ThreadStaticsOffsetSymbol(MetadataType type)
+        public ISymbolNode TypeThreadStaticsIndexSymbol(TypeDesc type)
         {
             if (CompilationModuleGroup.ContainsType(type))
             {
-                return _threadStaticsOffset.GetOrAdd(type);
+                return ThreadStaticsIndex;
             }
             else
             {
-                return ExternSymbol(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
+                return ExternSymbol(ThreadStaticsIndexNode.GetMangledName((NameMangler as UTCNameMangler).GetImportedTlsIndexPrefix()));
             }
         }
 
@@ -262,11 +283,11 @@ namespace ILCompiler
             return _hostedGenericDictionaryLayouts.GetOrAdd(methodOrType);
         }
 
-        private NodeCache<MethodDesc, NonExternMethodSymbolNode> _nonExternMethodSymbols;
+        private NodeCache<MethodKey, NonExternMethodSymbolNode> _nonExternMethodSymbols;
 
-        public NonExternMethodSymbolNode NonExternMethodSymbol(MethodDesc method)
+        public NonExternMethodSymbolNode NonExternMethodSymbol(MethodDesc method, bool isUnboxingStub)
         {
-            return _nonExternMethodSymbols.GetOrAdd(method);
+            return _nonExternMethodSymbols.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
     }
 }

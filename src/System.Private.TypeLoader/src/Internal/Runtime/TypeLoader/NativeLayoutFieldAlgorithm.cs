@@ -47,8 +47,8 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Only needed for universal generics, or when looking up an offset for a field for a universal generic
-            LowLevelList<int> fieldOffsets;
-            int[] position = ComputeTypeSizeAndAlignment(type, FieldLoadState.Instance, out fieldOffsets);
+            LowLevelList<LayoutInt> fieldOffsets;
+            LayoutInt[] position = ComputeTypeSizeAndAlignment(type, FieldLoadState.Instance, out fieldOffsets);
 
             int numInstanceFields = 0;
             foreach (NativeLayoutFieldDesc field in type.NativeLayoutFields)
@@ -59,7 +59,7 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            int byteCountAlignment = position[InstanceAlignmentEntry];
+            LayoutInt byteCountAlignment = position[InstanceAlignmentEntry];
             byteCountAlignment = type.Context.Target.GetObjectAlignment(byteCountAlignment);
 
             ComputedInstanceFieldLayout layout = new ComputedInstanceFieldLayout()
@@ -72,13 +72,13 @@ namespace Internal.Runtime.TypeLoader
 
             if (!type.IsValueType)
             {
-                layout.FieldAlignment = type.Context.Target.PointerSize;
-                layout.FieldSize = type.Context.Target.PointerSize;
+                layout.FieldAlignment = type.Context.Target.LayoutPointerSize;
+                layout.FieldSize = type.Context.Target.LayoutPointerSize;
             }
             else
             {
                 layout.FieldAlignment = position[InstanceAlignmentEntry];
-                layout.FieldSize = MemoryHelpers.AlignUp(position[(int)NativeFormat.FieldStorage.Instance], layout.FieldAlignment);
+                layout.FieldSize = LayoutInt.AlignUp(position[(int)NativeFormat.FieldStorage.Instance], layout.FieldAlignment);
             }
 
             int curInstanceField = 0;
@@ -101,8 +101,8 @@ namespace Internal.Runtime.TypeLoader
                 return ParseStaticRegionSizesFromNativeLayout(type);
             }
 
-            LowLevelList<int> fieldOffsets;
-            int[] position = ComputeTypeSizeAndAlignment(type, FieldLoadState.Statics, out fieldOffsets);
+            LowLevelList<LayoutInt> fieldOffsets;
+            LayoutInt[] position = ComputeTypeSizeAndAlignment(type, FieldLoadState.Statics, out fieldOffsets);
 
             int numStaticFields = 0;
             foreach (NativeLayoutFieldDesc field in type.NativeLayoutFields)
@@ -139,9 +139,9 @@ namespace Internal.Runtime.TypeLoader
 
         private ComputedStaticFieldLayout ParseStaticRegionSizesFromNativeLayout(TypeDesc type)
         {
-            int nonGcDataSize = 0;
-            int gcDataSize = 0;
-            int threadDataSize = 0;
+            LayoutInt nonGcDataSize = LayoutInt.Zero;
+            LayoutInt gcDataSize = LayoutInt.Zero;
+            LayoutInt threadDataSize = LayoutInt.Zero;
 
             TypeBuilderState state = type.GetOrCreateTypeBuilderState();
             NativeParser typeInfoParser = state.GetParserForNativeLayoutInfo();
@@ -154,19 +154,19 @@ namespace Internal.Runtime.TypeLoader
                     case BagElementKind.NonGcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.NonGcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        nonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
+                        nonGcDataSize = new LayoutInt(checked((int)typeInfoParser.GetUnsigned()));
                         break;
 
                     case BagElementKind.GcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.GcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        gcDataSize = checked((int)typeInfoParser.GetUnsigned());
+                        gcDataSize = new LayoutInt(checked((int)typeInfoParser.GetUnsigned()));
                         break;
 
                     case BagElementKind.ThreadStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.ThreadStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        threadDataSize = checked((int)typeInfoParser.GetUnsigned());
+                        threadDataSize = new LayoutInt(checked((int)typeInfoParser.GetUnsigned()));
                         break;
 
                     default:
@@ -270,16 +270,16 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="type">Type we are computing layout for</param>
         /// <param name="initialSize">What the initial Instance size should be</param>
         /// <param name="alignRequired">What is the basic alignment requirement of the base type or 1 if there is no base type to consider</param>
-        internal void ComputeTypeSizeBeforeFields(TypeDesc type, out int initialSize, out int alignRequired)
+        internal void ComputeTypeSizeBeforeFields(TypeDesc type, out LayoutInt initialSize, out LayoutInt alignRequired)
         {
             // Account for the EEType pointer in objects...
-            initialSize = IntPtr.Size;
-            alignRequired = 1;
+            initialSize = new LayoutInt(IntPtr.Size);
+            alignRequired = LayoutInt.Zero;
 
             if (type.IsValueType)
             {
                 // ...unless the type is a ValueType which doesn't have the EEType pointer.
-                initialSize = 0;
+                initialSize = LayoutInt.Zero;
             }
             else if (type.BaseType != null)
             {
@@ -315,7 +315,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // The layout algorithm should probably compute results and let the caller set things
-        internal unsafe int[] ComputeTypeSizeAndAlignment(TypeDesc type, FieldLoadState loadRequested, out LowLevelList<int> fieldOffsets)
+        internal unsafe LayoutInt[] ComputeTypeSizeAndAlignment(TypeDesc type, FieldLoadState loadRequested, out LowLevelList<LayoutInt> fieldOffsets)
         {
             fieldOffsets = null;
             TypeLoaderLogger.WriteLine("Laying out type " + type.ToString() + ". IsValueType: " + (type.IsValueType ? "true" : "false") + ". LoadRequested = " + ((int)loadRequested).LowLevelToString());
@@ -325,8 +325,8 @@ namespace Internal.Runtime.TypeLoader
 
             bool isArray = type is ArrayType;
 
-            int[] position = new int[5];
-            int alignRequired = 1;
+            LayoutInt[] position = new LayoutInt[5];
+            LayoutInt alignRequired = LayoutInt.One;
 
             if ((loadRequested & FieldLoadState.Instance) == FieldLoadState.Instance)
             {
@@ -344,7 +344,7 @@ namespace Internal.Runtime.TypeLoader
 
             if (!isArray && type.NativeLayoutFields.Length > 0)
             {
-                fieldOffsets = new LowLevelList<int>(type.NativeLayoutFields.Length);
+                fieldOffsets = new LowLevelList<LayoutInt>(type.NativeLayoutFields.Length);
                 for (int i = 0; i < type.NativeLayoutFields.Length; i++)
                 {
                     TypeDesc fieldType = type.NativeLayoutFields[i].FieldType;
@@ -356,22 +356,21 @@ namespace Internal.Runtime.TypeLoader
                     // For value types, we will attempt to get the size and alignment from
                     // the runtime if possible, otherwise GetFieldSizeAndAlignment will
                     // recurse to lay out nested struct fields.
-                    int alignment;
-                    int size;
+                    LayoutInt alignment;
+                    LayoutInt size;
                     GetFieldSizeAlignment(fieldType, out size, out alignment);
 
-                    Debug.Assert(alignment > 0);
+                    Debug.Assert(alignment.AsInt > 0);
 
                     if (fieldStorage == (int)NativeFormat.FieldStorage.Instance)
                     {
                         instanceFields++;
 
                         // Ensure alignment of type is sufficient for this field
-                        if (alignRequired < alignment)
-                            alignRequired = alignment;
+                        alignRequired = LayoutInt.Max(alignRequired, alignment);
                     }
 
-                    position[fieldStorage] = MemoryHelpers.AlignUp(position[fieldStorage], alignment);
+                    position[fieldStorage] = LayoutInt.AlignUp(position[fieldStorage], alignment);
                     TypeLoaderLogger.WriteLine(" --> Field type " + fieldType.ToString() +
                         " storage " + ((uint)(type.NativeLayoutFields[i].FieldStorage)).LowLevelToString() +
                         " offset " + position[fieldStorage].LowLevelToString() +
@@ -383,25 +382,28 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
-            if ((position[(int)NativeFormat.FieldStorage.Instance] == 0) && type.IsValueType)
-                position[(int)NativeFormat.FieldStorage.Instance] = 1;
+            if ((position[(int)NativeFormat.FieldStorage.Instance] == LayoutInt.Zero) && type.IsValueType)
+                position[(int)NativeFormat.FieldStorage.Instance] = LayoutInt.One;
 
-            Debug.Assert(alignRequired == 1 || alignRequired == 2 || alignRequired == 4 || alignRequired == 8);
+            Debug.Assert(alignRequired == new LayoutInt(1) || 
+                         alignRequired == new LayoutInt(2) || 
+                         alignRequired == new LayoutInt(4) || 
+                         alignRequired == new LayoutInt(8));
 
             position[InstanceAlignmentEntry] = alignRequired;
 
             return position;
         }
 
-        internal void GetFieldSizeAlignment(TypeDesc fieldType, out int size, out int alignment)
+        internal void GetFieldSizeAlignment(TypeDesc fieldType, out LayoutInt size, out LayoutInt alignment)
         {
             Debug.Assert(!fieldType.IsCanonicalSubtype(CanonicalFormKind.Any));
 
             // All reference and array types are pointer-sized
             if (!fieldType.IsValueType)
             {
-                size = IntPtr.Size;
-                alignment = IntPtr.Size;
+                size = new LayoutInt(IntPtr.Size);
+                alignment = new LayoutInt(IntPtr.Size);
                 return;
             }
 
@@ -411,8 +413,8 @@ namespace Internal.Runtime.TypeLoader
                 unsafe
                 {
                     EEType* eeType = fieldType.RuntimeTypeHandle.ToEETypePtr();
-                    size = (int)eeType->ValueTypeSize;
-                    alignment = eeType->FieldAlignmentRequirement;
+                    size = new LayoutInt((int)eeType->ValueTypeSize);
+                    alignment = new LayoutInt(eeType->FieldAlignmentRequirement);
                     return;
                 }
             }
@@ -470,8 +472,8 @@ namespace Internal.Runtime.TypeLoader
             // - Type of fields can be HFA valuetype itself
             // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
             //   the valuetype is HFA and explicitly specified size
-            int maxSize = currentHfaElementType.InstanceFieldSize * currentHfaElementType.Context.Target.MaximumHfaElementCount;
-            if (type.InstanceFieldSize > maxSize)
+            int maxSize = currentHfaElementType.InstanceFieldSize.AsInt * currentHfaElementType.Context.Target.MaximumHfaElementCount;
+            if (type.InstanceFieldSize.AsInt > maxSize)
                 return null;
 
             return currentHfaElementType;

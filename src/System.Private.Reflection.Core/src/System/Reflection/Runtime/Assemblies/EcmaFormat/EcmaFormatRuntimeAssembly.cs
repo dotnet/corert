@@ -298,5 +298,13 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 return moduleInfo.PE;
             }
         }
+
+        internal sealed override void RunModuleConstructor()
+        {
+            // TODO: throw InvalidOperationException for introspection only assemblies
+            // TODO: ensure module is loaded and that the module cctor ran. If the module is already
+            // loaded, do nothing and return (cctor already ran).
+            throw new NotImplementedException();
+        }
     }
 }

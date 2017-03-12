@@ -13,6 +13,7 @@ namespace Internal.IL.Stubs
         public static MethodIL EmitIL(MethodDesc method)
         {
             Debug.Assert(method.OwningType.IsDelegate);
+            Debug.Assert(method.OwningType.IsTypeDefinition);
             Debug.Assert(method.IsRuntimeImplemented);
 
             if (method.Name == "BeginInvoke" || method.Name == "EndInvoke")
@@ -44,6 +45,53 @@ namespace Internal.IL.Stubs
                 codeStream.EmitLdArg(1);
                 codeStream.EmitLdArg(2);
                 codeStream.Emit(ILOpcode.call, emit.NewToken(initializeMethod));
+                codeStream.Emit(ILOpcode.ret);
+
+                return emit.Link(method);
+            }
+
+            if (method.Name == "Invoke")
+            {
+                TypeSystemContext context = method.Context;
+
+                ILEmitter emit = new ILEmitter();
+                TypeDesc delegateType = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
+                FieldDesc firstParameterField = delegateType.GetKnownField("m_firstParameter");
+                FieldDesc functionPointerField = delegateType.GetKnownField("m_functionPointer");
+                ILCodeStream codeStream = emit.NewCodeStream();
+
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.ldfld, emit.NewToken(firstParameterField.InstantiateAsOpen()));
+                for (int i = 0; i < method.Signature.Length; i++)
+                {
+                    codeStream.EmitLdArg(i + 1);
+                }
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.ldfld, emit.NewToken(functionPointerField.InstantiateAsOpen()));
+
+                MethodSignature signature = method.Signature;
+                if (method.OwningType.HasInstantiation)
+                {
+                    // If the owning type is generic, the signature will contain T's and U's.
+                    // We need !0's and !1's.
+                    TypeDesc[] typesToReplace = new TypeDesc[method.OwningType.Instantiation.Length];
+                    TypeDesc[] replacementTypes = new TypeDesc[typesToReplace.Length];
+                    for (int i = 0; i < typesToReplace.Length; i++)
+                    {
+                        typesToReplace[i] = method.OwningType.Instantiation[i];
+                        replacementTypes[i] = context.GetSignatureVariable(i, method: false);
+                    }
+                    TypeDesc[] parameters = new TypeDesc[method.Signature.Length];
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        parameters[i] = method.Signature[i].ReplaceTypesInConstructionOfType(typesToReplace, replacementTypes);
+                    }
+                    TypeDesc returnType = method.Signature.ReturnType.ReplaceTypesInConstructionOfType(typesToReplace, replacementTypes);
+                    signature = new MethodSignature(signature.Flags, signature.GenericParameterCount, returnType, parameters);
+                }
+
+                codeStream.Emit(ILOpcode.calli, emit.NewToken(signature));
+
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(method);

@@ -88,7 +88,7 @@ namespace Microsoft.Win32
 
         private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, bool writable, RegistryOptions registryOptions)
         {
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             int disposition = 0;
 
             // By default, the new key will be writable.
@@ -168,7 +168,7 @@ namespace Microsoft.Win32
 
             if (throwOnPermissionFailure)
             {
-                if (ret == Interop.mincore.Errors.ERROR_ACCESS_DENIED || ret == Interop.mincore.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
+                if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
                 {
                     // We need to throw SecurityException here for compatibility reason,
                     // although UnauthorizedAccessException will make more sense.
@@ -186,7 +186,7 @@ namespace Microsoft.Win32
             {
                 Debug.Assert(IsSystemKey());
 
-                int ret = Interop.mincore.Errors.ERROR_INVALID_HANDLE;
+                int ret = Interop.Errors.ERROR_INVALID_HANDLE;
                 IntPtr baseKey = (IntPtr)0;
                 switch (_keyName)
                 {
@@ -228,7 +228,7 @@ namespace Microsoft.Win32
                 else
                 {
                     Win32Error(ret, null);
-                    throw new IOException(Interop.mincore.GetMessage(ret), ret);
+                    throw new IOException(Interop.Kernel32.GetMessage(ret), ret);
                 }
             }
         }
@@ -340,7 +340,7 @@ namespace Microsoft.Win32
                     if (ret != 0)
                     {
                         // ignore ERROR_MORE_DATA if we're querying HKEY_PERFORMANCE_DATA
-                        if (!(IsPerfDataKey() && ret == Interop.mincore.Errors.ERROR_MORE_DATA))
+                        if (!(IsPerfDataKey() && ret == Interop.Errors.ERROR_MORE_DATA))
                             Win32Error(ret, null);
                     }
 
@@ -368,7 +368,7 @@ namespace Microsoft.Win32
 
                     int r;
                     byte[] blob = new byte[size];
-                    while (Interop.mincore.Errors.ERROR_MORE_DATA == (r = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
+                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
                         if (size == Int32.MaxValue)
                         {
@@ -398,7 +398,7 @@ namespace Microsoft.Win32
                     // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
                     // Some OS's returned ERROR_MORE_DATA even in success cases, so we 
                     // want to continue on through the function. 
-                    if (ret != Interop.mincore.Errors.ERROR_MORE_DATA)
+                    if (ret != Interop.Errors.ERROR_MORE_DATA)
                     {
                         return data;
                     }
@@ -625,12 +625,12 @@ namespace Microsoft.Win32
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     throw str != null ?
                         new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
                         new UnauthorizedAccessException();
 
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     // For normal RegistryKey instances we dispose the SafeRegHandle and throw IOException.
                     // However, for HKEY_PERFORMANCE_DATA (on a local or remote machine) we avoid disposing the
                     // SafeRegHandle and only throw the IOException.  This is to workaround reentrancy issues
@@ -648,11 +648,11 @@ namespace Microsoft.Win32
                     }
                     goto default;
 
-                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
                     throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:
-                    throw new IOException(Interop.mincore.GetMessage(errorCode), errorCode);
+                    throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
             }
         }
 
@@ -660,13 +660,13 @@ namespace Microsoft.Win32
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     throw str != null ?
                         new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
                         new UnauthorizedAccessException();
 
                 default:
-                    throw new IOException(Interop.mincore.GetMessage(errorCode), errorCode);
+                    throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
             }
         }
 

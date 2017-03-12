@@ -1120,16 +1120,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 for (int i = 0; i < interfaces.Length; i++)
                 {
-#if DEBUG
-                    // If the type has a template, then check to see that the results of the template type loader loader are effectively equivalent
-                    if (state.TemplateType != null)
-                    {
-                        var templateTypeHandle = RuntimeAugments.GetInterface(state.TemplateType.RuntimeTypeHandle, i);
-                        var templateType = (DefType)type.Context.ResolveRuntimeTypeHandle(templateTypeHandle);
-                        var actualType = interfaces[i];
-                        Debug.Assert(templateType.HasSameTypeDefinition(actualType));
-                    }
-#endif
                     state.HalfBakedRuntimeTypeHandle.SetInterface(i, GetRuntimeTypeHandle(interfaces[i]));
                 }
             }
@@ -1617,7 +1607,13 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderLogger.WriteLine("Computing offset of field #" + fieldOrdinal.LowLevelToString() + " on type " + declaringType.ToString());
 
             // Get the computed field offset result
-            fieldOffset = declaringType.GetFieldByNativeLayoutOrdinal(fieldOrdinal).Offset;
+            LayoutInt layoutFieldOffset = declaringType.GetFieldByNativeLayoutOrdinal(fieldOrdinal).Offset;
+            if (layoutFieldOffset.IsIndeterminate)
+            {
+                fieldOffset = 0;
+                return false;
+            }
+            fieldOffset = layoutFieldOffset.AsInt;
             return true;
         }
 

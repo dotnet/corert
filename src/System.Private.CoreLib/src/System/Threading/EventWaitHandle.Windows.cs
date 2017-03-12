@@ -43,14 +43,14 @@ namespace System.Threading
             {
                 int errorCode = (int)Interop.mincore.GetLastError();
                 _handle.SetHandleAsInvalid();
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 throw ExceptionFromCreationError(errorCode, name);
             }
             else if (name != null)
             {
                 int errorCode = (int)Interop.mincore.GetLastError();
-                createdNew = errorCode != Interop.mincore.Errors.ERROR_ALREADY_EXISTS;
+                createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             }
             else
             {
@@ -88,11 +88,11 @@ namespace System.Threading
 
             if (myHandle.IsInvalid)
             {
-                if (Interop.mincore.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.mincore.Errors.ERROR_INVALID_NAME == errorCode)
+                if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
-                if (Interop.mincore.Errors.ERROR_PATH_NOT_FOUND == errorCode)
+                if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
                     return OpenExistingResult.PathNotFound;
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
+                if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
                 //this is for passed through Win32Native Errors
                 throw ExceptionFromCreationError(errorCode, name);

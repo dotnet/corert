@@ -190,7 +190,7 @@ namespace ILCompiler
         /// A type with an identical layout to the layout of a boxed value type.
         /// The type has a single field of the type of the valuetype it represents.
         /// </summary>
-        private class BoxedValueType : MetadataType
+        private class BoxedValueType : MetadataType, INonEmittableType
         {
             private const string BoxedValueFieldName = "BoxedValue";
 
@@ -246,6 +246,11 @@ namespace ILCompiler
                     hashCodeBuilder.Append(".");
                 hashCodeBuilder.Append(Name);
                 return hashCodeBuilder.ToHashCode();
+            }
+
+            public override string ToString()
+            {
+                return "Boxed " + Module.ToString() + ValueTypeRepresented.ToString();
             }
 
             protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
@@ -306,6 +311,40 @@ namespace ILCompiler
                     _owningType = owningType;
                 }
             }
+        }
+
+        /// <summary>
+        /// Does a method represent an unboxing stub
+        /// </summary>
+        public bool IsSpecialUnboxingThunk(MethodDesc method)
+        {
+            if (method.GetTypicalMethodDefinition().GetType() == typeof(GenericUnboxingThunk))
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Convert from an unboxing stub to the actual target method
+        /// </summary>
+        public MethodDesc GetTargetOfSpecialUnboxingThunk(MethodDesc method)
+        {
+            MethodDesc typicalMethodTarget = ((GenericUnboxingThunk)method.GetTypicalMethodDefinition()).TargetMethod;
+
+            MethodDesc methodOnInstantiatedType = typicalMethodTarget;
+            if (method.OwningType.HasInstantiation)
+            {
+                InstantiatedType instantiatedType = GetInstantiatedType((MetadataType)typicalMethodTarget.OwningType, method.OwningType.Instantiation);
+                methodOnInstantiatedType = GetMethodForInstantiatedType(typicalMethodTarget, instantiatedType);
+            }
+
+            MethodDesc instantiatedMethod = methodOnInstantiatedType;
+            if (method.HasInstantiation)
+            {
+                instantiatedMethod = GetInstantiatedMethod(methodOnInstantiatedType, method.Instantiation);
+            }
+
+            return instantiatedMethod;
         }
 
         /// <summary>

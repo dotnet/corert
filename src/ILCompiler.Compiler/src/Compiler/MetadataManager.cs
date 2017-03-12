@@ -64,13 +64,14 @@ namespace ILCompiler
             return result;
         }
 
-        public void AddToReadyToRunHeader(ReadyToRunHeaderNode header)
+        public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory)
         {
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", _typeSystemContext.Target);
-            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences", _typeSystemContext.Target);
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", nodeFactory);
+            var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences", nodeFactory);
+            var nativeStaticsTableNode = new ExternalReferencesTableNode("NativeStatics", nodeFactory);
 
             var resourceDataNode = new ResourceDataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceData), resourceDataNode, resourceDataNode, resourceDataNode.EndSymbol);
@@ -97,7 +98,7 @@ namespace ILCompiler
             var fieldMapNode = new ReflectionFieldMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FieldAccessMap), fieldMapNode, fieldMapNode, fieldMapNode.EndSymbol);
 
-            NativeLayoutInfo = new NativeLayoutInfoNode(nativeReferencesTableNode);
+            NativeLayoutInfo = new NativeLayoutInfoNode(nativeReferencesTableNode, nativeStaticsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeLayoutInfo), NativeLayoutInfo, NativeLayoutInfo, NativeLayoutInfo.EndSymbol);
 
             var exactMethodInstantiations = new ExactMethodInstantiationsNode(nativeReferencesTableNode);
@@ -118,12 +119,16 @@ namespace ILCompiler
             var genericMethodsTemplatesMapNode = new GenericMethodsTemplateMap(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.GenericMethodsTemplateMap), genericMethodsTemplatesMapNode, genericMethodsTemplatesMapNode, genericMethodsTemplatesMapNode.EndSymbol);
 
+            var genericTypesTemplatesMapNode = new GenericTypesTemplateMap(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeTemplateMap), genericTypesTemplatesMapNode, genericTypesTemplatesMapNode, genericTypesTemplatesMapNode.EndSymbol);
+
             var blockReflectionTypeMapNode = new BlockReflectionTypeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlockReflectionTypeMap), blockReflectionTypeMapNode, blockReflectionTypeMapNode, blockReflectionTypeMapNode.EndSymbol);
 
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode, nativeStaticsTableNode, nativeStaticsTableNode.EndSymbol);
         }
 
         private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -138,7 +143,7 @@ namespace ILCompiler
 
             IMethodNode methodNode = obj as MethodCodeNode;
             if (methodNode == null)
-                methodNode = obj as ShadowConcreteMethodNode<MethodCodeNode>;
+                methodNode = obj as ShadowConcreteMethodNode;
 
             if (methodNode == null)
                 methodNode = obj as NonExternMethodSymbolNode;
@@ -356,15 +361,16 @@ namespace ILCompiler
             _methodsGenerated.Add(method);
         }
 
-        private void EnsureMetadataGenerated()
+        private void EnsureMetadataGenerated(NodeFactory factory)
         {
             if (_metadataBlob != null)
                 return;
 
-            ComputeMetadata(out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings);
+            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings);
         }
 
-        protected abstract void ComputeMetadata(out byte[] metadataBlob, 
+        protected abstract void ComputeMetadata(NodeFactory factory,
+                                                out byte[] metadataBlob, 
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings);
@@ -376,27 +382,27 @@ namespace ILCompiler
         /// </summary>
         public abstract IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata();
 
-        public byte[] GetMetadataBlob()
+        public byte[] GetMetadataBlob(NodeFactory factory)
         {
-            EnsureMetadataGenerated();
+            EnsureMetadataGenerated(factory);
             return _metadataBlob;
         }
 
-        public IEnumerable<MetadataMapping<MetadataType>> GetTypeDefinitionMapping()
+        public IEnumerable<MetadataMapping<MetadataType>> GetTypeDefinitionMapping(NodeFactory factory)
         {
-            EnsureMetadataGenerated();
+            EnsureMetadataGenerated(factory);
             return _typeMappings;
         }
 
-        public IEnumerable<MetadataMapping<MethodDesc>> GetMethodMapping()
+        public IEnumerable<MetadataMapping<MethodDesc>> GetMethodMapping(NodeFactory factory)
         {
-            EnsureMetadataGenerated();
+            EnsureMetadataGenerated(factory);
             return _methodMappings;
         }
 
-        public IEnumerable<MetadataMapping<FieldDesc>> GetFieldMapping()
+        public IEnumerable<MetadataMapping<FieldDesc>> GetFieldMapping(NodeFactory factory)
         {
-            EnsureMetadataGenerated();
+            EnsureMetadataGenerated(factory);
             return _fieldMappings;
         }
 

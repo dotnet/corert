@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(fieldMapHashTable);
 
-            foreach (var fieldMapping in factory.MetadataManager.GetFieldMapping())
+            foreach (var fieldMapping in factory.MetadataManager.GetFieldMapping(factory))
             {
                 FieldDesc field = fieldMapping.Entity;
 
@@ -119,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         case FieldTableFlags.Instance:
                             vertex = writer.GetTuple(vertex,
-                                writer.GetUnsignedConstant((uint)field.Offset));
+                                writer.GetUnsignedConstant((uint)field.Offset.AsInt));
                             break;
                     }
                 }

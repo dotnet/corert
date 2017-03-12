@@ -23,13 +23,13 @@
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
             <CoreFxPackageVersion>4.4.0-beta-24913-02</CoreFxPackageVersion>
-            <NetCoreAppPackageVersion>2.0.0-beta-001368-00</NetCoreAppPackageVersion>
+            <NetCoreAppPackageVersion>2.0.0-beta-001663-00</NetCoreAppPackageVersion>
 
-            <JitPackageVersion>2.0.0-beta-25028-02</JitPackageVersion>
+            <JitPackageVersion>2.0.0-beta-25103-02</JitPackageVersion>
 
             <MicrosoftNetCoreNativePackageVersion>2.0.0-beta-25021-03</MicrosoftNetCoreNativePackageVersion>
 
-            <ObjectWriterPackageVersion>1.0.15-prerelease-00001</ObjectWriterPackageVersion>
+            <ObjectWriterPackageVersion>1.0.16-prerelease-00001</ObjectWriterPackageVersion>
             <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
             <ObjectWriterNuPkgRid Condition="'$(ObjectWriterNuPkgRid)'==''">$(NuPkgRid)</ObjectWriterNuPkgRid>
         </PropertyGroup>
@@ -173,7 +173,7 @@
 
             <ILCompilerFrameworkFiles Include="System.Runtime.CompilerServices.Unsafe/$(CoreFxPackageVersion)/lib/netstandard1.0/System.Runtime.CompilerServices.Unsafe.dll" />
 
-            <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).runtime.native.System/$(CoreFxPackageVersion)/runtimes/$(NuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).Microsoft.NETCore.App/$(NetCoreAppPackageVersion)/runtimes/$(NuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).Microsoft.NETCore.Native/$(MicrosoftNetCoreNativePackageVersion)/runtimes/$(NuPkgRid)/native/libSystem.Globalization.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerFrameworkFiles)">

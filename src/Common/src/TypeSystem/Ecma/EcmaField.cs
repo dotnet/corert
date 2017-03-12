@@ -269,7 +269,7 @@ namespace Internal.TypeSystem.Ecma
             int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
             var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
 
-            int size = field.FieldType.GetElementSize();
+            int size = field.FieldType.GetElementSize().AsInt;
             if (size > memBlock.Length)
                 throw new BadImageFormatException();
 

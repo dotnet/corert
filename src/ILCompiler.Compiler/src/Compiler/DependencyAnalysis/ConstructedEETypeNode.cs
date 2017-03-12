@@ -41,6 +41,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
 
+            // Ensure that we track the necessary type symbol if we are working with a constructed type symbol.
+            // The emitter will ensure we don't emit both, but this allows us assert that we only generate
+            // relocs to nodes we emit.
+            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
+
             DefType closestDefType = _type.GetClosestDefType();
 
             if (_type.RuntimeInterfaces.Length > 0)
@@ -71,11 +76,17 @@ namespace ILCompiler.DependencyAnalysis
                     // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
                     // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
                     // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                    if (implementedInterface.HasVariance)
+                    // NOTE: we need to also do this for generic interfaces on arrays because they have a weird casting rule
+                    // that doesn't require the implemented interface to be variant to consider it castable.
+                    if (implementedInterface.HasVariance || (_type.IsArray && implementedInterface.HasInstantiation))
                     {
                         foreach (var interfaceMethod in implementedInterface.GetAllMethods())
                         {
                             if (interfaceMethod.Signature.IsStatic)
+                                continue;
+
+                            // Generic virtual methods are tracked by an orthogonal mechanism.
+                            if (interfaceMethod.HasInstantiation)
                                 continue;
 
                             MethodDesc implMethod = closestDefType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
@@ -100,15 +111,24 @@ namespace ILCompiler.DependencyAnalysis
 
             if (closestDefType.HasGenericDictionarySlot())
             {
-                // Generic dictionary pointer is part of the vtable and as such it gets only laid out
-                // at the final data emission phase. We need to report it as a non-relocation dependency.
-                dependencyList.Add(factory.TypeGenericDictionary(closestDefType), "Type generic dictionary");
+                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
+                DefType templateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, _type.ConvertToCanonForm(CanonicalFormKind.Specific));
+
+                if (!factory.NecessaryTypeSymbol(templateType).RepresentsIndirectionCell)
+                    dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout");
             }
 
             // Generated type contains generic virtual methods that will get added to the GVM tables
             if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
             {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
+            }
+
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            {
+                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
+                // We need to make sure this is possible.
+                dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
             return dependencyList;
@@ -141,6 +161,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
             {
+                // Generic virtual methods are tracked by an orthogonal mechanism.
                 if (decl.HasInstantiation)
                     continue;
 
@@ -167,6 +188,10 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (MethodDesc interfaceMethod in interfaceType.GetAllMethods())
                 {
                     if (interfaceMethod.Signature.IsStatic)
+                        continue;
+
+                    // Generic virtual methods are tracked by an orthogonal mechanism.
+                    if (interfaceMethod.HasInstantiation)
                         continue;
 
                     MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);

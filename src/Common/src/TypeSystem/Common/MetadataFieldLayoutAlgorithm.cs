@@ -112,7 +112,7 @@ namespace Internal.TypeSystem
                     Debug.Assert(instanceField != null, "Null instance field");
 
                     result.Offsets = new FieldAndOffset[] {
-                        new FieldAndOffset(instanceField, 0)
+                        new FieldAndOffset(instanceField, LayoutInt.Zero)
                     };
                 }
                 else
@@ -205,11 +205,11 @@ namespace Internal.TypeSystem
 
                 SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, type.Context.Target.DefaultPackingSize);
 
-                block->Size = AlignmentHelper.AlignUp(block->Size, sizeAndAlignment.Alignment);
+                block->Size = LayoutInt.AlignUp(block->Size, sizeAndAlignment.Alignment);
                 result.Offsets[index] = new FieldAndOffset(field, block->Size);
-                block->Size = checked(block->Size + sizeAndAlignment.Size);
+                block->Size = block->Size + sizeAndAlignment.Size;
 
-                block->LargestAlignment = Math.Max(block->LargestAlignment, sizeAndAlignment.Alignment);
+                block->LargestAlignment = LayoutInt.Max(block->LargestAlignment, sizeAndAlignment.Alignment);
 
                 index++;
             }
@@ -268,14 +268,14 @@ namespace Internal.TypeSystem
         {
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
-            int cumulativeInstanceFieldPos =
-                type.HasBaseType && !type.IsValueType ? type.BaseType.InstanceByteCount : 0;
-            int instanceSize = cumulativeInstanceFieldPos;
+            LayoutInt cumulativeInstanceFieldPos =
+                type.HasBaseType && !type.IsValueType ? type.BaseType.InstanceByteCount : LayoutInt.Zero;
+            LayoutInt instanceSize = cumulativeInstanceFieldPos;
 
             var layoutMetadata = type.GetClassLayout();
 
             int packingSize = ComputePackingSize(type);
-            int largestAlignmentRequired = 1;
+            LayoutInt largestAlignmentRequired = LayoutInt.One;
 
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
@@ -284,17 +284,16 @@ namespace Internal.TypeSystem
             {
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldAndOffset.Field.FieldType, packingSize);
 
-                if (fieldSizeAndAlignment.Alignment > largestAlignmentRequired)
-                    largestAlignmentRequired = fieldSizeAndAlignment.Alignment;
+                largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
                 if (fieldAndOffset.Offset == FieldAndOffset.InvalidOffset)
                     throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
 
-                int computedOffset = checked(fieldAndOffset.Offset + cumulativeInstanceFieldPos);
+                LayoutInt computedOffset = fieldAndOffset.Offset + cumulativeInstanceFieldPos;
 
-                if (fieldAndOffset.Field.FieldType.IsGCPointer)
+                if (fieldAndOffset.Field.FieldType.IsGCPointer && !computedOffset.IsIndeterminate)
                 {
-                    int offsetModulo = computedOffset % type.Context.Target.PointerSize;
+                    int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
                     {
                         // GC pointers MUST be aligned.
@@ -304,18 +303,15 @@ namespace Internal.TypeSystem
 
                 offsets[fieldOrdinal] = new FieldAndOffset(fieldAndOffset.Field, computedOffset);
 
-                int fieldExtent = checked(computedOffset + fieldSizeAndAlignment.Size);
-                if (fieldExtent > instanceSize)
-                {
-                    instanceSize = fieldExtent;
-                }
+                LayoutInt fieldExtent = computedOffset + fieldSizeAndAlignment.Size;
+                instanceSize = LayoutInt.Max(fieldExtent, instanceSize);
 
                 fieldOrdinal++;
             }
 
-            if (type.IsValueType && layoutMetadata.Size > instanceSize)
+            if (type.IsValueType)
             {
-                instanceSize = layoutMetadata.Size;
+                instanceSize = LayoutInt.Max(new LayoutInt(layoutMetadata.Size), instanceSize);
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
@@ -336,9 +332,9 @@ namespace Internal.TypeSystem
             var offsets = new FieldAndOffset[numInstanceFields];
 
             // For types inheriting from another type, field offsets continue on from where they left off
-            int cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
+            LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
 
-            int largestAlignmentRequirement = 1;
+            LayoutInt largestAlignmentRequirement = LayoutInt.One;
             int fieldOrdinal = 0;
             int packingSize = ComputePackingSize(type);
 
@@ -349,10 +345,9 @@ namespace Internal.TypeSystem
 
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize);
 
-                if (fieldSizeAndAlignment.Alignment > largestAlignmentRequirement)
-                    largestAlignmentRequirement = fieldSizeAndAlignment.Alignment;
+                largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
-                cumulativeInstanceFieldPos = AlignmentHelper.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
+                cumulativeInstanceFieldPos = LayoutInt.AlignUp(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment);
                 offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
                 cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
 
@@ -362,7 +357,7 @@ namespace Internal.TypeSystem
             if (type.IsValueType)
             {
                 var layoutMetadata = type.GetClassLayout();
-                cumulativeInstanceFieldPos = Math.Max(cumulativeInstanceFieldPos, layoutMetadata.Size);
+                cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
@@ -378,9 +373,9 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static int ComputeBytesUsedInParentType(DefType type)
+        private static LayoutInt ComputeBytesUsedInParentType(DefType type)
         {
-            int cumulativeInstanceFieldPos = 0;
+            LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
             if (!type.IsValueType && type.HasBaseType)
             {
@@ -404,8 +399,8 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    result.Size = fieldType.Context.Target.PointerSize;
-                    result.Alignment = fieldType.Context.Target.PointerSize;
+                    result.Size = fieldType.Context.Target.LayoutPointerSize;
+                    result.Alignment = fieldType.Context.Target.LayoutPointerSize;
                 }
             }
             else if (fieldType.IsByRef || fieldType.IsArray)
@@ -413,17 +408,17 @@ namespace Internal.TypeSystem
                 // This could use InstanceFieldSize/Alignment (and those results should match what's here)
                 // but, its more efficient to just assume pointer size instead of fulling processing
                 // the instance field layout of fieldType here.
-                result.Size = fieldType.Context.Target.PointerSize;
-                result.Alignment = fieldType.Context.Target.PointerSize;
+                result.Size = fieldType.Context.Target.LayoutPointerSize;
+                result.Alignment = fieldType.Context.Target.LayoutPointerSize;
             }
             else
             {
                 Debug.Assert(fieldType.IsPointer || fieldType.IsFunctionPointer);
-                result.Size = fieldType.Context.Target.PointerSize;
-                result.Alignment = fieldType.Context.Target.PointerSize;
+                result.Size = fieldType.Context.Target.LayoutPointerSize;
+                result.Alignment = fieldType.Context.Target.LayoutPointerSize;
             }
 
-            result.Alignment = Math.Min(result.Alignment, packingSize);
+            result.Alignment = LayoutInt.Min(result.Alignment, new LayoutInt(packingSize));
 
             return result;
         }
@@ -439,30 +434,30 @@ namespace Internal.TypeSystem
                 return layoutMetadata.PackingSize;
         }
 
-        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, int count, int alignment, out SizeAndAlignment byteCount)
+        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
 
             int targetPointerSize = type.Context.Target.PointerSize;
 
             // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
-            if (type.IsValueType && count == 0)
+            if (type.IsValueType && instanceSize == LayoutInt.Zero)
             {
-                count = 1;
+                instanceSize = LayoutInt.One;
             }
 
             if (type.IsValueType)
             {
-                count = AlignmentHelper.AlignUp(count, alignment);
-                result.Size = count;
+                instanceSize = LayoutInt.AlignUp(instanceSize, alignment);
+                result.Size = instanceSize;
                 result.Alignment = alignment;
             }
             else
             {
-                result.Size = targetPointerSize;
-                result.Alignment = targetPointerSize;
+                result.Size = new LayoutInt(targetPointerSize);
+                result.Alignment = new LayoutInt(targetPointerSize);
                 if (type.HasBaseType)
-                    alignment = Math.Max(alignment, type.BaseType.InstanceByteAlignment);
+                    alignment = LayoutInt.Max(alignment, type.BaseType.InstanceByteAlignment);
             }
 
             // Determine the alignment needed by the type when allocated
@@ -470,7 +465,7 @@ namespace Internal.TypeSystem
             // 8 byte alignment requirements on ARM for longs and doubles
             alignment = type.Context.Target.GetObjectAlignment(alignment);
 
-            byteCount.Size = count;
+            byteCount.Size = instanceSize;
             byteCount.Alignment = alignment;
 
             return result;
@@ -541,12 +536,20 @@ namespace Internal.TypeSystem
                     if (expectedElementType == null)
                         return ValueTypeShapeCharacteristics.None;
 
+                    // Types which are indeterminate in field size are not considered to be HFA
+                    if (expectedElementType.InstanceFieldSize.IsIndeterminate)
+                        return ValueTypeShapeCharacteristics.None;
+
+                    // Types which are indeterminate in field size are not considered to be HFA
+                    if (type.InstanceFieldSize.IsIndeterminate)
+                        return ValueTypeShapeCharacteristics.None;
+
                     // Note that we check the total size, but do not perform any checks on number of fields:
                     // - Type of fields can be HFA valuetype itself
                     // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
                     //   the valuetype is HFA and explicitly specified size
-                    int maxSize = expectedElementType.InstanceFieldSize * expectedElementType.Context.Target.MaximumHfaElementCount;
-                    if (type.InstanceFieldSize > maxSize)
+                    int maxSize = expectedElementType.InstanceFieldSize.AsInt * expectedElementType.Context.Target.MaximumHfaElementCount;
+                    if (type.InstanceFieldSize.AsInt > maxSize)
                         return ValueTypeShapeCharacteristics.None;
 
                     // All the tests passed. This is an HFA type.
@@ -600,8 +603,8 @@ namespace Internal.TypeSystem
 
         private struct SizeAndAlignment
         {
-            public int Size;
-            public int Alignment;
+            public LayoutInt Size;
+            public LayoutInt Alignment;
         }
     }
 }

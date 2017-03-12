@@ -788,6 +788,8 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodModule"); }
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
         { throw new NotImplementedException("getMethodVTableOffset"); }
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass)
+        { throw new NotImplementedException("resolveVirtualMethod"); }
 
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
         {
@@ -1118,7 +1120,7 @@ namespace Internal.JitInterface
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
-            return (uint)type.GetElementSize();
+            return (uint)type.GetElementSize().AsInt;
         }
 
         private uint getClassAlignmentRequirement(CORINFO_CLASS_STRUCT_* cls, bool fDoubleAlignHint)
@@ -1156,8 +1158,8 @@ namespace Internal.JitInterface
                     continue;
                 }
 
-                Debug.Assert(field.Offset % PointerSize == 0);
-                byte* fieldGcPtrs = gcPtrs + field.Offset / PointerSize;
+                Debug.Assert(field.Offset.AsInt % PointerSize == 0);
+                byte* fieldGcPtrs = gcPtrs + field.Offset.AsInt / PointerSize;
 
                 if (gcType == CorInfoGCType.TYPE_GC_OTHER)
                 {
@@ -1192,7 +1194,7 @@ namespace Internal.JitInterface
 
             int pointerSize = PointerSize;
 
-            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceByteCount, pointerSize) / pointerSize;
+            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceByteCount.AsInt, pointerSize) / pointerSize;
 
             // Assume no GC pointers at first
             for (int i = 0; i < ptrsCount; i++)
@@ -1579,7 +1581,7 @@ namespace Internal.JitInterface
 
             // Check for invalid arguments passed to InitializeArray intrinsic
             if (!fd.HasRva ||
-                size > fd.FieldType.GetElementSize())
+                size > fd.FieldType.GetElementSize().AsInt)
             {
                 return null;
             }
@@ -1626,7 +1628,7 @@ namespace Internal.JitInterface
 
             Debug.Assert(fieldDesc.Offset != FieldAndOffset.InvalidOffset);
 
-            return (uint)fieldDesc.Offset;
+            return (uint)fieldDesc.Offset.AsInt;
         }
 
         private bool isWriteBarrierHelperRequired(CORINFO_FIELD_STRUCT_* field)
@@ -1765,7 +1767,7 @@ namespace Internal.JitInterface
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
             if (!field.IsStatic || !field.HasRva)
-                pResult.offset = (uint)field.Offset;
+                pResult.offset = (uint)field.Offset.AsInt;
             else
                 pResult.offset = 0xBAADF00D;
 
@@ -2165,12 +2167,12 @@ namespace Internal.JitInterface
             {
                 // TODO: actually implement
                 // https://github.com/dotnet/corert/issues/158
-                if (type.GetElementSize() <= 8)
+                if (type.GetElementSize().AsInt <= 8)
                 {
                     structPassInRegDescPtr->passedInRegisters = true;
                     structPassInRegDescPtr->eightByteCount = 1;
                     structPassInRegDescPtr->eightByteClassifications0 = SystemVClassificationType.SystemVClassificationTypeInteger;
-                    structPassInRegDescPtr->eightByteSizes0 = (byte)type.GetElementSize();
+                    structPassInRegDescPtr->eightByteSizes0 = (byte)type.GetElementSize().AsInt;
                     structPassInRegDescPtr->eightByteOffsets0 = 0;
                 }
                 else
@@ -2434,7 +2436,11 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj)
+                    // We could use pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
+                    // to distinguish between "necessary" and "constructed" symbols, but reflection and various
+                    // uses of "RhNewObject"/"RuntimeHelpers.RunClassConstructor" with the returned type handle
+                    // really give us no chance but to consider this a constructed type.
+                    if (ConstructedEETypeNode.CreationAllowed(td))
                         pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(td));
                     else
                         pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.NecessaryTypeSymbol(td));

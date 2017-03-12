@@ -141,6 +141,76 @@ namespace Internal.IL.Stubs
     }
 
     /// <summary>
+    /// Invoke thunk for open delegates to instance methods. This kind of thunk
+    /// uses the first parameter as `this` that gets passed to the target instance method.
+    /// The thunk also performs virtual resolution if necessary.
+    /// This kind of delegates is typically created with Delegate.CreateDelegate
+    /// and MethodInfo.CreateDelegate at runtime.
+    /// </summary>
+    public sealed class DelegateInvokeOpenInstanceThunk : DelegateThunk
+    {
+        internal DelegateInvokeOpenInstanceThunk(DelegateInfo delegateInfo)
+            : base(delegateInfo)
+        {
+        }
+
+        public override MethodIL EmitIL()
+        {
+            Debug.Assert(Signature.Length > 0);
+
+            var emitter = new ILEmitter();
+            ILCodeStream codeStream = emitter.NewCodeStream();
+
+            // Load all arguments except delegate's 'this'
+            TypeDesc boxThisType = null;
+            TypeDesc[] parameters = new TypeDesc[Signature.Length - 1];
+            for (int i = 0; i < Signature.Length; i++)
+            {
+                codeStream.EmitLdArg(i + 1);
+
+                if (i == 0)
+                {
+                    // Ensure that we're working with an object type by boxing it here.
+                    // This is to allow delegates which are generic over thier first parameter
+                    // to have valid code in their thunk.
+                    if (Signature[i].IsSignatureVariable)
+                    {
+                        boxThisType = Signature[i];
+                        codeStream.Emit(ILOpcode.box, emitter.NewToken(boxThisType));
+                    }
+                }
+                else
+                {
+                    parameters[i - 1] = Signature[i];
+                }
+            }
+
+            // Call a helper to get the actual method target
+            codeStream.EmitLdArg(0);
+            codeStream.EmitLdArg(1);
+            if (boxThisType != null)
+            {
+                codeStream.Emit(ILOpcode.box, emitter.NewToken(boxThisType));
+            }
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer", null)));
+
+            MethodSignature targetSignature = new MethodSignature(0, 0, Signature.ReturnType, parameters);
+            codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetSignature));
+            codeStream.Emit(ILOpcode.ret);
+
+            return emitter.Link(this);
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return "InvokeOpenInstanceThunk";
+            }
+        }
+    }
+
+    /// <summary>
     /// Invoke thunk for closed delegates to static methods. The target
     /// is a static method, but the first argument is captured by the delegate.
     /// The signature of the target has an extra object-typed argument, followed
@@ -422,6 +492,166 @@ namespace Internal.IL.Stubs
     }
 
     /// <summary>
+    /// Reverse invocation stub which goes from the strongly typed parameters the delegate
+    /// accepts, converts them into an object array, and invokes a delegate with the
+    /// object array, and then casts and returns the result back.
+    /// This is used to support delegates pointing to the LINQ expression interpreter.
+    /// </summary>
+    public sealed class DelegateInvokeObjectArrayThunk : DelegateThunk
+    {
+        internal DelegateInvokeObjectArrayThunk(DelegateInfo delegateInfo)
+            : base(delegateInfo)
+        {
+        }
+
+        public override MethodIL EmitIL()
+        {
+            // We will generate the following code:
+            //  
+            // object ret;
+            // object[] args = new object[parameterCount];
+            // args[0] = param0;
+            // args[1] = param1;
+            //  ...
+            // try {
+            //      ret = ((Func<object[], object>)dlg.m_helperObject)(args);
+            // } finally {
+            //      param0 = (T0)args[0];   // only generated for each byref argument
+            // }
+            // return (TRet)ret;
+
+            ILEmitter emitter = new ILEmitter();
+            ILCodeStream codeStream = emitter.NewCodeStream();
+
+            TypeDesc objectType = Context.GetWellKnownType(WellKnownType.Object);
+            TypeDesc objectArrayType = objectType.MakeArrayType();
+
+            ILLocalVariable argsLocal = emitter.NewLocal(objectArrayType);
+
+            bool hasReturnValue = !Signature.ReturnType.IsVoid;
+
+            bool hasRefArgs = false;
+            if (Signature.Length > 0)
+            {
+                codeStream.EmitLdc(Signature.Length);
+                codeStream.Emit(ILOpcode.newarr, emitter.NewToken(objectType));
+                codeStream.EmitStLoc(argsLocal);
+
+                for (int i = 0; i < Signature.Length; i++)
+                {
+                    TypeDesc paramType = Signature[i];
+                    bool paramIsByRef = false;
+
+                    if (paramType.IsByRef)
+                    {
+                        hasRefArgs |= paramType.IsByRef;
+                        paramIsByRef = true;
+                        paramType = ((ByRefType)paramType).ParameterType;
+                    }
+
+                    hasRefArgs |= paramType.IsByRef;
+
+                    codeStream.EmitLdLoc(argsLocal);
+                    codeStream.EmitLdc(i);
+                    codeStream.EmitLdArg(i + 1);
+
+                    if (paramIsByRef)
+                    {
+                        codeStream.Emit(ILOpcode.ldobj, emitter.NewToken(paramType));
+                    }
+                    TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
+                    codeStream.Emit(ILOpcode.box, emitter.NewToken(boxableParamType));
+                    codeStream.Emit(ILOpcode.stelem_ref);
+                }
+            }
+            else
+            {
+                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetEmptyObjectArray");
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
+                codeStream.EmitStLoc(argsLocal);
+            }
+
+            if (hasRefArgs)
+            {
+                // we emit a try/finally to update the args array even if an exception is thrown
+                // ilgen.BeginTryBody();
+            }
+
+            codeStream.EmitLdArg(0);
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
+
+            MetadataType funcType = Context.SystemModule.GetKnownType("System", "Func`2");
+            TypeDesc instantiatedFunc = funcType.MakeInstantiatedType(objectArrayType, objectType);
+
+            codeStream.Emit(ILOpcode.castclass, emitter.NewToken(instantiatedFunc));
+
+            codeStream.EmitLdLoc(argsLocal);
+
+            MethodDesc invokeMethod = instantiatedFunc.GetKnownMethod("Invoke", null);
+            codeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
+
+            ILLocalVariable retLocal = (ILLocalVariable)(-1);
+            if (hasReturnValue)
+            {
+                retLocal = emitter.NewLocal(objectType);
+                codeStream.EmitStLoc(retLocal);
+            }
+            else
+            {
+                codeStream.Emit(ILOpcode.pop);
+            }
+
+            if (hasRefArgs)
+            {
+                // ILGeneratorLabel returnLabel = new ILGeneratorLabel();
+                // ilgen.Emit(OperationCode.Leave, returnLabel);
+                // copy back ref/out args
+                //ilgen.BeginFinallyBlock();
+
+                for (int i = 0; i < Signature.Length; i++)
+                {
+                    TypeDesc paramType = Signature[i];
+                    if (paramType.IsByRef)
+                    {
+                        paramType = ((ByRefType)paramType).ParameterType;
+                        TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
+
+                        // Update parameter
+                        codeStream.EmitLdArg(i + 1);
+                        codeStream.EmitLdLoc(argsLocal);
+                        codeStream.EmitLdc(i);
+                        codeStream.Emit(ILOpcode.ldelem_ref);
+                        codeStream.Emit(ILOpcode.unbox_any, emitter.NewToken(boxableParamType));
+                        codeStream.Emit(ILOpcode.stobj, emitter.NewToken(paramType));
+                    }
+                }
+                // ilgen.Emit(OperationCode.Endfinally);
+                // ilgen.EndTryBody();
+                // ilgen.MarkLabel(returnLabel);
+            }
+
+            if (hasReturnValue)
+            {
+                TypeDesc boxableReturnType = DelegateDynamicInvokeThunk.ConvertToBoxableType(Signature.ReturnType);
+                codeStream.EmitLdLoc(retLocal);
+                codeStream.Emit(ILOpcode.unbox_any, emitter.NewToken(boxableReturnType));
+            }
+
+            codeStream.Emit(ILOpcode.ret);
+
+            return emitter.Link(this);
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return "InvokeObjectArrayThunk";
+            }
+        }
+    }
+
+    /// <summary>
     /// Delegate thunk that supports Delegate.DynamicInvoke. This thunk has heavy dependencies on the
     /// general dynamic invocation infrastructure in System.InvokeUtils and gets called from there
     /// at runtime. See comments in System.InvokeUtils for a more thorough explanation.
@@ -617,7 +847,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        private TypeDesc ConvertToBoxableType(TypeDesc type)
+        internal static TypeDesc ConvertToBoxableType(TypeDesc type)
         {
             if (type.IsPointer || type.IsFunctionPointer)
             {

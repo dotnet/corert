@@ -11,6 +11,7 @@ using System.Reflection.Runtime.General;
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
+using Internal.TypeSystem;
 
 namespace System
 {
@@ -37,6 +38,14 @@ namespace Internal.Runtime.TypeLoader
         public static string LowLevelToString(this int arg)
         {
             return ((uint)arg).LowLevelToString();
+        }
+
+        public static string LowLevelToString(this LayoutInt arg)
+        {
+            if (arg.IsIndeterminate)
+                return "Indeterminate";
+            else
+                return ((uint)arg.AsInt).LowLevelToString();
         }
 
         public static string LowLevelToString(this uint arg)

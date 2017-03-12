@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
 
 #if DEBUG
-        static HashSet<string> _previouslyWrittenNodeNames = new HashSet<string>();
+        static Dictionary<string, ISymbolNode> _previouslyWrittenNodeNames = new Dictionary<string, ISymbolNode>();
 #endif
 
         [DllImport(NativeObjectWriterFileName)]
@@ -93,6 +93,21 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             _currentSection = section;
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void SetCodeSectionAttribute(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes = 0, string comdatName = null);
+
+        public void SetCodeSectionAttribute(ObjectNodeSection section)
+        {
+            if (!section.IsStandardSection)
+            {
+                SetCodeSectionAttribute(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
+            }
+            else
+            {
+                SetCodeSectionAttribute(_nativeObjectWriter, section.Name);
+            }
         }
 
         public void EnsureCurrentSection()
@@ -689,7 +704,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 throw new IOException("Fail to initialize Native Object Writer");
             }
-
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
         }
@@ -746,9 +760,10 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
+                ObjectNodeSection managedCodeSection;
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    objectWriter.SetSection(MethodCodeNode.WindowsContentSection);
+                    managedCodeSection = MethodCodeNode.WindowsContentSection;
 
                     // Emit sentinels for managed code section.
                     ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
@@ -766,9 +781,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
+                    managedCodeSection = MethodCodeNode.UnixContentSection;
+                    // TODO 2916: managed code section has to be created here, switch is not necessary.
                     objectWriter.SetSection(MethodCodeNode.UnixContentSection);
                     objectWriter.SetSection(LsdaSection);
                 }
+                objectWriter.SetCodeSectionAttribute(managedCodeSection);
 
                 // Build file info map.
                 objectWriter.BuildFileInfoMap(nodes);
@@ -789,8 +807,18 @@ namespace ILCompiler.DependencyAnalysis
 
 #if DEBUG
                     foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
-                        Debug.Assert(_previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName()), "Duplicate node name emitted to file", 
-                            $"Symbol {definedSymbol.GetMangledName()} has already been written to the output object file {objectFilePath}");
+                    {
+                        try
+                        {
+                            _previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName(), definedSymbol);
+                        }
+                        catch (ArgumentException)
+                        {
+                            ISymbolNode alreadyWrittenSymbol = _previouslyWrittenNodeNames[definedSymbol.GetMangledName()];
+                            Debug.Assert(false, "Duplicate node name emitted to file",
+                            $"Symbol {definedSymbol.GetMangledName()} has already been written to the output object file {objectFilePath} with symbol {alreadyWrittenSymbol}");
+                        }
+                    }
 #endif
 
 

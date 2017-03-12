@@ -511,7 +511,7 @@ class Program
         class C1 { }
         class C2 { }
 
-        class Base<T> where T : class
+        class Base1<T> where T : class
         {
             public virtual T As(object o)
             {
@@ -519,7 +519,7 @@ class Program
             }
         }
 
-        class Derived<T> : Base<T> where T : class
+        class Derived1<T> : Base1<T> where T : class
         {
             public T AsToo(object o)
             {
@@ -527,14 +527,48 @@ class Program
             }
         }
 
+        class Base2<T>
+        {
+            public virtual string Method1() => "Base2.Method1";
+            public virtual string Method2() => "Base2.Method2";
+        }
+
+        class Derived2<T> : Base2<T>
+        {
+            public override string Method1() => "Derived2.Method1";
+            public override string Method2() => "Derived2.Method2";
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string TestMethod1FromSharedCode<T>(Base2<T> o) => o.Method1();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string TestMethod2FromSharedCode<T>(Base2<T> o) => o.Method2();
+
         public static void Run()
         {
             C1 c1 = new C1();
-            if (new Derived<C1>().As(c1) != c1)
+            if (new Derived1<C1>().As(c1) != c1)
                 throw new Exception();
 
             C2 c2 = new C2();
-            if (new Derived<C2>().AsToo(c2) != c2)
+            if (new Derived1<C2>().AsToo(c2) != c2)
+                throw new Exception();
+
+            // Also test the stability of the vtables.
+            Base2<string> b1 = new Derived2<string>();
+            if (b1.Method1() != "Derived2.Method1")
+                throw new Exception();
+            Base2<object> b2 = new Derived2<object>();
+            if (b2.Method2() != "Derived2.Method2")
+                throw new Exception();
+            if (TestMethod1FromSharedCode(b2) != "Derived2.Method1")
+                throw new Exception();
+            if (TestMethod1FromSharedCode(b1) != "Derived2.Method1")
+                throw new Exception();
+            if (TestMethod2FromSharedCode(b2) != "Derived2.Method2")
+                throw new Exception();
+            if (TestMethod2FromSharedCode(b1) != "Derived2.Method2")
                 throw new Exception();
         }
     }

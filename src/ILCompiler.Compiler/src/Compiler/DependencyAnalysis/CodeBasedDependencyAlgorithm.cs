@@ -37,7 +37,16 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
                 }
 
-                if (method.OwningType.IsValueType && !method.Signature.IsStatic)
+                bool skipUnboxingStubDependency = false;
+                if (factory.Target.Abi == TargetAbi.ProjectN)
+                {
+                    // ProjectN compilation currently computes the presence of these stubs independent from dependency analysis here
+                    // TODO: fix that issue and remove this odd treatment of unboxing stubs
+                    if (!method.HasInstantiation && method.OwningType.IsValueType && method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) && !method.Signature.IsStatic)
+                        skipUnboxingStubDependency = true;
+                }
+
+                if (method.OwningType.IsValueType && !method.Signature.IsStatic && !skipUnboxingStubDependency)
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub"));
             }
 
@@ -62,6 +71,21 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     dependencies = dependencies ?? new DependencyList();
                     dependencies.AddRange(templateMethodDependencies);
+                }
+            }
+            else
+            {
+                TypeDesc owningTemplateType = method.OwningType;
+
+                // Unboxing and Instantiating stubs use a different type as their template
+                if (factory.TypeSystemContext.IsSpecialUnboxingThunk(method))
+                    owningTemplateType = factory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(method).OwningType;
+
+                var templateTypeDepedencies = GenericTypesTemplateMap.GetTemplateTypeDependencies(factory, owningTemplateType);
+                if (templateTypeDepedencies != null)
+                {
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.AddRange(templateTypeDepedencies);
                 }
             }
         }

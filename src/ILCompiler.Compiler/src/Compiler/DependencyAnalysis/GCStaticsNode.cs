@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
             builder.RequireInitialPointerAlignment();
 
@@ -74,8 +74,8 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment);
-                builder.EmitZeros(_type.GCStaticFieldSize);
+                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment.AsInt);
+                builder.EmitZeros(_type.GCStaticFieldSize.AsInt);
             }
 
             builder.AddSymbol(this);

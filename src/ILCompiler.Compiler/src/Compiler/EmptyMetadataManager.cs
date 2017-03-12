@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
@@ -25,7 +26,7 @@ namespace ILCompiler
             return true;
         }
 
-        protected override void ComputeMetadata(out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
+        protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
         {
             metadataBlob = Array.Empty<byte>();
 

@@ -99,6 +99,8 @@ namespace Internal.IL
         private MethodDesc _invokeThunk;
         private MethodDesc _closedInstanceOverGeneric;
         private MethodDesc _reversePInvokeThunk;
+        private MethodDesc _invokeObjectArrayThunk;
+        private MethodDesc _openInstanceThunk;
 
         internal DelegateThunkCollection(DelegateInfo owningDelegate)
         {
@@ -107,9 +109,30 @@ namespace Internal.IL
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
             _invokeThunk = new DelegateDynamicInvokeThunk(owningDelegate);
             _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
+            _invokeObjectArrayThunk = new DelegateInvokeObjectArrayThunk(owningDelegate);
 
             if (!owningDelegate.Type.HasInstantiation && IsNativeCallingConventionCompatible(owningDelegate.Signature))
                 _reversePInvokeThunk = new DelegateReversePInvokeThunk(owningDelegate);
+
+            MethodSignature delegateSignature = owningDelegate.Signature;
+            if (delegateSignature.Length > 0)
+            {
+                TypeDesc firstParam = delegateSignature[0];
+
+                bool generateOpenInstanceMethod = true;
+
+                if (firstParam.IsValueType ||
+                    (!firstParam.IsDefType && !firstParam.IsSignatureVariable) /* no arrays, pointers, byrefs, etc. */)
+                {
+                    generateOpenInstanceMethod = false;
+                }
+
+                if (generateOpenInstanceMethod)
+                {
+                    _openInstanceThunk = new DelegateInvokeOpenInstanceThunk(owningDelegate);
+                }
+            }
+
         }
 
         #region Temporary interop logic
@@ -176,6 +199,10 @@ namespace Internal.IL
                         return _closedInstanceOverGeneric;
                     case DelegateThunkKind.ReversePinvokeThunk:
                         return _reversePInvokeThunk;
+                    case DelegateThunkKind.ObjectArrayThunk:
+                        return _invokeObjectArrayThunk;
+                    case DelegateThunkKind.OpenInstanceThunk:
+                        return _openInstanceThunk;
                     default:
                         return null;
                 }
