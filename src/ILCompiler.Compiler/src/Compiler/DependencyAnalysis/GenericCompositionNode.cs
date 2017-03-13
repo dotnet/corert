@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
     }
 
     internal struct GenericCompositionDetails : IEquatable<GenericCompositionDetails>

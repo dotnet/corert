@@ -99,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override string GetName() => $"Dictionary layout for {_owningMethodOrType.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;

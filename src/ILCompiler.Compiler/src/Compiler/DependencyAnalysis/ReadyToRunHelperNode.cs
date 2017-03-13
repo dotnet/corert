@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public ReadyToRunHelperId Id => _id;
         public Object Target =>  _target;

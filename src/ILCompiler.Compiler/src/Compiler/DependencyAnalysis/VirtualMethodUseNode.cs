@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             _decl = decl;
         }
 
-        protected override string GetName() => $"VirtualMethodUse {_decl.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"VirtualMethodUse {_decl.ToString()}";
 
         protected override void OnMarked(NodeFactory factory)
         {

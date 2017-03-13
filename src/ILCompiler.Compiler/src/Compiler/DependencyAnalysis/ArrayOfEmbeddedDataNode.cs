@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
             return _nestedNodesList.IndexOf(symbol);
         }
 
-        protected override string GetName() => $"Region {_startSymbol.GetMangledName()}";
+        protected override string GetName(NodeFactory factory) => $"Region {_startSymbol.GetMangledName(factory.NameMangler)}";
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
         public override bool IsShareable => false;

@@ -176,7 +176,7 @@ namespace ILCompiler
         {
             using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
             {
-                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph, _nodeFactory);
                 dgmlOutput.Flush();
             }
         }

@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public interface IDependencyAnalyzerLogEdgeVisitor
+    public interface IDependencyAnalyzerLogEdgeVisitor<DependencyContextType>
     {
-        void VisitEdge(DependencyNode nodeDepender, DependencyNode nodeDependedOn, string reason);
-        void VisitEdge(string root, DependencyNode dependedOn);
-        void VisitEdge(DependencyNode nodeDepender, DependencyNode nodeDependerOther, DependencyNode nodeDependedOn, string reason);
+        void VisitEdge(DependencyNodeCore<DependencyContextType> nodeDepender, DependencyNodeCore<DependencyContextType> nodeDependedOn, string reason);
+        void VisitEdge(string root, DependencyNodeCore<DependencyContextType> dependedOn);
+        void VisitEdge(DependencyNodeCore<DependencyContextType> nodeDepender, DependencyNodeCore<DependencyContextType> nodeDependerOther, DependencyNodeCore<DependencyContextType> nodeDependedOn, string reason);
     }
 }

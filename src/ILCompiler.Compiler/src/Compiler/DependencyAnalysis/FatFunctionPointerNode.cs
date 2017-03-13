@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

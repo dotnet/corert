@@ -85,9 +85,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected sealed override string GetName()
+        protected sealed override string GetName(NodeFactory factory)
         {
-            return this.GetMangledName();
+            return this.GetMangledName(factory.NameMangler);
         }
     }
 

@@ -222,7 +222,7 @@ namespace ILCompiler.DependencyAnalysis
 
     internal sealed class NativeLayoutMethodLdTokenVertexNode : NativeLayoutMethodEntryVertexNode
     {
-        protected override string GetName() => "NativeLayoutMethodLdTokenVertexNode_" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method)
             : base(factory, method, 0)
@@ -249,7 +249,7 @@ namespace ILCompiler.DependencyAnalysis
             _containingTypeSig = factory.NativeLayout.TypeSignatureVertex(field.OwningType);
         }
 
-        protected override string GetName() => "NativeLayoutFieldLdTokenVertexNode_" + NodeFactory.NameManglerDoNotUse.GetMangledFieldName(_field);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutFieldLdTokenVertexNode_" + factory.NameMangler.GetMangledFieldName(_field);
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
@@ -277,7 +277,7 @@ namespace ILCompiler.DependencyAnalysis
         private NativeLayoutTypeSignatureVertexNode _returnTypeSig;
         private NativeLayoutTypeSignatureVertexNode[] _parametersSig;
 
-        protected override string GetName() => "NativeLayoutMethodSignatureVertexNode" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutMethodSignatureVertexNode" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
         {
@@ -327,7 +327,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _method;
         private NativeLayoutMethodSignatureVertexNode _methodSig;
 
-        protected override string GetName() => "NativeLayoutMethodNameAndSignatureVertexNode" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutMethodNameAndSignatureVertexNode" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutMethodNameAndSignatureVertexNode(NodeFactory factory, MethodDesc method)
         {
@@ -356,7 +356,7 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName() => "NativeLayoutTypeSignatureVertexNode: " + _type.ToString();
+        protected override string GetName(NodeFactory factory) => "NativeLayoutTypeSignatureVertexNode: " + _type.ToString();
 
         public static NativeLayoutTypeSignatureVertexNode NewTypeSignatureVertexNode(NodeFactory factory, TypeDesc type)
         {
@@ -531,7 +531,7 @@ namespace ILCompiler.DependencyAnalysis
             _symbol = symbol;
         }
 
-        protected override string GetName() => "NativeLayoutISymbolNodeReferenceVertexNode " + _symbol.GetMangledName();
+        protected override string GetName(NodeFactory factory) => "NativeLayoutISymbolNodeReferenceVertexNode " + _symbol.GetMangledName(factory.NameMangler);
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
@@ -554,7 +554,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private NativeLayoutVertexNode _signatureToBePlaced;
 
-        protected override string GetName() => "NativeLayoutPlacedSignatureVertexNode";
+        protected override string GetName(NodeFactory factory) => "NativeLayoutPlacedSignatureVertexNode";
 
         public NativeLayoutPlacedSignatureVertexNode(NativeLayoutVertexNode signatureToBePlaced)
         {
@@ -583,7 +583,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private List<NativeLayoutVertexNode> _vertices;
 
-        protected override string GetName() => "NativeLayoutPlacedVertexSequenceVertexNode";
+        protected override string GetName(NodeFactory factory) => "NativeLayoutPlacedVertexSequenceVertexNode";
         public NativeLayoutPlacedVertexSequenceVertexNode(List<NativeLayoutVertexNode> vertices)
         {
             _vertices = vertices;
@@ -620,7 +620,7 @@ namespace ILCompiler.DependencyAnalysis
 
     internal sealed class NativeLayoutTemplateMethodSignatureVertexNode : NativeLayoutMethodEntryVertexNode
     {
-        protected override string GetName() => "NativeLayoutTemplateMethodSignatureVertexNode_" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateMethodSignatureVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutTemplateMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
             : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | MethodEntryFlags.SaveEntryPoint)
@@ -641,7 +641,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _method;
         private Dictionary<int, NativeLayoutVertexNode> _genericDictionaryEntries = new Dictionary<int, NativeLayoutVertexNode>();
 
-        protected override string GetName() => "NativeLayoutTemplateMethodLayoutVertexNode" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateMethodLayoutVertexNode" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutTemplateMethodLayoutVertexNode(NodeFactory factory, MethodDesc method)
         {
@@ -721,7 +721,7 @@ namespace ILCompiler.DependencyAnalysis
         private bool _isUniversalCanon;
         Dictionary<int, NativeLayoutVertexNode> _genericDictionaryEntries = new Dictionary<int, NativeLayoutVertexNode>();
 
-        protected override string GetName() => "NativeLayoutTemplateTypeLayoutVertexNode_" + NodeFactory.NameManglerDoNotUse.GetMangledTypeName(_type);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateTypeLayoutVertexNode_" + factory.NameMangler.GetMangledTypeName(_type);
 
         public NativeLayoutTemplateTypeLayoutVertexNode(NodeFactory factory, DefType type)
         {
@@ -1011,7 +1011,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected abstract string NodeTypeName { get; }
-        protected sealed override string GetName() => NodeTypeName + NodeFactory.NameManglerDoNotUse.GetMangledTypeName(_type);
+        protected sealed override string GetName(NodeFactory factory) => NodeTypeName + factory.NameMangler.GetMangledTypeName(_type);
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -1127,7 +1127,7 @@ namespace ILCompiler.DependencyAnalysis
         protected abstract StaticDataKind StaticDataKindFlag { get; }
         protected abstract string NodeTypeName { get; }
 
-        protected sealed override string GetName() => NodeTypeName + NodeFactory.NameManglerDoNotUse.GetMangledTypeName(_type);
+        protected sealed override string GetName(NodeFactory factory) => NodeTypeName + factory.NameMangler.GetMangledTypeName(_type);
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.StaticData;
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -1170,7 +1170,7 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
-        protected sealed override string GetName() => "NativeLayoutInterfaceDispatchGenericDictionarySlotNode_" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutInterfaceDispatchGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.InterfaceCall;
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -1203,7 +1203,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException();
             }
 
-            protected sealed override string GetName() => "WrappedMethodEntryVertexNodeForDictionarySlot_" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+            protected sealed override string GetName(NodeFactory factory) => "WrappedMethodEntryVertexNodeForDictionarySlot_" + factory.NameMangler.GetMangledMethodName(_method);
         }
 
 
@@ -1214,7 +1214,7 @@ namespace ILCompiler.DependencyAnalysis
             _wrappedNode = new WrappedMethodDictionaryVertexNode(factory, method);
         }
 
-        protected sealed override string GetName() => "NativeLayoutMethodDictionaryGenericDictionarySlotNode_" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutMethodDictionaryGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.MethodDictionary;
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -1236,7 +1236,7 @@ namespace ILCompiler.DependencyAnalysis
             _field = field;
         }
 
-        protected sealed override string GetName() => "NativeLayoutFieldLdTokenGenericDictionarySlotNode_" + NodeFactory.NameManglerDoNotUse.GetMangledFieldName(_field);
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutFieldLdTokenGenericDictionarySlotNode_" + factory.NameMangler.GetMangledFieldName(_field);
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.FieldLdToken;
 
@@ -1260,7 +1260,7 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
-        protected sealed override string GetName() => "NativeLayoutMethodLdTokenGenericDictionarySlotNode_" + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.FieldLdToken;
 
@@ -1298,7 +1298,7 @@ namespace ILCompiler.DependencyAnalysis
                 return _functionPointerNode;
             }
 
-            protected sealed override string GetName() => "WrappedMethodEntryVertexNodeForDictionarySlot_" + (_unboxingStub ? "Unboxing_" : "") + NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+            protected sealed override string GetName(NodeFactory factory) => "WrappedMethodEntryVertexNodeForDictionarySlot_" + (_unboxingStub ? "Unboxing_" : "") + factory.NameMangler.GetMangledMethodName(_method);
         }
 
 
@@ -1308,7 +1308,7 @@ namespace ILCompiler.DependencyAnalysis
             _wrappedNode = new WrappedMethodEntryVertexNode(factory, method, unboxingStub, functionPointerNode);
         }
 
-        protected sealed override string GetName() => "NativeLayoutMethodEntrypointGenericDictionarySlotNode_" + (_wrappedNode._unboxingStub ? "Unboxing_" : "")+ NodeFactory.NameManglerDoNotUse.GetMangledMethodName(_method);
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutMethodEntrypointGenericDictionarySlotNode_" + (_wrappedNode._unboxingStub ? "Unboxing_" : "") + factory.NameMangler.GetMangledMethodName(_method);
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.Method;
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
