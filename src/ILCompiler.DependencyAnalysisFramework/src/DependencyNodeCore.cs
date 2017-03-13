@@ -140,6 +140,13 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         // Force all non-abstract nodes to provide a name
-        protected internal abstract string GetName(DependencyContextType context);
+        protected abstract string GetName(DependencyContextType context);
+
+        // We would prefer GetName to be "protected internal", but that will break people who want to source
+        // include the dependency analysis framework. When nobody does that, maybe we can get rid of this method.
+        internal string GetNameInternal(DependencyContextType context)
+        {
+            return GetName(context);
+        }
     }
 }

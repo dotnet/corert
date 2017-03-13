@@ -106,7 +106,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         private void AddNode(DependencyNodeCore<DependencyContextType> node)
         {
-            AddNode(node, node.GetName(_context));
+            AddNode(node, node.GetNameInternal(_context));
         }
 
         private void AddNode(object node, string label)
@@ -148,8 +148,8 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         void IDependencyAnalyzerLogNodeVisitor<DependencyContextType>.VisitCombinedNode(Tuple<DependencyNodeCore<DependencyContextType>, DependencyNodeCore<DependencyContextType>> node)
         {
-            string label1 = node.Item1.GetName(_context);
-            string label2 = node.Item2.GetName(_context);
+            string label1 = node.Item1.GetNameInternal(_context);
+            string label2 = node.Item2.GetNameInternal(_context);
 
             AddNode(node, string.Concat("(", label1, ", ", label2, ")"));
         }
