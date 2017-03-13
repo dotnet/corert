@@ -661,6 +661,8 @@ namespace Internal.NativeFormat
             }
             writer.WriteUnsigned((uint)BagElementKind.End);
         }
+
+        public int ElementsCount => _elements.Count;
     }
 
 #if NATIVEFORMAT_PUBLICWRITER

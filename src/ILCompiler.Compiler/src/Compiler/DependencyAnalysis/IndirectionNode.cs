@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -13,11 +15,13 @@ namespace ILCompiler.DependencyAnalysis
     public class IndirectionNode : ObjectNode, ISymbolNode
     {
         private ISymbolNode _indirectedNode;
+        private int _offsetDelta;
         private TargetDetails _target;
 
-        public IndirectionNode(TargetDetails target, ISymbolNode indirectedNode)
+        public IndirectionNode(TargetDetails target, ISymbolNode indirectedNode, int offsetDelta)
         {
             _indirectedNode = indirectedNode;
+            _offsetDelta = offsetDelta;
             _target = target;
         }
 
@@ -25,6 +29,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__indirection");
             _indirectedNode.AppendMangledName(nameMangler, sb);
+            sb.Append("_" + _offsetDelta);
         }
         public int Offset => 0;
 
@@ -51,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
-            builder.EmitPointerReloc(_indirectedNode);
+            builder.EmitPointerReloc(_indirectedNode, _offsetDelta);
 
             return builder.ToObjectData();
         }

@@ -177,6 +177,7 @@
     <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticDescNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StaticsInfoHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
