@@ -17,7 +17,7 @@ using System.Runtime.Serialization;
 namespace System.Threading
 {
     [Serializable]
-    public class SynchronizationLockException : Exception
+    public class SynchronizationLockException : SystemException
     {
         public SynchronizationLockException()
             : base(SR.Arg_SynchronizationLockException)
