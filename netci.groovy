@@ -41,7 +41,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
             }
             else {
                 buildString = "./build.sh ${lowercaseConfiguration}"
-                testScriptString = "tests/runtest.sh ${configuration} -coreclr "
+                testScriptString = "tests/runtest.sh ${configuration} -coredumps -coreclr "
             }
 
             // Create a new job with the specified name.  The brace opens a new closure
