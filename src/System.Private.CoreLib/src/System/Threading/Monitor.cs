@@ -119,37 +119,11 @@ namespace System.Threading
             lockTaken = TryAcquireContended(lck, obj, millisecondsTimeout);
         }
 
-        public static bool TryEnter(Object obj, TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            int millisecondsTimeout = (int)tm;
+        public static bool TryEnter(Object obj, TimeSpan timeout) =>
+            TryEnter(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
-            Lock lck = GetLock(obj);
-            if (lck.TryAcquire(0))
-                return true;
-            return lck.TryAcquire(millisecondsTimeout);
-        }
-
-        public static void TryEnter(Object obj, TimeSpan timeout, ref bool lockTaken)
-        {
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            int millisecondsTimeout = (int)tm;
-
-            Lock lck = GetLock(obj);
-            if (lck.TryAcquire(0))
-            {
-                lockTaken = true;
-                return;
-            }
-
-            lockTaken = TryAcquireContended(lck, obj, millisecondsTimeout);
-        }
+        public static void TryEnter(Object obj, TimeSpan timeout, ref bool lockTaken) =>
+            TryEnter(obj, WaitHandle.ToTimeoutMilliseconds(timeout), ref lockTaken);
 
         public static void Exit(Object obj)
         {
@@ -165,29 +139,19 @@ namespace System.Threading
 
         #region Public Wait/Pulse methods
 
+        // Remoting is not supported, ignore exitContext
+        public static bool Wait(Object obj, int millisecondsTimeout, bool exitContext) =>
+            Wait(obj, millisecondsTimeout);
+
+        // Remoting is not supported, ignore exitContext
+        public static bool Wait(Object obj, TimeSpan timeout, bool exitContext) =>
+            Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
+
         // There are no consumers of FEATURE_GET_BLOCKING_OBJECTS at present.  Before enabling, consider
         // a more efficient implementation that uses a linked list of stack locations.  Also note that
         // Lock.TryAcquireContended does not create a record in the t_blockingObjects list at present.
 
-        public static bool Wait(object obj)
-        {
-#if FEATURE_GET_BLOCKING_OBJECTS
-            Condition condition = GetCondition(obj);
-            int removeCookie = t_blockingObjects.Add(obj, ReasonForBlocking.OnEvent);
-            try
-            {
-                return condition.Wait();
-            }
-            finally
-            {
-                t_blockingObjects.Remove(removeCookie);
-            }
-#else
-            return GetCondition(obj).Wait();
-#endif
-        }
-
-        public static bool Wait(object obj, int millisecondsTimeout)
+        public static bool Wait(Object obj, int millisecondsTimeout)
         {
 #if FEATURE_GET_BLOCKING_OBJECTS
             Condition condition = GetCondition(obj);
@@ -205,23 +169,9 @@ namespace System.Threading
 #endif
         }
 
-        public static bool Wait(object obj, TimeSpan timeout)
-        {
-#if FEATURE_GET_BLOCKING_OBJECTS
-            Condition condition = GetCondition(obj);
-            int removeCookie = t_blockingObjects.Add(obj, ReasonForBlocking.OnEvent);
-            try
-            {
-                return condition.Wait(timeout);
-            }
-            finally
-            {
-                t_blockingObjects.Remove(removeCookie);
-            }
-#else
-            return GetCondition(obj).Wait(timeout);
-#endif
-        }
+        public static bool Wait(Object obj, TimeSpan timeout) => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
+
+        public static bool Wait(Object obj) => Wait(obj, Timeout.Infinite);
 
         public static void Pulse(object obj)
         {
@@ -253,6 +203,10 @@ namespace System.Threading
             return lck.TryAcquire(millisecondsTimeout);
 #endif
         }
+
+        #endregion
+
+        #region Debugger support
 
 #if FEATURE_GET_BLOCKING_OBJECTS
         //
