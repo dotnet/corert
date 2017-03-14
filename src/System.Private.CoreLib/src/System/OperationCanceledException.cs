@@ -5,18 +5,22 @@
 /*============================================================
 **
 **
+**
 ** Purpose: Exception for cancelled IO requests.
 **
 **
 ===========================================================*/
 
 using System;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System
 {
+    [Serializable]
     public class OperationCanceledException : SystemException
     {
+        [NonSerialized]
         private CancellationToken _cancellationToken;
 
         public CancellationToken CancellationToken
@@ -60,6 +64,10 @@ namespace System
             : this(message, innerException)
         {
             CancellationToken = token;
+        }
+
+        protected OperationCanceledException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }
