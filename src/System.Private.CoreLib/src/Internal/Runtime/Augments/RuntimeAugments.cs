@@ -863,7 +863,7 @@ namespace Internal.Runtime.Augments
         // correct write barrier such that the GC is not incorrectly impacted.
         public static unsafe void BulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size)
         {
-            RuntimeImports.RhBulkMoveWithWriteBarrier((byte*)dmem.ToPointer(), (byte*)smem.ToPointer(), size);
+            RuntimeImports.RhBulkMoveWithWriteBarrier(ref *(byte*)dmem.ToPointer(), ref *(byte*)smem.ToPointer(), (uint)size);
         }
 
         public static IntPtr GetUniversalTransitionThunk()

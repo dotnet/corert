@@ -87,7 +87,7 @@ namespace System
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 169, 649
 
-#if !CORERT
+#if PROJECTN
         [Bound]
 #endif
         // WARNING: We allow diagnostic tools to directly inspect these two members (_stringLength, _firstChar)
@@ -423,19 +423,18 @@ namespace System
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public unsafe char this[int index]
         {
-            [NonVersionable]
-#if CORERT
+#if PROJECTN
+            [BoundsChecking]
+            get
+            {
+                return Unsafe.Add(ref _firstChar, index);
+            }
+#else
             [Intrinsic]
             get
             {
                 if ((uint)index >= _stringLength)
-                    throw new IndexOutOfRangeException();
-                return Unsafe.Add(ref _firstChar, index);
-            }
-#else
-            [BoundsChecking]
-            get
-            {
+                    ThrowHelper.ThrowIndexOutOfRangeException();
                 return Unsafe.Add(ref _firstChar, index);
             }
 #endif
@@ -537,6 +536,11 @@ namespace System
         public int Length
         {
             get { return _stringLength; }
+        }
+
+        internal ref char GetRawStringData()
+        {
+            return ref _firstChar;
         }
 
         // Helper for encodings so they can talk to our buffer directly

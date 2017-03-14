@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field)]
     internal sealed class IntrinsicAttribute : Attribute { }
 
-#if !CORERT
+#if PROJECTN
     [AttributeUsage(AttributeTargets.Field)]
     internal sealed class BoundAttribute : Attribute { }
 
