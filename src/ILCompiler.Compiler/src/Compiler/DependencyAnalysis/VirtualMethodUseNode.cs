@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _decl;
 
+        public MethodDesc Method => _decl;
+
         public VirtualMethodUseNode(MethodDesc decl)
         {
             // Generic virtual methods are tracked by an orthogonal mechanism.
@@ -48,11 +50,29 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            List<DependencyListEntry> dependencies = new List<DependencyListEntry>();
+            
+            if (factory.MetadataManager.IsReflectionInvokable(_decl) && _decl.IsAbstract)
+            {
+                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(_decl) && !_decl.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(_decl);
+                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (invokeStub != canonInvokeStub)
+                        dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    else
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                }
+            }
+
+            if (!_decl.IsSharedByGenericInstantiations)
+                dependencies.Add(new DependencyListEntry(factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, _decl), "Reflection invoke"));
+
             MethodDesc canonDecl = _decl.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (canonDecl != _decl)
-                return new[] { new DependencyListEntry(factory.VirtualMethodUse(canonDecl), "Canonical method") };
+                dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(canonDecl), "Canonical method"));
 
-            return null;
+            return dependencies;
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;

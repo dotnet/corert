@@ -86,8 +86,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 // TODO: HasVirtualInvoke
 
-                if (!method.IsAbstract)
-                    flags |= InvokeTableFlags.HasEntrypoint;
+                //if (!method.IsAbstract)
+                flags |= InvokeTableFlags.HasEntrypoint;
 
                 // Once we have a true multi module compilation story, we'll need to start emitting entries where this is not set.
                 flags |= InvokeTableFlags.HasMetadataHandle;
@@ -123,9 +123,16 @@ namespace ILCompiler.DependencyAnalysis
                 if ((flags & InvokeTableFlags.HasEntrypoint) != 0)
                 {
                     bool useUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
+
+                    ISymbolNode entrypoint;
+                    if (method.IsAbstract)
+                        entrypoint = factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, method);
+                    else
+                        entrypoint = factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific), useUnboxingStub);
+
                     vertex = writer.GetTuple(vertex,
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
-                            factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific), useUnboxingStub))));
+                            entrypoint)));
                 }
 
                 // TODO: data to generate the generic dictionary with the type loader

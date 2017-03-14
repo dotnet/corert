@@ -173,6 +173,13 @@ namespace ILCompiler
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
             }
+
+            var virtualMethodUseNode = obj as VirtualMethodUseNode;
+            if (virtualMethodUseNode != null && virtualMethodUseNode.Method.IsAbstract)
+            {
+                AddGeneratedMethod(virtualMethodUseNode.Method);
+                return;
+            }
         }
 
         /// <summary>
