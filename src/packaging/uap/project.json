@@ -2,7 +2,6 @@
   "frameworks": {
     "uap10.1": {
       "dependencies": {
-        "System.Diagnostics.Tracing": "4.4.0-beta-24913-02",
         "runtime.win7-x64-aot.Microsoft.Private.CoreFx.UAP": "4.4.0-beta-25107-03"
       }
     }

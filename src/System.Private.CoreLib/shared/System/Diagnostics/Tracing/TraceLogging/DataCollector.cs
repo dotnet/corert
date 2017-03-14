@@ -136,7 +136,7 @@ namespace System.Diagnostics.Tracing
                     this.EnsureBuffer();
                     fixed (void* p = value)
                     {
-                        Marshal.Copy((IntPtr)p, this.buffer, oldPos, size);
+                        Marshal.Copy((IntPtr)p, buffer, oldPos, size);
                     }
                 }
             }

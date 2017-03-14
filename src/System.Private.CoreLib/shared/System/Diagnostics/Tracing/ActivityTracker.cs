@@ -231,7 +231,7 @@ namespace System.Diagnostics.Tracing
                     m_current = new AsyncLocal<ActivityInfo>(ActivityChanging);
                 }
                 catch (NotImplementedException) {
-#if (!ES_BUILD_PCL && ! PROJECTN)
+#if (!ES_BUILD_PCL && ! ES_BUILD_PN)
                     // send message to debugger without delay
                     System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
 #endif
@@ -379,7 +379,7 @@ namespace System.Diagnostics.Tracing
                     {
                         // TODO FIXME - differentiate between AD inside PCL
                         int appDomainID = 0;
-#if (!ES_BUILD_STANDALONE && !PROJECTN)
+#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
                         appDomainID = System.Threading.Thread.GetDomainID();
 #endif
                         // We start with the appdomain number to make this unique among appdomains.
@@ -609,7 +609,7 @@ namespace System.Diagnostics.Tracing
         #endregion
     }
 
-#if ES_BUILD_STANDALONE || PROJECTN
+#if ES_BUILD_STANDALONE || ES_BUILD_PN
     /******************************** SUPPORT *****************************/
     /// <summary>
     /// This is supplied by the framework.   It is has the semantics that the value is copied to any new Tasks that is created

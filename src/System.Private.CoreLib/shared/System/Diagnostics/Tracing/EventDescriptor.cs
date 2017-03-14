@@ -22,9 +22,9 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     [StructLayout(LayoutKind.Explicit, Size = 16)]
-#if !CORECLR    
+#if !CORECLR && !ES_BUILD_PN    
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif // CORECLR    
+#endif // !CORECLR && !ES_BUILD_PN
     internal struct EventDescriptor
     {
         # region private

@@ -27,7 +27,7 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
+    <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />

@@ -245,32 +245,32 @@ namespace System.Diagnostics.Tracing
         {
             switch (type.GetTypeCode())
             {
-                case (Microsoft.Reflection.TypeCode)TypeCode.Boolean:
+                case (System.TypeCode)TypeCode.Boolean:
                     return "win:Boolean";
-                case (Microsoft.Reflection.TypeCode)TypeCode.Byte:
+                case (System.TypeCode)TypeCode.Byte:
                     return "win:UInt8";
-                case (Microsoft.Reflection.TypeCode)TypeCode.Char:
-                case (Microsoft.Reflection.TypeCode)TypeCode.UInt16:
+                case (System.TypeCode)TypeCode.Char:
+                case (System.TypeCode)TypeCode.UInt16:
                     return "win:UInt16";
-                case (Microsoft.Reflection.TypeCode)TypeCode.UInt32:
+                case (System.TypeCode)TypeCode.UInt32:
                     return "win:UInt32";
-                case (Microsoft.Reflection.TypeCode)TypeCode.UInt64:
+                case (System.TypeCode)TypeCode.UInt64:
                     return "win:UInt64";
-                case (Microsoft.Reflection.TypeCode)TypeCode.SByte:
+                case (System.TypeCode)TypeCode.SByte:
                     return "win:Int8";
-                case (Microsoft.Reflection.TypeCode)TypeCode.Int16:
+                case (System.TypeCode)TypeCode.Int16:
                     return "win:Int16";
-                case (Microsoft.Reflection.TypeCode)TypeCode.Int32:
+                case (System.TypeCode)TypeCode.Int32:
                     return "win:Int32";
-                case (Microsoft.Reflection.TypeCode)TypeCode.Int64:
+                case (System.TypeCode)TypeCode.Int64:
                     return "win:Int64";
-                case (Microsoft.Reflection.TypeCode)TypeCode.String:
+                case (System.TypeCode)TypeCode.String:
                     return "win:UnicodeString";
-                case (Microsoft.Reflection.TypeCode)TypeCode.Single:
+                case (System.TypeCode)TypeCode.Single:
                     return "win:Float";
-                case (Microsoft.Reflection.TypeCode)TypeCode.Double:
+                case (System.TypeCode)TypeCode.Double:
                     return "win:Double";
-                case (Microsoft.Reflection.TypeCode)TypeCode.DateTime:
+                case (System.TypeCode)TypeCode.DateTime:
                     return "win:FILETIME";
                 default:
                     if (type == typeof(Guid))

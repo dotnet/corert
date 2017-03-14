@@ -8,9 +8,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
-#if !CORECLR
+#if !CORECLR && !ES_BUILD_PN
 using System.Security.Permissions;
-#endif // !CORECLR
+#endif // !CORECLR && !ES_BUILD_PN
 using System.Threading;
 using System;
 
@@ -45,9 +45,9 @@ namespace System.Diagnostics.Tracing
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a 
     /// controller callback)
     /// </summary>
-#if !CORECLR    
+#if !CORECLR && !ES_BUILD_PN
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif // CORECLR
+#endif // !CORECLR && !ES_BUILD_PN
     internal partial class EventProvider : IDisposable
     {
         // This is the windows EVENT_DATA_DESCRIPTOR structure.  We expose it because this is what
@@ -553,7 +553,7 @@ namespace System.Diagnostics.Tracing
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && !PROJECTN && !FEATURE_PAL)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN && !FEATURE_PAL)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
                     regKey = @"HKEY_LOCAL_MACHINE\Software" + @"\Wow6432Node" + regKey;

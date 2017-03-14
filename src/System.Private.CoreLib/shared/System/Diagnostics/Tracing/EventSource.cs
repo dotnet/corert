@@ -8,7 +8,7 @@
 
 #define FEATURE_MANAGED_ETW
 
-#if !ES_BUILD_STANDALONE && !CORECLR && !PROJECTN
+#if !ES_BUILD_STANDALONE && !CORECLR && !ES_BUILD_PN
 #define FEATURE_ACTIVITYSAMPLING
 #endif // !ES_BUILD_STANDALONE
 
@@ -187,9 +187,9 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Security;
-#if !CORECLR
+#if !CORECLR && !ES_BUILD_PN
 using System.Security.Permissions;
-#endif // !CORECLR
+#endif // !CORECLR && !ES_BUILD_PN
 
 using System.Text;
 using System.Threading;
@@ -207,6 +207,10 @@ using Microsoft.Reflection;
 using Contract = System.Diagnostics.Contracts.Contract;
 #else
 using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
+#endif
+
+#if ES_BUILD_PN
+using Internal.Runtime.Augments;
 #endif
 
 #if ES_BUILD_STANDALONE
@@ -1470,7 +1474,7 @@ namespace System.Diagnostics.Tracing
                 // Set m_provider, which allows this.  
                 m_provider = provider;
 
-#if (!ES_BUILD_STANDALONE && !PROJECTN)
+#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
                 // API available on OS >= Win 8 and patched Win 7.
                 // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
                 var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
@@ -1842,7 +1846,13 @@ namespace System.Diagnostics.Tracing
                     // Everything else is marshaled as a string.
                     // ETW strings are NULL-terminated, so marshal everything up to the first
                     // null in the string.
-                    return System.Runtime.InteropServices.Marshal.PtrToStringUni(dataPointer);
+                    //return System.Runtime.InteropServices.Marshal.PtrToStringUni(dataPointer);
+                    if(dataPointer == IntPtr.Zero)
+                    {
+                        return null;
+                    }
+
+                    return new string((char *)dataPointer);
 
                 }
                 finally
@@ -2012,7 +2022,7 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
                     if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
                     {
-#if (!ES_BUILD_STANDALONE && !PROJECTN)
+#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
                         // Maintain old behavior - object identity is preserved
                         if (AppContextSwitches.PreserveEventListnerObjectIdentity)
                         {
@@ -2062,7 +2072,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="args"></param>
         private void LogEventArgsMismatches(ParameterInfo[] infos, object[] args)
         {
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
             // It would be nice to have this on PCL builds, but it would be pointless since there isn't support for 
             // writing to the debugger log on PCL.
             bool typesMatch = args.Length == infos.Length;
@@ -2517,7 +2527,7 @@ namespace System.Diagnostics.Tracing
             public TraceLoggingEventTypes TraceLoggingEventTypes;
             public EventActivityOptions ActivityOptions;
 
-#if PROJECTN
+#if ES_BUILD_PN
             public EventParameterType[] ParameterTypes;
 #endif
         };
@@ -3126,14 +3136,16 @@ namespace System.Diagnostics.Tracing
                     // For large manifests we want to not overflow any receiver's buffer. Most manifests will fit within
                     // 5 chunks, so only the largest manifests will hit the pause.
                     if ((envelope.ChunkNumber % 5) == 0)
-                        Thread.Sleep(15);
+                    {
+                        RuntimeThread.Sleep(15);
+                    }
                 }
             }
 #endif // FEATURE_MANAGED_ETW
             return success;
         }
 
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL)
         internal static Attribute GetCustomAttributeHelper(Type type, Type attributeType, EventManifestOptions flags = EventManifestOptions.None)
         {
             return GetCustomAttributeHelper(type.GetTypeInfo(), attributeType, flags);
@@ -3156,7 +3168,7 @@ namespace System.Diagnostics.Tracing
                 return firstAttribute;
             }
 
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
             // In the reflection only context, we have to do things by hand.
             string fullTypeNameToFind = attributeType.FullName;
 
@@ -3204,8 +3216,9 @@ namespace System.Diagnostics.Tracing
             }
 
             return null;
-#else // ES_BUILD_PCL && PROJECTN
-            throw new ArgumentException(Resources.GetResourceString("EventSource", nameof(EventSource_PCLPlatformNotSupportedReflection)));
+#else // ES_BUILD_PCL && ES_BUILD_PN
+            // Don't use nameof here because the resource doesn't exist on some platforms, which results in a compilation error.
+            throw new ArgumentException(Resources.GetResourceString("EventSource", "EventSource_PCLPlatformNotSupportedReflection"));
 #endif
         }
 
@@ -3793,7 +3806,7 @@ namespace System.Diagnostics.Tracing
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification = "Switch statement is clearer than alternatives")]
         static private int GetHelperCallFirstArg(MethodInfo method)
         {
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
             // Currently searches for the following pattern
             // 
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -3936,7 +3949,7 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
                 // send message to debugger without delay
                 System.Diagnostics.Debugger.Log(0, null, String.Format("EventSource Error: {0}{1}", msg, Environment.NewLine));
 #endif
@@ -6510,7 +6523,7 @@ namespace System.Diagnostics.Tracing
                 cultures = new List<CultureInfo>();
                 cultures.Add(CultureInfo.CurrentUICulture);
             }
-#if ES_BUILD_STANDALONE || PROJECTN
+#if ES_BUILD_STANDALONE || ES_BUILD_PN
             var sortedStrings = new List<string>(stringTab.Keys);
             sortedStrings.Sort();
 #else
@@ -6696,9 +6709,11 @@ namespace System.Diagnostics.Tracing
 
         private string GetKeywords(ulong keywords, string eventName)
         {
+#if FEATURE_MANAGED_ETW_CHANNELS
             // ignore keywords associate with channels
             // See ValidPredefinedChannelKeywords def for more. 
             keywords &= ~ValidPredefinedChannelKeywords;
+#endif
 
             string ret = "";
             for (ulong bit = 1; bit != 0; bit <<= 1)
@@ -6899,12 +6914,14 @@ namespace System.Diagnostics.Tracing
             SimpleXmlFormat = 1,          // simply dump the XML manifest as UTF8
         }
 
+#if FEATURE_MANAGED_ETW
         public ManifestFormats Format;
         public byte MajorVersion;
         public byte MinorVersion;
         public byte Magic;
         public ushort TotalChunks;
         public ushort ChunkNumber;
+#endif
     };
 
     #endregion
