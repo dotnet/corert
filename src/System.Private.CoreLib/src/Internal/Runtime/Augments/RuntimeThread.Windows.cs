@@ -41,6 +41,7 @@ namespace Internal.Runtime.Augments
             return _waitedHandles.Items;
         }
 
+        // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
         {
             _osHandle = GetOSHandleForCurrentThread();

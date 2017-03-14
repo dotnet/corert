@@ -13,8 +13,6 @@ namespace Internal.Runtime.Augments
 {
     public sealed partial class RuntimeThread
     {
-        private static bool s_setThreadExitCallback;
-
         // Event signaling that the thread has stopped
         private ManualResetEvent _stopped;
 
@@ -24,14 +22,10 @@ namespace Internal.Runtime.Augments
 
         private void PlatformSpecificInitialize()
         {
-            // Race condition is OK here since we set to the same value
-            if (!s_setThreadExitCallback)
-            {
-                RuntimeImports.RhSetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
-                s_setThreadExitCallback = true;
-            }
+            RuntimeImports.RhSetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
         }
 
+        // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
         {
             _stopped = new ManualResetEvent(false);

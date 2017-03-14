@@ -153,11 +153,6 @@ extern "C" bool PalDetachThread(void* thread)
         RhFailFast();
     }
 
-    if (g_threadExitCallback != nullptr)
-    {
-        g_threadExitCallback();
-    }
-
     FlsSetValue(g_flsIndex, NULL);
     return true;
 }
