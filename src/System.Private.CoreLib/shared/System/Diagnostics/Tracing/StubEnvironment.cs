@@ -164,7 +164,7 @@ namespace Microsoft.Reflection
 {
     using System.Reflection;
 
-#if (ES_BUILD_PCL || PROJECTN)
+#if ES_BUILD_PCL
     [Flags]
     public enum BindingFlags
     {
@@ -198,7 +198,7 @@ namespace Microsoft.Reflection
 #endif
     static class ReflectionExtensions
     {
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
 
         //
         // Type extension methods
@@ -226,7 +226,14 @@ namespace Microsoft.Reflection
         public static bool IsGenericType(this Type type) { return type.IsConstructedGenericType; }
         public static Type BaseType(this Type type) { return type.GetTypeInfo().BaseType; }
         public static Assembly Assembly(this Type type) { return type.GetTypeInfo().Assembly; }
-        public static IEnumerable<PropertyInfo> GetProperties(this Type type) { return type.GetRuntimeProperties(); }
+        public static IEnumerable<PropertyInfo> GetProperties(this Type type)
+        {
+#if ES_BUILD_PN
+            return type.GetProperties();
+#else
+            return type.GetRuntimeProperties();
+#endif
+        }
         public static MethodInfo GetGetMethod(this PropertyInfo propInfo) { return propInfo.GetMethod; }
         public static Type[] GetGenericArguments(this Type type) { return type.GenericTypeArguments; }
         
@@ -341,13 +348,14 @@ namespace Microsoft.Reflection
 }
 
 // Defining some no-ops in PCL builds
-#if ES_BUILD_PCL || PROJECTN
+#if ES_BUILD_PCL
 namespace System.Security
 {
     class SuppressUnmanagedCodeSecurityAttribute : Attribute { }
 
     enum SecurityAction { Demand }
 }
+
 namespace System.Security.Permissions
 {
     class HostProtectionAttribute : Attribute { public bool MayLeakOnAbort { get; set; } }
@@ -359,14 +367,14 @@ namespace System.Security.Permissions
 }
 #endif
 
-#if PROJECTN
+#if ES_BUILD_PN
 namespace System
 {
     public static class AppDomain
     {
         public static int GetCurrentThreadId()
         {
-            return (int)Interop.mincore.GetCurrentThreadId();
+            return Internal.Runtime.Augments.RuntimeThread.CurrentThread.ManagedThreadId;
         }
     }    
 }

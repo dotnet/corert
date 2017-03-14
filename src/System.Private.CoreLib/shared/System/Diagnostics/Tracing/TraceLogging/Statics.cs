@@ -394,7 +394,7 @@ namespace System.Diagnostics.Tracing
         public static MethodInfo GetDeclaredStaticMethod(Type declaringType, string name)
         {
             MethodInfo result;
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL || ES_BUILD_PN)
             result = declaringType.GetTypeInfo().GetDeclaredMethod(name);
 #else
             result = declaringType.GetMethod(
@@ -409,7 +409,7 @@ namespace System.Diagnostics.Tracing
             Type attributeType)
         {
             bool result;
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL || ES_BUILD_PN)
             result = propInfo.IsDefined(attributeType);
 #else
             var attributes = propInfo.GetCustomAttributes(
@@ -424,7 +424,7 @@ namespace System.Diagnostics.Tracing
             where AttributeType : Attribute
         {
             AttributeType result = null;
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL || ES_BUILD_PN)
             foreach (var attrib in propInfo.GetCustomAttributes<AttributeType>(false))
             {
                 result = attrib;
@@ -444,7 +444,7 @@ namespace System.Diagnostics.Tracing
             where AttributeType : Attribute
         {
             AttributeType result = null;
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL || ES_BUILD_PN)
             foreach (var attrib in type.GetTypeInfo().GetCustomAttributes<AttributeType>(false))
             {
                 result = attrib;
@@ -475,7 +475,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL || ES_BUILD_PN)
                 var ifaceTypes = type.GetTypeInfo().ImplementedInterfaces;
 #else
                 var ifaceTypes = type.FindInterfaces(IsGenericMatch, typeof(IEnumerable<>));
@@ -483,7 +483,7 @@ namespace System.Diagnostics.Tracing
 
                 foreach (var ifaceType in ifaceTypes)
                 {
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL || ES_BUILD_PN)
                     if (!IsGenericMatch(ifaceType, typeof(IEnumerable<>)))
                     {
                         continue;
@@ -512,7 +512,7 @@ namespace System.Diagnostics.Tracing
         public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
         {
             Delegate result;
-#if (ES_BUILD_PCL || PROJECTN)
+#if (ES_BUILD_PCL || ES_BUILD_PN)
             result = methodInfo.CreateDelegate(
                 delegateType);
 #else

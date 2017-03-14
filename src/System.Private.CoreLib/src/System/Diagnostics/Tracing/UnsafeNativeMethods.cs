@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.Win32 {
+namespace Microsoft.Win32
+{
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;
     using System;
@@ -15,53 +16,14 @@ namespace Microsoft.Win32 {
     using System.Text;
     using System.Diagnostics.Tracing;
 
+#if !ES_BUILD_PN
     [SuppressUnmanagedCodeSecurityAttribute()]
-    internal static class UnsafeNativeMethods {
-
-        [DllImport(Win32Native.KERNEL32, EntryPoint="GetTimeZoneInformation", SetLastError = true, ExactSpelling = true)]
-        internal static extern int GetTimeZoneInformation(out Win32Native.TimeZoneInformation lpTimeZoneInformation);
-
-        [DllImport(Win32Native.KERNEL32, EntryPoint="GetDynamicTimeZoneInformation", SetLastError = true, ExactSpelling = true)]
-        internal static extern int GetDynamicTimeZoneInformation(out Win32Native.DynamicTimeZoneInformation lpDynamicTimeZoneInformation);
-
-        // 
-        // BOOL GetFileMUIPath(
-        //   DWORD  dwFlags,
-        //   PCWSTR  pcwszFilePath,
-        //   PWSTR  pwszLanguage,
-        //   PULONG  pcchLanguage,
-        //   PWSTR  pwszFileMUIPath,
-        //   PULONG  pcchFileMUIPath,
-        //   PULONGLONG  pululEnumerator
-        // );
-        // 
-        [DllImport(Win32Native.KERNEL32, EntryPoint="GetFileMUIPath", SetLastError = true, ExactSpelling = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetFileMUIPath(
-                                     int flags,
-                                     [MarshalAs(UnmanagedType.LPWStr)]
-                                     String filePath,
-                                     [MarshalAs(UnmanagedType.LPWStr)]
-                                     StringBuilder language,
-                                     ref int languageLength,
-                                     [Out, MarshalAs(UnmanagedType.LPWStr)]
-                                     StringBuilder fileMuiPath,
-                                     ref int fileMuiPathLength,
-                                     ref Int64 enumerator);
-
-
-        [DllImport(Win32Native.USER32, EntryPoint="LoadStringW",  SetLastError=true, CharSet=CharSet.Unicode, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]
-        internal static extern int LoadString(SafeLibraryHandle handle, int id, [Out] StringBuilder buffer, int bufferLength);
-
-        [DllImport(Win32Native.KERNEL32, CharSet=System.Runtime.InteropServices.CharSet.Unicode, SetLastError=true)]
-        internal static extern SafeLibraryHandle LoadLibraryEx(string libFilename, IntPtr reserved, int flags);        
-                
-        [DllImport(Win32Native.KERNEL32, CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool FreeLibrary(IntPtr hModule);
-
-
+#endif
+    internal static class UnsafeNativeMethods
+    {   
+#if !ES_BUILD_PN
         [SuppressUnmanagedCodeSecurityAttribute()]
+#endif
         internal static unsafe class ManifestEtw
         {
             //
@@ -110,7 +72,7 @@ namespace Microsoft.Win32 {
                         [In] ref Guid providerId,
                         [In]EtwEnableCallback enableCallback,
                         [In]void* callbackContext,
-                        [In][Out]ref long registrationHandle
+                        [In] ref long registrationHandle
                         );
 
             // 
@@ -159,7 +121,9 @@ namespace Microsoft.Win32 {
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWriteTransfer", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+#if !ES_BUILD_PN
             [SuppressUnmanagedCodeSecurityAttribute]        // Don't do security checks 
+#endif
             private static extern int EventWriteTransfer(
                     [In] long registrationHandle,
                     [In] ref EventDescriptor eventDescriptor,
@@ -180,7 +144,9 @@ namespace Microsoft.Win32 {
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventActivityIdControl", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+#if !ES_BUILD_PN
             [SuppressUnmanagedCodeSecurityAttribute]        // Don't do security checks 
+#endif
             internal static extern int EventActivityIdControl([In] ActivityControl ControlCode, [In][Out] ref Guid ActivityId);
 
             internal enum EVENT_INFO_CLASS
@@ -192,7 +158,9 @@ namespace Microsoft.Win32 {
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventSetInformation", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+#if !ES_BUILD_PN
             [SuppressUnmanagedCodeSecurityAttribute]        // Don't do security checks 
+#endif
             internal static extern int EventSetInformation(
                 [In] long registrationHandle,
                 [In] EVENT_INFO_CLASS informationClass,
@@ -222,7 +190,7 @@ namespace Microsoft.Win32 {
                 public int Pid;
                 public int Flags;
             };
-
+#pragma warning disable CS0649
             internal struct TRACE_ENABLE_INFO
             {
                 public int IsEnabled;
@@ -234,10 +202,13 @@ namespace Microsoft.Win32 {
                 public long MatchAnyKeyword;
                 public long MatchAllKeyword;
             };
+#pragma warning restore CS0649
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EnumerateTraceGuidsEx", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+#if !ES_BUILD_PN
             [SuppressUnmanagedCodeSecurityAttribute]        // Don't do security checks 
+#endif
             internal static extern int EnumerateTraceGuidsEx(
                 TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,
                 void* InBuffer,
@@ -245,15 +216,40 @@ namespace Microsoft.Win32 {
                 void* OutBuffer,
                 int OutBufferSize,
                 ref int ReturnLength);
-
         }
-#if FEATURE_COMINTEROP
-        [DllImport("combase.dll", PreserveSig = true)]
-        internal static extern int RoGetActivationFactory(
-            [MarshalAs(UnmanagedType.HString)] string activatableClassId,
-            [In] ref Guid iid,
-            [Out,MarshalAs(UnmanagedType.IInspectable)] out Object factory);
+    }
+
+    internal static class Win32Native
+    {
+#if ES_BUILD_PCL
+        private const string CoreProcessThreadsApiSet = "api-ms-win-core-processthreads-l1-1-0";
+        private const string CoreLocalizationApiSet = "api-ms-win-core-localization-l1-2-0";
+#else
+        private const string CoreProcessThreadsApiSet = "kernel32.dll";
+        private const string CoreLocalizationApiSet = "kernel32.dll";
 #endif
 
+        internal const string KERNEL32 = "kernel32.dll";
+        internal const string ADVAPI32 = "advapi32.dll";
+
+        [System.Security.SecuritySafeCritical]
+        // Gets an error message for a Win32 error code.
+        internal static String GetMessage(int errorCode)
+        {
+#if FEATURE_MANAGED_ETW
+            return Interop.Kernel32.GetMessage(errorCode);
+#else
+            return "ErrorCode: " + errorCode;
+#endif // FEATURE_MANAGED_ETW
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+        [System.Security.SecurityCritical]
+        [DllImport(KERNEL32, CharSet = CharSet.Auto, SetLastError = true)]
+        internal static extern uint GetCurrentProcessId();
+
+        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+        private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
     }
 }

@@ -453,7 +453,7 @@ namespace System.Diagnostics.Tracing
                 descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                 descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
                 System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try
@@ -631,7 +631,7 @@ namespace System.Diagnostics.Tracing
                         descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 #endif // FEATURE_MANAGED_ETW
 
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
                         System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                         EventOpcode opcode = (EventOpcode)descriptor.Opcode;
@@ -734,7 +734,7 @@ namespace System.Diagnostics.Tracing
             DispatchToAllListeners(-1, pActivityId, eventCallbackArgs);
         }
 
-#if (!ES_BUILD_PCL && !PROJECTN)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN)
         [System.Runtime.ConstrainedExecution.ReliabilityContract(
             System.Runtime.ConstrainedExecution.Consistency.WillNotCorruptState,
             System.Runtime.ConstrainedExecution.Cer.Success)]
