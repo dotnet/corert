@@ -2194,7 +2194,9 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
         private SIZE_T* getAddrModuleDomainID(CORINFO_MODULE_STRUCT_* module)
         { throw new NotImplementedException("getAddrModuleDomainID"); }
-        private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
+
+        private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
         {
             ReadyToRunHelper id;
 
@@ -2295,6 +2297,17 @@ namespace Internal.JitInterface
             else
                 entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 
+            return entryPoint;
+        }
+
+        private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
+        {
+            ISymbolNode entryPoint;
+            if (!_helperCache.TryGetValue(ftnNum, out entryPoint))
+            {
+                entryPoint = GetHelperFtnUncached(ftnNum);
+                _helperCache.Add(ftnNum, entryPoint);
+            }
             return (void*)ObjectToHandle(entryPoint);
         }
 
