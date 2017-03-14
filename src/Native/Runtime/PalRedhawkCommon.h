@@ -122,6 +122,11 @@ struct PAL_LIMITED_CONTEXT
 
 void RuntimeThreadShutdown(void* thread);
 
+typedef void (__fastcall * ThreadExitCallback)();
+
+// Function to call when a thread is detached from the runtime
+extern ThreadExitCallback g_threadExitCallback;
+
 #ifdef PLATFORM_UNIX
 typedef Int32 (*PHARDWARE_EXCEPTION_HANDLER)(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
 #endif

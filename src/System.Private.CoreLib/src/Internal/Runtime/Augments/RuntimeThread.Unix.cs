@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -26,7 +27,7 @@ namespace Internal.Runtime.Augments
             // Race condition is OK here since we set to the same value
             if (!s_setThreadExitCallback)
             {
-                Interop.Sys.RuntimeThread_SetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
+                RuntimeImports.RhSetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
                 s_setThreadExitCallback = true;
             }
         }

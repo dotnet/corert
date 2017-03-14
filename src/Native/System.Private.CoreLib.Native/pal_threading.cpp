@@ -167,13 +167,6 @@ extern "C" void CoreLibNative_LowLevelMonitor_Signal_Release(LowLevelMonitor *mo
     monitor->Release();
 }
 
-extern void(*g_threadDetachCallback)();
-
-extern "C" void CoreLibNative_RuntimeThread_SetThreadExitCallback(void(*threadExitCallback)())
-{
-    g_threadDetachCallback = threadExitCallback;
-}
-
 extern "C" bool CoreLibNative_RuntimeThread_CreateThread(size_t stackSize, void *(*startAddress)(void*), void *parameter)
 {
     bool result = false;

@@ -158,9 +158,6 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-// Function to call when a thread is detached
-void (*g_threadDetachCallback)();
-
 extern bool PalQueryProcessorTopology();
 bool InitializeFlushProcessWriteBuffers();
 
@@ -509,9 +506,9 @@ extern "C" void PalAttachThread(void* thread)
 extern "C" bool PalDetachThread(void* thread)
 {
     UNREFERENCED_PARAMETER(thread);
-    if (g_threadDetachCallback != nullptr)
+    if (g_threadExitCallback != nullptr)
     {
-        g_threadDetachCallback();
+        g_threadExitCallback();
     }
     return true;
 }
