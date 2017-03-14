@@ -242,7 +242,7 @@ class ThreadTest
     private static void TestStartMethod()
     {
         // Case 1: new Thread(ThreadStart).Start()
-        var t1 = new Thread(() => Expect(true, null));
+        var t1 = new Thread(() => Expect(true, "Expected t1 to start"));
         t1.Start();
         s_startedThreads.Add(t1);
 
@@ -287,9 +287,12 @@ class ThreadTest
         ExpectException<InvalidOperationException>(() => t.Start(null), "Expected InvalidOperationException for t.Start()");
         ExpectException<ThreadStateException>(() => t.Join(), "Expected ThreadStateException for t.Join()");
 
-        Expect(!Thread.CurrentThread.Join(1), "CurrentThread.Join(1) must return false");
+        Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
+        Expect(stoppedResurrected.Join(1), "Expected stoppedResurrected.Join(1) to return true");
 
-        ExpectPassed(nameof(TestJoinMethod), 3);
+        Expect(!Thread.CurrentThread.Join(1), "Expected CurrentThread.Join(1) to return false");
+
+        ExpectPassed(nameof(TestJoinMethod), 4);
     }
 
     private static void TestCurrentThreadProperty()
@@ -478,11 +481,11 @@ class ThreadTest
 
         ~Resurrector()
         {
-            if (_unstarted)
+            if (_unstarted && (s_unstartedResurrected == null))
             {
                 s_unstartedResurrected = _thread;
             }
-            else
+            else if(!_unstarted && (s_stoppedResurrected == null))
             {
                 s_stoppedResurrected = _thread;
             }
@@ -494,38 +497,40 @@ class ThreadTest
             GC.KeepAlive(new Resurrector(unstarted));
         }
 
-        public static Thread CreateUnstartedResurrected()
+        static Thread CreateResurrectedThread(ref Thread trap, bool unstarted)
         {
-            s_unstartedResurrected = null;
+            trap = null;
 
-            while (s_unstartedResurrected == null)
+            while (trap == null)
             {
                 // Call twice to override the address of the first allocation on the stack (for conservative GC)
-                CreateInstance(unstarted: true);
-                CreateInstance(unstarted: true);
+                CreateInstance(unstarted);
+                CreateInstance(unstarted);
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
 
-            return s_unstartedResurrected;
+            // We would like to get a Thread object with its internal SafeHandle member disposed.
+            // The current implementation of SafeHandle postpones disposing until the next garbage
+            // collection. For this reason we do a couple more collections.
+            for (int i = 0; i < 2; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            return trap;
+        }
+
+        public static Thread CreateUnstartedResurrected()
+        {
+            return CreateResurrectedThread(ref s_unstartedResurrected, unstarted: true);
         }
 
         public static Thread CreateStoppedResurrected()
         {
-            s_stoppedResurrected = null;
-
-            while (s_stoppedResurrected == null)
-            {
-                // Call twice to override the address of the first allocation on the stack (for conservative GC)
-                CreateInstance(unstarted: false);
-                CreateInstance(unstarted: false);
-
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-
-            return s_stoppedResurrected;
+            return CreateResurrectedThread(ref s_stoppedResurrected, unstarted: false);
         }
     }
 }

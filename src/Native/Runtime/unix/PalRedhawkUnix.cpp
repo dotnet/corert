@@ -506,6 +506,10 @@ extern "C" void PalAttachThread(void* thread)
 extern "C" bool PalDetachThread(void* thread)
 {
     UNREFERENCED_PARAMETER(thread);
+    if (g_threadExitCallback != nullptr)
+    {
+        g_threadExitCallback();
+    }
     return true;
 }
 
