@@ -178,6 +178,31 @@ namespace System.Runtime.InteropServices
             return PInvokeMarshal.GetLastWin32Error();
         }
 
+        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
+        {
+            return PInvokeMarshal.AllocHGlobal(cb);
+        }
+
+        public static unsafe IntPtr AllocHGlobal(int cb)
+        {
+            return PInvokeMarshal.AllocHGlobal(cb);
+        }
+
+        public static void FreeHGlobal(IntPtr hglobal)
+        {
+            PInvokeMarshal.FreeHGlobal(hglobal);
+        }
+
+        public static unsafe IntPtr AllocCoTaskMem(int cb)
+        {
+            return PInvokeMarshal.AllocCoTaskMem(cb);
+        }
+
+        public static void FreeCoTaskMem(IntPtr ptr)
+        {
+            PInvokeMarshal.FreeCoTaskMem(ptr);
+        }
+
 #if PLATFORM_UNIX
         public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {

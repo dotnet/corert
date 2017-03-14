@@ -693,6 +693,9 @@
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
+  <data name="ArgumentOutOfRange_Length" xml:space="preserve">
+    <value>The specified length exceeds maximum capacity of SecureString.</value>
+  </data>
   <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
     <value>The specified length exceeds the maximum value of {0}.</value>
   </data>
@@ -869,6 +872,9 @@
   </data>
   <data name="ArgumentOutOfRange_IndexLength" xml:space="preserve">
     <value>Index and length must refer to a location within the string.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexString" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the length of the string.</value>
   </data>
   <data name="ArgumentOutOfRange_InvalidEraValue" xml:space="preserve">
     <value>Era value was not valid.</value>

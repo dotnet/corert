@@ -681,6 +681,23 @@
     <Compile Include="System\DateTime.Windows.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
+    <Compile Include="System\Security\SecureString.Windows.cs" />
+    <Compile Include="System\Security\SafeBSTRHandle.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\crypt32\Interop.CryptProtectMemory.cs">
+      <Link>Interop\Windows\crypt32\Interop.CryptProtectMemory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ntdll\Interop.ZeroMemory.cs">
+      <Link>Interop\Windows\ntdll\Interop.ZeroMemory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs">
+      <Link>Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\oleaut32\Interop.SysStringLen.cs">
+      <Link>Interop\Windows\oleaut32\Interop.SysStringLen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
@@ -822,6 +839,7 @@
     <Compile Include="System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
+    <Compile Include="System\Security\SecureString.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs">
       <Link>Interop\Unix\System.Globalization.Native\Interop.Calendar.cs</Link>
     </Compile>
