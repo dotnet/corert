@@ -26,6 +26,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override Type ReflectedType { get { throw NotImplemented.ByDesign; } }
         public sealed override CallingConventions CallingConvention { get { throw NotImplemented.ByDesign; } }
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes { get { throw NotImplemented.ByDesign; } }
+        public sealed override bool IsConstructedGenericMethod { get { throw NotImplemented.ByDesign; } }
         public sealed override bool IsGenericMethod { get { throw NotImplemented.ByDesign; } }
         public sealed override bool IsGenericMethodDefinition { get { throw NotImplemented.ByDesign; } }
         public sealed override MethodImplAttributes MethodImplementationFlags { get { throw NotImplemented.ByDesign; } }

@@ -43,6 +43,7 @@ namespace System.Reflection
         public bool IsPrivate => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private;
         public bool IsPublic => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
 
+        public virtual bool IsConstructedGenericMethod => IsGenericMethod && !IsGenericMethodDefinition;
         public virtual bool IsGenericMethod => false;
         public virtual bool IsGenericMethodDefinition => false;
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }

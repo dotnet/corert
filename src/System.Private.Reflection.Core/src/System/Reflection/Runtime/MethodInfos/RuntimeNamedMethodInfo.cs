@@ -91,6 +91,14 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new InvalidOperationException();
         }
 
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public sealed override bool IsGenericMethod
         {
             get
