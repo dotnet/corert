@@ -2248,4 +2248,7 @@
   <data name="Serialization_NonSerType" xml:space="preserve">
     <value>Type '{0}' in Assembly '{1}' is not marked as serializable.</value>
   </data>
+  <data name="InvalidCast_DBNull" xml:space="preserve">
+    <value>Object cannot be cast to DBNull.</value>
+  </data>
 </root>
