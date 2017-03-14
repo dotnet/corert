@@ -180,6 +180,7 @@
               <Text><![CDATA[        <file src="packages/runtime.win10-x64-aot.Microsoft.Private.CoreFx.UAP/$(CoreFxPackageVersion)/runtimes/win10-x64-aot/lib/uap10.1/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
 
+            <ILCompilerFrameworkFiles Include="System.Memory/$(CoreFxPackageVersion)/runtimes/win/lib/netcoreapp2.0/System.Memory.dll" />
             <ILCompilerFrameworkFiles Include="System.Runtime.CompilerServices.Unsafe/$(CoreFxPackageVersion)/lib/netstandard1.0/System.Runtime.CompilerServices.Unsafe.dll" />
 
             <ILCompilerFrameworkFiles Include="runtime.$(CoreFxNuPkgRid).Microsoft.Private.CoreFx.NETCoreApp/$(CoreFxPackageVersion)/runtimes/$(CoreFxNuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
