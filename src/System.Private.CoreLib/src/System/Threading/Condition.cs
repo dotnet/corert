@@ -98,18 +98,9 @@ namespace System.Threading
             _lock = @lock;
         }
 
-        public bool Wait()
-        {
-            return Wait(Timeout.Infinite);
-        }
+        public bool Wait() => Wait(Timeout.Infinite);
 
-        public bool Wait(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return Wait((int)tm);
-        }
+        public bool Wait(TimeSpan timeout) => Wait(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         public unsafe bool Wait(int millisecondsTimeout)
         {

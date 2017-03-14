@@ -15,7 +15,7 @@ using System.Threading;
 
 namespace System
 {
-    public class OperationCanceledException : Exception
+    public class OperationCanceledException : SystemException
     {
         private CancellationToken _cancellationToken;
 

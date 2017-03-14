@@ -130,6 +130,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public sealed override bool IsGenericMethod
         {
             get

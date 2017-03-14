@@ -1549,6 +1549,9 @@
   <data name="Task_Delay_InvalidDelay" xml:space="preserve">
     <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to Int32.MaxValue.</value>
   </data>
+  <data name="Task_Dispose_NotCompleted" xml:space="preserve">
+    <value>A task may only be disposed if it is in a completion state (RanToCompletion, Faulted or Canceled).</value>
+  </data>
   <data name="Task_WaitMulti_NullTask" xml:space="preserve">
     <value>The tasks array included at least one null element.</value>
   </data>
