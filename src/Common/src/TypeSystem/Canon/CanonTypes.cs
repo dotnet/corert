@@ -183,9 +183,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // The implementation below is correct (UniversalCanon is "a struct of indeterminate size and GC layout"),
-                // but we should probably still audit this if the assert is hit...
-                Debug.Assert(false);
+                // UniversalCanon is "a struct of indeterminate size and GC layout"
                 return Context.GetWellKnownType(WellKnownType.ValueType);
             }
         }

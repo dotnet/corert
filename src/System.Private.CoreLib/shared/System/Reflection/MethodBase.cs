@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using Internal.Reflection.Augments;
 using System.Diagnostics;
 
 namespace System.Reflection
 {
-    public abstract class MethodBase : MemberInfo
+    public abstract partial class MethodBase : MemberInfo
     {
         protected MethodBase() { }
 
@@ -49,22 +48,19 @@ namespace System.Reflection
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
         public virtual bool ContainsGenericParameters => false;
 
+        [DebuggerHidden]
         [DebuggerStepThrough]
         public object Invoke(object obj, object[] parameters) => Invoke(obj, BindingFlags.Default, binder: null, parameters: parameters, culture: null);
         public abstract object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
         public abstract RuntimeMethodHandle MethodHandle { get; }
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle);
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle, declaringType);
-
-        public static MethodBase GetCurrentMethod() { throw new NotImplementedException(); }
 
         public virtual bool IsSecurityCritical { get { throw NotImplemented.ByDesign; } }
         public virtual bool IsSecuritySafeCritical { get { throw NotImplemented.ByDesign; } }
         public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
 
         public override bool Equals(object obj) => base.Equals(obj);
-        public override int GetHashCode() => GetHashCode();
+        public override int GetHashCode() => base.GetHashCode();
 
         public static bool operator ==(MethodBase left, MethodBase right)
         {
@@ -86,8 +82,5 @@ namespace System.Reflection
         }
 
         public static bool operator !=(MethodBase left, MethodBase right) => !(left == right);
-
-        // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
-        public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
     }
 }

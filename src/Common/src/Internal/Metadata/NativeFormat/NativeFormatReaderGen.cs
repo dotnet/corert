@@ -2522,8 +2522,9 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
+        /// One of: ConstantStringValue, ConstantReferenceValue
 
-        public StringCollection Value
+        public HandleCollection Value
         {
             get
             {
@@ -2531,7 +2532,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Value
 
-        internal StringCollection _value;
+        internal HandleCollection _value;
     } // ConstantStringArray
 
     public partial struct ConstantStringArrayHandle
@@ -9380,92 +9381,6 @@ namespace Internal.Metadata.NativeFormat
             } // Dispose
         } // Enumerator
     } // CharCollection
-
-    public partial struct StringCollection : IReadOnlyCollection<string>
-    {
-        private NativeReader _reader;
-        private uint _offset;
-
-        internal StringCollection(NativeReader reader, uint offset)
-        {
-            _offset = offset;
-            _reader = reader;
-        }
-
-        public int Count
-        {
-            get
-            {
-                uint count;
-                _reader.DecodeUnsigned(_offset, out count);
-                return (int)count;
-            }
-        } // Count
-
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        IEnumerator<string> IEnumerable<string>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<string>
-        {
-            private NativeReader _reader;
-            private uint _offset;
-            private uint _remaining;
-            private string _current;
-
-            internal Enumerator(NativeReader reader, uint offset)
-            {
-                _reader = reader;
-                _offset = reader.DecodeUnsigned(offset, out _remaining);
-                _current = default(string);
-            }
-
-            public string Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
-            public bool MoveNext()
-            {
-                if (_remaining == 0)
-                    return false;
-                _remaining--;
-                _offset = _reader.Read(_offset, out _current);
-                return true;
-            } // MoveNext
-
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
-            public void Dispose()
-            {
-            } // Dispose
-        } // Enumerator
-    } // StringCollection
 
     public partial struct ByteCollection : IReadOnlyCollection<byte>
     {

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
+using Internal.Runtime;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -25,8 +26,18 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal override void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            // TODO: handle the __UniversalCanon case (valuetype padding optional field...)
-            Debug.Assert(_type.IsCanonicalDefinitionType(CanonicalFormKind.Specific));
+            if (_type.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+            {
+                // Value types should have at least 1 byte of size to avoid zero-length structures
+                // Add pointer-size to the number of instance field bytes to consistently represents the boxed size.
+                uint numInstanceFieldBytes = 1 + (uint)factory.Target.PointerSize;
+
+                uint valueTypeFieldPadding = (uint)(MinimumObjectSize - factory.Target.PointerSize) - numInstanceFieldBytes;
+                uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, 1);
+                Debug.Assert(valueTypeFieldPaddingEncoded != 0);
+
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
+            }
         }
 
         protected override void OutputBaseSize(ref ObjectDataBuilder objData)

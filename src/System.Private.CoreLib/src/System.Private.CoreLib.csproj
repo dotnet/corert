@@ -175,6 +175,7 @@
     <Compile Include="System\Reflection\ExceptionHandlingClauseOptions.cs" />
     <Compile Include="System\Reflection\FieldAttributes.cs" />
     <Compile Include="System\Reflection\FieldInfo.cs" />
+    <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\GenericParameterAttributes.cs" />
     <Compile Include="System\Reflection\ICustomAttributeProvider.cs" />
     <Compile Include="System\Reflection\ImageFileMachine.cs" />
@@ -191,7 +192,7 @@
     <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MemberTypes.cs" />
     <Compile Include="System\Reflection\MethodAttributes.cs" />
-    <Compile Include="System\Reflection\MethodBase.cs" />
+    <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="System\Reflection\MethodInfo.cs" />

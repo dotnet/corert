@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection
@@ -35,14 +36,22 @@ namespace System.Reflection
         public virtual Type[] GetOptionalCustomModifiers() => Array.Empty<Type>();
         public virtual Type[] GetRequiredCustomModifiers() => Array.Empty<Type>();
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public object GetValue(object obj) => GetValue(obj, index: null);
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public virtual object GetValue(object obj, object[] index) => GetValue(obj, BindingFlags.Default, binder: null, index: index, culture: null);
         public abstract object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture);
 
         public virtual object GetConstantValue() { throw NotImplemented.ByDesign; }
         public virtual object GetRawConstantValue() { throw NotImplemented.ByDesign; }
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public void SetValue(object obj, object value) => SetValue(obj, value, index: null);
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public virtual void SetValue(object obj, object value, object[] index) => SetValue(obj, value, BindingFlags.Default, binder: null, index: index, culture: null);
         public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture);
 

@@ -410,9 +410,6 @@ namespace System.Reflection.Runtime.General
                 case HandleType.ConstantBooleanArray:
                     return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value;
 
-                case HandleType.ConstantStringArray:
-                    return handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value;
-
                 case HandleType.ConstantCharArray:
                     return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value;
 
@@ -445,6 +442,21 @@ namespace System.Reflection.Runtime.General
 
                 case HandleType.ConstantDoubleArray:
                     return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value;
+
+                case HandleType.ConstantStringArray:
+                    {
+                        Handle[] constantHandles = handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value.ToArray();
+                        string[] elements = new string[constantHandles.Length];
+                        for (int i = 0; i < constantHandles.Length; i++)
+                        {
+                            object elementValue;
+                            exception = constantHandles[i].TryParseConstantValue(reader, out elementValue);
+                            if (exception != null)
+                                return null;
+                            elements[i] = (string)elementValue;
+                        }
+                        return elements;
+                    }
 
                 case HandleType.ConstantHandleArray:
                     {
