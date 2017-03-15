@@ -61,6 +61,11 @@ namespace System.Reflection
         public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
         public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
 
+        [CLSCompliant(false)]
+        public virtual void SetValueDirect(TypedReference obj, object value) { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
+        [CLSCompliant(false)]
+        public virtual object GetValueDirect(TypedReference obj) { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
+
         public virtual object GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
 
         public virtual Type[] GetOptionalCustomModifiers() { throw NotImplemented.ByDesign; }

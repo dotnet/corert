@@ -18,7 +18,7 @@ using TargetException = System.ArgumentException;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ValueTypeFieldAccessorForStaticFields : StaticFieldAccessor
+    internal sealed class ValueTypeFieldAccessorForStaticFields : WritableStaticFieldAccessor
     {
         private IntPtr _fieldAddress;
 
@@ -28,14 +28,13 @@ namespace Internal.Reflection.Execution.FieldAccessors
             _fieldAddress = fieldAddress;
         }
 
-        protected sealed override Object GetFieldBypassCctor(Object obj)
+        protected sealed override Object GetFieldBypassCctor()
         {
             return RuntimeAugments.LoadValueTypeField(_fieldAddress, FieldTypeHandle);
         }
 
-        protected sealed override void SetFieldBypassCctor(Object obj, Object value, BinderBundle binderBundle)
+        protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle, binderBundle);
             RuntimeAugments.StoreValueTypeField(_fieldAddress, value, FieldTypeHandle);
         }
     }

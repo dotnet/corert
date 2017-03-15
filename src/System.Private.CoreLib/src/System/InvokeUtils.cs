@@ -43,11 +43,12 @@ namespace System
             return CheckArgument(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, binderBundle, getExactTypeForCustomBinder: null);
         }
 
-        // This option does nothing but decide which type of exception to throw to match the legacy behavior.
+        // This option tweaks the coercion rules to match classic inconsistencies.
         internal enum CheckArgumentSemantics
         {
             ArraySet,            // Throws InvalidCastException
             DynamicInvoke,       // Throws ArgumentException
+            SetFieldDirect,      // Throws ArgumentException - other than that, like DynamicInvoke except that enums and integers cannot be intermingled, and null cannot substitute for default(valuetype).
         }
 
         internal static Object CheckArgument(Object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle binderBundle, Func<Type> getExactTypeForCustomBinder = null)
@@ -56,9 +57,15 @@ namespace System
             {
                 // null -> default(T) 
                 if (dstEEType.IsValueType && !dstEEType.IsNullable)
+                {
+                    if (semantics == CheckArgumentSemantics.SetFieldDirect)
+                        throw CreateChangeTypeException(CommonRuntimeTypes.Object.TypeHandle.ToEETypePtr(), dstEEType, semantics);
                     return Runtime.RuntimeImports.RhNewObject(dstEEType);
+                }
                 else
+                {
                     return null;
+                }
             }
             else
             {
@@ -110,6 +117,12 @@ namespace System
         // Special coersion rules for primitives, enums and pointer.
         private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstObject)
         {
+            if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType.IsEnum || dstEEType.IsEnum))
+            {
+                dstObject = null;
+                return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+            }
+
             if (!((srcEEType.IsEnum || srcEEType.IsPrimitive) && (dstEEType.IsEnum || dstEEType.IsPrimitive || dstEEType.IsPointer)))
             {
                 dstObject = null;
@@ -214,6 +227,7 @@ namespace System
             switch (semantics)
             {
                 case CheckArgumentSemantics.DynamicInvoke:
+                case CheckArgumentSemantics.SetFieldDirect:
                     return CreateChangeTypeArgumentException(srcEEType, dstEEType);
                 case CheckArgumentSemantics.ArraySet:
                     return CreateChangeTypeInvalidCastException(srcEEType, dstEEType);

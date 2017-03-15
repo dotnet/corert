@@ -604,6 +604,7 @@
       <Link>Interop\Windows\mincore\Interop.CLSIDFromProgID.cs</Link>
     </Compile>
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
+    <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.cs" />
     <Compile Include="System\UInt16.cs" />
