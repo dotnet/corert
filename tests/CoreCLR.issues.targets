@@ -822,6 +822,7 @@
     
     <!-- Precise GC -->
     <!-- https://github.com/dotnet/corert/issues/2354 -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect1\Collect1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\ReRegisterForFinalize\ReRegisterForFinalize.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\HandleCopy\HandleCopy.*" />
