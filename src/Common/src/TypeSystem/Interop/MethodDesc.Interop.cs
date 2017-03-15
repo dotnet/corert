@@ -142,9 +142,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Charset for marshalling strings
         /// </summary>
-        public  PInvokeAttributes GetCharSet()
+        public static PInvokeAttributes GetCharSet(PInvokeAttributes attributes)
         {
-            PInvokeAttributes charset = Attributes & PInvokeAttributes.CharSetMask;
+            PInvokeAttributes charset = attributes & PInvokeAttributes.CharSetMask;
 
             if (charset == 0)
             {

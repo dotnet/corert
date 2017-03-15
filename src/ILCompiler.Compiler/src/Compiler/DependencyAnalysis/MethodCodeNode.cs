@@ -107,8 +107,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
 
-                var stubMethod = factory.InteropStubManager.GetDelegateMarshallingStub(parameter);
-                dependencies.Add(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetOpenStaticDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetClosedDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
             }
             else if (MarshalHelpers.IsStructMarshallingRequired(parameter))
             {

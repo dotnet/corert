@@ -528,7 +528,10 @@ namespace Internal.TypeSystem.Interop
             else
             {
                 _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
-                _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+                if (IsNativeByRef)
+                    _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+                else
+                    _nativeHome = new Home(Index - 1, NativeType, isByRef: false);
             }
         }
 

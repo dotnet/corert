@@ -5,7 +5,6 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
 using Interlocked = System.Threading.Interlocked;
@@ -209,7 +208,7 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr FunctionPtr;     // Function pointer for open static delegates
         };
 
-        internal static IntPtr GetDelegateFunctionPointer()
+        internal static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
         {
             IntPtr pContext = RuntimeImports.GetCurrentInteropThunkContext();
             Debug.Assert(pContext != null);
@@ -228,7 +227,47 @@ namespace Internal.Runtime.CompilerHelpers
             return fnPtr;
         }
 
-        internal static IntPtr GetStubForPInvokeDelegate(Delegate del)
+        /// <summary>
+        /// Retrieves the current delegate that is being called
+        /// </summary>
+        public static T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
+        {
+            //
+            // RH keeps track of the current thunk that is being called through a secret argument / thread
+            // statics. No matter how that's implemented, we get the current thunk which we can use for
+            // look up later
+            //
+            IntPtr pContext = RuntimeImports.GetCurrentInteropThunkContext();
+
+            Debug.Assert(pContext != null);
+
+            GCHandle handle;
+            unsafe
+            {
+                // Pull out Handle from context
+                handle = (*((ThunkContextData*)pContext)).Handle;
+
+            }
+
+            T target = InteropExtensions.UncheckedCast<T>(handle.Target);
+
+            //
+            // The delegate might already been garbage collected
+            // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
+            // until they are done with the native function pointer
+            //
+            if (target == null)
+            {
+                Environment.FailFast(
+                    "The corresponding delegate has been garbage collected. " +
+                    "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
+                );
+            }
+            return target;
+
+        }
+    
+    internal static IntPtr GetStubForPInvokeDelegate(Delegate del)
         {
             if (del == null)
                 return IntPtr.Zero;
@@ -260,7 +299,12 @@ namespace Internal.Runtime.CompilerHelpers
             }
             else
             {
-                IntPtr pTarget = RuntimeAugments.InteropCallbacks.TryGetMarshallerForDelegate(del.GetTypeHandle());
+
+                McgPInvokeDelegateData pinvokeDelegateData;
+                if (!RuntimeAugments.InteropCallbacks.TryGetMarshallerDataForDelegate(del.GetTypeHandle(), out pinvokeDelegateData))
+                {
+                    Environment.FailFast("Couldn't find marshalling stubs for delegate.");
+                }
                 IntPtr pContext;
                 unsafe
                 {
@@ -274,6 +318,12 @@ namespace Internal.Runtime.CompilerHelpers
                     (*thunkData).Handle = GCHandle.Alloc(del, GCHandleType.Weak);
                     (*thunkData).FunctionPtr = del.GetRawFunctionPointerForOpenStaticDelegate();
                 }
+
+                //
+                //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
+                //
+                IntPtr pTarget = del.GetRawFunctionPointerForOpenStaticDelegate() == IntPtr.Zero ? pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
+
                 RuntimeAugments.SetThunkData(s_thunkPoolHeap, pThunk, pContext, pTarget);
 
                 return pThunk;

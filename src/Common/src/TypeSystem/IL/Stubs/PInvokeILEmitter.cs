@@ -34,7 +34,15 @@ namespace Internal.IL.Stubs
             _importMetadata = targetMethod.GetPInvokeMethodMetadata();
             _interopStateManager = interopStateManager;
 
-             bool isAnsi = _importMetadata.GetCharSet() == PInvokeAttributes.CharSetAnsi;
+            bool isAnsi;
+            if (targetMethod.IsPInvoke)
+            {
+                isAnsi = PInvokeMetadata.GetCharSet(_importMetadata.Attributes) == PInvokeAttributes.CharSetAnsi;
+            }
+            else
+            {
+                isAnsi = PInvokeMetadata.GetCharSet(((DelegateMarshallingMethodThunk)_targetMethod).DelegateType.GetDelegatePInvokeAttributes()) == PInvokeAttributes.CharSetAnsi;
+            }
 
             _marshallers = InitializeMarshallers(targetMethod, interopStateManager, isAnsi);
         }
@@ -111,19 +119,48 @@ namespace Internal.IL.Stubs
                             InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastWin32Error", null)));
             }
 
-            if (_targetMethod is DelegateMarshallingMethodThunk)
+            DelegateMarshallingMethodThunk delegateMethod = _targetMethod as DelegateMarshallingMethodThunk;
+            if (delegateMethod != null)
             {
-                TypeDesc[] parameters = new TypeDesc[_marshallers.Length - 1];
-                for (int i = 1; i < _marshallers.Length; i++)
+                if (delegateMethod.IsOpenStaticDelegate)
                 {
-                    parameters[i - 1] = _marshallers[i].ManagedParameterType;
+                    //
+                    // For Open static delegates call 
+                    //     InteropHelpers.GetCurrentCalleeOpenStaticDelegateFunctionPointer()
+                    // which returns a function pointer. Just call the function pointer and we are done.
+                    // 
+                    TypeDesc[] parameters = new TypeDesc[_marshallers.Length - 1];
+                    for (int i = 1; i < _marshallers.Length; i++)
+                    {
+                        parameters[i - 1] = _marshallers[i].ManagedParameterType;
+                    }
+
+                    MethodSignature managedSignature = new MethodSignature(MethodSignatureFlags.Static, 0, _marshallers[0].ManagedParameterType, parameters);
+                    fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(delegateMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod("GetCurrentCalleeOpenStaticDelegateFunctionPointer", null)));
+                    ILLocalVariable vDelegateStub = emitter.NewLocal(delegateMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
+                    fnptrLoadStream.EmitStLoc(vDelegateStub);
+                    callsiteSetupCodeStream.EmitLdLoc(vDelegateStub);
+                    callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(managedSignature));
                 }
-                MethodSignature managedSignature = new MethodSignature(MethodSignatureFlags.Static, 0, _marshallers[0].ManagedParameterType, parameters);
-                fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(_targetMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod("GetDelegateFunctionPointer", null)));
-                ILLocalVariable vDelegateStub = emitter.NewLocal(_targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
-                fnptrLoadStream.EmitStLoc(vDelegateStub);
-                callsiteSetupCodeStream.EmitLdLoc(vDelegateStub);
-                callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(managedSignature));
+                else
+                {
+                    //
+                    // For closed delegates call
+                    //     InteropHelpers.GetCurrentCalleeDelegate<Delegate>
+                    // which returns the delegate. Do a CallVirt on the invoke method.
+                    //
+                    MethodDesc instantiatedHelper = delegateMethod.Context.GetInstantiatedMethod(
+                        delegateMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod("GetCurrentCalleeDelegate", null),
+                        new Instantiation((delegateMethod.DelegateType)));
+                    fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(instantiatedHelper));
+
+                    ILLocalVariable vDelegateStub = emitter.NewLocal(delegateMethod.DelegateType);
+                    fnptrLoadStream.EmitStLoc(vDelegateStub);
+                    fnptrLoadStream.EmitLdLoc(vDelegateStub);
+                    MethodDesc invokeMethod = delegateMethod.DelegateType.GetKnownMethod("Invoke", null);
+                    callsiteSetupCodeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
+                }
+
             }
             else if (MarshalHelpers.UseLazyResolution(_targetMethod, _importMetadata.Module, _pInvokeILEmitterConfiguration))
             {
