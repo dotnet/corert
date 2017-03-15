@@ -555,11 +555,12 @@ namespace Internal.IL.Stubs
                     codeStream.EmitLdc(i);
                     codeStream.EmitLdArg(i + 1);
 
+                    TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
+
                     if (paramIsByRef)
                     {
-                        codeStream.Emit(ILOpcode.ldobj, emitter.NewToken(paramType));
+                        codeStream.Emit(ILOpcode.ldobj, emitter.NewToken(boxableParamType));
                     }
-                    TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
                     codeStream.Emit(ILOpcode.box, emitter.NewToken(boxableParamType));
                     codeStream.Emit(ILOpcode.stelem_ref);
                 }
