@@ -160,6 +160,9 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
+                // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
+                Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
