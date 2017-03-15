@@ -4,6 +4,8 @@
 
 using System;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -12,22 +14,20 @@ namespace Internal.IL.Stubs
     /// </summary>
     internal class DelegateMarshallingMethodThunk : ILStubMethod
     {
-        private TypeDesc _owningType;
-        private MethodSignature _delegateSignature; // signature of the delegate
+        private readonly TypeDesc _owningType;
+        private readonly TypeDesc _delegateType;
+        private readonly string _name;
+        private readonly InteropStateManager _interopStateManager;
+        private readonly MethodDesc _invokeMethod;
         private MethodSignature _signature;         // signature of the native callable marshalling stub
-        private TypeDesc _delegateType;
-        private MethodIL _methodIL;
-        private string _name;
 
-        public DelegateMarshallingMethodThunk(TypeDesc owningType, TypeDesc delegateType, string name)
+        public DelegateMarshallingMethodThunk(TypeDesc owningType, TypeDesc delegateType, InteropStateManager interopStateManager, string name)
         {
             _owningType = owningType;
             _delegateType = delegateType;
-            MethodDesc invokeMethod = delegateType.GetMethod("Invoke", null);
+            _invokeMethod = delegateType.GetMethod("Invoke", null);
             _name = name;
-            _delegateSignature = invokeMethod.Signature;
-            _methodIL = PInvokeILEmitter.EmitIL(this, null);
-            _signature = ((PInvokeILStubMethodIL)_methodIL).NativeCallableSignature;
+            _interopStateManager = interopStateManager;
         }
 
         public override TypeSystemContext Context
@@ -66,15 +66,60 @@ namespace Internal.IL.Stubs
         {
             get
             {
+                if (_signature == null)
+                {
+                    // TODO: Parse UnmanagedFunctionPointerAttribute 
+                    bool isAnsi = true;
+                    MethodSignature delegateSignature = _invokeMethod.Signature;
+                    TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
+                    ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
+                    int parameterIndex = 0;
+
+                    MarshalAsDescriptor marshalAs = null;
+                    if (parameterMetadataArray != null && parameterMetadataArray.Length > 0 && parameterMetadataArray[0].Index == 0)
+                    {
+                        marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
+                    }
+
+                    TypeDesc nativeReturnType = MarshalHelpers.GetNativeMethodParameterType(delegateSignature.ReturnType, null, _interopStateManager, true, isAnsi);
+                    for (int i = 0; i < delegateSignature.Length; i++)
+                    {
+                        int sequence = i + 1;
+                        Debug.Assert(parameterIndex == parameterMetadataArray.Length || sequence <= parameterMetadataArray[parameterIndex].Index);
+                        if (parameterIndex == parameterMetadataArray.Length || sequence < parameterMetadataArray[parameterIndex].Index)
+                        {
+                            // if we don't have metadata for the parameter, marshalAs is null
+                            marshalAs = null;
+                        }
+                        else
+                        {
+                            Debug.Assert(sequence == parameterMetadataArray[parameterIndex].Index);
+                            marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
+                        }
+
+                        nativeParameterTypes[i] = MarshalHelpers.GetNativeMethodParameterType(delegateSignature[i], marshalAs, _interopStateManager, false, isAnsi);
+                     }
+                    _signature = new MethodSignature(MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
+                }
                 return _signature;
             }
+        }
+
+        public override ParameterMetadata[] GetParameterMetadata()
+        {
+            return _invokeMethod.GetParameterMetadata();
+        }
+
+        public override PInvokeMetadata GetPInvokeMethodMetadata()
+        {
+            return _invokeMethod.GetPInvokeMethodMetadata();
         }
 
         public MethodSignature DelegateSignature
         {
             get
             {
-                return _delegateSignature;
+                return _invokeMethod.Signature;
             }
         }
 
@@ -89,7 +134,7 @@ namespace Internal.IL.Stubs
 
         public override MethodIL EmitIL()
         {
-            return _methodIL;
+            return PInvokeILEmitter.EmitIL(this, default(PInvokeILEmitterConfiguration), _interopStateManager);
         }
     }
 

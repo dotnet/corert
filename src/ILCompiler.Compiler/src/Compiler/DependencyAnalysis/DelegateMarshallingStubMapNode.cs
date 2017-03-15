@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var delegateEntry in factory.MetadataManager.DelegateMarshalingThunks)
+            foreach (var delegateEntry in factory.InteropStubManager.GetDelegateMarshallingThunks())
             {
                 Internal.TypeSystem.TypeDesc delegateType = delegateEntry.Value.DelegateType;
                 Vertex vertex = writer.GetTuple(

@@ -64,10 +64,28 @@ namespace PInvokeTests
         delegate int Delegate_Int(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Int(Delegate_Int del);
-
+        
         delegate void Delegate_Unused();
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern unsafe int* ReversePInvoke_Unused(Delegate_Unused del);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest")]
+        static extern bool StructTest_Auto(AutoStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest(SequentialStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern void StructTest_ByRef(ref SequentialStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern void StructTest_ByOut(out SequentialStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest_Explicit(ExplicitStruct es);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest_Nested(NestedStruct ns);
 
         public static int Main(string[] args)
         {
@@ -85,6 +103,7 @@ namespace PInvokeTests
 #if !CODEGEN_CPP
             TestDelegate();
 #endif            
+            TestStruct();
             return 100;
         }
 
@@ -262,6 +281,93 @@ namespace PInvokeTests
         static int Sum(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
         {
             return a + b + c + d + e + f + g + h + i + j;
+        }
+        [StructLayout(LayoutKind.Auto)]
+        public struct AutoStruct
+        {
+            public short f0;
+            public int f1;
+            public float f2;
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SequentialStruct
+        {
+            public short f0;
+            public int f1;
+            public float f2;
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct ExplicitStruct
+        {
+            [FieldOffset(0)]
+            public int f1;
+
+            [FieldOffset(12)]
+            public float f2;
+
+            [FieldOffset(24)]
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct NestedStruct
+        {
+            public int f1;
+
+            public ExplicitStruct f2;
+        }
+
+        private static void TestStruct()
+        {
+            Console.WriteLine("Testing Structs");
+            SequentialStruct ss = new SequentialStruct();
+            ss.f0 = 100;
+            ss.f1 = 1;
+            ss.f2 = 10.0f;
+            ss.f3 = "Hello";
+
+            ThrowIfNotEquals(true, StructTest(ss), "Struct marshalling scenario1 failed.");
+
+            StructTest_ByRef(ref ss);
+            ThrowIfNotEquals(true,  ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "Struct marshalling scenario2 failed.");
+
+            SequentialStruct ss2 = new SequentialStruct();
+            StructTest_ByOut(out ss2);
+            ThrowIfNotEquals(true, ss2.f0 == 1 && ss2.f1 == 1.0 &&  ss2.f2 == 1.0 && ss2.f3.Equals("0123456"), "Struct marshalling scenario3 failed.");
+
+            ExplicitStruct es = new ExplicitStruct();
+            es.f1 = 100;
+            es.f2 = 100.0f;
+            es.f3 = "Hello";
+            ThrowIfNotEquals(true, StructTest_Explicit(es), "Struct marshalling scenario4 failed.");
+
+            NestedStruct ns = new NestedStruct();
+            ns.f1 = 100;
+            ns.f2 = es;
+            ThrowIfNotEquals(true, StructTest_Nested(ns), "Struct marshalling scenario5 failed.");
+
+// RhpThrowEx is not implemented in CPPCodeGen
+#if !CODEGEN_CPP
+            bool pass = false;
+            AutoStruct autoStruct = new AutoStruct();
+            try
+            {
+                // passing struct with Auto layout should throw exception.
+                StructTest_Auto(autoStruct);
+            }
+            catch (Exception)
+            {
+                pass = true;
+            }
+            ThrowIfNotEquals(true, pass, "Struct marshalling scenario6 failed.");
+#endif
         }
     }
 

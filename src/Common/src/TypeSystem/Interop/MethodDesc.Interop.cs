@@ -138,6 +138,27 @@ namespace Internal.TypeSystem
                     throw new BadImageFormatException();
             }
         }
+
+        /// <summary>
+        /// Charset for marshalling strings
+        /// </summary>
+        public  PInvokeAttributes GetCharSet()
+        {
+            PInvokeAttributes charset = Attributes & PInvokeAttributes.CharSetMask;
+
+            if (charset == 0)
+            {
+                // ECMA-335 II.10.1.5 - Default value is Ansi.
+                charset = PInvokeAttributes.CharSetAnsi;
+            }
+
+            if (charset == PInvokeAttributes.CharSetAuto)
+            {
+                charset = PInvokeAttributes.CharSetUnicode;
+            }
+
+            return charset;
+        }
     }
 
     partial class InstantiatedMethod
