@@ -24,5 +24,35 @@ namespace System.Runtime.InteropServices
         {
             s_lastWin32Error = errorCode;
         }
+
+        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
+        {
+            return MemAlloc(cb);
+        }
+
+        public static unsafe IntPtr AllocHGlobal(int cb)
+        {
+            return AllocHGlobal((IntPtr)cb);
+        }
+
+        public static void FreeHGlobal(IntPtr hglobal)
+        {
+            MemFree(hglobal);
+        }
+
+        public static unsafe IntPtr AllocCoTaskMem(int cb)
+        {
+            IntPtr allocatedMemory = CoTaskMemAlloc(new UIntPtr(unchecked((uint)cb)));
+            if (allocatedMemory == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return allocatedMemory;
+        }
+
+        public static void FreeCoTaskMem(IntPtr ptr)
+        {
+            CoTaskMemFree(ptr);
+        }
     }
 }

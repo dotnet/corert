@@ -38,6 +38,16 @@ namespace System.Runtime.InteropServices
             return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
         }
 
+        internal static unsafe IntPtr MemAlloc(IntPtr cb)
+        {
+            return Interop.MemAlloc((UIntPtr)(void*)cb);
+        }
+
+        public static void MemFree(IntPtr hglobal)
+        {
+            Interop.MemFree(hglobal);
+        }
+
         internal static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.MemAlloc(bytes);
