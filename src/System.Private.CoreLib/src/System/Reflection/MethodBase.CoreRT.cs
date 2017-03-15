@@ -13,5 +13,8 @@ namespace System.Reflection
 
         // This is actually an ILC intrinsic.
         public static MethodBase GetCurrentMethod() { throw new NotImplementedException(); }
+
+        // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
+        public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
     }
 }
