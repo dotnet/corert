@@ -106,7 +106,6 @@
     <Compile Include="System\Reflection\Runtime\EventInfos\RuntimeEventInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\NativeFormat\NativeFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\FieldInfos\LiteralFieldAccessor.cs" />
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />

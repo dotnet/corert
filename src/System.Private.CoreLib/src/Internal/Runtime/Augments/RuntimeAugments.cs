@@ -310,6 +310,41 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        [CLSCompliant(false)]
+        public static void StoreValueTypeFieldValueIntoValueType(TypedReference typedReference, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldTypeHandle)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+
+            RuntimeImports.RhUnbox(fieldValue, ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldTypeHandle.ToEETypePtr());
+        }
+
+        [CLSCompliant(false)]
+        public static object LoadValueTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(fieldTypeHandle.ToEETypePtr().IsValueType);
+
+            return RuntimeImports.RhBox(fieldTypeHandle.ToEETypePtr(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+        }
+
+        [CLSCompliant(false)]
+        public static void StoreReferenceTypeFieldValueIntoValueType(TypedReference typedReference, int fieldOffset, object fieldValue)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+
+            Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset)) = fieldValue;
+        }
+
+        [CLSCompliant(false)]
+        public static object LoadReferenceTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+
+            return Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+        }
+
+        public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
+
         [DebuggerGuidedStepThroughAttribute]
         public static object CallDynamicInvokeMethod(
             object thisPtr,
@@ -650,6 +685,13 @@ namespace Internal.Runtime.Augments
         public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
             return InvokeUtils.CheckArgument(srcObject, dstType, binderBundle);
+        }
+
+        // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from
+        // the other Reflection api.
+        public static object CheckArgumentForDirectFieldAccess(object srcObject, RuntimeTypeHandle dstType)
+        {
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.SetFieldDirect, binderBundle: null);
         }
 
         public static bool IsAssignable(Object srcObject, RuntimeTypeHandle dstType)

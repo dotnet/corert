@@ -34,7 +34,7 @@ namespace System.Reflection
 
         public static void GetSerializationInfo(SerializationInfo info, MethodInfo m)
         {
-            Type[] genericArguments = (m.IsGenericMethod & !m.IsGenericMethodDefinition) ? m.GetGenericArguments() : null;
+            Type[] genericArguments = m.IsConstructedGenericMethod ? m.GetGenericArguments() : null;
             GetSerializationInfo(info, m.Name, m.ReflectedType, m.ToString(), m.SerializationToString(), MemberTypes.Method, genericArguments);
         }
 

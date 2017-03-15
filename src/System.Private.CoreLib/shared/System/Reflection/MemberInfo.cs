@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace System.Reflection
 {
-    public abstract class MemberInfo : ICustomAttributeProvider
+    public abstract partial class MemberInfo : ICustomAttributeProvider
     {
         protected MemberInfo() { }
 

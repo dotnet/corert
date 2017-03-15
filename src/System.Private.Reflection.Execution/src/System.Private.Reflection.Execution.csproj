@@ -75,6 +75,7 @@
     <Compile Include="Internal\Reflection\Execution\MethodInvokeInfo.cs" />
     <Compile Include="Internal\Reflection\Execution\RuntimeHandlesExtensions.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\InstanceFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\LiteralFieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForInstanceFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForStaticFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForThreadStaticFields.cs" />
@@ -84,6 +85,7 @@
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForStaticFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForThreadStaticFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForUniversalThreadStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\WritableStaticFieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\MethodInvokerWithMethodInvokeInfo.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\InstanceMethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\StaticMethodInvoker.cs" />
