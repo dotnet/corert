@@ -177,7 +177,15 @@ namespace ILCompiler.Metadata
 
             if (elementType.IsString)
             {
-                return new ConstantStringArray { Value = GetCustomAttributeConstantArrayElements<string>(value) };
+                var record = new ConstantStringArray();
+                record.Value.Capacity = value.Length;
+                foreach (var element in value)
+                {
+                    MetadataRecord elementRecord = element.Value == null ?
+                        (MetadataRecord)new ConstantReferenceValue() : HandleString((string)element.Value);
+                    record.Value.Add(elementRecord);
+                }
+                return record;
             }
 
             var result = new ConstantHandleArray();
