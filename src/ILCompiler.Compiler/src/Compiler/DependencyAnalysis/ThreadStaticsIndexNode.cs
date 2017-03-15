@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
         
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        protected override string GetName() => GetMangledName("");
+        protected override string GetName(NodeFactory factory) => GetMangledName("");
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -188,7 +188,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        protected override string GetName() => GetMangledName();
+        protected override string GetName(NodeFactory factory) => GetMangledName();
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

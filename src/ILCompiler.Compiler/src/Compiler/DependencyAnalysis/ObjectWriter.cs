@@ -461,7 +461,7 @@ namespace ILCompiler.DependencyAnalysis
                 ObjectNodeSection lsdaSection = LsdaSection;
                 if (ShouldShareSymbol(node))
                 {
-                    lsdaSection = lsdaSection.GetSharedSection(((ISymbolNode)node).GetMangledName());
+                    lsdaSection = lsdaSection.GetSharedSection(((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
                 }
                 SwitchSection(_nativeObjectWriter, lsdaSection.Name, GetCustomSectionAttributes(lsdaSection), lsdaSection.ComdatName);
 
@@ -810,13 +810,13 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         try
                         {
-                            _previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName(), definedSymbol);
+                            _previouslyWrittenNodeNames.Add(definedSymbol.GetMangledName(factory.NameMangler), definedSymbol);
                         }
                         catch (ArgumentException)
                         {
-                            ISymbolNode alreadyWrittenSymbol = _previouslyWrittenNodeNames[definedSymbol.GetMangledName()];
+                            ISymbolNode alreadyWrittenSymbol = _previouslyWrittenNodeNames[definedSymbol.GetMangledName(factory.NameMangler)];
                             Debug.Assert(false, "Duplicate node name emitted to file",
-                            $"Symbol {definedSymbol.GetMangledName()} has already been written to the output object file {objectFilePath} with symbol {alreadyWrittenSymbol}");
+                            $"Symbol {definedSymbol.GetMangledName(factory.NameMangler)} has already been written to the output object file {objectFilePath} with symbol {alreadyWrittenSymbol}");
                         }
                     }
 #endif
@@ -825,7 +825,7 @@ namespace ILCompiler.DependencyAnalysis
                     ObjectNodeSection section = node.Section;
                     if (objectWriter.ShouldShareSymbol(node))
                     {
-                        section = section.GetSharedSection(((ISymbolNode)node).GetMangledName());
+                        section = section.GetSharedSection(((ISymbolNode)node).GetMangledName(factory.NameMangler));
                     }
 
                     // Ensure section and alignment for the node.

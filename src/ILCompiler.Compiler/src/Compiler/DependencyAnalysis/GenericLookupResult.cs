@@ -234,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName());
+                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
             }
         }
 
@@ -290,7 +290,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName());
+                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
             }
         }
 

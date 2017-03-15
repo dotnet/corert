@@ -19,8 +19,8 @@ namespace ILCompiler.DependencyAnalysisFramework
         /// <returns>true if the node is newly marked</returns>
         bool MarkNode(DependencyNodeCore<DependencyContextType> node, DependencyNodeCore<DependencyContextType> reasonNode, DependencyNodeCore<DependencyContextType> reasonNode2, string reason);
 
-        void VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor logNodeVisitor);
+        void VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor);
 
-        void VisitLogEdges(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogEdgeVisitor logEdgeVisitor);
+        void VisitLogEdges(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor);
     }
 }

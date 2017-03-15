@@ -123,6 +123,10 @@ struct PAL_LIMITED_CONTEXT
 void RuntimeThreadShutdown(void* thread);
 
 #ifdef PLATFORM_UNIX
+typedef void (__fastcall * ThreadExitCallback)();
+
+extern ThreadExitCallback g_threadExitCallback;
+
 typedef Int32 (*PHARDWARE_EXCEPTION_HANDLER)(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
 #endif
 

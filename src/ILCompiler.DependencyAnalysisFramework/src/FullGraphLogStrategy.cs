@@ -135,9 +135,9 @@ namespace ILCompiler.DependencyAnalysisFramework
             return newlyMarked;
         }
 
-        void IDependencyAnalysisMarkStrategy<DependencyContextType>.VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor logNodeVisitor)
+        void IDependencyAnalysisMarkStrategy<DependencyContextType>.VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor)
         {
-            HashSet<Tuple<DependencyNode, DependencyNode>> combinedNodesReported = new HashSet<Tuple<DependencyNode, DependencyNode>>();
+            var combinedNodesReported = new HashSet<Tuple<DependencyNodeCore<DependencyContextType>, DependencyNodeCore<DependencyContextType>>>();
 
             if (_reasonStringOnlyNodes != null)
             {
@@ -156,7 +156,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                     {
                         if (markData.Reason2 != null)
                         {
-                            Tuple<DependencyNode, DependencyNode> combinedNode = new Tuple<DependencyNode, DependencyNode>(markData.Reason1, markData.Reason2);
+                            var combinedNode = new Tuple<DependencyNodeCore<DependencyContextType>, DependencyNodeCore<DependencyContextType>>(markData.Reason1, markData.Reason2);
 
                             if (!combinedNodesReported.Contains(combinedNode))
                             {
@@ -168,7 +168,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        void IDependencyAnalysisMarkStrategy<DependencyContextType>.VisitLogEdges(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogEdgeVisitor logEdgeVisitor)
+        void IDependencyAnalysisMarkStrategy<DependencyContextType>.VisitLogEdges(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor)
         {
             foreach (DependencyNodeCore<DependencyContextType> node in nodeList)
             {

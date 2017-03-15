@@ -575,6 +575,12 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCurrentThreadStackBounds")]
         internal static extern void RhGetCurrentThreadStackBounds(out IntPtr pStackLow, out IntPtr pStackHigh);
 
+#if PLATFORM_UNIX
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhSetThreadExitCallback")]
+        internal static extern bool RhSetThreadExitCallback(IntPtr pCallback);
+#endif
+
         // Functions involved in thunks from managed to managed functions (Universal transition transitions 
         // from an arbitrary method call into a defined function, and CallDescrWorker goes the other way.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

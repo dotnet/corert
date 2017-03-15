@@ -62,12 +62,12 @@ namespace ILCompiler.DependencyAnalysisFramework
         /// Used to walk all nodes that should be emitted to a log. Not intended for other purposes.
         /// </summary>
         /// <param name="logNodeVisitor"></param>
-        public abstract void VisitLogNodes(IDependencyAnalyzerLogNodeVisitor logNodeVisitor);
+        public abstract void VisitLogNodes(IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor);
 
         /// <summary>
         /// Used to walk the logical edges in the graph as part of log building.
         /// </summary>
         /// <param name="logEdgeVisitor"></param>
-        public abstract void VisitLogEdges(IDependencyAnalyzerLogEdgeVisitor logEdgeVisitor);
+        public abstract void VisitLogEdges(IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor);
     }
 }

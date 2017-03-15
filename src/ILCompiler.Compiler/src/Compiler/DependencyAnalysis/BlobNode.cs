@@ -38,6 +38,6 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolNode[] { this });
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
     }
 }

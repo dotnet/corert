@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 }
             }
 
-            protected override string GetName()
+            protected override string GetName(TestGraph context)
             {
                 return _data;
             }

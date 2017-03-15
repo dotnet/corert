@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
               .Append(nameMangler.GetMangledTypeName(_type));
         }
         public int Offset => 0;
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
         public override ObjectNodeSection Section
         {
             get

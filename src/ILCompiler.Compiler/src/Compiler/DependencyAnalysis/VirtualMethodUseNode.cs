@@ -24,19 +24,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public VirtualMethodUseNode(MethodDesc decl)
         {
+            Debug.Assert(decl.IsVirtual);
+
+            // TODO: assert that decl is a slot defining method (either a newslot or a first virtual method
+            // with this name and signature in the inheritance chain).
+
             // Generic virtual methods are tracked by an orthogonal mechanism.
             Debug.Assert(!decl.HasInstantiation);
+
             _decl = decl;
         }
 
-        protected override string GetName() => $"VirtualMethodUse {_decl.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"VirtualMethodUse {_decl.ToString()}";
 
         protected override void OnMarked(NodeFactory factory)
         {
             // If the VTable slice is getting built on demand, the fact that the virtual method is used means
             // that the slot is used.
             var lazyVTableSlice = factory.VTable(_decl.OwningType) as LazilyBuiltVTableSliceNode;
-            if (lazyVTableSlice != null && !_decl.HasInstantiation)
+            if (lazyVTableSlice != null)
                 lazyVTableSlice.AddEntry(factory, _decl);
         }
 

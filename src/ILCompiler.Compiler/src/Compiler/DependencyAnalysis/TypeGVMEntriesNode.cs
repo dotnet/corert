@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
-        protected override string GetName() => "__TypeGVMEntriesNode_" + NodeFactory.NameManglerDoNotUse.GetMangledTypeName(_associatedType);
+        protected override string GetName(NodeFactory factory) => "__TypeGVMEntriesNode_" + factory.NameMangler.GetMangledTypeName(_associatedType);
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
             return Array.Empty<CombinedDependencyListEntry>();
