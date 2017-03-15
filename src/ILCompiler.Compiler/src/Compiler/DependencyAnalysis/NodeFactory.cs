@@ -903,7 +903,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 int hashCode = Target.GetHashCode();
                 if (CallsiteId != null)
-                    hashCode = 23 * CallsiteId.GetHashCode();
+                    hashCode = hashCode * 23 + CallsiteId.GetHashCode();
                 return hashCode;
             }
         }
