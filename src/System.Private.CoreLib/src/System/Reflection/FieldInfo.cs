@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
-
-using Internal.Reflection.Augments;
 
 namespace System.Reflection
 {
-    public abstract class FieldInfo : MemberInfo
+    public abstract partial class FieldInfo : MemberInfo
     {
         protected FieldInfo() { }
 
@@ -37,8 +36,6 @@ namespace System.Reflection
         public virtual bool IsSecurityTransparent => false;
 
         public abstract RuntimeFieldHandle FieldHandle { get; }
-        public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetFieldFromHandle(handle);
-        public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.ReflectionCoreCallbacks.GetFieldFromHandle(handle, declaringType);
 
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
@@ -58,6 +55,8 @@ namespace System.Reflection
 
         public abstract object GetValue(object obj);
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
         public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
 

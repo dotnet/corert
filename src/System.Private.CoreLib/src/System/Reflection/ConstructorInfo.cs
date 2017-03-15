@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection
@@ -12,6 +13,8 @@ namespace System.Reflection
 
         public override MemberTypes MemberType => MemberTypes.Constructor;
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public object Invoke(object[] parameters) => Invoke(BindingFlags.Default, binder: null, parameters: parameters, culture: null);
         public abstract object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 

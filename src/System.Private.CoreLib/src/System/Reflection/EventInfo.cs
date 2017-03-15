@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using EventRegistrationToken = System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken;
 
 namespace System.Reflection
@@ -57,6 +58,8 @@ namespace System.Reflection
             }
         }
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public virtual void AddEventHandler(object target, Delegate handler)
         {
             MethodInfo addMethod = GetAddMethod(nonPublic: false);
@@ -70,6 +73,8 @@ namespace System.Reflection
             addMethod.Invoke(target, new object[] { handler });
         }
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public virtual void RemoveEventHandler(object target, Delegate handler)
         {
             MethodInfo removeMethod = GetRemoveMethod(nonPublic: false);
