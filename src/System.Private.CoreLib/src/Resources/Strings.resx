@@ -2256,6 +2256,7 @@
   </data>
   <data name="InvalidCast_DBNull" xml:space="preserve">
     <value>Object cannot be cast to DBNull.</value>
+  </data>
   <data name="NotSupported_NYI" xml:space="preserve">
     <value>This feature is not currently implemented.</value>
   </data>
