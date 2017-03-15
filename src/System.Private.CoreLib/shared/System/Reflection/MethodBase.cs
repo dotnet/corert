@@ -60,7 +60,7 @@ namespace System.Reflection
         public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
 
         public override bool Equals(object obj) => base.Equals(obj);
-        public override int GetHashCode() => GetHashCode();
+        public override int GetHashCode() => base.GetHashCode();
 
         public static bool operator ==(MethodBase left, MethodBase right)
         {
@@ -82,8 +82,5 @@ namespace System.Reflection
         }
 
         public static bool operator !=(MethodBase left, MethodBase right) => !(left == right);
-
-        // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
-        public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
     }
 }
