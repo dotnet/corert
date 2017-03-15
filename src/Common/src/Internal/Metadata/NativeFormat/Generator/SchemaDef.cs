@@ -200,7 +200,6 @@ class SchemaDef
     {
         new PrimitiveType("bool", "Boolean"),
         new PrimitiveType("char", "Char"),
-        new PrimitiveType("string", "String"),
         new PrimitiveType("byte", "Byte"),
         new PrimitiveType("sbyte", "SByte"),
         new PrimitiveType("short", "Int16"),
@@ -305,6 +304,12 @@ class SchemaDef
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: "Object", flags: MemberDefFlags.NotPersisted)
                     }
+                ),
+                new RecordDef(
+                    name: "ConstantStringValue",
+                    members: new MemberDef[] {
+                        new MemberDef(name: "Value", typeName: "string")
+                    }
                 )
             }
         )
@@ -332,6 +337,12 @@ class SchemaDef
                     name: "ConstantHandleArray",
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
+                    }
+                ),
+                new RecordDef(
+                    name: "ConstantStringArray",
+                    members: new MemberDef[] {
+                        new MemberDef(name: "Value", typeName: new string[] { "ConstantStringValue", "ConstantReferenceValue" }, flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
                     }
                 )
             }
