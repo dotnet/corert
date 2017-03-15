@@ -11,11 +11,13 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.Modules;
 
+using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
@@ -345,6 +347,44 @@ namespace System.Reflection.Runtime.General
         {
             RuntimeAssembly assembly = (RuntimeAssembly)module.Assembly;
             assembly.RunModuleConstructor();
+        }
+
+        public sealed override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (flds == null)
+                throw new ArgumentNullException(nameof(flds));
+            if (flds.Length == 0)
+                throw new ArgumentException(SR.Arg_ArrayZeroError);
+
+            offset = RuntimeAugments.ObjectHeaderSize;
+            Type targetType = target.GetType();
+            for (int i = 0; i < flds.Length; i++)
+            {
+                RuntimeFieldInfo field = flds[i] as RuntimeFieldInfo;
+                if (field == null)
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
+                if (field.IsInitOnly || field.IsStatic)
+                    throw new ArgumentException(SR.Argument_TypedReferenceInvalidField);
+
+                // For proper handling of Nullable<T> don't change to something like 'IsAssignableFrom'
+                // Currently we can't make a TypedReference to fields of Nullable<T>, which is fine.
+                Type declaringType = field.DeclaringType;
+                if (targetType != declaringType && !targetType.IsSubclassOf(declaringType))
+                    throw new MissingMemberException(SR.MissingMemberTypeRef); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
+
+                Type fieldType = field.FieldType;
+                if (fieldType.IsPrimitive)
+                    throw new ArgumentException(SR.Arg_TypeRefPrimitve);  // This check exists for compatibility (why such an ad-hoc restriction?)
+                if (i < (flds.Length - 1) && !fieldType.IsValueType)
+                    throw new MissingMemberException(SR.MissingMemberNestErr); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
+
+                targetType = fieldType;
+                offset = checked(offset + field.Offset);
+            }
+
+            type = targetType;
         }
     }
 }

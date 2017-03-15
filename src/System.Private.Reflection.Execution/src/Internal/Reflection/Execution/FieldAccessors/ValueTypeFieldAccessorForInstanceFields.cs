@@ -26,14 +26,26 @@ namespace Internal.Reflection.Execution.FieldAccessors
             _offset = offset;
         }
 
+        public sealed override int Offset => _offset - RuntimeAugments.ObjectHeaderSize;
+
         protected sealed override Object UncheckedGetField(Object obj)
         {
             return RuntimeAugments.LoadValueTypeField(obj, _offset, this.FieldTypeHandle);
         }
 
+        protected sealed override object UncheckedGetFieldDirectFromValueType(TypedReference typedReference)
+        {
+            return RuntimeAugments.LoadValueTypeFieldValueFromValueType(typedReference, this.Offset, this.FieldTypeHandle);
+        }
+
         protected sealed override void UncheckedSetField(Object obj, Object value)
         {
             RuntimeAugments.StoreValueTypeField(obj, _offset, value, this.FieldTypeHandle);
+        }
+
+        protected sealed override void UncheckedSetFieldDirectIntoValueType(TypedReference typedReference, object value)
+        {
+            RuntimeAugments.StoreValueTypeFieldValueIntoValueType(typedReference, this.Offset, value, this.FieldTypeHandle);
         }
     }
 }

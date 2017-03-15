@@ -18,7 +18,7 @@ using TargetException = System.ArgumentException;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ValueTypeFieldAccessorForThreadStaticFields : StaticFieldAccessor
+    internal sealed class ValueTypeFieldAccessorForThreadStaticFields : WritableStaticFieldAccessor
     {
         private IntPtr _cookie;
         private RuntimeTypeHandle _declaringTypeHandle;
@@ -30,15 +30,14 @@ namespace Internal.Reflection.Execution.FieldAccessors
             _declaringTypeHandle = declaringTypeHandle;
         }
 
-        protected sealed override Object GetFieldBypassCctor(Object obj)
+        protected sealed override Object GetFieldBypassCctor()
         {
             IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _cookie);
             return RuntimeAugments.LoadValueTypeField(fieldAddress, FieldTypeHandle);
         }
 
-        protected sealed override void SetFieldBypassCctor(Object obj, Object value, BinderBundle binderBundle)
+        protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle, binderBundle);
             IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _cookie);
             RuntimeAugments.StoreValueTypeField(fieldAddress, value, FieldTypeHandle);
         }

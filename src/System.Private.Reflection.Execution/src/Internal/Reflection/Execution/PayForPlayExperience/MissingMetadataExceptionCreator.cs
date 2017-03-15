@@ -116,7 +116,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     bool first = true;
 
                     // write out generic parameters
-                    if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
+                    if (method.IsConstructedGenericMethod)
                     {
                         first = true;
                         friendlyName.Append('<');

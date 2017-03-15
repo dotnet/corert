@@ -187,7 +187,6 @@
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
     <Compile Include="System\Reflection\ManifestResourceInfo.cs" />
     <Compile Include="System\Reflection\MemberFilter.cs" />
-    <Compile Include="System\Reflection\MemberInfo.cs" />
     <Compile Include="System\Reflection\MemberInfoSerializationHolder.cs" />
     <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MemberTypes.cs" />
@@ -605,6 +604,7 @@
       <Link>Interop\Windows\mincore\Interop.CLSIDFromProgID.cs</Link>
     </Compile>
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
+    <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.cs" />
     <Compile Include="System\UInt16.cs" />
