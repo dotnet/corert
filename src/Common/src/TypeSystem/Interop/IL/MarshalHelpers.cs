@@ -442,6 +442,17 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.Invalid;
                 }
 
+                if (type is MetadataType)
+                {
+                    MetadataType metadataType = (MetadataType)type;
+                    // the struct type need to be either sequential or explicit. If it is
+                    // auto layout we will throw exception.
+                    if (!metadataType.IsSequentialLayout && !metadataType.IsExplicitLayout)
+                    {
+                        throw new InvalidProgramException("The specified structure "+metadataType.Name+ " has invalid StructLayout information. It must be either Sequential or Explicit.");
+                    }
+
+                }
                 if (MarshalHelpers.IsBlittableType(type))
                 {
                     return MarshallerKind.BlittableStruct;

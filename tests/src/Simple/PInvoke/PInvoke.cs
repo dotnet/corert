@@ -69,6 +69,9 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern unsafe int* ReversePInvoke_Unused(Delegate_Unused del);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest")]
+        static extern bool StructTest_Auto(AutoStruct ss);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest(SequentialStruct ss);
 
@@ -279,6 +282,15 @@ namespace PInvokeTests
         {
             return a + b + c + d + e + f + g + h + i + j;
         }
+        [StructLayout(LayoutKind.Auto)]
+        public struct AutoStruct
+        {
+            public short f0;
+            public int f1;
+            public float f2;
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct SequentialStruct
@@ -341,6 +353,21 @@ namespace PInvokeTests
             ns.f2 = es;
             ThrowIfNotEquals(true, StructTest_Nested(ns), "Struct marshalling scenario5 failed.");
 
+// RhpThrowEx is not implemented in CPPCodeGen
+#if !CODEGEN_CPP
+            bool pass = false;
+            AutoStruct autoStruct = new AutoStruct();
+            try
+            {
+                // passing struct with Auto layout should throw exception.
+                StructTest_Auto(autoStruct);
+            }
+            catch (Exception)
+            {
+                pass = true;
+            }
+            ThrowIfNotEquals(true, pass, "Struct marshalling scenario6 failed.");
+#endif
         }
     }
 
