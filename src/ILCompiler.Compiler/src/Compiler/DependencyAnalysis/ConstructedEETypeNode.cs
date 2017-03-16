@@ -260,7 +260,11 @@ namespace ILCompiler.DependencyAnalysis
                     return false;
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    // TODO: any validation for arrays?
+
+                    TypeDesc elementType = type.GetParameterType();
+                    if (elementType.IsByRefLike || elementType.IsByRef)
+                        return false;
+
                     break;
 
                 default:
@@ -270,6 +274,10 @@ namespace ILCompiler.DependencyAnalysis
 
                     // Full EEtype of System.Canon should never be used.
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                        return false;
+
+                    // Byref-like types have interior pointers and cannot be heap allocated.
+                    if (type.IsByRefLike)
                         return false;
 
                     break;

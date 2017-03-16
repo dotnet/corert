@@ -115,6 +115,8 @@ namespace Internal.TypeSystem
                 case WellKnownType.RuntimeTypeHandle:
                 case WellKnownType.RuntimeMethodHandle:
                 case WellKnownType.RuntimeFieldHandle:
+                case WellKnownType.TypedReference:
+                case WellKnownType.ByReferenceOfT:
                     flags = TypeFlags.ValueType;
                     break;
 
@@ -262,6 +264,32 @@ namespace Internal.TypeSystem
             get
             {
                 return this.GetTypeDefinition().IsWellKnownType(WellKnownType.Nullable);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a generic definition, or
+        /// an instance of System.ByReference`1.
+        /// </summary>
+        public bool IsByReferenceOfT
+        {
+            get
+            {
+                return this.GetTypeDefinition().IsWellKnownType(WellKnownType.ByReferenceOfT);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a byref-like type (a <code>TypedReference</code>, <code>Span&lt;T&gt;</code>, etc.).
+        /// </summary>
+        public bool IsByRefLike
+        {
+            get
+            {
+                // TODO: should we key this off of the fact that there's an instance field
+                // of type ByReference<T>? We would need to move this to MetadataType and NoMetadataType
+                // respectively.
+                return this.IsWellKnownType(WellKnownType.TypedReference);
             }
         }
 

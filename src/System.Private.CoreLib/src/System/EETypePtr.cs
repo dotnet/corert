@@ -248,6 +248,14 @@ namespace System
             }
         }
 
+        internal bool IsByRefLike
+        {
+            get
+            {
+                return _value->IsByRefLike;
+            }
+        }
+
         internal bool IsNullable
         {
             get

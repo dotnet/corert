@@ -109,7 +109,7 @@ namespace Internal.TypeSystem.Ecma
                         return _module.Context.GetInstantiatedType(metadataTypeDef, new Instantiation(instance));
                     }
                 case SignatureTypeCode.TypedReference:
-                    throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+                    return GetWellKnownType(WellKnownType.TypedReference);
                 case SignatureTypeCode.FunctionPointer:
                     return _module.Context.GetFunctionPointerType(ParseMethodSignature());
                 default:

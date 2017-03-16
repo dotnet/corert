@@ -122,8 +122,8 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_MemoryBarrier, "MemoryBarrier", "System.Threading", "Interlocked");
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetCurrentManagedThread, "GetCurrentThreadNative", "System", "Thread"); // not in .NET Core
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetManagedThreadId, "get_ManagedThreadId", "System", "Thread"); // not in .NET Core
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor, ".ctor", "System", "ByReference`1"); // not handled
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value, "get_Value", "System", "ByReference`1"); // not handled
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor, ".ctor", "System", "ByReference`1"); // not handled
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value, "get_Value", "System", "ByReference`1"); // not handled
 
             // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
             Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 47);
@@ -196,6 +196,8 @@ namespace Internal.JitInterface
 
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
+                case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor:
+                case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value:
                     pMustExpand = true;
                     break;
 

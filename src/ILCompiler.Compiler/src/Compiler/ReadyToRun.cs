@@ -115,5 +115,9 @@ namespace ILCompiler
 
         // GVM lookup helper
         GVMLookupForSlot            = 0x100,
+
+        // TypedReference
+        TypeHandleToRuntimeType     = 0x110,
+        GetRefAny                   = 0x111,
     }
 }

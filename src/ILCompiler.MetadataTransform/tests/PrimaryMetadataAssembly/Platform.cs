@@ -69,6 +69,10 @@ namespace System
     public sealed class ParamArrayAttribute : Attribute
     {
     }
+
+    public struct TypedReference { }
+
+    public struct ByReference<T> { }
 }
 
 namespace System.Collections

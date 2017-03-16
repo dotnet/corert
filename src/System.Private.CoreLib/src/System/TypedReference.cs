@@ -11,21 +11,41 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 
+#if CORERT
+namespace System
+#else
+// Add a fake TypedReference to keep Project X running with CoreRT's type system that needs this now.
+namespace System
+{
+    [CLSCompliant(false)]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TypedReference
+    {
+    }
+}
+
 namespace System.Reflection  //@TODO: Intentionally placing TypedReference in the wrong namespace to work around NUTC's inability to handle ELEMENT_TYPE_TYPEDBYREF.
+#endif
 {
     [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct TypedReference
     {
         // Do not change the ordering of these fields. The JIT has a dependency on this layout.
+#if CORERT
+        private readonly ByReference<byte> _value;
+#else
         private readonly ByReferenceOfByte _value;
+#endif
         private readonly RuntimeTypeHandle _typeHandle;
 
         private TypedReference(object target, int offset, RuntimeTypeHandle typeHandle)
         {
-            //@todo: Once ByReference<T> is fixed, uncomment the following line and delete the one after it.
-            //_value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
+#if CORERT
+            _value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
+#else
             _value = new ByReferenceOfByte(target, offset);
+#endif
             _typeHandle = typeHandle;
         }
 
@@ -43,6 +63,11 @@ namespace System.Reflection  //@TODO: Intentionally placing TypedReference in th
         {
             if (value._typeHandle.IsNull)
                 throw new NullReferenceException(); // For compatibility;
+            return value._typeHandle;
+        }
+
+        internal static RuntimeTypeHandle RawTargetTypeToken(TypedReference value)
+        {
             return value._typeHandle;
         }
 

@@ -65,6 +65,10 @@ namespace System
     public class Array<T> : Array, System.Collections.Generic.IList<T> { }
 
     public class Exception { }
+
+    public struct TypedReference { }
+
+    public struct ByReference<T> { }
 }
 
 namespace System.Collections

@@ -1053,8 +1053,11 @@ namespace Internal.JitInterface
             {
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
 
+                if (type.IsByRefLike)
+                    result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
+
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout)
+                if (metadataType.IsExplicitLayout || metadataType.IsWellKnownType(WellKnownType.TypedReference))
                     result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
 
                 // TODO
@@ -1129,6 +1132,12 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
+
+            if (type.IsByReferenceOfT)
+            {
+                *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
+                return 1;
+            }
 
             foreach (var field in type.GetFields())
             {
@@ -1278,6 +1287,11 @@ namespace Internal.JitInterface
         private CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
+
+            // we shouldn't allow boxing of types that contains stack pointers
+            // csc and vbc already disallow it.
+            if (type.IsByRefLike)
+                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;
         }
@@ -1498,7 +1512,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
-                    throw new TypeSystemException.TypeLoadException("System", "TypedReference", _compilation.TypeSystemContext.SystemModule);
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.TypedReference));
 
                 case CorInfoClassId.CLASSID_TYPE_HANDLE:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeTypeHandle));
@@ -1618,8 +1632,19 @@ namespace Internal.JitInterface
 
         private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent)
         {
-            var fieldDesc = HandleToObject(field);
-            return asCorInfoType(fieldDesc.FieldType, out structType);
+            FieldDesc fieldDesc = HandleToObject(field);
+            TypeDesc fieldType = fieldDesc.FieldType;
+            CorInfoType type = asCorInfoType(fieldType, out structType);
+
+            Debug.Assert(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.ByReferenceOfT).GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
+            if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
+            {
+                Debug.Assert(structType == null);
+                Debug.Assert(fieldDesc.Offset.AsInt == 0);
+                type = CorInfoType.CORINFO_TYPE_BYREF;
+            }
+
+            return type;
         }
 
         private uint getFieldOffset(CORINFO_FIELD_STRUCT_* field)
@@ -2281,6 +2306,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC: id = ReadyToRunHelper.MonitorExitStatic; break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT: id = ReadyToRunHelper.GVMLookupForSlot; break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL: id = ReadyToRunHelper.TypeHandleToRuntimeType; break;
+                case CorInfoHelpFunc.CORINFO_HELP_GETREFANY: id = ReadyToRunHelper.GetRefAny; break;
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());

@@ -556,6 +556,11 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
             }
 
+            if (_type.IsByRefLike)
+            {
+                flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
+            }
+
             if (flags != 0)
             {
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, flags);
@@ -699,7 +704,7 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (TypeDesc typeArg in defType.Instantiation)
                 {
                     // ByRefs, pointers, function pointers, and System.Void are never valid instantiation arguments
-                    if (typeArg.IsByRef || typeArg.IsPointer || typeArg.IsFunctionPointer || typeArg.IsVoid)
+                    if (typeArg.IsByRef || typeArg.IsPointer || typeArg.IsFunctionPointer || typeArg.IsVoid || typeArg.IsByRefLike)
                     {
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }

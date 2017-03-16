@@ -198,12 +198,18 @@ namespace Internal.TypeSystem
                 if (!field.IsStatic || field.HasRva || field.IsLiteral)
                     continue;
 
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsByRefLike)
+                {
+                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
                 StaticsBlock* block =
                     field.IsThreadStatic ? &result.ThreadStatics :
                     field.HasGCStaticBase ? &result.GcStatics :
                     &result.NonGcStatics;
 
-                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, type.Context.Target.DefaultPackingSize);
+                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, type.Context.Target.DefaultPackingSize);
 
                 block->Size = LayoutInt.AlignUp(block->Size, sizeAndAlignment.Alignment);
                 result.Offsets[index] = new FieldAndOffset(field, block->Size);
@@ -222,6 +228,17 @@ namespace Internal.TypeSystem
         public override bool ComputeContainsGCPointers(DefType type)
         {
             bool someFieldContainsPointers = false;
+
+            if (type.IsValueType)
+            {
+                if (type.IsByReferenceOfT)
+                    return true;
+            }
+            else
+            {
+                if (type.HasBaseType && type.BaseType.ContainsGCPointers)
+                    return true;
+            }
 
             foreach (var field in type.GetFields())
             {
