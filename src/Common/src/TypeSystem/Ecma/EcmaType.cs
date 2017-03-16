@@ -9,7 +9,6 @@ using System.Reflection.Metadata;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
 
-using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem.Ecma
@@ -536,7 +535,6 @@ namespace Internal.TypeSystem.Ecma
             }
             return null;
         }
-
 
         public override bool IsExplicitLayout
         {

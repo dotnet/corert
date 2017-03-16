@@ -4,12 +4,13 @@
 
 using System;
 using Internal.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
     public abstract class InteropCallbacks
     {
-        public abstract IntPtr TryGetMarshallerForDelegate(RuntimeTypeHandle delegateTypeHandle);
+        public abstract bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData  delegateData);
     }
 }

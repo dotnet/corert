@@ -1293,7 +1293,7 @@
   <data name="Serialization_InvalidEscapeSequence" xml:space="preserve">
     <value>The serialized data contained an invalid escape sequence '\\{0}'.</value>
   </data>
-    <data name="Serialization_InvalidType" xml:space="preserve">
+  <data name="Serialization_InvalidType" xml:space="preserve">
     <value>Only system-provided types can be passed to the GetUninitializedObject method. '{0}' is not a valid instance of a type.</value>
   </data>
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
@@ -2259,5 +2259,8 @@
   </data>
   <data name="NotSupported_NYI" xml:space="preserve">
     <value>This feature is not currently implemented.</value>
+  </data>
+  <data name="Delegate_GarbageCollected" xml:space="preserve">
+    <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
   </data>
 </root>

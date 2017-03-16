@@ -6,6 +6,7 @@ using System;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -15,19 +16,24 @@ namespace Internal.IL.Stubs
     internal class DelegateMarshallingMethodThunk : ILStubMethod
     {
         private readonly TypeDesc _owningType;
-        private readonly TypeDesc _delegateType;
-        private readonly string _name;
+        private readonly MetadataType _delegateType;
         private readonly InteropStateManager _interopStateManager;
         private readonly MethodDesc _invokeMethod;
         private MethodSignature _signature;         // signature of the native callable marshalling stub
 
-        public DelegateMarshallingMethodThunk(TypeDesc owningType, TypeDesc delegateType, InteropStateManager interopStateManager, string name)
+        public bool IsOpenStaticDelegate
+        {
+            get;
+        }
+
+        public DelegateMarshallingMethodThunk(MetadataType delegateType, TypeDesc owningType,
+                InteropStateManager interopStateManager, bool isOpenStaticDelegate)
         {
             _owningType = owningType;
             _delegateType = delegateType;
             _invokeMethod = delegateType.GetMethod("Invoke", null);
-            _name = name;
             _interopStateManager = interopStateManager;
+            IsOpenStaticDelegate = isOpenStaticDelegate;
         }
 
         public override TypeSystemContext Context
@@ -54,7 +60,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public TypeDesc DelegateType
+        public MetadataType DelegateType
         {
             get
             {
@@ -68,8 +74,13 @@ namespace Internal.IL.Stubs
             {
                 if (_signature == null)
                 {
-                    // TODO: Parse UnmanagedFunctionPointerAttribute 
                     bool isAnsi = true;
+                    var ecmaType = _delegateType as EcmaType;
+                    if (ecmaType != null)
+                    {
+                        isAnsi = ecmaType.GetDelegatePInvokeFlags().CharSet == System.Runtime.InteropServices.CharSet.Ansi;
+                    }
+
                     MethodSignature delegateSignature = _invokeMethod.Signature;
                     TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
                     ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
@@ -128,7 +139,14 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return _name;
+                if (IsOpenStaticDelegate)
+                {
+                    return "ReverseOpenStaticDelegateStub__" + DelegateType.Name;
+                }
+                else
+                {
+                    return "ReverseDelegateStub__" + DelegateType.Name;
+                }
             }
         }
 
@@ -137,40 +155,4 @@ namespace Internal.IL.Stubs
             return PInvokeILEmitter.EmitIL(this, default(PInvokeILEmitterConfiguration), _interopStateManager);
         }
     }
-
-    
-    internal struct DelegateInvokeMethodSignature : IEquatable<DelegateInvokeMethodSignature>
-    {
-        public  readonly MethodSignature Signature;
-
-        public DelegateInvokeMethodSignature(TypeDesc delegateType)
-        {
-            MethodDesc invokeMethod = delegateType.GetMethod("Invoke", null);
-            Signature = invokeMethod.Signature;
-        }
-
-        public override int GetHashCode()
-        {
-            return Signature.GetHashCode();
-        }
-
-        // TODO: Use the MarshallerKind for each parameter to compare whether two signatures are similar(ie. whether two delegates can share marshalling stubs)
-        public bool Equals(DelegateInvokeMethodSignature other)
-        {
-            if (Signature.ReturnType != other.Signature.ReturnType)
-                return false;
-
-            if (Signature.Length != other.Signature.Length)
-                return false;
-
-            for (int i = 0; i < Signature.Length; i++)
-            {
-                if (Signature[i] != other.Signature[i])
-                    return false;
-            }
-
-            return true;
-        }
-    }
-
 }

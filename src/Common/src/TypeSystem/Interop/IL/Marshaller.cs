@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 using Internal.IL.Stubs;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
@@ -73,10 +74,11 @@ namespace Internal.TypeSystem.Interop
         public int Index;
         public TypeDesc ManagedType;
         public TypeDesc ManagedParameterType;
+        public PInvokeFlags PinvokeFlags;
         protected Marshaller[] Marshallers;
         private TypeDesc _nativeType;
         private TypeDesc _nativeParamType;
-
+        
 
         /// <summary>
         /// Native Type of the value being marshalled
@@ -266,7 +268,7 @@ namespace Internal.TypeSystem.Interop
             Marshaller[] marshallers,
             InteropStateManager interopStateManager,
             int index,
-            bool isAnsi,
+            PInvokeFlags flags,
             bool isIn,
             bool isOut,
             bool isReturn)
@@ -275,7 +277,7 @@ namespace Internal.TypeSystem.Interop
             MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(parameterType,
                                                 marshalAs,
                                                 isReturn,
-                                                isAnsi,
+                                                flags.CharSet == CharSet.Ansi,
                                                 marshallerType,
                                                 out elementMarshallerKind);
 
@@ -297,6 +299,7 @@ namespace Internal.TypeSystem.Interop
             marshaller.MarshalAsDescriptor = marshalAs;
             marshaller.Marshallers = marshallers;
             marshaller.Index = index;
+            marshaller.PinvokeFlags = flags;
 
             //
             // Desktop ignores [Out] on marshaling scenarios where they don't make sense (such as passing
@@ -528,7 +531,10 @@ namespace Internal.TypeSystem.Interop
             else
             {
                 _managedHome = new Home(emitter.NewLocal(ManagedType), ManagedType, isByRef: false);
-                _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+                if (IsNativeByRef)
+                    _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
+                else
+                    _nativeHome = new Home(Index - 1, NativeType, isByRef: false);
             }
         }
 

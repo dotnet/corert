@@ -3,20 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 
-using ILCompiler.Metadata;
-using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysisFramework;
 
 using Debug = System.Diagnostics.Debug;
-using ReadyToRunSectionType = Internal.Runtime.ReadyToRunSectionType;
-using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 
 namespace ILCompiler
 {
@@ -27,7 +21,7 @@ namespace ILCompiler
     {
         private readonly CompilationModuleGroup _compilationModuleGroup;
         private readonly CompilerTypeSystemContext _typeSystemContext;
-        private Dictionary<DelegateInvokeMethodSignature, DelegateMarshallingMethodThunk> _delegateMarshallingThunks = new Dictionary<DelegateInvokeMethodSignature, DelegateMarshallingMethodThunk>();
+        internal HashSet<TypeDesc> _delegateMarshalingTypes = new HashSet<TypeDesc>();
         private HashSet<NativeStructType> _structMarshallingTypes = new HashSet<NativeStructType>();
 
         public InteropStateManager InteropStateManager
@@ -42,18 +36,24 @@ namespace ILCompiler
             InteropStateManager = interopStateManager;
         }
     
-        internal MethodDesc GetDelegateMarshallingStub(TypeDesc delegateType)
+        internal MethodDesc GetOpenStaticDelegateMarshallingStub(TypeDesc delegateType)
         {
-            DelegateMarshallingMethodThunk thunk;
-            var lookupSig = new DelegateInvokeMethodSignature(delegateType);
-            if (!_delegateMarshallingThunks.TryGetValue(lookupSig, out thunk))
-            {
-                string stubName = "ReverseDelegateStub__" + NodeFactory.NameManglerDoNotUse.GetMangledTypeName(delegateType);
-                thunk = new DelegateMarshallingMethodThunk(_compilationModuleGroup.GeneratedAssembly.GetGlobalModuleType(), delegateType, InteropStateManager ,stubName);
-                _delegateMarshallingThunks.Add(lookupSig, thunk);
-            }
-            return thunk;
+            var stub = InteropStateManager.GetOpenStaticDelegateMarshallingThunk(delegateType);
+            Debug.Assert(stub != null);
+
+            _delegateMarshalingTypes.Add(delegateType);
+            return stub;
         }
+
+        internal MethodDesc GetClosedDelegateMarshallingStub(TypeDesc delegateType)
+        {
+            var stub = InteropStateManager.GetClosedDelegateMarshallingThunk(delegateType);
+            Debug.Assert(stub != null);
+
+            _delegateMarshalingTypes.Add(delegateType);
+            return stub;
+        }
+
 
         internal TypeDesc GetStructMarshallingType(TypeDesc structType)
         {
@@ -85,9 +85,14 @@ namespace ILCompiler
         }
 
 
-        internal IReadOnlyDictionary<DelegateInvokeMethodSignature, DelegateMarshallingMethodThunk> GetDelegateMarshallingThunks()
+        internal IEnumerable<Tuple<TypeDesc, DelegateMarshallingMethodThunk, DelegateMarshallingMethodThunk>> GetDelegateMarshallingThunks()
         {
-            return _delegateMarshallingThunks;
+            foreach (var delegateType in _delegateMarshalingTypes)
+            {
+                var openStub = InteropStateManager.GetOpenStaticDelegateMarshallingThunk(delegateType);
+                var closedStub = InteropStateManager.GetClosedDelegateMarshallingThunk(delegateType);
+                yield return new Tuple<TypeDesc, DelegateMarshallingMethodThunk, DelegateMarshallingMethodThunk>(delegateType, openStub, closedStub);
+            }
         }
 
         internal HashSet<NativeStructType> GetStructMarshallingTypes()
