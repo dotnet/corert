@@ -14,7 +14,7 @@
 **
 ===========================================================*/
 
-using System;
+using System.IO;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
@@ -26,6 +26,19 @@ namespace System.Reflection
         private byte[] _keyPairArray;
         private String _keyPairContainer;
         private byte[] _publicKey;
+
+        // Build key pair from file.
+        public StrongNameKeyPair(FileStream keyPairFile)
+        {
+            if (keyPairFile == null)
+                throw new ArgumentNullException(nameof(keyPairFile));
+
+            int length = (int)keyPairFile.Length;
+            _keyPairArray = new byte[length];
+            keyPairFile.Read(_keyPairArray, 0, length);
+
+            _keyPairExported = true;
+        }
 
         // Build key pair from byte array in memory.
         public StrongNameKeyPair(byte[] keyPairArray)
