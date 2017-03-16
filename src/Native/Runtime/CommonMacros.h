@@ -1,6 +1,11 @@
+#pragma optimize( "", off )  
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
+#ifndef __COMMONMACROS_H__
+#define __COMMONMACROS_H__
 
 // Some of our header files are shared with the binder, which needs the _TARGET_* macros defined
 #if defined(_TARGET_AMD64_)
@@ -229,3 +234,5 @@ typedef int32_t HRESULT;
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 #endif // !defined(_INC_WINDOWS) && !defined(BINDER)
 #endif // GCENV_INCLUDED
+
+#endif // __COMMONMACROS_H__

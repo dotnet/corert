@@ -33,7 +33,13 @@
 
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
 
+EXTERN_C void * RhpDebugFuncEvalHelper;
+GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, &RhpDebugFuncEvalHelper);
+
 #if defined(FEATURE_DYNAMIC_CODE)
+EXTERN_C void * RhpUniversalTransition();
+GPTR_IMPL_INIT(PTR_VOID, g_RhpUniversalTransitionAddr, (void**)&RhpUniversalTransition);
+
 EXTERN_C void * ReturnFromUniversalTransition;
 GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, &ReturnFromUniversalTransition);
 

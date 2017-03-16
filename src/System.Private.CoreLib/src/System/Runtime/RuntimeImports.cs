@@ -22,6 +22,22 @@ namespace System.Runtime
     public static class RuntimeImports
     {
         private const string RuntimeLibrary = "[MRT]";
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpSetHighLevelDebugFuncEvalHelper")]
+        public static extern void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpSendCustomEventToDebugger")]
+        public static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        public static extern IntPtr RhpGetFuncEvalTargetAddress();
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        [CLSCompliant(false)]
+        public static extern uint RhpGetFuncEvalParameterBufferSize();
+
         //
         // calls to GC
         // These methods are needed to implement System.GC like functionality (optional)

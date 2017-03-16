@@ -304,11 +304,10 @@
     <Compile Include="System\IO\FileMode.cs" />
     <Compile Include="System\IO\FileNotFoundException.cs" />
     <Compile Include="System\IO\FileShare.cs" />
-    <Compile Include="System\IO\FileOptions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\IO\FileOptions.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="System\IO\PathTooLongException.cs" />
-    <!-- TODO: Enable System.Path in ProjectN TFS build -->
     <Compile Include="System\IO\SeekOrigin.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
@@ -998,6 +997,9 @@
     <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="..\..\Runtime.Base\src\System\Diagnostics\Eval.cs">
+      <Link>Runtime.Base\src\System\Diagnostics\Eval.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs">
       <Link>Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs</Link>
     </Compile>
