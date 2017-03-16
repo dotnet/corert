@@ -16,6 +16,7 @@ namespace System.IO
     /// </devdoc>
     [Serializable]
     [Flags]
+    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem")]
     public enum FileOptions
     {
         // NOTE: any change to FileOptions enum needs to be 
