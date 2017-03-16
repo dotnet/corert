@@ -13,6 +13,8 @@ namespace Internal.Runtime.CompilerHelpers
         public static void InitializeLibrary()
         {
             TypeLoaderEnvironment.Initialize();
+            // TODO: Find a better home for the FuncEval runtime support
+            SerializedDebugData.Initialize();
         }
     }
 }
