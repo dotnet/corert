@@ -35,6 +35,7 @@ namespace System.Runtime
         public static extern IntPtr RhpGetFuncEvalTargetAddress();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        [CLSCompliant(false)]
         public static extern uint RhpGetFuncEvalParameterBufferSize();
 
         //

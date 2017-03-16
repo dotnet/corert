@@ -33,7 +33,7 @@
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <!-- TODO: Everything but Interop and TypeLoader should be out of the conditional block -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)..\System.Private.CoreLib\System.Private.CoreLib.csproj">
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj">
       <Aliases>global,System_Private_CoreLib</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
