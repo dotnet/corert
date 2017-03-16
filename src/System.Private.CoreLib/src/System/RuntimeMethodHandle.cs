@@ -144,9 +144,6 @@ namespace System
 
                 // This is either a RuntimeMethodInfo or a RuntimeConstructorInfo
                 MethodBase method = MethodInfo.GetMethodFromHandle(this, declaringType);
-                if (method == null)
-                    throw new SerializationException(SR.RuntimeMethodHandleSer_InsufficientMetadata);
-
                 info.AddValue("MethodObj", method, typeof(MethodBase));
             }
             catch (Exception e) when (!(e is SerializationException))

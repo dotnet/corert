@@ -2224,15 +2224,6 @@
   <data name="Serialization_InvalidFieldState" xml:space="preserve">
     <value>Object fields may not be properly initialized.</value>
   </data>
-  <data name="RuntimeTypeHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeTypeHandle cannot be serialized properly due to missing reflection metadata.</value>
-  </data>
-  <data name="RuntimeMethodHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeMethodHandle cannot be serialized properly due to missing reflection metadata.</value>
-  </data>
-  <data name="RuntimeFieldHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeFieldHandle cannot be serialized properly due to missing reflection metadata.</value>
-  </data>
   <data name="Acc_CreateAbst" xml:space="preserve">
     <value>Cannot create an abstract class.</value>
   </data>
