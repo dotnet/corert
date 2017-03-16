@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
-using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
 
@@ -536,86 +535,6 @@ namespace Internal.TypeSystem.Ecma
             }
             return null;
         }
-
-        public override PInvokeAttributes GetDelegatePInvokeAttributes()
-        {
-            PInvokeAttributes attributes = PInvokeAttributes.None;
-            if (!this.IsDelegate)
-            {
-                return attributes;
-            }
-
-            var customAttributeValue = this.GetDecodedCustomAttribute(
-                               "System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute");
-
-            if (customAttributeValue == null)
-            {
-                return attributes;
-            }
-
-            if (!customAttributeValue.HasValue)
-            {
-                return attributes;
-            }
-
-            if (customAttributeValue.Value.FixedArguments.Length != 1)
-            {
-                return attributes;
-            }
-
-            CallingConvention callingConvention = (CallingConvention)customAttributeValue.Value.FixedArguments[0].Value;
-
-            switch (callingConvention)
-            {
-                case CallingConvention.StdCall:
-                    attributes |= PInvokeAttributes.CallingConventionStdCall;
-                    break;
-                case CallingConvention.Cdecl:
-                    attributes |= PInvokeAttributes.CallingConventionCDecl;
-                    break;
-                case CallingConvention.ThisCall:
-                    attributes |= PInvokeAttributes.CallingConventionThisCall;
-                    break;
-                case CallingConvention.Winapi:
-                    attributes |= PInvokeAttributes.CallingConventionWinApi;
-                    break;
-            }
-
-            if (customAttributeValue.Value.NamedArguments.Length == 0)
-                return attributes;
-
-            
-            foreach (var namedArgument in customAttributeValue.Value.NamedArguments)
-            {
-                if (namedArgument.Name == "CharSet")
-                {
-                    CharSet charSet = (CharSet)namedArgument.Value;
-                    switch (charSet)
-                    {
-                        case CharSet.Ansi:
-                            attributes |= PInvokeAttributes.CharSetAnsi;
-                            break;
-                        case CharSet.Unicode:
-                            attributes |= PInvokeAttributes.CharSetUnicode;
-                            break;
-                    }
-                }
-                else if (namedArgument.Name == "BestFitMapping")
-                {
-                    attributes |= PInvokeAttributes.BestFitMappingMask;
-                }
-                else if (namedArgument.Name == "SetLastError")
-                {
-                    attributes |= PInvokeAttributes.SetLastError;
-                }
-                else if (namedArgument.Name == "ThrowOnUnmappableChar")
-                {
-                    attributes |= PInvokeAttributes.ThrowOnUnmappableCharEnable;
-                }
-            }
-            return attributes;
-        }
-
 
         public override bool IsExplicitLayout
         {

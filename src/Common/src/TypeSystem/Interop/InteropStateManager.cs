@@ -44,7 +44,7 @@ namespace Internal.TypeSystem
 
 
             // Get the stub for marshalling open static delegate
-            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, true);
+            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, isOpenStaticDelegate: true);
             return _delegateMarshallingThunkHashtable.GetOrCreateValue(stubKey);
         }
 
@@ -62,7 +62,7 @@ namespace Internal.TypeSystem
 
 
             // Get the stub for marshalling open static delegate
-            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, false);
+            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, isOpenStaticDelegate: false);
             return _delegateMarshallingThunkHashtable.GetOrCreateValue(stubKey);
         }
 
@@ -230,7 +230,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public struct DelegateMarshallingStubHashtableKey
+        private struct DelegateMarshallingStubHashtableKey
         {
             public readonly MetadataType DelegateType;
             public readonly bool IsOpenStaticDelegate;
@@ -267,7 +267,7 @@ namespace Internal.TypeSystem
 
             protected override DelegateMarshallingMethodThunk CreateValueFromKey(DelegateMarshallingStubHashtableKey key)
             {
-                return new DelegateMarshallingMethodThunk(key.DelegateType, _owningType, _interopStateManager,  key.IsOpenStaticDelegate);
+                return new DelegateMarshallingMethodThunk(key.DelegateType, _owningType, _interopStateManager, isOpenStaticDelegate: key.IsOpenStaticDelegate);
             }
 
             private TypeDesc _owningType;

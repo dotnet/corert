@@ -258,10 +258,7 @@ namespace Internal.Runtime.CompilerHelpers
             //
             if (target == null)
             {
-                Environment.FailFast(
-                    "The corresponding delegate has been garbage collected. " +
-                    "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
-                );
+                Environment.FailFast(SR.Delegate_GarbageCollected);
             }
             return target;
 

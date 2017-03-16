@@ -41,10 +41,5 @@ namespace Internal.TypeSystem
         {
             return Array.Empty<MarshalAsDescriptor>();
         }
-
-        public virtual PInvokeAttributes GetDelegatePInvokeAttributes()
-        {
-            return PInvokeAttributes.None;
-        }
     }
 }

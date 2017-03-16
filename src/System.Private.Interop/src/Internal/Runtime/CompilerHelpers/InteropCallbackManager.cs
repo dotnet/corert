@@ -16,8 +16,8 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
         {
-            IntPtr[] marshallingStubs;
-            if (!InteropCallbackManager.Instance.TryGetMarshallersForDelegate(delegateTypeHandle, out marshallingStubs))
+            IntPtr openStub, closedStub;
+            if (!InteropCallbackManager.Instance.TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub))
             {
                 data = default(McgPInvokeDelegateData);
                 return false;
@@ -25,8 +25,8 @@ namespace Internal.Runtime.CompilerHelpers
 
             data = new global::System.Runtime.InteropServices.McgPInvokeDelegateData()
             {
-                ReverseOpenStaticDelegateStub = marshallingStubs[0],
-                ReverseStub = marshallingStubs[1]
+                ReverseOpenStaticDelegateStub = openStub,
+                ReverseStub = closedStub
             };
             return true;
         }
@@ -59,10 +59,11 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        public unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr[] stubs)
+        public unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();
-            stubs = Array.Empty<IntPtr>();
+            openStub = IntPtr.Zero;
+            closedStub = IntPtr.Zero;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -84,7 +85,8 @@ namespace Internal.Runtime.CompilerHelpers
                         {
                             byte* pOpen = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                             byte* pClose = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-                            stubs = new IntPtr[2] { (IntPtr)pOpen, (IntPtr)pClose };
+                            openStub = (IntPtr)pOpen;
+                            closedStub = (IntPtr)pClose;
                             return true;
                         }
                     }

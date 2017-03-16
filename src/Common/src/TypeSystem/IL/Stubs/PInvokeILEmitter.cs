@@ -7,6 +7,7 @@ using System;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -34,20 +35,24 @@ namespace Internal.IL.Stubs
             _importMetadata = targetMethod.GetPInvokeMethodMetadata();
             _interopStateManager = interopStateManager;
 
-            bool isAnsi;
+            PInvokeFlags flags = new PInvokeFlags();
             if (targetMethod.IsPInvoke)
             {
-                isAnsi = PInvokeMetadata.GetCharSet(_importMetadata.Attributes) == PInvokeAttributes.CharSetAnsi;
+                flags = _importMetadata.Flags;
             }
-            else
+            else 
             {
-                isAnsi = PInvokeMetadata.GetCharSet(((DelegateMarshallingMethodThunk)_targetMethod).DelegateType.GetDelegatePInvokeAttributes()) == PInvokeAttributes.CharSetAnsi;
+                var delegateType = ((DelegateMarshallingMethodThunk)_targetMethod).DelegateType as EcmaType;
+                if (delegateType != null)
+                {
+                    flags = delegateType.GetDelegatePInvokeFlags();
+                }
             }
-
-            _marshallers = InitializeMarshallers(targetMethod, interopStateManager, isAnsi);
+            
+            _marshallers = InitializeMarshallers(targetMethod, interopStateManager, flags);
         }
 
-        private static Marshaller[] InitializeMarshallers(MethodDesc targetMethod, InteropStateManager interopStateManager, bool isAnsi)
+        private static Marshaller[] InitializeMarshallers(MethodDesc targetMethod, InteropStateManager interopStateManager, PInvokeFlags flags)
         {
             bool isDelegate = targetMethod is DelegateMarshallingMethodThunk;
             MethodSignature methodSig = isDelegate ? ((DelegateMarshallingMethodThunk)targetMethod).DelegateSignature : targetMethod.Signature;
@@ -77,7 +82,7 @@ namespace Internal.IL.Stubs
                                                     marshallers,
                                                     interopStateManager,
                                                     parameterMetadata.Index,
-                                                    isAnsi,
+                                                    flags,
                                                     parameterMetadata.In,
                                                     parameterMetadata.Out,
                                                     parameterMetadata.Return
@@ -113,7 +118,7 @@ namespace Internal.IL.Stubs
 
             MethodSignature nativeSig;
             // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke 
-            if ((_importMetadata.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
+            if (_importMetadata.Flags.SetLastError)
             {
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                             InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastWin32Error", null)));
@@ -169,7 +174,7 @@ namespace Internal.IL.Stubs
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType.GetKnownMethod("ResolvePInvoke", null)));
 
-                MethodSignatureFlags unmanagedCallConv = PInvokeMetadata.GetUnmanagedCallingConvention(_importMetadata.Attributes);
+                MethodSignatureFlags unmanagedCallConv = _importMetadata.Flags.UnmanagedCallingConvention;
 
                 nativeSig = new MethodSignature(
                     _targetMethod.Signature.Flags | unmanagedCallConv, 0, nativeReturnType, nativeParameterTypes);
@@ -183,7 +188,7 @@ namespace Internal.IL.Stubs
             {
                 // Eager call
                 PInvokeMetadata nativeImportMetadata =
-                    new PInvokeMetadata(_importMetadata.Module, _importMetadata.Name ?? _targetMethod.Name, _importMetadata.Attributes);
+                    new PInvokeMetadata(_importMetadata.Module, _importMetadata.Name ?? _targetMethod.Name, _importMetadata.Flags);
 
                 nativeSig = new MethodSignature(
                     _targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
@@ -196,7 +201,7 @@ namespace Internal.IL.Stubs
             
             // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.SaveLastWin32Error so that last error can be used later 
             // by calling PInvokeMarshal.GetLastWin32Error
-            if ((_importMetadata.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
+            if (_importMetadata.Flags.SetLastError)
             {
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                             InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("SaveLastWin32Error", null)));
@@ -239,7 +244,7 @@ namespace Internal.IL.Stubs
             {
                 return true;
             }
-            if ((_importMetadata.Attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError)
+            if (_importMetadata.Flags.SetLastError)
             {
                 return true;
             }

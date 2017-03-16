@@ -6,6 +6,7 @@ using System;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -18,9 +19,12 @@ namespace Internal.IL.Stubs
         private readonly MetadataType _delegateType;
         private readonly InteropStateManager _interopStateManager;
         private readonly MethodDesc _invokeMethod;
-        public readonly bool IsOpenStaticDelegate;
         private MethodSignature _signature;         // signature of the native callable marshalling stub
-        
+
+        public bool IsOpenStaticDelegate
+        {
+            get;
+        }
 
         public DelegateMarshallingMethodThunk(MetadataType delegateType, TypeDesc owningType,
                 InteropStateManager interopStateManager, bool isOpenStaticDelegate)
@@ -70,7 +74,13 @@ namespace Internal.IL.Stubs
             {
                 if (_signature == null)
                 {
-                    bool isAnsi = PInvokeMetadata.GetCharSet(_delegateType.GetDelegatePInvokeAttributes()) == PInvokeAttributes.CharSetAnsi;
+                    bool isAnsi = true;
+                    var ecmaType = _delegateType as EcmaType;
+                    if (ecmaType != null)
+                    {
+                        isAnsi = ecmaType.GetDelegatePInvokeFlags().CharSet == System.Runtime.InteropServices.CharSet.Ansi;
+                    }
+
                     MethodSignature delegateSignature = _invokeMethod.Signature;
                     TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
                     ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
@@ -131,7 +141,7 @@ namespace Internal.IL.Stubs
             {
                 if (IsOpenStaticDelegate)
                 {
-                    return "ReverseOpenStaicDelegateStub__" + DelegateType.Name;
+                    return "ReverseOpenStaticDelegateStub__" + DelegateType.Name;
                 }
                 else
                 {
