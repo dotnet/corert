@@ -281,6 +281,15 @@ namespace ILCompiler
                 if (eetypeGenerated.IsGenericDefinition)
                     continue;
 
+                if (eetypeGenerated.HasInstantiation)
+                {
+                    // Collapsing of field map entries based on canonicalization, to avoid redundant equivalent entries
+
+                    TypeDesc canonicalType = eetypeGenerated.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonicalType != eetypeGenerated && TypeGeneratesEEType(canonicalType))
+                        continue;
+                }
+
                 foreach (FieldDesc field in eetypeGenerated.GetFields())
                 {
                     int token;
