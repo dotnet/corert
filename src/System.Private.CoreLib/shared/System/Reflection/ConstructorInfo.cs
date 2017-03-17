@@ -18,8 +18,8 @@ namespace System.Reflection
         public object Invoke(object[] parameters) => Invoke(BindingFlags.Default, binder: null, parameters: parameters, culture: null);
         public abstract object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
-        public override bool Equals(object obj) => Equals(obj);
-        public override int GetHashCode() => GetHashCode();
+        public override bool Equals(object obj) => base.Equals(obj);
+        public override int GetHashCode() => base.GetHashCode();
 
         public static bool operator ==(ConstructorInfo left, ConstructorInfo right)
         {
