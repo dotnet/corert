@@ -280,20 +280,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether this is a byref-like type (a <code>TypedReference</code>, <code>Span&lt;T&gt;</code>, etc.).
-        /// </summary>
-        public bool IsByRefLike
-        {
-            get
-            {
-                // TODO: should we key this off of the fact that there's an instance field
-                // of type ByReference<T>? We would need to move this to MetadataType and NoMetadataType
-                // respectively.
-                return this.IsWellKnownType(WellKnownType.TypedReference);
-            }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this is an array type (<see cref="ArrayType"/>).
         /// Note this will return true for both multidimensional array types and vector types.
         /// Use <see cref="IsSzArray"/> to check for vector types.

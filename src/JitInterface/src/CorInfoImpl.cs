@@ -1053,7 +1053,7 @@ namespace Internal.JitInterface
             {
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
 
-                if (type.IsByRefLike)
+                if (metadataType.IsByRefLike)
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
 
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
@@ -1290,7 +1290,7 @@ namespace Internal.JitInterface
 
             // we shouldn't allow boxing of types that contains stack pointers
             // csc and vbc already disallow it.
-            if (type.IsByRefLike)
+            if (type.IsValueType && ((DefType)type).IsByRefLike)
                 throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;

@@ -260,9 +260,11 @@ namespace ILCompiler.DependencyAnalysis
                     return false;
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-
                     TypeDesc elementType = type.GetParameterType();
-                    if (elementType.IsByRefLike || elementType.IsByRef)
+                    if (elementType.IsByRef)
+                        return false;
+
+                    if (elementType.IsValueType && ((DefType)elementType).IsByRefLike)
                         return false;
 
                     break;
@@ -277,7 +279,7 @@ namespace ILCompiler.DependencyAnalysis
                         return false;
 
                     // Byref-like types have interior pointers and cannot be heap allocated.
-                    if (type.IsByRefLike)
+                    if (type.IsValueType && ((DefType)type).IsByRefLike)
                         return false;
 
                     break;

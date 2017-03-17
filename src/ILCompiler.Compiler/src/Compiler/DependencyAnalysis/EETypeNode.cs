@@ -522,6 +522,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint flags = 0;
 
+            MetadataType metadataType = _type as MetadataType;
+
             if (_type.IsNullable)
             {
                 flags |= (uint)EETypeRareFlags.IsNullableFlag;
@@ -537,7 +539,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }
 
-            if (_type.IsDefType && ((DefType)_type).IsHfa)
+            if (metadataType != null && metadataType.IsHfa)
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
@@ -551,12 +553,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if ((_type is MetadataType) && !_type.IsInterface && ((MetadataType)_type).IsAbstract)
+            if (metadataType != null && !_type.IsInterface && metadataType.IsAbstract)
             {
                 flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
             }
 
-            if (_type.IsByRefLike)
+            if (metadataType != null && metadataType.IsByRefLike)
             {
                 flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
             }
@@ -704,7 +706,11 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (TypeDesc typeArg in defType.Instantiation)
                 {
                     // ByRefs, pointers, function pointers, and System.Void are never valid instantiation arguments
-                    if (typeArg.IsByRef || typeArg.IsPointer || typeArg.IsFunctionPointer || typeArg.IsVoid || typeArg.IsByRefLike)
+                    if (typeArg.IsByRef
+                        || typeArg.IsPointer
+                        || typeArg.IsFunctionPointer
+                        || typeArg.IsVoid
+                        || (typeArg.IsValueType && ((DefType)typeArg).IsByRefLike))
                     {
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
