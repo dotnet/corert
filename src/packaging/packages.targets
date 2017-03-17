@@ -165,7 +165,7 @@
 
             <!-- End: Libraries with netcoreapp1.2corert configuration -->
 
-            <ILCompilerFrameworkFiles Include="runtime.aot.System.Diagnostics.Tracing/$(CoreFxPackageVersion)/runtimes/aot/lib/netcore50/System.Diagnostics.Tracing.dll" />
+            <ILCompilerFrameworkFiles Include="runtime.win7-x64-aot.Microsoft.Private.CoreFx.UAP/4.4.0-beta-25107-03/runtimes/win7-x64-aot/lib/uap10.1/System.Diagnostics.Tracing.dll" />
 
             <ILCompilerFrameworkFiles Include="System.Threading/$(CoreFxPackageVersion)/lib/netstandard1.7/System.Threading.dll" />
 

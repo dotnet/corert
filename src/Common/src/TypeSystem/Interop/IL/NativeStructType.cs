@@ -8,7 +8,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
 {
-    internal class NativeStructType : MetadataType
+    public class NativeStructType : MetadataType
     {
         // The managed struct that this type will imitate
         public MetadataType ManagedStructType
