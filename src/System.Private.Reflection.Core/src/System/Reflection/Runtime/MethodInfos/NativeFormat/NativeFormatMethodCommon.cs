@@ -18,6 +18,7 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime.CompilerServices;
+using Internal.Runtime.TypeLoader;
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos.NativeFormat
@@ -214,9 +215,9 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             for (int i = 0; i < genericArgHandles.Length; i++)
                 genericArgHandles[i] = genericArgs[i].TypeHandle;
 
-            TypeManagerHandle typeManager = Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(Reader);
+            TypeManagerHandle typeManager = TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(Reader);
 
-            return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
+            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                 DeclaringType.TypeHandle,
                 Name,
                 RuntimeSignature.CreateFromMethodHandle(typeManager, MethodHandle.AsInt()),

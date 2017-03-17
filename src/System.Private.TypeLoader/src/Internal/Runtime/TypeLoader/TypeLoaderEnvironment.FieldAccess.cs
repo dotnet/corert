@@ -465,7 +465,7 @@ namespace Internal.Runtime.TypeLoader
 #if SUPPORTS_R2R_LOADING
             fieldAccessMetadata.MappingTableModule = ModuleList.Instance.GetModuleForMetadataReader(((NativeFormatType)type.GetTypeDefinition()).MetadataReader);
 #endif
-            fieldAccessMetadata.Offset = fieldDesc.Offset;
+            fieldAccessMetadata.Offset = fieldDesc.Offset.AsInt;
             fieldAccessMetadata.Flags = FieldTableFlags.HasMetadataHandle;
 
             if (fieldDesc.IsThreadStatic)

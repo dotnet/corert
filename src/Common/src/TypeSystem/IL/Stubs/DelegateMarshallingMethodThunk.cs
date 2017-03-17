@@ -10,7 +10,7 @@ namespace Internal.IL.Stubs
     /// <summary>
     /// Thunk to marshal delegate parameters and invoke the appropriate delegate function pointer
     /// </summary>
-    internal class DelegateMarshallingMethodThunk : ILStubMethod
+    public class DelegateMarshallingMethodThunk : ILStubMethod
     {
         private TypeDesc _owningType;
         private MethodSignature _delegateSignature; // signature of the delegate
@@ -94,7 +94,7 @@ namespace Internal.IL.Stubs
     }
 
     
-    internal struct DelegateInvokeMethodSignature : IEquatable<DelegateInvokeMethodSignature>
+    public struct DelegateInvokeMethodSignature : IEquatable<DelegateInvokeMethodSignature>
     {
         public  readonly MethodSignature Signature;
 

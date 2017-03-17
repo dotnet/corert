@@ -135,6 +135,14 @@ namespace Internal.Runtime.TypeLoader
                 Environment.FailFast("TypeLoaderLock not held");
         }
 
+        public void RunUnderTypeLoaderLock(Action action)
+        {
+            using (LockHolder.Hold(_typeLoaderLock))
+            {
+                action();
+            }
+        }
+
         public IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult)
         {
             IntPtr result;

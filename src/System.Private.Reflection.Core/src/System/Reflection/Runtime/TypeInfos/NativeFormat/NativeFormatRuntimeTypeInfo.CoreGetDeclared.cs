@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             {
                 Method method = methodHandle.GetMethod(reader);
 
-                if (!MetadataReaderExtensions.IsConstructor(ref method, reader))
+                if (!NativeFormatMetadataReaderExtensions.IsConstructor(ref method, reader))
                     continue;
 
                 if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
@@ -45,7 +45,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             {
                 Method method = methodHandle.GetMethod(reader);
 
-                if (MetadataReaderExtensions.IsConstructor(ref method, reader))
+                if (NativeFormatMetadataReaderExtensions.IsConstructor(ref method, reader))
                     continue;
 
                 if (optionalNameFilter == null || optionalNameFilter.Matches(method.Name, reader))
