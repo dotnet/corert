@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Internal.Metadata.NativeFormat;
+using System.Reflection.Runtime.General;
 
 namespace Internal.TypeSystem.NativeFormat
 {
@@ -184,7 +185,7 @@ namespace Internal.TypeSystem.NativeFormat
             // This is gross, but its the only api I can find that directly returns the handle into a token
             // The assert is used to verify this round-trips properly
             int handleAsToken = handle.GetHashCode();
-            Debug.Assert(Internal.Runtime.TypeLoader.MetadataReaderExtensions.AsHandle(handleAsToken).Equals(handle));
+            Debug.Assert(handleAsToken.AsHandle().Equals(handle));
 
             return handleAsToken;
         }
@@ -198,7 +199,7 @@ namespace Internal.TypeSystem.NativeFormat
             // This is gross, but its the only api I can find that directly returns the handle into a token
             // The assert is used to verify this round-trips properly
             int handleAsToken = handle.GetHashCode();
-            Debug.Assert(Internal.Runtime.TypeLoader.MetadataReaderExtensions.AsHandle(handleAsToken).Equals(handle));
+            Debug.Assert(handleAsToken.AsHandle().Equals(handle));
 
             return handleAsToken;
         }

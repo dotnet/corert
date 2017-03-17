@@ -1,11 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(AssemblyName)' == ''">
     <AssemblyName>System.Private.TypeLoader</AssemblyName>
+    <ProjectGuid>{F36495F7-8CF5-474D-A92D-40317AE2439C}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{F36495F7-8CF5-474D-A92D-40317AE2439C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -21,6 +23,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;EETYPE_TYPE_MANAGER;AMD64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(JitSupport)' == 'true'">
+    <DefineConstants>SUPPORT_JIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
@@ -46,7 +51,32 @@
   <PropertyGroup>
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
   </PropertyGroup>
-
+  <ItemGroup Condition="'$(JitSupport)' == 'true'">
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\GenericParameterDesc.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ParameterizedType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedTypeUtilities.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\SignatureVariable.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeDesc.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.Symbols.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs" />
+    <Compile Include="Internal\TypeSystem\ILStubMethod.Runtime.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\JitSupport.MethodEntrypointStubs.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'" >
     <Compile Include="System\Reflection\Runtime\General\QHandles.Ecma.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.Ecma.cs" />

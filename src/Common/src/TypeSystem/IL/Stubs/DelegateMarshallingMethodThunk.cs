@@ -13,7 +13,7 @@ namespace Internal.IL.Stubs
     /// <summary>
     /// Thunk to marshal delegate parameters and invoke the appropriate delegate function pointer
     /// </summary>
-    internal class DelegateMarshallingMethodThunk : ILStubMethod
+    public class DelegateMarshallingMethodThunk : ILStubMethod
     {
         private readonly TypeDesc _owningType;
         private readonly MetadataType _delegateType;

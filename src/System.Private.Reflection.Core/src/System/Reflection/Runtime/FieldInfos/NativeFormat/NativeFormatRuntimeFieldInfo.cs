@@ -20,8 +20,9 @@ using Internal.Metadata.NativeFormat;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-
 using Internal.Reflection.Tracing;
+
+using Internal.Runtime.TypeLoader;
 
 namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 {
@@ -136,7 +137,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
         {
             get
             {
-                return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
+                return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
                     DeclaringType.TypeHandle,
                     Name);
             }

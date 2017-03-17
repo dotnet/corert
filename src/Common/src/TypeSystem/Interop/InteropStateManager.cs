@@ -33,7 +33,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Generates marshalling stubs for open static delegates
         /// </summary>
-        internal DelegateMarshallingMethodThunk GetOpenStaticDelegateMarshallingThunk(TypeDesc delegateType)
+        public DelegateMarshallingMethodThunk GetOpenStaticDelegateMarshallingThunk(TypeDesc delegateType)
         {
             if (delegateType is ByRefType)
             {
@@ -51,7 +51,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Generates marshalling stubs for closed instance delegates
         /// </summary>
-        internal DelegateMarshallingMethodThunk GetClosedDelegateMarshallingThunk(TypeDesc delegateType)
+        public DelegateMarshallingMethodThunk GetClosedDelegateMarshallingThunk(TypeDesc delegateType)
         {
             if (delegateType is ByRefType)
             {
@@ -79,7 +79,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Generates a Native struct type which imitates the managed struct
         /// </summary>
-        internal NativeStructType GetStructMarshallingNativeType(TypeDesc managedType)
+        public NativeStructType GetStructMarshallingNativeType(TypeDesc managedType)
         {
             if (managedType is ByRefType)
             {
@@ -94,7 +94,7 @@ namespace Internal.TypeSystem
         /// <summary>
         ///  Generates a thunk to marshal the fields of the struct from managed to native
         /// </summary>
-        internal MethodDesc GetStructMarshallingManagedToNativeThunk(TypeDesc managedType)
+        public MethodDesc GetStructMarshallingManagedToNativeThunk(TypeDesc managedType)
         {
             if (managedType is ByRefType)
             {
@@ -110,7 +110,7 @@ namespace Internal.TypeSystem
         /// <summary>
         ///  Generates a thunk to marshal the fields of the struct from native to managed
         /// </summary>
-        internal MethodDesc GetStructMarshallingNativeToManagedThunk(TypeDesc managedType)
+        public MethodDesc GetStructMarshallingNativeToManagedThunk(TypeDesc managedType)
         {
             if (managedType is ByRefType)
             {
@@ -127,7 +127,7 @@ namespace Internal.TypeSystem
         /// <summary>
         ///  Generates a thunk to cleanup any allocated resources during marshalling
         /// </summary>
-        internal MethodDesc GetStructMarshallingCleanupThunk(TypeDesc managedType)
+        public MethodDesc GetStructMarshallingCleanupThunk(TypeDesc managedType)
         {
             if (managedType is ByRefType)
             {

@@ -124,6 +124,10 @@ namespace System.Reflection
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture) { throw NotImplemented.ByDesign; }
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture, Version version) { throw NotImplemented.ByDesign; }
 
+        public virtual FileStream GetFile(string name) { throw NotImplemented.ByDesign; }
+        public virtual FileStream[] GetFiles() => GetFiles(getResourceModules: false);
+        public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
+
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
         public override string ToString()
