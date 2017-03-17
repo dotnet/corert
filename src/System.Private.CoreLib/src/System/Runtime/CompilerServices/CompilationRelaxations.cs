@@ -4,38 +4,19 @@
 
 namespace System.Runtime.CompilerServices
 {
-    /// IMPORTANT: Keep this in sync with corhdr.h
-    [Flags]
-    internal enum CompilationRelaxations : int
-    {
-        NoStringInterning = 0x0008, // Start in 0x0008, we had other non public flags in this enum before,
-                                    // so we'll start here just in case somebody used them. This flag is only
-                                    // valid when set for Assemblies.
-    };
-
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module | AttributeTargets.Class | AttributeTargets.Method)]
     public class CompilationRelaxationsAttribute : Attribute
     {
-        private int _relaxations;      // The relaxations.
-
-        public CompilationRelaxationsAttribute(
-            int relaxations)
+        public CompilationRelaxationsAttribute(int relaxations)
         {
-            _relaxations = relaxations;
+            CompilationRelaxations = relaxations;
         }
 
-        internal CompilationRelaxationsAttribute(
-            CompilationRelaxations relaxations)
+        public CompilationRelaxationsAttribute(CompilationRelaxations relaxations)
         {
-            _relaxations = (int)relaxations;
+            CompilationRelaxations = (int)relaxations;
         }
 
-        public int CompilationRelaxations
-        {
-            get
-            {
-                return _relaxations;
-            }
-        }
+        public int CompilationRelaxations { get; }
     }
 }

@@ -136,6 +136,15 @@ namespace System
             return base.GetInvocationList();
         }
 
+        protected override sealed Delegate CombineImpl(Delegate follow)
+        {
+            return base.CombineImpl(follow);
+        }
+        protected override sealed Delegate RemoveImpl(Delegate value)
+        {
+            return base.RemoveImpl(value);
+        }
+
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             Delegate[] invocationList = m_helperObject as Delegate[];

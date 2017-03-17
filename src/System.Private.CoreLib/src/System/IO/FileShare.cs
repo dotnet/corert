@@ -15,6 +15,9 @@ namespace System.IO
     ///   FILE_SHARE_WRITE, and FILE_SHARE_DELETE in winnt.h
     /// </devdoc>
     [Flags]
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem.Primitives")]
+#endif
     public enum FileShare
     {
         /// <devdoc>

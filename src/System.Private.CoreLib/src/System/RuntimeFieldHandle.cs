@@ -101,9 +101,6 @@ namespace System
                 RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleComponents(this, out declaringType, out fieldName);
 
                 FieldInfo field = FieldInfo.GetFieldFromHandle(this, declaringType);
-                if (field == null)
-                    throw new SerializationException(SR.RuntimeFieldHandleSer_InsufficientMetadata);
-
                 info.AddValue("FieldObj", field, typeof(FieldInfo));
             }
             catch (Exception e) when (!(e is SerializationException))

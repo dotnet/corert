@@ -10,6 +10,7 @@ using System.Runtime;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -132,7 +133,8 @@ namespace Internal.Runtime.TypeLoader
                 _methodName = methodName;
                 _signature = signature;
                 _genericArgs = genericArgs;
-                _hashcode = TypeHashingAlgorithms.ComputeGenericInstanceHashCode(declaringType.GetHashCode(), genericArgs) ^ methodName.GetHashCode() ^ signature.GetHashCode();
+                int methodNameHashCode = methodName == null ? 0 : methodName.GetHashCode();
+                _hashcode = TypeHashingAlgorithms.ComputeGenericInstanceHashCode(declaringType.GetHashCode(), genericArgs) ^ methodNameHashCode ^ signature.GetHashCode();
             }
 
             public override bool Equals(object obj)
@@ -280,7 +282,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, IntPtr methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
         {
-            string methodNameStr = GetStringFromMemoryInNativeFormat(methodName);
+            string methodNameStr = methodName == IntPtr.Zero ? null : GetStringFromMemoryInNativeFormat(methodName);
 
             RuntimeMethodHandleKey key = new RuntimeMethodHandleKey(declaringTypeHandle, methodNameStr, methodSignature, genericMethodArgs);
             RuntimeMethodHandle runtimeMethodHandle = default(RuntimeMethodHandle);
