@@ -436,6 +436,11 @@ COOP_PINVOKE_HELPER(TypeManagerHandle, RhpCreateTypeManager, (HANDLE osModule, v
     return TypeManagerHandle::Create(typeManager);
 }
 
+COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleForMrt, ())
+{
+    return GetRuntimeInstance()->GetPalInstance();
+}
+
 COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
 {
     RuntimeInstance::OsModuleEntry * pEntry = new (nothrow) RuntimeInstance::OsModuleEntry();

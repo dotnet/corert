@@ -461,7 +461,7 @@ namespace Internal.IL.Stubs
     /// </summary>
     public enum ILLocalVariable { }
 
-    internal class ILStubMethodIL : MethodIL
+    public class ILStubMethodIL : MethodIL
     {
         private byte[] _ilBytes;
         private LocalVariableDefinition[] _locals;
@@ -648,7 +648,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    public abstract class ILStubMethod : MethodDesc
+    public abstract partial class ILStubMethod : MethodDesc
     {
         public abstract MethodIL EmitIL();
 

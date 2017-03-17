@@ -570,11 +570,11 @@ namespace Internal.TypeSystem.NativeFormat
                     if ((fieldDefinition.Flags & FieldAttributes.Static) != 0)
                         continue;
 
-                    // Note: GetOffset() returns -1 when offset was not set in the metadata which maps nicely
-                    //       to FieldAndOffset.InvalidOffset.
-                    Debug.Assert(FieldAndOffset.InvalidOffset == -1);
+                    // Note: GetOffset() returns -1 when offset was not set in the metadata
+                    int fieldOffsetInMetadata = (int)fieldDefinition.Offset;
+                    LayoutInt fieldOffset = fieldOffsetInMetadata == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(fieldOffsetInMetadata);
                     result.Offsets[index] =
-                        new FieldAndOffset(_metadataUnit.GetField(handle, this), checked((int)fieldDefinition.Offset));
+                        new FieldAndOffset(_metadataUnit.GetField(handle, this), fieldOffset);
 
                     index++;
                 }

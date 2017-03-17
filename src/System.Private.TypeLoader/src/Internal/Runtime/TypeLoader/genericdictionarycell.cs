@@ -7,6 +7,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
@@ -93,6 +94,16 @@ namespace Internal.Runtime.TypeLoader
                     return builder.GetRuntimeTypeHandle(Type).ToIntPtr();
             }
         }
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        public static GenericDictionaryCell CreateInterfaceCallCell(TypeDesc interfaceType, int slot)
+        {
+            InterfaceCallCell dispatchCell = new InterfaceCallCell();
+            dispatchCell.InterfaceType = interfaceType;
+            dispatchCell.Slot = slot;
+            return dispatchCell;
+        }
+#endif
 
         private class InterfaceCallCell : GenericDictionaryCell
         {
@@ -261,6 +272,15 @@ namespace Internal.Runtime.TypeLoader
                 return *(IntPtr*)Create(builder);
             }
         }
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        public static GenericDictionaryCell CreateMethodDictionaryCell(InstantiatedMethod method)
+        {
+            MethodDictionaryCell methodCell = new MethodDictionaryCell();
+            methodCell.GenericMethod = method;
+            return methodCell;
+        }
+#endif
 
         private class MethodDictionaryCell : GenericDictionaryCell
         {
