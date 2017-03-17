@@ -556,12 +556,13 @@ namespace Internal.IL.Stubs
                     codeStream.EmitLdArg(i + 1);
 
                     TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
+                    ILToken boxableParamToken = emitter.NewToken(boxableParamType);
 
                     if (paramIsByRef)
                     {
-                        codeStream.Emit(ILOpcode.ldobj, emitter.NewToken(boxableParamType));
+                        codeStream.Emit(ILOpcode.ldobj, boxableParamToken);
                     }
-                    codeStream.Emit(ILOpcode.box, emitter.NewToken(boxableParamType));
+                    codeStream.Emit(ILOpcode.box, boxableParamToken);
                     codeStream.Emit(ILOpcode.stelem_ref);
                 }
             }
@@ -616,14 +617,15 @@ namespace Internal.IL.Stubs
                     {
                         paramType = ((ByRefType)paramType).ParameterType;
                         TypeDesc boxableParamType = DelegateDynamicInvokeThunk.ConvertToBoxableType(paramType);
+                        ILToken boxableParamToken = emitter.NewToken(boxableParamType);
 
                         // Update parameter
                         codeStream.EmitLdArg(i + 1);
                         codeStream.EmitLdLoc(argsLocal);
                         codeStream.EmitLdc(i);
                         codeStream.Emit(ILOpcode.ldelem_ref);
-                        codeStream.Emit(ILOpcode.unbox_any, emitter.NewToken(boxableParamType));
-                        codeStream.Emit(ILOpcode.stobj, emitter.NewToken(paramType));
+                        codeStream.Emit(ILOpcode.unbox_any, boxableParamToken);
+                        codeStream.Emit(ILOpcode.stobj, boxableParamToken);
                     }
                 }
                 // ilgen.Emit(OperationCode.Endfinally);
