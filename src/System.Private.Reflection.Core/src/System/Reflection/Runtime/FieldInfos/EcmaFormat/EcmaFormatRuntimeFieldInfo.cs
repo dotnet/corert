@@ -23,6 +23,8 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
+using Internal.Runtime.TypeLoader;
+
 using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
@@ -154,7 +156,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
         {
             get
             {
-                return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
+                return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
                     DeclaringType.TypeHandle,
                     Name);
             }

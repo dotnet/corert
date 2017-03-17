@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Reflection.Runtime.General;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;

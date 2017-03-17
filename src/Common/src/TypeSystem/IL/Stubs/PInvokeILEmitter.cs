@@ -258,7 +258,7 @@ namespace Internal.IL.Stubs
     /// All parameters are simple types. There will be no code
     /// generated for this method. Instead, a static reference to a symbol will be emitted.
     /// </summary>
-    internal sealed class PInvokeTargetNativeMethod : MethodDesc
+    public sealed partial class PInvokeTargetNativeMethod : MethodDesc
     {
         private TypeDesc _owningType;
         private MethodSignature _signature;
@@ -334,7 +334,7 @@ namespace Internal.IL.Stubs
     /// backed by a small data structure generated on the fly from the <see cref="PInvokeMetadata"/>
     /// carried by the instance of this class.
     /// </summary>
-    internal sealed class PInvokeLazyFixupField : FieldDesc
+    public sealed class PInvokeLazyFixupField : FieldDesc
     {
         private DefType _owningType;
         private PInvokeMetadata _pInvokeMetadata;
@@ -423,7 +423,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    internal sealed class PInvokeILStubMethodIL : ILStubMethodIL
+    public sealed class PInvokeILStubMethodIL : ILStubMethodIL
     {
         public bool IsStubRequired { get; }
         public MethodSignature NativeCallableSignature { get; }

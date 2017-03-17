@@ -1,11 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(AssemblyName)' == ''">
     <AssemblyName>System.Private.Reflection.Core</AssemblyName>
+    <ProjectGuid>{999BB20D-A032-4836-A587-627D243C1668}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{999BB20D-A032-4836-A587-627D243C1668}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -26,7 +28,6 @@
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
-    <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
@@ -35,7 +36,13 @@
     <!-- TODO: We should always include this -->
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+    <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' != 'true'">
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' == 'true'">
+    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
@@ -253,7 +260,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+    <EmbeddedResource Include="Resources\System.Private.Reflection.Core.rd.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />

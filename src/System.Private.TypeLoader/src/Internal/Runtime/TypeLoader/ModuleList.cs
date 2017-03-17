@@ -38,6 +38,8 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         internal DynamicModule* DynamicModulePtr { get; private set; }
 
+        public IntPtr DynamicModulePtrAsIntPtr => new IntPtr(DynamicModulePtr);
+
         /// <summary>
         /// What sort of module is this? (Eager, ReadyToRun)?
         /// </summary>

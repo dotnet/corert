@@ -115,13 +115,13 @@ namespace Internal.JitInterface
             public int LineNumber;
         }
 
-        private MethodCodeNode _methodCodeNode;
+        private IMethodCodeNode _methodCodeNode;
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
         private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
 
-        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        public void CompileMethod(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             try
             {
@@ -181,7 +181,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void SetDebugInformation(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL)
+        private void SetDebugInformation(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             try
             {
@@ -2979,8 +2979,9 @@ namespace Internal.JitInterface
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
             object literal = methodIL.GetObject((int)metaTok);
-            ppValue = (void*)ObjectToHandle(_compilation.NodeFactory.SerializedStringObject((string)literal));
-            return InfoAccessType.IAT_VALUE;
+            ISymbolNode stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+            ppValue = (void*)ObjectToHandle(stringObject);
+            return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         }
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)
@@ -3232,7 +3233,7 @@ namespace Internal.JitInterface
 
                     relocTarget = (ISymbolNode)targetObject;
 
-                    if (relocTarget is FatFunctionPointerNode)
+                    if (relocTarget is IFatFunctionPointerNode)
                         relocDelta = Runtime.FatFunctionPointerConstants.Offset;
 
                     break;
