@@ -30,7 +30,6 @@ namespace System.Reflection
         public bool IsPrivate => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Private;
         public bool IsPublic => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
 
-        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
         public virtual bool IsSecurityCritical => true;
         public virtual bool IsSecuritySafeCritical => false;
         public virtual bool IsSecurityTransparent => false;
