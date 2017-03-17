@@ -169,7 +169,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getMethodClass(        CORINFO_METHOD_HANDLE       method        );
     CORINFO_MODULE_HANDLE getMethodModule(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection        );
-    CORINFO_METHOD_HANDLE resolveVirtualMethod(        CORINFO_METHOD_HANDLE virtualMethod,        CORINFO_CLASS_HANDLE implementingClass        );
+    CORINFO_METHOD_HANDLE resolveVirtualMethod(            CORINFO_METHOD_HANDLE       virtualMethod,          CORINFO_CLASS_HANDLE        implementingClass,            CORINFO_CONTEXT_HANDLE      ownerType);
     CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , bool * pMustExpand);
     bool isInSIMDModule(           CORINFO_CLASS_HANDLE        classHnd );
     CorInfoUnmanagedCallConv getUnmanagedCallConv(        CORINFO_METHOD_HANDLE       method        );
