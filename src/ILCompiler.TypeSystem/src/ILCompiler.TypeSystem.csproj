@@ -344,9 +344,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
       <Link>Interop\IL\Marshaller.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeMethodData.cs">
-      <Link>Interop\IL\PInvokeMethodData.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeILEmitterConfiguration.cs">
       <Link>Interop\IL\PInvokeILEmitterConfiguration.cs</Link>
     </Compile>
@@ -361,6 +358,18 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropTypes.cs">
+      <Link>TypeSystem\Interop\InteropTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropStateManager.cs">
+      <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
       <Link>TypeSystem\Interop\InstantiatedType.Interop.cs</Link>
