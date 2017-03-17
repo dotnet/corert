@@ -274,7 +274,7 @@ namespace Internal.Runtime.TypeLoader
         {
             // Account for the EEType pointer in objects...
             initialSize = new LayoutInt(IntPtr.Size);
-            alignRequired = LayoutInt.Zero;
+            alignRequired = LayoutInt.One;
 
             if (type.IsValueType)
             {
