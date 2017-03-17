@@ -15,6 +15,9 @@ namespace System.IO
     ///   to the end of the file).  To truncate a file or create it if it doesn't
     ///   exist, use Create.
     /// </devdoc>
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem.Primitives")]
+#endif
     public enum FileMode
     {
         /// <devdoc>
