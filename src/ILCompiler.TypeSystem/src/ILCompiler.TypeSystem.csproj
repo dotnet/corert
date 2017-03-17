@@ -371,6 +371,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.cs">
+      <Link>TypeSystem\Interop\IL\InlineArrayType.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropTypes.cs">
       <Link>TypeSystem\Interop\InteropTypes.cs</Link>
     </Compile>
