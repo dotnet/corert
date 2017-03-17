@@ -333,7 +333,23 @@ namespace ILCompiler.DependencyAnalysis
         {
             var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
             // TODO The ProjectN abi should have an indirection here.
-            return factory.TypeNonGCStaticsSymbol(instantiatedType);
+            return factory.TypeNonGCStaticsSymbol(instantiatedType);            
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            ISymbolNode target = GetTarget(factory, typeInstantiation, methodInstantiation, dictionary);
+
+            // The dictionary entry always points to the beginning of the data.
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(instantiatedType))
+            {
+                builder.EmitPointerReloc(target, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, instantiatedType));
+            }
+            else
+            {
+                builder.EmitPointerReloc(target);
+            }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
