@@ -59,4 +59,9 @@ public class MultiModuleLibrary
         GenericClassWithTLS<int>.ThreadStaticInt += 1;
         return GenericClassWithTLS<int>.ThreadStaticInt == 1;
     }
+
+    public enum MyEnum
+    {
+        One, Two
+    }
 }
