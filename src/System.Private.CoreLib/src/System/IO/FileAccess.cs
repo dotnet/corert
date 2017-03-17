@@ -11,6 +11,9 @@ namespace System.IO
     ///   access to a file.
     /// </devdoc>
     [Flags]
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem.Primitives")]
+#endif
     public enum FileAccess
     {
         /// <devdoc>

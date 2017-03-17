@@ -75,7 +75,6 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
-
         public sealed override Type GetType(String name, bool throwOnError, bool ignoreCase)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -215,6 +214,16 @@ namespace System.Reflection.Runtime.Assemblies
         }
 
         public sealed override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream GetFile(string name)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream[] GetFiles(bool getResourceModules)
         {
             throw new PlatformNotSupportedException();
         }
