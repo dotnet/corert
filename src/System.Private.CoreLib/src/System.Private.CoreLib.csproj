@@ -164,6 +164,7 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\AmbiguousMatchException.cs" />
     <Compile Include="System\Reflection\Assembly.cs" />
+    <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\AssemblyContentType.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
     <Compile Include="System\Reflection\Binder.cs" />
