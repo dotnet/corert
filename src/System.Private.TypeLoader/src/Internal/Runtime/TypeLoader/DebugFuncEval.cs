@@ -2,20 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Reflection.Runtime.General;
 
-using Internal.TypeSystem;
-using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
-using Internal.TypeSystem.NativeFormat;
-using Internal.NativeFormat;
 
 namespace System.Runtime.InteropServices
 {
@@ -51,7 +43,6 @@ namespace Internal.Runtime.TypeLoader
 {
     internal class DebugFuncEval
     {
-
         private static void HighLevelDebugFuncEvalHelperWithVariables(ref int param, ref LocalVariableSet arguments)
         {
             // Hard coding the argument integer here!
@@ -65,7 +56,7 @@ namespace Internal.Runtime.TypeLoader
             returnAndArgumentTypes[0] = new LocalVariableType(typeof(void).TypeHandle, false, false);
             returnAndArgumentTypes[1] = new LocalVariableType(typeof(int).TypeHandle, false, false);
 
-            // 2) Invoke the target method
+            // Invoke the target method
 
             // Hard coding static here
             DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(Internal.Runtime.CallConverter.CallingConvention.ManagedStatic, returnAndArgumentTypes, returnAndArgumentTypes.Length);
@@ -133,7 +124,6 @@ namespace Internal.Runtime.TypeLoader
             LocalVariableSet.SetupArbitraryLocalVariableSet<int>(HighLevelDebugFuncEvalHelperWithVariables, ref integerParameterValue, argumentTypes);
         }
 
-        [McgIntrinsics]
         public static void Initialize()
         {
             // We needed this function only because the McgIntrinsics attribute cannot be applied on the static constructor
