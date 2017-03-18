@@ -23,6 +23,9 @@ public class ReflectionTest
         if (TestGenericTLS() == Fail)
             return Fail;
 
+        if (TestInjectedEnumMethods() == Fail)
+            return Fail;
+
         return Pass;
     }
     
@@ -72,6 +75,15 @@ public class ReflectionTest
 
         MultiModuleLibrary.GenericClassWithTLS<int>.ThreadStaticInt += 1;
         if (MultiModuleLibrary.GenericClassWithTLS<int>.ThreadStaticInt != 2)
+            return Fail;
+
+        return Pass;
+    }
+
+    public static int TestInjectedEnumMethods()
+    {
+        Console.WriteLine("Testing context-injected methods on enums..");
+        if (!MultiModuleLibrary.MyEnum.One.Equals(MultiModuleLibrary.MyEnum.One))
             return Fail;
 
         return Pass;
