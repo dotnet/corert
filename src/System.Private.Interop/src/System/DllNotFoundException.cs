@@ -12,8 +12,11 @@
 **
 =============================================================================*/
 
+using System.Runtime.Serialization;
+
 namespace System
 {
+    [Serializable]
     public class DllNotFoundException : TypeLoadException
     {
         public DllNotFoundException()
@@ -32,6 +35,10 @@ namespace System
             : base(message, inner)
         {
             HResult = __HResults.COR_E_DLLNOTFOUND;
+        }
+
+        protected DllNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

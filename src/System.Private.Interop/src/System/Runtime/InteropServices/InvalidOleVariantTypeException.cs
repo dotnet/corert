@@ -16,6 +16,7 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
@@ -37,6 +38,10 @@ namespace System.Runtime.InteropServices
             : base(message, inner)
         {
             HResult = __HResults.COR_E_INVALIDOLEVARIANTTYPE;
+        }
+
+        protected InvalidOleVariantTypeException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

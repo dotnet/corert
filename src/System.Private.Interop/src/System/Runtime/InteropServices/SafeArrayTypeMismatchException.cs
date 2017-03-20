@@ -13,10 +13,12 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    public class SafeArrayTypeMismatchException : Exception
+    [Serializable]
+    public class SafeArrayTypeMismatchException : SystemException
     {
         public SafeArrayTypeMismatchException()
             : base(SR.Arg_SafeArrayTypeMismatchException)
@@ -34,6 +36,10 @@ namespace System.Runtime.InteropServices
             : base(message, inner)
         {
             HResult = __HResults.COR_E_SAFEARRAYTYPEMISMATCH;
+        }
+
+        protected SafeArrayTypeMismatchException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

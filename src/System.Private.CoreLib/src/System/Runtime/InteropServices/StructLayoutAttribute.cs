@@ -19,8 +19,8 @@ namespace System.Runtime.InteropServices
         }
 
         public StructLayoutAttribute(short layoutKind)
-            : this((LayoutKind)layoutKind)
         {
+            _val = (LayoutKind)layoutKind;
         }
 
         public LayoutKind Value { get { return _val; } }
