@@ -49,8 +49,8 @@ namespace System
         public virtual bool IsGenericType => false;
         public virtual bool IsGenericTypeDefinition => false;
 
-        // Not an api but can't be declared "internal" because of Corelib/Reflection.Core divide. Returns true if and only if type is a vector (not a multidim array of rank 1.)
-        public virtual bool IsSzArray { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsSZArray { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsMultiDimensionalArray { get { throw NotImplemented.ByDesign; } }
 
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();

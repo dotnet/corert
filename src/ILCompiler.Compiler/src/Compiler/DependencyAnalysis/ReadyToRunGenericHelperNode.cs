@@ -55,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected sealed override string GetName() => this.GetMangledName();
+        protected sealed override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
         public override bool IsShareable => true;
 
         protected sealed override void OnMarked(NodeFactory factory)

@@ -1583,6 +1583,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            Value = visitor.Visit(this, Value);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1600,13 +1601,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -229915937;
-            if (Value != null)
-            {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
-            }
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -1614,6 +1608,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
+            Debug.Assert(Value.TrueForAll(handle => handle == null ||
+                handle.HandleType == HandleType.ConstantStringValue ||
+                handle.HandleType == HandleType.ConstantReferenceValue));
             writer.Write(Value);
         } // Save
 
@@ -1637,7 +1634,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public String[] Value;
+        public List<MetadataRecord> Value = new List<MetadataRecord>();
     } // ConstantStringArray
 
     public partial class ConstantStringValue : MetadataRecord

@@ -128,7 +128,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskDebugView))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}")]
-    public class Task : IThreadPoolWorkItem, IAsyncResult
+    public class Task : IThreadPoolWorkItem, IAsyncResult, IDisposable
     {
         internal static int s_taskIdCounter; //static counter used to generate unique task IDs
 
@@ -1690,11 +1690,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        #endregion properties
-
-
-        #region internal helpers
-
         /// <summary>
         /// The captured execution context for the current task to run inside
         /// If the TASK_STATE_EXECUTIONCONTEXT_IS_NULL flag is set, this means ExecutionContext.Capture returned null, otherwise
@@ -1717,6 +1712,100 @@ namespace System.Threading.Tasks
                 //else do nothing, this is the default context
             }
         }
+
+        #endregion properties
+
+
+        #region IDisposable implementation
+
+        /// <summary>
+        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.
+        /// </summary>
+        /// <remarks>
+        /// Unlike most of the members of <see cref="Task"/>, this method is not thread-safe.
+        /// Also, <see cref="Dispose()"/> may only be called on a <see cref="Task"/> that is in one of
+        /// the final states: <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
+        /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
+        /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
+        /// </remarks>
+        /// <exception cref="T:System.InvalidOperationException">
+        /// The exception that is thrown if the <see cref="Task"/> is not in
+        /// one of the final states: <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
+        /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
+        /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
+        /// </exception>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// A Boolean value that indicates whether this method is being called due to a call to <see
+        /// cref="Dispose()"/>.
+        /// </param>
+        /// <remarks>
+        /// Unlike most of the members of <see cref="Task"/>, this method is not thread-safe.
+        /// </remarks>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose is a nop if this task was created with the DoNotDispose internal option.
+                // This is done before the completed check, because if we're not touching any
+                // state on the task, it's ok for it to happen before completion.
+                if ((Options & (TaskCreationOptions)InternalTaskOptions.DoNotDispose) != 0)
+                {
+                    return;
+                }
+
+                // Task must be completed to dispose
+                if (!IsCompleted)
+                {
+                    throw new InvalidOperationException(SR.Task_Dispose_NotCompleted);
+                }
+
+                // Dispose of the underlying completion event if it exists
+                var cp = Volatile.Read(ref m_contingentProperties);
+                if (cp != null)
+                {
+                    // Make a copy to protect against racing Disposes.
+                    // If we wanted to make this a bit safer, we could use an interlocked here,
+                    // but we state that Dispose is not thread safe.
+                    var ev = cp.m_completionEvent;
+                    if (ev != null)
+                    {
+                        // Null out the completion event in contingent props; we'll use our copy from here on out
+                        cp.m_completionEvent = null;
+
+                        // In the unlikely event that our completion event is inflated but not yet signaled,
+                        // go ahead and signal the event.  If you dispose of an unsignaled MRES, then any waiters
+                        // will deadlock; an ensuing Set() will not wake them up.  In the event of an AppDomainUnload,
+                        // there is no guarantee that anyone else is going to signal the event, and it does no harm to
+                        // call Set() twice on m_completionEvent.
+                        if (!ev.IsSet) ev.Set();
+
+                        // Finally, dispose of the event
+                        ev.Dispose();
+                    }
+                }
+            }
+
+            // We OR the flags to indicate the object has been disposed. The task
+            // has already completed at this point, and the only conceivable race condition would
+            // be with the unsetting of the TASK_STATE_WAIT_COMPLETION_NOTIFICATION flag, which
+            // is extremely unlikely and also benign.  (Worst case: we hit a breakpoint
+            // twice instead of once in the debugger.  Weird, but not lethal.)
+            m_stateFlags |= TASK_STATE_DISPOSED;
+        }
+
+        #endregion IDisposable implementation
+
+
+        #region internal helpers
 
         /// <summary>
         /// Schedules the task for execution.

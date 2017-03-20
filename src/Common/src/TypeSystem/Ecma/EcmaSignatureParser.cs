@@ -289,23 +289,35 @@ namespace Internal.TypeSystem.Ecma
             return arguments;
         }
 
-        public MarshalAsDescriptor ParseMarshalAsDescriptor()
+        public MarshalAsDescriptor ParseMarshalAsDescriptor(bool isParameter)
         {
+            Debug.Assert(_reader.RemainingBytes != 0);
+
             NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
             NativeTypeKind arraySubType = NativeTypeKind.Invalid;
             uint? paramNum = null , numElem = null;
-            if (_reader.RemainingBytes != 0)
+            
+            if (type == NativeTypeKind.Array)
             {
-                arraySubType = (NativeTypeKind)_reader.ReadByte();
                 if (_reader.RemainingBytes != 0)
                 {
-                    paramNum = (uint)_reader.ReadCompressedInteger();
-
-                    if (_reader.RemainingBytes != 0)
-                        numElem = (uint)_reader.ReadCompressedInteger();
+                   arraySubType = (NativeTypeKind)_reader.ReadByte();
                 }
             }
 
+            if (isParameter)
+            {
+                if (_reader.RemainingBytes != 0)
+                {
+                    paramNum = (uint)_reader.ReadCompressedInteger();
+                }
+            }
+
+            if (_reader.RemainingBytes != 0)
+            {
+                numElem = (uint)_reader.ReadCompressedInteger();
+            }
+            
             Debug.Assert(_reader.RemainingBytes == 0);
 
             return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem);

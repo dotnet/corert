@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -40,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -72,10 +73,13 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (field.HasGCStaticBase)
                         flags |= FieldTableFlags.IsGcSection;
+
+                    if (field.OwningType.HasInstantiation)
+                        flags |= FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
                 else
                 {
-                    flags = FieldTableFlags.Instance;
+                    flags = FieldTableFlags.Instance | FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
 
                 // TODO: support emitting field info without a handle for generics in multifile
@@ -113,13 +117,46 @@ namespace ILCompiler.DependencyAnalysis
                     switch (flags & FieldTableFlags.StorageClass)
                     {
                         case FieldTableFlags.ThreadStatic:
-                        case FieldTableFlags.Static:
-                            // TODO: statics and thread statics
+                            // TODO: thread statics
                             continue;
 
+                        case FieldTableFlags.Static:
+                            {
+                                if (field.OwningType.HasInstantiation)
+                                {
+                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                                }
+                                else
+                                {
+                                    MetadataType metadataType = (MetadataType)field.OwningType;
+
+                                    int cctorOffset = 0;
+                                    if (!field.HasGCStaticBase && factory.TypeSystemContext.HasLazyStaticConstructor(metadataType))
+                                        cctorOffset += NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, metadataType);
+
+                                    ISymbolNode staticsNode = field.HasGCStaticBase ?
+                                        factory.TypeGCStaticsSymbol(metadataType) :
+                                        factory.TypeNonGCStaticsSymbol(metadataType);
+
+                                    if (!field.HasGCStaticBase || factory.Target.Abi == TargetAbi.ProjectN)
+                                    {
+                                        uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt + cctorOffset);
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
+                                    }
+                                    else
+                                    {
+                                        Debug.Assert(field.HasGCStaticBase && factory.Target.Abi == TargetAbi.CoreRT);
+
+                                        uint index = _externalReferences.GetIndex(staticsNode);
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt + cctorOffset)));
+                                    }
+                                }
+                            }
+                            break;
+
                         case FieldTableFlags.Instance:
-                            vertex = writer.GetTuple(vertex,
-                                writer.GetUnsignedConstant((uint)field.Offset));
+                            vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)field.Offset.AsInt));
                             break;
                     }
                 }

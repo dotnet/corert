@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
               .Append(nameMangler.GetMangledFieldName(_targetField));
         }
         public int Offset => 0;
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;

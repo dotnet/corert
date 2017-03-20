@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -50,12 +50,13 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var delegateEntry in factory.MetadataManager.DelegateMarshalingThunks)
+            foreach (var delegateEntry in factory.InteropStubManager.GetDelegateMarshallingThunks())
             {
-                Internal.TypeSystem.TypeDesc delegateType = delegateEntry.Value.DelegateType;
+                var delegateType = delegateEntry.Item1;
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(delegateType))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Value)))
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Item2))),
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Item3)))
                 );
 
                 int hashCode = delegateType.GetHashCode();

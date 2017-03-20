@@ -454,7 +454,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        internal Delegate CombineImpl(Delegate follow)
+        protected virtual Delegate CombineImpl(Delegate follow)
         {
             if ((Object)follow == null) // cast to object for a more efficient test
                 return this;
@@ -577,7 +577,7 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        internal Delegate RemoveImpl(Delegate value)
+        protected virtual Delegate RemoveImpl(Delegate value)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case

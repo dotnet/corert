@@ -9,7 +9,6 @@ using System.Reflection.Metadata;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
 
-using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem.Ecma
@@ -493,11 +492,10 @@ namespace Internal.TypeSystem.Ecma
                     if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
                         continue;
 
-                    // Note: GetOffset() returns -1 when offset was not set in the metadata which maps nicely
-                    //       to FieldAndOffset.InvalidOffset.
-                    Debug.Assert(FieldAndOffset.InvalidOffset == -1);
+                    // Note: GetOffset() returns -1 when offset was not set in the metadata
+                    int specifiedOffset = fieldDefinition.GetOffset();
                     result.Offsets[index] =
-                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), fieldDefinition.GetOffset());
+                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
 
                     index++;
                 }
@@ -506,6 +504,36 @@ namespace Internal.TypeSystem.Ecma
                 result.Offsets = null;
 
             return result;
+        }
+
+        public override MarshalAsDescriptor[] GetFieldMarshalAsDescriptors()
+        {
+            var fieldDefinitionHandles = _typeDefinition.GetFields();
+
+            MarshalAsDescriptor[] marshalAsDescriptors = new MarshalAsDescriptor[fieldDefinitionHandles.Count];
+            int index = 0;
+            foreach (var handle in fieldDefinitionHandles)
+            {
+                var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
+                MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(fieldDefinition);
+                marshalAsDescriptors[index++] = marshalAsDescriptor;
+            }
+
+            return marshalAsDescriptors;
+        }
+
+        private MarshalAsDescriptor GetMarshalAsDescriptor(FieldDefinition fieldDefinition)
+        {
+            if ((fieldDefinition.Attributes & FieldAttributes.HasFieldMarshal) == FieldAttributes.HasFieldMarshal)
+            {
+                MetadataReader metadataReader = MetadataReader;
+                BlobReader marshalAsReader = metadataReader.GetBlobReader(fieldDefinition.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(EcmaModule, marshalAsReader);
+                MarshalAsDescriptor marshalAs =  parser.ParseMarshalAsDescriptor(isParameter:false);
+                Debug.Assert(marshalAs != null);
+                return marshalAs;
+            }
+            return null;
         }
 
         public override bool IsExplicitLayout

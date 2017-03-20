@@ -68,15 +68,15 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
+        protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
-            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
 
         protected override IMethodNode CreateShadowConcreteMethodNode(MethodKey methodKey)
         {
-            return new ShadowConcreteMethodNode<MethodCodeNode>(methodKey.Method, 
-                (MethodCodeNode)MethodEntrypoint(
+            return new ShadowConcreteMethodNode(methodKey.Method, 
+                MethodEntrypoint(
                     methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific),
                     methodKey.IsUnboxingStub));
         }

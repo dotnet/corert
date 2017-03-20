@@ -7,7 +7,7 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public abstract class Module : ICustomAttributeProvider, ISerializable
+    public abstract partial class Module : ICustomAttributeProvider, ISerializable
     {
         protected Module() { }
 

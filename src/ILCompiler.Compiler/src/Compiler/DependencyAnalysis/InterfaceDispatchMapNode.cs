@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
             _dispatchMapTableIndex = IndexNotSet;
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

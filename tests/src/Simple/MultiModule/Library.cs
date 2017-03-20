@@ -47,4 +47,21 @@ public class MultiModuleLibrary
     {
         public T Value;
     }
+
+    public class GenericClassWithTLS<T>
+    {
+        [ThreadStatic]
+        public static int ThreadStaticInt;
+    }
+
+    public static bool MethodThatUsesGenericWithTLS()
+    {
+        GenericClassWithTLS<int>.ThreadStaticInt += 1;
+        return GenericClassWithTLS<int>.ThreadStaticInt == 1;
+    }
+
+    public enum MyEnum
+    {
+        One, Two
+    }
 }

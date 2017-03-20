@@ -5,7 +5,6 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 //
-
 //
 // An exception for task cancellations.
 //
@@ -13,14 +12,17 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Threading.Tasks
 {
     /// <summary>
     /// Represents an exception used to communicate task cancellation.
     /// </summary>
+    [Serializable]
     public class TaskCanceledException : OperationCanceledException
     {
+        [NonSerialized]
         private Task m_canceledTask; // The task which has been canceled.
 
         /// <summary>
@@ -59,6 +61,16 @@ namespace System.Threading.Tasks
             base(SR.TaskCanceledException_ctor_DefaultMessage, task != null ? task.CancellationToken : new CancellationToken())
         {
             m_canceledTask = task;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:System.Threading.Tasks.TaskCanceledException"/>
+        /// class with serialized data.
+        /// </summary>
+        /// <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
+        /// <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext"/> that contains contextual information about the source or destination. </param>
+        protected TaskCanceledException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
         /// <summary>

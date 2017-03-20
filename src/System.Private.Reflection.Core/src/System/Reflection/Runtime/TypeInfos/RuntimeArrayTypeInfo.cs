@@ -35,12 +35,15 @@ namespace System.Reflection.Runtime.TypeInfos
             return _rank;
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        public sealed override bool IsSZArray
         {
-            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+            get
+            {
+                return !_multiDim;
+            }
         }
 
-        internal sealed override bool InternalIsMultiDimArray
+        public sealed override bool IsMultiDimensionalArray
         {
             get
             {
@@ -48,11 +51,16 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        {
+            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+        }
+
         internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
         {
             get
             {
-                bool multiDim = this.InternalIsMultiDimArray;
+                bool multiDim = this.IsMultiDimensionalArray;
                 int rank = this.GetArrayRank();
 
                 RuntimeTypeInfo arrayType = this;
@@ -266,7 +274,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                if (this.InternalIsMultiDimArray)
+                if (this.IsMultiDimensionalArray)
                     return Array.Empty<QTypeDefRefOrSpec>();
                 else
                     return TypeDefInfoProjectionForArrays.TypeRefDefOrSpecsForDirectlyImplementedInterfaces;

@@ -693,6 +693,9 @@
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
+  <data name="ArgumentOutOfRange_Length" xml:space="preserve">
+    <value>The specified length exceeds maximum capacity of SecureString.</value>
+  </data>
   <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
     <value>The specified length exceeds the maximum value of {0}.</value>
   </data>
@@ -776,6 +779,9 @@
   </data>
   <data name="ArgumentNull_String" xml:space="preserve">
     <value>String reference not set to an instance of a String.</value>
+  </data>
+  <data name="ArgumentNull_Type" xml:space="preserve">
+    <value>Type cannot be null.</value>
   </data>
   <data name="ArgumentNull_Waithandles" xml:space="preserve">
     <value>The waitHandles parameter cannot be null.</value>
@@ -866,6 +872,9 @@
   </data>
   <data name="ArgumentOutOfRange_IndexLength" xml:space="preserve">
     <value>Index and length must refer to a location within the string.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexString" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the length of the string.</value>
   </data>
   <data name="ArgumentOutOfRange_InvalidEraValue" xml:space="preserve">
     <value>Era value was not valid.</value>
@@ -1284,6 +1293,9 @@
   <data name="Serialization_InvalidEscapeSequence" xml:space="preserve">
     <value>The serialized data contained an invalid escape sequence '\\{0}'.</value>
   </data>
+  <data name="Serialization_InvalidType" xml:space="preserve">
+    <value>Only system-provided types can be passed to the GetUninitializedObject method. '{0}' is not a valid instance of a type.</value>
+  </data>
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
   </data>
@@ -1542,6 +1554,9 @@
   </data>
   <data name="Task_Delay_InvalidDelay" xml:space="preserve">
     <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to Int32.MaxValue.</value>
+  </data>
+  <data name="Task_Dispose_NotCompleted" xml:space="preserve">
+    <value>A task may only be disposed if it is in a completion state (RanToCompletion, Faulted or Canceled).</value>
   </data>
   <data name="Task_WaitMulti_NullTask" xml:space="preserve">
     <value>The tasks array included at least one null element.</value>
@@ -2167,6 +2182,9 @@
   <data name="DelegateSer_InsufficientMetadata" xml:space="preserve">
     <value>The delegate cannot be serialized properly due to missing metadata for the target method.</value>
   </data>
+  <data name="Argument_NoUninitializedStrings" xml:space="preserve">
+    <value>Uninitialized Strings cannot be created.</value>
+  </data>
   <data name="ArgumentOutOfRangeException_NoGCRegionSizeTooLarge" xml:space="preserve">
     <value>totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in http://go.microsoft.com/fwlink/?LinkId=522706.</value>
   </data>
@@ -2206,19 +2224,34 @@
   <data name="Serialization_InvalidFieldState" xml:space="preserve">
     <value>Object fields may not be properly initialized.</value>
   </data>
-  <data name="RuntimeTypeHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeTypeHandle cannot be serialized properly due to missing reflection metadata.</value>
+  <data name="Acc_CreateAbst" xml:space="preserve">
+    <value>Cannot create an abstract class.</value>
   </data>
-  <data name="RuntimeMethodHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeMethodHandle cannot be serialized properly due to missing reflection metadata.</value>
+  <data name="Acc_CreateGeneric" xml:space="preserve">
+    <value>Cannot create a type for which Type.ContainsGenericParameters is true.</value>
   </data>
-  <data name="RuntimeFieldHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeFieldHandle cannot be serialized properly due to missing reflection metadata.</value>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="NotSupported_ManagedActivation" xml:space="preserve">
+    <value>Cannot create uninitialized instances of types requiring managed activation.</value>
   </data>
   <data name="PlatformNotSupported_ResourceManager_ResWFileUnsupportedMethod" xml:space="preserve">
     <value>ResourceManager method '{0}' is not supported when reading from .resw resource files.</value>
   </data>
   <data name="PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty" xml:space="preserve">
     <value>ResourceManager property '{0}' is not supported when reading from .resw resource files.</value>
+  </data>
+  <data name="Serialization_NonSerType" xml:space="preserve">
+    <value>Type '{0}' in Assembly '{1}' is not marked as serializable.</value>
+  </data>
+  <data name="InvalidCast_DBNull" xml:space="preserve">
+    <value>Object cannot be cast to DBNull.</value>
+  </data>
+  <data name="NotSupported_NYI" xml:space="preserve">
+    <value>This feature is not currently implemented.</value>
+  </data>
+  <data name="Delegate_GarbageCollected" xml:space="preserve">
+    <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
   </data>
 </root>

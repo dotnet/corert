@@ -749,3 +749,15 @@ COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, (PTR_VOID * ppStackLow,
 {
     ThreadStore::GetCurrentThread()->GetStackBounds(ppStackLow, ppStackHigh);
 }
+
+#ifdef PLATFORM_UNIX
+
+// Function to call when a thread is detached from the runtime
+ThreadExitCallback g_threadExitCallback;
+
+COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
+{
+    g_threadExitCallback = (ThreadExitCallback)pCallback;
+}
+
+#endif // PLATFORM_UNIX

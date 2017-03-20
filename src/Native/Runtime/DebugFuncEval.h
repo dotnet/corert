@@ -29,6 +29,19 @@ public:
     /// on the ISosRedhawk7 interface.
     /// </remarks>
     static void* GetFuncEvalTarget();
+
+
+    /// <summary>
+    /// Retrieve the global FuncEval parameter buffer size.
+    /// </summary>
+    /// <remarks>
+    /// During debugging, if a FuncEval is requested, 
+    /// the func eval infrastructure needs to know how much buffer to allocate for the debugger to 
+    /// write the parameter information in. The C# supporting code will call this API to obtain the 
+    /// buffer size. By that time, the value should have been set through the UpdateFuncEvalParameterSize() 
+    /// method on the ISosRedhawk7 interface.
+    /// </remarks>
+    static UInt32 GetFuncEvalParameterBufferSize();
 };
 
 #endif //!DACCESS_COMPILE

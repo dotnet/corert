@@ -97,6 +97,17 @@ void DebugEventSource::SendExceptionFirstPassFrameEnteredEvent(CORDB_ADDRESS ipI
     SendRawEvent(&payload);
 }
 
+void DebugEventSource::SendCustomEvent(void* payload, int length)
+{
+    if (!EventEnabled(DEBUG_EVENT_TYPE_CUSTOM))
+        return;
+    DebugEventPayload rawPayload;
+    rawPayload.type = DEBUG_EVENT_TYPE_CUSTOM;
+    rawPayload.Custom.payload = (CORDB_ADDRESS)payload;
+    rawPayload.Custom.length = length;
+    SendRawEvent(&rawPayload);
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Sends a raw managed debug event to the debugger.
@@ -199,6 +210,12 @@ COOP_PINVOKE_HELPER(ExceptionEventKind, RhpGetRequestedExceptionEvents, ())
     if(EventEnabled(DEBUG_EVENT_TYPE_EXCEPTION_FIRST_PASS_FRAME_ENTER))
         mask |= EEK_FirstPassFrameEntered;
     return (ExceptionEventKind)mask;
+}
+
+//Called by the C# func eval code to hand shake with the debugger
+COOP_PINVOKE_HELPER(void, RhpSendCustomEventToDebugger, (void* payload, int length))
+{
+    DebugEventSource::SendCustomEvent(payload, length);
 }
 
 #endif //!DACCESS_COMPILE

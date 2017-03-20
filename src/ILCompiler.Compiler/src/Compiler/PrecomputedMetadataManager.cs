@@ -266,10 +266,15 @@ namespace ILCompiler
                     // if the unboxing stub entrypoint is marked already (which will mean that the unboxing stub
                     // has been compiled, On ProjectN abi, this may will not be triggered by the CodeBasedDependencyAlgorithm.
                     // See the ProjectN abi specific code in there.
-                    if (!method.HasInstantiation && method.OwningType.IsValueType && method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) && !method.Signature.IsStatic)
+                    if (!method.HasInstantiation && method.OwningType.IsValueType && !method.Signature.IsStatic)
                     {
-                        if (!((DependencyNode)factory.MethodEntrypoint(method, true)).Marked)
-                            continue;
+                        MethodDesc canonicalMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                        if (canonicalMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            if (!factory.MethodEntrypoint(canonicalMethod, true).Marked)
+                                continue;
+                        }
                     }
 
                     methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, token));
@@ -280,6 +285,15 @@ namespace ILCompiler
             {
                 if (eetypeGenerated.IsGenericDefinition)
                     continue;
+
+                if (eetypeGenerated.HasInstantiation)
+                {
+                    // Collapsing of field map entries based on canonicalization, to avoid redundant equivalent entries
+
+                    TypeDesc canonicalType = eetypeGenerated.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonicalType != eetypeGenerated && TypeGeneratesEEType(canonicalType))
+                        continue;
+                }
 
                 foreach (FieldDesc field in eetypeGenerated.GetFields())
                 {

@@ -61,7 +61,7 @@ namespace ILCompiler
             // https://github.com/dotnet/corert/issues/2454
             // https://github.com/dotnet/corert/issues/2149
             if (this is CppCodegenCompilation) forceLazyPInvokeResolution = false;
-            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution));
+            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
 
             _methodILCache = new ILProvider(PInvokeILProvider);
         }
@@ -176,7 +176,7 @@ namespace ILCompiler
         {
             using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
             {
-                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph, _nodeFactory);
                 dgmlOutput.Flush();
             }
         }
@@ -221,17 +221,17 @@ namespace ILCompiler
                 MetadataType metadataType = type as MetadataType;
                 if (metadataType != null)
                 {
-                    if (metadataType.ThreadStaticFieldSize > 0)
+                    if (metadataType.ThreadStaticFieldSize.AsInt > 0)
                     {
                         _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
                     }
 
-                    if (metadataType.GCStaticFieldSize > 0)
+                    if (metadataType.GCStaticFieldSize.AsInt > 0)
                     {
                         _graph.AddRoot(_factory.TypeGCStaticsSymbol(metadataType), reason);
                     }
 
-                    if (metadataType.NonGCStaticFieldSize > 0)
+                    if (metadataType.NonGCStaticFieldSize.AsInt > 0)
                     {
                         _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
                     }

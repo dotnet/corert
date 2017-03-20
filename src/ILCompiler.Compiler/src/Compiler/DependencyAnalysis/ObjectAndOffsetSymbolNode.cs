@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
             _includeCompilationUnitPrefix = includeCompilationUnitPrefix;
         }
 
-        protected override string GetName() => $"Symbol {_name.ToString()} at offset {_offset.ToStringInvariant()}";
+        protected override string GetName(NodeFactory factory) => $"Symbol {_name.ToString()} at offset {_offset.ToStringInvariant()}";
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;

@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Runtime.Augments
 {
@@ -26,6 +27,7 @@ namespace Internal.Runtime.Augments
         private ManagedThreadId _managedThreadId;
         private string _name;
         private Delegate _threadStart;
+        private object _threadStartArg;
         private int _maxStackSize;
 
         // Protects starting the thread and setting its priority
@@ -50,6 +52,7 @@ namespace Internal.Runtime.Augments
             PlatformSpecificInitialize();
         }
 
+        // Constructor for threads created by the Thread class
         private RuntimeThread(Delegate threadStart, int maxStackSize)
             : this()
         {
@@ -101,6 +104,7 @@ namespace Internal.Runtime.Augments
                 currentThread._threadState = (int)(ThreadState.Running | ThreadState.Background);
             }
             currentThread.PlatformSpecificInitializeExistingThread();
+            currentThread._priority = currentThread.GetPriorityLive();
             t_currentThread = currentThread;
             return currentThread;
         }
@@ -196,7 +200,15 @@ namespace Internal.Runtime.Augments
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_Priority);
                 }
-                return GetPriority();
+                if (!HasStarted())
+                {
+                    // The thread has not been started yet; return the value assigned to the Priority property.
+                    // Race condition with setting the priority or starting the thread is OK, we may return an old value.
+                    return _priority;
+                }
+                // The priority might have been changed by external means. Obtain the actual value from the OS
+                // rather than using the value saved in _priority.
+                return GetPriorityLive();
             }
             set
             {
@@ -212,7 +224,12 @@ namespace Internal.Runtime.Augments
                 // Prevent race condition with starting this thread
                 using (LockHolder.Hold(_lock))
                 {
-                    if (!SetPriority(value))
+                    if (!HasStarted())
+                    {
+                        Debug.Assert(GetThreadStateBit(ThreadState.Unstarted));
+                        // We will set the priority when we create an OS thread
+                    }
+                    else if (!SetPriorityLive(value))
                     {
                         throw new ThreadStateException(SR.ThreadState_SetPriorityFailed);
                     }
@@ -222,25 +239,6 @@ namespace Internal.Runtime.Augments
         }
 
         public ThreadState ThreadState => (GetThreadState() & PublicThreadStateMask);
-
-        private ThreadState GetThreadState()
-        {
-            int state = _threadState;
-            // If the thread is marked as alive, check if it has finished execution
-            if ((state & (int)(ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0)
-            {
-                if (HasFinishedExecution())
-                {
-                    state = _threadState;
-                    if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
-                    {
-                        SetThreadStateBit(ThreadState.Stopped);
-                        state = _threadState;
-                    }
-                }
-            }
-            return (ThreadState)state;
-        }
 
         private bool GetThreadStateBit(ThreadState bit)
         {
@@ -305,18 +303,14 @@ namespace Internal.Runtime.Augments
             {
                 throw new ThreadStateException(SR.ThreadState_NotStarted);
             }
-            if (millisecondsTimeout == 0)
-            {
-                return HasFinishedExecution();
-            }
-            return JoinCore(millisecondsTimeout);
+            return JoinInternal(millisecondsTimeout);
         }
 
-        public static void Sleep(int millisecondsTimeout) => SleepCore(VerifyTimeoutMilliseconds(millisecondsTimeout));
+        public static void Sleep(int millisecondsTimeout) => SleepInternal(VerifyTimeoutMilliseconds(millisecondsTimeout));
         public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
         public static bool Yield() => RuntimeImports.RhYield();
 
-        public void Start() => StartCore(null);
+        public void Start() => StartInternal(null);
 
         public void Start(object parameter)
         {
@@ -324,7 +318,107 @@ namespace Internal.Runtime.Augments
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
             }
-            StartCore(parameter);
+            StartInternal(parameter);
+        }
+
+        private void StartInternal(object parameter)
+        {
+            using (LockHolder.Hold(_lock))
+            {
+                if (!GetThreadStateBit(ThreadState.Unstarted))
+                {
+                    throw new ThreadStateException(SR.ThreadState_AlreadyStarted);
+                }
+
+                bool waitingForThreadStart = false;
+                GCHandle threadHandle = GCHandle.Alloc(this);
+                _threadStartArg = parameter;
+
+                try
+                {
+                    if (!CreateThread(threadHandle))
+                    {
+                        throw new OutOfMemoryException();
+                    }
+
+                    // Skip cleanup if any asynchronous exception happens while waiting for the thread start
+                    waitingForThreadStart = true;
+
+                    // Wait until the new thread either dies or reports itself as started
+                    while (GetThreadStateBit(ThreadState.Unstarted) && !JoinInternal(0))
+                    {
+                        Yield();
+                    }
+
+                    waitingForThreadStart = false;
+                }
+                finally
+                {
+                    Debug.Assert(!waitingForThreadStart, "Leaked threadHandle");
+                    if (!waitingForThreadStart)
+                    {
+                        threadHandle.Free();
+                        _threadStartArg = null;
+                    }
+                }
+
+                if (GetThreadStateBit(ThreadState.Unstarted))
+                {
+                    // Lack of memory is the only expected reason for thread creation failure
+                    throw new ThreadStartException(new OutOfMemoryException());
+                }
+            }
+        }
+
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static uint StartThread(IntPtr parameter)
+        {
+            GCHandle threadHandle = (GCHandle)parameter;
+            RuntimeThread thread = (RuntimeThread)threadHandle.Target;
+            Delegate threadStart = thread._threadStart;
+            // Get the value before clearing the ThreadState.Unstarted bit
+            object threadStartArg = thread._threadStartArg;
+
+            try
+            {
+                t_currentThread = thread;
+                System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
+            }
+            catch (OutOfMemoryException)
+            {
+                // Terminate the current thread. The creator thread will throw a ThreadStartException.
+                return 0;
+            }
+
+            // Report success to the creator thread, which will free threadHandle and _threadStartArg
+            thread.ClearThreadStateBit(ThreadState.Unstarted);
+
+            try
+            {
+                // The Thread cannot be started more than once, so we may clean up the delegate
+                thread._threadStart = null;
+
+#if ENABLE_WINRT
+                // If this call fails, COM and WinRT calls on this thread will fail with CO_E_NOTINITIALIZED.
+                // We may continue and fail on the actual call.
+                Interop.WinRT.RoInitialize(Interop.WinRT.RO_INIT_TYPE.RO_INIT_MULTITHREADED);
+#endif
+
+                ParameterizedThreadStart paramThreadStart = threadStart as ParameterizedThreadStart;
+                if (paramThreadStart != null)
+                {
+                    paramThreadStart(threadStartArg);
+                }
+                else
+                {
+                    ((ThreadStart)threadStart)();
+                }
+            }
+            finally
+            {
+                thread.SetThreadStateBit(ThreadState.Stopped);
+            }
+            return 0;
         }
     }
 }

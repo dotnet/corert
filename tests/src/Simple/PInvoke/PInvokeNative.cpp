@@ -228,6 +228,12 @@ DLL_EXPORT bool __stdcall ReversePInvoke_Int(int(__stdcall *fnPtr) (int, int, in
     return fnPtr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) == 55;
 }
 
+DLL_EXPORT bool __stdcall ReversePInvoke_String(bool(__stdcall *fnPtr) (char *))
+{
+    char str[] = "Hello World";
+    return fnPtr(str);
+}
+
 DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)
 {
     char str[] = "Hello World";
@@ -242,3 +248,104 @@ DLL_EXPORT int* __stdcall ReversePInvoke_Unused(void(__stdcall *fnPtr) (void))
 {
     return 0;
 }
+
+struct NativeSequentialStruct
+{
+    short s;
+    int a;
+    float b;
+    char *str;
+};
+
+DLL_EXPORT bool __stdcall StructTest(NativeSequentialStruct nss)
+{
+    if (nss.s != 100)
+        return false;
+
+    if (nss.a != 1)
+        return false;
+
+    if (nss.b != 10.0)
+       return false;
+
+
+    if (!CompareAnsiString(nss.str, "Hello"))
+        return false;
+
+    return true;
+}
+
+DLL_EXPORT void __stdcall StructTest_ByRef(NativeSequentialStruct *nss)
+{
+    nss->a++;
+    nss->b++;
+
+    char *p = nss->str;
+    while (*p != NULL)
+    {
+        *p = *p + 1;
+        p++;
+    }
+}
+
+DLL_EXPORT void __stdcall StructTest_ByOut(NativeSequentialStruct *nss)
+{
+    nss->s = 1;
+    nss->a = 1;
+    nss->b = 1.0;
+
+    int arrSize = 7;
+    char *p;
+#ifdef Windows_NT
+    p = (char *)CoTaskMemAlloc(sizeof(char) * arrSize);
+#else
+    p = (char *)malloc(sizeof(char) * arrSize);
+#endif
+
+    for (int i = 0; i < arrSize; i++)
+    {
+        *(p + i) = i + '0';
+    }
+    *(p + arrSize) = '\0';
+    nss->str = p;
+}
+
+
+struct NativeExplicitStruct
+{
+    int a;
+    char padding1[8];
+    float b;
+    char padding2[8];
+    char *str;
+};
+
+DLL_EXPORT bool __stdcall StructTest_Explicit(NativeExplicitStruct nes)
+{
+    if (nes.a != 100)
+        return false;
+
+    if (nes.b != 100.0)
+        return false;
+
+
+    if (!CompareAnsiString(nes.str, "Hello"))
+        return false;
+
+    return true;
+}
+
+struct NativeNestedStruct
+{
+    int a;
+    NativeExplicitStruct nes;
+};
+
+DLL_EXPORT bool __stdcall StructTest_Nested(NativeNestedStruct nns)
+{
+    if (nns.a != 100)
+        return false;
+    
+    return StructTest_Explicit(nns.nes);
+}
+

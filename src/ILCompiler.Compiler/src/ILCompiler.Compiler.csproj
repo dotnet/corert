@@ -62,9 +62,6 @@
     <Compile Include="..\..\Common\src\Internal\Text\Utf8StringBuilder.cs">
       <Link>Common\Utf8StringBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
-      <Link>IL\DelegateInfo.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMethodILEmitter.cs">
       <Link>IL\Stubs\DelegateMethodILEmitter.cs</Link>
     </Compile>
@@ -132,6 +129,7 @@
     <Compile Include="Compiler\DependencyAnalysis\FrozenStringNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericCompositionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDefinitionEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\HelperEntrypoint.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeDeterminedMethodNode.cs" />
@@ -139,6 +137,8 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IFatFunctionPointerNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
@@ -177,6 +177,7 @@
     <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticDescNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StaticsInfoHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
@@ -226,6 +227,7 @@
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\CompilerGeneratedMetadataManager.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
+	<Compile Include="Compiler\InteropStubManager.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
@@ -247,7 +249,6 @@
     <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
     <Compile Include="CppCodeGen\NodeDataSection.cs" />
-    <Compile Include="IL\PInvokeILEmitterConfiguration.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="Logger.cs" />
@@ -299,27 +300,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliIntrinsic.cs">
       <Link>IL\Stubs\CalliIntrinsic.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
-      <Link>IL\Stubs\DelegateThunks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
-      <Link>IL\Stubs\ILEmitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
-      <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
-      <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
-      <Link>TypeSystem\Interop\IL\Marshaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.cs">
-      <Link>TypeSystem\Interop\IL\MarshalHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeMethodData.cs">
-      <Link>TypeSystem\Interop\IL\PInvokeMethodData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>

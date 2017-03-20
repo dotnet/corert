@@ -2,75 +2,224 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.DeveloperExperience;
-using System.Diagnostics.Contracts;
-using System.Runtime.CompilerServices;
-using System.Security;
+#define DEBUG // Do not remove this, it is needed to retain calls to these conditional methods in release builds
 
 namespace System.Diagnostics
 {
-    // .NET Native-specific Debug implementation
+    /// <summary>
+    /// Provides a set of properties and methods for debugging code.
+    /// </summary>
     public static partial class Debug
     {
-        // internal and not read only so that the tests can swap this out.
-        internal static IDebugLogger s_logger = new NetNativeDebugLogger();
+        private static readonly object s_ForLock = new Object();
 
-        internal sealed class NetNativeDebugLogger : IDebugLogger
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Assert(bool condition)
         {
-            public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
+            Assert(condition, string.Empty, string.Empty);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Assert(bool condition, string message)
+        {
+            Assert(condition, message, string.Empty);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Assert(bool condition, string message, string detailMessage)
+        {
+            if (!condition)
             {
-                string fullMessage = message + Environment.NewLine + detailMessage;
-                bool result = DeveloperExperience.Default.OnContractFailure(stackTrace, ContractFailureKind.Assert, fullMessage, null, null, null);
-                if (!result)
+                string stackTrace;
+
+                try
                 {
-                    ExitProcess();
+                    stackTrace = Environment.StackTrace;
                 }
-            }
-
-            public void WriteCore(string message)
-            {
-                // really huge messages mess up both VS and dbmon, so we chop it up into 
-                // reasonable chunks if it's too big. This is the number of characters 
-                // that OutputDebugstring chunks at.
-                const int WriteChunkLength = 4091;
-
-                // We don't want output from multiple threads to be interleaved.
-                lock (s_ForLock)
+                catch
                 {
-                    if (message == null || message.Length <= WriteChunkLength)
-                    {
-                        WriteToDebugger(message);
-                    }
-                    else
-                    {
-                        int offset;
-                        for (offset = 0; offset < message.Length - WriteChunkLength; offset += WriteChunkLength)
-                        {
-                            WriteToDebugger(message.Substring(offset, WriteChunkLength));
-                        }
-                        WriteToDebugger(message.Substring(offset));
-                    }
+                    stackTrace = "";
                 }
-            }
 
-            private static void WriteToDebugger(string message)
-            {
-                Interop.mincore.OutputDebugString(message ?? string.Empty);
-            }
-
-            private static void ExitProcess()
-            {
-                Interop.mincore.ExitProcess((uint)(Interop.Constants.EFail));
+                WriteAssert(stackTrace, message, detailMessage);
+                s_logger.ShowAssertDialog(stackTrace, message, detailMessage);
             }
         }
 
-        [DebuggerHidden]
-        [Intrinsic]
-        internal static void DebugBreak()
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Fail(string message)
         {
-            // IMPORTANT: This call will let us detect if  debug break is broken, and also
-            // gives double chances.
-            DebugBreak();
+            Assert(false, message, string.Empty);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Fail(string message, string detailMessage)
+        {
+            Assert(false, message, detailMessage);
+        }
+
+        private static void WriteAssert(string stackTrace, string message, string detailMessage)
+        {
+            string assertMessage = SR.DebugAssertBanner + Environment.NewLine
+                                   + SR.DebugAssertShortMessage + Environment.NewLine
+                                   + message + Environment.NewLine
+                                   + SR.DebugAssertLongMessage + Environment.NewLine
+                                   + detailMessage + Environment.NewLine
+                                   + stackTrace;
+
+            WriteLine(assertMessage);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Assert(bool condition, string message, string detailMessageFormat, params object[] args)
+        {
+            Assert(condition, message, string.Format(detailMessageFormat, args));
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLine(string message)
+        {
+            Write(message + Environment.NewLine);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Write(string message)
+        {
+            s_logger.WriteCore(message);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLine(object value)
+        {
+            WriteLine((value == null) ? string.Empty : value.ToString());
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLine(object value, string category)
+        {
+            WriteLine((value == null) ? string.Empty : value.ToString(), category);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLine(string format, params object[] args)
+        {
+            WriteLine(string.Format(null, format, args));
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLine(string message, string category)
+        {
+            if (category == null)
+            {
+                WriteLine(message);
+            }
+            else
+            {
+                WriteLine(category + ":" + ((message == null) ? string.Empty : message));
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Write(object value)
+        {
+            Write((value == null) ? string.Empty : value.ToString());
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Write(string message, string category)
+        {
+            if (category == null)
+            {
+                Write(message);
+            }
+            else
+            {
+                Write(category + ":" + ((message == null) ? string.Empty : message));
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Write(object value, string category)
+        {
+            Write((value == null) ? string.Empty : value.ToString(), category);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteIf(bool condition, string message)
+        {
+            if (condition)
+            {
+                Write(message);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteIf(bool condition, object value)
+        {
+            if (condition)
+            {
+                Write(value);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteIf(bool condition, string message, string category)
+        {
+            if (condition)
+            {
+                Write(message, category);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteIf(bool condition, object value, string category)
+        {
+            if (condition)
+            {
+                Write(value, category);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, object value)
+        {
+            if (condition)
+            {
+                WriteLine(value);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, object value, string category)
+        {
+            if (condition)
+            {
+                WriteLine(value, category);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, string value)
+        {
+            if (condition)
+            {
+                WriteLine(value);
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void WriteLineIf(bool condition, string value, string category)
+        {
+            if (condition)
+            {
+                WriteLine(value, category);
+            }
+        }
+
+        internal interface IDebugLogger
+        {
+            void ShowAssertDialog(string stackTrace, string message, string detailMessage);
+            void WriteCore(string message);
         }
     }
 }

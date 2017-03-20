@@ -110,12 +110,13 @@ namespace System
             if (type.HasElementType)
             {
                 sb.AppendSerializationString(type.GetElementType(), withinGenericTypeArgument);
-                if (type.IsSzArray)
+                if (type.IsSZArray)
                 {
                     sb.Append("[]");
                 }
-                else if (type.IsArray)
+                else if (type.IsMultiDimensionalArray)
                 {
+                    sb.Append('[');
                     int rank = type.GetArrayRank();
                     if (rank == 1)
                     {
@@ -123,10 +124,9 @@ namespace System
                     }
                     else
                     {
-                        sb.Append('[');
                         sb.Append(',', rank - 1);
-                        sb.Append(']');
                     }
+                    sb.Append(']');
                 }
                 else if (type.IsByRef)
                 {

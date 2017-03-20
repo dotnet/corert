@@ -169,7 +169,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
             {
                 BuildGraphUsingAllTypesOfRules(testGraph, analyzer);
                 MemoryStream dgmlOutput = new MemoryStream();
-                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, analyzer);
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, analyzer, testGraph);
                 dgmlOutput.Seek(0, SeekOrigin.Begin);
                 TextReader tr = new StreamReader(dgmlOutput);
                 dgmlOutputs[analyzer.GetType().FullName] = tr.ReadToEnd();

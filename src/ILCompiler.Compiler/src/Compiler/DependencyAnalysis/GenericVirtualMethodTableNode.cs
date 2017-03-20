@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         /// <summary>
         /// Helper method to compute the dependencies that would be needed by a hashtable entry for a GVM call.

@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static int GetClassConstructorContextStorageSize(TargetDetails target, MetadataType type)
         {
-            int alignmentRequired = Math.Max(type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(target));
+            int alignmentRequired = Math.Max(type.NonGCStaticFieldAlignment.AsInt, GetClassConstructorContextAlignment(target));
             return AlignmentHelper.AlignUp(GetClassConstructorContextSize(type.Context.Target), alignmentRequired);
         }
 
@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
             {
-                int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(_type.Context.Target));
+                int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment.AsInt, GetClassConstructorContextAlignment(_type.Context.Target));
                 int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);
                 builder.RequireInitialAlignment(alignmentRequired);
                 
@@ -109,10 +109,10 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireInitialAlignment(_type.NonGCStaticFieldAlignment);
+                builder.RequireInitialAlignment(_type.NonGCStaticFieldAlignment.AsInt);
             }
 
-            builder.EmitZeros(_type.NonGCStaticFieldSize);
+            builder.EmitZeros(_type.NonGCStaticFieldSize.AsInt);
             builder.AddSymbol(this);
 
             return builder.ToObjectData();

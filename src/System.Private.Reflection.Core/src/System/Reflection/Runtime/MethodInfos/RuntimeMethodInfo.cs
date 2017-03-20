@@ -190,6 +190,11 @@ namespace System.Reflection.Runtime.MethodInfos
             return result;
         }
 
+        public abstract override bool IsConstructedGenericMethod
+        {
+            get;
+        }
+
         public abstract override bool IsGenericMethod
         {
             get;

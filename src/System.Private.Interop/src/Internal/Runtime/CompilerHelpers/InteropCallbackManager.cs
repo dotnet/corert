@@ -8,14 +8,27 @@ using Internal.Runtime.Augments;
 using Internal.NativeFormat;
 using Internal.Runtime.TypeLoader;
 using Internal.Reflection.Execution;
+using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
     internal class Callbacks : InteropCallbacks
     {
-        public override IntPtr TryGetMarshallerForDelegate(RuntimeTypeHandle delegateTypeHandle)
+        public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
         {
-            return InteropCallbackManager.Instance.TryGetMarshallerForDelegate(delegateTypeHandle);
+            IntPtr openStub, closedStub;
+            if (!InteropCallbackManager.Instance.TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub))
+            {
+                data = default(McgPInvokeDelegateData);
+                return false;
+            }
+
+            data = new global::System.Runtime.InteropServices.McgPInvokeDelegateData()
+            {
+                ReverseOpenStaticDelegateStub = openStub,
+                ReverseStub = closedStub
+            };
+            return true;
         }
     }
 
@@ -46,9 +59,11 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        public unsafe IntPtr TryGetMarshallerForDelegate(RuntimeTypeHandle delegateTypeHandle)
+        public unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();
+            openStub = IntPtr.Zero;
+            closedStub = IntPtr.Zero;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -68,14 +83,17 @@ namespace Internal.Runtime.CompilerHelpers
                         RuntimeTypeHandle foundDelegateType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                         if (foundDelegateType.Equals(delegateTypeHandle))
                         {
-                            byte* pByte = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-                            return (IntPtr)pByte;
+                            byte* pOpen = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                            byte* pClose = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                            openStub = (IntPtr)pOpen;
+                            closedStub = (IntPtr)pClose;
+                            return true;
                         }
                     }
                 }
             }
 
-            return IntPtr.Zero;
+            return false;
         }
 
     }

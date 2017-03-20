@@ -83,6 +83,7 @@
     <Compile Include="System\Void.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="System\Diagnostics\Debug.cs" />
+    <Compile Include="System\Diagnostics\Eval.cs" />
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
     <Compile Include="System\Runtime\CastableObjectSupport.cs" />

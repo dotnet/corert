@@ -37,7 +37,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.IsSharedByGenericInstantiations);
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
-            Debug.Assert(canonicalMethod is DependencyNodeCore<NodeFactory>);
             Method = method;
             _canonicalMethodNode = canonicalMethod;
         }
@@ -47,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             yield return new DependencyListEntry(_canonicalMethodNode, "Canonical body");
         }
 
-        protected override string GetName() => $"{Method.ToString()} backed by {_canonicalMethodNode.GetMangledName()}";
+        protected override string GetName(NodeFactory factory) => $"{Method.ToString()} backed by {_canonicalMethodNode.GetMangledName(factory.NameMangler)}";
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {

@@ -3,15 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public abstract class DependencyNode
+    public abstract class DependencyNode : IDependencyNode
     {
         private object _mark;
 
@@ -37,14 +33,6 @@ namespace ILCompiler.DependencyAnalysisFramework
             {
                 return _mark != null;
             }
-        }
-
-        // Force all non-abstract nodes to provide a name
-        protected internal abstract string GetName();
-
-        public override string ToString()
-        {
-            return GetName();
         }
 
         public sealed override bool Equals(object obj)

@@ -115,7 +115,33 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        REGDISPLAY *    pRegisterSet,
                                        GCEnumContext * hCallback)
 {
-    // @TODO: CORERT: EnumGcRefs
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    UInt32 codeOffset = (UInt32)(dac_cast<TADDR>(safePointAddress) - dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress));
+
+    GcInfoDecoder decoder(
+        GCInfoToken(p),
+        GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+        codeOffset - 1 // TODO: Is this adjustment correct?
+    );
+
+    if (!decoder.EnumerateLiveSlots(
+        pRegisterSet,
+        false /* reportScratchSlots */,
+        pNativeMethodInfo->executionAborted ? ICodeManagerFlags::ExecutionAborted : 0, // TODO: Flags?
+        hCallback->pCallback,
+        hCallback
+        ))
+    {
+        assert(false);
+    }
 }
 
 UIntNative UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)

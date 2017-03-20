@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        protected override string GetName() => $"__vtable_{NodeFactory.NameManglerDoNotUse.GetMangledTypeName(_type).ToString()}";
+        protected override string GetName(NodeFactory factory) => $"__vtable_{factory.NameMangler.GetMangledTypeName(_type).ToString()}";
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -39,6 +39,15 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
+
+        protected IEnumerable<MethodDesc> GetAllVirtualMethods()
+        {
+            foreach (MethodDesc method in _type.GetAllMethods())
+            {
+                if (method.IsVirtual)
+                    yield return method;
+            }
+        }
     }
 
     /// <summary>
@@ -54,19 +63,24 @@ namespace ILCompiler.DependencyAnalysis
         {
             var slots = new ArrayBuilder<MethodDesc>();
 
-            MethodDesc finalizerMethod = type.GetFinalizer();
+            bool isObjectType = type.IsObject;
             DefType defType = _type.GetClosestDefType();
-            foreach (var method in defType.GetAllMethods())
-            {
-                if (!method.IsVirtual)
-                    continue;
 
+            IEnumerable<MethodDesc> allSlots = _type.IsInterface ?
+                GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+
+            foreach (var method in allSlots)
+            {
                 // GVMs are not emitted in the type's vtable.
                 if (method.HasInstantiation)
                     continue;
 
                 // Finalizers are called via a field on the EEType, not through the VTable
-                if (finalizerMethod == method || (type.IsObject && method.Name == "Finalize"))
+                if (isObjectType && method.Name == "Finalize")
+                    continue;
+
+                // Current type doesn't define this slot.
+                if (method.OwningType != defType)
                     continue;
 
                 slots.Add(method);
@@ -175,13 +189,18 @@ namespace ILCompiler.DependencyAnalysis
             // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
             // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
             DefType defType = _type.GetClosestDefType();
-            foreach (var method in defType.GetAllMethods())
+
+            IEnumerable<MethodDesc> allSlots = _type.IsInterface ?
+                GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+
+            foreach (var method in allSlots)
             {
-                if (!method.IsVirtual)
-                    continue;
-                
                 // Generic virtual methods are tracked by an orthogonal mechanism.
                 if (method.HasInstantiation)
+                    continue;
+
+                // Current type doesn't define this slot. Another VTableSlice will take care of this.
+                if (method.OwningType != defType)
                     continue;
 
                 yield return new CombinedDependencyListEntry(

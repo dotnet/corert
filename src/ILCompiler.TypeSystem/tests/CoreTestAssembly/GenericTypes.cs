@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace GenericTypes
 {
     /// <summary>
@@ -65,5 +67,30 @@ namespace GenericTypes
         public void GenericFunction<K, V>()
         {
         }
+    }
+
+    /// <summary>
+    /// Generic structure with 3 fields all defined by type parameters
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GenStruct<A,B,C>
+    {
+        A _a;
+        B _b;
+        C _c;
+    }
+
+    public class GenClass<A>
+    {
+#pragma warning disable 169
+        A _a;
+#pragma warning restore 169
+    }
+
+    public class GenDerivedClass<A,B> : GenClass<A>
+    {
+#pragma warning disable 169
+        B _b;
+#pragma warning restore 169
     }
 }

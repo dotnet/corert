@@ -23,21 +23,8 @@ namespace System.Reflection.Runtime.General
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    internal static class MetadataReaderExtensions
+    internal static class NativeFormatMetadataReaderExtensions
     {
-        public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
-        {
-            return reader.GetConstantStringValue(handle).Value;
-        }
-
-        // Useful for namespace Name string which can be a null handle.
-        public static String GetStringOrNull(this ConstantStringValueHandle handle, MetadataReader reader)
-        {
-            if (reader.IsNull(handle))
-                return null;
-            return reader.GetConstantStringValue(handle).Value;
-        }
-
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, String valueOrNull, MetadataReader reader)
         {
             if (valueOrNull == null)
@@ -96,14 +83,6 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-
-        public static bool IsTypeDefRefOrSpecHandle(this Handle handle, MetadataReader reader)
-        {
-            HandleType handleType = handle.HandleType;
-            return handleType == HandleType.TypeDefinition ||
-                handleType == HandleType.TypeReference ||
-                handleType == HandleType.TypeSpecification;
-        }
 
         public static bool IsNamespaceDefinitionHandle(this Handle handle, MetadataReader reader)
         {
@@ -410,9 +389,6 @@ namespace System.Reflection.Runtime.General
                 case HandleType.ConstantBooleanArray:
                     return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value;
 
-                case HandleType.ConstantStringArray:
-                    return handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value;
-
                 case HandleType.ConstantCharArray:
                     return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value;
 
@@ -445,6 +421,21 @@ namespace System.Reflection.Runtime.General
 
                 case HandleType.ConstantDoubleArray:
                     return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value;
+
+                case HandleType.ConstantStringArray:
+                    {
+                        Handle[] constantHandles = handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value.ToArray();
+                        string[] elements = new string[constantHandles.Length];
+                        for (int i = 0; i < constantHandles.Length; i++)
+                        {
+                            object elementValue;
+                            exception = constantHandles[i].TryParseConstantValue(reader, out elementValue);
+                            if (exception != null)
+                                return null;
+                            elements[i] = (string)elementValue;
+                        }
+                        return elements;
+                    }
 
                 case HandleType.ConstantHandleArray:
                     {
@@ -648,66 +639,6 @@ namespace System.Reflection.Runtime.General
             ReverseStringInStringBuilder(fullName, 0, fullName.Length);
             fullName.Append(typeName);
             return fullName.ToString();
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
-        {
-            ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                scopeDefinition.Name,
-                scopeDefinition.MajorVersion,
-                scopeDefinition.MinorVersion,
-                scopeDefinition.BuildNumber,
-                scopeDefinition.RevisionNumber,
-                scopeDefinition.Culture,
-                scopeDefinition.PublicKey,
-                scopeDefinition.Flags
-                );
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeReferenceHandle scopeReferenceHandle, MetadataReader reader)
-        {
-            ScopeReference scopeReference = scopeReferenceHandle.GetScopeReference(reader);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                scopeReference.Name,
-                scopeReference.MajorVersion,
-                scopeReference.MinorVersion,
-                scopeReference.BuildNumber,
-                scopeReference.RevisionNumber,
-                scopeReference.Culture,
-                scopeReference.PublicKeyOrToken,
-                scopeReference.Flags
-                );
-        }
-
-        private static RuntimeAssemblyName CreateRuntimeAssemblyNameFromMetadata(
-            MetadataReader reader,
-            ConstantStringValueHandle name,
-            ushort majorVersion,
-            ushort minorVersion,
-            ushort buildNumber,
-            ushort revisionNumber,
-            ConstantStringValueHandle culture,
-            IEnumerable<byte> publicKeyOrToken,
-            NativeFormatAssemblyFlags assemblyFlags)
-        {
-            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.PublicKey))
-                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.Retargetable))
-                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
-            int contentType = ((int)assemblyFlags) & 0x00000E00;
-            assemblyNameFlags |= (AssemblyNameFlags)contentType;
-
-            return new RuntimeAssemblyName(
-                name.GetString(reader),
-                new Version(majorVersion, minorVersion, buildNumber, revisionNumber),
-                culture.GetStringOrNull(reader),
-                assemblyNameFlags,
-                publicKeyOrToken.ToArray()
-                );
         }
     }
 }

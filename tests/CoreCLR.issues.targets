@@ -6,6 +6,7 @@
     <!-- https://github.com/dotnet/corert/issues/363 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\bug505642\test\test.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\RecursiveTailCall\RecursiveTailCall.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\regressions\polyrec\Polyrec\Polyrec.*" />
 
     <!-- Implement general purpose RuntimeHelpers.InitializeArray -->
     <!-- https://github.com/dotnet/corert/issues/364 -->
@@ -224,100 +225,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_r\vt4_cs_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_ro\vt4_cs_ro.*" />
 
-    <!-- System.Threading -->
-    <!-- https://github.com/dotnet/corert/issues/370 -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\LocallocLarge\LocallocLarge.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\b72218\b72218\b72218.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M01\b10827\b10827\b10827.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\regressions\polyrec\Polyrec\Polyrec.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic01\ThreadStatic01.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic02\ThreadStatic02.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic03\ThreadStatic03.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic05\ThreadStatic05.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic06\ThreadStatic06.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta2\462651\462651\462651.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd\dlbigleakthd.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd_v2\dlbigleakthd_v2.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalizeTimeout\FinalizeTimeout\FinalizeTimeout.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakGen\leakgenthrd\leakgenthrd.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakWheel\leakwheel\leakwheel.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\THDChaos\thdchaos\thdchaos.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_add\VolatileTest_op_add.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_and\VolatileTest_op_and.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_div\VolatileTest_op_div.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_mod\VolatileTest_op_mod.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_mul\VolatileTest_op_mul.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_or\VolatileTest_op_or.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_shr\VolatileTest_op_shr.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_sub\VolatileTest_op_sub.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\VolatileTest_op_xor\VolatileTest_op_xor.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\rngchk\ArrayWithThread_o\ArrayWithThread_o.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ndpw\14888\objectusedonlyinhandler\objectusedonlyinhandler.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\misc\_dbgconcurgc_il\_dbgconcurgc_il.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\misc\_relconcurgc_il\_relconcurgc_il.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\assemname_cs_d\assemname_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\assemname_cs_do\assemname_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\assemname_cs_r\assemname_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\assemname_cs_ro\assemname_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads1_cs_d\threads1_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads1_cs_do\threads1_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads1_cs_r\threads1_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads1_cs_ro\threads1_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads2_cs_d\threads2_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads2_cs_do\threads2_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads2_cs_r\threads2_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads2_cs_ro\threads2_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\Desktop\_il_relthread-race\_il_relthread-race.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\hijacking\hijacking.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b99969\b99969\b99969.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b425314\b425314\b425314.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\M00\b113493\b113493\b113493.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool_1\ThreadStartBool_1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizearraysleep\finalizearraysleep.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\523654\test532654_b\test532654_b.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\backpatching\test1\test1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorFourThreads\CircularCctorFourThreads.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads01\CircularCctorThreeThreads01.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads02\CircularCctorThreeThreads02.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads03\CircularCctorThreeThreads03.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CoreCLR\CircularCctorThreeThreads03\CircularCctorThreeThreads03.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool\ThreadStartBool.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorOpenFile\CctorOpenFile.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\GenMethInlined\GenMethInlined.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\GenMethInlined_Multinested\GenMethInlined_Multinested.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\GenTypeInlined\GenTypeInlined.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\GenTypeInlined_Multinested\GenTypeInlined_Multinested.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\Inlined\Inlined.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\Inlining\Inlined_Multinested\Inlined_Multinested.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\BinTree\thdtree\thdtree.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\BinTree\thdtreegrowingobj\thdtreegrowingobj.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\BinTree\thdtreelivingobj\thdtreelivingobj.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\THDList\thdlist\thdlist.*" />
-
-    <!-- System.Diagnostics.StackTrace -->
-    <!-- https://github.com/dotnet/corert/issues/370 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\AttributeConflict\AttributeConflict.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\NegativeCases\NegativeCases.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\PositiveCases\PositiveCases.*" />
-
-    <!-- mscorlib -->
-    <!-- https://github.com/dotnet/corefx/issues/14528 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\Misc\function_pointer\MutualThdRecur-fptr\MutualThdRecur-fptr.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.1-M1-Beta1\b143840\b143840\b143840.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b426654\b426654\b426654.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorFourThreadsBFI\CircularCctorFourThreadsBFI.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads01BFI\CircularCctorThreeThreads01BFI.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads02BFI\CircularCctorThreeThreads02BFI.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorThreeThreads03BFI\CircularCctorThreeThreads03BFI.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nestedtry\throwinnestedtrycatch_d\throwinnestedtrycatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nestedtry\throwinnestedtrycatch_r\throwinnestedtrycatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nestedtry\nestedtrycatch_d\nestedtrycatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nestedtry\nestedtrycatch_r\nestedtrycatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\disconnected\reversedhandlers_d\reversedhandlers_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\disconnected\reversedhandlers_r\reversedhandlers_r.*" />
-
     <!-- System.Reflection.Emit.Lightweight -->
     <!-- https://github.com/dotnet/corert/issues/370 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\dynamic_methods\bug_445388\bug_445388.*" />
@@ -448,8 +355,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3Interop_r\Vector3Interop_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3Interop_ro\Vector3Interop_ro.*" />
 
-    <!-- System.IO.FileSystem -->
-    <!-- https://github.com/dotnet/corert/issues/370 -->
+    <!-- Test has expectations about CoreRun and running on CoreCLR -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\NativeLibs\FromNativePaths\FromNativePaths.*" />
 
     <!-- Microsoft.CodeAnalysis -->
@@ -536,24 +442,10 @@
     <!-- Generic virtual methods -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_il_d\class2_il_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_il_r\class2_il_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_il_d\vt4_il_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_il_r\vt4_il_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos55915408cs\chaos55915408cs.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos55915408cs_o\chaos55915408cs_o.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos56200037cs\chaos56200037cs.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos56200037cs_o\chaos56200037cs_o.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs\chaos65204782cs.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs_o\chaos65204782cs_o.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate007\Delegate007.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate008\Delegate008.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\nonvirtualcall\generics\generics.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b210352\csharptester\csharptester.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\b611219\b611219\b611219.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\Dev11_243742\app\app.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\readytorun\mainv1\mainv1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\readytorun\mainv2\mainv2.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\readytorun\generics\generics.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case9\case9.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001e\method001e.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001f\method001f.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001g\method001g.*" />
@@ -571,14 +463,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\CoreCLR\Method003\Method003.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\109968\test\test.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712\dev10_468712.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\208900\bug\bug.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_710121\dev10_710121\dev10_710121.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate019\Delegate019.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate020\Delegate020.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate021\Delegate021.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate022\Delegate022.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate023\Delegate023.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Instantiation\delegates\Delegate024\Delegate024.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\395780\testExplicitOverride\testExplicitOverride.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ExplicitOverrideVirtualNewslot\Class_ExplicitOverrideVirtualNewslot.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ExplicitOverrideVirtualNewslotFinal\Class_ExplicitOverrideVirtualNewslotFinal.*" />
@@ -593,10 +478,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method002\Method002.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method003\Method003.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method004\Method004.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\nonvirtualcall\generics2_d\generics2_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\nonvirtualcall\generics2_r\generics2_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\576621\VSW576621\VSW576621.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b374944\b374944\b374944.*" />
 
     <!-- DynamicInvoke stub for a method with 8192 parameters -->
     <!-- https://github.com/dotnet/corert/issues/2349 -->
@@ -695,6 +577,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b17023\b17023\b17023.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_5164\GitHub_5164\GitHub_5164.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\hijacking\hijacking.*" />
 
     <!-- Non-trivial marshalling -->
     <ExcludeList Include="$(XunitTestBinBase)\Exceptions\ForeignThread\ForeignThreadExceptions\ForeignThreadExceptions.*" />
@@ -840,6 +723,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case6\case6.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case7\case7.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case8\case8.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\objrefandnonobjrefoverlap\case9\case9.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test21\test21.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test9\test9.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test16\test16.*" />
@@ -938,6 +822,7 @@
     
     <!-- Precise GC -->
     <!-- https://github.com/dotnet/corert/issues/2354 -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect1\Collect1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\ReRegisterForFinalize\ReRegisterForFinalize.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\HandleCopy\HandleCopy.*" />
@@ -994,6 +879,12 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowexcept_d\trythrowexcept_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowexcept_r\trythrowexcept_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\dev10_393447\dev10_393447\dev10_393447.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos55915408cs\chaos55915408cs.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos55915408cs_o\chaos55915408cs_o.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos56200037cs\chaos56200037cs.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos56200037cs_o\chaos56200037cs_o.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs\chaos65204782cs.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs_o\chaos65204782cs_o.*" />
 
     <!-- Metadata generation failure due to garbage fields due to bad base class libraries -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\throwisfirstinstruction\throwisfirstinstruction.*" />
@@ -1304,6 +1195,13 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\NDPin\ndpinfinal\ndpinfinal.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinning\object-pin\object-pin\object-pin.*" />
 
+    <!-- More failing GC tests -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizearraysleep\finalizearraysleep.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd\dlbigleakthd.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd_v2\dlbigleakthd_v2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakWheel\leakwheel\leakwheel.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.*" />
+
     <!-- Variant interface method resolution -->
     <!-- https://github.com/dotnet/corert/issues/2358 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\dev10_bug719093\variancesmall\variancesmall.*" />
@@ -1333,6 +1231,13 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\529206\vsw529206ModuleCctor\vsw529206ModuleCctor.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\vsw529206\vsw529206ModuleCctor\vsw529206ModuleCctor.*" />
 
+    <!-- https://github.com/dotnet/corert/issues/2958 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b426654\b426654\b426654.*" />
+
+    <!-- Null StringBuilder marshalling -->
+    <!-- https://github.com/dotnet/corert/issues/2959 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b425314\b425314\b425314.*" />
+
     <!-- Absurdly large field offset -->
     <!-- https://github.com/dotnet/corert/issues/2396 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\ASURT\ASURT150271\test3\test3.*" />
@@ -1355,18 +1260,11 @@
     <!-- NetStandard2: System.Runtime.Loader.AssemblyLoadContext -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\modulector\runmoduleconstructor\runmoduleconstructor.*" />
 
-    <!-- NetStandard2: AccessViolationException -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\calli_excep\calli_excep.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack\LdfldaHack.*" />
-
     <!-- NetStandard2: RuntimeHelpers.TryCode -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\RuntimeHelpers\ExecuteCodeWithGuaranteedCleanup\ExecuteCodeWithGuaranteedCleanup.*" />
 
     <!-- NetStandard2: Marshal.StringToCoTaskMemUTF8 -->
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\String\StringMarshalingTest\StringMarshalingTest.*" />
-
-    <!-- NetStandard2: IntPtr System.RuntimeTypeHandle.get_Value() -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\b609988\Desktop\b609988\b609988.*" />
 
     <!-- NetStandard2: System.Type.GetInterfaceMap -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M01\b12425\b12425\b12425.*" />
@@ -1382,8 +1280,9 @@
     <!-- NetStandard2: System.Runtime.CompilerServices.FixedAddressValueTypeAttribute. -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\FixedAddressValueType\FixedAddressValueType\FixedAddressValueType.*" />
 
-    <!-- NetStandard2: System.GC.GetGeneration(System.WeakReference) -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR2\GetGenerationWR2.*" />
+    <!-- Test infra problem -->
+    <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool_1\ThreadStartBool_1.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartBool\ThreadStartBool.*" />
 
     <!-- ILDASM tests, not runtime tests -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\BBT\Scenario4\Not-Int32\Not-Int32.*" />
@@ -1399,6 +1298,9 @@
     <!-- Crossgen tests, not runtime tests -->
     <ExcludeList Include="$(XunitTestBinBase)\readytorun\genericsload\callgenericctor\callgenericctor.*" />
     <ExcludeList Include="$(XunitTestBinBase)\readytorun\genericsload\usegenericfield\usegenericfield.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\readytorun\mainv1\mainv1.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\readytorun\mainv2\mainv2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\readytorun\generics\generics.*" />
 
     <!-- Superpmi tests, not runtime tests -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\superpmi\superpmicollect\superpmicollect.*" />
@@ -1409,6 +1311,12 @@
 
     <!-- Expectations about inlining being enabled -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ddb\87766\ddb87766\ddb87766.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\AttributeConflict\AttributeConflict.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\NegativeCases\NegativeCases.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\PositiveCases\PositiveCases.*" />
+
+    <!-- Expectations about HW exceptions in unmanaged code being catchable -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\calli_excep\calli_excep.*" />
 
     <!-- These tests use CultureInfo so do not work if we are using dummy globalization -->
     <ExcludeList Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'" Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\b04914.*" />

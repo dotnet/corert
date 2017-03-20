@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             _name = name;
         }
 
-        protected override string GetName() => $"ExternSymbol {_name.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"ExternSymbol {_name.ToString()}";
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

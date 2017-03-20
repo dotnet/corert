@@ -155,6 +155,11 @@ namespace ILCompiler
                 return new RuntimeImportMethodNode(method);
             }
 
+            if (CompilationModuleGroup.ContainsMethod(method))
+            {
+                return NonExternMethodSymbol(method, false);
+            }
+
             return new ExternMethodSymbolNode(this, method);
         }
 
@@ -165,6 +170,11 @@ namespace ILCompiler
                 // Unboxing stubs to canonical instance methods need a special unboxing instantiating stub that unboxes
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
                 // The unboxing instantiating stub is emitted by UTC.
+                if (CompilationModuleGroup.ContainsMethod(method))
+                {
+                    return NonExternMethodSymbol(method, true);
+                }
+
                 return new ExternMethodSymbolNode(this, method, true);
             }
             else
@@ -174,18 +184,18 @@ namespace ILCompiler
             }
         }
 
-        protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
+        protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
-            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
 
         protected override IMethodNode CreateShadowConcreteMethodNode(MethodKey methodKey)
         {
-            // All methods are modeled as ExternMethodSymbolNode in ProjectX for now.
-            return new ShadowConcreteMethodNode<ExternMethodSymbolNode>(methodKey.Method,
-                (ExternMethodSymbolNode)MethodEntrypoint(
+            IMethodNode methodCodeNode = MethodEntrypoint(
                     methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific),
-                    methodKey.IsUnboxingStub));
+                    methodKey.IsUnboxingStub);
+
+            return new ShadowConcreteMethodNode(methodKey.Method, methodCodeNode);
         }
 
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(

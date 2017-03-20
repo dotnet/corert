@@ -20,7 +20,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    public abstract partial class WaitHandle : IDisposable
+    public abstract partial class WaitHandle : MarshalByRefObject, IDisposable
     {
         internal const int WaitObject0 = (int)Interop.Constants.WaitObject0;
         public const int WaitTimeout = (int)Interop.Constants.WaitTimeout;
@@ -88,7 +88,7 @@ namespace System.Threading
             { _waitHandle = value; }
         }
 
-        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        internal static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             var timeoutMilliseconds = (long)timeout.TotalMilliseconds;
             if (timeoutMilliseconds < -1 || timeoutMilliseconds > int.MaxValue)

@@ -33,16 +33,16 @@ namespace ILCompiler.DependencyAnalysis
             return new UnboxingStubNode(method);
         }
 
-        protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
+        protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
             // TODO: this is wrong: this returns an assembly stub node
-            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
 
         protected override IMethodNode CreateShadowConcreteMethodNode(MethodKey methodKey)
         {
-            return new ShadowConcreteMethodNode<CppMethodCodeNode>(methodKey.Method,
-                (CppMethodCodeNode)MethodEntrypoint(
+            return new ShadowConcreteMethodNode(methodKey.Method,
+                MethodEntrypoint(
                     methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific),
                     methodKey.IsUnboxingStub));
         }

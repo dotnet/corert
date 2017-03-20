@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -74,8 +74,8 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment);
-                builder.EmitZeros(_type.GCStaticFieldSize);
+                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment.AsInt);
+                builder.EmitZeros(_type.GCStaticFieldSize.AsInt);
             }
 
             builder.AddSymbol(this);

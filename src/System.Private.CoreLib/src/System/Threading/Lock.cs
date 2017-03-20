@@ -88,10 +88,7 @@ namespace System.Threading
 
         public bool TryAcquire(TimeSpan timeout)
         {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return TryAcquire((int)tm);
+            return TryAcquire(WaitHandle.ToTimeoutMilliseconds(timeout));
         }
 
         public bool TryAcquire(int millisecondsTimeout)

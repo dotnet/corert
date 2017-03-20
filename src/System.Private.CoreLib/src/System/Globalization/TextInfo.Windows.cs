@@ -17,12 +17,16 @@ namespace System.Globalization
         //////////////////////////////////////////////////////////////////////////
         internal unsafe TextInfo(CultureData cultureData)
         {
-            const uint LCMAP_SORTHANDLE = 0x20000000;
-
             // This is our primary data source, we don't need most of the rest of this
             _cultureData = cultureData;
             _cultureName = _cultureData.CultureName;
             _textInfoName = _cultureData.STEXTINFO;
+            FinishInitialization(_textInfoName);
+        }
+
+        private unsafe void FinishInitialization(string textInfoName)
+        {
+            const uint LCMAP_SORTHANDLE = 0x20000000;
 
             long handle;
             int ret = Interop.mincore.LCMapStringEx(_textInfoName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
@@ -103,7 +107,7 @@ namespace System.Globalization
 
         // PAL Ends here
 
-        private readonly IntPtr _sortHandle;
+        private IntPtr _sortHandle;
 
         private const uint LCMAP_LINGUISTIC_CASING = 0x01000000;
         private const uint LCMAP_LOWERCASE = 0x00000100;

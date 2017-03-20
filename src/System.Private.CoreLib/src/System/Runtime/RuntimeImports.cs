@@ -22,6 +22,22 @@ namespace System.Runtime
     public static class RuntimeImports
     {
         private const string RuntimeLibrary = "[MRT]";
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpSetHighLevelDebugFuncEvalHelper")]
+        public static extern void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpSendCustomEventToDebugger")]
+        public static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        public static extern IntPtr RhpGetFuncEvalTargetAddress();
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        [CLSCompliant(false)]
+        public static extern uint RhpGetFuncEvalParameterBufferSize();
+
         //
         // calls to GC
         // These methods are needed to implement System.GC like functionality (optional)
@@ -510,6 +526,10 @@ namespace System.Runtime
         internal static extern IntPtr RhGetOSModuleFromEEType(IntPtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetOSModuleForMrt")]
+        public static extern IntPtr RhGetOSModuleForMrt();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
         internal static extern unsafe byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, IntPtr fieldCookie);
 
@@ -578,6 +598,12 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCurrentThreadStackBounds")]
         internal static extern void RhGetCurrentThreadStackBounds(out IntPtr pStackLow, out IntPtr pStackHigh);
+
+#if PLATFORM_UNIX
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhSetThreadExitCallback")]
+        internal static extern bool RhSetThreadExitCallback(IntPtr pCallback);
+#endif
 
         // Functions involved in thunks from managed to managed functions (Universal transition transitions 
         // from an arbitrary method call into a defined function, and CallDescrWorker goes the other way.

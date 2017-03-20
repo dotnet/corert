@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -144,6 +145,71 @@ namespace Internal.TypeSystem.Ecma
                 // unsupported metadata
                 return false;
             }
+        }
+
+        public static PInvokeFlags GetDelegatePInvokeFlags(this EcmaType type)
+        {
+            PInvokeFlags flags = new PInvokeFlags();
+
+            if (!type.IsDelegate)
+            {
+                return flags;
+            }
+
+            var customAttributeValue = type.GetDecodedCustomAttribute(
+                               "System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute");
+
+            if (customAttributeValue == null)
+            {
+                return flags;
+            }
+
+            if (!customAttributeValue.HasValue)
+            {
+                return flags;
+            }
+
+            if (customAttributeValue.Value.FixedArguments.Length == 1)
+            {
+                CallingConvention callingConvention = (CallingConvention)customAttributeValue.Value.FixedArguments[0].Value;
+
+                switch (callingConvention)
+                {
+                    case CallingConvention.StdCall:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionStdCall;
+                        break;
+                    case CallingConvention.Cdecl:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionCdecl;
+                        break;
+                    case CallingConvention.ThisCall:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionThisCall;
+                        break;
+                    case CallingConvention.Winapi:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionStdCall;
+                        break;
+                }
+            }
+
+            foreach (var namedArgument in customAttributeValue.Value.NamedArguments)
+            {
+                if (namedArgument.Name == "CharSet")
+                {
+                    flags.CharSet = (CharSet)namedArgument.Value;
+                }
+                else if (namedArgument.Name == "BestFitMapping")
+                {
+                    flags.BestFitMapping = (bool)namedArgument.Value;
+                }
+                else if (namedArgument.Name == "SetLastError")
+                {
+                    flags.SetLastError = (bool)namedArgument.Value;
+                }
+                else if (namedArgument.Name == "ThrowOnUnmappableChar")
+                {
+                    flags.ThrowOnUnmappableChar = (bool)namedArgument.Value;
+                }
+            }
+            return flags;
         }
 
         // This mask is the fastest way to check if a type is nested from its flags,

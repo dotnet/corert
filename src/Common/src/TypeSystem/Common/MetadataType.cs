@@ -107,11 +107,13 @@ namespace Internal.TypeSystem
 
     public struct FieldAndOffset
     {
-        public const int InvalidOffset = -1;
+        public static readonly LayoutInt InvalidOffset = new LayoutInt(int.MaxValue);
 
         public readonly FieldDesc Field;
-        public readonly int Offset;
-        public FieldAndOffset(FieldDesc field, int offset)
+
+        public readonly LayoutInt Offset;
+
+        public FieldAndOffset(FieldDesc field, LayoutInt offset)
         {
             Field = field;
             Offset = offset;

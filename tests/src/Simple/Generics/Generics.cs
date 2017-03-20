@@ -4,6 +4,7 @@
 
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 class Program
@@ -27,6 +28,7 @@ class Program
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
         TestGvmDependencies.Run();
+        TestFieldAccess.Run();
 
         return 100;
     }
@@ -1117,6 +1119,300 @@ class Program
                 Foo x = new Bar();
                 x.Frob<Atom>();
             }
+        }
+    }
+
+    class TestFieldAccess
+    {
+        class ClassType { }
+        struct StructType { }
+
+        class Foo<T>
+        {
+            static Foo()
+            {
+                Console.WriteLine("Foo<" + typeof(T).Name + "> cctor");
+
+                if (typeof(T) == typeof(ClassType))
+                    TestFieldAccess.s_FooClassTypeCctorCount++;
+                else
+                    TestFieldAccess.s_FooStructTypeCctorCount++;
+            }
+
+            public static int s_intField;
+            public static float s_floatField;
+            public static string s_stringField;
+            public static object s_objectField;
+            public static long s_longField1;
+            public static long s_longField2;
+            public static long s_longField3;
+            public static KeyValuePair<string, string> s_kvp;
+
+            public int m_intField;
+            public float m_floatField;
+            public string m_stringField;
+            public object m_objectField;
+        }
+
+        class Bar
+        {
+            static Bar()
+            {
+                Console.WriteLine("Bar cctor");
+                TestFieldAccess.s_BarCctorCount++;
+            }
+
+            public static int s_intField;
+            public static float s_floatField;
+            public static string s_stringField;
+            public static object s_objectField;
+            public static long s_longField1;
+            public static long s_longField2;
+            public static long s_longField3;
+            public static KeyValuePair<string, string> s_kvp;
+
+            public int m_intField;
+            public float m_floatField;
+            public string m_stringField;
+            public object m_objectField;
+        }
+
+        public static int s_FooClassTypeCctorCount = 0;
+        public static int s_FooStructTypeCctorCount = 0;
+        public static int s_BarCctorCount = 0;
+        public static int s_NumErrors = 0;
+
+        private static void Verify<T>(T expected, T actual)
+        {
+            if (!actual.Equals(expected))
+            {
+                Console.WriteLine("ACTUAL   : " + actual);
+                Console.WriteLine("EXPECTED : " + expected);
+                s_NumErrors++;
+            }
+        }
+
+        private static void TestStaticFields()
+        {
+            Foo<ClassType>.s_intField = 11223344;
+            Foo<ClassType>.s_stringField = "abcd";
+            Foo<ClassType>.s_floatField = 12.34f;
+            Foo<ClassType>.s_objectField = "123";
+            Foo<ClassType>.s_kvp = new KeyValuePair<string, string>("1122", "3344");
+
+            Foo<StructType>.s_intField = 44332211;
+            Foo<StructType>.s_stringField = "dcba";
+            Foo<StructType>.s_floatField = 43.21f;
+            Foo<StructType>.s_objectField = "321";
+            Foo<StructType>.s_kvp = new KeyValuePair<string, string>("4433", "2211");
+
+
+            Bar.s_intField = 778899;
+            Bar.s_stringField = "xxyyzz";
+            Bar.s_floatField = 88.99f;
+            Bar.s_objectField = "890";
+            Bar.s_kvp = new KeyValuePair<string, string>("7788", "8899");
+
+            // Testing correctness of cctor context
+            {
+                Foo<ClassType>.s_longField1 = 0xff00;
+                Foo<ClassType>.s_longField2 = 0xff00;
+                Foo<ClassType>.s_longField3 = 0xff00;
+                if (TestFieldAccess.s_FooClassTypeCctorCount != 1)
+                    s_NumErrors++;
+
+                Foo<StructType>.s_longField1 = 0xff00;
+                Foo<StructType>.s_longField2 = 0xff00;
+                Foo<StructType>.s_longField3 = 0xff00;
+                if (TestFieldAccess.s_FooStructTypeCctorCount != 1)
+                    s_NumErrors++;
+
+                Bar.s_longField1 = 0xff00;
+                Bar.s_longField2 = 0xff00;
+                Bar.s_longField3 = 0xff00;
+                if (TestFieldAccess.s_BarCctorCount != 1)
+                    s_NumErrors++;
+            }
+
+            Console.WriteLine("Testing static fields on type Foo<ClassType> ...");
+            {
+                FieldInfo fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_intField");
+                Verify((int)11223344, (int)fi.GetValue(null));
+
+                fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_stringField");
+                Verify("abcd", (string)fi.GetValue(null));
+
+                fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_floatField");
+                Verify(12.34f, (float)fi.GetValue(null));
+
+                fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_objectField");
+                Verify("123", fi.GetValue(null));
+
+                fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_kvp");
+                var result = (KeyValuePair<string, string>)fi.GetValue(null);
+                Verify("1122", result.Key);
+                Verify("3344", result.Value);
+
+                typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_stringField").SetValue(null, "ThisIsAString1");
+                typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_objectField").SetValue(null, "ThisIsAString2");
+                typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("s_kvp").SetValue(null, new KeyValuePair<string, string>("ThisIs", "AString"));
+                Verify("ThisIsAString1", (string)Foo<ClassType>.s_stringField);
+                Verify("ThisIsAString2", (string)Foo<ClassType>.s_objectField);
+                Verify("ThisIs", (string)Foo<ClassType>.s_kvp.Key);
+                Verify("AString", (string)Foo<ClassType>.s_kvp.Value);
+            }
+
+            Console.WriteLine("Testing static fields on type Foo<StructType> ...");
+            {
+                FieldInfo fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_intField");
+                Verify(44332211, (int)fi.GetValue(null));
+
+                fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_stringField");
+                Verify("dcba", (string)fi.GetValue(null));
+
+                fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_floatField");
+                Verify(43.21f, (float)fi.GetValue(null));
+
+                fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_objectField");
+                Verify("321", fi.GetValue(null));
+
+                fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_kvp");
+                var result = (KeyValuePair<string, string>)fi.GetValue(null);
+                Verify("4433", result.Key);
+                Verify("2211", result.Value);
+
+                typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_stringField").SetValue(null, "ThisIsAString3");
+                typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_objectField").SetValue(null, "ThisIsAString4");
+                typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("s_kvp").SetValue(null, new KeyValuePair<string, string>("ThisIs1", "AString1"));
+                Verify("ThisIsAString3", (string)Foo<StructType>.s_stringField);
+                Verify("ThisIsAString4", (string)Foo<StructType>.s_objectField);
+                Verify("ThisIs1", (string)Foo<StructType>.s_kvp.Key);
+                Verify("AString1", (string)Foo<StructType>.s_kvp.Value);
+            }
+
+            Console.WriteLine("Testing static fields on type Bar ...");
+            {
+                FieldInfo fi = typeof(Bar).GetTypeInfo().GetDeclaredField("s_intField");
+                Verify(778899, (int)fi.GetValue(null));
+
+                fi = typeof(Bar).GetTypeInfo().GetDeclaredField("s_stringField");
+                Verify("xxyyzz", (string)fi.GetValue(null));
+
+                fi = typeof(Bar).GetTypeInfo().GetDeclaredField("s_floatField");
+                Verify(88.99f, (float)fi.GetValue(null));
+
+                fi = typeof(Bar).GetTypeInfo().GetDeclaredField("s_objectField");
+                Verify("890", fi.GetValue(null));
+
+                fi = typeof(Bar).GetTypeInfo().GetDeclaredField("s_kvp");
+                var result = (KeyValuePair<string, string>)fi.GetValue(null);
+                Verify("7788", result.Key);
+                Verify("8899", result.Value);
+
+                typeof(Bar).GetTypeInfo().GetDeclaredField("s_stringField").SetValue(null, "ThisIsAString5");
+                typeof(Bar).GetTypeInfo().GetDeclaredField("s_objectField").SetValue(null, "ThisIsAString6");
+                typeof(Bar).GetTypeInfo().GetDeclaredField("s_kvp").SetValue(null, new KeyValuePair<string, string>("ThisIs2", "AString2"));
+                Verify("ThisIsAString5", (string)Bar.s_stringField);
+                Verify("ThisIsAString6", (string)Bar.s_objectField);
+                Verify("ThisIs2", (string)Bar.s_kvp.Key);
+                Verify("AString2", (string)Bar.s_kvp.Value);
+            }
+        }
+
+        private static void TestInstanceFields()
+        {
+            Foo<ClassType> fooClassType = new Foo<ClassType>
+            {
+                m_intField = 1212,
+                m_stringField = "2323",
+                m_floatField = 34.34f,
+                m_objectField = "4545",
+            };
+
+            Foo<StructType> fooStructType = new Foo<StructType>
+            {
+                m_intField = 2323,
+                m_stringField = "3434",
+                m_floatField = 45.45f,
+                m_objectField = "5656",
+            };
+
+            Bar bar = new Bar
+            {
+                m_intField = 3434,
+                m_stringField = "4545",
+                m_floatField = 56.56f,
+                m_objectField = "6767",
+            };
+
+            Console.WriteLine("Testing instance fields on type Foo<ClassType> ...");
+            {
+                FieldInfo fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("m_intField");
+                Verify(1212, (int)fi.GetValue(fooClassType));
+
+                fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("m_stringField");
+                Verify("2323", (string)fi.GetValue(fooClassType));
+
+                fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("m_floatField");
+                Verify(34.34f, (float)fi.GetValue(fooClassType));
+
+                fi = typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("m_objectField");
+                Verify("4545", fi.GetValue(fooClassType));
+
+                typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("m_stringField").SetValue(fooClassType, "ThisIsAString7");
+                typeof(Foo<ClassType>).GetTypeInfo().GetDeclaredField("m_objectField").SetValue(fooClassType, "ThisIsAString8");
+                Verify("ThisIsAString7", (string)fooClassType.m_stringField);
+                Verify("ThisIsAString8", (string)fooClassType.m_objectField);
+            }
+
+            Console.WriteLine("Testing instance fields on type Foo<StructType> ...");
+            {
+                FieldInfo fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("m_intField");
+                Verify(2323, (int)fi.GetValue(fooStructType));
+
+                fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("m_stringField");
+                Verify("3434", (string)fi.GetValue(fooStructType));
+
+                fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("m_floatField");
+                Verify(45.45f, (float)fi.GetValue(fooStructType));
+
+                fi = typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("m_objectField");
+                Verify("5656", fi.GetValue(fooStructType));
+
+                typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("m_stringField").SetValue(fooStructType, "ThisIsAString9");
+                typeof(Foo<StructType>).GetTypeInfo().GetDeclaredField("m_objectField").SetValue(fooStructType, "ThisIsAString10");
+                Verify("ThisIsAString9", (string)fooStructType.m_stringField);
+                Verify("ThisIsAString10", (string)fooStructType.m_objectField);
+            }
+
+            Console.WriteLine("Testing instance fields on type Bar ...");
+            {
+                FieldInfo fi = typeof(Bar).GetTypeInfo().GetDeclaredField("m_intField");
+                Verify(3434, (int)fi.GetValue(bar));
+
+                fi = typeof(Bar).GetTypeInfo().GetDeclaredField("m_stringField");
+                Verify("4545", (string)fi.GetValue(bar));
+
+                fi = typeof(Bar).GetTypeInfo().GetDeclaredField("m_floatField");
+                Verify(56.56f, (float)fi.GetValue(bar));
+
+                fi = typeof(Bar).GetTypeInfo().GetDeclaredField("m_objectField");
+                Verify("6767", fi.GetValue(bar));
+
+                typeof(Bar).GetTypeInfo().GetDeclaredField("m_stringField").SetValue(bar, "ThisIsAString11");
+                typeof(Bar).GetTypeInfo().GetDeclaredField("m_objectField").SetValue(bar, "ThisIsAString12");
+                Verify("ThisIsAString11", (string)bar.m_stringField);
+                Verify("ThisIsAString12", (string)bar.m_objectField);
+            }
+        }
+
+        public static void Run()
+        {
+            TestStaticFields();
+            TestInstanceFields();
+
+            if (s_NumErrors != 0)
+                throw new Exception(s_NumErrors + " errors!");
         }
     }
 }

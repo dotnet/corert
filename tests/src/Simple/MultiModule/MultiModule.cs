@@ -20,6 +20,12 @@ public class ReflectionTest
         if (TestSharedGenerics() == Fail)
             return Fail;
 
+        if (TestGenericTLS() == Fail)
+            return Fail;
+
+        if (TestInjectedEnumMethods() == Fail)
+            return Fail;
+
         return Pass;
     }
     
@@ -55,6 +61,29 @@ public class ReflectionTest
             return Fail;
 
         if (!MultiModuleLibrary.MethodThatUsesGenerics())
+            return Fail;
+
+        return Pass;
+    }
+
+    public static int TestGenericTLS()
+    {
+        Console.WriteLine("Testing thread statics on generic types shared between modules are shared properly..");
+
+        if (!MultiModuleLibrary.MethodThatUsesGenericWithTLS())
+            return Fail;
+
+        MultiModuleLibrary.GenericClassWithTLS<int>.ThreadStaticInt += 1;
+        if (MultiModuleLibrary.GenericClassWithTLS<int>.ThreadStaticInt != 2)
+            return Fail;
+
+        return Pass;
+    }
+
+    public static int TestInjectedEnumMethods()
+    {
+        Console.WriteLine("Testing context-injected methods on enums..");
+        if (!MultiModuleLibrary.MyEnum.One.Equals(MultiModuleLibrary.MyEnum.One))
             return Fail;
 
         return Pass;

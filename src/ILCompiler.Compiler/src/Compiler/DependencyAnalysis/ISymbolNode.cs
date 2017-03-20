@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface ISymbolNode
+    public interface ISymbolNode : IDependencyNode<NodeFactory>
     {
         void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         int Offset { get; }
@@ -26,13 +26,13 @@ namespace ILCompiler.DependencyAnalysis
         [ThreadStatic]
         static Utf8StringBuilder s_cachedUtf8StringBuilder;
 
-        public static string GetMangledName(this ISymbolNode symbolNode)
+        public static string GetMangledName(this ISymbolNode symbolNode, NameMangler nameMangler)
         {
             Utf8StringBuilder sb = s_cachedUtf8StringBuilder;
             if (sb == null)
                 sb = new Utf8StringBuilder();
 
-            symbolNode.AppendMangledName(NodeFactory.NameManglerDoNotUse, sb);
+            symbolNode.AppendMangledName(nameMangler, sb);
             string ret = sb.ToString();
 
             sb.Clear();

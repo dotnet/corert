@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// method body along with the instantiation context the canonical body requires.
     /// Pointers to these structures can be created by e.g. ldftn/ldvirtftn of a method with a canonical body.
     /// </summary>
-    public class FatFunctionPointerNode : ObjectNode, IMethodNode
+    public class FatFunctionPointerNode : ObjectNode, IMethodNode, IFatFunctionPointerNode
     {
         private bool _isUnboxingStub;
 
@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

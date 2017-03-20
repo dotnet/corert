@@ -51,17 +51,16 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, _lookupSignature, relocsOnly);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, encoder.TargetRegister.Arg0);
 
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
-
-                            AddrMode loadBase = new AddrMode(encoder.TargetRegister.Arg0, null, cctorContextSize, 0, AddrModeSize.Int64);
-                            encoder.EmitLEA(encoder.TargetRegister.Result, ref loadBase);
-
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize - cctorContextSize, 0, AddrModeSize.Int32);
                             encoder.EmitCMP(ref initialized, 1);
                             encoder.EmitRETIfEqual();
 
+                            AddrMode loadCctor = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
+                            encoder.EmitLEA(encoder.TargetRegister.Arg0, ref loadCctor);
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
                         }
@@ -88,11 +87,14 @@ namespace ILCompiler.DependencyAnalysis
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, nonGcRegionLookup, relocsOnly);
 
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                            int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize - cctorContextSize, 0, AddrModeSize.Int32);
                             encoder.EmitCMP(ref initialized, 1);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
+                            AddrMode loadCctor = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
+                            encoder.EmitLEA(encoder.TargetRegister.Arg0, ref loadCctor);
 
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
                         }
@@ -113,6 +115,9 @@ namespace ILCompiler.DependencyAnalysis
                             // class constructor context lives.
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
+                            int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
+                            AddrMode loadCctor = new AddrMode(encoder.TargetRegister.Arg2, null, -cctorContextSize, 0, AddrModeSize.Int64);
+                            encoder.EmitLEA(encoder.TargetRegister.Arg2, ref loadCctor);
 
                             helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase);
                         }
