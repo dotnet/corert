@@ -82,6 +82,7 @@
     </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ImportedMethodGenericDictionaryNode.cs" />
     <Compile Include="Compiler\EmptyMetadataManager.cs" />
     <Compile Include="Compiler\ILStreamReader.cs" />
     <Compile Include="Compiler\INonEmittableType.cs" />
