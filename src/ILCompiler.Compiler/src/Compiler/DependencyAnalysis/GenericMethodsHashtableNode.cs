@@ -120,7 +120,7 @@ namespace ILCompiler.DependencyAnalysis
             NativeLayoutSavedVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
             dependencies.Add(new DependencyListEntry(placedNameAndSig, "GenericMethodsHashtable entry signature"));
 
-            GenericDictionaryNode dictionaryNode = factory.MethodGenericDictionary(method);
+            ISymbolNode dictionaryNode = factory.MethodGenericDictionary(method);
             dependencies.Add(new DependencyListEntry(dictionaryNode, "GenericMethodsHashtable entry dictionary"));
 
             return dependencies;
