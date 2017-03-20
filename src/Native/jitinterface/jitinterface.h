@@ -22,7 +22,7 @@ struct JitInterfaceCallbacks
     void* (__stdcall * getMethodClass)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (__stdcall * getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
     void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection);
-    void* (__stdcall * resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass);
+    void* (__stdcall * resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
     int (__stdcall * getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
     bool (__stdcall * isInSIMDModule)(void * thisHandle, CorInfoException** ppException, void* classHnd);
     int (__stdcall * getUnmanagedCallConv)(void * thisHandle, CorInfoException** ppException, void* method);
@@ -292,10 +292,10 @@ public:
             throw pException;
     }
 
-    virtual void* resolveVirtualMethod(void* virtualMethod, void* implementingClass)
+    virtual void* resolveVirtualMethod(void* virtualMethod, void* implementingClass, void* ownerType)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _callbacks->resolveVirtualMethod(_thisHandle, &pException, virtualMethod, implementingClass);
+        void* _ret = _callbacks->resolveVirtualMethod(_thisHandle, &pException, virtualMethod, implementingClass, ownerType);
         if (pException != nullptr)
             throw pException;
         return _ret;

@@ -65,6 +65,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
@@ -74,6 +75,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs" />
     <Compile Include="Internal\TypeSystem\ILStubMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\JitSupport.MethodEntrypointStubs.cs" />
   </ItemGroup>

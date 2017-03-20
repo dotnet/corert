@@ -788,7 +788,7 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodModule"); }
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
         { throw new NotImplementedException("getMethodVTableOffset"); }
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass)
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
 
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
@@ -2600,6 +2600,13 @@ namespace Internal.JitInterface
                 // to call.
 
                 MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                if (directMethod == null && constrainedType.IsEnum)
+                {
+                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
+                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
+                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrainedType, method);
+                }
+
                 if (directMethod != null)
                 {
                     // Either

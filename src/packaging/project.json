@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Jit": "2.0.0-beta-25103-02",
+    "Microsoft.NETCore.Jit": "2.0.0-beta-25117-06",
     "Microsoft.DotNet.ObjectWriter": "1.0.16-prerelease-00001"
   },
   "frameworks": {
