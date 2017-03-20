@@ -2,15 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
 using System.Reflection;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-
-using Internal.Reflection.Core.NonPortable;
 
 namespace System
 {
@@ -41,7 +33,7 @@ namespace System
             }
         }
 
-        private Type GetRootElementType()
+        internal Type GetRootElementType()
         {
             Type rootElementType = this;
 
@@ -55,6 +47,12 @@ namespace System
         {
             get
             {
+#if CORECLR
+                RuntimeType rt = this as RuntimeType;
+                if (rt != null)
+                    return RuntimeTypeHandle.IsVisible(rt);
+#endif //CORECLR
+
                 if (IsGenericParameter)
                     return true;
 
@@ -450,7 +448,7 @@ namespace System
         private static bool FilterNameImpl(MemberInfo m, object filterCriteria)
         {
             // Check that the criteria object is a String object
-            if (filterCriteria == null || !(filterCriteria is String))
+            if (filterCriteria == null || !(filterCriteria is string))
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
 
             // At the moment this fails if its done on a single line....

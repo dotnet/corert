@@ -7,7 +7,7 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public abstract partial class Module : ICustomAttributeProvider, ISerializable
+    public abstract class Module : ICustomAttributeProvider, ISerializable
     {
         protected Module() { }
 
@@ -18,7 +18,8 @@ namespace System.Reflection
         public virtual int MDStreamVersion { get { throw NotImplemented.ByDesign; } }
         public virtual Guid ModuleVersionId { get { throw NotImplemented.ByDesign; } }
         public virtual string ScopeName { get { throw NotImplemented.ByDesign; } }
-        public ModuleHandle ModuleHandle => new ModuleHandle(this);
+        public ModuleHandle ModuleHandle => GetModuleHandleImpl();
+        protected virtual ModuleHandle GetModuleHandleImpl() => ModuleHandle.EmptyHandle; // Not an api but declared protected because of Reflection.Core/Corelib divide (when built by CoreRt)
         public virtual void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw NotImplemented.ByDesign; }
         public virtual bool IsResource() { throw NotImplemented.ByDesign; }
 
@@ -28,7 +29,14 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
-        public MethodInfo GetMethod(string name) => GetMethod(name, null);
+        public MethodInfo GetMethod(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
+        }
+
         public MethodInfo GetMethod(string name, Type[] types) => GetMethod(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
         public MethodInfo GetMethod(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {

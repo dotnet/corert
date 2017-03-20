@@ -171,16 +171,16 @@ namespace System
 
         internal static bool IsIntegerType(Type t)
         {
-            return (t == CommonRuntimeTypes.Int32 ||
-                    t == CommonRuntimeTypes.Int16 ||
-                    t == CommonRuntimeTypes.UInt16 ||
-                    t == CommonRuntimeTypes.Byte ||
-                    t == CommonRuntimeTypes.SByte ||
-                    t == CommonRuntimeTypes.UInt32 ||
-                    t == CommonRuntimeTypes.Int64 ||
-                    t == CommonRuntimeTypes.UInt64 ||
-                    t == CommonRuntimeTypes.Char ||
-                    t == CommonRuntimeTypes.Boolean);
+            return (t == typeof(int) ||
+                    t == typeof(short) ||
+                    t == typeof(ushort) ||
+                    t == typeof(byte) ||
+                    t == typeof(sbyte) ||
+                    t == typeof(uint) ||
+                    t == typeof(long) ||
+                    t == typeof(ulong) ||
+                    t == typeof(char) ||
+                    t == typeof(bool));
         }
     }
 }
