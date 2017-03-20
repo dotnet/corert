@@ -97,9 +97,9 @@ namespace ILCompiler
             return intrinsicMethod;
         }
 
-        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target)
+        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
-            return DelegateCreationInfo.Create(delegateType, target, NodeFactory);
+            return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
         }
     }
 }
