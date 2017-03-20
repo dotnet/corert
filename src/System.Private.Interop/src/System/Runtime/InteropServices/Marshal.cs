@@ -16,12 +16,10 @@ using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
 using System.Threading;
-
-#if ENABLE_WINRT
 using System.Runtime.InteropServices.ComTypes;
-#endif //ENABLE_WINRT
 
 namespace System.Runtime.InteropServices
 {
@@ -135,6 +133,18 @@ namespace System.Runtime.InteropServices
             {
                 return new String((char*)ptr);
             }
+        }
+
+        public static String PtrToStringAuto(IntPtr ptr, int len)
+        {
+            // Ansi platforms are no longer supported
+            return PtrToStringUni(ptr, len);
+        }
+
+        public static String PtrToStringAuto(IntPtr ptr)
+        {
+            // Ansi platforms are no longer supported
+            return PtrToStringUni(ptr);
         }
 
         //====================================================================
@@ -648,24 +658,6 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Memory allocation and deallocation.
         //====================================================================
-        public static IntPtr AllocHGlobal(IntPtr cb)
-        {
-            return ExternalInterop.MemAlloc(cb);
-        }
-
-        public static IntPtr AllocHGlobal(int cb)
-        {
-            return AllocHGlobal((IntPtr)cb);
-        }
-
-        public static void FreeHGlobal(IntPtr hglobal)
-        {
-            if (IsNotWin32Atom(hglobal))
-            {
-                ExternalInterop.MemFree(hglobal);
-            }
-        }
-
         public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
             return ExternalInterop.MemReAlloc(pv, cb);
@@ -809,6 +801,12 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        public static IntPtr StringToHGlobalAuto(String s)
+        {
+            // Ansi platforms are no longer supported
+            return StringToHGlobalUni(s);
+        }
+
         //====================================================================
         // return the IUnknown* for an Object if the current context
         // is the one where the RCW was first seen. Will return null
@@ -844,16 +842,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(o), SR.Arg_InvalidHandle);
 
             return McgComHelpers.IsComObject(o);
-        }
-
-        public static unsafe IntPtr AllocCoTaskMem(int cb)
-        {
-            IntPtr pNewMem = new IntPtr(ExternalInterop.CoTaskMemAlloc(new IntPtr(cb)));
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return pNewMem;
         }
 
         public static unsafe IntPtr StringToCoTaskMemUni(String s)
@@ -915,12 +903,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe void FreeCoTaskMem(IntPtr ptr)
+        public static IntPtr StringToCoTaskMemAuto(String s)
         {
-            if (IsNotWin32Atom(ptr))
-            {
-                ExternalInterop.CoTaskMemFree((void*)ptr);
-            }
+            // Ansi platforms are no longer supported
+            return StringToCoTaskMemUni(s);
         }
 
         //====================================================================
@@ -1479,6 +1465,23 @@ namespace System.Runtime.InteropServices
             return UnsafeAddrOfPinnedArrayElement((Array)arr, index);
         }
 
+        //====================================================================
+        // This method binds to the specified moniker.
+        //====================================================================
+        public static Object BindToMoniker(String monikerName)
+        {
+            Object obj = null;
+            IBindCtx bindctx = null;
+            ExternalInterop.CreateBindCtx(0, out bindctx);
+
+            UInt32 cbEaten;
+            IMoniker pmoniker = null;
+            ExternalInterop.MkParseDisplayName(bindctx, monikerName, out cbEaten, out pmoniker);
+
+            ExternalInterop.BindMoniker(pmoniker, 0, ref Interop.COM.IID_IUnknown, out obj);
+            return obj;
+        }
+
 #if ENABLE_WINRT
         public static Type GetTypeFromCLSID(Guid clsid)
         {
@@ -1600,6 +1603,48 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             throw new PlatformNotSupportedException("WriteInt64");
+        }
+
+        public static void ChangeWrapperHandleStrength(Object otp, bool fIsWeak)
+        {
+            throw new PlatformNotSupportedException("ChangeWrapperHandleStrength");
+        }
+
+        public static void CleanupUnusedObjectsInCurrentContext()
+        {
+            // RCW cleanup implemented in native code in CoreCLR, and uses a global list to indicate which objects need to be collected. In
+            // CoreRT, RCWs are implemented in managed code and their cleanup is normally accomplished using finalizers. Implementing
+            // this method in a more complicated way (without calling WaitForPendingFinalizers) is non-trivial because it possible for timing
+            // problems to occur when competing with finalizers.
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        public static void Prelink(MethodInfo m)
+        {
+            if (m == null)
+                throw new ArgumentNullException(nameof(m));
+            Contract.EndContractBlock();
+
+            // Note: This method is effectively a no-op in ahead-of-time compilation scenarios. In CoreCLR and Desktop, this will pre-generate
+            // the P/Invoke, but everything is pre-generated in CoreRT.
+        }
+
+        public static void PrelinkAll(Type c)
+        {
+            if (c == null)
+                throw new ArgumentNullException(nameof(c));
+            Contract.EndContractBlock();
+
+            MethodInfo[] mi = c.GetMethods();
+            if (mi != null)
+            {
+                for (int i = 0; i < mi.Length; i++)
+                {
+                    Prelink(mi[i]);
+                }
+            }
         }
     }
 }

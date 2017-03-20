@@ -13,10 +13,12 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    public class SEHException : Exception
+    [Serializable]
+    public class SEHException : ExternalException
     {
         public SEHException()
             : base()
@@ -34,6 +36,10 @@ namespace System.Runtime.InteropServices
             : base(message, inner)
         {
             HResult = __HResults.E_FAIL;
+        }
+
+        protected SEHException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
         // Exceptions can be resumable, meaning a filtered exception

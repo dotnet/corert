@@ -15,7 +15,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices
 {
@@ -101,7 +103,18 @@ namespace System.Runtime.InteropServices
             int count,
             IntPtr results
         );
-        
+
+        [DllImport(Libraries.CORE_COM, PreserveSig = false)]
+        [SuppressUnmanagedCodeSecurity]
+        internal static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
+
+        [DllImport(Libraries.CORE_COM, PreserveSig = false)]
+        [SuppressUnmanagedCodeSecurity]
+        internal static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
+
+        [DllImport(Libraries.CORE_COM, PreserveSig = false)]
+        [SuppressUnmanagedCodeSecurity]
+        internal static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
 
         [DllImport(Libraries.CORE_COM_AUT)]
         [McgGeneratedNativeCallCodeAttribute]

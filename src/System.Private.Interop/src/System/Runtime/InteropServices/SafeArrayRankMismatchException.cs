@@ -12,10 +12,12 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    public class SafeArrayRankMismatchException : Exception
+    [Serializable]
+    public class SafeArrayRankMismatchException : SystemException
     {
         public SafeArrayRankMismatchException()
             : base(SR.Arg_SafeArrayRankMismatchException)
@@ -33,6 +35,10 @@ namespace System.Runtime.InteropServices
             : base(message, inner)
         {
             HResult = __HResults.COR_E_SAFEARRAYRANKMISMATCH;
+        }
+
+        protected SafeArrayRankMismatchException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Security;
 
 namespace System.Runtime.InteropServices
 {
@@ -17,6 +18,56 @@ namespace System.Runtime.InteropServices
         internal static void SetLastWin32Error(int errorCode)
         {
             PInvokeMarshal.SetLastWin32Error(errorCode);
+        }
+
+        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
+        {
+            return PInvokeMarshal.AllocHGlobal(cb);
+        }
+
+        public static unsafe IntPtr AllocHGlobal(int cb)
+        {
+            return PInvokeMarshal.AllocHGlobal(cb);
+        }
+
+        public static void FreeHGlobal(IntPtr hglobal)
+        {
+            PInvokeMarshal.FreeHGlobal(hglobal);
+        }
+
+        public static unsafe IntPtr AllocCoTaskMem(int cb)
+        {
+            return PInvokeMarshal.AllocCoTaskMem(cb);
+        }
+
+        public static void FreeCoTaskMem(IntPtr ptr)
+        {
+            PInvokeMarshal.FreeCoTaskMem(ptr);
+        }
+
+        public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s)
+        {
+            return PInvokeMarshal.SecureStringToGlobalAllocAnsi(s);
+        }
+
+        public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s)
+        {
+            return PInvokeMarshal.SecureStringToGlobalAllocUnicode(s);
+        }
+
+        public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s)
+        {
+            return PInvokeMarshal.SecureStringToCoTaskMemAnsi(s);
+        }
+
+        public static IntPtr SecureStringToCoTaskMemUnicode(SecureString s)
+        {
+            return PInvokeMarshal.SecureStringToCoTaskMemUnicode(s);
+        }
+
+        public static IntPtr SecureStringToBSTR(SecureString s)
+        {
+            return PInvokeMarshal.SecureStringToBSTR(s);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
