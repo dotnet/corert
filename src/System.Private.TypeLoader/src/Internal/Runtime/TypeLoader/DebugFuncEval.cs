@@ -17,26 +17,6 @@ namespace System.Runtime.InteropServices
         // This method is implemented elsewhere in the toolchain
         internal static IntPtr AddrOf<T>(T ftn) { throw new PlatformNotSupportedException(); }
     }
-
-    internal class AutoPinner : IDisposable
-    {
-        private GCHandle _pinnedArray;
-
-        public AutoPinner(Object obj)
-        {
-            _pinnedArray = GCHandle.Alloc(obj, GCHandleType.Pinned);
-        }
-
-        public static implicit operator IntPtr(AutoPinner ap)
-        {
-            return ap._pinnedArray.AddrOfPinnedObject();
-        }
-        
-        public void Dispose()
-        {
-            _pinnedArray.Free();
-        }
-    }
 }
 
 namespace Internal.Runtime.TypeLoader
@@ -48,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
             // Hard coding the argument integer here!
             arguments.SetVar<int>(1, param);
 
-            // For now, fill this variable in the debugger, any static void method with a single integer argument would work
+            // Obtain the target method address from the runtime
             IntPtr targetAddress = RuntimeImports.RhpGetFuncEvalTargetAddress();
 
             // Hard coding a single void return here
@@ -56,21 +36,24 @@ namespace Internal.Runtime.TypeLoader
             returnAndArgumentTypes[0] = new LocalVariableType(typeof(void).TypeHandle, false, false);
             returnAndArgumentTypes[1] = new LocalVariableType(typeof(int).TypeHandle, false, false);
 
-            // Invoke the target method
-
             // Hard coding static here
             DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(Internal.Runtime.CallConverter.CallingConvention.ManagedStatic, returnAndArgumentTypes, returnAndArgumentTypes.Length);
 
-            // Go and execute!
+            // Invoke the target method
             Internal.Runtime.CallInterceptor.CallInterceptor.MakeDynamicCall(targetAddress, dynamicCallSignature, arguments);
 
-            FuncEvalCompleteCommand funcEvalCompleteCommand = new FuncEvalCompleteCommand();
-            funcEvalCompleteCommand.commandCode = 0;
-
-            using (AutoPinner ap = new AutoPinner(funcEvalCompleteCommand))
+            // Signal to the debugger the func eval completes
+            IntPtr funcEvalCompleteCommandPointer;
+            unsafe
             {
-                RuntimeImports.RhpSendCustomEventToDebugger(ap, Unsafe.SizeOf<FuncEvalCompleteCommand>());
+                FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
+                (*funcEvalCompleteCommand).commandCode = 0;
+                funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
             }
+
+            RuntimeImports.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
+
+            // debugger magic will make sure this function never returns, instead control will be transferred back to the point where the FuncEval begins
         }
 
         [StructLayout(LayoutKind.Explicit, Size=16)]
@@ -94,27 +77,29 @@ namespace Internal.Runtime.TypeLoader
         private static void HighLevelDebugFuncEvalHelper()
         {
             int integerParameterValue = 0;
-
             uint parameterBufferSize = RuntimeImports.RhpGetFuncEvalParameterBufferSize();
-            byte[] debuggerBuffer = new byte[parameterBufferSize];
 
-            using (AutoPinner ap = new AutoPinner(debuggerBuffer))
+            IntPtr writeParameterCommandPointer;
+            IntPtr debuggerBufferPointer;
+            unsafe
             {
-                IntPtr debuggerBufferPointer = ap;
+                byte* debuggerBufferRawPointer = stackalloc byte[(int)parameterBufferSize];
+                debuggerBufferPointer = new IntPtr(debuggerBufferRawPointer);
 
-                WriteParameterCommand writeParameterCommand = new WriteParameterCommand();
-                writeParameterCommand.commandCode = 1;
-                writeParameterCommand.bufferAddress = debuggerBufferPointer.ToInt64();
-                
-                using (AutoPinner ap2 = new AutoPinner(writeParameterCommand))
-                {
-                    RuntimeImports.RhpSendCustomEventToDebugger(ap2, Unsafe.SizeOf<WriteParameterCommand>());
-                }
+                WriteParameterCommand* writeParameterCommand = stackalloc WriteParameterCommand[1];
+                (*writeParameterCommand).commandCode = 1;
+                (*writeParameterCommand).bufferAddress = debuggerBufferPointer.ToInt64();
 
-                unsafe
-                {
-                    integerParameterValue = Unsafe.Read<int>(debuggerBufferPointer.ToPointer());
-                }
+                writeParameterCommandPointer = new IntPtr(writeParameterCommand);
+            }
+
+            RuntimeImports.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
+
+            // .. debugger magic ... the debuggerBuffer will be filled with parameter data
+
+            unsafe
+            {
+                integerParameterValue = Unsafe.Read<int>(debuggerBufferPointer.ToPointer());
             }
 
             // Hard coding a single argument of type int here
