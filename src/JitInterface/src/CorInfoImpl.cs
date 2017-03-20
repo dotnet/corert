@@ -209,27 +209,27 @@ namespace Internal.JitInterface
                     SetParameterNames(parameters);
                 }
 
-                ArrayBuilder<uint> variableToTypeIndex = new ArrayBuilder<uint>();
+                ArrayBuilder<TypeDesc> variableToTypeDesc = new ArrayBuilder<TypeDesc>();
 
                 var signature = MethodBeingCompiled.Signature;
                 if (!signature.IsStatic)
                 {
                     TypeDesc type = MethodBeingCompiled.OwningType;
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeDesc.Add(type);
                 }
 
                 for (int i = 0; i < signature.Length; ++i)
                 {
                     TypeDesc type = signature[i];
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeDesc.Add(type);
                 }
                 var locals = methodIL.GetLocals();
                 for (int i = 0; i < locals.Length; ++i)
                 {
                     TypeDesc type = locals[i].Type;
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeDesc.Add(type);
                 }
-                _variableToTypeIndex = variableToTypeIndex.ToArray();
+                _variableToTypeDesc = variableToTypeDesc.ToArray();
             }
             catch (Exception e)
             {
@@ -431,7 +431,7 @@ namespace Internal.JitInterface
             _sequencePoints = null;
             _debugLocInfos = null;
             _debugVarInfos = null;
-            _variableToTypeIndex = null;
+            _variableToTypeDesc = null;
 
             _lastException = null;
         }
@@ -1819,16 +1819,6 @@ namespace Internal.JitInterface
             _parameterIndexToNameMap = parameterIndexToNameMap;
         }
 
-        private uint GetVariableTypeIndex(TypeDesc type)
-        {
-            uint typeIndex = 0;
-            if (type.IsPrimitive)
-            {
-                typeIndex = TypesDebugInfo.PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);               
-            }
-            return typeIndex;
-        }
-
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
@@ -1956,7 +1946,7 @@ namespace Internal.JitInterface
 
             if (!debugVars.TryGetValue(nativeVarInfo.varNumber, out debugVar))
             {
-                debugVar = new DebugVarInfo(name, isParam, _variableToTypeIndex[(int)nativeVarInfo.varNumber]);
+                debugVar = new DebugVarInfo(name, isParam, _variableToTypeDesc[(int)nativeVarInfo.varNumber]);
                 debugVars[nativeVarInfo.varNumber] = debugVar;
             }
 
@@ -3030,7 +3020,7 @@ namespace Internal.JitInterface
         private Dictionary<uint, string> _parameterIndexToNameMap;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
-        private uint[] _variableToTypeIndex;
+        private TypeDesc[] _variableToTypeDesc;
 
         private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {

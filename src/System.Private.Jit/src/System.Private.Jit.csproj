@@ -133,7 +133,6 @@
     <Compile Include="$(JitInterfaceBasePath)\CorInfoImpl.Intrinsics.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoTypes.cs" />
     <Compile Include="$(JitInterfaceBasePath)\JitConfigProvider.cs" />
-    <Compile Include="$(JitInterfaceBasePath)\TypesDebugInfo\PrimitiveTypeDescriptor.cs" />
     <Compile Include="$(TypeLoaderBasePath)\Internal\TypeSystem\PInvokeTargetNativeMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />
     <Compile Include="Internal\Runtime\JitSupport\VirtualMethodSlotHelper.cs" />
