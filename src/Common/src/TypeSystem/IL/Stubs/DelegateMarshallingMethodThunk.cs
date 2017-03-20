@@ -4,6 +4,9 @@
 
 using System;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
+using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -12,22 +15,25 @@ namespace Internal.IL.Stubs
     /// </summary>
     public class DelegateMarshallingMethodThunk : ILStubMethod
     {
-        private TypeDesc _owningType;
-        private MethodSignature _delegateSignature; // signature of the delegate
+        private readonly TypeDesc _owningType;
+        private readonly MetadataType _delegateType;
+        private readonly InteropStateManager _interopStateManager;
+        private readonly MethodDesc _invokeMethod;
         private MethodSignature _signature;         // signature of the native callable marshalling stub
-        private TypeDesc _delegateType;
-        private MethodIL _methodIL;
-        private string _name;
 
-        public DelegateMarshallingMethodThunk(TypeDesc owningType, TypeDesc delegateType, string name)
+        public bool IsOpenStaticDelegate
+        {
+            get;
+        }
+
+        public DelegateMarshallingMethodThunk(MetadataType delegateType, TypeDesc owningType,
+                InteropStateManager interopStateManager, bool isOpenStaticDelegate)
         {
             _owningType = owningType;
             _delegateType = delegateType;
-            MethodDesc invokeMethod = delegateType.GetMethod("Invoke", null);
-            _name = name;
-            _delegateSignature = invokeMethod.Signature;
-            _methodIL = PInvokeILEmitter.EmitIL(this, null);
-            _signature = ((PInvokeILStubMethodIL)_methodIL).NativeCallableSignature;
+            _invokeMethod = delegateType.GetMethod("Invoke", null);
+            _interopStateManager = interopStateManager;
+            IsOpenStaticDelegate = isOpenStaticDelegate;
         }
 
         public override TypeSystemContext Context
@@ -54,7 +60,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public TypeDesc DelegateType
+        public MetadataType DelegateType
         {
             get
             {
@@ -66,15 +72,65 @@ namespace Internal.IL.Stubs
         {
             get
             {
+                if (_signature == null)
+                {
+                    bool isAnsi = true;
+                    var ecmaType = _delegateType as EcmaType;
+                    if (ecmaType != null)
+                    {
+                        isAnsi = ecmaType.GetDelegatePInvokeFlags().CharSet == System.Runtime.InteropServices.CharSet.Ansi;
+                    }
+
+                    MethodSignature delegateSignature = _invokeMethod.Signature;
+                    TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
+                    ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
+                    int parameterIndex = 0;
+
+                    MarshalAsDescriptor marshalAs = null;
+                    if (parameterMetadataArray != null && parameterMetadataArray.Length > 0 && parameterMetadataArray[0].Index == 0)
+                    {
+                        marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
+                    }
+
+                    TypeDesc nativeReturnType = MarshalHelpers.GetNativeMethodParameterType(delegateSignature.ReturnType, null, _interopStateManager, true, isAnsi);
+                    for (int i = 0; i < delegateSignature.Length; i++)
+                    {
+                        int sequence = i + 1;
+                        Debug.Assert(parameterIndex == parameterMetadataArray.Length || sequence <= parameterMetadataArray[parameterIndex].Index);
+                        if (parameterIndex == parameterMetadataArray.Length || sequence < parameterMetadataArray[parameterIndex].Index)
+                        {
+                            // if we don't have metadata for the parameter, marshalAs is null
+                            marshalAs = null;
+                        }
+                        else
+                        {
+                            Debug.Assert(sequence == parameterMetadataArray[parameterIndex].Index);
+                            marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
+                        }
+
+                        nativeParameterTypes[i] = MarshalHelpers.GetNativeMethodParameterType(delegateSignature[i], marshalAs, _interopStateManager, false, isAnsi);
+                     }
+                    _signature = new MethodSignature(MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
+                }
                 return _signature;
             }
+        }
+
+        public override ParameterMetadata[] GetParameterMetadata()
+        {
+            return _invokeMethod.GetParameterMetadata();
+        }
+
+        public override PInvokeMetadata GetPInvokeMethodMetadata()
+        {
+            return _invokeMethod.GetPInvokeMethodMetadata();
         }
 
         public MethodSignature DelegateSignature
         {
             get
             {
-                return _delegateSignature;
+                return _invokeMethod.Signature;
             }
         }
 
@@ -83,49 +139,20 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return _name;
+                if (IsOpenStaticDelegate)
+                {
+                    return "ReverseOpenStaticDelegateStub__" + DelegateType.Name;
+                }
+                else
+                {
+                    return "ReverseDelegateStub__" + DelegateType.Name;
+                }
             }
         }
 
         public override MethodIL EmitIL()
         {
-            return _methodIL;
+            return PInvokeILEmitter.EmitIL(this, default(PInvokeILEmitterConfiguration), _interopStateManager);
         }
     }
-
-    
-    public struct DelegateInvokeMethodSignature : IEquatable<DelegateInvokeMethodSignature>
-    {
-        public  readonly MethodSignature Signature;
-
-        public DelegateInvokeMethodSignature(TypeDesc delegateType)
-        {
-            MethodDesc invokeMethod = delegateType.GetMethod("Invoke", null);
-            Signature = invokeMethod.Signature;
-        }
-
-        public override int GetHashCode()
-        {
-            return Signature.GetHashCode();
-        }
-
-        // TODO: Use the MarshallerKind for each parameter to compare whether two signatures are similar(ie. whether two delegates can share marshalling stubs)
-        public bool Equals(DelegateInvokeMethodSignature other)
-        {
-            if (Signature.ReturnType != other.Signature.ReturnType)
-                return false;
-
-            if (Signature.Length != other.Signature.Length)
-                return false;
-
-            for (int i = 0; i < Signature.Length; i++)
-            {
-                if (Signature[i] != other.Signature[i])
-                    return false;
-            }
-
-            return true;
-        }
-    }
-
 }

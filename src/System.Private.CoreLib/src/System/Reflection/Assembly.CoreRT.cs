@@ -13,7 +13,7 @@ namespace System.Reflection
     {
         public static Assembly GetEntryAssembly() => Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetEntryAssembly();
         public static Assembly GetExecutingAssembly() { throw new NotImplementedException(); }
-        public static Assembly GetCallingAssembly() { throw new NotImplementedException(); }
+        public static Assembly GetCallingAssembly() { throw new PlatformNotSupportedException(); }
 
         public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef);
         public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) => ReflectionAugments.ReflectionCoreCallbacks.Load(rawAssembly, rawSymbolStore);

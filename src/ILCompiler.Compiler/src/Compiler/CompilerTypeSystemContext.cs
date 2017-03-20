@@ -311,6 +311,10 @@ namespace ILCompiler
             {
                 return GetAllMethodsForDelegate(type);
             }
+            else if (type.IsEnum)
+            {
+                return GetAllMethodsForEnum(type);
+            }
 
             return type.GetMethods();
         }

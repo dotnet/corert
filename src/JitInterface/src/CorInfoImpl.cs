@@ -788,7 +788,7 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodModule"); }
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
         { throw new NotImplementedException("getMethodVTableOffset"); }
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass)
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
 
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
@@ -799,9 +799,7 @@ namespace Internal.JitInterface
 
         private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)
         {
-            var attributes = HandleToObject(method).GetPInvokeMethodMetadata().Attributes;
-
-            MethodSignatureFlags unmanagedCallConv = PInvokeMetadata.GetUnmanagedCallingConvention(attributes);
+            MethodSignatureFlags unmanagedCallConv = HandleToObject(method).GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
 
             // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoUnmanagedCallConv via a simple cast
             Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
@@ -2602,6 +2600,13 @@ namespace Internal.JitInterface
                 // to call.
 
                 MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                if (directMethod == null && constrainedType.IsEnum)
+                {
+                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
+                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
+                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrainedType, method);
+                }
+
                 if (directMethod != null)
                 {
                     // Either

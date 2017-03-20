@@ -23,6 +23,8 @@ namespace Internal.TypeSystem
         R8 = 0xc,
         LPStr = 0x14,
         LPWStr = 0x15,
+        LPTStr = 0x16,        // Ptr to OS preferred (SBCS/Unicode) string
+        ByValTStr = 0x17,     // OS preferred (SBCS/Unicode) inline string (only valid in structs)
         Struct = 0x1b,
         ByValArray = 0x1e,
         SysInt = 0x1f,

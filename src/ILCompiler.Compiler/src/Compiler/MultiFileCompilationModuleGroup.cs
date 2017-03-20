@@ -81,29 +81,4 @@ namespace ILCompiler
             return ConstructedEETypeNode.CreationAllowed(type);
         }
     }
-
-    /// <summary>
-    /// Represents an unshared multifile compilation group where types contained in the group are expanded as needed.
-    /// </summary>
-    public class MultiFileLeafCompilationModuleGroup : MultiFileCompilationModuleGroup
-    {
-        public MultiFileLeafCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
-            : base(context, compilationModuleSet)
-        {
-        }
-
-        public override bool ShouldProduceFullType(TypeDesc type)
-        {
-            // Fully build all shareable types so they will be identical in each module
-            if (EETypeNode.IsTypeNodeShareable(type))
-                return true;
-
-            // If referring to a type from another module, VTables, interface maps, etc should assume the
-            // type is fully build.
-            if (!ContainsType(type))
-                return true;
-
-            return false;
-        }
-    }
 }

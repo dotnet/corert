@@ -50,12 +50,13 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var delegateEntry in factory.MetadataManager.DelegateMarshalingThunks)
+            foreach (var delegateEntry in factory.InteropStubManager.GetDelegateMarshallingThunks())
             {
-                Internal.TypeSystem.TypeDesc delegateType = delegateEntry.Value.DelegateType;
+                var delegateType = delegateEntry.Item1;
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(delegateType))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Value)))
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Item2))),
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Item3)))
                 );
 
                 int hashCode = delegateType.GetHashCode();

@@ -300,10 +300,7 @@ namespace ILCompiler
                         inputModules.Add(module);
                     }
 
-                    if (entrypointModule == null)
-                        compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
-                    else
-                        compilationGroup = new MultiFileLeafCompilationModuleGroup(typeSystemContext, inputModules);
+                    compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
                 }
                 else
                 {

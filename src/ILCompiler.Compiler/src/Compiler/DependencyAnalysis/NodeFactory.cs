@@ -32,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             NameMangler = nameMangler;
+            InteropStubManager = new InteropStubManager(compilationModuleGroup, context, new InteropStateManager(compilationModuleGroup.GeneratedAssembly));
             CreateNodeCaches();
 
             MetadataManager = metadataManager;
@@ -76,6 +77,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
+        {
+            get;
+        }
+
+        public InteropStubManager InteropStubManager
         {
             get;
         }
@@ -287,9 +293,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReadyToRunGenericLookupFromTypeNode(this, data.HelperId, data.Target, data.DictionaryOwner);
             });
 
-            _indirectionNodes = new NodeCache<ISymbolNode, IndirectionNode>(symbol =>
+            _indirectionNodes = new NodeCache<Tuple<ISymbolNode, int>, IndirectionNode>(indirectionData =>
             {
-                return new IndirectionNode(Target, symbol);
+                return new IndirectionNode(Target, indirectionData.Item1, indirectionData.Item2);
             });
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
@@ -723,11 +729,11 @@ namespace ILCompiler.DependencyAnalysis
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
-        private NodeCache<ISymbolNode, IndirectionNode> _indirectionNodes;
+        private NodeCache<Tuple<ISymbolNode, int>, IndirectionNode> _indirectionNodes;
 
-        public IndirectionNode Indirection(ISymbolNode symbol)
+        public IndirectionNode Indirection(ISymbolNode symbol, int offsetDelta = 0)
         {
-            return _indirectionNodes.GetOrAdd(symbol);
+            return _indirectionNodes.GetOrAdd(new Tuple<ISymbolNode, int>(symbol, offsetDelta));
         }
 
         private NodeCache<string, FrozenStringNode> _frozenStringNodes;

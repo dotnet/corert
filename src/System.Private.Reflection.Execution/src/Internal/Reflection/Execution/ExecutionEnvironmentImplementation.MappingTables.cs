@@ -1083,28 +1083,49 @@ namespace Internal.Reflection.Execution
 
                 case FieldTableFlags.Static:
                     {
-                        IntPtr fieldAddress;
+                        int fieldOffset;
+                        IntPtr staticsBase;
+                        bool isGcStatic = ((fieldAccessMetadata.Flags & FieldTableFlags.IsGcSection) != 0);
 
                         if (RuntimeAugments.IsGenericType(declaringTypeHandle))
                         {
                             unsafe
                             {
-                                if (fieldAccessMetadata.Flags.HasFlag(FieldTableFlags.IsGcSection))
-                                    fieldAddress = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(declaringTypeHandle) + fieldAccessMetadata.Offset;
-                                else
-                                    fieldAddress = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(declaringTypeHandle) + fieldAccessMetadata.Offset;
+                                fieldOffset = fieldAccessMetadata.Offset;
+                                staticsBase = isGcStatic ?
+                                    *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(declaringTypeHandle) :
+                                    *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(declaringTypeHandle);
                             }
                         }
                         else
                         {
                             Debug.Assert((fieldAccessMetadata.Flags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
-                            fieldAddress = TypeLoaderEnvironment.RvaToNonGenericStaticFieldAddress(
-                                fieldAccessMetadata.MappingTableModule, fieldAccessMetadata.Offset);
+#if CORERT
+                            if (isGcStatic)
+                            {
+                                fieldOffset = fieldAccessMetadata.Offset;
+                                staticsBase = fieldAccessMetadata.Cookie;
+                            }
+                            else
+                            {
+                                // The fieldAccessMetadata.Cookie value points directly to the field's data. We'll use that as the 'staticsBase'
+                                // and just use a field offset of zero.
+                                fieldOffset = 0;
+                                staticsBase = fieldAccessMetadata.Cookie;
+                            }
+#else
+                            // The fieldAccessMetadata.Offset value is not really a field offset, but a static field RVA. We'll use the
+                            // field's address as a 'staticsBase', and just use a field offset of zero.
+                            fieldOffset = 0;
+                            staticsBase = TypeLoaderEnvironment.RvaToNonGenericStaticFieldAddress(fieldAccessMetadata.MappingTableModule, fieldAccessMetadata.Offset);
+#endif
                         }
 
+                        IntPtr cctorContext = TryGetStaticClassConstructionContext(declaringTypeHandle);
+
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                            (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), fieldAddress, fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), fieldAddress, fieldTypeHandle);
+                            (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle) :
+                            (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle);
                     }
 
                 case FieldTableFlags.ThreadStatic:

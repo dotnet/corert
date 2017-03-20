@@ -148,7 +148,7 @@ namespace Internal.Runtime.TypeLoader
 
                     FieldTableFlags entryFlags = (FieldTableFlags)entryParser.GetUnsigned();
 
-                    if ((canonFormKind == CanonicalFormKind.Universal) != entryFlags.HasFlag(FieldTableFlags.IsUniversalCanonicalEntry))
+                    if ((canonFormKind == CanonicalFormKind.Universal) != ((entryFlags & FieldTableFlags.IsUniversalCanonicalEntry) != 0))
                         continue;
 
                     RuntimeTypeHandle entryDeclaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
@@ -156,7 +156,7 @@ namespace Internal.Runtime.TypeLoader
                         && !canonWrapper.IsCanonicallyEquivalent(entryDeclaringTypeHandle))
                         continue;
 
-                    if (entryFlags.HasFlag(FieldTableFlags.HasMetadataHandle))
+                    if ((entryFlags & FieldTableFlags.HasMetadataHandle) != 0)
                     {
                         Handle entryFieldHandle = (((int)HandleType.Field << 24) | (int)entryParser.GetUnsigned()).AsHandle();
                         if (!fieldHandle.Equals(entryFieldHandle))
@@ -198,15 +198,26 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
+                        if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
+                            fieldOffset = cookieOrOffsetOrOrdinal;
+                        else
+                        {
 #if CORERT
-                        fieldOffset = cookieOrOffsetOrOrdinal;
+                            fieldOffset = 0;
+                            fieldAddressCookie = externalReferences.GetFieldAddressFromIndex((uint)cookieOrOffsetOrOrdinal);
+
+                            if((entryFlags & FieldTableFlags.IsGcSection) != 0)
+                                fieldOffset = (int)entryParser.GetUnsigned();
 #else
-                        fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
+                            fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
 #endif
+                        }
                     }
 
                     if ((entryFlags & FieldTableFlags.StorageClass) == FieldTableFlags.ThreadStatic)
                     {
+                        // TODO: CoreRT support
+
                         if (canonFormKind != CanonicalFormKind.Universal)
                         {
                             fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, fieldOffset);
@@ -340,23 +351,23 @@ namespace Internal.Runtime.TypeLoader
 
                     FieldTableFlags entryFlags = (FieldTableFlags)entryParser.GetUnsigned();
 
-                    Debug.Assert(!entryFlags.HasFlag(FieldTableFlags.IsUniversalCanonicalEntry));
+                    Debug.Assert((entryFlags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
 
-                    if (!entryFlags.HasFlag(FieldTableFlags.Static))
+                    if ((entryFlags & FieldTableFlags.Static) == 0)
                         continue;
 
                     switch (fieldAccessKind)
                     {
                         case FieldAccessStaticDataKind.NonGC:
-                            if (entryFlags.HasFlag(FieldTableFlags.IsGcSection))
+                            if ((entryFlags & FieldTableFlags.IsGcSection) != 0)
                                 continue;
-                            if (entryFlags.HasFlag(FieldTableFlags.ThreadStatic))
+                            if ((entryFlags & FieldTableFlags.ThreadStatic) != 0)
                                 continue;
                             break;
                         case FieldAccessStaticDataKind.GC:
-                            if (!entryFlags.HasFlag(FieldTableFlags.IsGcSection))
+                            if ((entryFlags & FieldTableFlags.IsGcSection) != 0)
                                 continue;
-                            if (entryFlags.HasFlag(FieldTableFlags.ThreadStatic))
+                            if ((entryFlags & FieldTableFlags.ThreadStatic) != 0)
                                 continue;
                             break;
 
@@ -371,7 +382,7 @@ namespace Internal.Runtime.TypeLoader
                     if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
                         continue;
 
-                    if (entryFlags.HasFlag(FieldTableFlags.HasMetadataHandle))
+                    if ((entryFlags & FieldTableFlags.HasMetadataHandle) != 0)
                     {
                         // skip metadata handle
                         entryParser.GetUnsigned();

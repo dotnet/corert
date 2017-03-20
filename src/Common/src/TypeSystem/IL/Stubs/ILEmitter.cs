@@ -206,7 +206,7 @@ namespace Internal.IL.Stubs
 
         public void EmitLdInd(TypeDesc type)
         {
-            switch (type.Category)
+            switch (type.UnderlyingType.Category)
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
@@ -244,10 +244,6 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Interface:
                     Emit(ILOpcode.ldind_ref);
                     break;
-                case TypeFlags.Enum:
-                    // Use more efficient encoding for enum
-                    EmitLdInd(type.UnderlyingType);
-                    break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                     Emit(ILOpcode.ldobj, _emitter.NewToken(type));
@@ -259,7 +255,7 @@ namespace Internal.IL.Stubs
         }
         public void EmitStInd(TypeDesc type)
         {
-            switch (type.Category)
+            switch (type.UnderlyingType.Category)
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
@@ -297,10 +293,6 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Interface:
                     Emit(ILOpcode.stind_ref);
                     break;
-                case TypeFlags.Enum:
-                    // Use more efficient encoding for enum
-                    EmitStInd(type.UnderlyingType);
-                    break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                     Emit(ILOpcode.stobj, _emitter.NewToken(type));
@@ -313,7 +305,7 @@ namespace Internal.IL.Stubs
 
         public void EmitStElem(TypeDesc type)
         {
-            switch (type.Category)
+            switch (type.UnderlyingType.Category)
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
@@ -351,10 +343,6 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Interface:
                     Emit(ILOpcode.stelem_ref);
                     break;
-                case TypeFlags.Enum:
-                    // Use more efficient encoding for enum
-                    EmitStElem(type.UnderlyingType);
-                    break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                     Emit(ILOpcode.stelem, _emitter.NewToken(type));
@@ -367,7 +355,7 @@ namespace Internal.IL.Stubs
 
         public void EmitLdElem(TypeDesc type)
         {
-            switch (type.Category)
+            switch (type.UnderlyingType.Category)
             {
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
@@ -404,10 +392,6 @@ namespace Internal.IL.Stubs
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                     Emit(ILOpcode.ldelem_ref);
-                    break;
-                case TypeFlags.Enum:
-                    // Use more efficient encoding for enum
-                    EmitLdElem(type.UnderlyingType);
                     break;
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:

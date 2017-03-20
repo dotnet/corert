@@ -50,5 +50,6 @@ namespace Internal.Runtime
         IsUniversalCanonicalEntry = 0x04,
         HasMetadataHandle = 0x08,
         IsGcSection = 0x10,
+        FieldOffsetEncodedDirectly = 0x20
     }
 }

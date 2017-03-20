@@ -87,6 +87,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEnumerator.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEqualityComparer.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IList.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs"/>
@@ -154,12 +155,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ParamArrayAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformNotSupportedException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\RankException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscateAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscationAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PropertyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeDelegator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxations.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DefaultDependencyAttribute.cs"/>
@@ -175,7 +181,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StringFreezingAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\SuppressIldasmAttribute.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TupleElementNamesAttribute.cs"/>    
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TupleElementNamesAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Cer.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Consistency.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\ReliabilityContractAttribute.cs"/>

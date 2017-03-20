@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Internal.TypeSystem
 {
@@ -100,6 +101,184 @@ namespace Internal.TypeSystem
         ThrowOnUnmappableCharMask = 12288
     }
 
+    public struct PInvokeFlags
+    {
+        private PInvokeAttributes _attributes;
+        public PInvokeAttributes Attributes
+        {
+            get
+            {
+                return _attributes;
+            }
+        }
+
+        public PInvokeFlags(PInvokeAttributes attributes)
+        {
+            _attributes = attributes;
+        }
+
+        public CharSet CharSet
+        {
+            get
+            {
+                PInvokeAttributes mask = _attributes & PInvokeAttributes.CharSetMask;
+
+                // ECMA-335 II.10.1.5 - Default value is Ansi.
+                CharSet charset = CharSet.Ansi;
+
+                if (mask == PInvokeAttributes.CharSetUnicode || mask == PInvokeAttributes.CharSetAuto)
+                {
+                    charset = CharSet.Unicode;
+                }
+                return charset;
+            }
+
+            set
+            {
+                // clear the charset bits;
+                _attributes &= ~(PInvokeAttributes.CharSetMask);
+                if (value == CharSet.Unicode || (short)value == 4) // CharSet.Auto has value 4, but not in the enum
+                {
+                    _attributes |= PInvokeAttributes.CharSetUnicode;
+                }
+                else
+                {
+                    _attributes |= PInvokeAttributes.CharSetAnsi;
+                }
+            }
+        }
+
+        public MethodSignatureFlags UnmanagedCallingConvention
+        {
+            get
+            {
+                switch (_attributes & PInvokeAttributes.CallingConventionMask)
+                {
+                    case PInvokeAttributes.CallingConventionWinApi:
+                        return MethodSignatureFlags.UnmanagedCallingConventionStdCall; // TODO: CDecl for varargs
+                    case PInvokeAttributes.CallingConventionCDecl:
+                        return MethodSignatureFlags.UnmanagedCallingConventionCdecl;
+                    case PInvokeAttributes.CallingConventionStdCall:
+                        return MethodSignatureFlags.UnmanagedCallingConventionStdCall;
+                    case PInvokeAttributes.CallingConventionThisCall:
+                        return MethodSignatureFlags.UnmanagedCallingConventionThisCall;
+                    default:
+                        throw new BadImageFormatException();
+                }
+            }
+            set
+            {
+                _attributes &= ~(PInvokeAttributes.CallingConventionMask);
+                switch (value)
+                {
+
+                    case MethodSignatureFlags.UnmanagedCallingConventionStdCall:
+                        _attributes |= PInvokeAttributes.CallingConventionStdCall;
+                        break;
+                    case MethodSignatureFlags.UnmanagedCallingConventionCdecl:
+                        _attributes |= PInvokeAttributes.CallingConventionCDecl;
+                        break;
+                    case MethodSignatureFlags.UnmanagedCallingConventionThisCall:
+                        _attributes |= PInvokeAttributes.CallingConventionThisCall;
+                        break;
+                    default:
+                        throw new BadImageFormatException();
+                }
+            }
+        }
+
+        public bool SetLastError
+        {
+            get
+            {
+                return (_attributes & PInvokeAttributes.SetLastError) == PInvokeAttributes.SetLastError;
+            }
+            set
+            {
+                if (value)
+                {
+                    _attributes |= PInvokeAttributes.SetLastError;
+                }
+                else
+                {
+                    _attributes &= ~(PInvokeAttributes.SetLastError);
+                }
+            }
+        }
+
+        public bool ExactSpelling
+        {
+            get
+            {
+                return (_attributes & PInvokeAttributes.ExactSpelling) == PInvokeAttributes.ExactSpelling;
+            }
+            set
+            {
+                if (value)
+                {
+                    _attributes |= PInvokeAttributes.ExactSpelling;
+                }
+                else
+                {
+                    _attributes &= ~(PInvokeAttributes.ExactSpelling);
+                }
+            }
+        }
+
+        public bool BestFitMapping
+        {
+            get
+            {
+                PInvokeAttributes mask = _attributes & PInvokeAttributes.BestFitMappingMask;
+                if (mask == PInvokeAttributes.BestFitMappingDisable)
+                {
+                    return false;
+                }
+                // default value is true
+                return true;
+            }
+            set
+            {
+                _attributes &= ~(PInvokeAttributes.BestFitMappingMask);
+                if (value)
+                {
+                    _attributes |= PInvokeAttributes.BestFitMappingEnable;
+                }
+                else
+                {
+                    _attributes |= PInvokeAttributes.BestFitMappingDisable;
+                }
+            }
+        }
+
+        public bool ThrowOnUnmappableChar
+        {
+            get
+            {
+                PInvokeAttributes mask = _attributes & PInvokeAttributes.ThrowOnUnmappableCharMask;
+                if (mask == PInvokeAttributes.ThrowOnUnmappableCharEnable)
+                {
+                    return true;
+                }
+                // default value is false
+                return false;
+            }
+            set
+            {
+                _attributes &= ~(PInvokeAttributes.ThrowOnUnmappableCharMask);
+                if (value)
+                {
+                    _attributes |= PInvokeAttributes.ThrowOnUnmappableCharEnable;
+                }
+                else
+                {
+                    _attributes |= PInvokeAttributes.ThrowOnUnmappableCharDisable;
+                }
+            }
+        }
+        
+    }
+
     /// <summary>
     /// Represents details about a pinvokeimpl method import.
     /// </summary>
@@ -109,34 +288,20 @@ namespace Internal.TypeSystem
 
         public readonly string Module;
 
-        public readonly PInvokeAttributes Attributes;
+        public readonly PInvokeFlags Flags;
 
         public PInvokeMetadata(string module, string entrypoint, PInvokeAttributes attributes)
         {
             Name = entrypoint;
             Module = module;
-            Attributes = attributes;
+            Flags = new PInvokeFlags(attributes);
         }
 
-        /// <summary>
-        /// Converts unmanaged calling convention encoded as PInvokeAttributes to unmanaged 
-        /// calling convention encoded as MethodSignatureFlags.
-        /// </summary>
-        public static MethodSignatureFlags GetUnmanagedCallingConvention(PInvokeAttributes attributes)
+        public PInvokeMetadata(string module, string entrypoint, PInvokeFlags flags)
         {
-            switch (attributes & PInvokeAttributes.CallingConventionMask)
-            {
-                case PInvokeAttributes.CallingConventionWinApi:
-                    return MethodSignatureFlags.UnmanagedCallingConventionStdCall; // TODO: CDecl for varargs
-                case PInvokeAttributes.CallingConventionCDecl:
-                    return MethodSignatureFlags.UnmanagedCallingConventionCdecl;
-                case PInvokeAttributes.CallingConventionStdCall:
-                    return MethodSignatureFlags.UnmanagedCallingConventionStdCall;
-                case PInvokeAttributes.CallingConventionThisCall:
-                    return MethodSignatureFlags.UnmanagedCallingConventionThisCall;
-                default:
-                    throw new BadImageFormatException();
-            }
+            Name = entrypoint;
+            Module = module;
+            Flags = flags;
         }
     }
 

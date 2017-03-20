@@ -61,7 +61,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
                             }
                             else {
                                 // Run the full set of known passing tests in the post-commit job
-                                batchFile(testScriptString + "KnownGood")
+                                batchFile(testScriptString + "KnownGood /multimodule")
                             }
                         }
                     }

@@ -144,6 +144,18 @@ namespace Internal.Runtime.TypeLoader
             return GetIntPtrFromIndex(index);
         }
 
+#if CORERT
+        unsafe public IntPtr GetFieldAddressFromIndex(uint index)
+        {
+            if (index >= _elementsCount)
+                throw new BadImageFormatException();
+
+            // TODO: indirection through IAT
+
+            return ((IntPtr*)_elements)[index];
+        }
+#endif
+
         public uint GetExternalNativeLayoutOffset(uint index)
         {
             // CoreRT is a bit more optimized than ProjectN. In ProjectN, some tables that reference data

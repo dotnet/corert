@@ -26,7 +26,7 @@ namespace PInvokeTests
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int Inc(ref int value);
- 
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int VerifyByRefFoo(ref Foo value);
 
@@ -39,10 +39,10 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern int VerifyUnicodeString(string str);
 
-        [DllImport("*", CharSet=CharSet.Ansi)]
-        private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string []str);
+        [DllImport("*", CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string[] str);
 
-        [DllImport("*", CharSet=CharSet.Ansi)]
+        [DllImport("*", CharSet = CharSet.Ansi)]
         private static extern void ToUpper([In, Out, MarshalAs(UnmanagedType.LPArray)]string[] str);
 
         [DllImport("*", CharSet = CharSet.Ansi)]
@@ -65,9 +65,32 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Int(Delegate_Int del);
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet=CharSet.Ansi)]
+        delegate bool Delegate_String(string s);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_String(Delegate_String del);
+
         delegate void Delegate_Unused();
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern unsafe int* ReversePInvoke_Unused(Delegate_Unused del);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest")]
+        static extern bool StructTest_Auto(AutoStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest(SequentialStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern void StructTest_ByRef(ref SequentialStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern void StructTest_ByOut(out SequentialStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest_Explicit(ExplicitStruct es);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest_Nested(NestedStruct ns);
 
         public static int Main(string[] args)
         {
@@ -85,6 +108,7 @@ namespace PInvokeTests
 #if !CODEGEN_CPP
             TestDelegate();
 #endif            
+            TestStruct();
             return 100;
         }
 
@@ -100,20 +124,20 @@ namespace PInvokeTests
 
         public static void ThrowIfNotEquals(bool expected, bool actual, string message)
         {
-           ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
+            ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
         }
 
         private static void TestBlittableType()
         {
-           Console.WriteLine("Testing marshalling blittable types");
-           ThrowIfNotEquals(100, Square(10),  "Int marshalling failed");
+            Console.WriteLine("Testing marshalling blittable types");
+            ThrowIfNotEquals(100, Square(10), "Int marshalling failed");
         }
 
         private static void TestBoolean()
         {
-           Console.WriteLine("Testing marshalling boolean");
-           ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
-           ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
+            Console.WriteLine("Testing marshalling boolean");
+            ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
+            ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
         }
 
         private static void TestUnichar()
@@ -164,7 +188,7 @@ namespace PInvokeTests
             Foo foo = new Foo();
             foo.a = 10;
             foo.b = 20;
-            int ret = VerifyByRefFoo(ref foo);            
+            int ret = VerifyByRefFoo(ref foo);
             ThrowIfNotEquals(0, ret, "By ref struct marshalling failed");
 
             ThrowIfNotEquals(foo.a, 11, "By ref struct unmarshalling failed");
@@ -195,7 +219,7 @@ namespace PInvokeTests
             ThrowIfNotEquals(1, VerifyAnsiStringArray(strArray), "Ansi string array in marshalling failed.");
             ToUpper(strArray);
 
-            ThrowIfNotEquals(true, "HELLO" ==  strArray[0] && "WORLD" == strArray[1], "Ansi string array  out marshalling failed.");
+            ThrowIfNotEquals(true, "HELLO" == strArray[0] && "WORLD" == strArray[1], "Ansi string array  out marshalling failed.");
         }
 
         private static void TestLastError()
@@ -212,7 +236,7 @@ namespace PInvokeTests
             SafeMemoryHandle hnd = SafeMemoryHandle.AllocateMemory(1000);
 
             IntPtr hndIntPtr = hnd.DangerousGetHandle(); //get the IntPtr associated with hnd
-            long val =  hndIntPtr.ToInt64(); //return the 64-bit value associated with hnd
+            long val = hndIntPtr.ToInt64(); //return the 64-bit value associated with hnd
 
             ThrowIfNotEquals(true, SafeHandleTest(hnd, val), "SafeHandle marshalling failed.");
 
@@ -243,6 +267,19 @@ namespace PInvokeTests
             ThrowIfNotEquals(true, pass, "SizeParamIndex failed.");
         }
 
+        private class ClosedDelegateCLass
+        {
+            public int Sum(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
+            {
+                return a + b + c + d + e + f + g + h + i + j;
+            }
+
+            public bool GetString(String s)
+            {
+                return s == "Hello World";
+            }
+        }
+
         private static void TestDelegate()
         {
             Console.WriteLine("Testing Delegate");
@@ -257,11 +294,104 @@ namespace PInvokeTests
                 //
                 ReversePInvoke_Unused(null);
             }
+
+            Delegate_Int closed = new Delegate_Int((new ClosedDelegateCLass()).Sum);
+            ThrowIfNotEquals(true, ReversePInvoke_Int(closed), "Closed Delegate marshalling failed.");
+
+            Delegate_String ds = new Delegate_String((new ClosedDelegateCLass()).GetString);
+            ThrowIfNotEquals(true, ReversePInvoke_String(ds), "Delegate marshalling failed.");
         }
 
         static int Sum(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
         {
             return a + b + c + d + e + f + g + h + i + j;
+        }
+        [StructLayout(LayoutKind.Auto)]
+        public struct AutoStruct
+        {
+            public short f0;
+            public int f1;
+            public float f2;
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SequentialStruct
+        {
+            public short f0;
+            public int f1;
+            public float f2;
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct ExplicitStruct
+        {
+            [FieldOffset(0)]
+            public int f1;
+
+            [FieldOffset(12)]
+            public float f2;
+
+            [FieldOffset(24)]
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct NestedStruct
+        {
+            public int f1;
+
+            public ExplicitStruct f2;
+        }
+
+        private static void TestStruct()
+        {
+            Console.WriteLine("Testing Structs");
+            SequentialStruct ss = new SequentialStruct();
+            ss.f0 = 100;
+            ss.f1 = 1;
+            ss.f2 = 10.0f;
+            ss.f3 = "Hello";
+
+            ThrowIfNotEquals(true, StructTest(ss), "Struct marshalling scenario1 failed.");
+
+            StructTest_ByRef(ref ss);
+            ThrowIfNotEquals(true,  ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "Struct marshalling scenario2 failed.");
+
+            SequentialStruct ss2 = new SequentialStruct();
+            StructTest_ByOut(out ss2);
+            ThrowIfNotEquals(true, ss2.f0 == 1 && ss2.f1 == 1.0 &&  ss2.f2 == 1.0 && ss2.f3.Equals("0123456"), "Struct marshalling scenario3 failed.");
+
+            ExplicitStruct es = new ExplicitStruct();
+            es.f1 = 100;
+            es.f2 = 100.0f;
+            es.f3 = "Hello";
+            ThrowIfNotEquals(true, StructTest_Explicit(es), "Struct marshalling scenario4 failed.");
+
+            NestedStruct ns = new NestedStruct();
+            ns.f1 = 100;
+            ns.f2 = es;
+            ThrowIfNotEquals(true, StructTest_Nested(ns), "Struct marshalling scenario5 failed.");
+
+// RhpThrowEx is not implemented in CPPCodeGen
+#if !CODEGEN_CPP
+            bool pass = false;
+            AutoStruct autoStruct = new AutoStruct();
+            try
+            {
+                // passing struct with Auto layout should throw exception.
+                StructTest_Auto(autoStruct);
+            }
+            catch (Exception)
+            {
+                pass = true;
+            }
+            ThrowIfNotEquals(true, pass, "Struct marshalling scenario6 failed.");
+#endif
         }
     }
 
