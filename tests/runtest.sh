@@ -4,6 +4,7 @@ usage()
 {
     echo "Usage: $0 [OS] [arch] [flavor] [-mode] [-runtest] [-coreclr <subset>]"
     echo "    -mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit"
+    echo "    -test         : Run a single test by folder name (ie, BasicThreading)"
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
     echo "    -coreclr      : Download and run the CoreCLR repo tests"
     echo "    -multimodule  : Compile the framework as a .so and link tests against it (ryujit only)"
