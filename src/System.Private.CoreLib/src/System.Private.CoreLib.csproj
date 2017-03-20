@@ -199,7 +199,6 @@
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\MethodImplAttributes.cs" />
-    <Compile Include="System\Reflection\Module.cs" />
     <Compile Include="System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="System\Reflection\ParameterAttributes.cs" />
     <Compile Include="System\Reflection\ParameterModifier.cs" />
@@ -594,9 +593,7 @@
     <Compile Include="System\TimeSpan.cs" />
     <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\Tuple.cs" />
-    <Compile Include="System\Type.cs" />
-    <Compile Include="System\Type.Enum.cs" />
-    <Compile Include="System\Type.Helpers.cs" />
+    <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="System\Type.Win32.cs" />
