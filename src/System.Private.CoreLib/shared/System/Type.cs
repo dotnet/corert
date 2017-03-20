@@ -2,17 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
 using System.Reflection;
+using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-
-using Internal.Runtime.Augments;
-using Internal.Reflection.Augments;
-using Internal.Reflection.Core.NonPortable;
 
 namespace System
 {
@@ -50,7 +43,6 @@ namespace System
         public virtual bool IsGenericTypeDefinition => false;
 
         public virtual bool IsSZArray { get { throw NotImplemented.ByDesign; } }
-        public virtual bool IsMultiDimensionalArray { get { throw NotImplemented.ByDesign; } }
 
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();
@@ -59,7 +51,7 @@ namespace System
         public virtual int GetArrayRank() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
         public virtual Type GetGenericTypeDefinition() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
-        public virtual Type[] GenericTypeArguments => IsConstructedGenericType ? GetGenericArguments() : Array.Empty<Type>();
+        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : Array.Empty<Type>();
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
         public virtual int GenericParameterPosition { get { throw new InvalidOperationException(SR.Arg_NotGenericParameter); } }
@@ -77,11 +69,9 @@ namespace System
         public bool IsAbstract => (GetAttributeFlagsImpl() & TypeAttributes.Abstract) != 0;
         public bool IsImport => (GetAttributeFlagsImpl() & TypeAttributes.Import) != 0;
         public bool IsSealed => (GetAttributeFlagsImpl() & TypeAttributes.Sealed) != 0;
-        public virtual bool IsSerializable => (GetAttributeFlagsImpl() & TypeAttributes.Serializable) != 0;
         public bool IsSpecialName => (GetAttributeFlagsImpl() & TypeAttributes.SpecialName) != 0;
 
         public bool IsClass => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class && !IsValueType;
-        public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
 
         public bool IsNestedAssembly => (GetAttributeFlagsImpl() & TypeAttributes.VisibilityMask) == TypeAttributes.NestedAssembly;
         public bool IsNestedFamANDAssem => (GetAttributeFlagsImpl() & TypeAttributes.VisibilityMask) == TypeAttributes.NestedFamANDAssem;
@@ -103,11 +93,11 @@ namespace System
         public bool IsCOMObject => IsCOMObjectImpl();
         protected abstract bool IsCOMObjectImpl();
         public bool IsContextful => IsContextfulImpl();
-        protected virtual bool IsContextfulImpl() => typeof(ContextBoundObject).IsAssignableFrom(this);
+        protected virtual bool IsContextfulImpl() => false;
 
         public virtual bool IsEnum => IsSubclassOf(typeof(Enum));
         public bool IsMarshalByRef => IsMarshalByRefImpl();
-        protected virtual bool IsMarshalByRefImpl() => typeof(MarshalByRefObject).IsAssignableFrom(this);
+        protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive => IsPrimitiveImpl();
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType => IsValueTypeImpl();
@@ -229,30 +219,12 @@ namespace System
 
         public virtual MemberInfo[] GetDefaultMembers() { throw NotImplemented.ByDesign; }
 
-        [Intrinsic]
-        public static Type GetType(string typeName) => GetType(typeName, throwOnError: false, ignoreCase: false);
-        [Intrinsic]
-        public static Type GetType(string typeName, bool throwOnError) => GetType(typeName, throwOnError: throwOnError, ignoreCase: false);
-        [Intrinsic]
-        public static Type GetType(string typeName, bool throwOnError, bool ignoreCase) => GetType(typeName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
-
-        [Intrinsic]
-        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver) => GetType(typeName, assemblyResolver, typeResolver, throwOnError: false, ignoreCase: false);
-        [Intrinsic]
-        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError) => GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: false);
-        [Intrinsic]
-        public static Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase) => RuntimeAugments.Callbacks.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssembly: null);
-
         public virtual RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
-        [Intrinsic]
-        public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(handle);
         public static RuntimeTypeHandle GetTypeHandle(object o)
         {
             if (o == null)
                 throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             Type type = o.GetType();
-            if (!type.IsRuntimeImplemented())
-                throw new InvalidCastException();  // For compat with full framework which casts to RuntimeType without checking.
             return type.TypeHandle;
         }
 
@@ -290,29 +262,19 @@ namespace System
         public static Type GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
         public static Type GetTypeFromCLSID(Guid clsid, bool throwOnError) => GetTypeFromCLSID(clsid, null, throwOnError: throwOnError);
         public static Type GetTypeFromCLSID(Guid clsid, string server) => GetTypeFromCLSID(clsid, server, throwOnError: false);
-        public static Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError) => ReflectionAugments.ReflectionCoreCallbacks.GetTypeFromCLSID(clsid, server, throwOnError);
 
         public static Type GetTypeFromProgID(string progID) => GetTypeFromProgID(progID, null, throwOnError: false);
         public static Type GetTypeFromProgID(string progID, bool throwOnError) => GetTypeFromProgID(progID, null, throwOnError: throwOnError);
         public static Type GetTypeFromProgID(string progID, string server) => GetTypeFromProgID(progID, server, throwOnError: false);
-        public static Type GetTypeFromProgID(string progID, string server, bool throwOnError)
-        {
-            if (progID == null)
-                throw new ArgumentNullException(nameof(progID));
-
-            Guid clsid;
-            Exception exception = GetCLSIDFromProgID(progID, out clsid);
-            if (exception != null)
-            {
-                if (throwOnError)
-                    throw exception;
-                return null;
-            }
-            return Type.GetTypeFromCLSID(clsid, server, throwOnError);
-        }
 
         public abstract Type BaseType { get; }
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args) => InvokeMember(name, invokeAttr, binder, target, args, null, null, null);
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, CultureInfo culture) => InvokeMember(name, invokeAttr, binder, target, args, null, culture, null);
         public abstract object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters);
 
@@ -364,19 +326,6 @@ namespace System
         }
         public virtual bool Equals(Type o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
-        public static bool operator ==(Type left, Type right)
-        {
-            if (object.ReferenceEquals(left, right))
-                return true;
-
-            if ((object)left == null || (object)right == null)
-                return false;
-
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(Type left, Type right) => !(left == right);
-
         public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
 
         public static readonly char Delimiter = '.';
@@ -386,9 +335,6 @@ namespace System
         public static readonly MemberFilter FilterAttribute = FilterAttributeImpl;
         public static readonly MemberFilter FilterName = FilterNameImpl;
         public static readonly MemberFilter FilterNameIgnoreCase = FilterNameIgnoreCaseImpl;
-
-        public static Binder DefaultBinder => s_defaultBinder ?? (s_defaultBinder = ReflectionAugments.ReflectionCoreCallbacks.CreateDefaultBinder());
-        private static volatile Binder s_defaultBinder;
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
     }

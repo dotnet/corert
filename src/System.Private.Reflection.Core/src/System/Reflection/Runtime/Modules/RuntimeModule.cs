@@ -126,6 +126,8 @@ namespace System.Reflection.Runtime.Modules
         public sealed override string ResolveString(int metadataToken) { throw new PlatformNotSupportedException(); }
         public sealed override Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new PlatformNotSupportedException(); }
 
+        protected sealed override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(this);
+
         private readonly Assembly _assembly;
     }
 }

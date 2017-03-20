@@ -23,12 +23,6 @@ namespace Internal.Reflection.Core.NonPortable
         {
             return RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(new RuntimeTypeHandle(eeType));
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsRuntimeImplemented(this Type type)
-        {
-            return type is IRuntimeImplementedType;
-        }
     }
 }
 
