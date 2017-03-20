@@ -8,8 +8,7 @@ namespace System
 {
     public struct ModuleHandle
     {
-        // Public in full framework but not in .NetCore contract
-        internal static readonly ModuleHandle EmptyHandle = default(ModuleHandle);
+        public static readonly ModuleHandle EmptyHandle = default(ModuleHandle);
 
         private Module _ptr;
 

@@ -21,6 +21,36 @@ namespace System
         {
             return arg.LowLevelToString();
         }
+
+        public static string ToStringInvariant(this uint arg)
+        {
+            return arg.LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this byte arg)
+        {
+            return ((uint)arg).LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this ushort arg)
+        {
+            return ((uint)arg).LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this ulong arg)
+        {
+            return arg.LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this float arg)
+        {
+            return "FLOAT";
+        }
+
+        public static string ToStringInvariant(this double arg)
+        {
+            return "DOUBLE";
+        }
     }
 }
 
@@ -52,6 +82,20 @@ namespace Internal.Runtime.TypeLoader
         {
             StringBuilder sb = new StringBuilder(8);
             int shift = 4 * 8;
+            while (shift > 0)
+            {
+                shift -= 4;
+                int digit = (int)((arg >> shift) & 0xF);
+                sb.Append(HexDigits[digit]);
+            }
+
+            return sb.ToString();
+        }
+
+        public static string LowLevelToString(this ulong arg)
+        {
+            StringBuilder sb = new StringBuilder(16);
+            int shift = 4 * 16;
             while (shift > 0)
             {
                 shift -= 4;

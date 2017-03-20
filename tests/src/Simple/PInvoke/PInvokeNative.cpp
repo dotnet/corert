@@ -228,6 +228,12 @@ DLL_EXPORT bool __stdcall ReversePInvoke_Int(int(__stdcall *fnPtr) (int, int, in
     return fnPtr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) == 55;
 }
 
+DLL_EXPORT bool __stdcall ReversePInvoke_String(bool(__stdcall *fnPtr) (char *))
+{
+    char str[] = "Hello World";
+    return fnPtr(str);
+}
+
 DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)
 {
     char str[] = "Hello World";

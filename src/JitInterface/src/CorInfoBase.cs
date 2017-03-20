@@ -36,7 +36,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate void __getMethodVTableOffset(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        delegate CORINFO_METHOD_STRUCT_* __resolveVirtualMethod(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass);
+        delegate CORINFO_METHOD_STRUCT_* __resolveVirtualMethod(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate CorInfoIntrinsics __getIntrinsicID(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, [MarshalAs(UnmanagedType.U1)] ref bool pMustExpand);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
@@ -506,12 +506,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CORINFO_METHOD_STRUCT_* _resolveVirtualMethod(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass)
+        static CORINFO_METHOD_STRUCT_* _resolveVirtualMethod(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.resolveVirtualMethod(virtualMethod, implementingClass);
+                return _this.resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
             }
             catch (Exception ex)
             {

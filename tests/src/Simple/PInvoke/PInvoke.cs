@@ -26,7 +26,7 @@ namespace PInvokeTests
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int Inc(ref int value);
- 
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         private static extern int VerifyByRefFoo(ref Foo value);
 
@@ -39,10 +39,10 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern int VerifyUnicodeString(string str);
 
-        [DllImport("*", CharSet=CharSet.Ansi)]
-        private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string []str);
+        [DllImport("*", CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string[] str);
 
-        [DllImport("*", CharSet=CharSet.Ansi)]
+        [DllImport("*", CharSet = CharSet.Ansi)]
         private static extern void ToUpper([In, Out, MarshalAs(UnmanagedType.LPArray)]string[] str);
 
         [DllImport("*", CharSet = CharSet.Ansi)]
@@ -64,7 +64,12 @@ namespace PInvokeTests
         delegate int Delegate_Int(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Int(Delegate_Int del);
-        
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet=CharSet.Ansi)]
+        delegate bool Delegate_String(string s);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_String(Delegate_String del);
+
         delegate void Delegate_Unused();
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern unsafe int* ReversePInvoke_Unused(Delegate_Unused del);
@@ -119,20 +124,20 @@ namespace PInvokeTests
 
         public static void ThrowIfNotEquals(bool expected, bool actual, string message)
         {
-           ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
+            ThrowIfNotEquals(expected ? 1 : 0, actual ? 1 : 0, message);
         }
 
         private static void TestBlittableType()
         {
-           Console.WriteLine("Testing marshalling blittable types");
-           ThrowIfNotEquals(100, Square(10),  "Int marshalling failed");
+            Console.WriteLine("Testing marshalling blittable types");
+            ThrowIfNotEquals(100, Square(10), "Int marshalling failed");
         }
 
         private static void TestBoolean()
         {
-           Console.WriteLine("Testing marshalling boolean");
-           ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
-           ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
+            Console.WriteLine("Testing marshalling boolean");
+            ThrowIfNotEquals(1, IsTrue(true), "Bool marshalling failed");
+            ThrowIfNotEquals(0, IsTrue(false), "Bool marshalling failed");
         }
 
         private static void TestUnichar()
@@ -183,7 +188,7 @@ namespace PInvokeTests
             Foo foo = new Foo();
             foo.a = 10;
             foo.b = 20;
-            int ret = VerifyByRefFoo(ref foo);            
+            int ret = VerifyByRefFoo(ref foo);
             ThrowIfNotEquals(0, ret, "By ref struct marshalling failed");
 
             ThrowIfNotEquals(foo.a, 11, "By ref struct unmarshalling failed");
@@ -214,7 +219,7 @@ namespace PInvokeTests
             ThrowIfNotEquals(1, VerifyAnsiStringArray(strArray), "Ansi string array in marshalling failed.");
             ToUpper(strArray);
 
-            ThrowIfNotEquals(true, "HELLO" ==  strArray[0] && "WORLD" == strArray[1], "Ansi string array  out marshalling failed.");
+            ThrowIfNotEquals(true, "HELLO" == strArray[0] && "WORLD" == strArray[1], "Ansi string array  out marshalling failed.");
         }
 
         private static void TestLastError()
@@ -231,7 +236,7 @@ namespace PInvokeTests
             SafeMemoryHandle hnd = SafeMemoryHandle.AllocateMemory(1000);
 
             IntPtr hndIntPtr = hnd.DangerousGetHandle(); //get the IntPtr associated with hnd
-            long val =  hndIntPtr.ToInt64(); //return the 64-bit value associated with hnd
+            long val = hndIntPtr.ToInt64(); //return the 64-bit value associated with hnd
 
             ThrowIfNotEquals(true, SafeHandleTest(hnd, val), "SafeHandle marshalling failed.");
 
@@ -262,6 +267,19 @@ namespace PInvokeTests
             ThrowIfNotEquals(true, pass, "SizeParamIndex failed.");
         }
 
+        private class ClosedDelegateCLass
+        {
+            public int Sum(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
+            {
+                return a + b + c + d + e + f + g + h + i + j;
+            }
+
+            public bool GetString(String s)
+            {
+                return s == "Hello World";
+            }
+        }
+
         private static void TestDelegate()
         {
             Console.WriteLine("Testing Delegate");
@@ -276,6 +294,12 @@ namespace PInvokeTests
                 //
                 ReversePInvoke_Unused(null);
             }
+
+            Delegate_Int closed = new Delegate_Int((new ClosedDelegateCLass()).Sum);
+            ThrowIfNotEquals(true, ReversePInvoke_Int(closed), "Closed Delegate marshalling failed.");
+
+            Delegate_String ds = new Delegate_String((new ClosedDelegateCLass()).GetString);
+            ThrowIfNotEquals(true, ReversePInvoke_String(ds), "Delegate marshalling failed.");
         }
 
         static int Sum(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)

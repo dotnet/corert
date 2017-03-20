@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Reflection.Runtime.General;
 
 using Internal.TypeSystem;
 using Internal.Runtime.Augments;

@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
-using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
@@ -192,7 +193,18 @@ namespace Internal.IL.Stubs
                 Debug.Assert(_interopStateManager != null);
                 Marshaller[] marshallers = new Marshaller[GetNumberOfInstanceFields()];
                 MarshalAsDescriptor[] marshalAsDescriptors = ((MetadataType)ManagedType).GetFieldMarshalAsDescriptors();
-                bool isAnsi = ManagedType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass;
+                
+                PInvokeFlags flags = new PInvokeFlags();
+                if (ManagedType.PInvokeStringFormat == PInvokeStringFormat.UnicodeClass || ManagedType.PInvokeStringFormat == PInvokeStringFormat.AutoClass)
+                {
+                    flags.CharSet = CharSet.Unicode;
+                }
+                else
+                {
+                    flags.CharSet = CharSet.Ansi;
+                }
+
+                
                 int index = 0;
 
                 foreach (FieldDesc field in ManagedType.GetFields())
@@ -209,7 +221,7 @@ namespace Internal.IL.Stubs
                                                                         marshallers,
                                                                         _interopStateManager,
                                                                         index,
-                                                                        isAnsi: isAnsi,
+                                                                        flags,
                                                                         isIn: true,     /* Struct fields are considered as IN within the helper*/
                                                                         isOut: false,
                                                                         isReturn: false);

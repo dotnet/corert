@@ -1296,7 +1296,7 @@
   <data name="Serialization_InvalidEscapeSequence" xml:space="preserve">
     <value>The serialized data contained an invalid escape sequence '\\{0}'.</value>
   </data>
-    <data name="Serialization_InvalidType" xml:space="preserve">
+  <data name="Serialization_InvalidType" xml:space="preserve">
     <value>Only system-provided types can be passed to the GetUninitializedObject method. '{0}' is not a valid instance of a type.</value>
   </data>
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
@@ -2227,15 +2227,6 @@
   <data name="Serialization_InvalidFieldState" xml:space="preserve">
     <value>Object fields may not be properly initialized.</value>
   </data>
-  <data name="RuntimeTypeHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeTypeHandle cannot be serialized properly due to missing reflection metadata.</value>
-  </data>
-  <data name="RuntimeMethodHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeMethodHandle cannot be serialized properly due to missing reflection metadata.</value>
-  </data>
-  <data name="RuntimeFieldHandleSer_InsufficientMetadata" xml:space="preserve">
-    <value>The RuntimeFieldHandle cannot be serialized properly due to missing reflection metadata.</value>
-  </data>
   <data name="Acc_CreateAbst" xml:space="preserve">
     <value>Cannot create an abstract class.</value>
   </data>
@@ -2262,5 +2253,8 @@
   </data>
   <data name="NotSupported_NYI" xml:space="preserve">
     <value>This feature is not currently implemented.</value>
+  </data>
+  <data name="Delegate_GarbageCollected" xml:space="preserve">
+    <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
   </data>
 </root>

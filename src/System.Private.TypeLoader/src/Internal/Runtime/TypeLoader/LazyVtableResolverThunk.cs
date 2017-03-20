@@ -17,7 +17,7 @@ using Internal.Runtime.CallConverter;
 namespace Internal.Runtime.TypeLoader
 {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-    internal static class LazyVTableResolver
+    public static class LazyVTableResolver
     {
         private static object s_lockObject = new object();
         private static object s_lazyVtableThunksPoolHeap;

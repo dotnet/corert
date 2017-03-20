@@ -26,6 +26,13 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeatureCominterop>false</FeatureCominterop>
+    <FeatureCominterop Condition="'$(TargetsWindows)' == 'true'">true</FeatureCominterop>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">FEATURE_COMINTEROP;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -158,24 +165,22 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\AmbiguousMatchException.cs" />
     <Compile Include="System\Reflection\Assembly.cs" />
+    <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\AssemblyContentType.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
     <Compile Include="System\Reflection\Binder.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
     <Compile Include="System\Reflection\BindingFlags.cs" />
     <Compile Include="System\Reflection\CallingConventions.cs" />
-    <Compile Include="System\Reflection\ConstructorInfo.cs" />
     <Compile Include="System\Reflection\CustomAttributeData.cs" />
     <Compile Include="System\Reflection\CustomAttributeExtensions.cs" />
     <Compile Include="System\Reflection\CustomAttributeFormatException.cs" />
     <Compile Include="System\Reflection\CustomAttributeNamedArgument.cs" />
     <Compile Include="System\Reflection\CustomAttributeTypedArgument.cs" />
     <Compile Include="System\Reflection\EventAttributes.cs" />
-    <Compile Include="System\Reflection\EventInfo.cs" />
     <Compile Include="System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="System\Reflection\ExceptionHandlingClauseOptions.cs" />
     <Compile Include="System\Reflection\FieldAttributes.cs" />
-    <Compile Include="System\Reflection\FieldInfo.cs" />
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\GenericParameterAttributes.cs" />
     <Compile Include="System\Reflection\ICustomAttributeProvider.cs" />
@@ -196,7 +201,6 @@
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\MethodImplAttributes.cs" />
-    <Compile Include="System\Reflection\MethodInfo.cs" />
     <Compile Include="System\Reflection\Module.cs" />
     <Compile Include="System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="System\Reflection\ParameterAttributes.cs" />
@@ -205,7 +209,6 @@
     <Compile Include="System\Reflection\Pointer.cs" />
     <Compile Include="System\Reflection\PortableExecutableKinds.cs" />
     <Compile Include="System\Reflection\PropertyAttributes.cs" />
-    <Compile Include="System\Reflection\PropertyInfo.cs" />
     <Compile Include="System\Reflection\ResourceAttributes.cs" />
     <Compile Include="System\Reflection\ReflectionContext.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadException.cs" />
@@ -214,7 +217,6 @@
     <Compile Include="System\Reflection\TargetException.cs" />
     <Compile Include="System\Reflection\TypeAttributes.cs" />
     <Compile Include="System\Reflection\TypeFilter.cs" />
-    <Compile Include="System\Reflection\TypeInfo.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
     <Compile Include="System\Resources\FastResourceComparer.cs" />
@@ -323,6 +325,7 @@
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="System\Diagnostics\Debug.cs" />
+    <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
@@ -955,9 +958,6 @@
     <Compile Include="..\..\Common\src\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Diagnostics\Debug.cs">
-      <Link>System\Diagnostics\Debug.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Globalization\FormatProvider.Number.cs">
       <Link>System\Globalization\FormatProvider.Number.cs</Link>
     </Compile>
@@ -966,6 +966,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgPInvokeData.cs">
+      <Link>System\Runtime\InteropServices\McgPInvokeData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs">
       <Link>System\NotImplemented.cs</Link>

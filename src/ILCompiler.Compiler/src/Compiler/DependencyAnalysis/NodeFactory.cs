@@ -938,12 +938,4 @@ namespace ILCompiler.DependencyAnalysis
             public override int GetHashCode() => Name.GetHashCode();
         }
     }
-
-    public enum HelperEntrypoint
-    {
-        EnsureClassConstructorRunAndReturnGCStaticBase,
-        EnsureClassConstructorRunAndReturnNonGCStaticBase,
-        EnsureClassConstructorRunAndReturnThreadStaticBase,
-        GetThreadStaticBaseForType,
-    }
 }

@@ -41,6 +41,5 @@ namespace Internal.TypeSystem
         {
             return Array.Empty<MarshalAsDescriptor>();
         }
-
     }
 }

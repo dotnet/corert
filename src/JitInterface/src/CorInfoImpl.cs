@@ -115,13 +115,13 @@ namespace Internal.JitInterface
             public int LineNumber;
         }
 
-        private MethodCodeNode _methodCodeNode;
+        private IMethodCodeNode _methodCodeNode;
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
         private bool _isFallbackBodyCompilation; // True if we're compiling a fallback method body after compiling the real body failed
 
-        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
+        public void CompileMethod(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             try
             {
@@ -181,7 +181,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void SetDebugInformation(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL)
+        private void SetDebugInformation(IMethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             try
             {
@@ -788,7 +788,7 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodModule"); }
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
         { throw new NotImplementedException("getMethodVTableOffset"); }
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass)
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
 
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
@@ -799,9 +799,7 @@ namespace Internal.JitInterface
 
         private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)
         {
-            var attributes = HandleToObject(method).GetPInvokeMethodMetadata().Attributes;
-
-            MethodSignatureFlags unmanagedCallConv = PInvokeMetadata.GetUnmanagedCallingConvention(attributes);
+            MethodSignatureFlags unmanagedCallConv = HandleToObject(method).GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
 
             // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoUnmanagedCallConv via a simple cast
             Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
@@ -2630,6 +2628,13 @@ namespace Internal.JitInterface
                 // to call.
 
                 MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                if (directMethod == null && constrainedType.IsEnum)
+                {
+                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
+                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
+                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrainedType, method);
+                }
+
                 if (directMethod != null)
                 {
                     // Either
@@ -3007,8 +3012,9 @@ namespace Internal.JitInterface
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
             object literal = methodIL.GetObject((int)metaTok);
-            ppValue = (void*)ObjectToHandle(_compilation.NodeFactory.SerializedStringObject((string)literal));
-            return InfoAccessType.IAT_VALUE;
+            ISymbolNode stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+            ppValue = (void*)ObjectToHandle(stringObject);
+            return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         }
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)
@@ -3260,7 +3266,7 @@ namespace Internal.JitInterface
 
                     relocTarget = (ISymbolNode)targetObject;
 
-                    if (relocTarget is FatFunctionPointerNode)
+                    if (relocTarget is IFatFunctionPointerNode)
                         relocDelta = Runtime.FatFunctionPointerConstants.Offset;
 
                     break;

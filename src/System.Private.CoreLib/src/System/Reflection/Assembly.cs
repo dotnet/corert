@@ -9,14 +9,11 @@ using System.Configuration.Assemblies;
 using System.Runtime.Serialization;
 using System.Security;
 
-using Internal.Reflection.Augments;
-
 namespace System.Reflection
 {
-    public abstract class Assembly : ICustomAttributeProvider, ISerializable
+    public abstract partial class Assembly : ICustomAttributeProvider, ISerializable
     {
         protected Assembly() { }
-
 
         public virtual IEnumerable<TypeInfo> DefinedTypes
         {
@@ -28,7 +25,7 @@ namespace System.Reflection
                 {
                     TypeInfo typeinfo = types[i].GetTypeInfo();
                     if (typeinfo == null)
-                        throw new NotSupportedException(SR.NotSupported_NoTypeInfo);
+                        throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
 
                     typeinfos[i] = typeinfo;
                 }
@@ -94,7 +91,7 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
-        public virtual String EscapedCodeBase => AssemblyName.EscapeCodeBase(CodeBase);
+        public virtual string EscapedCodeBase => AssemblyName.EscapeCodeBase(CodeBase);
 
         public object CreateInstance(string typeName) => CreateInstance(typeName, false, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
         public object CreateInstance(string typeName, bool ignoreCase) => CreateInstance(typeName, ignoreCase, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
@@ -123,6 +120,10 @@ namespace System.Reflection
 
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture) { throw NotImplemented.ByDesign; }
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture, Version version) { throw NotImplemented.ByDesign; }
+
+        public virtual FileStream GetFile(string name) { throw NotImplemented.ByDesign; }
+        public virtual FileStream[] GetFiles() => GetFiles(getResourceModules: false);
+        public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
@@ -174,29 +175,10 @@ namespace System.Reflection
                 return m.Assembly;
         }
 
-        public static Assembly GetEntryAssembly() => Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetEntryAssembly();
-        public static Assembly GetExecutingAssembly() { throw new NotImplementedException(); }
-        public static Assembly GetCallingAssembly() { throw new NotImplementedException(); }
-
-        public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef);
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
-        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) => ReflectionAugments.ReflectionCoreCallbacks.Load(rawAssembly, rawSymbolStore);
-
-        public static Assembly Load(string assemblyString)
-        {
-            if (assemblyString == null)
-                throw new ArgumentNullException(nameof(assemblyString));
-
-            AssemblyName name = new AssemblyName(assemblyString);
-            return Load(name);
-        }
-
-        public static Assembly LoadFile(String path) { throw new PlatformNotSupportedException(); }
-        public static Assembly LoadFrom(String assemblyFile) { throw new PlatformNotSupportedException(); }
-        public static Assembly LoadFrom(String assemblyFile, byte[] hashValue, AssemblyHashAlgorithm hashAlgorithm) { throw new PlatformNotSupportedException(); }
 
         [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public static Assembly LoadWithPartialName(String partialName)
+        public static Assembly LoadWithPartialName(string partialName)
         {
             if (partialName == null)
                 throw new ArgumentNullException(nameof(partialName));
@@ -206,8 +188,8 @@ namespace System.Reflection
 
         public static Assembly UnsafeLoadFrom(string assemblyFile) => LoadFrom(assemblyFile);
 
-        public Module LoadModule(String moduleName, byte[] rawModule) => LoadModule(moduleName, rawModule, null);
-        public virtual Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw NotImplemented.ByDesign; }
+        public Module LoadModule(string moduleName, byte[] rawModule) => LoadModule(moduleName, rawModule, null);
+        public virtual Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw NotImplemented.ByDesign; }
 
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
         public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }

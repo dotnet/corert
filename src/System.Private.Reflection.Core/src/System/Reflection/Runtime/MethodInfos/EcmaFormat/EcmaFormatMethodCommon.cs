@@ -13,10 +13,13 @@ using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.ParameterInfos.EcmaFormat;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.CompilerServices;
+using Internal.Runtime.TypeLoader;
 
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -212,7 +215,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             }
         }
 
-        public RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgHandles)
+        public RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
         {
             Debug.Assert(genericArgs != null);
 
@@ -220,12 +223,12 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             for (int i = 0; i < genericArgHandles.Length; i++)
                 genericArgHandles[i] = genericArgs[i].TypeHandle;
 
-            TypeManagerHandle typeManager = Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(Reader);
+            IntPtr dynamicModule = ModuleList.Instance.GetModuleInfoForMetadataReader(Reader).DynamicModulePtrAsIntPtr;
 
-            return Internal.Runtime.TypeLoader.TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
+            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                 DeclaringType.TypeHandle,
                 Name,
-                RuntimeSignature.CreateFromMethodHandle(typeManager, MethodHandle.AsInt()),
+                RuntimeSignature.CreateFromMethodHandle(dynamicModule, MetadataToken),
                 genericArgHandles);
         }
 

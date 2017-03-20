@@ -10,7 +10,7 @@ using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
+    public class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo, IMethodCodeNode
     {
         public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
         public static readonly ObjectNodeSection WindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
@@ -107,8 +107,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
 
-                var stubMethod = factory.InteropStubManager.GetDelegateMarshallingStub(parameter);
-                dependencies.Add(factory.MethodEntrypoint(stubMethod), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetOpenStaticDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetClosedDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
             }
             else if (MarshalHelpers.IsStructMarshallingRequired(parameter))
             {

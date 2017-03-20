@@ -305,11 +305,23 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Ecma\CachingMetadataStringDecoder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
+      <Link>IL\DelegateInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs">
+      <Link>IL\Stubs\EnumThunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs">
+      <Link>IL\TypeSystemContext.DelegateInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.Symbols.cs">
       <Link>IL\EcmaMethodIL.Symbols.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
@@ -328,6 +340,42 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs">
       <Link>IL\ILOpcode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs">
+      <Link>IL\TypeSystemContext.EnumMethods.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.cs">
+      <Link>Interop\IL\MarshalHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
+      <Link>Interop\IL\Marshaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeILEmitterConfiguration.cs">
+      <Link>Interop\IL\PInvokeILEmitterConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
+      <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
+      <Link>IL\Stubs\ILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
+      <Link>IL\Stubs\DelegateThunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropTypes.cs">
+      <Link>TypeSystem\Interop\InteropTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropStateManager.cs">
+      <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
       <Link>TypeSystem\Interop\InstantiatedType.Interop.cs</Link>

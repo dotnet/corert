@@ -92,31 +92,6 @@ namespace ILCompiler
         }
         private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
 
-        private class DelegateInfoHashtable : LockFreeReaderHashtable<TypeDesc, DelegateInfo>
-        {
-            protected override int GetKeyHashCode(TypeDesc key)
-            {
-                return key.GetHashCode();
-            }
-            protected override int GetValueHashCode(DelegateInfo value)
-            {
-                return value.Type.GetHashCode();
-            }
-            protected override bool CompareKeyToValue(TypeDesc key, DelegateInfo value)
-            {
-                return Object.ReferenceEquals(key, value.Type);
-            }
-            protected override bool CompareValueToValue(DelegateInfo value1, DelegateInfo value2)
-            {
-                return Object.ReferenceEquals(value1.Type, value2.Type);
-            }
-            protected override DelegateInfo CreateValueFromKey(TypeDesc key)
-            {
-                return new DelegateInfo(key);
-            }
-        }
-        private DelegateInfoHashtable _delegateInfoHashtable = new DelegateInfoHashtable();
-
         private SharedGenericsMode _genericsMode;
 
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
@@ -276,11 +251,6 @@ namespace ILCompiler
             }
         }
 
-        public DelegateInfo GetDelegateInfo(TypeDesc delegateType)
-        {
-            return _delegateInfoHashtable.GetOrCreateValue(delegateType);
-        }
-
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
             return _metadataFieldLayoutAlgorithm;
@@ -340,6 +310,10 @@ namespace ILCompiler
             if (type.IsDelegate)
             {
                 return GetAllMethodsForDelegate(type);
+            }
+            else if (type.IsEnum)
+            {
+                return GetAllMethodsForEnum(type);
             }
 
             return type.GetMethods();
