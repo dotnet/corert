@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 using Internal.Runtime.CallInterceptor;
 
-namespace System.Runtime.InteropServices
+namespace Internal.Runtime.TypeLoader
 {
     [McgIntrinsics]
     internal static class AddrofIntrinsics
@@ -17,10 +17,7 @@ namespace System.Runtime.InteropServices
         // This method is implemented elsewhere in the toolchain
         internal static IntPtr AddrOf<T>(T ftn) { throw new PlatformNotSupportedException(); }
     }
-}
 
-namespace Internal.Runtime.TypeLoader
-{
     internal class DebugFuncEval
     {
         private static void HighLevelDebugFuncEvalHelperWithVariables(ref int param, ref LocalVariableSet arguments)
@@ -46,9 +43,12 @@ namespace Internal.Runtime.TypeLoader
             IntPtr funcEvalCompleteCommandPointer;
             unsafe
             {
-                FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
-                (*funcEvalCompleteCommand).commandCode = 0;
-                funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
+                FuncEvalCompleteCommand funcEvalCompleteCommand = new FuncEvalCompleteCommand
+                {
+                    commandCode = 0
+                };
+
+                funcEvalCompleteCommandPointer = new IntPtr(&funcEvalCompleteCommand);
             }
 
             RuntimeImports.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
@@ -86,11 +86,13 @@ namespace Internal.Runtime.TypeLoader
                 byte* debuggerBufferRawPointer = stackalloc byte[(int)parameterBufferSize];
                 debuggerBufferPointer = new IntPtr(debuggerBufferRawPointer);
 
-                WriteParameterCommand* writeParameterCommand = stackalloc WriteParameterCommand[1];
-                (*writeParameterCommand).commandCode = 1;
-                (*writeParameterCommand).bufferAddress = debuggerBufferPointer.ToInt64();
+                WriteParameterCommand writeParameterCommand = new WriteParameterCommand
+                {
+                    commandCode = 1,
+                    bufferAddress = debuggerBufferPointer.ToInt64()
+                };
 
-                writeParameterCommandPointer = new IntPtr(writeParameterCommand);
+                writeParameterCommandPointer = new IntPtr(&writeParameterCommand);
             }
 
             RuntimeImports.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
