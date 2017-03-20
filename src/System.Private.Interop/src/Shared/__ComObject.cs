@@ -1600,6 +1600,20 @@ namespace System
                     else
                         return McgComHelpers.CreateGenericComDispatcher(typeof(IList_RCWAdapter<>).TypeHandle, genericTypeArgs, this);
                 }
+            } 
+            else if (isReadOnly && !testForIDictionary)
+            {
+                //
+                // Check for a variant type cast in the cache for IReadOnlyList<T>: IReadOnlyList supports CoVariance
+                //
+                IntPtr pComPtr; 
+                RuntimeTypeHandle variantInterfaceType = FindCastableGenericInterfaceInCache(iTypeToQI, out pComPtr);
+                if (!variantInterfaceType.IsInvalid())
+                {
+                    RuntimeTypeHandle[] variantGenericArguments;
+                    RuntimeTypeHandle variantGenericTypeDef = RuntimeAugments.GetGenericInstantiation(variantInterfaceType, out variantGenericArguments);
+                    return McgComHelpers.CreateGenericComDispatcher(typeof(IReadOnlyList_RCWAdapter<>).TypeHandle, variantGenericArguments, this);
+                }
             }
 
             // Cannot cast...
@@ -1737,7 +1751,7 @@ namespace System
                         if (variantInterfaceType.IsInvalid())
                             return null;
 
-                        InsertIntoCache(interfaceType, currentCookie, ref pComPtr, true);
+                        genericTypeDef = RuntimeAugments.GetGenericInstantiation(variantInterfaceType, out genericArguments);
                     }
                 }
 
