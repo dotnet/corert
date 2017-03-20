@@ -163,7 +163,6 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\AmbiguousMatchException.cs" />
-    <Compile Include="System\Reflection\Assembly.cs" />
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\AssemblyContentType.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
@@ -203,7 +202,6 @@
     <Compile Include="System\Reflection\Module.cs" />
     <Compile Include="System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="System\Reflection\ParameterAttributes.cs" />
-    <Compile Include="System\Reflection\ParameterInfo.cs" />
     <Compile Include="System\Reflection\ParameterModifier.cs" />
     <Compile Include="System\Reflection\Pointer.cs" />
     <Compile Include="System\Reflection\PortableExecutableKinds.cs" />
