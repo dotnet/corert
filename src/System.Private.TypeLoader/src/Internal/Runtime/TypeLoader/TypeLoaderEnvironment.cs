@@ -647,10 +647,19 @@ namespace Internal.Runtime.TypeLoader
             {
                 hasInstantiationDeterminedSize = false;
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                // TODO, Add logic which uses type loader to identify which types are affected by loading the 
-                // universal generic type, and checking its size. At this time, the type loader cannot correctly
-                // compute sizes of generic types that are instantiated over UniversalCanon
-                Environment.FailFast("Unable to determine if a generic has an instantiation determined size.");
+                MetadataType typeDefinition = type.GetTypeDefinition() as MetadataType;
+                if (typeDefinition != null)
+                {
+                    TypeDesc [] universalCanonInstantiation = new TypeDesc[type.Instantiation.Length];
+                    TypeSystemContext context = type.Context;
+                    TypeDesc universalCanonType = context.UniversalCanonType;
+                    for (int i = 0 ; i < universalCanonInstantiation.Length; i++)
+                         universalCanonInstantiation[i] = universalCanonType;
+
+                    DefType universalCanonForm = typeDefinition.MakeInstantiatedType(universalCanonInstantiation);
+                    hasInstantiationDeterminedSize = universalCanonForm.InstanceFieldSize.IsIndeterminate;
+                    return true;
+                }
 #endif
                 return false;
             }
