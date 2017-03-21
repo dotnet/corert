@@ -1468,6 +1468,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // This method binds to the specified moniker.
         //====================================================================
+#if false // Bug 398140: Shared library is broken by addition of non-existent import BindMoniker
         public static Object BindToMoniker(String monikerName)
         {
             Object obj = null;
@@ -1481,6 +1482,7 @@ namespace System.Runtime.InteropServices
             ExternalInterop.BindMoniker(pmoniker, 0, ref Interop.COM.IID_IUnknown, out obj);
             return obj;
         }
+#endif // Bug 398140: Shared library is broken by addition of non-existent import BindMoniker
 
 #if ENABLE_WINRT
         public static Type GetTypeFromCLSID(Guid clsid)
