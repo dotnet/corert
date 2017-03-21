@@ -402,6 +402,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\CallInterceptor.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CanonicallyEquivalentEntryLocator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ConstrainedCallSupport.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\DebugFuncEval.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\DispatchCellInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
