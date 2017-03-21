@@ -197,7 +197,7 @@ namespace Internal.Runtime.TypeLoader
                         }
 
                         Debug.Assert(
-                            (kind != CanonicalFormKind.Universal && candidateTemplate != candidateTemplate.ConvertToCanonForm(kind)) ||
+                            (kind != CanonicalFormKind.Universal) ||
                             (kind == CanonicalFormKind.Universal && candidateTemplate == candidateTemplate.ConvertToCanonForm(kind)));
 
                         nativeLayoutInfoModule = moduleInfo;
@@ -275,7 +275,7 @@ namespace Internal.Runtime.TypeLoader
                         }
 
                         Debug.Assert(
-                            (kind != CanonicalFormKind.Universal && candidateTemplate != candidateTemplate.GetCanonMethodTarget(kind)) ||
+                            (kind != CanonicalFormKind.Universal) ||
                             (kind == CanonicalFormKind.Universal && candidateTemplate == candidateTemplate.GetCanonMethodTarget(kind)));
 
                         return candidateTemplate;

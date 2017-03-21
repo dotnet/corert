@@ -88,16 +88,19 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (type.IsDefType && ((DefType)type).ContainsGCPointers)
+            if (!type.IsCanonicalSubtype(CanonicalFormKind.Universal))
             {
-                flags |= (UInt16)EETypeFlags.HasPointersFlag;
-            }
-            else if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType && ((DefType)elementType).ContainsGCPointers) || elementType.IsGCPointer)
+                if (type.IsDefType && ((DefType)type).ContainsGCPointers)
                 {
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;
+                }
+                else if (type.IsArray)
+                {
+                    var elementType = ((ArrayType)type).ElementType;
+                    if ((elementType.IsValueType && ((DefType)elementType).ContainsGCPointers) || elementType.IsGCPointer)
+                    {
+                        flags |= (UInt16)EETypeFlags.HasPointersFlag;
+                    }
                 }
             }
 

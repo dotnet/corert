@@ -43,7 +43,16 @@ namespace Internal.Runtime.TypeLoader
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
+            if ((type == UniversalCanonType)
+#if SUPPORT_JIT
+                || (type.IsRuntimeDeterminedType && (((RuntimeDeterminedType)type).CanonicalType == UniversalCanonType)))
+#else
+                )
+#endif
+            {
+                return UniversalCanonLayoutAlgorithm.Instance;
+            }
+            else if (type.RetrieveRuntimeTypeHandleIfPossible())
             {
                 // If the type is already constructed, use the NoMetadataFieldLayoutAlgorithm.
                 // its more efficient than loading from native layout or metadata.
