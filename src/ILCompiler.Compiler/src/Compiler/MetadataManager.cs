@@ -185,7 +185,10 @@ namespace ILCompiler
         {
             var signature = method.Signature;
 
+            // ----------------------------------------------------------------
             // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
+            // ----------------------------------------------------------------
+
             if (signature.ReturnType.IsPointer)
                 return false;
 
@@ -193,7 +196,10 @@ namespace ILCompiler
                 if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
                     return false;
 
+            // ----------------------------------------------------------------
             // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
+            // ----------------------------------------------------------------
+
             if (signature.ReturnType.IsFunctionPointer)
                 return false;
 
@@ -201,11 +207,31 @@ namespace ILCompiler
                 if (signature[i].IsFunctionPointer)
                     return false;
 
+            // ----------------------------------------------------------------
             // Methods with ByRef returns can't be reflection invoked
+            // ----------------------------------------------------------------
+
             if (signature.ReturnType.IsByRef)
                 return false;
 
+            // ----------------------------------------------------------------
+            // Methods that return ByRef-like types or take them by reference can't be reflection invoked
+            // ----------------------------------------------------------------
+
+            if (signature.ReturnType.IsDefType && ((DefType)signature.ReturnType).IsByRefLike)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                ByRefType paramType = signature[i] as ByRefType;
+                if (paramType != null && paramType.ParameterType.IsDefType && ((DefType)paramType.ParameterType).IsByRefLike)
+                    return false;
+            }
+
+            // ----------------------------------------------------------------
             // Delegate construction is only allowed through specific IL sequences
+            // ----------------------------------------------------------------
+
             if (method.OwningType.IsDelegate && method.IsConstructor)
                 return false;
 
