@@ -147,7 +147,15 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
-                        return new CanonicalEETypeNode(this, type);
+                        if (Target.Abi == TargetAbi.CoreRT)
+                        {
+                            return new CanonicalEETypeNode(this, type);
+                        }
+                        else
+                        {
+                            // Remove this once we stop using the STS dependency analysis.
+                            return new NecessaryCanonicalEETypeNode(this, type);
+                        }
                     }
                     else
                     {
@@ -346,7 +354,7 @@ namespace ILCompiler.DependencyAnalysis
             
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
             {
-                if (CompilationModuleGroup.ShouldProduceFullType(type))
+                if (CompilationModuleGroup.ShouldProduceFullVTable(type))
                     return new EagerlyBuiltVTableSliceNode(type);
                 else
                     return new LazilyBuiltVTableSliceNode(type);
@@ -394,7 +402,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
-            if (_compilationModuleGroup.ShouldProduceFullType(type))
+            if (_compilationModuleGroup.ShouldPromoteToFullType(type))
             {
                 return ConstructedTypeSymbol(type);
             }
