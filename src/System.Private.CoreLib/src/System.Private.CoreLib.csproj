@@ -329,6 +329,9 @@
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
+    <Compile Include="System\Diagnostics\StackFrame.cs" />
+    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
+    <Compile Include="System\Diagnostics\StackTrace.cs" />
     <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
