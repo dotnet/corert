@@ -112,9 +112,11 @@ namespace System.Runtime.InteropServices
         [SuppressUnmanagedCodeSecurity]
         internal static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
 
+#if false // Bug 398140: Shared library is broken by addition of non-existent import BindMoniker
         [DllImport(Libraries.CORE_COM, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
+#endif // Bug 398140: Shared library is broken by addition of non-existent import BindMoniker
 
         [DllImport(Libraries.CORE_COM_AUT)]
         [McgGeneratedNativeCallCodeAttribute]

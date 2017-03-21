@@ -37,7 +37,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.Reflection.Runtime.BindingFlagSupport.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
 
             if (binder == null)
                 binder = DefaultBinder;
@@ -144,7 +144,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
 
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                    return System.Reflection.Runtime.BindingFlagSupport.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
 
                 if (binder == null)
                     binder = DefaultBinder;

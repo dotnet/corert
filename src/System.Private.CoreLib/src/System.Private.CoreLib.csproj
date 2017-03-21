@@ -268,6 +268,8 @@
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
+    <Compile Include="System\DefaultBinder.cs" />
+    <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
     <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\FormatProvider.cs" />
@@ -324,6 +326,9 @@
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
+    <Compile Include="System\Diagnostics\StackFrame.cs" />
+    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
+    <Compile Include="System\Diagnostics\StackTrace.cs" />
     <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
