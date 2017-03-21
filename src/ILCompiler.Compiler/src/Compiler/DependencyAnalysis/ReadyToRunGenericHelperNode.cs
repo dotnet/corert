@@ -50,6 +50,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.VirtualMethodAddress((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
+                case ReadyToRunHelperId.DelegateCtor:
+                    return ((DelegateCreationInfo)target).GetLookupKind(factory);
                 default:
                     throw new NotImplementedException();
             }
@@ -107,6 +109,27 @@ namespace ILCompiler.DependencyAnalysis
                         _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
                         "Dictionary dependency") };
         }
+
+        protected void AppendLookupSignatureMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            if (_id != ReadyToRunHelperId.DelegateCtor)
+            {
+                _lookupSignature.AppendMangledName(nameMangler, sb);
+            }
+            else
+            {
+                var createInfo = (DelegateCreationInfo)_target;
+                sb.Append("__DelegateCtor_");
+                createInfo.Constructor.AppendMangledName(nameMangler, sb);
+                sb.Append("__");
+                sb.Append(nameMangler.GetMangledMethodName(createInfo.TargetMethod));
+                if (createInfo.Thunk != null)
+                {
+                    sb.Append("__");
+                    createInfo.Thunk.AppendMangledName(nameMangler, sb);
+                }
+            }
+        }
     }
 
     public partial class ReadyToRunGenericLookupFromDictionaryNode : ReadyToRunGenericHelperNode
@@ -125,7 +148,7 @@ namespace ILCompiler.DependencyAnalysis
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
             sb.Append("__GenericLookupFromDict_").Append(mangledContextName).Append("_");
-            _lookupSignature.AppendMangledName(nameMangler, sb);
+            AppendLookupSignatureMangledName(nameMangler, sb);
         }
     }
 
@@ -145,7 +168,7 @@ namespace ILCompiler.DependencyAnalysis
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
             sb.Append("__GenericLookupFromType_").Append(mangledContextName).Append("_");
-            _lookupSignature.AppendMangledName(nameMangler, sb);
+            AppendLookupSignatureMangledName(nameMangler, sb);
         }
     }
 }

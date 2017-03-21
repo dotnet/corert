@@ -160,7 +160,16 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
                 return dependencyList;
             }
-            else
+            else if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                var info = (DelegateCreationInfo)_target;
+                if (info.TargetNeedsVTableLookup)
+                {
+                    DependencyList dependencyList = new DependencyList();
+                    dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
+                    return dependencyList;
+                }
+            }
             {
                 return null;
             }

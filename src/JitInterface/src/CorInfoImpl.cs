@@ -1394,7 +1394,11 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
+                        object helperArg;
+                        if (helperId != ReadyToRunHelperId.DelegateCtor)
+                            helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
+                        else
+                            helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
                         ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
@@ -1407,14 +1411,56 @@ namespace Internal.JitInterface
 
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
         {
-            MethodDesc method = HandleToObject(pTargetMethod.hMethod);
-            TypeDesc type = HandleToObject(delegateType);
+            // This is just a compat thunk to make current RyuJIT be able to talk to the richer API surface.
+            CORINFO_LOOKUP lookup = default(CORINFO_LOOKUP);
+            getReadyToRunDelegateCtorHelper(ref pTargetMethod, delegateType, ref lookup, isLdvirtftn: false);
+            Debug.Assert(!lookup.lookupKind.needsRuntimeLookup);
+            pLookup = lookup.constLookup;
+        }
 
-            // TODO: we need a flag whether to do virtual resolution
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup, bool isLdvirtftn)
+        {
+            // TODO: maybe instead of the isLdvirtftn flag, RyuJIT should just populate pTargetMethod.tokenType with a flag
+            // that says the token comes from a ldvirtftn...
 
-            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method, followVirtualDispatch: true);
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_LOOKUP* tmp = &pLookup)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, sizeof(CORINFO_LOOKUP));
+#endif
 
-            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+            MethodDesc targetMethod = HandleToObject(pTargetMethod.hMethod);
+            TypeDesc delegateTypeDesc = HandleToObject(delegateType);
+
+            if (targetMethod.IsSharedByGenericInstantiations)
+            {
+                // If the method is not exact, fetch it as a runtime determined method.
+                targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
+            }
+
+            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, isLdvirtftn);
+
+            if (delegateInfo.NeedsRuntimeLookup)
+            {
+                pLookup.lookupKind.needsRuntimeLookup = true;
+
+                MethodDesc contextMethod = methodFromContext(pTargetMethod.tokenContext);
+
+                // TODO: Sergey, I would expect we aborted inlining already. If that's not the case,
+                // the best we can do is a `return` at this point. We can't compute a runtime lookup
+                // in inlined methods.
+                Debug.Assert(contextMethod == MethodBeingCompiled);
+                
+                pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
+                pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+            }
+            else
+            {
+                pLookup.lookupKind.needsRuntimeLookup = false;
+                pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+            }
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)

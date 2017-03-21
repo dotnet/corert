@@ -14,6 +14,14 @@ namespace ILCompiler.DependencyAnalysis
 {
     partial class ReadyToRunGenericHelperNode
     {
+        protected Register GetContextRegister(ref /* readonly */ X64Emitter encoder)
+        {
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+                return encoder.TargetRegister.Arg2;
+            else
+                return encoder.TargetRegister.Arg0;
+        }
+
         protected void EmitDictionaryLookup(NodeFactory factory, ref X64Emitter encoder, Register context, Register result, GenericLookupResult lookup, bool relocsOnly)
         {
             // INVARIANT: must not trash context register
@@ -34,13 +42,17 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override void EmitCode(NodeFactory factory, ref X64Emitter encoder, bool relocsOnly)
         {
-            // First load the generic context into Arg0.
+            // First load the generic context into the context register.
             EmitLoadGenericContext(factory, ref encoder, relocsOnly);
+
+            Register contextRegister = GetContextRegister(ref encoder);
 
             switch (_id)
             {
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
+                        Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
+
                         MetadataType target = (MetadataType)_target;
 
                         if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
@@ -69,6 +81,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetGCStaticBase:
                     {
+                        Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
+
                         MetadataType target = (MetadataType)_target;
 
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
@@ -103,6 +117,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
+                        Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
+
                         MetadataType target = (MetadataType)_target;
 
                         // Look up the index cell
@@ -140,6 +156,33 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
+                case ReadyToRunHelperId.DelegateCtor:
+                    {
+                        // This is a weird helper. Codegen populated Arg0 and Arg1 with the values that the constructor
+                        // method expects. Codegen also passed us the generic context in Arg2.
+                        // We now need to load the delegate target method into Arg2 (using a dictionary lookup)
+                        // and the optional 4th parameter, and call the ctor.
+
+                        Debug.Assert(contextRegister == encoder.TargetRegister.Arg2);
+
+                        var target = (DelegateCreationInfo)_target;
+
+                        EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, _lookupSignature, relocsOnly);
+
+                        if (target.Thunk != null)
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 3);
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg3, target.Thunk);
+                        }
+                        else
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 2);
+                        }
+
+                        encoder.EmitJMP(target.Constructor);
+                    }
+                    break;
+
                 // These are all simple: just get the thing from the dictionary and we're done
                 case ReadyToRunHelperId.TypeHandle:
                 case ReadyToRunHelperId.MethodHandle:
@@ -149,7 +192,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                 case ReadyToRunHelperId.MethodEntry:
                     {
-                        EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
+                        EmitDictionaryLookup(factory, ref encoder, contextRegister, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();
                     }
                     break;
@@ -160,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual void EmitLoadGenericContext(NodeFactory factory, ref X64Emitter encoder, bool relocsOnly)
         {
-            // Assume generic context is already loaded in Arg0.
+            // Assume generic context is already loaded in the context register.
         }
     }
 
@@ -168,7 +211,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitLoadGenericContext(NodeFactory factory, ref X64Emitter encoder, bool relocsOnly)
         {
-            // We start with Arg0 pointing to the EEType
+            // We start with context register pointing to the EEType
+            Register contextRegister = GetContextRegister(ref encoder);
 
             // Locate the VTable slot that points to the dictionary
             int vtableSlot = 0;
@@ -182,8 +226,8 @@ namespace ILCompiler.DependencyAnalysis
             int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
 
             // Load the dictionary pointer from the VTable
-            AddrMode loadDictionary = new AddrMode(encoder.TargetRegister.Arg0, null, slotOffset, 0, AddrModeSize.Int64);
-            encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadDictionary);
+            AddrMode loadDictionary = new AddrMode(contextRegister, null, slotOffset, 0, AddrModeSize.Int64);
+            encoder.EmitMOV(contextRegister, ref loadDictionary);
         }
     }
 }

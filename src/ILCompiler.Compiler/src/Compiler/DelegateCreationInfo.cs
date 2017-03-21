@@ -21,7 +21,6 @@ namespace ILCompiler
         private enum TargetKind
         {
             Direct,
-            ShadowMethod,
             FatPointer,
             InterfaceDispatch,
             VTableLookup,
@@ -42,35 +41,94 @@ namespace ILCompiler
             get;
         }
 
+        private bool TargetMethodIsUnboxingThunk
+        {
+            get
+            {
+                return TargetMethod.OwningType.IsValueType && !TargetMethod.Signature.IsStatic;
+            }
+        }
+
         public bool TargetNeedsVTableLookup => _targetKind == TargetKind.VTableLookup;
 
+        public bool NeedsRuntimeLookup
+        {
+            get
+            {
+                switch (_targetKind)
+                {
+                    case TargetKind.Direct:
+                    case TargetKind.VTableLookup:
+                        return false;
+
+                    case TargetKind.FatPointer:
+                    case TargetKind.InterfaceDispatch:
+                        return TargetMethod.IsRuntimeDeterminedExactMethod;
+
+                    default:
+                        Debug.Assert(false);
+                        return false;
+                }
+            }
+        }
+
         /// <summary>
-        /// Gets the node representing the target method of the delegate.
+        /// Gets the node representing the target method of the delegate if no runtime lookup is needed.
         /// </summary>
         public ISymbolNode GetTargetNode(NodeFactory factory)
         {
-            bool useUnboxingThunk = TargetMethod.OwningType.IsValueType && !TargetMethod.Signature.IsStatic;
-            MethodDesc canonTargetMethod = TargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            Debug.Assert(!NeedsRuntimeLookup);
+            return GetTargetNode(factory, TargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+        }
+
+        /// <summary>
+        /// Gets the node representing the target method of the delegate if runtime lookup is needed.
+        /// </summary>
+        public ISymbolNode GetTargetNode(NodeFactory factory, Instantiation typeInst, Instantiation methodInst)
+        {
+            Debug.Assert(NeedsRuntimeLookup);
+            return GetTargetNode(factory, TargetMethod.InstantiateSignature(typeInst, methodInst));
+        }
+
+        // None of the data structures that support shared generics have been ported to the JIT
+        // codebase which makes this a huge PITA. Not including the method for JIT since nobody
+        // uses it in that mode anyway.
+#if !SUPPORT_JIT
+        public GenericLookupResult GetLookupKind(NodeFactory factory)
+        {
+            Debug.Assert(NeedsRuntimeLookup);
+            switch (_targetKind)
+            {
+                case TargetKind.FatPointer:
+                    return factory.GenericLookup.MethodEntry(TargetMethod, TargetMethodIsUnboxingThunk);
+
+                case TargetKind.InterfaceDispatch:
+                    return factory.GenericLookup.VirtualMethodAddress(TargetMethod);
+
+                default:
+                    Debug.Assert(false);
+                    return null;
+            }
+        }
+#endif
+
+        private ISymbolNode GetTargetNode(NodeFactory factory, MethodDesc exactTargetMethod)
+        {
+            MethodDesc canonTargetMethod = exactTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             switch (_targetKind)
             {
                 case TargetKind.Direct:
-                    return factory.MethodEntrypoint(TargetMethod, useUnboxingThunk);
+                    return factory.MethodEntrypoint(exactTargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.FatPointer:
-                    if (TargetMethod != canonTargetMethod)
-                        return factory.FatFunctionPointer(TargetMethod, useUnboxingThunk);
+                    if (exactTargetMethod != canonTargetMethod)
+                        return factory.FatFunctionPointer(exactTargetMethod, TargetMethodIsUnboxingThunk);
                     else
-                        return factory.MethodEntrypoint(TargetMethod, useUnboxingThunk);
+                        return factory.MethodEntrypoint(exactTargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.InterfaceDispatch:
-                    return factory.InterfaceDispatchCell(TargetMethod);
-
-                case TargetKind.ShadowMethod:
-                    if (TargetMethod != canonTargetMethod)
-                        return factory.ShadowConcreteMethod(TargetMethod, useUnboxingThunk);
-                    else
-                        return factory.MethodEntrypoint(TargetMethod, useUnboxingThunk);
+                    return factory.InterfaceDispatchCell(exactTargetMethod);
 
                 case TargetKind.VTableLookup:
                     Debug.Assert(false, "Need to do runtime lookup");
@@ -209,7 +267,7 @@ namespace ILCompiler
                             kind = TargetKind.VTableLookup;
                     }
                     else
-                        kind = TargetKind.ShadowMethod;
+                        kind = TargetKind.Direct;
                 }
 
                 return new DelegateCreationInfo(

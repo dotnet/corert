@@ -8,6 +8,8 @@ using System.Diagnostics;
 using ILCompiler.DependencyAnalysis.X64;
 using Internal.TypeSystem;
 
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -184,7 +186,14 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.GetTargetNode(factory));
+                            int delta = 0;
+                            ISymbolNode targetMethodNode = target.GetTargetNode(factory);
+                            if (targetMethodNode is IFatFunctionPointerNode)
+                            {
+                                delta = FatFunctionPointerConstants.Offset;
+                            }
+
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.GetTargetNode(factory), delta);
                         }
 
                         if (target.Thunk != null)
