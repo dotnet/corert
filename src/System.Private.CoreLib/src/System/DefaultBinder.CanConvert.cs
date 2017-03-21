@@ -2,26 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
+using System.Reflection;
 
-using Internal.LowLevelLinq;
-
-namespace System.Reflection.Runtime.BindingFlagSupport
+namespace System
 {
-    internal sealed partial class DefaultBinder : Binder
+    public sealed partial class DefaultBinder : Binder
     {
-
-        // CanConvertPrimitive
+        // CanChangePrimitive
         // This will determine if the source can be converted to the target type
-        private static bool CanConvertPrimitive(Type source, Type target)
+        private static bool CanChangePrimitive(Type source, Type target)
         {
             return CanPrimitiveWiden(source, target);
         }
 
-        // CanConvertPrimitiveObjectToType
-        private static bool CanConvertPrimitiveObjectToType(Object source, Type type)
+        // CanChangePrimitiveObjectToType
+        private static bool CanChangePrimitiveObjectToType(Object source, Type type)
         {
-            return CanConvertPrimitive(source.GetType(), type);
+            return CanPrimitiveWiden(source.GetType(), type);
         }
 
         private static bool CanPrimitiveWiden(Type source, Type target)

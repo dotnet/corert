@@ -125,8 +125,6 @@ namespace Internal.Reflection.Augments
         public abstract MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m);
         public abstract PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p);
 
-        public abstract Binder CreateDefaultBinder();
-
         public abstract object ActivatorCreateInstance(Type type, bool nonPublic);
         public abstract object ActivatorCreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes);
 
