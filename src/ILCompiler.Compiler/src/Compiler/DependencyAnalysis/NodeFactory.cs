@@ -352,9 +352,16 @@ namespace ILCompiler.DependencyAnalysis
                     return new LazilyBuiltVTableSliceNode(type);
             });
 
-            _methodGenericDictionaries = new NodeCache<MethodDesc, GenericDictionaryNode>(method =>
+            _methodGenericDictionaries = new NodeCache<MethodDesc, ISymbolNode>(method =>
             {
-                return new MethodGenericDictionaryNode(method);
+                if (CompilationModuleGroup.ContainsMethod(method))
+                {
+                    return new MethodGenericDictionaryNode(method);
+                }
+                else
+                {
+                    return new ImportedMethodGenericDictionaryNode(this, method);
+                }
             });
 
             _typeGenericDictionaries = new NodeCache<TypeDesc, GenericDictionaryNode>(type =>
@@ -560,8 +567,8 @@ namespace ILCompiler.DependencyAnalysis
             return _vTableNodes.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, GenericDictionaryNode> _methodGenericDictionaries;
-        public GenericDictionaryNode MethodGenericDictionary(MethodDesc method)
+        private NodeCache<MethodDesc, ISymbolNode> _methodGenericDictionaries;
+        public ISymbolNode MethodGenericDictionary(MethodDesc method)
         {
             return _methodGenericDictionaries.GetOrAdd(method);
         }

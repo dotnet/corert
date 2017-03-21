@@ -49,6 +49,12 @@ namespace ILCompiler
         /// </summary>
         public abstract bool ShouldReferenceThroughImportTable(TypeDesc type);
 
+        /// <summary>
+        /// If true, there may be type system constructs that will not be linked into the same module as the current compilation and therefore
+        /// accessed through the target platform's import mechanism (ie, Import Address Table on Windows)
+        /// </summary>
+        public abstract bool CanHaveReferenceThroughImportTable { get; }
+
         private class CompilerGeneratedAssembly : ModuleDesc, IAssemblyDesc
         {
             private MetadataType _globalModuleType;

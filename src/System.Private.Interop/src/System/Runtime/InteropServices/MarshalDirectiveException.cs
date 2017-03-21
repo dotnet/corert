@@ -13,10 +13,12 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    public class MarshalDirectiveException : Exception
+    [Serializable]
+    public class MarshalDirectiveException : SystemException
     {
         public MarshalDirectiveException()
             : base(SR.Arg_MarshalDirectiveException)
@@ -34,6 +36,10 @@ namespace System.Runtime.InteropServices
             : base(message, inner)
         {
             HResult = __HResults.COR_E_MARSHALDIRECTIVE;
+        }
+
+        protected MarshalDirectiveException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }
