@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
@@ -13,9 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.MethodInfos;
-using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
 
-using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.Execution;
@@ -45,11 +42,6 @@ namespace System.Reflection.Runtime.General
                 clonedTypes[i] = types[i];
             }
             return clonedTypes;
-        }
-
-        public static bool IsRuntimeImplemented(this Type type)
-        {
-            return type is IRuntimeImplementedType;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

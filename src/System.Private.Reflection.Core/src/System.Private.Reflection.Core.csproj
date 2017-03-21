@@ -81,8 +81,6 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\ConstructorPolicies.cs" />
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.CanConvert.cs" />
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\EventPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\FieldPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />

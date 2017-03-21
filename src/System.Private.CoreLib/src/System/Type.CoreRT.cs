@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -66,12 +67,22 @@ namespace System
 
         public static bool operator !=(Type left, Type right) => !(left == right);
 
-        public static Binder DefaultBinder => s_defaultBinder ?? (s_defaultBinder = ReflectionAugments.ReflectionCoreCallbacks.CreateDefaultBinder());
+        public static Binder DefaultBinder
+        {
+            get
+            {
+                if (s_defaultBinder == null)
+                {
+                    DefaultBinder binder = new DefaultBinder();
+                    Interlocked.CompareExchange<Binder>(ref s_defaultBinder, binder, null);
+                }
+                return s_defaultBinder;
+            }
+        }
+
         private static volatile Binder s_defaultBinder;
 
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsRuntimeImplemented() => this is IRuntimeImplementedType;
+        public bool IsRuntimeImplemented() => this is IRuntimeImplementedType; // Not an api but needs to be public because of Reflection.Core/CoreLib divide.
     }
 }
 

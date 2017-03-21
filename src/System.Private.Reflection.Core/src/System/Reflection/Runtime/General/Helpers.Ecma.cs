@@ -12,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.Assemblies;
-using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;

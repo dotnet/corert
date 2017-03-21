@@ -2254,4 +2254,19 @@
   <data name="Delegate_GarbageCollected" xml:space="preserve">
     <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
   </data>
+  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
+    <value>Ambiguous match found.</value>
+  </data>
+  <data name="NotSupported_ChangeType" xml:space="preserve">
+    <value>ChangeType operation is not supported.</value>
+  </data>
+  <data name="Arg_EmptyArray" xml:space="preserve">
+    <value>Array may not be empty.</value>
+  </data>
+  <data name="MissingMember" xml:space="preserve">
+    <value>Member not found.</value>
+  </data>
+  <data name="MissingField" xml:space="preserve">
+    <value>Field not found.</value>
+  </data>
 </root>

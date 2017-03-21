@@ -149,11 +149,6 @@ namespace System.Reflection.Runtime.General
             return p.GetImplicitlyOverriddenBaseClassMember();
         }
 
-        public sealed override Binder CreateDefaultBinder()
-        {
-            return new DefaultBinder();
-        }
-
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
