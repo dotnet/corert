@@ -687,7 +687,7 @@ namespace Internal.Runtime.TypeLoader
                             {
                                 if (Method.IsCanonicalMethod(CanonicalFormKind.Specific) &&
                                     !NeedsDictionaryParameterToCallCanonicalVersion(Method) &&
-                                    !TypeLoaderEnvironment.MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(
+                                    !UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(
                                         Method.GetTypicalMethodDefinition().Signature))
                                 {
                                     _exactFunctionPointer = addressToUse;

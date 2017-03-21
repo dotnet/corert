@@ -615,7 +615,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        void ComputeValueTypeFieldPadding()
+        protected virtual void ComputeValueTypeFieldPadding()
         {
             // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding. 
             // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.

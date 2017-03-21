@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime;
 using System.Reflection.Runtime.General;
 
+using Internal.Runtime;
 using Internal.Runtime.TypeLoader;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -320,10 +321,10 @@ namespace Internal.Runtime.TypeLoader
         {
             // Compute parameters dependent on generic instantiation for their layout
             parametersWithGenericDependentLayout = new bool[methodSignature.Length + 1];
-            parametersWithGenericDependentLayout[0] = TypeHasLayoutDependentOnGenericInstantiation(methodSignature.ReturnType, HasVarsInvestigationLevel.Parameter);
+            parametersWithGenericDependentLayout[0] = UniversalGenericParameterLayout.IsLayoutDependentOnGenericInstantiation(methodSignature.ReturnType);
             for (int i = 0; i < methodSignature.Length; i++)
             {
-                parametersWithGenericDependentLayout[i + 1] = TypeHasLayoutDependentOnGenericInstantiation(methodSignature[i], HasVarsInvestigationLevel.Parameter);
+                parametersWithGenericDependentLayout[i + 1] = UniversalGenericParameterLayout.IsLayoutDependentOnGenericInstantiation(methodSignature[i]);
             }
 
             // Compute hasThis-ness
@@ -342,69 +343,6 @@ namespace Internal.Runtime.TypeLoader
         }
 #endif
 
-        /// <summary>
-        /// IF THESE SEMANTICS EVER CHANGE UPDATE THE LOGIC WHICH DEFINES THIS BEHAVIOR IN 
-        /// THE DYNAMIC TYPE LOADER AS WELL AS THE COMPILER. 
-        ///
-        /// Parameter's are considered to have type layout dependent on their generic instantiation
-        /// if the type of the parameter in its signature is a type variable, or if the type is a generic 
-        /// structure which meets 2 characteristics:
-        /// 1. Structure size/layout is affected by the size/layout of one or more of its generic parameters
-        /// 2. One or more of the generic parameters is a type variable, or a generic structure which also recursively
-        ///    would satisfy constraint 2. (Note, that in the recursion case, whether or not the structure is affected
-        ///    by the size/layout of its generic parameters is not investigated.)
-        ///    
-        /// Examples parameter types, and behavior.
-        /// 
-        /// T = true
-        /// List[T] = false
-        /// StructNotDependentOnArgsForSize[T] = false
-        /// GenStructDependencyOnArgsForSize[T] = true
-        /// StructNotDependentOnArgsForSize[GenStructDependencyOnArgsForSize[T]] = true
-        /// StructNotDependentOnArgsForSize[GenStructDependencyOnArgsForSize[List[T]]]] = false
-        /// 
-        /// Example non-parameter type behavior
-        /// T = true
-        /// List[T] = false
-        /// StructNotDependentOnArgsForSize[T] = *true*
-        /// GenStructDependencyOnArgsForSize[T] = true
-        /// StructNotDependentOnArgsForSize[GenStructDependencyOnArgsForSize[T]] = true
-        /// StructNotDependentOnArgsForSize[GenStructDependencyOnArgsForSize[List[T]]]] = false
-        /// </summary>
-        private static bool TypeHasLayoutDependentOnGenericInstantiation(TypeDesc type, HasVarsInvestigationLevel investigationLevel)
-        {
-            if (type is SignatureVariable)
-            {
-                return true;
-            }
-            else if (type.IsDefType && type.HasInstantiation && type.IsValueType)
-            {
-                foreach (TypeDesc valueTypeInstantiationParam in type.Instantiation)
-                {
-                    if (TypeHasLayoutDependentOnGenericInstantiation(valueTypeInstantiationParam, HasVarsInvestigationLevel.NotParameter))
-                    {
-                        if (investigationLevel == HasVarsInvestigationLevel.Parameter)
-                        {
-                            bool needsCallingConventionConverter;
-                            if (!TypeLoaderEnvironment.Instance.TryComputeHasInstantiationDeterminedSize((DefType)type, out needsCallingConventionConverter))
-                                Environment.FailFast("Unable to setup calling convention converter correctly");
-                            return needsCallingConventionConverter;
-                        }
-                        else
-                        {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                // All other forms of type do not change their shape dependent on signature variables.
-                return false;
-            }
-        }
-
         internal bool MethodSignatureHasVarsNeedingCallingConventionConverter(TypeSystemContext context, RuntimeSignature methodSig)
         {
             if (methodSig.IsNativeLayoutSignature)
@@ -413,7 +351,7 @@ namespace Internal.Runtime.TypeLoader
             {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
                 var sig = TypeSystemSigFromRuntimeSignature(context, methodSig);
-                return MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(sig);
+                return UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(sig);
 #else
                 Environment.FailFast("Cannot parse signature");
                 return false;
@@ -445,21 +383,6 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        public static bool MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(TypeSystem.MethodSignature methodSignature)
-        {
-            if (TypeHasLayoutDependentOnGenericInstantiation(methodSignature.ReturnType, HasVarsInvestigationLevel.Parameter))
-                return true;
-
-            for (int i = 0; i < methodSignature.Length; i++)
-            {
-                if (TypeHasLayoutDependentOnGenericInstantiation(methodSignature[i], HasVarsInvestigationLevel.Parameter))
-                    return true;
-            }
-
-            return false;
-        }
-
-
         #region Private Helpers
         private enum HasVarsInvestigationLevel
         {
@@ -471,7 +394,8 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// IF THESE SEMANTICS EVER CHANGE UPDATE THE LOGIC WHICH DEFINES THIS BEHAVIOR IN 
         /// THE DYNAMIC TYPE LOADER AS WELL AS THE COMPILER. 
-        ///
+        /// (There is a version of this in UniversalGenericParameterLayout.cs that must be kept in sync with this.)
+        /// 
         /// Parameter's are considered to have type layout dependent on their generic instantiation
         /// if the type of the parameter in its signature is a type variable, or if the type is a generic 
         /// structure which meets 2 characteristics:
