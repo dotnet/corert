@@ -173,17 +173,19 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class MethodEntryGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
+        private bool _isUnboxingThunk;
 
-        public MethodEntryGenericLookupResult(MethodDesc method)
+        public MethodEntryGenericLookupResult(MethodDesc method, bool isUnboxingThunk)
         {
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             _method = method;
+            _isUnboxingThunk = isUnboxingThunk;
         }
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return factory.FatFunctionPointer(instantiatedMethod);
+            return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
         }
 
         public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
@@ -193,7 +195,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("MethodEntry_");
+            if (!_isUnboxingThunk)
+                sb.Append("MethodEntry_");
+            else
+                sb.Append("UnboxMethodEntry_");
+
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
