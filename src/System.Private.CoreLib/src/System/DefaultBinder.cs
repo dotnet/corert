@@ -211,7 +211,7 @@ namespace System
                         continue;
 
                     // the type is Object, so it will match everything
-                    if (pCls == CommonRuntimeTypes.Object)
+                    if (pCls == typeof(object))
                         continue;
 
                     // now do a "classic" type check
@@ -468,7 +468,7 @@ namespace System
                             continue;
                         }
                     }
-                    if (pCls == CommonRuntimeTypes.Object)
+                    if (pCls == typeof(object))
                     {
                         candidates[CurIdx++] = candidates[i];
                         continue;
@@ -554,7 +554,7 @@ namespace System
                     Type pCls = par[j].ParameterType;
                     if (pCls == types[j])
                         continue;
-                    if (pCls == CommonRuntimeTypes.Object)
+                    if (pCls == typeof(object))
                         continue;
                     if (pCls.IsPrimitive)
                     {
@@ -642,7 +642,7 @@ namespace System
                         // If the classes  exactly match continue
                         if (pCls == indexes[j])
                             continue;
-                        if (pCls == CommonRuntimeTypes.Object)
+                        if (pCls == typeof(object))
                             continue;
 
                         if (pCls.IsPrimitive)
