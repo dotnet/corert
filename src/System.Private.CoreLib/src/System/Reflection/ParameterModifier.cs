@@ -4,28 +4,29 @@
 
 namespace System.Reflection
 {
-    public partial struct ParameterModifier
+    [Serializable]
+    public struct ParameterModifier
     {
         public ParameterModifier(int parameterCount)
         {
             if (parameterCount <= 0)
                 throw new ArgumentException(SR.Arg_ParmArraySize);
 
-            _byRef = new bool[parameterCount];
+            IsByRefArray = new bool[parameterCount];
         }
 
         public bool this[int index]
         {
             get
             {
-                return _byRef[index];
+                return IsByRefArray[index];
             }
             set
             {
-                _byRef[index] = value;
+                IsByRefArray[index] = value;
             }
         }
 
-        private readonly bool[] _byRef;
+        internal bool[] IsByRefArray { get; }
     }
 }

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
 using System;
 using System.Runtime.Serialization;
 using System.Globalization;
@@ -45,17 +43,17 @@ namespace System.Reflection
         #endregion
 
         #region Private Static Members
-        private static void GetSerializationInfo(SerializationInfo info, String name, Type reflectedClass, String signature, MemberTypes type)
+        private static void GetSerializationInfo(SerializationInfo info, string name, Type reflectedClass, string signature, MemberTypes type)
         {
             GetSerializationInfo(info, name, reflectedClass, signature, null, type, null);
         }
 
         private static void GetSerializationInfo(
             SerializationInfo info,
-            String name,
+            string name,
             Type reflectedClass,
-            String signature,
-            String signature2,
+            string signature,
+            string signature2,
             MemberTypes type,
             Type[] genericArguments)
         {
@@ -63,29 +61,29 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
-            String assemblyName = reflectedClass.Module.Assembly.FullName;
-            String typeName = reflectedClass.FullName;
+            string assemblyName = reflectedClass.Module.Assembly.FullName;
+            string typeName = reflectedClass.FullName;
 
             info.SetType(typeof(MemberInfoSerializationHolder));
-            info.AddValue("Name", name, typeof(String));
-            info.AddValue("AssemblyName", assemblyName, typeof(String));
-            info.AddValue("ClassName", typeName, typeof(String));
-            info.AddValue("Signature", signature, typeof(String));
-            info.AddValue("Signature2", signature2, typeof(String));
+            info.AddValue("Name", name, typeof(string));
+            info.AddValue("AssemblyName", assemblyName, typeof(string));
+            info.AddValue("ClassName", typeName, typeof(string));
+            info.AddValue("Signature", signature, typeof(string));
+            info.AddValue("Signature2", signature2, typeof(string));
             info.AddValue("MemberType", (int)type);
             info.AddValue("GenericArguments", genericArguments, typeof(Type[]));
         }
         #endregion
 
         #region Private Data Members
-        private String m_memberName;
+        private string m_memberName;
         private Type m_reflectedType;
         // m_signature stores the ToString() representation of the member which is sometimes ambiguous.
         // Mulitple overloads of the same methods or properties can identical ToString().
         // m_signature2 stores the SerializationToString() representation which should be unique for each member.
         // It is only written and used by post 4.0 CLR versions.
-        private String m_signature;
-        private String m_signature2;
+        private string m_signature;
+        private string m_signature2;
         private MemberTypes m_memberType;
         private SerializationInfo m_info;
         #endregion
@@ -98,8 +96,8 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
-            String assemblyName = info.GetString("AssemblyName");
-            String typeName = info.GetString("ClassName");
+            string assemblyName = info.GetString("AssemblyName");
+            string typeName = info.GetString("ClassName");
 
             if (assemblyName == null || typeName == null)
                 throw new SerializationException(SR.Serialization_InsufficientState);
@@ -123,7 +121,7 @@ namespace System.Reflection
         #endregion
 
         #region IObjectReference
-        public virtual Object GetRealObject(StreamingContext context)
+        public virtual object GetRealObject(StreamingContext context)
         {
             if (m_memberName == null || m_reflectedType == null || m_memberType == 0)
                 throw new SerializationException(SR.Serialization_InsufficientState);

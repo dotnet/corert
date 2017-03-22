@@ -2,18 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** 
-**
-**
-** Purpose: Encapsulate access to a public/private key pair
-**          used to sign strong name assemblies.
-**
-**
-===========================================================*/
-
 using System.IO;
 using System.Runtime.Serialization;
 
@@ -24,7 +12,7 @@ namespace System.Reflection
     {
         private bool _keyPairExported;
         private byte[] _keyPairArray;
-        private String _keyPairContainer;
+        private string _keyPairContainer;
         private byte[] _publicKey;
 
         // Build key pair from file.
@@ -60,7 +48,7 @@ namespace System.Reflection
             _publicKey = (byte[])info.GetValue("_publicKey", typeof(byte[]));
         }
 
-        public StrongNameKeyPair(String keyPairContainer)
+        public StrongNameKeyPair(string keyPairContainer)
         {
             throw new PlatformNotSupportedException();
         }
@@ -81,6 +69,6 @@ namespace System.Reflection
             info.AddValue("_publicKey", _publicKey);
         }
 
-        void IDeserializationCallback.OnDeserialization(Object sender) { }
+        void IDeserializationCallback.OnDeserialization(object sender) { }
     }
 }

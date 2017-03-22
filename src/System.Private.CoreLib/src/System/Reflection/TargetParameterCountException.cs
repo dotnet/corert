@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-  Type:  TargetParameterCountException
-**
-==============================================================*/
-
 using System.Runtime.Serialization;
 
 namespace System.Reflection
@@ -21,13 +15,13 @@ namespace System.Reflection
             HResult = __HResults.COR_E_TARGETPARAMCOUNT;
         }
 
-        public TargetParameterCountException(String message)
+        public TargetParameterCountException(string message)
             : base(message)
         {
             HResult = __HResults.COR_E_TARGETPARAMCOUNT;
         }
 
-        public TargetParameterCountException(String message, Exception inner)
+        public TargetParameterCountException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = __HResults.COR_E_TARGETPARAMCOUNT;

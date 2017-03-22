@@ -2,55 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  ManifestResourceInfo
-**
-==============================================================*/
-
-using global::System;
-
 namespace System.Reflection
 {
     public class ManifestResourceInfo
     {
-        private Assembly _containingAssembly;
-        private String _containingFileName;
-        private ResourceLocation _resourceLocation;
-
         public ManifestResourceInfo(Assembly containingAssembly,
-                                      String containingFileName,
+                                      string containingFileName,
                                       ResourceLocation resourceLocation)
         {
-            _containingAssembly = containingAssembly;
-            _containingFileName = containingFileName;
-            _resourceLocation = resourceLocation;
+            ReferencedAssembly = containingAssembly;
+            FileName = containingFileName;
+            ResourceLocation = resourceLocation;
         }
 
-        public virtual Assembly ReferencedAssembly
-        {
-            get
-            {
-                return _containingAssembly;
-            }
-        }
-
-        public virtual String FileName
-        {
-            get
-            {
-                return _containingFileName;
-            }
-        }
-
-        public virtual ResourceLocation ResourceLocation
-        {
-            get
-            {
-                return _resourceLocation;
-            }
-        }
+        public virtual Assembly ReferencedAssembly { get; }
+        public virtual string FileName { get; }
+        public virtual ResourceLocation ResourceLocation { get; }
     }
 }
 

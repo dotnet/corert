@@ -4,6 +4,5 @@
 
 namespace System.Reflection
 {
-    // Define the delegate
-    public delegate bool MemberFilter(MemberInfo m, Object filterCriteria);
+    public delegate bool MemberFilter(MemberInfo m, object filterCriteria);
 }
