@@ -2,7 +2,7 @@
 This repo contains the .NET Core runtime optimized for AOT compilation
 
 |         |Ubuntu 14.04 |Windows |Mac OS X |
-|---------|:------:|:------:|:------:|:------:|:-------:|:-------:|
+|---------|:------:|:------:|:------:|
 |**Debug**|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_ubuntu/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_ubuntu/)|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_windows_nt/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_windows_nt/)|[![Build Status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_osx/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_osx/)|
 |**Release**|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_ubuntu/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_ubuntu/)|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_windows_nt/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_windows_nt/)|[![Build Status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_osx/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_osx/)|
 
