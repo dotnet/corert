@@ -750,6 +750,12 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
                     }
+
+                    if ((parameterType.IsDefType) && ((DefType)parameterType).IsByRefLike)
+                    {
+                        // Arrays of byref-like types are not allowed
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                 }
 
                 // Validate we're not constructing a type over a ByRef

@@ -260,13 +260,7 @@ namespace ILCompiler.DependencyAnalysis
                     return false;
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
-                    TypeDesc elementType = type.GetParameterType();
-                    if (elementType.IsByRef)
-                        return false;
-
-                    if (elementType.IsValueType && ((DefType)elementType).IsByRefLike)
-                        return false;
-
+                    // TODO: any validation for arrays?
                     break;
 
                 default:
