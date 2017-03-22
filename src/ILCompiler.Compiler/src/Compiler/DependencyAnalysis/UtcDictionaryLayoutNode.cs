@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public override IEnumerable<GenericLookupResult> Entries
+        public override ICollection<GenericLookupResult> Entries
         {
             get
             {

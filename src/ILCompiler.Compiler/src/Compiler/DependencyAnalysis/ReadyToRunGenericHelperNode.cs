@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -71,6 +71,39 @@ namespace ILCompiler.DependencyAnalysis
                 // because that's where the class constructor context is.
                 factory.GenericDictionaryLayout(_dictionaryOwner).EnsureEntry(factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target));
             }
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = new DependencyNodeCore<NodeFactory>.DependencyList();
+
+            // When methods use generic lookup nodes, make sure they're also available as template dictionary nodes
+            if (_dictionaryOwner is MethodDesc)
+            {
+                dependencies.Add(factory.NativeLayout.TemplateMethodLayout((MethodDesc)_dictionaryOwner), "Type loader template");
+                dependencies.Add(_lookupSignature.TemplateDictionaryNode(factory), "Type loader template");
+            }
+            else
+            {
+                DefType actualTemplateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, (TypeDesc)_dictionaryOwner);
+                dependencies.Add(factory.NativeLayout.TemplateTypeLayout(actualTemplateType), "Type loader template");
+                dependencies.Add(_lookupSignature.TemplateDictionaryNode(factory), "Type loader template");
+            }
+
+            if (_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase)
+            {
+                // If the type has a lazy static constructor, we also need the non-GC static base to be available as
+                // a template dictionary node.
+                TypeDesc type = (TypeDesc)_target;
+
+                if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                {
+                    GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(type);
+                    dependencies.Add(nonGcRegionLookup.TemplateDictionaryNode(factory), "Type loader template");
+                }
+            }
+
+            return dependencies;
         }
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
