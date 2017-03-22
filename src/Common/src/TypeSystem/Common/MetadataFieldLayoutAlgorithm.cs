@@ -37,10 +37,10 @@ namespace Internal.TypeSystem
                 if (fieldType.IsByRef)
                     throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
 
-                // ByRef=like instance fields on reference types are not allowed.
+                // ByRef-like instance fields on reference types are not allowed.
                 if (fieldType.IsValueType && !type.IsValueType)
                 {
-                    if (((DefType)fieldType).IsByRefLike || fieldType.IsByReferenceOfT)
+                    if (((DefType)fieldType).IsByRefLike)
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
@@ -240,12 +240,6 @@ namespace Internal.TypeSystem
         public override bool ComputeContainsGCPointers(DefType type)
         {
             bool someFieldContainsPointers = false;
-
-            if (type.IsValueType)
-            {
-                if (type.IsByReferenceOfT)
-                    return true;
-            }
 
             foreach (var field in type.GetFields())
             {
@@ -631,6 +625,9 @@ namespace Internal.TypeSystem
             if (!type.IsValueType)
                 return false;
 
+            if (type.IsByReferenceOfT)
+                return true;
+
             foreach (FieldDesc field in type.GetFields())
             {
                 if (field.IsStatic)
@@ -640,7 +637,7 @@ namespace Internal.TypeSystem
                 if (fieldType.IsValueType && !fieldType.IsPrimitive)
                 {
                     DefType fieldDefType = (DefType)fieldType;
-                    if (fieldDefType.IsByRefLike || fieldDefType.IsByReferenceOfT)
+                    if (fieldDefType.IsByRefLike)
                     {
                         return true;
                     }

@@ -309,6 +309,11 @@ namespace TypeSystemTests
             }
 
             {
+                DefType type = _context.GetWellKnownType(WellKnownType.ByReferenceOfT);
+                Assert.True(type.IsByRefLike);
+            }
+
+            {
                 DefType type = _testModule.GetType("IsByRefLike", "ByRefLikeStruct");
                 Assert.True(type.IsByRefLike);
             }

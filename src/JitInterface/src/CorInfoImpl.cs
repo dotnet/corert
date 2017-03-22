@@ -1147,7 +1147,8 @@ namespace Internal.JitInterface
                 var fieldType = field.FieldType;
                 if (fieldType.IsValueType)
                 {
-                    if (!((DefType)fieldType).ContainsGCPointers)
+                    var fieldDefType = (DefType)fieldType;
+                    if (!fieldDefType.ContainsGCPointers && !fieldDefType.IsByRefLike)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
@@ -1207,7 +1208,7 @@ namespace Internal.JitInterface
             for (int i = 0; i < ptrsCount; i++)
                 gcPtrs[i] = (byte)CorInfoGCType.TYPE_GC_NONE;
 
-            if (type.ContainsGCPointers)
+            if (type.ContainsGCPointers || type.IsByRefLike)
             {
                 result = (uint)GatherClassGCLayout(type, gcPtrs);
             }
