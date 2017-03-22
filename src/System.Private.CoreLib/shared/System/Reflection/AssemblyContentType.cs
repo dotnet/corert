@@ -4,13 +4,10 @@
 
 namespace System.Reflection
 {
-    [Flags()]
-    public enum ExceptionHandlingClauseOptions : int
+    public enum AssemblyContentType
     {
-        Clause = 0x0,
-        Filter = 0x1,
-        Finally = 0x2,
-        Fault = 0x4,
+        Default = 0,
+        WindowsRuntime = 1,
     }
 }
 

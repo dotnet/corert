@@ -4,8 +4,11 @@
 
 namespace System.Reflection
 {
-    public partial struct ParameterModifier
+    [Serializable]
+    public struct ParameterModifier
     {
+        private readonly bool[] _byRef;
+
         public ParameterModifier(int parameterCount)
         {
             if (parameterCount <= 0)
@@ -26,6 +29,8 @@ namespace System.Reflection
             }
         }
 
-        private readonly bool[] _byRef;
+#if CORECLR
+        internal bool[] IsByRefArray => _byRef;
+#endif
     }
 }
