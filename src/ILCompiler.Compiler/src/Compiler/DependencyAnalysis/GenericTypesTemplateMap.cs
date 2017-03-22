@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
 
-            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
+            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
                 if (!IsEligibleToHaveATemplate(type))
                     continue;
