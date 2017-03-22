@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 Debug.Assert(this is CanonicalDefinitionEETypeNode);
             else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                Debug.Assert(this is CanonicalEETypeNode);
+                Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
 
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
@@ -416,7 +416,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // It's only okay to touch the actual list of slots if we're in the final emission phase
             // or the vtable is not built lazily.
-            if (relocsOnly && !factory.CompilationModuleGroup.ShouldProduceFullType(declType))
+            if (relocsOnly && !factory.CompilationModuleGroup.ShouldProduceFullVTable(declType))
                 return;
 
             // Actual vtable slots follow
