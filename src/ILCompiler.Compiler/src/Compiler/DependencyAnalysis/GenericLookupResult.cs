@@ -510,7 +510,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
+            return factory.Indirection(factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType)));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -524,6 +524,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.AllocateObjectDictionarySlot(_type);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            return GenericLookupResultReferenceType.Indirect;
         }
     }
 
@@ -544,7 +549,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
             Debug.Assert(instantiatedType.IsArray);
-            return factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(instantiatedType));
+            return factory.Indirection(factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(instantiatedType)));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -558,6 +563,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.AllocateArrayDictionarySlot(_type);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            return GenericLookupResultReferenceType.Indirect;
         }
     }
 
