@@ -31,7 +31,12 @@ namespace ILCompiler
             }
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public override bool ShouldProduceFullVTable(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool ShouldPromoteToFullType(TypeDesc type)
         {
             return false;
         }
