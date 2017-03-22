@@ -398,6 +398,8 @@ namespace ILCompiler.DependencyAnalysis
                 return _methodDictionary_GenericDictionarySlots.GetOrAdd(method);
             }
 
+            public readonly NativeLayoutNotSupportedDictionarySlotNode NotSupportedDictionarySlot = new NativeLayoutNotSupportedDictionarySlotNode();
+
             private struct MethodEntrypointSlotKey : IEquatable<MethodEntrypointSlotKey>
             {
                 public readonly bool Unboxing;

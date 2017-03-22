@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public virtual IEnumerable<GenericLookupResult> Entries
+        public virtual ICollection<GenericLookupResult> Entries
         {
             get
             {
