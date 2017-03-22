@@ -8,12 +8,14 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
 {
+    //Marked serializable even though it has no state.
+    [Serializable]
 #if CORECLR
     internal
 #else
-    public
+    public sealed
 #endif
-    sealed partial class DefaultBinder : Binder
+    partial class DefaultBinder : Binder
     {
         // This method is passed a set of methods and must choose the best
         // fit.  The methods all have the same number of arguments and the object
@@ -628,7 +630,6 @@ namespace System
             int indexesLength = (indexes != null) ? indexes.Length : 0;
             for (i = 0; i < candidates.Length; i++)
             {
-
                 if (indexes != null)
                 {
                     ParameterInfo[] par = candidates[i].GetIndexParameters();
@@ -722,7 +723,7 @@ namespace System
         // ChangeType
         // The default binder doesn't support any change type functionality.
         // This is because the default is built into the low level invoke code.
-        public sealed override object ChangeType(object value, Type type, CultureInfo cultureInfo)
+        public override object ChangeType(object value, Type type, CultureInfo cultureInfo)
         {
             throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
@@ -1091,7 +1092,7 @@ namespace System
             return depth;
         }
 
-        private static MethodBase FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
+        internal static MethodBase FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
         {
             int deepestHierarchy = 0;
             MethodBase methWithDeepestHierarchy = null;
