@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _method;
 
+        public MethodDesc Method => _method;
+
         public GVMDependenciesNode(MethodDesc method)
         {
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
@@ -36,6 +38,29 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
+            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
+            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
+            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
+            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
+            if (context.MetadataManager.IsReflectionInvokable(_method) && _method.IsAbstract)
+            {
+                List<DependencyListEntry> dependencies = new List<DependencyListEntry>();
+
+                if (context.MetadataManager.HasReflectionInvokeStubForInvokableMethod(_method) && !_method.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    MethodDesc invokeStub = context.MetadataManager.GetReflectionInvokeStub(_method);
+                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (invokeStub != canonInvokeStub)
+                        dependencies.Add(new DependencyListEntry(context.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    else
+                        dependencies.Add(new DependencyListEntry(context.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                }
+
+                dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(context, _method));
+
+                return dependencies;
+            }
+
             return Array.Empty<DependencyListEntry>();
         }
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)

@@ -23,6 +23,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _decl;
 
+        public MethodDesc Method => _decl;
+
         public VirtualMethodUseNode(MethodDesc decl)
         {
             Debug.Assert(decl.IsVirtual);
@@ -55,11 +57,32 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            List<DependencyListEntry> dependencies = new List<DependencyListEntry>();
+
+            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
+            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
+            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
+            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
+            if (factory.MetadataManager.IsReflectionInvokable(_decl) && _decl.IsAbstract)
+            {
+                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(_decl) && !_decl.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(_decl);
+                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (invokeStub != canonInvokeStub)
+                        dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    else
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                }
+
+                dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, _decl));
+            }
+
             MethodDesc canonDecl = _decl.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (canonDecl != _decl)
-                return new[] { new DependencyListEntry(factory.VirtualMethodUse(canonDecl), "Canonical method") };
+                dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(canonDecl), "Canonical method"));
 
-            return null;
+            return dependencies;
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)

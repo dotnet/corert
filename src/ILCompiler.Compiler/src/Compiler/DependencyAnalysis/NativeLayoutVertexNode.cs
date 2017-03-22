@@ -779,7 +779,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-
             foreach (TypeDesc iface in _type.RuntimeInterfaces)
             {
                 yield return new DependencyListEntry(context.NativeLayout.TypeSignatureVertex(iface), "template interface list");
@@ -805,7 +804,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (_type.BaseType.IsRuntimeDeterminedSubtype)
+            if (_type.BaseType != null && _type.BaseType.IsRuntimeDeterminedSubtype)
             {
                 yield return new DependencyListEntry(context.NativeLayout.PlacedSignatureVertex(context.NativeLayout.TypeSignatureVertex(_type.BaseType)), "template base type");
             }
@@ -1014,7 +1013,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (_type.BaseType.IsRuntimeDeterminedSubtype)
+            if (_type.BaseType != null && _type.BaseType.IsRuntimeDeterminedSubtype)
             {
                 layoutInfo.Append(BagElementKind.BaseType, factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(_type.BaseType)).WriteVertex(factory));
             }

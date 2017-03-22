@@ -137,6 +137,7 @@
     <Compile Include="Compiler\DependencyAnalysis\HelperEntrypoint.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectionVirtualInvokeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeDeterminedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
@@ -233,7 +234,7 @@
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\CompilerGeneratedMetadataManager.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
-	<Compile Include="Compiler\InteropStubManager.cs" />
+    <Compile Include="Compiler\InteropStubManager.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
