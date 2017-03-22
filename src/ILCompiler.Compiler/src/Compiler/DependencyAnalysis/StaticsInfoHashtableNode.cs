@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
             section.Place(hashtable);
 
-            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
+            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
                 if (!type.HasInstantiation || type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsGenericDefinition)
                     continue;

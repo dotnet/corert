@@ -40,6 +40,7 @@ namespace ILCompiler
         private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
+        private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
@@ -141,6 +142,12 @@ namespace ILCompiler
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
                 AddGeneratedType(eetypeNode.Type);
+
+                if (eetypeNode is ConstructedEETypeNode || eetypeNode is CanonicalEETypeNode)
+                {
+                    _typesWithConstructedEETypesGenerated.Add(eetypeNode.Type);
+                }
+
                 return;
             }
 
@@ -429,6 +436,11 @@ namespace ILCompiler
         internal IEnumerable<TypeDesc> GetTypesWithEETypes()
         {
             return _typesWithEETypesGenerated;
+        }
+
+        internal IEnumerable<TypeDesc> GetTypesWithConstructedEETypes()
+        {
+            return _typesWithConstructedEETypesGenerated;
         }
 
         public abstract bool IsReflectionBlocked(MetadataType type);
