@@ -4,6 +4,13 @@
 
 namespace System.Reflection
 {
-    // Define the delegate
-    public delegate bool MemberFilter(MemberInfo m, Object filterCriteria);
+    [Flags]
+    public enum ExceptionHandlingClauseOptions : int
+    {
+        Clause = 0x0,
+        Filter = 0x1,
+        Finally = 0x2,
+        Fault = 0x4,
+    }
 }
+
