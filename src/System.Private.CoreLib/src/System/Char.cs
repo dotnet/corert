@@ -132,7 +132,7 @@ namespace System
         // If object is not of type Char, this method throws an ArgumentException.
         //
         [Pure]
-        int IComparable.CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null)
             {
@@ -161,7 +161,7 @@ namespace System
         }
 
         [Pure]
-        String IConvertible.ToString(IFormatProvider provider)
+        public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return Char.ToString(m_value);
@@ -457,7 +457,7 @@ namespace System
         // IConvertible implementation
         //    
         [Pure]
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.Char;
         }

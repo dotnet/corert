@@ -664,7 +664,7 @@ namespace System
         // if this is equal to value, or a value greater than 0 if this is greater than value.
         //
 
-        int IComparable.CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null)
             {
