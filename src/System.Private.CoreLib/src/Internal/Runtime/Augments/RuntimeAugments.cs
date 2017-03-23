@@ -30,6 +30,11 @@ using Internal.Runtime.CompilerServices;
 
 using Volatile = System.Threading.Volatile;
 
+#if !CORERT
+// Temporary workaround until NUTC stops crashing
+using TypedReference = System.Reflection.TypedReference;
+#endif
+
 namespace Internal.Runtime.Augments
 {
     public enum CanonTypeKind

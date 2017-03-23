@@ -17,9 +17,9 @@ namespace System
 // Add a fake TypedReference to keep Project X running with CoreRT's type system that needs this now.
 namespace System
 {
-    [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
-    public struct TypedReference
+    [System.Runtime.CompilerServices.DependencyReductionRoot] // TODO: proper fix is to put this in the ILToolchain contract
+    internal struct TypedReference
     {
     }
 }
