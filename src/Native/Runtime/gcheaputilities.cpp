@@ -23,5 +23,7 @@ uint8_t* g_ephemeral_high = (uint8_t*)~0;
 uint32_t* g_card_bundle_table = nullptr;
 #endif
 
+IGCHandleTable* g_pGCHandleTable = nullptr;
+
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);

@@ -20,6 +20,8 @@ GPTR_DECL(uint32_t,g_card_table);
 }
 #endif // !DACCESS_COMPILE
 
+extern "C" IGCHandleTable* g_pGCHandleTable;
+
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 extern "C" uint32_t* g_card_bundle_table;
 #endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -53,6 +55,15 @@ public:
     {
         assert(g_pGCHeap != nullptr);
         return g_pGCHeap;
+    }
+
+    // Retrieves the GC handle table.
+    static IGCHandleTable* GetGCHandleTable() 
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        assert(g_pGCHandleTable != nullptr);
+        return g_pGCHandleTable;
     }
 
     // Returns true if the heap has been initialized, false otherwise.
