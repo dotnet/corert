@@ -171,7 +171,6 @@
     <Compile Include="System\Reflection\CustomAttributeTypedArgument.cs" />
     <Compile Include="System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
-    <Compile Include="System\Reflection\IReflect.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
     <Compile Include="System\Reflection\MemberInfoSerializationHolder.cs" />
