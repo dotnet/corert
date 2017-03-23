@@ -190,6 +190,26 @@ namespace System
             }
         }
 
+        public static Array CreateInstance(Type elementType, params long[] lengths)
+        {
+            if (lengths == null)
+                throw new ArgumentNullException(nameof(lengths));
+            if (lengths.Length == 0)
+                throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
+
+            int[] intLengths = new int[lengths.Length];
+
+            for (int i = 0; i < lengths.Length; ++i)
+            {
+                long len = lengths[i];
+                if (len > int.MaxValue || len < int.MinValue)
+                    throw new ArgumentOutOfRangeException("len", SR.ArgumentOutOfRange_HugeArrayNotSupported);
+                intLengths[i] = (int)len;
+            }
+
+            return Array.CreateInstance(elementType, intLengths);
+        }
+
         private static Array CreateSzArray(Type elementType, int length)
         {
             // Though our callers already validated length once, this parameter is passed via arrays, so we must check it again
@@ -1314,6 +1334,8 @@ namespace System
         }
 
         public bool IsFixedSize { get { return true; } }
+
+        public bool IsReadOnly { get { return false; } }
 
         // Is this Array synchronized (i.e., thread-safe)?  If you want a synchronized
         // collection, you can use SyncRoot as an object to synchronize your 
@@ -2695,6 +2717,56 @@ namespace System
             }
         }
 
+        public void SetValue(object value, long index)
+        {
+            if (index > int.MaxValue || index < int.MinValue)
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_HugeArrayNotSupported);
+
+            SetValue(value, (int)index);
+        }
+
+        public void SetValue(object value, long index1, long index2)
+        {
+            if (index1 > int.MaxValue || index1 < int.MinValue)
+                throw new ArgumentOutOfRangeException(nameof(index1), SR.ArgumentOutOfRange_HugeArrayNotSupported);
+            if (index2 > int.MaxValue || index2 < int.MinValue)
+                throw new ArgumentOutOfRangeException(nameof(index2), SR.ArgumentOutOfRange_HugeArrayNotSupported);
+
+            SetValue(value, (int)index1, (int)index2);
+        }
+
+        public void SetValue(object value, long index1, long index2, long index3)
+        {
+            if (index1 > int.MaxValue || index1 < int.MinValue)
+                throw new ArgumentOutOfRangeException(nameof(index1), SR.ArgumentOutOfRange_HugeArrayNotSupported);
+            if (index2 > int.MaxValue || index2 < int.MinValue)
+                throw new ArgumentOutOfRangeException(nameof(index2), SR.ArgumentOutOfRange_HugeArrayNotSupported);
+            if (index3 > int.MaxValue || index3 < int.MinValue)
+                throw new ArgumentOutOfRangeException(nameof(index3), SR.ArgumentOutOfRange_HugeArrayNotSupported);
+
+            SetValue(value, (int)index1, (int)index2, (int)index3);
+        }
+
+        public void SetValue(object value, params long[] indices)
+        {
+            if (indices == null)
+                throw new ArgumentNullException(nameof(indices));
+            if (Rank != indices.Length)
+                throw new ArgumentException(SR.Arg_RankIndices);
+
+            int[] intIndices = new int[indices.Length];
+
+            for (int i = 0; i < indices.Length; ++i)
+            {
+                long index = indices[i];
+                if (index > int.MaxValue || index < int.MinValue)
+                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_HugeArrayNotSupported);
+                intIndices[i] = (int)index;
+            }
+
+            SetValue(value, intIndices);
+        }
+
         private unsafe void SetValue(Object value, int* pIndices, int rank)
         {
             Debug.Assert(Rank == rank);
@@ -2883,7 +2955,13 @@ namespace System
             }
         }
 
-        public bool IsReadOnly
+        //
+        // Fun fact:
+        //
+        //  ((int[])a).IsReadOnly returns false.
+        //  ((IList<int>)a).IsReadOnly returns true.
+        //
+        public new bool IsReadOnly
         {
             get
             {
