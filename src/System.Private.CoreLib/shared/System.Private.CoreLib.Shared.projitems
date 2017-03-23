@@ -190,6 +190,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClauseOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\GenericParameterAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ICustomAttributeProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ImageFileMachine.cs" />
