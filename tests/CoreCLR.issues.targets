@@ -1096,6 +1096,10 @@
     <!-- NetStandard2: System.Type.GetInterfaceMap -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M01\b12425\b12425\b12425.*" />
 
+    <!-- NetStandard2: System.TypedReference in the System.Runtime facade -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbgstress2\_il_dbgstress2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_relstress2\_il_relstress2.*" />
+
     <!-- NetStandard2: PlatformID enum -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbgformat\_il_dbgformat.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbglongsig\_il_dbglongsig.*" />
