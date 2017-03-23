@@ -117,6 +117,14 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        /// <summary>
+        /// Returns true if the underlying OS thread has been created and started execution of managed code.
+        /// </summary>
+        private bool HasStarted()
+        {
+            return !GetThreadStateBit(ThreadState.Unstarted);
+        }
+
         public bool IsAlive
         {
             get
