@@ -272,6 +272,10 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                         return false;
 
+                    // Byref-like types have interior pointers and cannot be heap allocated.
+                    if (type.IsValueType && ((DefType)type).IsByRefLike)
+                        return false;
+
                     break;
             }
 

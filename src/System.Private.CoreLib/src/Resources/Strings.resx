@@ -1215,6 +1215,9 @@
   <data name="NotSupported_VoidArray" xml:space="preserve">
     <value>Arrays of System.Void are not supported.</value>
   </data>
+  <data name="NotSupported_ByRefLike" xml:space="preserve">
+    <value>Cannot create boxed ByRef-like values.</value>
+  </data>
   <data name="NotSupported_WaitAllSTAThread" xml:space="preserve">
     <value>WaitAll for multiple handles on a STA thread is not supported.</value>
   </data>

@@ -178,6 +178,13 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot", null);
                     break;
 
+                case ReadyToRunHelper.TypeHandleToRuntimeType:
+                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeMaybeNull");
+                    break;
+                case ReadyToRunHelper.GetRefAny:
+                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "GetRefAny");
+                    break;
+
                 default:
                     throw new NotImplementedException(id.ToString());
             }

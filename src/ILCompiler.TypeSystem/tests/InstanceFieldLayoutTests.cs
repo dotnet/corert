@@ -299,5 +299,48 @@ namespace TypeSystemTests
             type = _testModule.GetType("ContainsGCPointers", "ClassHasArrayOfClassType");
             Assert.True(type.ContainsGCPointers);
         }
+
+        [Fact]
+        public void TestByRefLikeTypes()
+        {
+            {
+                DefType type = _context.GetWellKnownType(WellKnownType.TypedReference);
+                Assert.True(type.IsByRefLike);
+            }
+
+            {
+                DefType type = _context.GetWellKnownType(WellKnownType.ByReferenceOfT);
+                Assert.True(type.IsByRefLike);
+            }
+
+            {
+                DefType type = _testModule.GetType("IsByRefLike", "ByRefLikeStruct");
+                Assert.True(type.IsByRefLike);
+            }
+
+            {
+                DefType type = _testModule.GetType("IsByRefLike", "ComposedStruct");
+                Assert.True(type.IsByRefLike);
+            }
+
+            {
+                DefType type = _testModule.GetType("IsByRefLike", "NotByRefLike");
+                Assert.False(type.IsByRefLike);
+            }
+        }
+
+        [Fact]
+        public void TestInvalidByRefLikeTypes()
+        {
+            {
+                DefType type = _testModule.GetType("IsByRefLike", "Invalid");
+                Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
+            }
+
+            {
+                DefType type = _testModule.GetType("IsByRefLike", "ComposedInvalid");
+                Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
+            }
+        }
     }
 }

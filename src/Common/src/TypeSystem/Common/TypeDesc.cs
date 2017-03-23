@@ -115,6 +115,8 @@ namespace Internal.TypeSystem
                 case WellKnownType.RuntimeTypeHandle:
                 case WellKnownType.RuntimeMethodHandle:
                 case WellKnownType.RuntimeFieldHandle:
+                case WellKnownType.TypedReference:
+                case WellKnownType.ByReferenceOfT:
                     flags = TypeFlags.ValueType;
                     break;
 
@@ -262,6 +264,18 @@ namespace Internal.TypeSystem
             get
             {
                 return this.GetTypeDefinition().IsWellKnownType(WellKnownType.Nullable);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a generic definition, or
+        /// an instance of System.ByReference`1.
+        /// </summary>
+        public bool IsByReferenceOfT
+        {
+            get
+            {
+                return this.GetTypeDefinition().IsWellKnownType(WellKnownType.ByReferenceOfT);
             }
         }
 
