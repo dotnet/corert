@@ -259,7 +259,7 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException(SR.NotSupported_ManagedActivation);
             }
 
-            EETypePtr eeTypePtr = type.TypeHandle.EETypePtr;
+            EETypePtr eeTypePtr = type.TypeHandle.ToEETypePtr();
 
             if (eeTypePtr == EETypePtr.EETypePtrOf<string>())
             {

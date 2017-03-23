@@ -91,7 +91,7 @@ namespace System
             return TrueLiteral;
         }
 
-        String IConvertible.ToString(IFormatProvider provider)
+        public String ToString(IFormatProvider provider)
         {
             return ToString();
         }
@@ -120,7 +120,7 @@ namespace System
         // 
         // Returns a value less than zero if this  object
         // 
-        int IComparable.CompareTo(Object obj)
+        public int CompareTo(Object obj)
         {
             if (obj == null)
             {
@@ -247,7 +247,7 @@ namespace System
         // IConvertible implementation
         // 
 
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.Boolean;
         }

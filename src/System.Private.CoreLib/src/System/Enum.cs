@@ -822,13 +822,13 @@ namespace System
             return Format(enumInfo, this, format);
         }
 
-        String IFormattable.ToString(String format, IFormatProvider provider)
+        public String ToString(String format, IFormatProvider provider)
         {
             return ToString(format);
         }
 
         [Obsolete("The provider argument is not used. Please use ToString().")]
-        String IConvertible.ToString(IFormatProvider provider)
+        public String ToString(IFormatProvider provider)
         {
             return ToString();
         }
@@ -1250,7 +1250,7 @@ namespace System
 
 
         #region IConvertible
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             Type enumType = this.GetType();
             Type underlyingType = GetUnderlyingType(enumType);
