@@ -83,6 +83,12 @@ namespace System
             _Revision = v.Revision;
         }
 
+        public Version()
+        {
+            _Major = 0;
+            _Minor = 0;
+        }
+
         private Version(Version version)
         {
             Debug.Assert(version != null);
@@ -129,7 +135,7 @@ namespace System
             get { return (short)(_Revision & 0xFFFF); }
         }
 
-        int IComparable.CompareTo(Object version)
+        public int CompareTo(Object version)
         {
             if (version == null)
             {

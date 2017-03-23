@@ -412,7 +412,7 @@ namespace System
         // occurs.  Null is considered less than any instance.
         //
         // Returns a value less than zero if this  object
-        private int CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null) return 1;
             if (!(value is DateTime))
@@ -425,11 +425,6 @@ namespace System
             if (ticks > valueTicks) return 1;
             if (ticks < valueTicks) return -1;
             return 0;
-        }
-
-        int IComparable.CompareTo(Object value)
-        {
-            return this.CompareTo(value);
         }
 
         public int CompareTo(DateTime value)
@@ -1283,7 +1278,7 @@ namespace System
         // IConvertible implementation
         // 
 
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.DateTime;
         }

@@ -28,7 +28,7 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type SByte, this method throws an ArgumentException.
         // 
-        int IComparable.CompareTo(Object obj)
+        public int CompareTo(Object obj)
         {
             if (obj == null)
             {
@@ -190,7 +190,7 @@ namespace System
         // IConvertible implementation
         // 
 
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.SByte;
         }

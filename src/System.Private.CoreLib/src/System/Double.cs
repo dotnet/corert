@@ -100,7 +100,7 @@ namespace System
         //
         // Returns a value less than zero if this  object
         //
-        int IComparable.CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null)
             {
@@ -305,7 +305,7 @@ namespace System
         // IConvertible implementation
         //
 
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.Double;
         }
