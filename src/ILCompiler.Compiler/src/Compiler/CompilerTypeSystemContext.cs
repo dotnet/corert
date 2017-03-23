@@ -370,6 +370,9 @@ namespace ILCompiler
             return typeToConvert;
         }
 
+        public override bool SupportsUniversalCanon => false;
+        public override bool SupportsCanon => _genericsMode != SharedGenericsMode.Disabled;
+
         public MetadataStringDecoder GetMetadataStringDecoder()
         {
             if (_metadataStringDecoder == null)

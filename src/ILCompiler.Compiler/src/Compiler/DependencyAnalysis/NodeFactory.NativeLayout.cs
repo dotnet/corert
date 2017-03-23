@@ -32,9 +32,14 @@ namespace ILCompiler.DependencyAnalysis
                      return NativeLayoutTypeSignatureVertexNode.NewTypeSignatureVertexNode(_factory, type);
                 });
 
-                _methodSignatures = new NodeCache<MethodDesc, NativeLayoutMethodSignatureVertexNode>(method =>
+                _methodSignatures = new NodeCache<MethodSignature, NativeLayoutMethodSignatureVertexNode>(signature =>
                 {
-                    return new NativeLayoutMethodSignatureVertexNode(_factory, method);
+                    return new NativeLayoutMethodSignatureVertexNode(_factory, signature);
+                });
+
+                _callingConventionSlots = new NodeCache<CallingConventionConverterKey, NativeLayoutCallingConventionConverterGenericDictionarySlotNode>(key =>
+                {
+                    return new NativeLayoutCallingConventionConverterGenericDictionarySlotNode(key.Signature, key.ConverterKind);
                 });
 
                 _methodNameAndSignatures = new NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode>(method =>
@@ -161,6 +166,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new NativeLayoutMethodLdTokenGenericDictionarySlotNode(method);
                 });
+
+                _fieldOffset_GenericDictionaryslots = new NodeCache<FieldDesc, NativeLayoutFieldOffsetGenericDictionarySlotNode>(field =>
+                {
+                    return new NativeLayoutFieldOffsetGenericDictionarySlotNode(field);
+                });
+
+                _vtableOffset_GenericDictionaryslots = new NodeCache<MethodDesc, NativeLayoutVTableOffsetGenericDictionarySlotNode>(method =>
+                {
+                    return new NativeLayoutVTableOffsetGenericDictionarySlotNode(method);
+                });
             }
 
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
@@ -175,10 +190,16 @@ namespace ILCompiler.DependencyAnalysis
                 return _typeSignatures.GetOrAdd(type);
             }
 
-            private NodeCache<MethodDesc, NativeLayoutMethodSignatureVertexNode> _methodSignatures;
-            internal NativeLayoutMethodSignatureVertexNode MethodSignatureVertex(MethodDesc method)
+            private NodeCache<MethodSignature, NativeLayoutMethodSignatureVertexNode> _methodSignatures;
+            internal NativeLayoutMethodSignatureVertexNode MethodSignatureVertex(MethodSignature signature)
             {
-                return _methodSignatures.GetOrAdd(method);
+                return _methodSignatures.GetOrAdd(signature);
+            }
+
+            private NodeCache<CallingConventionConverterKey, NativeLayoutCallingConventionConverterGenericDictionarySlotNode> _callingConventionSlots;
+            internal NativeLayoutCallingConventionConverterGenericDictionarySlotNode CallingConventionConverter(CallingConventionConverterKey key)
+            {
+                return _callingConventionSlots.GetOrAdd(key);
             }
 
             private NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode> _methodNameAndSignatures;
@@ -459,6 +480,18 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutMethodLdTokenGenericDictionarySlotNode MethodLdTokenDictionarySlot(MethodDesc method)
             {
                 return _methodLdToken_GenericDictionarySlots.GetOrAdd(method);
+            }
+
+            private NodeCache<FieldDesc, NativeLayoutFieldOffsetGenericDictionarySlotNode> _fieldOffset_GenericDictionaryslots;
+            public NativeLayoutFieldOffsetGenericDictionarySlotNode FieldOffsetDictionarySlot(FieldDesc field)
+            {
+                return _fieldOffset_GenericDictionaryslots.GetOrAdd(field);
+            }
+
+            private NodeCache<MethodDesc, NativeLayoutVTableOffsetGenericDictionarySlotNode> _vtableOffset_GenericDictionaryslots;
+            public NativeLayoutVTableOffsetGenericDictionarySlotNode VTableOffsetDictionarySlot(MethodDesc method)
+            {
+                return _vtableOffset_GenericDictionaryslots.GetOrAdd(method);
             }
         }
 
