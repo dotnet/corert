@@ -203,10 +203,17 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.OwningType != defType)
                     continue;
 
-                yield return new CombinedDependencyListEntry(
-                    factory.VirtualMethodUse(method),
-                    factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    "Canonically equivalent virtual method use");
+                if (defType.Context.SupportsCanon)
+                    yield return new CombinedDependencyListEntry(
+                        factory.VirtualMethodUse(method),
+                        factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                        "Canonically equivalent virtual method use");
+
+                if (defType.Context.SupportsUniversalCanon)
+                    yield return new CombinedDependencyListEntry(
+                        factory.VirtualMethodUse(method),
+                        factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Universal)),
+                        "Universal Canonically equivalent virtual method use");
             }
         }
     }

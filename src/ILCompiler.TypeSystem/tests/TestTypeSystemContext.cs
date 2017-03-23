@@ -117,5 +117,8 @@ namespace TypeSystemTests
                 return fieldType.IsGCPointer;
 
         }
+
+        public override bool SupportsUniversalCanon => true;
+        public override bool SupportsCanon => true;
     }
 }

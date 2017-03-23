@@ -486,6 +486,12 @@ namespace Internal.NativeFormat
             MDArrayTypeSignature sig = new MDArrayTypeSignature(elementType, rank, bounds, lowerBounds);
             return Unify(sig);
         }
+
+        public Vertex GetCallingConventionConverterSignature(uint flags, Vertex signature)
+        {
+            CallingConventionConverterSignature sig = new CallingConventionConverterSignature(flags, GetRelativeOffsetSignature(signature));
+            return Unify(sig);
+        }
     }
 
     class PlacedVertex : Vertex
@@ -1442,6 +1448,49 @@ namespace Internal.NativeFormat
                 if (_lowerBounds[i] != other._lowerBounds[i])
                     return false;
             }
+
+            return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class CallingConventionConverterSignature : Vertex
+    {
+        private uint _flags;
+        private Vertex _signature;
+
+        public CallingConventionConverterSignature(uint flags, Vertex signature)
+        {
+            _flags = flags;
+            _signature = signature;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.WriteUnsigned(_flags);
+            _signature.Save(writer);
+        }
+
+        public override int GetHashCode()
+        {
+            return 509 * 197 + ((int)_flags) * 23 + 647 * _signature.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            CallingConventionConverterSignature other = obj as CallingConventionConverterSignature;
+            if (other == null)
+                return false;
+
+            if (_flags != other._flags)
+                return false;
+
+            if (!_signature.Equals(other._signature))
+                return false;
 
             return true;
         }
