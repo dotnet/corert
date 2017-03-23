@@ -201,6 +201,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ManifestResourceInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfoSerializationHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
@@ -285,6 +286,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\UnauthorizedAccessException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventArgs.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventHandler.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\UnitySerializationHolder.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs"/>
