@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _method = method;
             _flags = flags;
-            _methodSig = factory.NativeLayout.MethodSignatureVertex(method.GetTypicalMethodDefinition());
+            _methodSig = factory.NativeLayout.MethodSignatureVertex(method.GetTypicalMethodDefinition().Signature);
 
             if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) == 0)
             {
@@ -274,19 +274,19 @@ namespace ILCompiler.DependencyAnalysis
 
     internal sealed class NativeLayoutMethodSignatureVertexNode : NativeLayoutVertexNode
     {
-        private MethodDesc _method;
+        private Internal.TypeSystem.MethodSignature _signature;
         private NativeLayoutTypeSignatureVertexNode _returnTypeSig;
         private NativeLayoutTypeSignatureVertexNode[] _parametersSig;
 
-        protected override string GetName(NodeFactory factory) => "NativeLayoutMethodSignatureVertexNode" + factory.NameMangler.GetMangledMethodName(_method);
+        protected override string GetName(NodeFactory factory) => "NativeLayoutMethodSignatureVertexNode " + _signature.GetMangledName(factory.NameMangler);
 
-        public NativeLayoutMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
+        public NativeLayoutMethodSignatureVertexNode(NodeFactory factory, Internal.TypeSystem.MethodSignature signature)
         {
-            _method = method;
-            _returnTypeSig = factory.NativeLayout.TypeSignatureVertex(method.Signature.ReturnType);
-            _parametersSig = new NativeLayoutTypeSignatureVertexNode[method.Signature.Length];
+            _signature = signature;
+            _returnTypeSig = factory.NativeLayout.TypeSignatureVertex(signature.ReturnType);
+            _parametersSig = new NativeLayoutTypeSignatureVertexNode[signature.Length];
             for (int i = 0; i < _parametersSig.Length; i++)
-                _parametersSig[i] = factory.NativeLayout.TypeSignatureVertex(method.Signature[i]);
+                _parametersSig[i] = factory.NativeLayout.TypeSignatureVertex(signature[i]);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
@@ -306,19 +306,19 @@ namespace ILCompiler.DependencyAnalysis
 
             MethodCallingConvention methodCallingConvention = default(MethodCallingConvention);
 
-            if (_method.Signature.GenericParameterCount > 0)
+            if (_signature.GenericParameterCount > 0)
                 methodCallingConvention |= MethodCallingConvention.Generic;
-            if (_method.Signature.IsStatic)
+            if (_signature.IsStatic)
                 methodCallingConvention |= MethodCallingConvention.Static;
 
-            Debug.Assert(_method.Signature.Length == _parametersSig.Length);
+            Debug.Assert(_signature.Length == _parametersSig.Length);
 
             Vertex returnType = _returnTypeSig.WriteVertex(factory);
             Vertex[] parameters = new Vertex[_parametersSig.Length];
             for (int i = 0; i < _parametersSig.Length; i++)
                 parameters[i] = _parametersSig[i].WriteVertex(factory);
 
-            Vertex signature = GetNativeWriter(factory).GetMethodSigSignature((uint)methodCallingConvention, (uint)_method.Signature.GenericParameterCount, returnType, parameters);
+            Vertex signature = GetNativeWriter(factory).GetMethodSigSignature((uint)methodCallingConvention, (uint)_signature.GenericParameterCount, returnType, parameters);
             return factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(signature);
         }
     }
@@ -333,7 +333,7 @@ namespace ILCompiler.DependencyAnalysis
         public NativeLayoutMethodNameAndSignatureVertexNode(NodeFactory factory, MethodDesc method)
         {
             _method = method;
-            _methodSig = factory.NativeLayout.MethodSignatureVertex(method);
+            _methodSig = factory.NativeLayout.MethodSignatureVertex(method.Signature);
         }
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
@@ -848,7 +848,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // For USG delegate, we need to write the signature of the Invoke method to the native layout.
                 // This signature is used by the calling convention converter to marshal parameters during delegate calls.
-                yield return new DependencyListEntry(context.NativeLayout.MethodSignatureVertex(_type.GetMethod("Invoke", null).GetTypicalMethodDefinition()), "invoke method signature");
+                yield return new DependencyListEntry(context.NativeLayout.MethodSignatureVertex(_type.GetMethod("Invoke", null).GetTypicalMethodDefinition().Signature), "invoke method signature");
             }
 
             if (_isUniversalCanon)
@@ -899,7 +899,7 @@ namespace ILCompiler.DependencyAnalysis
                             if (vtableSignatureNodeEntries == null)
                                 vtableSignatureNodeEntries = new List<NativeLayoutVertexNode>();
 
-                            vtableSignatureNodeEntries.Add(context.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition()));
+                            vtableSignatureNodeEntries.Add(context.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature));
                         }
                     }
                     , _type, _type);
@@ -937,7 +937,7 @@ namespace ILCompiler.DependencyAnalysis
                                 conditionalDependencies = new List<CombinedDependencyListEntry>();
 
                             conditionalDependencies.Add(
-                                new CombinedDependencyListEntry(context.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition()),
+                                new CombinedDependencyListEntry(context.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature),
                                                                 context.VirtualMethodUse(declMethod),
                                                                 "conditional vtable cctor sig"));
                         }
@@ -1066,7 +1066,7 @@ namespace ILCompiler.DependencyAnalysis
                 // For USG delegate, we need to write the signature of the Invoke method to the native layout.
                 // This signature is used by the calling convention converter to marshal parameters during delegate calls.
                 MethodDesc delegateInvokeMethod = _type.GetMethod("Invoke", null).GetTypicalMethodDefinition();
-                NativeLayoutMethodSignatureVertexNode invokeSignatureVertexNode = factory.NativeLayout.MethodSignatureVertex(delegateInvokeMethod);
+                NativeLayoutMethodSignatureVertexNode invokeSignatureVertexNode = factory.NativeLayout.MethodSignatureVertex(delegateInvokeMethod.Signature);
                 layoutInfo.Append(BagElementKind.DelegateInvokeSignature, invokeSignatureVertexNode.WriteVertex(factory));
             }
 
@@ -1103,6 +1103,9 @@ namespace ILCompiler.DependencyAnalysis
                     // If this field does contribute to layout, skip
                     if (field.HasRva || field.IsLiteral)
                         continue;
+
+                    // NOTE: The order and contents of the signature vertices emitted here is what we consider a field ordinal for the
+                    // purpose of NativeLayoutFieldOffsetGenericDictionarySlotNode. 
 
                     FieldStorage fieldStorage = FieldStorage.Instance;
                     if (field.IsStatic)
@@ -1160,7 +1163,7 @@ namespace ILCompiler.DependencyAnalysis
                             if (vtableSignaturesSequence == null)
                                 vtableSignaturesSequence = new VertexSequence();
 
-                            NativeLayoutVertexNode signatureVertex = factory.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition());
+                            NativeLayoutVertexNode signatureVertex = factory.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature);
                             NativeLayoutVertexNode placedSignatureVertex = factory.NativeLayout.PlacedSignatureVertex(signatureVertex);
 
                             Vertex vtableSignatureEntry = writer.GetTuple(writer.GetUnsignedConstant(((uint)vtableIndex) << 1), // We currently do not use sealed vtable entries yet. Update when that happens
@@ -1524,6 +1527,53 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public sealed class NativeLayoutFieldOffsetGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        FieldDesc _field;
+
+        public NativeLayoutFieldOffsetGenericDictionarySlotNode(FieldDesc field)
+        {
+            _field = field;
+        }
+
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutFieldOffsetGenericDictionarySlotNode_" + factory.NameMangler.GetMangledFieldName(_field);
+
+        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.FieldOffset;
+
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            return new DependencyListEntry[1] { new DependencyListEntry(factory.NativeLayout.TypeSignatureVertex(_field.OwningType), "Field Containing Type Signature") };
+        }
+
+        protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            NativeWriter nativeWriter = GetNativeWriter(factory);
+
+            uint fieldOrdinal = 0;
+
+            foreach (FieldDesc field in _field.OwningType.GetFields())
+            {
+                // If this field does contribute to layout, skip
+                if (field.HasRva || field.IsLiteral)
+                    continue;
+
+                // NOTE: The order and contents of the field ordinal emitted here is based on the order of emission for fields
+                // in the USG template generation.
+
+                if (field == _field)
+                {
+                    Vertex typeVertex = factory.NativeLayout.TypeSignatureVertex(_field.OwningType).WriteVertex(factory);
+                    return nativeWriter.GetTuple(typeVertex, nativeWriter.GetUnsignedConstant(fieldOrdinal));
+                }
+                fieldOrdinal++;
+            }
+
+            // If we reach here, we were unable to calculate field ordinal.
+            Debug.Assert(false, "This should be unreachable, as we should have found a field ordinal above");
+            throw new Exception("Internal Compiler Error");
+        }
+    }
+
     public sealed class NativeLayoutFieldLdTokenGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
         FieldDesc _field;
@@ -1548,6 +1598,41 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public sealed class NativeLayoutVTableOffsetGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        MethodDesc _method;
+        MethodDesc _slotDefiningMethod;
+
+        public NativeLayoutVTableOffsetGenericDictionarySlotNode(MethodDesc method)
+        {
+            _method = method;
+            MethodDesc typicalSlotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetTypicalMethodDefinition());
+            _slotDefiningMethod = _method.OwningType.FindMethodOnTypeWithMatchingTypicalMethod(typicalSlotDefiningMethod).GetCanonMethodTarget(CanonicalFormKind.Specific);
+            Debug.Assert(!method.HasInstantiation);
+            Debug.Assert(!method.OwningType.IsInterface);
+            Debug.Assert(method.OwningType.IsDefType);
+            Debug.Assert(method.IsVirtual);
+        }
+
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutVTableOffsetGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
+
+        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.VTableOffset;
+
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            return new DependencyListEntry[1] { new DependencyListEntry(factory.NativeLayout.TypeSignatureVertex(_slotDefiningMethod.OwningType), "Method VTableOffset Containing Type Signature") };
+        }
+
+        protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            NativeWriter nativeWriter = GetNativeWriter(factory);
+            
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _slotDefiningMethod);
+            Vertex typeVertex = factory.NativeLayout.TypeSignatureVertex(_slotDefiningMethod.OwningType).WriteVertex(factory);
+            return nativeWriter.GetTuple(typeVertex, nativeWriter.GetUnsignedConstant((uint)slot));
+        }
+    }
+
     public sealed class NativeLayoutMethodLdTokenGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
         MethodDesc _method;
@@ -1559,7 +1644,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
-        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.FieldLdToken;
+        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.MethodLdToken;
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -1569,6 +1654,35 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
             return factory.NativeLayout.MethodLdTokenVertex(_method).WriteVertex(factory);
+        }
+    }
+
+    public sealed class NativeLayoutCallingConventionConverterGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        Internal.TypeSystem.MethodSignature _signature;
+        CallingConventionConverterKind _converterKind;
+
+        public NativeLayoutCallingConventionConverterGenericDictionarySlotNode(Internal.TypeSystem.MethodSignature signature, CallingConventionConverterKind converterKind)
+        {
+            _signature = signature;
+            _converterKind = converterKind;
+        }
+
+        protected sealed override string GetName(NodeFactory factory) => 
+            "NativeLayoutCallingConventionConverterGenericDictionarySlotNode" + _converterKind.ToString() +
+             _signature.GetMangledName(factory.NameMangler);
+
+        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.MethodLdToken;
+
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            return new DependencyListEntry[1] { new DependencyListEntry(factory.NativeLayout.MethodSignatureVertex(_signature), "Method Signature") };
+        }
+
+        protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            Vertex signatureStream = factory.NativeLayout.MethodSignatureVertex(_signature).WriteVertex(factory);
+            return GetNativeWriter(factory).GetCallingConventionConverterSignature((uint)_converterKind, signatureStream);
         }
     }
 

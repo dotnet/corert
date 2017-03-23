@@ -83,5 +83,8 @@ namespace Internal.TypeSystem
         {
             throw new NotSupportedException();
         }
+
+        public abstract bool SupportsCanon { get; }
+        public abstract bool SupportsUniversalCanon { get; }
     }
 }

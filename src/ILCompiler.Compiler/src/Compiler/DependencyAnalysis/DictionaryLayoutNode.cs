@@ -99,6 +99,22 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
+        {
+            foreach (GenericLookupResult lookupResult in Entries)
+            {
+#if DEBUG
+                int offsetBefore = builder.CountBytes;
+#endif
+
+                lookupResult.EmitDictionaryEntry(ref builder, factory, dictionary.TypeInstantiation, dictionary.MethodInstantiation, dictionary);
+
+#if DEBUG
+                Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
+#endif
+            }
+        }
+
         protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
 
         public override bool HasConditionalStaticDependencies => false;

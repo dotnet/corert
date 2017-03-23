@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
+
+using ILCompiler.DependencyAnalysisFramework;
 
 using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
@@ -44,6 +47,12 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public abstract NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory);
+
+        // Call this api to get non-reloc dependencies that arise from use of a dictionary lookup
+        public virtual IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            return Array.Empty<DependencyNodeCore<NodeFactory>>();
+        }
     }
 
     /// <summary>
@@ -100,6 +109,157 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return GenericLookupResultReferenceType.Direct;
             }
+        }
+    }
+
+
+    /// <summary>
+    /// Generic lookup result that points to an EEType where if the type is Nullable<X> the EEType is X
+    /// </summary>
+    internal sealed class UnwrapNullableTypeHandleGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public UnwrapNullableTypeHandleGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+
+            // Unwrap the nullable type if necessary
+            if (instantiatedType.IsNullable)
+                instantiatedType = instantiatedType.Instantiation[0];
+
+            // We are getting a constructed type symbol because this might be something passed to newobj.
+            IEETypeNode typeNode = factory.ConstructedTypeSymbol(instantiatedType);
+
+            if (typeNode.RepresentsIndirectionCell)
+            {
+                // Imported eetype needs another indirection. Setting the lowest bit to indicate that.
+                Debug.Assert(LookupResultReferenceType(factory) == GenericLookupResultReferenceType.ConditionalIndirect);
+                return factory.Indirection(typeNode, 1);
+            }
+            else
+            {
+                return typeNode;
+            }
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("UnwrapNullable_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"UnwrapNullable: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.UnwrapNullableTypeDictionarySlot(_type);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            if (factory.CompilationModuleGroup.CanHaveReferenceThroughImportTable)
+            {
+                return GenericLookupResultReferenceType.ConditionalIndirect;
+            }
+            else
+            {
+                return GenericLookupResultReferenceType.Direct;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that puts a field offset into the generic dictionary.
+    /// </summary>
+    internal sealed class FieldOffsetGenericLookupResult : GenericLookupResult
+    {
+        private FieldDesc _field;
+
+        public FieldOffsetGenericLookupResult(FieldDesc field)
+        {
+            Debug.Assert(field.OwningType.IsRuntimeDeterminedSubtype, "Concrete field in a generic dictionary?");
+            _field = field;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            Debug.Assert(false, "GetTarget for a FieldOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            FieldDesc instantiatedField = _field.InstantiateSignature(typeInstantiation, methodInstantiation);
+            int offset = instantiatedField.Offset.AsInt;
+            builder.EmitNaturalInt(offset);
+        }
+
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("FieldOffset_");
+            sb.Append(nameMangler.GetMangledFieldName(_field));
+        }
+
+        public override string ToString() => $"FieldOffset: {_field}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.FieldOffsetDictionarySlot(_field);
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that puts a vtable offset into the generic dictionary.
+    /// </summary>
+    internal sealed class VTableOffsetGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        public VTableOffsetGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod, "Concrete method in a generic dictionary?");
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            Debug.Assert(false, "GetTarget for a VTableOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            Debug.Assert(false, "VTableOffset contents should only be generated into generic dictionaries at runtime");
+            builder.EmitNaturalInt(0);
+        }
+
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("VTableOffset_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"VTableOffset: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.VTableOffsetDictionarySlot(_method);
+        }
+
+        public override IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            return new DependencyNodeCore<NodeFactory>[] {
+                factory.VirtualMethodUse(_method.GetCanonMethodTarget(CanonicalFormKind.Universal))
+            };
         }
     }
 
@@ -688,6 +848,42 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.DefaultConstructorDictionarySlot(_type);
+        }
+    }
+
+    internal sealed class CallingConventionConverterLookupResult : GenericLookupResult
+    {
+        private CallingConventionConverterKey _callingConventionConverter;
+
+        public CallingConventionConverterLookupResult(CallingConventionConverterKey callingConventionConverter)
+        {
+            _callingConventionConverter = callingConventionConverter;
+            Debug.Assert(Internal.Runtime.UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(callingConventionConverter.Signature));
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            Debug.Assert(false, "GetTarget for a CallingConventionConverterLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            Debug.Assert(false, "CallingConventionConverterLookupResult contents should only be generated into generic dictionaries at runtime");
+            builder.EmitNaturalInt(0);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("CallingConventionConverterLookupResult_");
+            sb.Append(_callingConventionConverter.GetName(nameMangler));
+        }
+
+        public override string ToString() => "CallingConventionConverterLookupResult";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.CallingConventionConverter(_callingConventionConverter);
         }
     }
 }

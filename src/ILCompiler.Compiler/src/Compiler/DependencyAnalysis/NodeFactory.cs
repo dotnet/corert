@@ -718,7 +718,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;
 
-        public DependencyNode VirtualMethodUse(MethodDesc decl)
+        public DependencyNodeCore<NodeFactory> VirtualMethodUse(MethodDesc decl)
         {
             return _virtMethods.GetOrAdd(decl);
         }

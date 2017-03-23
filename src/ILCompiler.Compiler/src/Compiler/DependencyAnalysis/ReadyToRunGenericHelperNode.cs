@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using ILCompiler.DependencyAnalysisFramework;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public abstract partial class ReadyToRunGenericHelperNode : AssemblyStubNode, INodeWithRuntimeDeterminedDependencies
@@ -106,6 +108,20 @@ namespace ILCompiler.DependencyAnalysis
             return new[] { new DependencyListEntry(
                         _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
                         "Dictionary dependency") };
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = null;
+            foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
+                dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
+            }
+
+            return dependencies;
         }
     }
 

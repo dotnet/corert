@@ -289,5 +289,8 @@ namespace Internal.Runtime.TypeLoader
             }
             return false;
         }
+
+        public override bool SupportsUniversalCanon => true;
+        public override bool SupportsCanon => true;
     }
 }
