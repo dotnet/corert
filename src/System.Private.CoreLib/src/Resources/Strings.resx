@@ -2272,4 +2272,10 @@
   <data name="MissingField" xml:space="preserve">
     <value>Field not found.</value>
   </data>
+  <data name="InvalidCast_FromDBNull" xml:space="preserve">
+    <value>Object cannot be cast from DBNull to other types.</value>
+  </data>
+  <data name="NotSupported_DBNullSerial" xml:space="preserve">
+    <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
+  </data>
 </root>

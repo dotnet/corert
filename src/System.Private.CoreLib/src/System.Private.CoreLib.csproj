@@ -231,7 +231,6 @@
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
-    <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />

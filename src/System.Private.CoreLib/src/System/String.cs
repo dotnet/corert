@@ -480,7 +480,7 @@ namespace System
         }
 
         // Returns this string.
-        String IConvertible.ToString(IFormatProvider provider)
+        public String ToString(IFormatProvider provider)
         {
             return this;
         }
@@ -591,7 +591,7 @@ namespace System
         // IConvertible implementation
         // 
 
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.String;
         }
