@@ -235,7 +235,6 @@
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="System\ContextBoundObject.cs" />
-    <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\DefaultBinder.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
