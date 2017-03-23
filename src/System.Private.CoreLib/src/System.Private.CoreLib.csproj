@@ -174,7 +174,6 @@
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
-    <Compile Include="System\Reflection\MemberInfoSerializationHolder.cs" />
     <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
@@ -571,7 +570,6 @@
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntptr.cs" />
-    <Compile Include="System\UnitySerializationHolder.cs" />
     <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
