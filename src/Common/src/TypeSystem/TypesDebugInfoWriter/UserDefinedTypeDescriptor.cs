@@ -14,17 +14,27 @@ namespace Internal.TypeSystem.TypesDebugInfo
         {
             _objectWriter = objectWriter;
         }
-        public uint GetTypeIndex(TypeDesc type)
+        public uint GetTypeIndex(TypeDesc type, bool needsCompleteType)
         {
             uint variableTypeIndex = 0;
-            if (!_knownTypes.TryGetValue(type, out variableTypeIndex))
+            if (needsCompleteType)
             {
-                variableTypeIndex = GetNewTypeIndex(type);
+                if (!_completeKnownTypes.TryGetValue(type, out variableTypeIndex))
+                {
+                    variableTypeIndex = GetNewTypeIndex(type, true);
+                }
+            }
+            else
+            {
+                if (!_knownTypes.TryGetValue(type, out variableTypeIndex))
+                {
+                    variableTypeIndex = GetNewTypeIndex(type, false);
+                }
             }
             return variableTypeIndex;          
         }
 
-        private uint GetNewTypeIndex(TypeDesc type)
+        private uint GetNewTypeIndex(TypeDesc type, bool needsCompleteType)
         {
 
             if (type.IsEnum)
@@ -33,7 +43,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
             }
             else if (type.IsDefType)
             {
-                return GetClassTypeIndex(type);
+                return GetClassTypeIndex(type, needsCompleteType);
             }
             return 0;
         }
@@ -53,7 +63,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 }
             }
             enumTypeDescriptor.ElementCount = (ulong)fieldsDescriptors.Count;
-            enumTypeDescriptor.ElementType = _objectWriter.GetVariableTypeIndex(defType.UnderlyingType);
+            enumTypeDescriptor.ElementType = _objectWriter.GetVariableTypeIndex(defType.UnderlyingType, true);
             enumTypeDescriptor.Name = defType.Name;
             enumTypeDescriptor.UniqueName = defType.GetFullName();
             EnumRecordTypeDescriptor[] typeRecords = new EnumRecordTypeDescriptor[enumTypeDescriptor.ElementCount];
@@ -65,7 +75,10 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 recordTypeDescriptor.Name = field.Name;
                 typeRecords[i] = recordTypeDescriptor;
             }
-            return _knownTypes[type] = _objectWriter.GetEnumTypeIndex(enumTypeDescriptor, typeRecords);
+            uint typeIndex = _objectWriter.GetEnumTypeIndex(enumTypeDescriptor, typeRecords);
+            _knownTypes[type] = typeIndex;
+            _completeKnownTypes[type] = typeIndex;
+            return typeIndex;
         }
 
         public ulong  GetEnumRecordValue(FieldDesc field)
@@ -112,7 +125,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
             return 0;
         }
 
-        public uint GetClassTypeIndex(TypeDesc type)
+        public uint GetClassTypeIndex(TypeDesc type, bool needsCompleteType)
         {
             DefType defType = type as DefType;
             System.Diagnostics.Debug.Assert(defType != null, "GetClassTypeIndex was called with non def type");
@@ -123,9 +136,10 @@ namespace Internal.TypeSystem.TypesDebugInfo
             classTypeDescriptor.BaseClassId = 0;
             if (type.HasBaseType && !type.IsValueType)
             {
-                classTypeDescriptor.BaseClassId = _objectWriter.GetVariableTypeIndex(defType.BaseType);
+                classTypeDescriptor.BaseClassId = _objectWriter.GetVariableTypeIndex(defType.BaseType, false);
             }
-            uint result = _knownTypes[type] = _objectWriter.GetClassTypeIndex(classTypeDescriptor);
+            uint typeIndex = _objectWriter.GetClassTypeIndex(classTypeDescriptor);
+            _knownTypes[type] = typeIndex;
 
             List <DataFieldDescriptor> fieldsDescs = new List<DataFieldDescriptor>();
             foreach (var fieldDesc in defType.GetFields())
@@ -133,7 +147,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 if (fieldDesc.HasRva || fieldDesc.IsLiteral)
                     continue;
                 DataFieldDescriptor field = new DataFieldDescriptor();
-                field.FieldTypeIndex = _objectWriter.GetVariableTypeIndex(fieldDesc.FieldType);
+                field.FieldTypeIndex = _objectWriter.GetVariableTypeIndex(fieldDesc.FieldType, false);
                 field.Offset = fieldDesc.Offset.AsInt;
                 field.Name = fieldDesc.Name;
                 fieldsDescs.Add(field);                
@@ -148,11 +162,17 @@ namespace Internal.TypeSystem.TypesDebugInfo
             fiedlsDescriptor.FieldsCount = fieldsDescs.Count;
             fiedlsDescriptor.Size = defType.GetElementSize().AsInt;
 
-            _objectWriter.CompleteClassDescription(classTypeDescriptor, fiedlsDescriptor, fields);
-            return result;
+            uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fiedlsDescriptor, fields);
+            _completeKnownTypes[type] = completeTypeIndex;
+
+            if (needsCompleteType)
+                return completeTypeIndex;
+            else
+                return typeIndex;
         }
 
         private ITypesDebugInfoWriter _objectWriter;
         private Dictionary<TypeDesc, uint> _knownTypes = new Dictionary<TypeDesc, uint>();
+        private Dictionary<TypeDesc, uint> _completeKnownTypes = new Dictionary<TypeDesc, uint>();
     }
 }
