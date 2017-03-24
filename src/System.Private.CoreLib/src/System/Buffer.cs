@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -224,6 +225,12 @@ namespace System
             }
 
             Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
+        }
+
+        internal unsafe static void Memcpy(byte* dest, byte* src, int len)
+        {
+            Debug.Assert(len >= 0, "Negative length in memcpy!");
+            Memmove(dest, src, (nuint)len);
         }
 
         internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
