@@ -42,7 +42,7 @@ namespace System
         // null is considered to be less than any instance, hence returns positive number
         // If object is not of type Int32, this method throws an ArgumentException.
         // 
-        int IComparable.CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null)
             {
@@ -179,7 +179,7 @@ namespace System
         // 
 
         [Pure]
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.Int32;
         }
