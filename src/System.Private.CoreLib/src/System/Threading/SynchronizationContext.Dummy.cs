@@ -14,7 +14,7 @@ namespace System.Threading
         {
             get
             {
-                return s_current;
+                return CurrentExplicit;
             }
         }
     }
