@@ -1651,14 +1651,37 @@ namespace Internal.Runtime.TypeLoader
         {
             TypeLoaderLogger.WriteLine("BuildGenericLookupTarget for " + context.LowLevelToString() + "/" + signature.LowLevelToString());
 
-            IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(signature);
-            NativeReader reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle));
-            uint offset = reader.AddressToOffset(signature);
+            TypeManagerHandle typeManager;
+            NativeReader reader;
+            uint offset;
+
+#if !CORERT
+            // If the system module is compiled with as a type manager, all modules are compiled as such
+            if (ModuleList.Instance.SystemModule.Handle.IsTypeManager)
+#endif
+            {
+                // The first is a pointer that points to the TypeManager indirection cell.
+                // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
+                IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
+                typeManager = new TypeManagerHandle(lazySignature[0][0]);
+                offset = checked((uint)lazySignature[0][1].ToInt32());
+                reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
+            }
+#if !CORERT
+            else
+            {
+                IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(signature);
+                typeManager = new TypeManagerHandle(moduleHandle);
+                reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
+                offset = reader.AddressToOffset(signature);
+            }
+#endif
+
             NativeParser parser = new NativeParser(reader, offset);
 
             GenericContextKind contextKind = (GenericContextKind)parser.GetUnsigned();
 
-            NativeFormatModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(moduleHandle));
+            NativeFormatModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoByHandle(typeManager);
 
             NativeLayoutInfoLoadContext nlilContext = new NativeLayoutInfoLoadContext();
             nlilContext._module = moduleInfo;

@@ -44,6 +44,8 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
+        private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
@@ -52,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.AddSymbol(this);
 
             NativeLayoutMethodLdTokenVertexNode ldtokenSigNode = factory.NativeLayout.MethodLdTokenVertex(_targetMethod);
-            objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode));
+            objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode, s_NativeLayoutSignaturePrefix, _targetMethod));
 
             return objData.ToObjectData();
         }
