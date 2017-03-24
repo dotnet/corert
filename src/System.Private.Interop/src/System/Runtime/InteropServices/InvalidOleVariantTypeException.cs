@@ -20,7 +20,7 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    public class InvalidOleVariantTypeException : Exception
+    public class InvalidOleVariantTypeException : SystemException
     {
         public InvalidOleVariantTypeException()
             : base(SR.Arg_InvalidOleVariantTypeException)
@@ -40,7 +40,8 @@ namespace System.Runtime.InteropServices
             HResult = __HResults.COR_E_INVALIDOLEVARIANTTYPE;
         }
 
-        protected InvalidOleVariantTypeException(SerializationInfo info, StreamingContext context) : base(info, context)
+        protected InvalidOleVariantTypeException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }
