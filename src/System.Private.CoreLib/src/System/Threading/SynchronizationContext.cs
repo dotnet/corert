@@ -11,6 +11,8 @@
 ** 
 ===========================================================*/
 
+using Internal.Runtime.Augments;
+
 namespace System.Threading
 {
     public partial class SynchronizationContext
@@ -43,20 +45,17 @@ namespace System.Threading
         {
         }
 
-        [ThreadStatic]
-        private static SynchronizationContext s_current;
-
         // Set the SynchronizationContext on the current thread
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
         {
-            s_current = syncContext;
+            RuntimeThread.CurrentThread.SynchronizationContext = syncContext;
         }
 
         internal static SynchronizationContext CurrentExplicit
         {
             get
             {
-                return s_current;
+                return RuntimeThread.CurrentThread.SynchronizationContext;
             }
         }
 
