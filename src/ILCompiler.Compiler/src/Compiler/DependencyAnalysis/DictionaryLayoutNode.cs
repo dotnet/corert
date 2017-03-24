@@ -84,6 +84,20 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
+        {
+            if (_layout == null)
+                ComputeLayout();
+
+            ArrayBuilder<NativeLayoutVertexNode> templateEntries = new ArrayBuilder<NativeLayoutVertexNode>();
+            for (int i = 0; i < _layout.Length; i++)
+            {
+                templateEntries.Add(_layout[i].TemplateDictionaryNode(factory));
+            }
+
+            return templateEntries.ToArray();
+        }
+
         [Conditional("DEBUG")]
         private void Validate()
         {

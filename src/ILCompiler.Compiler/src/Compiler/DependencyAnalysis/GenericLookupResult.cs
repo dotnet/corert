@@ -467,7 +467,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                throw new NotImplementedException();
+                return factory.NativeLayout.NotSupportedDictionarySlot;
             }
             else
             {
@@ -523,7 +523,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                throw new NotImplementedException();
+                return factory.NativeLayout.NotSupportedDictionarySlot;
             }
             else
             {
@@ -611,7 +611,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            throw new NotImplementedException();
+            return factory.NativeLayout.NotSupportedDictionarySlot;
         }
     }
 
@@ -645,7 +645,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.GcStaticDictionarySlot(_type);
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                return factory.NativeLayout.NotSupportedDictionarySlot;
+            }
+            else
+            {
+                return factory.NativeLayout.GcStaticDictionarySlot(_type);
+            }
         }
 
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
