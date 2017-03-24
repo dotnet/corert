@@ -28,6 +28,13 @@ class Program
 
         return Pass;
     }
+
+    public static bool IsRunnningOnWindows()
+    {
+        // Note: Environment.OSVersion is not yet available.
+        // This is a temporary hack that allows to skip Task related tests on Unix.
+        return System.IO.Path.DirectorySeparatorChar == '\\';
+    }
 }
 
 class FinalizeTest
@@ -156,6 +163,12 @@ class ThreadStaticsTestWithTasks
 
     public static void Run()
     {
+        if (!Program.IsRunnningOnWindows())
+        {
+            // Tasks are not supported on Unix yet
+            return;
+        }
+
         Task[] tasks = new Task[TotalTaskCount];
         for (int i = 0; i < tasks.Length; ++i)
         {
@@ -327,6 +340,12 @@ class ThreadTest
 
     private static void TestIsBackgroundProperty()
     {
+        if (!Program.IsRunnningOnWindows())
+        {
+            // This test uses tasks which are not supported on Unix yet
+            return;
+        }
+
         // Thread created using Thread.Start
         var t_event = new AutoResetEvent(false);
         var t = new Thread(() => t_event.WaitOne());
@@ -441,6 +460,28 @@ class ThreadTest
         ExpectPassed(nameof(TestMaxStackSize), 0);
     }
 
+    static int s_startedThreadCount = 0;
+    private static void TestStartShutdown()
+    {
+        Thread[] threads = new Thread[2048];
+
+        // Creating a large number of threads
+        for (int i = 0; i < threads.Length; i++)
+        {
+            threads[i] = new Thread(() => { Interlocked.Increment(ref s_startedThreadCount); });
+            threads[i].Start();
+        }
+
+        // Wait for all threads to shutdown;
+        for (int i = 0; i < threads.Length; i++)
+        {
+            threads[i].Join();
+        }
+
+        Expect(s_startedThreadCount == threads.Length,
+            String.Format("Not all threads completed. Expected: {0}, Actual: {1}", threads.Length, s_startedThreadCount));
+    }
+
     public static int Run()
     {
         TestStartMethod();
@@ -454,6 +495,7 @@ class ThreadTest
         TestThreadStateProperty();
 
         TestMaxStackSize();
+        TestStartShutdown();
 
         return (s_failed == 0) ? Program.Pass : Program.Fail;
     }

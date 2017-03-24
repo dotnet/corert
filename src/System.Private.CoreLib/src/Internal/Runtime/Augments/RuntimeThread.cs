@@ -117,6 +117,14 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        /// <summary>
+        /// Returns true if the underlying OS thread has been created and started execution of managed code.
+        /// </summary>
+        private bool HasStarted()
+        {
+            return !GetThreadStateBit(ThreadState.Unstarted);
+        }
+
         public bool IsAlive
         {
             get
@@ -224,12 +232,7 @@ namespace Internal.Runtime.Augments
                 // Prevent race condition with starting this thread
                 using (LockHolder.Hold(_lock))
                 {
-                    if (!HasStarted())
-                    {
-                        Debug.Assert(GetThreadStateBit(ThreadState.Unstarted));
-                        // We will set the priority when we create an OS thread
-                    }
-                    else if (!SetPriorityLive(value))
+                    if (HasStarted() && !SetPriorityLive(value))
                     {
                         throw new ThreadStateException(SR.ThreadState_SetPriorityFailed);
                     }
@@ -386,6 +389,11 @@ namespace Internal.Runtime.Augments
             }
             catch (OutOfMemoryException)
             {
+#if PLATFORM_UNIX
+                // This should go away once OnThreadExit stops using t_currentThread to signal
+                // shutdown of the thread on Unix.
+                thread._stopped.Set();
+#endif
                 // Terminate the current thread. The creator thread will throw a ThreadStartException.
                 return 0;
             }
