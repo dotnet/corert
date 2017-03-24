@@ -194,15 +194,6 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                // TODO: Do we really want to get the instantiation to figure out whether the type is generic?
-                if (this.HasInstantiation)
-                    flags |= TypeFlags.ContainsGenericVariables;
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
                 TypeDesc baseType = this.BaseType;
