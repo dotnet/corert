@@ -14,14 +14,15 @@
     <TargetsOSX Condition="'$(TargetsOSX)' != 'true'">false</TargetsOSX>
   </PropertyGroup>
   <ItemGroup Condition="$(TargetsWindows)">
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.BOOL.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Errors.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Libraries.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CancelIoEx.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CloseHandle.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FileTypes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FormatMessage.cs"/>
@@ -34,11 +35,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.LockFile.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SecurityOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SecurityOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEndOfFile.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetErrorMode.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs"/>
@@ -66,6 +66,22 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Write.cs"/>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\ArithmeticException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\ArrayTypeMismatchException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\AsyncCallback.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\AttributeTargets.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\AttributeUsageAttribute.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ConfigurableArrayPool.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\CharEnumerator.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollection.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IComparer.cs"/>
@@ -87,24 +103,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEnumerator.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEqualityComparer.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IList.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\ArithmeticException.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\ArrayTypeMismatchException.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\AsyncCallback.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\AttributeTargets.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\AttributeUsageAttribute.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ConfigurableArrayPool.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\CharEnumerator.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IStructuralComparable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IStructuralEquatable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableAttribute.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DataMisalignedException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeKind.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DayOfWeek.cs"/>
@@ -157,8 +159,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ParamArrayAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformNotSupportedException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\RankException.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Assembly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AmbiguousMatchException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Assembly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyAlgorithmIdAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyCompanyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyConfigurationAttribute.cs" />
@@ -191,13 +193,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClauseOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\GenericParameterAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ICustomAttributeProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ImageFileMachine.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InterfaceMapping.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IntrospectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvalidFilterCriteriaException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ManifestResourceInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberFilter.cs" />
@@ -290,26 +292,24 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventHandler.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\UnitySerializationHolder.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows)">
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.StringBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Win32Marshal.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix) and $(TargetsOSX)">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.OSX.cs"/>
