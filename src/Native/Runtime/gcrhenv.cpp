@@ -1451,6 +1451,11 @@ void GCToEEInterface::EnableFinalization(bool foundFinalizers)
         RhEnableFinalization();
 }
 
+void GCToEEInterface::HandleFatalError(unsigned int exitCode)
+{
+    EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
+}
+
 #endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
