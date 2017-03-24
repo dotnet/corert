@@ -1122,6 +1122,24 @@
   <data name="InvalidOperation_TooEarly" xml:space="preserve">
     <value>Internal Error: This operation cannot be invoked in an eager class constructor.</value>
   </data>
+  <data name="InvalidOperation_NullContext" xml:space="preserve">
+    <value>Cannot call Set on a null context</value>
+  </data>
+  <data name="InvalidOperation_CannotUseAFCOtherThread" xml:space="preserve">
+    <value>AsyncFlowControl object must be used on the thread where it was created.</value>
+  </data>
+  <data name="InvalidOperation_CannotRestoreUnsupressedFlow" xml:space="preserve">
+    <value>Cannot restore context flow when it is not suppressed.</value>
+  </data>
+  <data name="InvalidOperation_CannotSupressFlowMultipleTimes" xml:space="preserve">
+    <value>Context flow is already suppressed.</value>
+  </data>
+  <data name="InvalidOperation_CannotUseAFCMultiple" xml:space="preserve">
+    <value>AsyncFlowControl object can be used only once to call Undo().</value>
+  </data>
+  <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
+    <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
+  </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
@@ -1605,9 +1623,6 @@
   </data>
   <data name="Argument_MinMaxValue" xml:space="preserve">
     <value>'{0}' cannot be greater than {1}.</value>
-  </data>
-  <data name="InvalidOperation_NullContext" xml:space="preserve">
-    <value>Cannot call Set on a null context</value>
   </data>
   <data name="ExecutionContext_ExceptionInAsyncLocalNotification" xml:space="preserve">
     <value>An exception was not handled in an AsyncLocal&lt;T&gt; notification callback.</value>

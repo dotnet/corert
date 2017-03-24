@@ -676,7 +676,6 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NativeLayoutTemplateMethodLayoutVertexNode : NativeLayoutSavedVertexNode
     {
         private MethodDesc _method;
-        private Dictionary<int, NativeLayoutVertexNode> _genericDictionaryEntries = new Dictionary<int, NativeLayoutVertexNode>();
 
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateMethodLayoutVertexNode" + factory.NameMangler.GetMangledMethodName(_method);
 
@@ -686,21 +685,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(method.HasInstantiation);
             Debug.Assert(method.IsCanonicalMethod(CanonicalFormKind.Any));
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method, "Assert that the canonical method passed in is in standard canonical form");
-        }
-
-        public void AddGenericDictionaryEntry(int slot, NativeLayoutVertexNode description)
-        {
-            lock (_genericDictionaryEntries)
-            {
-                if (!_genericDictionaryEntries.ContainsKey(slot))
-                {
-                    _genericDictionaryEntries.Add(slot, description);
-                }
-                else
-                {
-                    Debug.Assert(_genericDictionaryEntries[slot] == description);
-                }
-            }
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
@@ -719,25 +703,17 @@ namespace ILCompiler.DependencyAnalysis
 
             VertexBag layoutInfo = new VertexBag();
 
-            KeyValuePair<int, NativeLayoutVertexNode>[] dictionaryEntries = new KeyValuePair<int, NativeLayoutVertexNode>[_genericDictionaryEntries.Count];
-            int index = 0;
-            foreach (KeyValuePair<int, NativeLayoutVertexNode> entry in _genericDictionaryEntries)
-            {
-                dictionaryEntries[index++] = entry;
-            }
-            Array.Sort(dictionaryEntries, CompareDictionaryEntries);
-
-            if (!_method.IsCanonicalMethod(CanonicalFormKind.Universal) && (dictionaryEntries.Length > 0))
+            DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_method);
+            ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
+            
+            if (!_method.IsCanonicalMethod(CanonicalFormKind.Universal) && (templateLayout.Count > 0))
             {
                 List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
 
-                int indexer = 0;
-                foreach (KeyValuePair<int, NativeLayoutVertexNode> dictionaryEntry in dictionaryEntries)
+                foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
                 {
-                    Debug.Assert(dictionaryEntry.Key == indexer);
-                    Debug.Assert(dictionaryEntry.Value.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
-                    dictionaryVertices.Add(dictionaryEntry.Value);
-                    indexer++;
+                    Debug.Assert(dictionaryEntry.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
+                    dictionaryVertices.Add(dictionaryEntry);
                 }
                 NativeLayoutVertexNode dictionaryLayout = factory.NativeLayout.PlacedVertexSequence(dictionaryVertices);
 
@@ -746,7 +722,6 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(layoutInfo);
 
-            _genericDictionaryEntries = null; // WriteVertex is only to be used once, and no dictionary entries should be modified after writing the vertex.
             return SetSavedVertex(layoutInfo);
         }
     }
@@ -755,7 +730,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         private DefType _type;
         private bool _isUniversalCanon;
-        Dictionary<int, NativeLayoutVertexNode> _genericDictionaryEntries = new Dictionary<int, NativeLayoutVertexNode>();
 
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateTypeLayoutVertexNode_" + factory.NameMangler.GetMangledTypeName(_type);
 
@@ -765,15 +739,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(type.ConvertToCanonForm(CanonicalFormKind.Specific) == type, "Assert that the canonical type passed in is in standard canonical form");
             _isUniversalCanon = type.IsCanonicalSubtype(CanonicalFormKind.Universal);
             _type = type.ConvertToSharedRuntimeDeterminedForm();
-        }
-
-        public void AddGenericDictionaryEntry(int slot, NativeLayoutVertexNode description)
-        {
-            lock (_genericDictionaryEntries)
-            {
-                if (!_genericDictionaryEntries.ContainsKey(slot))
-                    _genericDictionaryEntries.Add(slot, description);
-            }
         }
 
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
@@ -968,14 +933,9 @@ namespace ILCompiler.DependencyAnalysis
 
             VertexBag layoutInfo = new VertexBag();
 
-            KeyValuePair<int, NativeLayoutVertexNode>[] dictionaryEntries = new KeyValuePair<int, NativeLayoutVertexNode>[_genericDictionaryEntries.Count];
-            int index = 0;
-            foreach (KeyValuePair<int, NativeLayoutVertexNode> entry in _genericDictionaryEntries)
-            {
-                dictionaryEntries[index++] = entry;
-            }
-            Array.Sort(dictionaryEntries, CompareDictionaryEntries);
-
+            DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
+            
             NativeWriter writer = GetNativeWriter(factory);
 
             // Interfaces
@@ -992,17 +952,14 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.ImplementedInterfaces, implementedInterfaces.WriteVertex(factory));
             }
 
-            if (!_isUniversalCanon && (dictionaryEntries.Length > 0))
+            if (!_isUniversalCanon && (templateLayout.Count > 0))
             {
                 List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
 
-                int indexer = 0;
-                foreach (KeyValuePair<int, NativeLayoutVertexNode> dictionaryEntry in dictionaryEntries)
+                foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
                 {
-                    Debug.Assert(dictionaryEntry.Key == indexer);
-                    Debug.Assert(dictionaryEntry.Value.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
-                    dictionaryVertices.Add(dictionaryEntry.Value);
-                    indexer++;
+                    Debug.Assert(dictionaryEntry.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
+                    dictionaryVertices.Add(dictionaryEntry);
                 }
                 NativeLayoutVertexNode dictionaryLayout = factory.NativeLayout.PlacedVertexSequence(dictionaryVertices);
 
@@ -1182,7 +1139,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(layoutInfo);
-            _genericDictionaryEntries = null; // WriteVertex is only to be used once, and no dictionary entries should be modified after writing the vertex.
 
             return SetSavedVertex(layoutInfo);
         }
@@ -1729,6 +1685,23 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
             return _wrappedNode.WriteVertex(factory);
+        }
+    }
+
+    public sealed class NativeLayoutNotSupportedDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.NotYetSupported;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            return null;
+        }
+
+        protected override string GetName(NodeFactory context) => "NativeLayoutNotSupportedDictionarySlotNode";
+        
+        protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            return writer.GetUnsignedConstant(0xDEADBEEF);
         }
     }
 }

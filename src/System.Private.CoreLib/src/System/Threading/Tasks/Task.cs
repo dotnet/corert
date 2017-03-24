@@ -1701,11 +1701,11 @@ namespace System.Threading.Tasks
             {
                 var props = m_contingentProperties;
                 if (props != null && props.m_capturedContext != null) return props.m_capturedContext;
-                else return ExecutionContext.PreAllocatedDefault;
+                else return ExecutionContext.Default;
             }
             set
             {
-                if (!value.IsPreAllocatedDefault) // not the default context, then inflate the contingent properties and set it
+                if (value != ExecutionContext.Default) // not the default context, then inflate the contingent properties and set it
                 {
                     EnsureContingentPropertiesInitialized(needsProtection: false).m_capturedContext = value;
                 }

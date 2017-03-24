@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -112,16 +113,64 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyList dependencies = null;
+            DependencyList dependencies = new DependencyList();
             foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
             {
-                if (dependencies == null)
-                    dependencies = new DependencyList();
-
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
+            // Root the template for the type while we're hitting its dictionary cells. In the future, we may
+            // want to control this via type reflectability instead.
+            if (_dictionaryOwner is MethodDesc)
+            {
+                dependencies.Add(factory.NativeLayout.TemplateMethodLayout((MethodDesc)_dictionaryOwner), "Type loader template");
+            }
+            else
+            {
+                DefType actualTemplateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, (TypeDesc)_dictionaryOwner);
+                dependencies.Add(factory.NativeLayout.TemplateTypeLayout(actualTemplateType), "Type loader template");
+            }
+
             return dependencies;
+        }
+
+        public override bool HasConditionalStaticDependencies => true;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
+            NativeLayoutSavedVertexNode templateLayout;
+            if (_dictionaryOwner is MethodDesc)
+            {
+                templateLayout = factory.NativeLayout.TemplateMethodLayout((MethodDesc)_dictionaryOwner);
+                conditionalDependencies.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
+                                                                templateLayout,
+                                                                "Type loader template"));
+            }
+            else
+            {
+                DefType actualTemplateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, (TypeDesc)_dictionaryOwner);
+                templateLayout = factory.NativeLayout.TemplateTypeLayout(actualTemplateType);
+                conditionalDependencies.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
+                                                                templateLayout,
+                                                                "Type loader template"));
+            }
+
+            if (_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase)
+            {
+                // If the type has a lazy static constructor, we also need the non-GC static base to be available as
+                // a template dictionary node.
+                TypeDesc type = (TypeDesc)_target;
+                Debug.Assert(templateLayout != null);
+                if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                {
+                    GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(type);
+                    conditionalDependencies.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),
+                                                                templateLayout,
+                                                                "Type loader template"));
+                }
+            }
+            
+            return conditionalDependencies;
         }
     }
 

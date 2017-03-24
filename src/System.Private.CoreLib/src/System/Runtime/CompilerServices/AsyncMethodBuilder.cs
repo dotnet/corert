@@ -24,6 +24,7 @@ using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
 using CausalitySource = Internal.Runtime.Augments.CausalitySource;
 using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
 using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
+using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 namespace System.Runtime.CompilerServices
 {
@@ -729,10 +730,11 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             // Async state machines are required not to throw, so no need for try/finally here.
+            Thread currentThread = Thread.CurrentThread;
             ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            ExecutionContext.EstablishCopyOnWriteScope(ref ecs);
+            ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
             stateMachine.MoveNext();
-            ecs.Undo();
+            ecs.Undo(currentThread);
         }
 
         //

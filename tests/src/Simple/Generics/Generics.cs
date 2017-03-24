@@ -1125,6 +1125,7 @@ class Program
     class TestFieldAccess
     {
         class ClassType { }
+        class ClassType2 { }
         struct StructType { }
 
         class Foo<T>
@@ -1152,6 +1153,19 @@ class Program
             public float m_floatField;
             public string m_stringField;
             public object m_objectField;
+        }
+
+        // Remove this and use Foo once we have type loader support for all necessary dictionary slots
+        class FooDynamic<T>
+        {
+            static FooDynamic()
+            {
+                Console.WriteLine("FooDynamic<" + typeof(T).Name + "> cctor");
+            }
+
+            public static int s_intField;
+            public static float s_floatField;
+            public static long s_longField1;
         }
 
         class Bar
@@ -1190,6 +1204,37 @@ class Program
                 Console.WriteLine("EXPECTED : " + expected);
                 s_NumErrors++;
             }
+        }
+
+        private static void TestDynamicStaticFields()
+        {
+            FooDynamic<object>.s_intField = 1234;
+            FooDynamic<object>.s_floatField = 12.34f;
+            FooDynamic<object>.s_longField1 = 0x1111;
+
+            var fooDynamicOfClassType = typeof(FooDynamic<>).MakeGenericType(typeof(ClassType)).GetTypeInfo();
+            var fooDynamicOfClassType2 = typeof(FooDynamic<>).MakeGenericType(typeof(ClassType2)).GetTypeInfo();
+            
+            FieldInfo fi = fooDynamicOfClassType.GetDeclaredField("s_intField");
+            FieldInfo fi2 = fooDynamicOfClassType2.GetDeclaredField("s_intField");
+            fi.SetValue(null, 1111);
+            fi2.SetValue(null, 2222);
+            Verify(1111, (int)fi.GetValue(null));
+            Verify(2222, (int)fi2.GetValue(null));
+
+            fi = fooDynamicOfClassType.GetDeclaredField("s_floatField");
+            fi2 = fooDynamicOfClassType2.GetDeclaredField("s_floatField");
+            fi.SetValue(null, 1.1f);
+            fi2.SetValue(null, 2.2f);
+            Verify(1.1f, (float)fi.GetValue(null));
+            Verify(2.2f, (float)fi2.GetValue(null));
+
+            fi = fooDynamicOfClassType.GetDeclaredField("s_longField1");
+            fi2 = fooDynamicOfClassType2.GetDeclaredField("s_longField1");
+            fi.SetValue(null, 0x11111111);
+            fi2.SetValue(null, 0x22222222);
+            Verify(0x11111111, (long)fi.GetValue(null));
+            Verify(0x22222222, (long)fi2.GetValue(null));
         }
 
         private static void TestStaticFields()
@@ -1410,6 +1455,7 @@ class Program
         {
             TestStaticFields();
             TestInstanceFields();
+            TestDynamicStaticFields();
 
             if (s_NumErrors != 0)
                 throw new Exception(s_NumErrors + " errors!");
