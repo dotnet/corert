@@ -477,7 +477,7 @@
     <Compile Include="System\Text\EncodingProvider.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\Latin1Encoding.cs" />
-    <Compile Include="System\Text\StringBuilder.cs" />
+    <Compile Include="System\Text\StringBuilder.CoreRT.cs"/>
     <Compile Include="System\Text\StringBuilderCache.cs" />
     <Compile Include="System\Text\UnicodeEncoding.cs" />
     <Compile Include="System\Text\UTF32Encoding.cs" />

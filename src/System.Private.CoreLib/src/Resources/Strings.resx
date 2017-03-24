@@ -2278,4 +2278,10 @@
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
   </data>
+  <data name="Serialization_StringBuilderCapacity" xml:space="preserve">
+    <value>The serialized Capacity property of StringBuilder must be positive, less than or equal to MaxCapacity and greater than or equal to the String length.</value>
+  </data>
+  <data name="Serialization_StringBuilderMaxCapacity" xml:space="preserve">
+    <value>The serialized MaxCapacity property of StringBuilder must be positive and greater than or equal to the String length.</value>
+  </data>
 </root>
