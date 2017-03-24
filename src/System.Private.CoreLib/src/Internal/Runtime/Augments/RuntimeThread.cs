@@ -22,6 +22,9 @@ namespace Internal.Runtime.Augments
         [ThreadStatic]
         private static RuntimeThread t_currentThread;
 
+        private ExecutionContext _executionContext;
+        private SynchronizationContext _synchronizationContext;
+
         private volatile int _threadState;
         private ThreadPriority _priority;
         private ManagedThreadId _managedThreadId;
@@ -123,6 +126,18 @@ namespace Internal.Runtime.Augments
         private bool HasStarted()
         {
             return !GetThreadStateBit(ThreadState.Unstarted);
+        }
+
+        internal ExecutionContext ExecutionContext
+        {
+            get { return _executionContext; }
+            set { _executionContext = value; }
+        }
+
+        internal SynchronizationContext SynchronizationContext
+        {
+            get { return _synchronizationContext; }
+            set { _synchronizationContext = value; }
         }
 
         public bool IsAlive
