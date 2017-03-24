@@ -413,14 +413,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public bool ContainsGenericVariables
-        {
-            get
-            {
-                return (GetTypeFlags(TypeFlags.ContainsGenericVariables | TypeFlags.ContainsGenericVariablesComputed) & TypeFlags.ContainsGenericVariables) != 0;
-            }
-        }
-
         /// <summary>
         /// Gets the type from which this type derives from, or null if there's no such type.
         /// </summary>
