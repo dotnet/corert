@@ -479,12 +479,12 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr GetCriticalHandle(CriticalHandle criticalHandle)
         {
-            return criticalHandle.handle;
+            return criticalHandle.GetHandleInternal();
         }
 
         public static void SetCriticalHandle(CriticalHandle criticalHandle, IntPtr handle)
         {
-            criticalHandle.handle = handle;
+            criticalHandle.SetHandleInternal(handle);
         }
     }
 }

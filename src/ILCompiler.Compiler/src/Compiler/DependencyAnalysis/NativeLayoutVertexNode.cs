@@ -673,6 +673,100 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+
+    public sealed class NativeLayoutDictionarySignatureNode : NativeLayoutSavedVertexNode
+    {
+        private TypeSystemEntity _owningMethodOrType;
+        public NativeLayoutDictionarySignatureNode(TypeSystemEntity owningMethodOrType)
+        {
+            if (owningMethodOrType is MethodDesc)
+            {
+                MethodDesc owningMethod = (MethodDesc)owningMethodOrType;
+                Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Universal));
+                Debug.Assert(owningMethod.HasInstantiation);
+            }
+            else
+            {
+                TypeDesc owningType = (TypeDesc)owningMethodOrType;
+                Debug.Assert(owningType.IsCanonicalSubtype(CanonicalFormKind.Universal));
+            }
+
+            _owningMethodOrType = owningMethodOrType;
+        }
+
+        private GenericContextKind ContextKind
+        {
+            get
+            {
+                if (_owningMethodOrType is MethodDesc)
+                {
+                    MethodDesc owningMethod = (MethodDesc)_owningMethodOrType;
+                    Debug.Assert(owningMethod.HasInstantiation);
+                    return GenericContextKind.FromMethodHiddenArg | GenericContextKind.NeedsUSGContext;
+                }
+                else
+                {
+                    TypeDesc owningType = (TypeDesc)_owningMethodOrType;
+                    if (owningType.IsSzArray || owningType.IsValueType || owningType.IsSealed())
+                    {
+                        return GenericContextKind.FromHiddenArg | GenericContextKind.NeedsUSGContext;
+                    }
+                    else
+                    {
+                        return GenericContextKind.FromHiddenArg | GenericContextKind.NeedsUSGContext | GenericContextKind.HasDeclaringType;
+                    }
+                }
+            }
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            if ((ContextKind & GenericContextKind.HasDeclaringType) != 0)
+            {
+                return new DependencyListEntry[] { new DependencyListEntry(context.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType), "DeclaringType signature") };
+            }
+            else
+            {
+                return Array.Empty<DependencyListEntry>();
+            }
+        }
+
+        public override Vertex WriteVertex(NodeFactory factory)
+        {
+            Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
+
+            VertexSequence sequence = new VertexSequence();
+
+            DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_owningMethodOrType);
+            ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
+
+            foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
+            {
+                Debug.Assert(dictionaryEntry.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
+                sequence.Append(dictionaryEntry.WriteVertex(factory));
+            }
+
+            Vertex signature;
+
+            GenericContextKind contextKind = ContextKind;
+            NativeWriter nativeWriter = GetNativeWriter(factory);
+
+            if ((ContextKind & GenericContextKind.HasDeclaringType) != 0)
+            {
+                signature = nativeWriter.GetTuple(factory.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType).WriteVertex(factory), sequence);
+            }
+            else
+            {
+                signature = sequence;
+            }
+
+            Vertex signatureWithContextKind = nativeWriter.GetTuple(nativeWriter.GetUnsignedConstant((uint)contextKind), signature);
+            return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(signatureWithContextKind));
+        }
+
+        protected override string GetName(NodeFactory factory) => $"Dictionary layout signature for {_owningMethodOrType.ToString()}";
+    }
+
     public sealed class NativeLayoutTemplateMethodLayoutVertexNode : NativeLayoutSavedVertexNode
     {
         private MethodDesc _method;

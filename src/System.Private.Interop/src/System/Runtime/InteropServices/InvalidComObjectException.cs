@@ -13,10 +13,12 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    public class InvalidComObjectException : Exception
+    [Serializable]
+    public class InvalidComObjectException : SystemException
     {
         public InvalidComObjectException()
             : base(SR.Arg_InvalidComObjectException)
@@ -34,6 +36,11 @@ namespace System.Runtime.InteropServices
             : base(message, inner)
         {
             HResult = __HResults.COR_E_INVALIDCOMOBJECT;
+        }
+
+        protected InvalidComObjectException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
         }
     }
 }

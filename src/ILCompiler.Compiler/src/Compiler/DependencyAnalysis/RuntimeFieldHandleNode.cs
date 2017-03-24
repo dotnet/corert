@@ -33,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
 
+        private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RFHSignature_");
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
@@ -41,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.AddSymbol(this);
 
             NativeLayoutFieldLdTokenVertexNode ldtokenSigNode = factory.NativeLayout.FieldLdTokenVertex(_targetField);
-            objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode));
+            objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode, s_NativeLayoutSignaturePrefix, _targetField));
 
             return objData.ToObjectData();
         }
