@@ -2299,4 +2299,10 @@
   <data name="Serialization_StringBuilderMaxCapacity" xml:space="preserve">
     <value>The serialized MaxCapacity property of StringBuilder must be positive and greater than or equal to the String length.</value>
   </data>
+  <data name="PlatformNotSupported_Remoting" xml:space="preserve">
+    <value>Remoting is not supported on this platform.</value>
+  </data>   
+  <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
+    <value>Strong-name signing is not supported on this platform.</value>
+  </data>
 </root>
