@@ -4,6 +4,7 @@ usage()
 {
     echo "Usage: $0 [OS] [arch] [flavor] [-mode] [-runtest] [-coreclr <subset>]"
     echo "    -mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit"
+    echo "    -test         : Run a single test by folder name (ie, BasicThreading)"
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
     echo "    -coreclr      : Download and run the CoreCLR repo tests"
     echo "    -multimodule  : Compile the framework as a .so and link tests against it (ryujit only)"
@@ -148,6 +149,7 @@ CoreRT_CrossCXXFlags=
 CoreRT_CrossLinkerFlags=
 CoreRT_CrossBuild=0
 CoreRT_EnableCoreDumps=0
+CoreRT_TestName=*
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -180,6 +182,10 @@ while [ "$1" != "" ]; do
         -mode)
             shift
             CoreRT_TestCompileMode=$1
+            ;;
+        -test)
+            shift
+            CoreRT_TestName=$1
             ;;
         -runtest)
             shift
@@ -273,6 +279,10 @@ if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
     CoreRT_TestCompileMode=ryujit
 fi
 
+if [ "$CoreRT_TestCompileMode" = "jit" ]; then
+    CoreRT_TestCompileMode=ryujit
+fi
+
 if [ ! -d $__LogDir ]; then
     mkdir -p $__LogDir
 fi
@@ -295,8 +305,8 @@ __JitPassedTests=0
 echo > ${__CoreRTTestBinDir}/testResults.tmp
 
 __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
-
-for csproj in $(find src -name "*.csproj")
+__TestSearchPath=src/Simple/${CoreRT_TestName}
+for csproj in $(find ${__TestSearchPath} -name "*.csproj")
 do
     if [ ! -e `dirname ${csproj}`/no_unix ]; then
         if [ "${CoreRT_TestCompileMode}" != "cpp" ]; then
