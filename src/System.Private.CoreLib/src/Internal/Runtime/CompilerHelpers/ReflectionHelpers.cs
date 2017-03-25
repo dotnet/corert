@@ -27,5 +27,12 @@ namespace Internal.Runtime.CompilerHelpers
         {
             return RuntimeAugments.Callbacks.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, callingAssemblyName);
         }
+
+        // This supports Assembly.GetExecutingAssembly() intrinsic expansion in the compiler
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        public static Assembly GetExecutingAssembly(RuntimeTypeHandle typeHandle)
+        {
+            return Type.GetTypeFromHandle(typeHandle).Assembly;
+        }
     }
 }
