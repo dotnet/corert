@@ -495,5 +495,10 @@ namespace System.Threading
         #endregion
 
 #endif // CORERT
+
+        public static void MemoryBarrierProcessWide()
+        {
+            RuntimeImports.RhFlushProcessWriteBuffers();
+        }
     }
 }
