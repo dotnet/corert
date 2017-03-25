@@ -148,7 +148,6 @@ namespace System.Resources
             return GetEnumeratorHelper();
         }
 
-        /// <internalonly/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumeratorHelper();
