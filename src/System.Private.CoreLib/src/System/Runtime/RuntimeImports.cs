@@ -325,6 +325,9 @@ namespace System.Runtime
         private static extern int _RhYield();
         internal static bool RhYield() { return (_RhYield() != 0); }
 
+        [DllImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void RhFlushProcessWriteBuffers();
+
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [DllImport(RuntimeLibrary, ExactSpelling = true)]

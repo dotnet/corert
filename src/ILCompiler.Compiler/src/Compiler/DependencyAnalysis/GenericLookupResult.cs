@@ -893,4 +893,50 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NativeLayout.CallingConventionConverter(_callingConventionConverter);
         }
     }
+
+    internal sealed class TypeSizeLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        public TypeSizeLookupResult(TypeDesc type)
+        {
+            _type = type;
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+        }
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            Debug.Assert(false, "GetTarget for a TypeSizeLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            int typeSize;
+
+            if (_type.IsDefType)
+            {
+                typeSize = ((DefType)_type).InstanceFieldSize.AsInt;
+            }
+            else
+            {
+                typeSize = factory.TypeSystemContext.Target.PointerSize;
+            }
+
+            builder.EmitNaturalInt(typeSize);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("TypeSize_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"TypeSize: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeSizeDictionarySlot(_type);
+        }
+    }
 }

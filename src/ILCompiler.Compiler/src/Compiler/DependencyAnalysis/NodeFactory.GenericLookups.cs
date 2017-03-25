@@ -116,6 +116,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new CallingConventionConverterLookupResult(key);
                 });
+
+                _typeSizes = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new TypeSizeLookupResult(type);
+                });
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -260,6 +265,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult CallingConventionConverterLookupResult(CallingConventionConverterKey key)
             {
                 return _callingConventionConverters.GetOrAdd(key);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _typeSizes;
+
+            public GenericLookupResult TypeSize(TypeDesc type)
+            {
+                return _typeSizes.GetOrAdd(type);
             }
         }
 

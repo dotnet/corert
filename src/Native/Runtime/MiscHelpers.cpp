@@ -62,6 +62,15 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
     return PalSwitchToThread();
 }
 
+EXTERN_C REDHAWK_API void __cdecl RhFlushProcessWriteBuffers()
+{
+    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
+    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
+        "You must p/invoke to RhFlushProcessWriteBuffers");
+
+    PalFlushProcessWriteBuffers();
+}
+
 // Return the DispatchMap pointer of a type
 COOP_PINVOKE_HELPER(DispatchMap*, RhGetDispatchMapForType, (EEType * pEEType))
 {
