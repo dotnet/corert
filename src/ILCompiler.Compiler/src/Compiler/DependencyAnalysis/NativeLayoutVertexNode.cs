@@ -33,6 +33,13 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
+
+        [Conditional("DEBUG")]
+        public virtual void CheckIfMarkedEnoughToWrite()
+        {
+            Debug.Assert(Marked);
+        }
+
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
             return Array.Empty<CombinedDependencyListEntry>();
@@ -742,7 +749,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
             {
-                Debug.Assert(dictionaryEntry.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
+                dictionaryEntry.CheckIfMarkedEnoughToWrite();
                 sequence.Append(dictionaryEntry.WriteVertex(factory));
             }
 
@@ -806,7 +813,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
                 {
-                    Debug.Assert(dictionaryEntry.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
+                    dictionaryEntry.CheckIfMarkedEnoughToWrite();
                     dictionaryVertices.Add(dictionaryEntry);
                 }
                 NativeLayoutVertexNode dictionaryLayout = factory.NativeLayout.PlacedVertexSequence(dictionaryVertices);
@@ -1052,7 +1059,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
                 {
-                    Debug.Assert(dictionaryEntry.Marked); // We don't mark these in the static dependencies as the discovery order does not permit that, but they should be marked by the time we write.
+                    dictionaryEntry.CheckIfMarkedEnoughToWrite();
                     dictionaryVertices.Add(dictionaryEntry);
                 }
                 NativeLayoutVertexNode dictionaryLayout = factory.NativeLayout.PlacedVertexSequence(dictionaryVertices);
@@ -1342,7 +1349,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override Vertex WriteVertex(NodeFactory factory)
         {
-            Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
+            CheckIfMarkedEnoughToWrite();
 
             NativeWriter writer = GetNativeWriter(factory);
             return writer.GetFixupSignature(SignatureKind, WriteSignatureVertex(writer, factory));
@@ -1779,6 +1786,64 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
             return _wrappedNode.WriteVertex(factory);
+        }
+    }
+
+    public sealed class NativeLayoutIntegerDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        int _value;
+
+        public NativeLayoutIntegerDictionarySlotNode(int value)
+        {
+            _value = value;
+        }
+
+        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.IntValue;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            return null;
+        }
+
+        protected override string GetName(NodeFactory context) => "NativeLayoutIntegerDictionarySlotNode_" + _value.ToStringInvariant();
+
+        protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            return writer.GetUnsignedConstant((uint)_value);
+        }
+
+        public override void CheckIfMarkedEnoughToWrite()
+        {
+            // Do nothing, this node does not need marking
+        }
+    }
+
+    public sealed class NativeLayoutPointerToOtherSlotDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        int _otherSlotIndex;
+
+        public NativeLayoutPointerToOtherSlotDictionarySlotNode(int otherSlotIndex)
+        {
+            _otherSlotIndex = otherSlotIndex;
+        }
+
+        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.PointerToOtherSlot;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            return null;
+        }
+
+        protected override string GetName(NodeFactory context) => "NativeLayoutPointerToOtherSlotDictionarySlotNode_" + _otherSlotIndex.ToStringInvariant();
+
+        protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            return writer.GetUnsignedConstant((uint)_otherSlotIndex);
+        }
+
+        public override void CheckIfMarkedEnoughToWrite()
+        {
+            // Do nothing, this node does not need marking
         }
     }
 
