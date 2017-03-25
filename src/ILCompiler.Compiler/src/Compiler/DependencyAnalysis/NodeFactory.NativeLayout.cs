@@ -182,6 +182,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new NativeLayoutDictionarySignatureNode(owningMethodOrType);
                 });
+
+                _integerSlots = new NodeCache<int, NativeLayoutIntegerDictionarySlotNode>(value =>
+                {
+                    return new NativeLayoutIntegerDictionarySlotNode(value);
+                });
+
+                _otherSlotPointerSlots = new NodeCache<int, NativeLayoutPointerToOtherSlotDictionarySlotNode>(otherSlotIndex =>
+                {
+                    return new NativeLayoutPointerToOtherSlotDictionarySlotNode(otherSlotIndex);
+                });
             }
 
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
@@ -547,6 +557,18 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutDictionarySignatureNode DictionarySignature(TypeSystemEntity owningMethodOrType)
             {
                 return _dictionarySignatures.GetOrAdd(owningMethodOrType);
+            }
+
+            private NodeCache<int, NativeLayoutIntegerDictionarySlotNode> _integerSlots;
+            public NativeLayoutIntegerDictionarySlotNode IntegerSlot(int value)
+            {
+                return _integerSlots.GetOrAdd(value);
+            }
+
+            private NodeCache<int, NativeLayoutPointerToOtherSlotDictionarySlotNode> _otherSlotPointerSlots;
+            public NativeLayoutPointerToOtherSlotDictionarySlotNode PointerToOtherSlot(int otherSlotIndex)
+            {
+                return _otherSlotPointerSlots.GetOrAdd(otherSlotIndex);
             }
         }
 
