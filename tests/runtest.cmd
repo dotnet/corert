@@ -12,6 +12,7 @@ set CoreRT_TestCompileMode=
 set CoreRT_RunCoreCLRTests=
 set CoreRT_CoreCLRTargetsFile=
 set CoreRT_TestLogFileName=testresults.xml
+set CoreRT_TestName=*
 
 :ArgLoop
 if "%1" == "" goto :ArgsDone
@@ -47,6 +48,7 @@ if /i "%1" == "/coreclr"  (
 )
 if /i "%1" == "/coreclrsingletest" (set CoreRT_RunCoreCLRTests=true&set CoreRT_CoreCLRTest=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
+if /i "%1" == "/test" (set CoreRT_TestName=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/multimodule" (set CoreRT_MultiFileConfiguration=MultiModule&shift&goto ArgLoop)
@@ -59,6 +61,7 @@ echo %ThisScript% [arch] [flavor] [/mode] [/runtest] [/coreclr ^<subset^>]
 echo     arch          : x64 / x86 / arm
 echo     flavor        : debug / release
 echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit. Default: both
+echo     /test         : Run a single test by folder name (ie, BasicThreading)
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
 echo     /coreclrsingletest ^<absolute\path\to\test.exe^>
@@ -72,6 +75,10 @@ echo        All        : Runs all tests. There will be many failures (~7000 test
 exit /b 2
 
 :ArgsDone
+
+if /i "%CoreRT_TestCompileMode%"=="jit" (
+    set CoreRT_TestCompileMode=ryujit
+)
 
 :: Cpp Codegen does not support multi-module compilation, so force Ryujit
 if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
@@ -116,7 +123,7 @@ set /a __CppTotalTests=0
 set /a __CppPassedTests=0
 set /a __JitTotalTests=0
 set /a __JitPassedTests=0
-for /f "delims=" %%a in ('cmd /c dir /s /aD /b %CoreRT_TestRoot%\src\* %__Filter%') do (
+for /f "delims=" %%a in ('cmd /c dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName% %__Filter%') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!

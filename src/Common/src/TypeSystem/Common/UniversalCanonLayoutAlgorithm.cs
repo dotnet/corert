@@ -19,7 +19,12 @@ namespace Internal.TypeSystem
         public override bool ComputeContainsGCPointers(DefType type)
         {
             // This should never be called
-            throw new ArgumentException();
+            throw new NotSupportedException();
+        }
+
+        public override bool ComputeIsByRefLike(DefType type)
+        {
+            return false;
         }
 
         public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)

@@ -443,10 +443,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     }
 #endif // !USE_PORTABLE_HELPERS
 
-#if !HAVE_THREAD_LOCAL
-    __cxa_thread_atexit(RuntimeThreadShutdown, NULL, &__dso_handle);
-#endif
-
     return true;
 }
 
@@ -494,6 +490,8 @@ extern "C" void PalAttachThread(void* thread)
 {
 #if HAVE_THREAD_LOCAL
     tls_destructionMonitor.SetThread(thread);
+#else
+    __cxa_thread_atexit(RuntimeThreadShutdown, thread, &__dso_handle);
 #endif
 }
 

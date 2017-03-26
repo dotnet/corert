@@ -101,6 +101,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\TypedReferenceHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
@@ -162,7 +163,6 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
-    <Compile Include="System\Reflection\Assembly.cs" />
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
@@ -172,14 +172,11 @@
     <Compile Include="System\Reflection\CustomAttributeTypedArgument.cs" />
     <Compile Include="System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
-    <Compile Include="System\Reflection\IReflect.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
-    <Compile Include="System\Reflection\MemberInfoSerializationHolder.cs" />
     <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
-    <Compile Include="System\Reflection\ParameterInfo.cs" />
     <Compile Include="System\Reflection\Pointer.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
@@ -234,9 +231,7 @@
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
-    <Compile Include="System\ContextBoundObject.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
-    <Compile Include="System\DefaultBinder.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
     <Compile Include="System\Empty.cs" />
@@ -482,7 +477,7 @@
     <Compile Include="System\Text\EncodingProvider.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\Latin1Encoding.cs" />
-    <Compile Include="System\Text\StringBuilder.cs" />
+    <Compile Include="System\Text\StringBuilder.CoreRT.cs"/>
     <Compile Include="System\Text\StringBuilderCache.cs" />
     <Compile Include="System\Text\UnicodeEncoding.cs" />
     <Compile Include="System\Text\UTF32Encoding.cs" />
@@ -574,7 +569,6 @@
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntptr.cs" />
-    <Compile Include="System\UnitySerializationHolder.cs" />
     <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />

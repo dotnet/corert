@@ -27,8 +27,25 @@ namespace Internal.TypeSystem
             // Count the number of instance fields in advance for convenience
             int numInstanceFields = 0;
             foreach (var field in type.GetFields())
-                if (!field.IsStatic)
-                    numInstanceFields++;
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+
+                // ByRef instance fields are not allowed.
+                if (fieldType.IsByRef)
+                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+
+                // ByRef-like instance fields on reference types are not allowed.
+                if (fieldType.IsValueType && !type.IsValueType)
+                {
+                    if (((DefType)fieldType).IsByRefLike)
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
+                numInstanceFields++;
+            }
 
             if (type.IsModuleType)
             {
@@ -123,11 +140,6 @@ namespace Internal.TypeSystem
                 return result;
             }
 
-            // Verify that no ByRef types present in this type's fields
-            foreach (var field in type.GetFields())
-                if (field.FieldType.IsByRef)
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-
             // If the type has layout, read its packing and size info
             // If the type has explicit layout, also read the field offset info
             if (type.IsExplicitLayout || type.IsSequentialLayout)
@@ -198,12 +210,18 @@ namespace Internal.TypeSystem
                 if (!field.IsStatic || field.HasRva || field.IsLiteral)
                     continue;
 
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsByRef || (fieldType.IsValueType && ((DefType)fieldType).IsByRefLike))
+                {
+                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
                 StaticsBlock* block =
                     field.IsThreadStatic ? &result.ThreadStatics :
                     field.HasGCStaticBase ? &result.GcStatics :
                     &result.NonGcStatics;
 
-                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, type.Context.Target.DefaultPackingSize);
+                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, type.Context.Target.DefaultPackingSize);
 
                 block->Size = LayoutInt.AlignUp(block->Size, sizeAndAlignment.Alignment);
                 result.Offsets[index] = new FieldAndOffset(field, block->Size);
@@ -240,7 +258,7 @@ namespace Internal.TypeSystem
                         break;
                     }
                 }
-                else if (fieldType.IsGCPointer || fieldType.IsByRef)
+                else if (fieldType.IsGCPointer)
                 {
                     someFieldContainsPointers = true;
                     break;
@@ -403,7 +421,7 @@ namespace Internal.TypeSystem
                     result.Alignment = fieldType.Context.Target.LayoutPointerSize;
                 }
             }
-            else if (fieldType.IsByRef || fieldType.IsArray)
+            else if (fieldType.IsArray)
             {
                 // This could use InstanceFieldSize/Alignment (and those results should match what's here)
                 // but, its more efficient to just assume pointer size instead of fulling processing
@@ -599,6 +617,34 @@ namespace Internal.TypeSystem
                         return null;
                 }
             }
+        }
+
+        public override bool ComputeIsByRefLike(DefType type)
+        {
+            // Reference types can never be ByRef-like.
+            if (!type.IsValueType)
+                return false;
+
+            if (type.IsByReferenceOfT)
+                return true;
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsValueType && !fieldType.IsPrimitive)
+                {
+                    DefType fieldDefType = (DefType)fieldType;
+                    if (fieldDefType.IsByRefLike)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private struct SizeAndAlignment

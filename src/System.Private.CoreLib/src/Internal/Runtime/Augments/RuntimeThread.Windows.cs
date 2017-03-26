@@ -123,23 +123,15 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        /// <summary>
-        /// Returns true if the thread is started or being started in StartInternal.
-        /// </summary>
-        private bool HasStarted()
-        {
-            return !_osHandle.IsInvalid;
-        }
-
         private ThreadPriority GetPriorityLive()
         {
-            Debug.Assert(HasStarted());
+            Debug.Assert(!_osHandle.IsInvalid);
             return MapFromOSPriority(Interop.mincore.GetThreadPriority(_osHandle));
         }
 
         private bool SetPriorityLive(ThreadPriority priority)
         {
-            Debug.Assert(HasStarted());
+            Debug.Assert(!_osHandle.IsInvalid);
             return Interop.mincore.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
         }
 

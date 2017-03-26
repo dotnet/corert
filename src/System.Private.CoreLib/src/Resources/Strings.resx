@@ -1233,6 +1233,9 @@
   <data name="NotSupported_VoidArray" xml:space="preserve">
     <value>Arrays of System.Void are not supported.</value>
   </data>
+  <data name="NotSupported_ByRefLike" xml:space="preserve">
+    <value>Cannot create boxed ByRef-like values.</value>
+  </data>
   <data name="NotSupported_WaitAllSTAThread" xml:space="preserve">
     <value>WaitAll for multiple handles on a STA thread is not supported.</value>
   </data>
@@ -2289,5 +2292,17 @@
   </data>
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
+  </data>
+  <data name="Serialization_StringBuilderCapacity" xml:space="preserve">
+    <value>The serialized Capacity property of StringBuilder must be positive, less than or equal to MaxCapacity and greater than or equal to the String length.</value>
+  </data>
+  <data name="Serialization_StringBuilderMaxCapacity" xml:space="preserve">
+    <value>The serialized MaxCapacity property of StringBuilder must be positive and greater than or equal to the String length.</value>
+  </data>
+  <data name="PlatformNotSupported_Remoting" xml:space="preserve">
+    <value>Remoting is not supported on this platform.</value>
+  </data>   
+  <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
+    <value>Strong-name signing is not supported on this platform.</value>
   </data>
 </root>

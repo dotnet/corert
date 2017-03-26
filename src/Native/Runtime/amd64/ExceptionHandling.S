@@ -486,7 +486,7 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         mov     [rax]                            , r15
 
         mov     rax, [rsp + locThread]                               // rax <- Thread*
-   lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], ~TSF_DoNotTriggerGc
+   lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
 
         FUNCLET_CALL_EPILOGUE
 

@@ -130,20 +130,6 @@ namespace Internal.TypeSystem.NoMetadata
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                for (int i = 0; i < _instantiation.Length; i++)
-                {
-                    if (_instantiation[i].ContainsGenericVariables)
-                    {
-                        flags |= TypeFlags.ContainsGenericVariables;
-                        break;
-                    }
-                }
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
                 unsafe

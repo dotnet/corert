@@ -41,5 +41,8 @@ namespace Internal.TypeSystem
         RuntimeFieldHandle,
 
         Exception,
+
+        TypedReference,
+        ByReferenceOfT,
     }
 }

@@ -15,7 +15,6 @@ namespace System
     public abstract partial class Type : MemberInfo, IReflect
     {
         public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-        public virtual bool IsSerializable => (GetAttributeFlagsImpl() & TypeAttributes.Serializable) != 0;
 
         public virtual bool IsMultiDimensionalArray { get { throw NotImplemented.ByDesign; } }
 
@@ -66,21 +65,6 @@ namespace System
         }
 
         public static bool operator !=(Type left, Type right) => !(left == right);
-
-        public static Binder DefaultBinder
-        {
-            get
-            {
-                if (s_defaultBinder == null)
-                {
-                    DefaultBinder binder = new DefaultBinder();
-                    Interlocked.CompareExchange<Binder>(ref s_defaultBinder, binder, null);
-                }
-                return s_defaultBinder;
-            }
-        }
-
-        private static volatile Binder s_defaultBinder;
 
         public bool IsRuntimeImplemented() => this is IRuntimeImplementedType; // Not an api but needs to be public because of Reflection.Core/CoreLib divide.
     }

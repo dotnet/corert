@@ -49,6 +49,16 @@ namespace Internal.TypeSystem
             /// True if information about the shape of value type has been computed.
             /// </summary>
             public const int ComputedValueTypeShapeCharacteristics = 0x40;
+
+            /// <summary>
+            /// True if <see cref="IsByRefLike"/> has been computed.
+            /// </summary>
+            public const int ComputedIsByRefLike = 0x80;
+
+            /// <summary>
+            /// True if this is a byref-like type.
+            /// </summary>
+            public const int IsByRefLike = 0x100;
         }
 
         private class StaticBlockInfo
@@ -275,6 +285,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a byref-like type
+        /// (a <code>TypedReference</code>, <code>Span&lt;T&gt;</code>, etc.).
+        /// </summary>
+        public bool IsByRefLike
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedIsByRefLike))
+                {
+                    ComputeIsByRefLike();
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsByRefLike);
+            }
+        }
+
         private void ComputeValueTypeShapeCharacteristics()
         {
             _valueTypeShapeCharacteristics = this.Context.GetLayoutAlgorithmForType(this).ComputeValueTypeShapeCharacteristics(this);
@@ -356,6 +382,21 @@ namespace Internal.TypeSystem
             if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsGCPointers(this))
             {
                 flagsToAdd |= FieldLayoutFlags.ContainsGCPointers;
+            }
+
+            _fieldLayoutFlags.AddFlags(flagsToAdd);
+        }
+
+        public void ComputeIsByRefLike()
+        {
+            if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedIsByRefLike))
+                return;
+
+            int flagsToAdd = FieldLayoutFlags.ComputedIsByRefLike;
+
+            if (this.Context.GetLayoutAlgorithmForType(this).ComputeIsByRefLike(this))
+            {
+                flagsToAdd |= FieldLayoutFlags.IsByRefLike;
             }
 
             _fieldLayoutFlags.AddFlags(flagsToAdd);

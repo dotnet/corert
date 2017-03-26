@@ -257,11 +257,6 @@ namespace ILCompiler
             {
                 TypeFlags flags = 0;
 
-                if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-                {
-                    flags |= TypeFlags.ContainsGenericVariablesComputed;
-                }
-
                 if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
                 {
                     flags |= TypeFlags.HasGenericVarianceComputed;

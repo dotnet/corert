@@ -40,6 +40,9 @@ namespace Internal.TypeSystem
             "RuntimeFieldHandle",
 
             "Exception",
+
+            "TypedReference",
+            "ByReference`1",
         };
 
         private MetadataType[] _wellKnownTypes;

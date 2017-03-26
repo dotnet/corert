@@ -313,26 +313,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether the method's <see cref="Instantiation"/>
-        /// contains any generic variables.
-        /// </summary>
-        public bool ContainsGenericVariables
-        {
-            get
-            {
-                // TODO: Cache?
-
-                Instantiation instantiation = this.Instantiation;
-                for (int i = 0; i < instantiation.Length; i++)
-                {
-                    if (instantiation[i].ContainsGenericVariables)
-                        return true;
-                }
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this method is an instance constructor.
         /// </summary>
         public bool IsConstructor

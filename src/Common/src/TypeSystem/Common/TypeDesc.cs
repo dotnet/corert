@@ -115,6 +115,8 @@ namespace Internal.TypeSystem
                 case WellKnownType.RuntimeTypeHandle:
                 case WellKnownType.RuntimeMethodHandle:
                 case WellKnownType.RuntimeFieldHandle:
+                case WellKnownType.TypedReference:
+                case WellKnownType.ByReferenceOfT:
                     flags = TypeFlags.ValueType;
                     break;
 
@@ -266,6 +268,18 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a generic definition, or
+        /// an instance of System.ByReference`1.
+        /// </summary>
+        public bool IsByReferenceOfT
+        {
+            get
+            {
+                return this.GetTypeDefinition().IsWellKnownType(WellKnownType.ByReferenceOfT);
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is an array type (<see cref="ArrayType"/>).
         /// Note this will return true for both multidimensional array types and vector types.
         /// Use <see cref="IsSzArray"/> to check for vector types.
@@ -396,14 +410,6 @@ namespace Internal.TypeSystem
                     || category == TypeFlags.Array
                     || category == TypeFlags.SzArray
                     || category == TypeFlags.Interface;
-            }
-        }
-
-        public bool ContainsGenericVariables
-        {
-            get
-            {
-                return (GetTypeFlags(TypeFlags.ContainsGenericVariables | TypeFlags.ContainsGenericVariablesComputed) & TypeFlags.ContainsGenericVariables) != 0;
             }
         }
 

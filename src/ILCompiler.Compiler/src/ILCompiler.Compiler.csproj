@@ -310,6 +310,15 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
     </Compile>
+	<Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\PrimitiveTypeDescriptor.cs">
+      <Link>TypeSystem\TypesDebugInfoWriter\PrimitiveTypeDescriptor.cs</Link>
+    </Compile>
+	<Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs">
+      <Link>TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs</Link>
+    </Compile>
+	<Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\UserDefinedTypeDescriptor.cs">
+      <Link>TypeSystem\TypesDebugInfoWriter\UserDefinedTypeDescriptor.cs</Link>
+    </Compile>	
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
@@ -326,9 +335,6 @@
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
       <Link>JitInterface\CorInfoTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\TypesDebugInfo\PrimitiveTypeDescriptor.cs">
-      <Link>JitInterface\TypesDebugInfo\PrimitiveTypeDescriptor.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

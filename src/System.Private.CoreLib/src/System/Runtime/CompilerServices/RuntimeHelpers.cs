@@ -271,6 +271,11 @@ namespace System.Runtime.CompilerServices
                 throw new MemberAccessException(SR.Acc_CreateAbst);
             }
 
+            if (eeTypePtr.IsByRefLike)
+            {
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+            }
+
             if (eeTypePtr.IsNullable)
             {
                 return GetUninitializedObject(ReflectionCoreNonPortable.GetRuntimeTypeForEEType(eeTypePtr.NullableType));

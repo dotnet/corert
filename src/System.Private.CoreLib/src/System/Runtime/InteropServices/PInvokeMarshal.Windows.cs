@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 using System.Security;
 
 namespace System.Runtime.InteropServices
@@ -76,7 +75,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            Contract.EndContractBlock();
             return s.MarshalToBSTR();
         }
     }

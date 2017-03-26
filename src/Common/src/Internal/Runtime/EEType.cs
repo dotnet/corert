@@ -507,6 +507,14 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsByRefLike
+        {
+            get
+            {
+                return (RareFlags & EETypeRareFlags.IsByRefLikeFlag) != 0;
+            }
+        }
+
         internal bool IsDynamicType
         {
             get

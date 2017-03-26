@@ -171,6 +171,7 @@ namespace Internal.Runtime.TypeLoader
                 ushort runtimeInterfacesLength = 0;
                 bool isGenericEETypeDef = false;
                 bool isAbstractClass;
+                bool isByRefLike;
 #if EETYPE_TYPE_MANAGER
                 IntPtr typeManager = IntPtr.Zero;
 #endif
@@ -194,6 +195,7 @@ namespace Internal.Runtime.TypeLoader
                     isArray = pTemplateEEType->IsArray;
                     isGeneric = pTemplateEEType->IsGeneric;
                     isAbstractClass = pTemplateEEType->IsAbstract && !pTemplateEEType->IsInterface;
+                    isByRefLike = pTemplateEEType->IsByRefLike;
 #if EETYPE_TYPE_MANAGER
                     typeManager = pTemplateEEType->PointerToTypeManager;
 #endif
@@ -214,6 +216,7 @@ namespace Internal.Runtime.TypeLoader
                     isGeneric = false;
                     isGenericEETypeDef = true;
                     isAbstractClass = false;
+                    isByRefLike = false;
                     componentSize = checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
                     baseSize = 0;
                 }
@@ -229,6 +232,8 @@ namespace Internal.Runtime.TypeLoader
                     isAbstractClass = (state.TypeBeingBuilt is MetadataType)
                         && ((MetadataType)state.TypeBeingBuilt).IsAbstract
                         && !state.TypeBeingBuilt.IsInterface;
+
+                    isByRefLike = (state.TypeBeingBuilt is DefType) && ((DefType)state.TypeBeingBuilt).IsByRefLike;
 
                     if (state.TypeBeingBuilt.HasVariance)
                     {
@@ -327,6 +332,11 @@ namespace Internal.Runtime.TypeLoader
                         rareFlags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.IsAbstractClassFlag;
+
+                    if (isByRefLike)
+                        rareFlags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
+                    else
+                        rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
 
                     rareFlags |= (uint)EETypeRareFlags.HasDynamicModuleFlag;
 
