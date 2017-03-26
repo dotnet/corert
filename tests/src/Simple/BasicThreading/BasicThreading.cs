@@ -28,13 +28,6 @@ class Program
 
         return Pass;
     }
-
-    public static bool IsRunnningOnWindows()
-    {
-        // Note: Environment.OSVersion is not yet available.
-        // This is a temporary hack that allows to skip Task related tests on Unix.
-        return System.IO.Path.DirectorySeparatorChar == '\\';
-    }
 }
 
 class FinalizeTest
@@ -163,12 +156,6 @@ class ThreadStaticsTestWithTasks
 
     public static void Run()
     {
-        if (!Program.IsRunnningOnWindows())
-        {
-            // Tasks are not supported on Unix yet
-            return;
-        }
-
         Task[] tasks = new Task[TotalTaskCount];
         for (int i = 0; i < tasks.Length; ++i)
         {
@@ -340,12 +327,6 @@ class ThreadTest
 
     private static void TestIsBackgroundProperty()
     {
-        if (!Program.IsRunnningOnWindows())
-        {
-            // This test uses tasks which are not supported on Unix yet
-            return;
-        }
-
         // Thread created using Thread.Start
         var t_event = new AutoResetEvent(false);
         var t = new Thread(() => t_event.WaitOne());
