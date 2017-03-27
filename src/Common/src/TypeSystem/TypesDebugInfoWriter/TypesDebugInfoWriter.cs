@@ -12,9 +12,9 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor);
 
-        void CompleteClassDescription(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
+        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
 
-        uint GetVariableTypeIndex(TypeDesc type);
+        uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteType);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
