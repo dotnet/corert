@@ -23,7 +23,7 @@ namespace Internal.Reflection.Core.Execution
         {
             BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, cultureInfo);
             Object result = Invoke(thisObject, arguments, binderBundle);
-            System.Runtime.InteropServices.DebugAnnotations.PreviousCallContainsUserCode();
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
         public abstract Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle);
