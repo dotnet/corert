@@ -27,6 +27,15 @@ using System.Text;
 
 namespace System.Globalization
 {
+
+#if CORECLR
+    using StringStringDictionary = Dictionary<string, string>;
+    using StringList = List<string>;
+#else
+    using StringStringDictionary = LowLevelDictionary<string, string>;
+    using StringList = LowLevelList<string>;
+#endif
+
     //
     // from LocaleEx.txt header
     //
@@ -116,17 +125,17 @@ namespace System.Globalization
         internal const String CJKSecondSuff = "\u79d2";
 
         // The collection fo date words & postfix.
-        internal LowLevelList<String> m_dateWords = new LowLevelList<String>();
+        internal StringList m_dateWords = new StringList();
         // Hashtable for the known words.
-        private static volatile LowLevelDictionary<String, String> s_knownWords;
+        private static volatile StringStringDictionary s_knownWords;
 
-        private static LowLevelDictionary<String, String> KnownWords
+        static StringStringDictionary KnownWords
         {
             get
             {
                 if (s_knownWords == null)
                 {
-                    LowLevelDictionary<String, String> temp = new LowLevelDictionary<String, String>();
+                    StringStringDictionary temp = new StringStringDictionary();
                     // Add known words into the hash table.
 
                     // Skip these special symbols.                        
@@ -229,7 +238,7 @@ namespace System.Globalization
                 {
                     if (m_dateWords == null)
                     {
-                        m_dateWords = new LowLevelList<String>();
+                        m_dateWords = new StringList();
                     }
                     if (formatPostfix == "MMMM")
                     {
@@ -375,7 +384,7 @@ namespace System.Globalization
             if (m_dateWords == null)
             {
                 // Create the date word array.
-                m_dateWords = new LowLevelList<String>();
+                m_dateWords = new StringList();
             }
             // Add the ignorable symbol into the ArrayList.
             String temp = IgnorableSymbolChar + text;

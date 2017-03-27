@@ -2305,4 +2305,10 @@
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
   </data>
+  <data name="Serialization_MissingDateTimeData" xml:space="preserve">
+    <value>Invalid serialized DateTime data. Unable to find 'ticks' or 'dateData'.</value>
+  </data>
+  <data name="Serialization_DateTimeTicksOutOfRange" xml:space="preserve">
+    <value>Invalid serialized DateTime data. Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
+  </data>
 </root>
