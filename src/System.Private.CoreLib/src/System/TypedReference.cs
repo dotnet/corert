@@ -82,6 +82,10 @@ namespace System.Reflection  //@TODO: Intentionally placing TypedReference in th
             {
                 return RuntimeImports.RhBox(eeType, ref value.Value);
             }
+            else if (eeType.IsPointer)
+            {
+                return RuntimeImports.RhBox(EETypePtr.EETypePtrOf<UIntPtr>(), ref value.Value);
+            }
             else
             {
                 return Unsafe.As<byte, object>(ref value.Value);
