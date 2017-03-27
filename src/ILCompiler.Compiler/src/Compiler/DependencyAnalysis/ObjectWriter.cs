@@ -255,19 +255,19 @@ namespace ILCompiler.DependencyAnalysis
         private static extern uint GetClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor);
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void CompleteClassDescription(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
+        private static extern uint GetCompleteClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
 
         public uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor)
         {
             return GetClassTypeIndex(_nativeObjectWriter, classTypeDescriptor);
         }
 
-        public void CompleteClassDescription(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
+        public uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
         {
-            CompleteClassDescription(_nativeObjectWriter, classTypeDescriptor, classFieldsTypeDescriptior, fields);
+            return GetCompleteClassTypeIndex(_nativeObjectWriter, classTypeDescriptor, classFieldsTypeDescriptior, fields);
         }
 
-        public uint GetVariableTypeIndex(TypeDesc type)
+        public uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteIndex)
         {
             uint typeIndex = 0;
             if (type.IsPrimitive)
@@ -276,7 +276,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                typeIndex = _userDefinedTypeDescriptor.GetTypeIndex(type);
+                typeIndex = _userDefinedTypeDescriptor.GetTypeIndex(type, needsCompleteIndex);
             }
             return typeIndex;
         }
@@ -287,7 +287,7 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitDebugVar(DebugVarInfo debugVar)
         {
             int rangeCount = debugVar.Ranges.Count;
-            uint typeIndex = GetVariableTypeIndex(debugVar.Type);
+            uint typeIndex = GetVariableTypeIndex(debugVar.Type, true);
             EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
@@ -952,9 +952,12 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (objectWriter.HasFunctionDebugInfo())
                     {
-                        // Build debug local var info
-                        objectWriter.EmitDebugVarInfo(node);
-
+                        if (factory.Target.OperatingSystem == TargetOS.Windows)
+                        {
+                            // Build debug local var info.
+                            // It currently supports only Windows CodeView format.
+                            objectWriter.EmitDebugVarInfo(node);
+                        }
                         objectWriter.EmitDebugFunctionInfo(nodeContents.Data.Length);
                     }
                 }
