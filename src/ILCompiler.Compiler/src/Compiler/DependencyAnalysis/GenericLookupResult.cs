@@ -939,4 +939,71 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NativeLayout.TypeSizeDictionarySlot(_type);
         }
     }
+
+    internal sealed class ConstrainedMethodUseLookupResult : GenericLookupResult
+    {
+        MethodDesc _constrainedMethod;
+        TypeDesc _constraintType;
+        bool _directCall;
+
+        public ConstrainedMethodUseLookupResult(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+        {
+            _constrainedMethod = constrainedMethod;
+            _constraintType = constraintType;
+            _directCall = directCall;
+
+            Debug.Assert(_constraintType.IsRuntimeDeterminedSubtype || _constrainedMethod.IsRuntimeDeterminedExactMethod, "Concrete type in a generic dictionary?");
+            Debug.Assert(!_constrainedMethod.HasInstantiation || !_directCall, "Direct call to constrained generic method isn't supported");
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            MethodDesc instantiatedConstrainedMethod = _constrainedMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedConstraintType = _constraintType.InstantiateSignature(typeInstantiation, methodInstantiation);
+
+            MethodDesc implMethod = instantiatedConstraintType.GetClosestDefType().ResolveInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethod);
+
+            // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
+            Debug.Assert(instantiatedConstraintType.IsValueType);
+            Debug.Assert(implMethod.OwningType == instantiatedConstraintType);
+
+            if (implMethod.HasInstantiation && implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != implMethod)
+            {
+                return factory.FatFunctionPointer(implMethod);
+            }
+            else
+            {
+                return factory.MethodEntrypoint(implMethod);
+            }
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            ISymbolNode target = GetTarget(factory, typeInstantiation, methodInstantiation, dictionary);
+            if (target is IFatFunctionPointerNode)
+            {
+                builder.EmitPointerReloc(target, FatFunctionPointerConstants.Offset);
+            }
+            else
+            {
+                builder.EmitPointerReloc(target);
+            }
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("ConstrainedMethodUseLookupResult_");
+            sb.Append(nameMangler.GetMangledTypeName(_constraintType));
+            sb.Append(nameMangler.GetMangledMethodName(_constrainedMethod));
+            if (_directCall)
+                sb.Append("Direct");
+        }
+
+        public override string ToString() => $"ConstrainedMethodUseLookupResult: {_constraintType} {_constrainedMethod} {_directCall}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
+        }
+    }
 }

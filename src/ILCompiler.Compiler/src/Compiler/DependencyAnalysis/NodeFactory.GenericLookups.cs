@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -120,6 +121,11 @@ namespace ILCompiler.DependencyAnalysis
                 _typeSizes = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new TypeSizeLookupResult(type);
+                });
+
+                _constrainedMethodUses = new NodeCache<ConstrainedMethodUseKey, GenericLookupResult>(constrainedMethodUse =>
+                {
+                    return new ConstrainedMethodUseLookupResult(constrainedMethodUse.ConstrainedMethod, constrainedMethodUse.ConstraintType, constrainedMethodUse.DirectCall);
                 });
             }
 
@@ -273,8 +279,51 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _typeSizes.GetOrAdd(type);
             }
+
+            private NodeCache<ConstrainedMethodUseKey, GenericLookupResult> _constrainedMethodUses;
+            public GenericLookupResult ConstrainedMethodUse(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+            {
+                return _constrainedMethodUses.GetOrAdd(new ConstrainedMethodUseKey(constrainedMethod, constraintType, directCall));
+            }
         }
 
         public GenericLookupResults GenericLookup = new GenericLookupResults();
+
+        private struct ConstrainedMethodUseKey : IEquatable<ConstrainedMethodUseKey>
+        {
+            public ConstrainedMethodUseKey(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+            {
+                ConstrainedMethod = constrainedMethod;
+                ConstraintType = constraintType;
+                DirectCall = directCall;
+            }
+
+            public readonly MethodDesc ConstrainedMethod;
+            public readonly TypeDesc ConstraintType;
+            public readonly bool DirectCall;
+
+            public override int GetHashCode()
+            {
+                return ConstraintType.GetHashCode() ^ ConstrainedMethod.GetHashCode() ^ DirectCall.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return (obj is ConstrainedMethodUseKey) && Equals((ConstrainedMethodUseKey)obj);
+            }
+
+            public bool Equals(ConstrainedMethodUseKey other)
+            {
+                if (ConstraintType != other.ConstraintType)
+                    return false;
+                if (ConstrainedMethod != other.ConstrainedMethod)
+                    return false;
+                if (DirectCall != other.DirectCall)
+                    return false;
+
+                return true;
+            }
+        }
+
     }
 }
