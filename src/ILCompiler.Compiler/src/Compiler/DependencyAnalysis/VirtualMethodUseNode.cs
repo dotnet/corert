@@ -82,6 +82,8 @@ namespace ILCompiler.DependencyAnalysis
             if (canonDecl != _decl)
                 dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(canonDecl), "Canonical method"));
 
+            dependencies.Add(new DependencyListEntry(factory.VTable(_decl.OwningType), "VTable of a VirtualMethodUse"));
+
             return dependencies;
         }
 

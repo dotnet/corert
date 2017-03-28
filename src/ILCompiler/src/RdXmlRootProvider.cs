@@ -106,7 +106,19 @@ namespace ILCompiler
             {
                 foreach (var method in type.GetMethods())
                 {
-                    if (method.IsAbstract || method.HasInstantiation)
+                    // We don't know what to instantiate generic methods over
+                    if (method.HasInstantiation)
+                        continue;
+
+                    // Virtual methods should be rooted as if they were called virtually
+                    if (method.IsVirtual)
+                    {
+                        MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                        rootProvider.RootVirtualMethodUse(slotMethod, "RD.XML root");
+                    }
+
+                    // Abstract methods have no entrypoints
+                    if (method.IsAbstract)
                         continue;
 
                     rootProvider.AddCompilationRoot(method, "RD.XML root");
