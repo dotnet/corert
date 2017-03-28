@@ -144,6 +144,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInfo;
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod, _common.DefiningTypeInfo);
+            }
+        }
+
         public sealed override MethodImplAttributes MethodImplementationFlags
         {
             get

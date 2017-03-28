@@ -105,6 +105,14 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         public sealed override MethodImplAttributes MethodImplementationFlags
         {
             get

@@ -207,6 +207,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override MethodInfo MakeGenericMethod(params Type[] typeArguments);
 
+        public abstract override MethodBase MetadataDefinitionMethod { get; }
+
         public abstract override int MetadataToken
         {
             get;
