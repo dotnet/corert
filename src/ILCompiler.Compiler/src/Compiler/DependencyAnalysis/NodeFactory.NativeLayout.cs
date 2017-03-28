@@ -192,6 +192,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new NativeLayoutPointerToOtherSlotDictionarySlotNode(otherSlotIndex);
                 });
+
+                _constrainedMethodUseSlots = new NodeCache<ConstrainedMethodUseKey, NativeLayoutConstrainedMethodDictionarySlotNode>(constrainedMethodUse =>
+                {
+                    return new NativeLayoutConstrainedMethodDictionarySlotNode(constrainedMethodUse.ConstrainedMethod, constrainedMethodUse.ConstraintType, constrainedMethodUse.DirectCall);
+                });
             }
 
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
@@ -569,6 +574,12 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutPointerToOtherSlotDictionarySlotNode PointerToOtherSlot(int otherSlotIndex)
             {
                 return _otherSlotPointerSlots.GetOrAdd(otherSlotIndex);
+            }
+
+            private NodeCache<ConstrainedMethodUseKey, NativeLayoutConstrainedMethodDictionarySlotNode> _constrainedMethodUseSlots;
+            public NativeLayoutConstrainedMethodDictionarySlotNode ConstrainedMethodUse(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+            {
+                return _constrainedMethodUseSlots.GetOrAdd(new ConstrainedMethodUseKey(constrainedMethod, constraintType, directCall));
             }
         }
 
