@@ -854,7 +854,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type));
-                staticsBagKind = BagElementKind.End; // GC static EETypes not yet implemented in type loader
+                staticsBagKind = BagElementKind.GcStaticEEType; // GC static EETypes not yet implemented in type loader
             }
 
             return symbol;

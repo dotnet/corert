@@ -645,14 +645,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                return factory.NativeLayout.NotSupportedDictionarySlot;
-            }
-            else
-            {
-                return factory.NativeLayout.GcStaticDictionarySlot(_type);
-            }
+            return factory.NativeLayout.GcStaticDictionarySlot(_type);
         }
 
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
