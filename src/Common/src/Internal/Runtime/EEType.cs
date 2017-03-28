@@ -1358,7 +1358,7 @@ namespace Internal.Runtime
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
                 return cbOffset;
             }
-            if (IsGeneric)
+            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicNonGcStatics)
@@ -1366,7 +1366,7 @@ namespace Internal.Runtime
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
                 return cbOffset;
             }
-            if (IsGeneric)
+            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicThreadStaticOffset)
@@ -1374,7 +1374,7 @@ namespace Internal.Runtime
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
                 return cbOffset;
             }
-            if (IsGeneric)
+            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0)
                 cbOffset += 4;
 
             Debug.Assert(false, "Unknown EEType field type");
