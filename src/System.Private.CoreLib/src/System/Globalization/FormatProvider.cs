@@ -17,49 +17,17 @@ namespace System.Globalization
         {
             return CultureInfo.CurrentCulture.TextInfo.ToLower(s);
         }
-        public static char ToLower(char c)
-        {
-            return CultureInfo.CurrentCulture.TextInfo.ToLower(c);
-        }
         public static string ToLowerInvariant(string s)
         {
             return CultureInfo.InvariantCulture.TextInfo.ToLower(s);
-        }
-        public static char ToLowerInvariant(char c)
-        {
-            return CultureInfo.InvariantCulture.TextInfo.ToLower(c);
         }
         public static string ToUpper(string s)
         {
             return CultureInfo.CurrentCulture.TextInfo.ToUpper(s);
         }
-        public static char ToUpper(char c)
-        {
-            return CultureInfo.CurrentCulture.TextInfo.ToUpper(c);
-        }
         public static string ToUpperInvariant(string s)
         {
             return CultureInfo.InvariantCulture.TextInfo.ToUpper(s);
-        }
-        public static char ToUpperInvariant(char c)
-        {
-            return CultureInfo.InvariantCulture.TextInfo.ToUpper(c);
-        }
-        public static UnicodeCategory GetUnicodeCategory(char c)
-        {
-            return CharUnicodeInfo.GetUnicodeCategory(c);
-        }
-        public static UnicodeCategory GetUnicodeCategory(string s, int index)
-        {
-            return CharUnicodeInfo.GetUnicodeCategory(s, index);
-        }
-        public static double GetNumericValue(char c)
-        {
-            return CharUnicodeInfo.GetNumericValue(c);
-        }
-        public static double GetNumericValue(string s, int index)
-        {
-            return CharUnicodeInfo.GetNumericValue(s, index);
         }
         #endregion
 
