@@ -34,5 +34,23 @@ namespace Internal.Runtime.CompilerHelpers
         {
             return Type.GetTypeFromHandle(typeHandle).Assembly;
         }
+
+        // This supports MethodBase.GetCurrentMethod() intrinsic expansion in the compiler
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        public static MethodBase GetCurrentMethodNonGeneric(RuntimeMethodHandle methodHandle)
+        {
+            // The compiler should ideally provide us with a RuntimeMethodHandle for the uninstantiated thing,
+            // but the file format cannot express a RuntimeMethodHandle for a generic definition of a generic method.
+            return MethodBase.GetMethodFromHandle(methodHandle).MetadataDefinitionMethod;
+        }
+
+        // This supports MethodBase.GetCurrentMethod() intrinsic expansion in the compiler
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        public static MethodBase GetCurrentMethodGeneric(RuntimeMethodHandle methodHandle, RuntimeTypeHandle typeHandle)
+        {
+            // The compiler should ideally provide us with a RuntimeMethodHandle for the uninstantiated thing,
+            // but the file format cannot express a RuntimeMethodHandle for a generic definition of a generic method.
+            return MethodBase.GetMethodFromHandle(methodHandle, typeHandle).MetadataDefinitionMethod;
+        }
     }
 }
