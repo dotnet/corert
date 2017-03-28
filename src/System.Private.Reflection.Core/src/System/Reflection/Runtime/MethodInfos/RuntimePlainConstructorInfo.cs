@@ -106,6 +106,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return newObject != null ? newObject : ctorAllocatedObject;
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimePlainConstructorInfo<TRuntimeMethodCommon>.GetRuntimePlainConstructorInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod);
+            }
+        }
+
         public sealed override MethodImplAttributes MethodImplementationFlags
         {
             get

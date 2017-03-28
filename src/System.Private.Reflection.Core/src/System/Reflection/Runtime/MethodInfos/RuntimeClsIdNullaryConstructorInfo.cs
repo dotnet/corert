@@ -52,6 +52,8 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/1764 - Make the call out to Interop to create an RCW from the supplied CLSID and server.
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod { get { throw new NotSupportedException(); } }
+
         public sealed override int MetadataToken { get { throw new InvalidOperationException(); } }
 
         public sealed override RuntimeMethodHandle MethodHandle { get { throw new PlatformNotSupportedException(); } }

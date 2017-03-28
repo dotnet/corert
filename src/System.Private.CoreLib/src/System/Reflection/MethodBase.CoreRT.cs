@@ -16,5 +16,23 @@ namespace System.Reflection
 
         // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
         public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
+
+        //
+        // MethodBase MetadataDefinitionMethod { get; }
+        //
+        //  Returns the canonical MethodBase that this is an instantiation or reflected mirror of.
+        //  If MethodBase is already a canonical MethodBase, returns "this".
+        //
+        //  Guarantees on returned MethodBase:
+        //
+        //    IsConstructedGenericMethod == false.
+        //    DeclaringType.IsConstructedGenericType == false.
+        //    ReflectedType == DeclaringType
+        //
+        //  Throws NotSupportedException if the MethodBase is not a metadata-represented method
+        //  (for example, the methods returned on Array types.)
+        //
+        // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
+        public virtual MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }
     }
 }

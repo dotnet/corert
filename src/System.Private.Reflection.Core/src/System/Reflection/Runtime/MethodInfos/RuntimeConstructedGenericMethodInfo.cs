@@ -100,6 +100,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return _genericMethodDefinition.MetadataDefinitionMethod;
+            }
+        }
+
         public sealed override int MetadataToken
         {
             get

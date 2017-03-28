@@ -56,8 +56,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
         {
             get
             {
-                EcmaFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToEcmaFormatRuntimeNamedTypeInfo();
-                return new EcmaFormatMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+                return new EcmaFormatMethodCommon(MethodHandle, _definingTypeInfo, _definingTypeInfo);
             }
         }
 
