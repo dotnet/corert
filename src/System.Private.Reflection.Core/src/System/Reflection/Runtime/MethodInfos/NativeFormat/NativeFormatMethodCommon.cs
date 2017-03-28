@@ -64,8 +64,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
         {
             get
             {
-                NativeFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToNativeFormatRuntimeNamedTypeInfo();
-                return new NativeFormatMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+                return new NativeFormatMethodCommon(MethodHandle, _definingTypeInfo, _definingTypeInfo);
             }
         }
 
