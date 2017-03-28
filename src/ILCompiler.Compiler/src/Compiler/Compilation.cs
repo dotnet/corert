@@ -236,7 +236,11 @@ namespace ILCompiler
                         _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
                     }
                 }
+            }
 
+            public void RootVirtualMethodUse(MethodDesc method, string reason)
+            {
+                _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
             }
         }
     }
