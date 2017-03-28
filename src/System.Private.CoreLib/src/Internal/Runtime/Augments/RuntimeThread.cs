@@ -388,8 +388,7 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static uint StartThread(IntPtr parameter)
+        private static void StartThread(IntPtr parameter)
         {
             GCHandle threadHandle = (GCHandle)parameter;
             RuntimeThread thread = (RuntimeThread)threadHandle.Target;
@@ -410,7 +409,7 @@ namespace Internal.Runtime.Augments
                 thread._stopped.Set();
 #endif
                 // Terminate the current thread. The creator thread will throw a ThreadStartException.
-                return 0;
+                return;
             }
 
             // Report success to the creator thread, which will free threadHandle and _threadStartArg
@@ -441,7 +440,6 @@ namespace Internal.Runtime.Augments
             {
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
-            return 0;
         }
     }
 }

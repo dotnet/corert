@@ -220,7 +220,7 @@ namespace Internal.Runtime.Augments
 
             uint threadId;
             _osHandle = Interop.mincore.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(StartThread), (IntPtr)thisThreadHandle,
+                AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(ThreadEntryPoint), (IntPtr)thisThreadHandle,
                 (uint)(Interop.Constants.CreateSuspended | Interop.Constants.StackSizeParamIsAReservation),
                 out threadId);
 
@@ -234,6 +234,16 @@ namespace Internal.Runtime.Augments
 
             Interop.mincore.ResumeThread(_osHandle);
             return true;
+        }
+
+        /// <summary>
+        /// This an entry point for managed threads created by applicatoin
+        /// </summary>
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static uint ThreadEntryPoint(IntPtr parameter)
+        {
+            StartThread(parameter);
+            return 0;
         }
 
         public ApartmentState GetApartmentState() { throw null; }

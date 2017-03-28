@@ -71,8 +71,8 @@ namespace System.Threading
         /// <summary>
         /// This method is an entry point of a thread pool worker thread.
         /// </summary>
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static uint ThreadPoolDispatchCallback(IntPtr context)
+        [NativeCallable]
+        private static IntPtr ThreadPoolDispatchCallback(IntPtr context)
         {
             RuntimeThread.InitializeThreadPoolThread();
 
@@ -81,23 +81,14 @@ namespace System.Threading
                 // Handle pending requests
                 ThreadPoolWorkQueue.Dispatch();
 
-                try
-                {
-                    // Wait for new requests to arrive
-                    s_semaphore.Wait();
-                }
-                catch (ObjectDisposedException)
-                {
-                    break;
-                }
+                // Wait for new requests to arrive
+                s_semaphore.Wait();
 
             } while (true);
-
-            return 0;
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static uint LongRunningWorkCallback(IntPtr context)
+        [NativeCallable]
+        private static IntPtr LongRunningWorkCallback(IntPtr context)
         {
             RuntimeThread.InitializeThreadPoolThread();
 
@@ -106,7 +97,7 @@ namespace System.Threading
             gcHandle.Free();
 
             callback();
-            return 0;
+            return IntPtr.Zero;
         }
 
     }
