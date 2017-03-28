@@ -35,6 +35,9 @@ internal static partial class Interop
         internal extern static bool SetEvent(IntPtr hEvent);
 
         [DllImport(Libraries.Kernel32)]
+        internal extern static bool SetEvent(SafeWaitHandle hEvent);
+
+        [DllImport(Libraries.Kernel32)]
         internal extern static bool ReleaseSemaphore(IntPtr hSemaphore, int lReleaseCount, out int lpPreviousCount);
 
         [DllImport(Libraries.Kernel32)]
