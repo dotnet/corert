@@ -52,10 +52,6 @@ namespace System.Globalization
         {
             return CompareInfo.CompareOrdinalIgnoreCase(string1, offset1, length1, string2, offset2, length2);
         }
-        public static StringComparer GetCultureAwareStringComparer(bool ignoreCase)
-        {
-            return new CultureAwareComparer(CultureInfo.CurrentCulture, ignoreCase);
-        }
         public static int IndexOf(String source, String value, int startIndex, int count)
         {
             return CultureInfo.CurrentCulture.CompareInfo.IndexOf(source, value, startIndex, count, CompareOptions.None);
