@@ -427,6 +427,7 @@
     <Compile Include="System\Single.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
+    <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\String.Searching.cs" />
     <Compile Include="System\Array.cs" />
@@ -872,6 +873,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
+      <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
