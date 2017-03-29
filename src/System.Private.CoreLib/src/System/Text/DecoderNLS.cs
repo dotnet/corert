@@ -212,7 +212,7 @@ namespace System.Text
 
         // This is the version that used pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting chars
-        internal unsafe void Convert(byte* bytes, int byteCount,
+        public unsafe override void Convert(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {

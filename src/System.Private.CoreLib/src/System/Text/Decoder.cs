@@ -219,6 +219,53 @@ namespace System.Text
             return charCount;
         }
 
+        // This is the version that uses *.
+        // We're done processing this buffer only if completed returns true.
+        //
+        // Might consider checking Max...Count to avoid the extra counting step.
+        //
+        // Note that if all of the input bytes are not consumed, then we'll do a /2, which means
+        // that its likely that we didn't consume as many bytes as we could have.  For some
+        // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
+        [CLSCompliant(false)]
+        public virtual unsafe void Convert(byte* bytes, int byteCount,
+                                             char* chars, int charCount, bool flush,
+                                             out int bytesUsed, out int charsUsed, out bool completed)
+        {
+            // Validate input parameters
+            if (bytes == null || chars == null)
+                throw new ArgumentNullException((bytes == null ? nameof(bytes) : nameof(chars)),
+                      SR.ArgumentNull_Array);
+
+            if (byteCount < 0 || charCount < 0)
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
+                      SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            Contract.EndContractBlock();
+
+            // Get ready to do it
+            bytesUsed = byteCount;
+
+            // Its easy to do if it won't overrun our buffer.
+            while (bytesUsed > 0)
+            {
+                if (GetCharCount(bytes, bytesUsed, flush) <= charCount)
+                {
+                    charsUsed = GetChars(bytes, bytesUsed, chars, charCount, flush);
+                    completed = (bytesUsed == byteCount &&
+                        (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
+                    return;
+                }
+
+                // Try again with 1/2 the count, won't flush then 'cause won't read it all
+                flush = false;
+                bytesUsed /= 2;
+            }
+
+            // Oops, we didn't have anything, we'll have to throw an overflow
+            throw new ArgumentException(SR.Argument_ConversionOverflow);
+        }
+
         // This method is used when the output buffer might not be large enough.
         // It will decode until it runs out of bytes, and then it will return
         // true if it the entire input was converted.  In either case it
