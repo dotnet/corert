@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Threading;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -30,7 +29,8 @@ namespace System
     // out and for internal readability.
 
     [StructLayout(LayoutKind.Auto)]
-    public struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>
+    [Serializable]
+    public struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback
     {
         // Constants
         internal const Int64 MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -39,6 +39,9 @@ namespace System
         private const long UnixEpochTicks = TimeSpan.TicksPerDay * DateTime.DaysTo1970; // 621,355,968,000,000,000
         private const long UnixEpochSeconds = UnixEpochTicks / TimeSpan.TicksPerSecond; // 62,135,596,800
         private const long UnixEpochMilliseconds = UnixEpochTicks / TimeSpan.TicksPerMillisecond; // 62,135,596,800,000
+
+        internal const long UnixMinSeconds = DateTime.MinTicks / TimeSpan.TicksPerSecond - UnixEpochSeconds;
+        internal const long UnixMaxSeconds = DateTime.MaxTicks / TimeSpan.TicksPerSecond - UnixEpochSeconds;
 
         // Static Fields
         public static readonly DateTimeOffset MinValue = new DateTimeOffset(DateTime.MinTicks, TimeSpan.Zero);
@@ -59,8 +62,8 @@ namespace System
             _dateTime = ValidateDate(dateTime, offset);
         }
 
-        // Constructs a DateTimeOffset from a DateTime. For UTC and Unspecified kinds, creates a
-        // UTC instance with a zero offset. For local, extracts the local offset.
+        // Constructs a DateTimeOffset from a DateTime. For Local and Unspecified kinds,
+        // extracts the local offset. For UTC, creates a UTC instance with a zero offset.
         public DateTimeOffset(DateTime dateTime)
         {
             TimeSpan offset;
@@ -114,6 +117,14 @@ namespace System
         {
             _offsetMinutes = ValidateOffset(offset);
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond), offset);
+        }
+
+        // Constructs a DateTimeOffset from a given year, month, day, hour,
+        // minute, second, millsecond, Calendar and offset.
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, TimeSpan offset)
+        {
+            _offsetMinutes = ValidateOffset(offset);
+            _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond, calendar), offset);
         }
 
         // Returns a DateTimeOffset representing the current date and time. The
@@ -514,13 +525,10 @@ namespace System
 
         public static DateTimeOffset FromUnixTimeSeconds(long seconds)
         {
-            const long MinSeconds = DateTime.MinTicks / TimeSpan.TicksPerSecond - UnixEpochSeconds;
-            const long MaxSeconds = DateTime.MaxTicks / TimeSpan.TicksPerSecond - UnixEpochSeconds;
-
-            if (seconds < MinSeconds || seconds > MaxSeconds)
+            if (seconds < UnixMinSeconds || seconds > UnixMaxSeconds)
             {
                 throw new ArgumentOutOfRangeException(nameof(seconds),
-                    string.Format(SR.ArgumentOutOfRange_Range, MinSeconds, MaxSeconds));
+                    SR.Format(SR.ArgumentOutOfRange_Range, UnixMinSeconds, UnixMaxSeconds));
             }
 
             long ticks = seconds * TimeSpan.TicksPerSecond + UnixEpochTicks;
@@ -535,11 +543,50 @@ namespace System
             if (milliseconds < MinMilliseconds || milliseconds > MaxMilliseconds)
             {
                 throw new ArgumentOutOfRangeException(nameof(milliseconds),
-                    string.Format(SR.ArgumentOutOfRange_Range, MinMilliseconds, MaxMilliseconds));
+                    SR.Format(SR.ArgumentOutOfRange_Range, MinMilliseconds, MaxMilliseconds));
             }
 
             long ticks = milliseconds * TimeSpan.TicksPerMillisecond + UnixEpochTicks;
             return new DateTimeOffset(ticks, TimeSpan.Zero);
+        }
+
+        // ----- SECTION: private serialization instance methods  ----------------*
+
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            try
+            {
+                _offsetMinutes = ValidateOffset(Offset);
+                _dateTime = ValidateDate(ClockDateTime, Offset);
+            }
+            catch (ArgumentException e)
+            {
+                throw new SerializationException(SR.Serialization_InvalidData, e);
+            }
+        }
+
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue("DateTime", _dateTime);
+            info.AddValue("OffsetMinutes", _offsetMinutes);
+        }
+
+
+        private DateTimeOffset(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime));
+            _offsetMinutes = (Int16)info.GetValue("OffsetMinutes", typeof(Int16));
         }
 
         // Returns the hash code for this DateTimeOffset.
@@ -556,8 +603,8 @@ namespace System
         public static DateTimeOffset Parse(String input)
         {
             TimeSpan offset;
-            DateTime dateResult = FormatProvider.ParseDateTime(input,
-                                                      null,
+            DateTime dateResult = DateTimeParse.Parse(input,
+                                                      DateTimeFormatInfo.CurrentInfo,
                                                       DateTimeStyles.None,
                                                       out offset);
             return new DateTimeOffset(dateResult.Ticks, offset);
@@ -576,8 +623,8 @@ namespace System
         {
             styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
-            DateTime dateResult = FormatProvider.ParseDateTime(input,
-                                                      formatProvider,
+            DateTime dateResult = DateTimeParse.Parse(input,
+                                                      DateTimeFormatInfo.GetInstance(formatProvider),
                                                       styles,
                                                       out offset);
             return new DateTimeOffset(dateResult.Ticks, offset);
@@ -600,9 +647,9 @@ namespace System
         {
             styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
-            DateTime dateResult = FormatProvider.ParseDateTimeExact(input,
+            DateTime dateResult = DateTimeParse.ParseExact(input,
                                                            format,
-                                                           formatProvider,
+                                                           DateTimeFormatInfo.GetInstance(formatProvider),
                                                            styles,
                                                            out offset);
             return new DateTimeOffset(dateResult.Ticks, offset);
@@ -612,9 +659,9 @@ namespace System
         {
             styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
-            DateTime dateResult = FormatProvider.ParseDateTimeExactMultiple(input,
+            DateTime dateResult = DateTimeParse.ParseExactMultiple(input,
                                                                    formats,
-                                                                   formatProvider,
+                                                                   DateTimeFormatInfo.GetInstance(formatProvider),
                                                                    styles,
                                                                    out offset);
             return new DateTimeOffset(dateResult.Ticks, offset);
@@ -668,27 +715,32 @@ namespace System
 
         public DateTimeOffset ToLocalTime()
         {
-            return new DateTimeOffset(UtcDateTime.ToLocalTime());
+            return ToLocalTime(false);
+        }
+
+        internal DateTimeOffset ToLocalTime(bool throwOnOverflow)
+        {
+            return new DateTimeOffset(UtcDateTime.ToLocalTime(throwOnOverflow));
         }
 
         public override String ToString()
         {
-            return FormatProvider.FormatDateTime(ClockDateTime, null, null, Offset);
+            return DateTimeFormat.Format(ClockDateTime, null, DateTimeFormatInfo.CurrentInfo, Offset);
         }
 
         public String ToString(String format)
         {
-            return FormatProvider.FormatDateTime(ClockDateTime, format, null, Offset);
+            return DateTimeFormat.Format(ClockDateTime, format, DateTimeFormatInfo.CurrentInfo, Offset);
         }
 
         public String ToString(IFormatProvider formatProvider)
         {
-            return FormatProvider.FormatDateTime(ClockDateTime, null, formatProvider, Offset);
+            return DateTimeFormat.Format(ClockDateTime, null, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
         }
 
         public String ToString(String format, IFormatProvider formatProvider)
         {
-            return FormatProvider.FormatDateTime(ClockDateTime, format, formatProvider, Offset);
+            return DateTimeFormat.Format(ClockDateTime, format, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
         }
 
         public DateTimeOffset ToUniversalTime()
@@ -700,8 +752,8 @@ namespace System
         {
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = FormatProvider.TryParseDateTime(input,
-                                                    null,
+            Boolean parsed = DateTimeParse.TryParse(input,
+                                                    DateTimeFormatInfo.CurrentInfo,
                                                     DateTimeStyles.None,
                                                     out dateResult,
                                                     out offset);
@@ -714,8 +766,8 @@ namespace System
             styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = FormatProvider.TryParseDateTime(input,
-                                                    formatProvider,
+            Boolean parsed = DateTimeParse.TryParse(input,
+                                                    DateTimeFormatInfo.GetInstance(formatProvider),
                                                     styles,
                                                     out dateResult,
                                                     out offset);
@@ -729,9 +781,9 @@ namespace System
             styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = FormatProvider.TryParseDateTimeExact(input,
+            Boolean parsed = DateTimeParse.TryParseExact(input,
                                                          format,
-                                                         formatProvider,
+                                                         DateTimeFormatInfo.GetInstance(formatProvider),
                                                          styles,
                                                          out dateResult,
                                                          out offset);
@@ -745,9 +797,9 @@ namespace System
             styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = FormatProvider.TryParseDateTimeExactMultiple(input,
+            Boolean parsed = DateTimeParse.TryParseExactMultiple(input,
                                                                  formats,
-                                                                 formatProvider,
+                                                                 DateTimeFormatInfo.GetInstance(formatProvider),
                                                                  styles,
                                                                  out dateResult,
                                                                  out offset);
@@ -775,6 +827,7 @@ namespace System
         {
             // The key validation is that both the UTC and clock times fit. The clock time is validated
             // by the DateTime constructor.
+            Debug.Assert(offset.Ticks >= MinOffset && offset.Ticks <= MaxOffset, "Offset not validated.");
 
             // This operation cannot overflow because offset should have already been validated to be within
             // 14 hours and the DateTime instance is more than that distance from the boundaries of Int64.
@@ -803,7 +856,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_DateTimeOffsetInvalidDateTimeStyles, parameterName);
             }
 
-            // RoundtripKind does not make sense for DateTimeOffset; ignore this flag for backward compatability with DateTime
+            // RoundtripKind does not make sense for DateTimeOffset; ignore this flag for backward compatibility with DateTime
             style &= ~DateTimeStyles.RoundtripKind;
 
             // AssumeLocal is also ignored as that is what we do by default with DateTimeOffset.Parse             
