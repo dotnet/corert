@@ -2298,16 +2298,23 @@ namespace System
                 throw new ArgumentNullException(nameof(match));
             }
 
-            LowLevelList<T> list = new LowLevelList<T>();
+            int pos = 0;
+            T[] result = Empty<T>();
             for (int i = 0; i < array.Length; i++)
             {
                 if (match(array[i]))
                 {
-                    list.Add(array[i]);
+                    if (pos == result.Length)
+                        Resize(ref result, Math.Min(pos == 0 ? 4 : pos * 2, array.Length));
+
+                    result[pos++] = array[i];
                 }
             }
 
-            return list.ToArray();
+            if (pos != result.Length)
+                Resize(ref result, pos);
+
+            return result;
         }
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)
