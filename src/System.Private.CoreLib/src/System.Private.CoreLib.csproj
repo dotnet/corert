@@ -275,7 +275,6 @@
     <Compile Include="System\IO\UnmanagedMemoryStream.cs" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
-    <Compile Include="System\DateTimeOffset.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
