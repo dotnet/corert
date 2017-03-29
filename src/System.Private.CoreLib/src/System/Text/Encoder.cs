@@ -273,6 +273,52 @@ namespace System.Text
             // Oops, we didn't have anything, we'll have to throw an overflow
             throw new ArgumentException(SR.Argument_ConversionOverflow);
         }
+
+        // Same thing, but using pointers
+        //
+        // Might consider checking Max...Count to avoid the extra counting step.
+        //
+        // Note that if all of the input chars are not consumed, then we'll do a /2, which means
+        // that its likely that we didn't consume as many chars as we could have.  For some
+        // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
+        [CLSCompliant(false)]
+        public virtual unsafe void Convert(char* chars, int charCount,
+                                             byte* bytes, int byteCount, bool flush,
+                                             out int charsUsed, out int bytesUsed, out bool completed)
+        {
+            // Validate input parameters
+            if (chars == null || bytes == null)
+                throw new ArgumentNullException((chars == null ? nameof(chars) : nameof(bytes)),
+                      SR.ArgumentNull_Array);
+
+            if (charCount < 0 || byteCount < 0)
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
+                      SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            Contract.EndContractBlock();
+
+            // Get ready to do it
+            charsUsed = charCount;
+
+            // Its easy to do if it won't overrun our buffer.
+            while (charsUsed > 0)
+            {
+                if (GetByteCount(chars, charsUsed, flush) <= byteCount)
+                {
+                    bytesUsed = GetBytes(chars, charsUsed, bytes, byteCount, flush);
+                    completed = (charsUsed == charCount &&
+                        (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
+                    return;
+                }
+
+                // Try again with 1/2 the count, won't flush then 'cause won't read it all
+                flush = false;
+                charsUsed /= 2;
+            }
+
+            // Oops, we didn't have anything, we'll have to throw an overflow
+            throw new ArgumentException(SR.Argument_ConversionOverflow);
+        }
     }
 }
 
