@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 
@@ -143,6 +144,11 @@ namespace System
         protected override sealed Delegate RemoveImpl(Delegate value)
         {
             return base.RemoveImpl(value);
+        }
+
+        protected override MethodInfo GetMethodImpl()
+        {
+            return base.GetMethodImpl();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
