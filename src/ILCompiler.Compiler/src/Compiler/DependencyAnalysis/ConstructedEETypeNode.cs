@@ -275,6 +275,10 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsValueType && ((DefType)type).IsByRefLike)
                         return false;
 
+                    // The global "<Module>" type can never be allocated.
+                    if (((MetadataType)type).IsModuleType)
+                        return false;
+
                     break;
             }
 
