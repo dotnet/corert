@@ -47,9 +47,6 @@ namespace ILCompiler
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            // TODO: hacky static field
-            NodeFactory.NameManglerDoNotUse = _nodeFactory.NameMangler;
-
             var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);

@@ -816,13 +816,6 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
-        /// <summary>
-        /// New code should use <see cref="NameMangler"/> instance property.
-        /// This global variable is only to support existing code and will be going away.
-        /// Do not add new references to it, unless it's from a GetName override.
-        /// </summary>
-        public static NameMangler NameManglerDoNotUse;
-
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
