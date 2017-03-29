@@ -84,7 +84,8 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.IsDefaultConstructor)
                     flags |= InvokeTableFlags.IsDefaultConstructor;
 
-                // TODO: HasVirtualInvoke
+                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(method))
+                    flags |= InvokeTableFlags.HasVirtualInvoke;
 
                 if (!method.IsAbstract)
                     flags |= InvokeTableFlags.HasEntrypoint;

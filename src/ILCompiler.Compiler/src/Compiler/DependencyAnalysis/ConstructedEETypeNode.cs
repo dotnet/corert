@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
                 DefType templateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, _type.ConvertToCanonForm(CanonicalFormKind.Specific));
 
-                if (!factory.NecessaryTypeSymbol(templateType).RepresentsIndirectionCell)
+                if (templateType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(templateType).RepresentsIndirectionCell)
                     dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout");
             }
 
@@ -230,8 +230,7 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
-                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, interfaceMethod), "Interface method");
-                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, interfaceMethod), "Interface method address");
+                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method");
                     }
                 }
             }

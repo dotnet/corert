@@ -151,7 +151,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 DependencyList dependencyList = new DependencyList();
                 dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
-                dependencyList.Add(factory.VTable(((MethodDesc)_target).OwningType), "ReadyToRun Virtual Method Call Target VTable");
                 return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.ResolveVirtualFunction)

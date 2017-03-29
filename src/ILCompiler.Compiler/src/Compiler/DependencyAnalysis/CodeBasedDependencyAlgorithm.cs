@@ -48,6 +48,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (method.OwningType.IsValueType && !method.Signature.IsStatic && !skipUnboxingStubDependency)
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub"));
+
+                dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, method));
             }
 
             if (method.HasInstantiation)

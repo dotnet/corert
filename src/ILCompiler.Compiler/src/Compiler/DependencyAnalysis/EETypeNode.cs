@@ -408,7 +408,8 @@ namespace ILCompiler.DependencyAnalysis
             if (declType.HasGenericDictionarySlot())
             {
                 // Note: Canonical type instantiations always have a generic dictionary vtable slot, but it's empty
-                if (declType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                // TODO: emit the correction dictionary slot for interfaces (needed when we start supporting static methods on interfaces)
+                if (declType.IsInterface || declType.IsCanonicalSubtype(CanonicalFormKind.Any))
                     objData.EmitZeroPointer();
                 else
                     objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));

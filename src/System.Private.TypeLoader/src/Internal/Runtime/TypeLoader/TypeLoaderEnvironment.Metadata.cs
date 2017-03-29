@@ -745,6 +745,11 @@ namespace Internal.Runtime.TypeLoader
         /// <returns></returns>
         public static unsafe bool TryGetMethodMethodNameAndSigFromVTableSlotForPregeneratedOrTemplateType(TypeSystemContext context, RuntimeTypeHandle type, int vtableSlot, out MethodNameAndSignature methodNameAndSig)
         {
+            // 
+            // NOTE: The semantics of the vtable slot and method declaring type in the VirtualInvokeMap table have slight differences between ProjectN and CoreRT ABIs.
+            // See comment in TryGetVirtualResolveData for more details.
+            //
+
             int logicalSlot = vtableSlot;
             EEType* ptrType = type.ToEETypePtr();
             RuntimeTypeHandle openOrNonGenericTypeDefinition = default(RuntimeTypeHandle);
@@ -823,23 +828,50 @@ namespace Internal.Runtime.TypeLoader
             ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
             externalReferences.InitializeCommonFixupsTable(module);
 
-            RuntimeTypeHandle definitionType = Instance.GetTypeDefinition(methodHandleDeclaringType);
+            //
+            // When working with the ProjectN ABI, the entries in the map are based on the definition types. All
+            // instantiations of these definition types will have the same vtable method entries.
+            // On CoreRT, the vtable entries for each instantiated type might not necessarily exist.
+            // Example 1: 
+            //      If there's a call to Foo<string>.Method1 and a call to Foo<int>.Method2, Foo<string> will
+            //      not have Method2 in its vtable and Foo<int> will not have Method1.
+            // Example 2:
+            //      If there's a call to Foo<string>.Method1 and a call to Foo<object>.Method2, given that both
+            //      of these instantiations share the same canonical form, Foo<__Canon> will have both method 
+            //      entries, and therefore Foo<string> and Foo<object> will have both entries too.
+            // For this reason, the entries that we write to the map in CoreRT will be based on the canonical form
+            // of the method's containing type instead of the open type definition.
+            //
+            // Similarly, given that we use the open type definition for ProjectN, the slot numbers ignore dictionary
+            // entries in the vtable, and computing the correct slot number in the presence of dictionary entries is 
+            // done at runtime. When working with the CoreRT ABI, the correct slot numbers will be written to the map,
+            // and no adjustments will be performed at runtime.
+            //
+            
+#if CORERT
+            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(
+                methodHandleDeclaringType, 
+                CanonicalFormKind.Specific);
+#else
+            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(
+                Instance.GetTypeDefinition(methodHandleDeclaringType), 
+                CanonicalFormKind.Specific);
+#endif
 
-            int hashcode = definitionType.GetHashCode();
+            var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
 
-            var lookup = invokeHashtable.Lookup(hashcode);
             NativeParser entryParser;
             while (!(entryParser = lookup.GetNext()).IsNull)
             {
                 // Grammar of an entry in the hash table:
                 // Virtual Method uses a normal slot 
-                // OpenType + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
+                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
                 // OR
                 // Generic Virtual Method 
-                // OpenType + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
+                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
 
                 RuntimeTypeHandle entryType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                if (!entryType.Equals(definitionType))
+                if (!canonHelper.IsCanonicallyEquivalent(entryType))
                     continue;
 
                 uint nameAndSigPointerToken = externalReferences.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
@@ -899,6 +931,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     uint slot = entryParser.GetUnsigned();
 
+#if !CORERT
                     RuntimeTypeHandle searchForSharedGenericTypesInParentHierarchy = declaringTypeOfVirtualInvoke;
                     while (!searchForSharedGenericTypesInParentHierarchy.IsNull())
                     {
@@ -929,6 +962,7 @@ namespace Internal.Runtime.TypeLoader
                             break;
                         }
                     }
+#endif
 
                     lookupResult = new VirtualResolveDataResult
                     {
@@ -947,38 +981,43 @@ namespace Internal.Runtime.TypeLoader
         /// Given a virtual logical slot and its open defining type, get information necessary to acquire the associated metadata from the mapping tables.
         /// </summary>
         /// <param name="moduleHandle">Module to look in</param>
-        /// <param name="definitionType">Open or non-generic type that is known to define the slot</param>
+        /// <param name="declaringType">Declaring type that is known to define the slot</param>
         /// <param name="logicalSlot">The logical slot that the method goes in. For this method, the logical 
         /// slot is defined as the nth virtual method defined in order on the type (including base types). 
         /// VTable slots reserved for dictionary pointers are ignored.</param>
         /// <param name="methodNameAndSig">The name and signature of the method</param>
         /// <returns>true if a definition is found, false if not</returns>
-        public static unsafe bool TryGetMethodNameAndSigFromVirtualResolveData(NativeFormatModuleInfo module,
-            RuntimeTypeHandle definitionType, int logicalSlot, out MethodNameAndSignature methodNameAndSig)
+        private static unsafe bool TryGetMethodNameAndSigFromVirtualResolveData(NativeFormatModuleInfo module,
+            RuntimeTypeHandle declaringType, int logicalSlot, out MethodNameAndSignature methodNameAndSig)
         {
-            EEType* definitionEEType = definitionType.ToEETypePtr();
+            // 
+            // NOTE: The semantics of the vtable slot and method declaring type in the VirtualInvokeMap table have slight differences between ProjectN and CoreRT ABIs.
+            // See comment in TryGetVirtualResolveData for more details.
+            //
+
             NativeReader invokeMapReader = GetNativeReaderForBlob(module, ReflectionMapBlob.VirtualInvokeMap);
             NativeParser invokeMapParser = new NativeParser(invokeMapReader, 0);
             NativeHashtable invokeHashtable = new NativeHashtable(invokeMapParser);
             ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
             externalReferences.InitializeCommonFixupsTable(module);
 
-            int hashcode = definitionType.GetHashCode();
+            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(declaringType, CanonicalFormKind.Specific);
+
             methodNameAndSig = default(MethodNameAndSignature);
 
-            var lookup = invokeHashtable.Lookup(hashcode);
+            var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
             NativeParser entryParser;
             while (!(entryParser = lookup.GetNext()).IsNull)
             {
                 // Grammar of an entry in the hash table:
                 // Virtual Method uses a normal slot 
-                // OpenType + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
+                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
                 // OR
                 // Generic Virtual Method 
-                // OpenType + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
+                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
 
                 RuntimeTypeHandle entryType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                if (!entryType.Equals(definitionType))
+                if (!canonHelper.IsCanonicallyEquivalent(entryType))
                     continue;
 
                 uint nameAndSigPointerToken = externalReferences.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());

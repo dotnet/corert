@@ -9,7 +9,7 @@ This repo contains the .NET Core runtime optimized for AOT compilation
 ## How to Engage, Contribute and Provide Feedback
 Some of the best ways to contribute are to try things out, file bugs, and join in design conversations.
 
-Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/UpForGrabs) issues are a great place to start or take a look at our [documentation](Documentation).
+Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/up-for-grabs) issues are a great place to start or take a look at our [documentation](Documentation).
 
 This project follows the [.NET Core Contribution Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md).
 

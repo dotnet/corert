@@ -129,6 +129,9 @@ namespace ILCompiler
             var staticsInfoHashtableNode = new StaticsInfoHashtableNode(nativeReferencesTableNode, nativeStaticsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.StaticsInfoHashtable), staticsInfoHashtableNode, staticsInfoHashtableNode, staticsInfoHashtableNode.EndSymbol);
 
+            var virtualInvokeMapNode = new ReflectionVirtualInvokeMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.VirtualInvokeMap), virtualInvokeMapNode, virtualInvokeMapNode, virtualInvokeMapNode.EndSymbol);
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
@@ -182,6 +185,19 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
+            }
+
+            var virtualMethodUseNode = obj as VirtualMethodUseNode;
+            if (virtualMethodUseNode != null && virtualMethodUseNode.Method.IsAbstract)
+            {
+                AddGeneratedMethod(virtualMethodUseNode.Method);
+                return;
+            }
+
+            var gvmDependenciesNode = obj as GVMDependenciesNode;
+            if(gvmDependenciesNode != null && gvmDependenciesNode.Method.IsAbstract)
+            {
+                AddGeneratedMethod(gvmDependenciesNode.Method);
             }
         }
 

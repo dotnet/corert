@@ -2,31 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
-using Internal.Reflection.Core.NonPortable;
 
 namespace System.Reflection
 {
+    [Serializable]
+    [CLSCompliant(false)]
     public sealed unsafe class Pointer : ISerializable
     {
-        public Pointer()
-        {
-        }
+        // CoreCLR: Do not add or remove fields without updating the ReflectionPointer class in runtimehandles.h
+        private readonly void* _ptr;
+        private readonly Type _ptrType;
 
         private Pointer(void* ptr, Type ptrType)
         {
+            Debug.Assert(ptrType.IsRuntimeImplemented()); // CoreCLR: For CoreRT's sake, _ptrType has to be declared as "Type", but in fact, it is always a RuntimeType. Code on CoreCLR expects this.
             _ptr = ptr;
             _ptrType = ptrType;
         }
 
-        private unsafe Pointer(SerializationInfo info, StreamingContext context)
+        private Pointer(SerializationInfo info, StreamingContext context)
         {
             _ptr = ((IntPtr)(info.GetValue("_ptr", typeof(IntPtr)))).ToPointer();
             _ptrType = (Type)info.GetValue("_ptrType", typeof(Type));
+            if (!_ptrType.IsRuntimeImplemented())
+                throw new SerializationException(SR.Arg_MustBeType);
         }
 
-        [CLSCompliant(false)]
         public static object Box(void* ptr, Type type)
         {
             if (type == null)
@@ -34,12 +37,11 @@ namespace System.Reflection
             if (!type.IsPointer)
                 throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
             if (!type.IsRuntimeImplemented())
-                throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(ptr));
 
             return new Pointer(ptr, type);
         }
 
-        [CLSCompliant(false)]
         public static void* Unbox(object ptr)
         {
             if (!(ptr is Pointer))
@@ -53,7 +55,7 @@ namespace System.Reflection
             info.AddValue("_ptrType", _ptrType);
         }
 
-        private readonly void* _ptr;
-        private readonly Type _ptrType;
+        internal Type GetPointerType() => _ptrType;
+        internal object GetPointerValue() => (IntPtr)_ptr;
     }
 }

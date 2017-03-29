@@ -613,6 +613,8 @@ class Program
 
     class TestReflectionInvoke
     {
+        static int s_NumErrors = 0;
+
         struct Foo<T>
         {
             public int Value;
@@ -622,6 +624,60 @@ class Program
             {
                 Value = value;
                 return check != null && typeof(T) == typeof(U);
+            }
+        }
+
+        public interface IFace<T>
+        {
+            string IFaceMethod1(T t);
+            string IFaceGVMethod1<U>(T t, U u);
+        }
+
+        public class BaseClass<T> : IFace<T>
+        {
+            public virtual string Method1(T t) { return "BaseClass.Method1"; }
+            public virtual string Method2(T t) { return "BaseClass.Method2"; }
+            public virtual string Method3(T t) { return "BaseClass.Method3"; }
+            public virtual string Method4(T t) { return "BaseClass.Method4"; }
+            public virtual string GVMethod1<U>(T t, U u) { return "BaseClass.GVMethod1"; }
+            public virtual string GVMethod2<U>(T t, U u) { return "BaseClass.GVMethod2"; }
+            public virtual string GVMethod3<U>(T t, U u) { return "BaseClass.GVMethod3"; }
+            public virtual string GVMethod4<U>(T t, U u) { return "BaseClass.GVMethod4"; }
+
+            public virtual string IFaceMethod1(T t) { return "BaseClass.IFaceMethod1"; }
+            public virtual string IFaceGVMethod1<U>(T t, U u) { return "BaseClass.IFaceGVMethod1"; }
+        }
+
+        public class DerivedClass1<T> : BaseClass<T>, IFace<T>
+        {
+            public override sealed string Method1(T t) { return "DerivedClass1.Method1"; }
+            public override string Method2(T t) { return "DerivedClass1.Method2"; }
+            public new virtual string Method3(T t) { return "DerivedClass1.Method3"; }
+            public override sealed string GVMethod1<U>(T t, U u) { return "DerivedClass1.GVMethod1"; }
+            public override string GVMethod2<U>(T t, U u) { return "DerivedClass1.GVMethod2"; }
+            public new virtual string GVMethod3<U>(T t, U u) { return "DerivedClass1.GVMethod3"; }
+
+            public override string IFaceMethod1(T t) { return "DerivedClass1.IFaceMethod1"; }
+        }
+
+        public class DerivedClass2<T> : DerivedClass1<T>, IFace<T>
+        {
+            public override string Method3(T t) { return "DerivedClass2.Method3"; }
+            public override string Method4(T t) { return "DerivedClass2.Method4"; }
+            public override string GVMethod3<U>(T t, U u) { return "DerivedClass2.GVMethod3"; }
+            public override string GVMethod4<U>(T t, U u) { return "DerivedClass2.GVMethod4"; }
+
+            string IFace<T>.IFaceMethod1(T t) { return "DerivedClass2.IFaceMethod1"; }
+            public override string IFaceGVMethod1<U>(T t, U u) { return "DerivedClass2.IFaceGVMethod1"; }
+        }
+
+        private static void Verify<T>(T expected, T actual)
+        {
+            if (!actual.Equals(expected))
+            {
+                Console.WriteLine("ACTUAL   : " + actual);
+                Console.WriteLine("EXPECTED : " + expected);
+                s_NumErrors++;
             }
         }
 
@@ -639,22 +695,141 @@ class Program
             {
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(string));
                 if (!(bool)mi.Invoke(o, new object[] { 123, "hello" }))
-                    throw new Exception();
+                    s_NumErrors++;
 
                 var foo = (Foo<string>)o;
                 if (foo.Value != 123)
-                    throw new Exception();
+                    s_NumErrors++;
 
                 if ((bool)mi.Invoke(o, new object[] { 123, null }))
-                    throw new Exception();
+                    s_NumErrors++;
             }
 
             // Uncomment when we have the type loader to buld invoke stub dictionaries.
             /*{
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(object));
                 if ((bool)mi.Invoke(o, new object[] { 123, new object() }))
-                    throw new Exception();
+                    s_NumErrors++;
             }*/
+
+            // VirtualInvokeMap testing
+            {
+                // Rooting some methods to make them reflectable
+                new BaseClass<string>().Method1("string");
+                new BaseClass<string>().Method2("string");
+                new BaseClass<string>().Method3("string");
+                new BaseClass<string>().Method4("string");
+                new BaseClass<string>().GVMethod1<string>("string", "string2");
+                new BaseClass<string>().GVMethod2<string>("string", "string2");
+                new BaseClass<string>().GVMethod3<string>("string", "string2");
+                new BaseClass<string>().GVMethod4<string>("string", "string2");
+                new DerivedClass1<string>().Method1("string");
+                new DerivedClass1<string>().Method2("string");
+                new DerivedClass1<string>().Method3("string");
+                new DerivedClass1<string>().Method4("string");
+                new DerivedClass1<string>().GVMethod1<string>("string", "string2");
+                new DerivedClass1<string>().GVMethod2<string>("string", "string2");
+                new DerivedClass1<string>().GVMethod3<string>("string", "string2");
+                new DerivedClass1<string>().GVMethod4<string>("string", "string2");
+                new DerivedClass2<string>().Method1("string");
+                new DerivedClass2<string>().Method2("string");
+                new DerivedClass2<string>().Method3("string");
+                new DerivedClass2<string>().Method4("string");
+                new DerivedClass2<string>().GVMethod1<string>("string", "string2");
+                new DerivedClass2<string>().GVMethod2<string>("string", "string2");
+                new DerivedClass2<string>().GVMethod3<string>("string", "string2");
+                new DerivedClass2<string>().GVMethod4<string>("string", "string2");
+                ((IFace<string>)new BaseClass<string>()).IFaceMethod1("string");
+                ((IFace<string>)new BaseClass<string>()).IFaceGVMethod1<string>("string1", "string2");
+
+                MethodInfo m1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method1");
+                MethodInfo m2 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method2");
+                MethodInfo m3 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method3");
+                MethodInfo m4 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method4");
+                MethodInfo gvm1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod1").MakeGenericMethod(typeof(string));
+                MethodInfo gvm2 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod2").MakeGenericMethod(typeof(string));
+                MethodInfo gvm3 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
+                MethodInfo gvm4 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod4").MakeGenericMethod(typeof(string));
+                Verify("BaseClass.Method1", m1.Invoke(new BaseClass<string>(), new[] { "" }));
+                Verify("BaseClass.Method2", m2.Invoke(new BaseClass<string>(), new[] { "" }));
+                Verify("BaseClass.Method3", m3.Invoke(new BaseClass<string>(), new[] { "" }));
+                Verify("BaseClass.Method4", m4.Invoke(new BaseClass<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method2", m2.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("BaseClass.Method3", m3.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("BaseClass.Method4", m4.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method2", m2.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("BaseClass.Method3", m3.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass2.Method4", m4.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("BaseClass.GVMethod1", gvm1.Invoke(new BaseClass<string>(), new[] { "", "" }));
+                Verify("BaseClass.GVMethod2", gvm2.Invoke(new BaseClass<string>(), new[] { "", "" }));
+                Verify("BaseClass.GVMethod3", gvm3.Invoke(new BaseClass<string>(), new[] { "", "" }));
+                Verify("BaseClass.GVMethod4", gvm4.Invoke(new BaseClass<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod1", gvm1.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod2", gvm2.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("BaseClass.GVMethod3", gvm3.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("BaseClass.GVMethod4", gvm4.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod1", gvm1.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod2", gvm2.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+                Verify("BaseClass.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+                Verify("DerivedClass2.GVMethod4", gvm4.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+
+                m1 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("Method1");
+                m2 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("Method2");
+                m3 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("Method3");
+                gvm1 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("GVMethod1").MakeGenericMethod(typeof(string));
+                gvm2 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("GVMethod2").MakeGenericMethod(typeof(string));
+                gvm3 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
+                Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method2", m2.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method3", m3.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass1.Method2", m2.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass2.Method3", m3.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass1.GVMethod1", gvm1.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod2", gvm2.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod3", gvm3.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod1", gvm1.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.GVMethod2", gvm2.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+                Verify("DerivedClass2.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+
+                m3 = typeof(DerivedClass2<string>).GetTypeInfo().GetDeclaredMethod("Method3");
+                m4 = typeof(DerivedClass2<string>).GetTypeInfo().GetDeclaredMethod("Method4");
+                gvm3 = typeof(DerivedClass2<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
+                gvm4 = typeof(DerivedClass2<string>).GetTypeInfo().GetDeclaredMethod("GVMethod4").MakeGenericMethod(typeof(string));
+                Verify("DerivedClass2.Method3", m3.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass2.Method4", m4.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass2.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+                Verify("DerivedClass2.GVMethod4", gvm4.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+
+                // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on CoreRT, because vtable entries
+                // get populated on demand (the first type won't get a Method3 entry, and the latter won't get a Method1 entry)
+                // On ProjectN, both types will get vtable entries for both methods.
+                new BaseClass<int>().Method1(1);
+                m1 = typeof(BaseClass<int>).GetTypeInfo().GetDeclaredMethod("Method1");
+                Verify("BaseClass.Method1", m1.Invoke(new BaseClass<int>(), new object[] { (int)1 }));
+                Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass1<int>(), new object[] { (int)1 }));
+                Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass2<int>(), new object[] { (int)1 }));
+
+                new BaseClass<float>().Method3(1);
+                m3 = typeof(BaseClass<float>).GetTypeInfo().GetDeclaredMethod("Method3");
+                Verify("BaseClass.Method3", m3.Invoke(new BaseClass<float>(), new object[] { 1.1f }));
+                Verify("BaseClass.Method3", m3.Invoke(new DerivedClass1<float>(), new object[] { 1.1f }));
+                Verify("BaseClass.Method3", m3.Invoke(new DerivedClass2<float>(), new object[] { 1.1f }));
+
+                m1 = typeof(IFace<string>).GetTypeInfo().GetDeclaredMethod("IFaceMethod1");
+                gvm1 = typeof(IFace<string>).GetTypeInfo().GetDeclaredMethod("IFaceGVMethod1").MakeGenericMethod(typeof(string));
+                Verify("BaseClass.IFaceMethod1", m1.Invoke(new BaseClass<string>(), new[] { "" }));
+                Verify("BaseClass.IFaceGVMethod1", gvm1.Invoke(new BaseClass<string>(), new[] { "", "" }));
+                Verify("DerivedClass1.IFaceMethod1", m1.Invoke(new DerivedClass1<string>(), new[] { "" }));
+                Verify("BaseClass.IFaceGVMethod1", gvm1.Invoke(new DerivedClass1<string>(), new[] { "", "" }));
+                Verify("DerivedClass2.IFaceMethod1", m1.Invoke(new DerivedClass2<string>(), new[] { "" }));
+                Verify("DerivedClass2.IFaceGVMethod1", gvm1.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
+            }
+
+            if (s_NumErrors != 0)
+                throw new Exception();
         }
     }
 

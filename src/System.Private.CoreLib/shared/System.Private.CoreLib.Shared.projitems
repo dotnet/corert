@@ -109,6 +109,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DataMisalignedException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeKind.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DayOfWeek.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DBNull.cs"/>
@@ -123,6 +124,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\FlagsAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\FormatException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\FormattableString.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormat.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormatInfo.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormatInfoScanner.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeParse.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IComparable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IConvertible.cs"/>
@@ -219,6 +224,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterModifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Pointer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PortableExecutableKinds.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ProcessorArchitecture.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PropertyAttributes.cs" />
