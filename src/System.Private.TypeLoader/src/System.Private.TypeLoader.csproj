@@ -379,9 +379,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
       <Link>UniversalCanonLayoutAlgorithm.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
-      <Link>LockFreeReaderHashtable.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
       <Link>LockFreeReaderHashtableOfPointers.cs</Link>
     </Compile>
