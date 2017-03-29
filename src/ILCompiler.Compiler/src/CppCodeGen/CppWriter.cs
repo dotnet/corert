@@ -1105,24 +1105,24 @@ namespace ILCompiler.CppCodeGen
                     typeDefinitions.AppendLine();
                     typeDefinitions.Append(GetCodeForDelegate(nodeType));
                 }
+            }
 
+            if (nodeType.HasStaticConstructor)
+            {
+                _statics.AppendLine();
+                _statics.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
+            }
 
-                if (nodeType.HasStaticConstructor)
+            List<MethodDesc> methodList;
+            if (_methodLists.TryGetValue(nodeType, out methodList))
+            {
+                foreach (var m in methodList)
                 {
-                    _statics.AppendLine();
-                    _statics.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
-                }
-
-                List<MethodDesc> methodList;
-                if (_methodLists.TryGetValue(nodeType, out methodList))
-                {
-                    foreach (var m in methodList)
-                    {
-                        typeDefinitions.AppendLine();
-                        AppendCppMethodDeclaration(typeDefinitions, m, false);
-                    }
+                    typeDefinitions.AppendLine();
+                    AppendCppMethodDeclaration(typeDefinitions, m, false);
                 }
             }
+
             typeDefinitions.AppendEmptyLine();
             typeDefinitions.Append("};");
             typeDefinitions.AppendEmptyLine();
