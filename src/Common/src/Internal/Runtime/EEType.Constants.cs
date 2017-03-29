@@ -208,6 +208,9 @@ namespace Internal.Runtime
         ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
+        ETF_DynamicGcStatics,
+        ETF_DynamicNonGcStatics,
+        ETF_DynamicThreadStaticOffset,
     }
 
     internal enum CorElementType
