@@ -257,8 +257,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
         {
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Universal);
+
+            // If we're producing a full vtable for the type, we don't need to report virtual method use.
+            if (factory.CompilationModuleGroup.ShouldProduceFullVTable(canonMethod.OwningType))
+                return Array.Empty<DependencyNodeCore<NodeFactory>>();
+
             return new DependencyNodeCore<NodeFactory>[] {
-                factory.VirtualMethodUse(_method.GetCanonMethodTarget(CanonicalFormKind.Universal))
+                factory.VirtualMethodUse(canonMethod)
             };
         }
     }

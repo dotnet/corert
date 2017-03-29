@@ -48,13 +48,13 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (_type.RuntimeInterfaces.Length > 0)
+            if (TrackInterfaceDispatchMapDepenendency && _type.RuntimeInterfaces.Length > 0)
             {
-                if (TrackInterfaceDispatchMapDepenendency)
-                {
-                    dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
-                }
+                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+            }
 
+            if (_type.RuntimeInterfaces.Length > 0 && !factory.CompilationModuleGroup.ShouldProduceFullVTable(_type))
+            {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
                     // If the type implements ICastable, the methods are implicitly necessary
@@ -191,6 +191,10 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             DefType defType = _type.GetClosestDefType();
+
+            // If we're producing a full vtable, none of the dependencies are conditional.
+            if (factory.CompilationModuleGroup.ShouldProduceFullVTable(defType))
+                yield break;
 
             foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
             {

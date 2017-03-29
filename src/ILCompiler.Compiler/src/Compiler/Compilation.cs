@@ -240,7 +240,8 @@ namespace ILCompiler
 
             public void RootVirtualMethodUse(MethodDesc method, string reason)
             {
-                _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
+                if (!_factory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
+                    _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
             }
         }
     }
