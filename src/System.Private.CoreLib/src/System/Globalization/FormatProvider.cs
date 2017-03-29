@@ -52,10 +52,6 @@ namespace System.Globalization
         {
             return CompareInfo.CompareOrdinalIgnoreCase(string1, offset1, length1, string2, offset2, length2);
         }
-        public static StringComparer GetCultureAwareStringComparer(bool ignoreCase)
-        {
-            return new CultureAwareComparer(CultureInfo.CurrentCulture, ignoreCase);
-        }
         public static int IndexOf(String source, String value, int startIndex, int count)
         {
             return CultureInfo.CurrentCulture.CompareInfo.IndexOf(source, value, startIndex, count, CompareOptions.None);
@@ -108,14 +104,6 @@ namespace System.Globalization
 
         #region Formatting
         // provider if null means we use NumberFormatInfo.CurrenctInfo otherwise we use NumberFormatInfo.GetInstance(provider)
-        public static String FormatDateTime(DateTime value, String format, IFormatProvider provider)
-        {
-            return DateTimeFormat.Format(value, format, DateTimeFormatInfo.GetInstance(provider));
-        }
-        public static String FormatDateTime(DateTime value, String format, IFormatProvider provider, TimeSpan offSet)
-        {
-            return DateTimeFormat.Format(value, format, DateTimeFormatInfo.GetInstance(provider), offSet);
-        }
         public static String FormatDecimal(Decimal value, String format, IFormatProvider provider)
         {
             return FormatProvider.Number.FormatDecimal(value, format, provider);
@@ -148,40 +136,9 @@ namespace System.Globalization
         {
             return FormatProvider.Number.FormatUInt64(value, format, provider);
         }
-        public static string[] GetAllDateTimes(DateTime value, char format, IFormatProvider provider)
-        {
-            if (format == (char)0)
-                return DateTimeFormat.GetAllDateTimes(value, DateTimeFormatInfo.GetInstance(provider));
-            else
-                return DateTimeFormat.GetAllDateTimes(value, format, DateTimeFormatInfo.GetInstance(provider));
-        }
         #endregion
 
         #region Parsing
-        public static DateTime ParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles)
-        {
-            return DateTimeParse.Parse(value, DateTimeFormatInfo.GetInstance(provider), styles);
-        }
-        public static DateTime ParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles, out TimeSpan offset)
-        {
-            return DateTimeParse.Parse(value, DateTimeFormatInfo.GetInstance(provider), styles, out offset);
-        }
-        public static DateTime ParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles)
-        {
-            return DateTimeParse.ParseExact(value, format, DateTimeFormatInfo.GetInstance(provider), styles);
-        }
-        public static DateTime ParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles, out TimeSpan offset)
-        {
-            return DateTimeParse.ParseExact(value, format, DateTimeFormatInfo.GetInstance(provider), styles, out offset);
-        }
-        public static DateTime ParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles)
-        {
-            return DateTimeParse.ParseExactMultiple(value, formats, DateTimeFormatInfo.GetInstance(provider), styles);
-        }
-        public static DateTime ParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles, out TimeSpan offset)
-        {
-            return DateTimeParse.ParseExactMultiple(value, formats, DateTimeFormatInfo.GetInstance(provider), styles, out offset);
-        }
         public static Decimal ParseDecimal(String value, NumberStyles options, IFormatProvider provider)
         {
             return FormatProvider.Number.ParseDecimal(value, options, provider);
@@ -221,30 +178,6 @@ namespace System.Globalization
         public static UInt64 ParseUInt64(String value, NumberStyles options, IFormatProvider provider)
         {
             return FormatProvider.Number.ParseUInt64(value, options, provider);
-        }
-        public static Boolean TryParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
-        {
-            return DateTimeParse.TryParse(value, DateTimeFormatInfo.GetInstance(provider), styles, out result);
-        }
-        public static Boolean TryParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
-        {
-            return DateTimeParse.TryParse(value, DateTimeFormatInfo.GetInstance(provider), styles, out result, out offset);
-        }
-        public static Boolean TryParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
-        {
-            return DateTimeParse.TryParseExact(value, format, DateTimeFormatInfo.GetInstance(provider), styles, out result);
-        }
-        public static Boolean TryParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
-        {
-            return DateTimeParse.TryParseExact(value, format, DateTimeFormatInfo.GetInstance(provider), styles, out result, out offset);
-        }
-        public static Boolean TryParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
-        {
-            return DateTimeParse.TryParseExactMultiple(value, formats, DateTimeFormatInfo.GetInstance(provider), styles, out result);
-        }
-        public static Boolean TryParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
-        {
-            return DateTimeParse.TryParseExactMultiple(value, formats, DateTimeFormatInfo.GetInstance(provider), styles, out result, out offset);
         }
         public static Boolean TryParseDecimal(String value, NumberStyles options, IFormatProvider provider, out Decimal result)
         {
