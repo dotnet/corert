@@ -245,7 +245,6 @@
     <Compile Include="System\Globalization\JapaneseCalendar.cs" />
     <Compile Include="System\Globalization\KoreanCalendar.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
-    <Compile Include="System\Globalization\FormatProvider.CultureAwareComparer.cs" />
     <Compile Include="System\Globalization\SortKey.cs" />
     <Compile Include="System\Globalization\SortVersion.cs" />
     <Compile Include="System\Globalization\StringInfo.cs" />
@@ -431,7 +430,6 @@
     <Compile Include="System\String.Comparison.cs" />
     <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\String.Searching.cs" />
-    <Compile Include="System\StringComparer.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Delegate.cs" />
@@ -449,7 +447,6 @@
     <Compile Include="System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
     <Compile Include="System\Runtime\CompilerServices\INotifyCompletion.cs" />
     <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
-    <Compile Include="System\StringComparison.cs" />
     <Compile Include="System\Text\ASCIIEncoding.cs" />
     <Compile Include="System\Text\Decoder.cs" />
     <Compile Include="System\Text\DecoderBestFitFallback.cs" />
