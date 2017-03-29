@@ -288,6 +288,25 @@ namespace System
             return this;
         }
 
+        public static unsafe String Copy(String str)
+        {
+            if (str == null)
+            {
+                throw new ArgumentNullException(nameof(str));
+            }
+
+            int length = str.Length;
+
+            String result = FastAllocateString(length);
+
+            fixed (char* dest = &result._firstChar)
+            fixed (char* src = &str._firstChar)
+            {
+                wstrcpy(dest, src, length);
+            }
+            return result;
+        }
+
         public static readonly String Empty = "";
 
         // Gets the character at a specified position.
@@ -483,6 +502,11 @@ namespace System
         public String ToString(IFormatProvider provider)
         {
             return this;
+        }
+
+        public CharEnumerator GetEnumerator()
+        {
+            return new CharEnumerator(this);
         }
 
         IEnumerator<char> IEnumerable<char>.GetEnumerator()
