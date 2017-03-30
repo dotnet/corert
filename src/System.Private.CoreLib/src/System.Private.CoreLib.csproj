@@ -329,6 +329,7 @@
     <Compile Include="System\Int64.cs" />
     <Compile Include="System\Intptr.cs" />
     <Compile Include="System\Math.cs" />
+    <Compile Include="System\MathF.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MissingMethodException.cs" />
