@@ -17,7 +17,11 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeMethodHandleNode(MethodDesc targetMethod)
         {
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
-            Debug.Assert(targetMethod.IsTypicalMethodDefinition || !targetMethod.IsRuntimeDeterminedExactMethod);
+
+            // IL is allowed to LDTOKEN an uninstantiated thing. Do not check IsRuntimeDetermined for the nonexact thing.
+            Debug.Assert((targetMethod.HasInstantiation && targetMethod.IsMethodDefinition)
+                || targetMethod.OwningType.IsGenericDefinition
+                || !targetMethod.IsRuntimeDeterminedExactMethod);
             _targetMethod = targetMethod;
         }
 
@@ -35,7 +39,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (!_targetMethod.IsTypicalMethodDefinition && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)
+            if (!_targetMethod.IsMethodDefinition && !_targetMethod.OwningType.IsGenericDefinition
+                && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)
             {
                 DependencyList dependencies = new DependencyList();
                 dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_targetMethod), "GVM dependencies for runtime method handle"));
