@@ -64,10 +64,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe IntPtr GetAddrOfPinnedArrayFromEETypeField(this Array array)
         {
-            fixed (IntPtr* pEEType = &array.m_pEEType)
-            {
-                return (IntPtr)Array.GetAddrOfPinnedArrayFromEETypeField(pEEType);
-            }
+            return (IntPtr)Unsafe.AsPointer(ref array.GetRawArrayData());
         }
 
         public static bool IsBlittable(this RuntimeTypeHandle handle)
