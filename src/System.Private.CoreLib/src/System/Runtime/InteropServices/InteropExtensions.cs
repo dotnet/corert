@@ -215,6 +215,11 @@ namespace System.Runtime.InteropServices
             return handle.ToEETypePtr().IsValueType;
         }
 
+        public static bool IsClass(this RuntimeTypeHandle handle)
+        {
+            return handle.ToEETypePtr().IsDefType && !handle.ToEETypePtr().IsInterface && !handle.ToEETypePtr().IsValueType;
+        }
+
         public static bool IsEnum(this RuntimeTypeHandle handle)
         {
             return handle.ToEETypePtr().IsEnum;
@@ -223,6 +228,17 @@ namespace System.Runtime.InteropServices
         public static bool IsInterface(this RuntimeTypeHandle handle)
         {
             return handle.ToEETypePtr().IsInterface;
+        }
+
+        public static bool IsPrimitive(this RuntimeTypeHandle handle)
+        {
+            return handle.ToEETypePtr().IsPrimitive;
+        }
+
+        public static bool IsDelegate(this RuntimeTypeHandle handle)
+        {
+            return InteropExtensions.AreTypesAssignable(handle, typeof(MulticastDelegate).TypeHandle) ||
+                InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
         }
 
         public static bool AreTypesAssignable(RuntimeTypeHandle sourceType, RuntimeTypeHandle targetType)
