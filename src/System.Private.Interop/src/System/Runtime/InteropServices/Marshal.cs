@@ -1468,9 +1468,11 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // This method binds to the specified moniker.
         //====================================================================
-#if false // Bug 398140: Shared library is broken by addition of non-existent import BindMoniker
         public static Object BindToMoniker(String monikerName)
         {
+#if TARGET_CORE_API_SET // BindMoniker not available in core API set
+            throw new PlatformNotSupportedException();
+#else
             Object obj = null;
             IBindCtx bindctx = null;
             ExternalInterop.CreateBindCtx(0, out bindctx);
@@ -1481,8 +1483,8 @@ namespace System.Runtime.InteropServices
 
             ExternalInterop.BindMoniker(pmoniker, 0, ref Interop.COM.IID_IUnknown, out obj);
             return obj;
+#endif
         }
-#endif // Bug 398140: Shared library is broken by addition of non-existent import BindMoniker
 
 #if ENABLE_WINRT
         public static Type GetTypeFromCLSID(Guid clsid)
