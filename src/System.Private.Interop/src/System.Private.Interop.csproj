@@ -23,7 +23,6 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Debug.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Threading.Tasks.dll" />
   </ItemGroup>
@@ -119,7 +118,6 @@
     <Compile Include="System\Runtime\InteropServices\HandleRef.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropEventProvider.cs" />
     <Compile Include="System\Runtime\InteropServices\GuidAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomAdapter.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomFactory.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomMarshaler.cs" />
