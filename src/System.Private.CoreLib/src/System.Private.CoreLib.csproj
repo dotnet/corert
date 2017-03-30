@@ -637,6 +637,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\ntdll\Interop.ZeroMemory.cs">
       <Link>Interop\Windows\ntdll\Interop.ZeroMemory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
