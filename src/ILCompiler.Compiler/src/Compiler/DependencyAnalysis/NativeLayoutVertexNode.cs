@@ -115,7 +115,7 @@ namespace ILCompiler.DependencyAnalysis
             if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) == 0)
             {
                 _containingTypeSig = factory.NativeLayout.TypeSignatureVertex(method.OwningType);
-                if (method.HasInstantiation)
+                if (method.HasInstantiation && !method.IsMethodDefinition)
                 {
                     _instantiationArgsSig = new NativeLayoutTypeSignatureVertexNode[method.Instantiation.Length];
                     for (int i = 0; i < _instantiationArgsSig.Length; i++)
@@ -138,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 dependencies.Add(new DependencyListEntry(_containingTypeSig, "NativeLayoutMethodEntryVertexNode containing type signature"));
-                if (_method.HasInstantiation)
+                if (_method.HasInstantiation && !_method.IsMethodDefinition)
                 {
                     foreach (var arg in _instantiationArgsSig)
                         dependencies.Add(new DependencyListEntry(arg, "NativeLayoutMethodEntryVertexNode instantiation argument signature"));
@@ -165,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
 
             Vertex[] args = null;
             MethodFlags flags = 0;
-            if (_method.HasInstantiation)
+            if (_method.HasInstantiation && !_method.IsMethodDefinition)
             {
                 Debug.Assert(_instantiationArgsSig == null || (_instantiationArgsSig != null && _method.Instantiation.Length == _instantiationArgsSig.Length));
 

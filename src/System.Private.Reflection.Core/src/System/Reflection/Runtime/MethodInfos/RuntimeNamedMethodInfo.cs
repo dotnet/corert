@@ -206,7 +206,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.GetHashCode();
         }
 
-        public sealed override RuntimeMethodHandle MethodHandle => GetRuntimeMethodHandle(Array.Empty<Type>());
+        public sealed override RuntimeMethodHandle MethodHandle => GetRuntimeMethodHandle(null);
 
         protected internal sealed override String ComputeToString(RuntimeMethodInfo contextMethod)
         {

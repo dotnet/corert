@@ -127,14 +127,17 @@ namespace Internal.Runtime.TypeLoader
 
             public RuntimeMethodHandleKey(RuntimeTypeHandle declaringType, string methodName, RuntimeSignature signature, RuntimeTypeHandle[] genericArgs)
             {
-                Debug.Assert(genericArgs != null);
-
                 _declaringType = declaringType;
                 _methodName = methodName;
                 _signature = signature;
                 _genericArgs = genericArgs;
                 int methodNameHashCode = methodName == null ? 0 : methodName.GetHashCode();
-                _hashcode = TypeHashingAlgorithms.ComputeGenericInstanceHashCode(declaringType.GetHashCode(), genericArgs) ^ methodNameHashCode ^ signature.GetHashCode();
+                _hashcode = methodNameHashCode ^ signature.GetHashCode();
+
+                if (genericArgs != null)
+                    _hashcode ^= TypeHashingAlgorithms.ComputeGenericInstanceHashCode(declaringType.GetHashCode(), genericArgs);
+                else
+                    _hashcode ^= declaringType.GetHashCode();
             }
 
             public override bool Equals(object obj)
@@ -152,12 +155,18 @@ namespace Internal.Runtime.TypeLoader
                 if (!_declaringType.Equals(other._declaringType) || _methodName != other._methodName || !_signature.Equals(other._signature))
                     return false;
 
-                if (_genericArgs.Length != other._genericArgs.Length)
+                if ((_genericArgs == null) != (other._genericArgs == null))
                     return false;
 
-                for (int i = 0; i < _genericArgs.Length; i++)
-                    if (!_genericArgs[i].Equals(other._genericArgs[i]))
-                        return false;
+                if (_genericArgs != null)
+                {
+                    if (_genericArgs.Length != other._genericArgs.Length)
+                       return false;
+
+                    for (int i = 0; i < _genericArgs.Length; i++)
+                        if (!_genericArgs[i].Equals(other._genericArgs[i]))
+                            return false;
+                }
 
                 return true;
             }
@@ -301,8 +310,9 @@ namespace Internal.Runtime.TypeLoader
                 if (!_runtimeMethodHandles.TryGetValue(key, out runtimeMethodHandle))
                 {
                     int sizeToAllocate = sizeof(DynamicMethodHandleInfo);
+                    int numGenericMethodArgs = genericMethodArgs == null ? 0 : genericMethodArgs.Length;
                     // Use checked arithmetics to ensure there aren't any overflows/truncations
-                    sizeToAllocate = checked(sizeToAllocate + (genericMethodArgs.Length > 0 ? sizeof(IntPtr) * (genericMethodArgs.Length - 1) : 0));
+                    sizeToAllocate = checked(sizeToAllocate + (numGenericMethodArgs > 0 ? sizeof(IntPtr) * (numGenericMethodArgs - 1) : 0));
                     IntPtr runtimeMethodHandleValue = MemoryHelpers.AllocateMemory(sizeToAllocate);
                     if (runtimeMethodHandleValue == IntPtr.Zero)
                         throw new OutOfMemoryException();
@@ -311,9 +321,9 @@ namespace Internal.Runtime.TypeLoader
                     methodData->DeclaringType = *(IntPtr*)&declaringTypeHandle;
                     methodData->MethodName = methodName;
                     methodData->MethodSignature = methodSignature;
-                    methodData->NumGenericArgs = genericMethodArgs.Length;
+                    methodData->NumGenericArgs = numGenericMethodArgs;
                     IntPtr* genericArgPtr = &(methodData->GenericArgsArray);
-                    for (int i = 0; i < genericMethodArgs.Length; i++)
+                    for (int i = 0; i < numGenericMethodArgs; i++)
                     {
                         RuntimeTypeHandle currentArg = genericMethodArgs[i];
                         genericArgPtr[i] = *(IntPtr*)&currentArg;
@@ -351,7 +361,7 @@ namespace Internal.Runtime.TypeLoader
 
             DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)runtimeMethodHandleValue.ToPointer();
             declaringTypeHandle = *(RuntimeTypeHandle*)&(methodData->DeclaringType);
-            genericMethodArgs = Empty<RuntimeTypeHandle>.Array;
+            genericMethodArgs = null;
 
             if (methodData->NumGenericArgs > 0)
             {
