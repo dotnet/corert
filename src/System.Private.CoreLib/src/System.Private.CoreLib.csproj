@@ -203,6 +203,8 @@
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\AggregateException.cs" />
+    <Compile Include="System\AppContext.cs" />
+    <Compile Include="System\AppContextDefaultValues.cs" />
     <Compile Include="System\ArgumentException.cs" />
     <Compile Include="System\ArgumentOutOfRangeException.cs" />
     <Compile Include="System\ArraySegment.cs" />
@@ -636,6 +638,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
+      <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs">
       <Link>Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs</Link>
