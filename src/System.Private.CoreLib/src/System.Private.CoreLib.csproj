@@ -203,6 +203,8 @@
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\AggregateException.cs" />
+    <Compile Include="System\AppContext.cs" />
+    <Compile Include="System\AppContextDefaultValues.cs" />
     <Compile Include="System\ArgumentException.cs" />
     <Compile Include="System\ArgumentOutOfRangeException.cs" />
     <Compile Include="System\ArraySegment.cs" />
@@ -327,6 +329,7 @@
     <Compile Include="System\Int64.cs" />
     <Compile Include="System\Intptr.cs" />
     <Compile Include="System\Math.cs" />
+    <Compile Include="System\MathF.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MissingMethodException.cs" />
@@ -634,8 +637,14 @@
     <Compile Include="..\..\Common\src\Interop\Windows\ntdll\Interop.ZeroMemory.cs">
       <Link>Interop\Windows\ntdll\Interop.ZeroMemory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
+      <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs">
       <Link>Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs</Link>
