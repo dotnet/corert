@@ -14,6 +14,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _targetMethod;
 
+        public MethodDesc Method => _targetMethod;
+
         public RuntimeMethodHandleNode(MethodDesc targetMethod)
         {
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
