@@ -82,7 +82,9 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
-    <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />    <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeILEmitterConfiguration.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\InlineArrayType.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeILEmitterConfiguration.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\InteropTypes.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\InteropStateManager.cs" />
     <Compile Include="$(ILCompilerBasePath)\Logger.cs" />

@@ -84,6 +84,12 @@ namespace ILCompiler
             return stub;
         }
 
+        internal TypeDesc GetInlineArrayType(InlineArrayCandidate candidate)
+        {
+            TypeDesc inlineArrayType = InteropStateManager.GetInlineArrayType(candidate);
+            Debug.Assert(inlineArrayType != null);
+            return inlineArrayType;
+        }
 
         internal IEnumerable<Tuple<TypeDesc, DelegateMarshallingMethodThunk, DelegateMarshallingMethodThunk>> GetDelegateMarshallingThunks()
         {

@@ -92,6 +92,32 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest_Nested(NestedStruct ns);
 
+        [StructLayout(LayoutKind.Sequential, CharSet= CharSet.Ansi, Pack = 4)]
+        public unsafe struct InlineArrayStruct
+        {
+            public int f0;
+            public int f1;
+            public int f2;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
+            public short[] inlineArray;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 11)]
+            public string inlineString;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 4)]
+        public unsafe struct InlineUnicodeStruct
+        {
+            public int f0;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 11)]
+            public string inlineString;
+        }
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool InlineArrayTest(ref InlineArrayStruct ias, ref InlineUnicodeStruct ius);
+
         public static int Main(string[] args)
         {
             TestBlittableType();
@@ -377,9 +403,37 @@ namespace PInvokeTests
             ns.f2 = es;
             ThrowIfNotEquals(true, StructTest_Nested(ns), "Struct marshalling scenario5 failed.");
 
-// RhpThrowEx is not implemented in CPPCodeGen
+            InlineArrayStruct ias = new InlineArrayStruct();
+            ias.inlineArray = new short[128];
+
+            for (short i = 0; i < 128; i++)
+            {
+                ias.inlineArray[i] = i;
+            }
+
+            ias.inlineString = "Hello";
+
+            InlineUnicodeStruct ius = new InlineUnicodeStruct();
+            ius.inlineString = "Hello World";
+
 #if !CODEGEN_CPP
-            bool pass = false;
+            ThrowIfNotEquals(true, InlineArrayTest(ref ias, ref ius), "inline array marshalling failed");
+            bool pass = true;
+            for (short i = 0; i < 128; i++)
+            {
+                if (ias.inlineArray[i] != i + 1)
+                {
+                    pass = false;
+                }
+            }
+            ThrowIfNotEquals(true, pass, "inline array marshalling failed");
+
+            ThrowIfNotEquals("Hello World", ias.inlineString, "Inline ByValTStr Ansi marshalling failed");
+
+            ThrowIfNotEquals("Hello World", ius.inlineString, "Inline ByValTStr Unicode marshalling failed");
+
+            // RhpThrowEx is not implemented in CPPCodeGen
+            pass = false;
             AutoStruct autoStruct = new AutoStruct();
             try
             {
