@@ -318,6 +318,9 @@
   <data name="Arg_MustBeSingle" xml:space="preserve">
     <value>Object must be of type Single.</value>
   </data>
+  <data name="Arg_MustBeStatic" xml:space="preserve">
+    <value>Method must be a static method.</value>
+  </data>
   <data name="Arg_MustBeString" xml:space="preserve">
     <value>Object must be of type String.</value>
   </data>
@@ -455,6 +458,9 @@
   </data>
   <data name="Arg_WrongType" xml:space="preserve">
     <value>The value '{0}' is not of type '{1}' and cannot be used in this generic collection.</value>
+  </data>
+  <data name="Argument_AbsolutePathRequired" xml:space="preserve">
+    <value>Absolute path information is required.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
@@ -1656,6 +1662,9 @@
   </data>
   <data name="InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext" xml:space="preserve">
     <value>Send is not supported in the Windows Runtime SynchronizationContext</value>
+  </data>
+  <data name="InvalidOperation_SetData_OnlyOnce" xml:space="preserve">
+    <value>SetData can only be used to set the value of a given name once.</value>
   </data>
   <data name="SemaphoreSlim_Disposed" xml:space="preserve">
     <value>The semaphore has been disposed.</value>
