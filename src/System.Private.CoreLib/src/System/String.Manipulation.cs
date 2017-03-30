@@ -1519,6 +1519,16 @@ namespace System
             return FormatProvider.ToLower(this);
         }
 
+        // Creates a copy of this string in lower case.  The culture is set by culture.
+        public String ToLower(CultureInfo culture)
+        {
+            if (culture == null)
+            {
+                throw new ArgumentNullException(nameof(culture));
+            }
+            return culture.TextInfo.ToLower(this);
+        }
+
         // Creates a copy of this string in lower case based on invariant culture.
         public String ToLowerInvariant()
         {
@@ -1528,6 +1538,16 @@ namespace System
         public String ToUpper()
         {
             return FormatProvider.ToUpper(this);
+        }
+
+        // Creates a copy of this string in upper case.  The culture is set by culture.
+        public String ToUpper(CultureInfo culture)
+        {
+            if (culture == null)
+            {
+                throw new ArgumentNullException(nameof(culture));
+            }
+            return culture.TextInfo.ToUpper(this);
         }
 
         //Creates a copy of this string in upper case based on invariant culture.

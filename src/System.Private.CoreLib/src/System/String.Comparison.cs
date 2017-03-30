@@ -471,6 +471,32 @@ namespace System
             }
         }
 
+        // Provides a culture-correct string comparison. strA is compared to strB
+        // to determine whether it is lexicographically less, equal, or greater, and then a
+        // negative integer, 0, or a positive integer is returned; respectively.
+        //
+        public static int Compare(String strA, String strB, CultureInfo culture, CompareOptions options)
+        {
+            if (culture == null)
+            {
+                throw new ArgumentNullException(nameof(culture));
+            }
+
+            return culture.CompareInfo.Compare(strA, strB, options);
+        }
+
+        // Provides a culture-correct string comparison. strA is compared to strB
+        // to determine whether it is lexicographically less, equal, or greater, and then a
+        // negative integer, 0, or a positive integer is returned; respectively.
+        // The case-sensitive option is set by ignoreCase, and the culture is set
+        // by culture
+        //
+        public static int Compare(String strA, String strB, bool ignoreCase, CultureInfo culture)
+        {
+            CompareOptions options = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
+            return Compare(strA, strB, culture, options);
+        }
+
         // Determines whether two string regions match.  The substring of strA beginning
         // at indexA of length length is compared with the substring of strB
         // beginning at indexB of the same length.
@@ -520,6 +546,44 @@ namespace System
             return ignoreCase ?
                 FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB) :
                 FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
+        }
+
+        // Determines whether two string regions match.  The substring of strA beginning
+        // at indexA of length length is compared with the substring of strB
+        // beginning at indexB of the same length.  Case sensitivity is determined by the ignoreCase boolean,
+        // and the culture is set by culture.
+        //
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length, bool ignoreCase, CultureInfo culture)
+        {
+            CompareOptions options = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
+            return Compare(strA, indexA, strB, indexB, length, culture, options);
+        }
+
+        // Determines whether two string regions match.  The substring of strA beginning
+        // at indexA of length length is compared with the substring of strB
+        // beginning at indexB of the same length.
+        //
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length, CultureInfo culture, CompareOptions options)
+        {
+            if (culture == null)
+            {
+                throw new ArgumentNullException(nameof(culture));
+            }
+
+            int lengthA = length;
+            int lengthB = length;
+
+            if (strA != null)
+            {
+                lengthA = Math.Min(lengthA, strA.Length - indexA);
+            }
+
+            if (strB != null)
+            {
+                lengthB = Math.Min(lengthB, strB.Length - indexB);
+            }
+
+            return culture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, options);
         }
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType)
@@ -739,6 +803,27 @@ namespace System
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
+        }
+
+        public Boolean EndsWith(String value, Boolean ignoreCase, CultureInfo culture)
+        {
+            if (null == value)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if ((object)this == (object)value)
+            {
+                return true;
+            }
+
+            CultureInfo referenceCulture;
+            if (culture == null)
+                referenceCulture = CultureInfo.CurrentCulture;
+            else
+                referenceCulture = culture;
+
+            return referenceCulture.CompareInfo.IsSuffix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
         internal bool EndsWith(char value)
@@ -1015,6 +1100,27 @@ namespace System
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
+        }
+
+        public Boolean StartsWith(String value, Boolean ignoreCase, CultureInfo culture)
+        {
+            if (null == value)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if ((object)this == (object)value)
+            {
+                return true;
+            }
+
+            CultureInfo referenceCulture;
+            if (culture == null)
+                referenceCulture = CultureInfo.CurrentCulture;
+            else
+                referenceCulture = culture;
+
+            return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
     }
 }

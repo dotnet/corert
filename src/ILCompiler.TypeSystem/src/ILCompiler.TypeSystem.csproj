@@ -114,7 +114,7 @@
       <Link>Utilities\GCPointerMap.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
-      <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+        <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ArrayType.cs">
       <Link>TypeSystem\Common\ArrayType.cs</Link>
