@@ -2311,4 +2311,10 @@
   <data name="Serialization_DateTimeTicksOutOfRange" xml:space="preserve">
     <value>Invalid serialized DateTime data. Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
+  <data name="Arg_InvalidANSIString" xml:space="preserve">
+    <value>The ANSI string passed in could not be converted from the default ANSI code page to Unicode.</value>
+  </data>
+  <data name="Arg_ExpectedNulTermination" xml:space="preserve">
+    <value>The value passed was not NUL terminated.</value>
+  </data>
 </root>
