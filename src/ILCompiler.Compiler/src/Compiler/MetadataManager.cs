@@ -169,6 +169,13 @@ namespace ILCompiler
                 return;
             }
 
+            var runtimeMethodHandleNode = obj as RuntimeMethodHandleNode;
+            if (runtimeMethodHandleNode != null)
+            {
+                AddMetadataOnlyMethod(runtimeMethodHandleNode.Method);
+                return;
+            }
+
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
             if (nonGcStaticSectionNode != null && _typeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
             {
@@ -398,6 +405,10 @@ namespace ILCompiler
         {
             Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
             _methodsGenerated.Add(method);
+        }
+
+        protected virtual void AddMetadataOnlyMethod(MethodDesc method)
+        {
         }
 
         private void EnsureMetadataGenerated(NodeFactory factory)
