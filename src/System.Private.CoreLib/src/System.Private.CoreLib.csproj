@@ -344,7 +344,6 @@
     <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\Progress.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
-    <Compile Include="System\ResolveEventArgs.cs" />
     <Compile Include="System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
