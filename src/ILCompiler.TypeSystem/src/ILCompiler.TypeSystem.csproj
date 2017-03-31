@@ -356,8 +356,11 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
       <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.Mangling.cs">
-      <Link>IL\Stubs\PInvokeILEmitter.Mangling.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
