@@ -108,6 +108,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IStructuralEquatable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\CurrentSystemTimeZone.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DataMisalignedException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeKind.cs"/>
@@ -282,6 +283,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\StringComparison.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\StringSplitOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZone.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs"/>

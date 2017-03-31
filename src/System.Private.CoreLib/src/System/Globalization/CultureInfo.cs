@@ -1034,7 +1034,7 @@ namespace System.Globalization
 
             RegionInfo.s_currentRegionInfo = null;
 #pragma warning disable 0618 // disable the obsolete warning 
-            //TimeZone.ResetTimeZone();
+            TimeZone.ResetTimeZone();
 #pragma warning restore 0618
             TimeZoneInfo.ClearCachedData();
             s_LcidCachedCultures = null;

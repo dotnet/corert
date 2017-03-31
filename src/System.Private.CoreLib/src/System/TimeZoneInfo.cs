@@ -1775,7 +1775,7 @@ namespace System
         //
         // Helper function that converts a year and TransitionTime into a DateTime
         //
-        private static DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
+        internal static DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
         {
             DateTime value;
             DateTime timeOfDay = transitionTime.TimeOfDay;
