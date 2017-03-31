@@ -310,6 +310,44 @@ DLL_EXPORT void __stdcall StructTest_ByOut(NativeSequentialStruct *nss)
     nss->str = p;
 }
 
+typedef struct {
+    int a;
+    int b;
+    int c;
+    short inlineArray[128];
+    char inlineString[11];
+} inlineStruct;
+
+typedef struct {
+    int a;
+    unsigned short inlineString[11];
+} inlineUnicodeStruct;
+
+
+DLL_EXPORT bool __stdcall InlineArrayTest(inlineStruct* p, inlineUnicodeStruct *q)
+{
+    for (short i = 0; i < 128; i++)
+    {
+        if (p->inlineArray[i] != i)
+            return false;
+        p->inlineArray[i] = i + 1;
+    }
+    
+    if (CompareAnsiString(p->inlineString, "Hello") != 1)
+       return false;
+
+    if (!VerifyUnicodeString(q->inlineString))
+        return false;
+
+    q->inlineString[5] = p->inlineString[5] = ' ';
+    q->inlineString[6] = p->inlineString[6] = 'W';
+    q->inlineString[7] = p->inlineString[7] = 'o';
+    q->inlineString[8] = p->inlineString[8] = 'r';
+    q->inlineString[9] = p->inlineString[9] = 'l';
+    q->inlineString[10] = p->inlineString[10] = 'd';
+
+	return true;
+}
 
 struct NativeExplicitStruct
 {

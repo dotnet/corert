@@ -5,6 +5,7 @@
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -50,8 +51,9 @@ namespace System
     // throw an exception. A conversion from float or double to
     // Decimal throws an OverflowException if the value is not within
     // the range of the Decimal type.
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Decimal : IFormattable, IComparable, IComparable<Decimal>, IEquatable<Decimal>, IConvertible
+    public partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -252,6 +254,19 @@ namespace System
                 _flags |= SignMask;
         }
 
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            // OnDeserialization is called after each instance of this class is deserialized.
+            // This callback method performs decimal validation after being deserialized.
+            try
+            {
+                SetBits(GetBits(this));
+            }
+            catch (ArgumentException e)
+            {
+                throw new SerializationException(SR.Overflow_Decimal, e);
+            }
+        }
 
         // Constructs a Decimal from its constituent parts.
         private Decimal(int lo, int mid, int hi, int flags)
@@ -539,7 +554,12 @@ namespace System
         // By default a mid-point value is rounded to the nearest even number. If the mode is
         // passed in, it can also round away from zero.
 
-        internal static Decimal Round(Decimal d, int decimals)
+        public static Decimal Round(Decimal d)
+        {
+            return Round(d, 0);
+        }
+
+        public static Decimal Round(Decimal d, int decimals)
         {
             Decimal result = new Decimal();
 
@@ -552,7 +572,12 @@ namespace System
             return d;
         }
 
-        internal static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
+        public static Decimal Round(Decimal d, MidpointRounding mode)
+        {
+            return Round(d, 0, mode);
+        }
+
+        public static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
         {
             if (decimals < 0 || decimals > 28)
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);

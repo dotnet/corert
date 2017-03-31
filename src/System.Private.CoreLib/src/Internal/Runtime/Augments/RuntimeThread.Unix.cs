@@ -99,7 +99,7 @@ namespace Internal.Runtime.Augments
             _stopped = new ManualResetEvent(false);
 
             if (!Interop.Sys.RuntimeThread_CreateThread((IntPtr)_maxStackSize,
-                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(StartThread), (IntPtr)thisThreadHandle))
+                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(ThreadEntryPoint), (IntPtr)thisThreadHandle))
             {
                 return false;
             }
@@ -108,6 +108,16 @@ namespace Internal.Runtime.Augments
             SetPriorityLive(_priority);
 
             return true;
+        }
+
+        /// <summary>
+        /// This an entry point for managed threads created by applicatoin
+        /// </summary>
+        [NativeCallable]
+        private static IntPtr ThreadEntryPoint(IntPtr parameter)
+        {
+            StartThread(parameter);
+            return IntPtr.Zero;
         }
 
         public void Interrupt() => WaitSubsystem.Interrupt(this);

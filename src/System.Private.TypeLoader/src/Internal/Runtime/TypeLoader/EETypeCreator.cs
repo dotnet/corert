@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime;
@@ -139,6 +140,8 @@ namespace Internal.Runtime.TypeLoader
             IntPtr eeTypePtrPlusGCDesc = IntPtr.Zero;
             IntPtr dynamicDispatchMapPtr = IntPtr.Zero;
             DynamicModule* dynamicModulePtr = null;
+            IntPtr gcStaticData = IntPtr.Zero;
+            IntPtr gcStaticsIndirection = IntPtr.Zero;
 
             try
             {
@@ -619,11 +622,26 @@ namespace Internal.Runtime.TypeLoader
                     // create GC desc
                     if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
                     {
-                        int cbStaticGCDesc;
-                        state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
+                        if (state.GcStaticEEType != IntPtr.Zero)
+                        {
+                            // CoreRT Abi uses managed heap-allocated GC statics
+                            object obj = RuntimeAugments.NewObject(((EEType*)state.GcStaticEEType)->ToRuntimeTypeHandle());
+                            gcStaticData = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
+
+                            // CoreRT references statics through an extra level of indirection (a table in the image).
+                            gcStaticsIndirection = MemoryHelpers.AllocateMemory(IntPtr.Size);
+
+                            *((IntPtr*)gcStaticsIndirection) = gcStaticData;
+                            pEEType->DynamicGcStaticsData = gcStaticsIndirection;
+                        }
+                        else
+                        {
+                            int cbStaticGCDesc;
+                            state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
 #if GENERICS_FORCE_USG
-                        TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
+                            TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
 #endif
+                        }
                     }
 
                     if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
@@ -689,6 +707,10 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(state.GcStaticDesc);
                     if (state.AllocatedThreadStaticGCDesc)
                         MemoryHelpers.FreeMemory(state.ThreadStaticDesc);
+                    if (gcStaticData != IntPtr.Zero)
+                        RuntimeImports.RhHandleFree(gcStaticData);
+                    if (gcStaticsIndirection != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(gcStaticsIndirection);
                 }
             }
         }

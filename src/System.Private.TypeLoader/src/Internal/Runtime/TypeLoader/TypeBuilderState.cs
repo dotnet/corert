@@ -512,6 +512,7 @@ namespace Internal.Runtime.TypeLoader
 
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;
+        public IntPtr GcStaticEEType;
         public IntPtr ThreadStaticDesc;
         public bool AllocatedStaticGCDesc;
         public bool AllocatedThreadStaticGCDesc;
@@ -683,6 +684,10 @@ namespace Internal.Runtime.TypeLoader
 
                             case BagElementKind.ThreadStaticDesc:
                                 ThreadStaticDesc = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
+                                break;
+
+                            case BagElementKind.GcStaticEEType:
+                                GcStaticEEType = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                                 break;
 
                             default:

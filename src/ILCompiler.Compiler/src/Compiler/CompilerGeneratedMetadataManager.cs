@@ -62,6 +62,23 @@ namespace ILCompiler
             base.AddGeneratedMethod(method);
         }
 
+        private void AddMetadataOnlyType(TypeDesc type)
+        {
+            if (type is MetadataType)
+            {
+                var mdType = (MetadataType)type.GetTypeDefinition();
+                _modulesSeen.Add(mdType.Module);
+                _typeDefinitionsGenerated.Add(mdType);
+            }
+        }
+
+        protected override void AddMetadataOnlyMethod(MethodDesc method)
+        {
+            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+            AddMetadataOnlyType(typicalMethod.OwningType);
+            _methodDefinitionsGenerated.Add(typicalMethod);
+        }
+
         public override bool IsReflectionBlocked(MetadataType type)
         {
             return _metadataPolicy.IsBlocked(type);
