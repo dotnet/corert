@@ -55,6 +55,7 @@ using Internal.TypeSystem;
 using Internal.Runtime.TypeLoader;
 using Internal.Runtime.CallConverter;
 
+using ArgIterator = Internal.Runtime.CallConverter.ArgIterator;
 using CallingConvention = Internal.Runtime.CallConverter.CallingConvention;
 
 namespace Internal.Runtime.CallInterceptor
