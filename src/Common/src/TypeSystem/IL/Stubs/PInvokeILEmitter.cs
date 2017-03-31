@@ -187,14 +187,11 @@ namespace Internal.IL.Stubs
             else
             {
                 // Eager call
-                PInvokeMetadata nativeImportMetadata =
-                    new PInvokeMetadata(_importMetadata.Module, _importMetadata.Name ?? _targetMethod.Name, _importMetadata.Flags);
-
                 nativeSig = new MethodSignature(
                     _targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
 
                 MethodDesc nativeMethod =
-                    new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, nativeImportMetadata, _pInvokeILEmitterConfiguration.GetNextNativeMethodId());
+                    new PInvokeTargetNativeMethod(_targetMethod, nativeSig);
 
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(nativeMethod));
             }
@@ -284,81 +281,6 @@ namespace Internal.IL.Stubs
             CallsiteSetupCodeStream = Emitter.NewCodeStream();
             ReturnValueMarshallingCodeStream = Emitter.NewCodeStream();
             UnmarshallingCodestream = Emitter.NewCodeStream();
-        }
-    }
-    /// <summary>
-    /// Synthetic method that represents the actual PInvoke target method.
-    /// All parameters are simple types. There will be no code
-    /// generated for this method. Instead, a static reference to a symbol will be emitted.
-    /// </summary>
-    public sealed partial class PInvokeTargetNativeMethod : MethodDesc
-    {
-        private TypeDesc _owningType;
-        private MethodSignature _signature;
-        private PInvokeMetadata _methodMetadata;
-        private int _sequenceNumber;
-
-        public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata, int sequenceNumber)
-        {
-            _owningType = owningType;
-            _signature = signature;
-            _methodMetadata = methodMetadata;
-            _sequenceNumber = sequenceNumber;
-        }
-
-        public override TypeSystemContext Context
-        {
-            get
-            {
-                return _owningType.Context;
-            }
-        }
-
-        public override TypeDesc OwningType
-        {
-            get
-            {
-                return _owningType;
-            }
-        }
-
-        public override MethodSignature Signature
-        {
-            get
-            {
-                return _signature;
-            }
-        }
-
-        public override string Name
-        {
-            get
-            {
-                return "__pInvokeImpl" + _methodMetadata.Name + _sequenceNumber;
-            }
-        }
-
-        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
-        {
-            return false;
-        }
-
-        public override bool IsPInvoke
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override PInvokeMetadata GetPInvokeMethodMetadata()
-        {
-            return _methodMetadata;
-        }
-
-        public override string ToString()
-        {
-            return "[EXTERNAL]" + Name;
         }
     }
 

@@ -257,6 +257,11 @@ namespace ILCompiler
                         }
                         mangledName += NestMangledName(mangledInstantiation);
                     }
+                    else if (type is IPrefixMangledType)
+                    {
+                        var prefixMangledType = (IPrefixMangledType)type;
+                        mangledName = NestMangledName(prefixMangledType.Prefix) + GetMangledTypeName(prefixMangledType.BaseType);
+                    }
                     else
                     {
                         mangledName = SanitizeName(((DefType)type).GetFullName(), true);
@@ -348,6 +353,11 @@ namespace ILCompiler
                 {
                     // Method on an instantiated type
                     mangledName = GetMangledMethodName(typicalMethodDefinition).ToString();
+                }
+                else if (method is IPrefixMangledMethod)
+                {
+                    var prefixMangledMetod = (IPrefixMangledMethod)method;
+                    mangledName = NestMangledName(prefixMangledMetod.Prefix) + GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString();
                 }
                 else
                 {
