@@ -364,6 +364,7 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.BlittableArray:
                     return new BlittableArrayMarshaller();
                 case MarshallerKind.Bool:
+                case MarshallerKind.CBool:
                     return new BooleanMarshaller();
                 case MarshallerKind.AnsiString:
                     return new AnsiStringMarshaller();
@@ -671,7 +672,7 @@ namespace Internal.TypeSystem.Interop
             //
             if (IsManagedByRef && !In)
             {
-                ReInitNativeTransform();
+                ReInitNativeTransform(_ilCodeStreams.MarshallingCodeStream);
             }
             else
             {
@@ -772,12 +773,24 @@ namespace Internal.TypeSystem.Interop
                 PropagateFromByRefArg(_ilCodeStreams.MarshallingCodeStream, _nativeHome);
             }
 
-            AllocAndTransformNativeToManaged(_ilCodeStreams.MarshallingCodeStream);
+            if (IsNativeByRef && !In)
+            {
+                ReInitManagedTransform(_ilCodeStreams.MarshallingCodeStream);
+            }
+            else
+            {
+                AllocAndTransformNativeToManaged(_ilCodeStreams.MarshallingCodeStream);
+            }
 
             LoadManagedArg(_ilCodeStreams.CallsiteSetupCodeStream);
 
             if (Out)
             {
+                if (IsNativeByRef)
+                {
+                    AllocManagedToNative(_ilCodeStreams.UnmarshallingCodestream);
+                }
+
                 TransformManagedToNative(_ilCodeStreams.UnmarshallingCodestream);
 
                 if (IsNativeByRef)
@@ -791,26 +804,24 @@ namespace Internal.TypeSystem.Interop
         protected virtual void EmitMarshalElementManagedToNative()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
+            ILCodeStream codeStream = _ilCodeStreams.MarshallingCodeStream;
+            Debug.Assert(codeStream != null);
 
             SetupArgumentsForElementMarshalling();
 
-            StoreManagedValue(marshallingCodeStream);
+            StoreManagedValue(codeStream);
 
             // marshal
-            AllocAndTransformManagedToNative(marshallingCodeStream);
+            AllocAndTransformManagedToNative(codeStream);
 
-            LoadNativeValue(marshallingCodeStream);
+            LoadNativeValue(codeStream);
         }
 
         protected virtual void EmitMarshalElementNativeToManaged()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream codeStream;
-            if (Return)
-                codeStream = _ilCodeStreams.ReturnValueMarshallingCodeStream;
-            else
-                codeStream = _ilCodeStreams.UnmarshallingCodestream;
+            ILCodeStream codeStream = _ilCodeStreams.MarshallingCodeStream;
+            Debug.Assert(codeStream != null);
 
             SetupArgumentsForElementMarshalling();
 
@@ -853,7 +864,11 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
         }
 
-        protected virtual void ReInitNativeTransform()
+        protected virtual void ReInitManagedTransform(ILCodeStream codeStream)
+        {
+        }
+
+        protected virtual void ReInitNativeTransform(ILCodeStream codeStream)
         {
         }
 
@@ -931,6 +946,7 @@ namespace Internal.TypeSystem.Interop
                 _elementMarshaller.Return = Return;
                 _elementMarshaller.Context = Context;
                 _elementMarshaller.ManagedType = ((ArrayType)ManagedType).ElementType;
+                _elementMarshaller.MarshalAsDescriptor = MarshalAsDescriptor;
             }
             _elementMarshaller.In = (direction == MarshalDirection);
             _elementMarshaller.Out = !In;
@@ -1013,19 +1029,13 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
             var arrayType = (ArrayType)ManagedType;
             var elementType = arrayType.ElementType;
 
-            ILLocalVariable vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
-            ILLocalVariable vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-            ILLocalVariable vNativeTemp = emitter.NewLocal(NativeType);
-
             ILCodeLabel lNullArray = emitter.NewCodeLabel();
-            ILCodeLabel lRangeCheck = emitter.NewCodeLabel();
-            ILCodeLabel lLoopHeader = emitter.NewCodeLabel();
 
             LoadNativeAddr(codeStream);
             codeStream.Emit(ILOpcode.initobj, emitter.NewToken(NativeType));
@@ -1037,18 +1047,15 @@ namespace Internal.TypeSystem.Interop
             // allocate memory
             // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(manageParameter.Length * sizeof(byte*))));
 
+            // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);
-            codeStream.Emit(ILOpcode.dup);
-            codeStream.EmitStLoc(vLength);
 
-            TypeDesc nativeType = ((PointerType)NativeType).ParameterType;
-            if (elementType.IsPrimitive)
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
+            TypeDesc nativeElementType = ((PointerType)NativeType).ParameterType;
+            if (nativeElementType.IsPrimitive)
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
             else
                 codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
 
-            codeStream.Emit(ILOpcode.dup);
-            codeStream.EmitStLoc(vSizeOf);
             codeStream.Emit(ILOpcode.mul_ovf);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 Context.SystemModule.
@@ -1059,11 +1066,43 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemAllocAndZeroMemory")));
             StoreNativeValue(codeStream);
 
-            // initialize content
+            codeStream.EmitLabel(lNullArray);
+        }
+
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var arrayType = (ArrayType)ManagedType;
+            var elementType = arrayType.ElementType;
+
+            var lRangeCheck = emitter.NewCodeLabel();
+            var lLoopHeader = emitter.NewCodeLabel();
+            var  lNullArray = emitter.NewCodeLabel();
+
+            var vNativeTemp = emitter.NewLocal(NativeType);
             var vIndex = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+            var vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+            var vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+            
+            // Check for null array
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNullArray);
+            
+            // loads the number of elements
+            EmitElementCount(codeStream, MarshalDirection.Forward);
+            codeStream.EmitStLoc(vLength);
+
+            TypeDesc nativeElementType = ((PointerType)NativeType).ParameterType;
+            if (nativeElementType.IsPrimitive)
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
+            else
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
+
+            codeStream.EmitStLoc(vSizeOf);
 
             LoadNativeValue(codeStream);
             codeStream.EmitStLoc(vNativeTemp);
+
             codeStream.EmitLdc(0);
             codeStream.EmitStLoc(vIndex);
             codeStream.Emit(ILOpcode.br, lRangeCheck);
@@ -1075,9 +1114,10 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdElem(elementType);
             // generate marshalling IL for the element
-            GetElementMarshaller(MarshalDirection.Forward).EmitMarshallingIL(_ilCodeStreams);
+            GetElementMarshaller(MarshalDirection.Forward)
+                .EmitMarshallingIL(new PInvokeILCodeStreams(_ilCodeStreams.Emitter, codeStream));
 
-            codeStream.EmitStInd(elementType);
+            codeStream.EmitStInd(nativeElementType);
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdc(1);
             codeStream.Emit(ILOpcode.add);
@@ -1093,7 +1133,6 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(vLength);
             codeStream.Emit(ILOpcode.clt);
             codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
-
             codeStream.EmitLabel(lNullArray);
         }
 
@@ -1103,6 +1142,7 @@ namespace Internal.TypeSystem.Interop
             ArrayType arrayType = (ArrayType)ManagedType;
 
             var elementType = arrayType.ElementType;
+            var nativeElementType = ((PointerType)NativeType).ParameterType;
 
             ILLocalVariable vSizeOf = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
             ILLocalVariable vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
@@ -1114,8 +1154,8 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.EmitStLoc(vLength);
 
-            if (elementType.IsPrimitive)
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
+            if (nativeElementType.IsPrimitive)
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
             else
                 codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
 
@@ -1138,10 +1178,11 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(vIndex);
             codeStream.EmitLdLoc(vNativeTemp);
 
-            codeStream.EmitLdInd(elementType);
+            codeStream.EmitLdInd(nativeElementType);
 
             // generate marshalling IL for the element
-            GetElementMarshaller(MarshalDirection.Reverse).EmitMarshallingIL(_ilCodeStreams);
+            GetElementMarshaller(MarshalDirection.Reverse)
+                .EmitMarshallingIL(new PInvokeILCodeStreams(_ilCodeStreams.Emitter, codeStream));
 
             codeStream.EmitStElem(elementType);
 
@@ -1246,6 +1287,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
+
     }
 
     class BlittableArrayMarshaller : ArrayMarshaller
@@ -1280,12 +1322,11 @@ namespace Internal.TypeSystem.Interop
             StoreNativeValue(codeStream);
         }
 
-        protected override void ReInitNativeTransform()
+        protected override void ReInitNativeTransform(ILCodeStream codeStream)
         {
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
-            marshallingCodeStream.EmitLdc(0);
-            marshallingCodeStream.Emit(ILOpcode.conv_u);
-            StoreNativeValue(marshallingCodeStream);
+            codeStream.EmitLdc(0);
+            codeStream.Emit(ILOpcode.conv_u);
+            StoreNativeValue(codeStream);
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
@@ -1761,7 +1802,8 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdElem(managedElementType);
 
             // generate marshalling IL for the element
-            GetElementMarshaller(MarshalDirection.Forward).EmitMarshallingIL(_ilCodeStreams);
+            GetElementMarshaller(MarshalDirection.Forward)
+                .EmitMarshallingIL(new PInvokeILCodeStreams(_ilCodeStreams.Emitter, codeStream));
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
                            nativeArrayType.GetInlineArrayMethod(InlineArrayMethodKind.Setter)));
@@ -1840,7 +1882,8 @@ namespace Internal.TypeSystem.Interop
                nativeArrayType.GetInlineArrayMethod(InlineArrayMethodKind.Getter)));
 
             // generate marshalling IL for the element
-            GetElementMarshaller(MarshalDirection.Reverse).EmitMarshallingIL(_ilCodeStreams);
+            GetElementMarshaller(MarshalDirection.Reverse)
+                .EmitMarshallingIL(new PInvokeILCodeStreams(_ilCodeStreams.Emitter, codeStream));
 
             codeStream.EmitStElem(managedElementType);
 

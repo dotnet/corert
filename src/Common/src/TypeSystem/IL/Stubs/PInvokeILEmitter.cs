@@ -59,7 +59,7 @@ namespace Internal.IL.Stubs
             ParameterMetadata[] parameterMetadataArray = targetMethod.GetParameterMetadata();
             Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
             int parameterIndex = 0;
-            ParameterMetadata parameterMetadata = new ParameterMetadata();
+            ParameterMetadata parameterMetadata;
 
             for (int i = 0; i < marshallers.Length; i++)
             {
@@ -281,6 +281,12 @@ namespace Internal.IL.Stubs
             CallsiteSetupCodeStream = Emitter.NewCodeStream();
             ReturnValueMarshallingCodeStream = Emitter.NewCodeStream();
             UnmarshallingCodestream = Emitter.NewCodeStream();
+        }
+
+        public PInvokeILCodeStreams(ILEmitter emitter, ILCodeStream codeStream)
+        {
+            Emitter = emitter;
+            MarshallingCodeStream = codeStream;
         }
     }
 
