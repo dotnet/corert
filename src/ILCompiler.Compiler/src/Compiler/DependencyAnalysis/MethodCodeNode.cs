@@ -171,20 +171,4 @@ namespace ILCompiler.DependencyAnalysis
             _debugVarInfos = debugVarInfos;
         }
     }
-
-    internal class UnboxingThunkMethodCodeNode : MethodCodeNode
-    {
-        private MethodDesc _targetMethod;
-
-        public UnboxingThunkMethodCodeNode(MethodDesc method, MethodDesc targetMethod)
-            : base(method)
-        {
-            _targetMethod = targetMethod;
-        }
-
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("__unbox_").Append(nameMangler.GetMangledMethodName(_targetMethod));
-        }
-    }
 }

@@ -187,14 +187,11 @@ namespace Internal.IL.Stubs
             else
             {
                 // Eager call
-                PInvokeMetadata nativeImportMetadata =
-                    new PInvokeMetadata(_importMetadata.Module, _importMetadata.Name ?? _targetMethod.Name, _importMetadata.Flags);
-
                 nativeSig = new MethodSignature(
                     _targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
 
                 MethodDesc nativeMethod =
-                    new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, nativeImportMetadata, _pInvokeILEmitterConfiguration.GetNextNativeMethodId());
+                    new PInvokeTargetNativeMethod(_targetMethod, nativeSig);
 
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(nativeMethod));
             }
@@ -293,24 +290,20 @@ namespace Internal.IL.Stubs
     /// </summary>
     public sealed partial class PInvokeTargetNativeMethod : MethodDesc
     {
-        private TypeDesc _owningType;
-        private MethodSignature _signature;
-        private PInvokeMetadata _methodMetadata;
-        private int _sequenceNumber;
-
-        public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata, int sequenceNumber)
+        private readonly MethodDesc _declMethod;
+        private readonly MethodSignature _signature;
+        
+        public PInvokeTargetNativeMethod(MethodDesc declMethod, MethodSignature signature)
         {
-            _owningType = owningType;
+            _declMethod = declMethod;
             _signature = signature;
-            _methodMetadata = methodMetadata;
-            _sequenceNumber = sequenceNumber;
         }
 
         public override TypeSystemContext Context
         {
             get
             {
-                return _owningType.Context;
+                return _declMethod.Context;
             }
         }
 
@@ -318,7 +311,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return _owningType;
+                return _declMethod.OwningType;
             }
         }
 
@@ -334,7 +327,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "__pInvokeImpl" + _methodMetadata.Name + _sequenceNumber;
+                return _declMethod.Name;
             }
         }
 
@@ -353,7 +346,7 @@ namespace Internal.IL.Stubs
 
         public override PInvokeMetadata GetPInvokeMethodMetadata()
         {
-            return _methodMetadata;
+            return _declMethod.GetPInvokeMethodMetadata();
         }
 
         public override string ToString()
