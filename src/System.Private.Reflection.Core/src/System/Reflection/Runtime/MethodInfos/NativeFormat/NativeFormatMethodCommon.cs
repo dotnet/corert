@@ -208,6 +208,8 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 
         public RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
         {
+            Debug.Assert(genericArgs == null || genericArgs.Length > 0);
+
             RuntimeTypeHandle[] genericArgHandles;
             if (genericArgs != null)
             {

@@ -127,6 +127,10 @@ namespace Internal.Runtime.TypeLoader
 
             public RuntimeMethodHandleKey(RuntimeTypeHandle declaringType, string methodName, RuntimeSignature signature, RuntimeTypeHandle[] genericArgs)
             {
+                // genericArgs will be null if this is a (typical or not) method definition
+                // genericArgs are non-null only for instantiated generic methods.
+                Debug.Assert(genericArgs == null || genericArgs.Length > 0);
+
                 _declaringType = declaringType;
                 _methodName = methodName;
                 _signature = signature;

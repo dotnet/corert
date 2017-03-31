@@ -56,6 +56,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         int MetadataToken { get; }
 
+        /// <summary>
+        /// Retrieves the RuntimeMethodHandle for the given method. Non-null generic args should only be passed for instantiated
+        /// generic methods.
+        /// </summary>
         RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs);
     }
 }
