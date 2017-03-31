@@ -2326,4 +2326,7 @@
   <data name="Arg_ExpectedNulTermination" xml:space="preserve">
     <value>The value passed was not NUL terminated.</value>
   </data>
+  <data name="Arg_TypeUnloadedException" xml:space="preserve">
+    <value>Type had been unloaded.</value>
+  </data>
 </root>
