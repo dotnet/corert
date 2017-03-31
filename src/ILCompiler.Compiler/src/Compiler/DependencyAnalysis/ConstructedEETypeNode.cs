@@ -48,13 +48,13 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (_type.RuntimeInterfaces.Length > 0)
+            if (TrackInterfaceDispatchMapDepenendency && _type.RuntimeInterfaces.Length > 0)
             {
-                if (TrackInterfaceDispatchMapDepenendency)
-                {
-                    dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
-                }
+                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+            }
 
+            if (_type.RuntimeInterfaces.Length > 0 && !factory.CompilationModuleGroup.ShouldProduceFullVTable(_type))
+            {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
                     // If the type implements ICastable, the methods are implicitly necessary
@@ -192,45 +192,49 @@ namespace ILCompiler.DependencyAnalysis
         {
             DefType defType = _type.GetClosestDefType();
 
-            foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
+            // If we're producing a full vtable, none of the dependencies are conditional.
+            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(defType))
             {
-                // Generic virtual methods are tracked by an orthogonal mechanism.
-                if (decl.HasInstantiation)
-                    continue;
-
-                MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
-                if (impl.OwningType == defType && !impl.IsAbstract)
+                foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                 {
-                    MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
-                }
-            }
-
-            Debug.Assert(
-                _type == defType ||
-                ((System.Collections.IStructuralEquatable)defType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
-                EqualityComparer<DefType>.Default));
-
-            // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
-            // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
-            // possible for any IFoo object to actually be an instance of T.
-            foreach (DefType interfaceType in defType.RuntimeInterfaces)
-            {
-                Debug.Assert(interfaceType.IsInterface);
-
-                foreach (MethodDesc interfaceMethod in interfaceType.GetAllMethods())
-                {
-                    if (interfaceMethod.Signature.IsStatic)
-                        continue;
-
                     // Generic virtual methods are tracked by an orthogonal mechanism.
-                    if (interfaceMethod.HasInstantiation)
+                    if (decl.HasInstantiation)
                         continue;
 
-                    MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
-                    if (implMethod != null)
+                    MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                    if (impl.OwningType == defType && !impl.IsAbstract)
                     {
-                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method");
+                        MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                        yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
+                    }
+                }
+
+                Debug.Assert(
+                    _type == defType ||
+                    ((System.Collections.IStructuralEquatable)defType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
+                    EqualityComparer<DefType>.Default));
+
+                // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
+                // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
+                // possible for any IFoo object to actually be an instance of T.
+                foreach (DefType interfaceType in defType.RuntimeInterfaces)
+                {
+                    Debug.Assert(interfaceType.IsInterface);
+
+                    foreach (MethodDesc interfaceMethod in interfaceType.GetAllMethods())
+                    {
+                        if (interfaceMethod.Signature.IsStatic)
+                            continue;
+
+                        // Generic virtual methods are tracked by an orthogonal mechanism.
+                        if (interfaceMethod.HasInstantiation)
+                            continue;
+
+                        MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                        if (implMethod != null)
+                        {
+                            yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method");
+                        }
                     }
                 }
             }

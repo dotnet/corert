@@ -29,8 +29,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(decl.IsVirtual);
 
-            // TODO: assert that decl is a slot defining method (either a newslot or a first virtual method
-            // with this name and signature in the inheritance chain).
+            // Virtual method use always represents the slot defining method of the virtual.
+            // Places that might see virtual methods being used through an override need to normalize
+            // to the slot defining method.
+            Debug.Assert(MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
 
             // Generic virtual methods are tracked by an orthogonal mechanism.
             Debug.Assert(!decl.HasInstantiation);
