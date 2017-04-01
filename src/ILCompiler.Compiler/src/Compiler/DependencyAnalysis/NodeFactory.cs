@@ -286,6 +286,10 @@ namespace ILCompiler.DependencyAnalysis
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
             {
+                // We don't need to track virtual method uses for types that are producing full vtables.
+                // It's a waste of CPU time and memory.
+                Debug.Assert(!CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType));
+
                 return new VirtualMethodUseNode(method);
             });
 
@@ -815,13 +819,6 @@ namespace ILCompiler.DependencyAnalysis
         public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
-
-        /// <summary>
-        /// New code should use <see cref="NameMangler"/> instance property.
-        /// This global variable is only to support existing code and will be going away.
-        /// Do not add new references to it, unless it's from a GetName override.
-        /// </summary>
-        public static NameMangler NameManglerDoNotUse;
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

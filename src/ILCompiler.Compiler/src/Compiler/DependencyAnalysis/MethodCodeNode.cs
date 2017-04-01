@@ -92,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
                 MethodSignature methodSig = _method.Signature;
                 AddPInvokeParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
 
-                for (int i=0; i < methodSig.Length; i++)
+                for (int i = 0; i < methodSig.Length; i++)
                 {
                     AddPInvokeParameterDependencies(ref dependencies, factory, methodSig[i]);
                 }
@@ -112,10 +112,20 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (MarshalHelpers.IsStructMarshallingRequired(parameter))
             {
+                var stub = (Internal.IL.Stubs.StructMarshallingThunk)factory.InteropStubManager.GetStructMarshallingManagedToNativeStub(parameter);
                 dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetStructMarshallingType(parameter)), "Struct Marshalling Type");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingManagedToNativeStub(parameter)), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(stub), "Struct Marshalling stub");
                 dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingNativeToManagedStub(parameter)), "Struct Marshalling stub");
                 dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingCleanupStub(parameter)), "Struct Marshalling stub");
+
+                foreach (var inlineArrayCandidate in stub.GetInlineArrayCandidates())
+                {
+                    dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetInlineArrayType(inlineArrayCandidate)), "Struct Marshalling Type");
+                    foreach (var method in inlineArrayCandidate.ElementType.GetMethods())
+                    {
+                        dependencies.Add(factory.MethodEntrypoint(method), "inline array marshalling stub");
+                    }
+                }
             }
         }
 
@@ -159,22 +169,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_debugVarInfos == null);
             _debugVarInfos = debugVarInfos;
-        }
-    }
-
-    internal class UnboxingThunkMethodCodeNode : MethodCodeNode
-    {
-        private MethodDesc _targetMethod;
-
-        public UnboxingThunkMethodCodeNode(MethodDesc method, MethodDesc targetMethod)
-            : base(method)
-        {
-            _targetMethod = targetMethod;
-        }
-
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("__unbox_").Append(nameMangler.GetMangledMethodName(_targetMethod));
         }
     }
 }

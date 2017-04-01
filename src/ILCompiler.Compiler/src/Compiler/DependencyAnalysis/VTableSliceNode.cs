@@ -99,18 +99,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            List<DependencyListEntry> dependencies = new List<DependencyListEntry>(_slots.Length + 1);
             if (_type.HasBaseType)
             {
-                dependencies.Add(new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable"));
+                return new DependencyListEntry[]
+                {
+                    new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable")
+                };
             }
 
-            foreach (MethodDesc method in _slots)
-            {
-                dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(method), "Full vtable dependency"));
-            }
-
-            return dependencies;
+            return null;
         }
     }
 

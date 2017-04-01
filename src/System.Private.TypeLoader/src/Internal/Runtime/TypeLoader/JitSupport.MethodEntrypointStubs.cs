@@ -121,7 +121,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     Environment.FailFast("Unable to create method signature");
                 }
-                RuntimeTypeHandle[] genericMethodArgs = Array.Empty<RuntimeTypeHandle>();
+                RuntimeTypeHandle[] genericMethodArgs = null;
                 if (method.Instantiation.Length != 0)
                 {
                     genericMethodArgs = new RuntimeTypeHandle[method.Instantiation.Length];

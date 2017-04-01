@@ -190,7 +190,7 @@ namespace ILCompiler
         /// A type with an identical layout to the layout of a boxed value type.
         /// The type has a single field of the type of the valuetype it represents.
         /// </summary>
-        private class BoxedValueType : MetadataType, INonEmittableType
+        private partial class BoxedValueType : MetadataType, INonEmittableType
         {
             private const string BoxedValueFieldName = "BoxedValue";
 
@@ -345,7 +345,7 @@ namespace ILCompiler
         /// <summary>
         /// Represents a thunk to call shared instance method on boxed valuetypes.
         /// </summary>
-        private class GenericUnboxingThunk : ILStubMethod
+        private partial class GenericUnboxingThunk : ILStubMethod
         {
             private MethodDesc _targetMethod;
             private ValueTypeInstanceMethodWithHiddenParameter _nakedTargetMethod;

@@ -257,6 +257,11 @@ namespace ILCompiler
                         }
                         mangledName += NestMangledName(mangledInstantiation);
                     }
+                    else if (type is IPrefixMangledType)
+                    {
+                        var prefixMangledType = (IPrefixMangledType)type;
+                        mangledName = NestMangledName(prefixMangledType.Prefix) + GetMangledTypeName(prefixMangledType.BaseType);
+                    }
                     else
                     {
                         mangledName = SanitizeName(((DefType)type).GetFullName(), true);
@@ -322,10 +327,11 @@ namespace ILCompiler
 
             string mangledName;
 
-            var methodDefinition = method.GetTypicalMethodDefinition();
+            var methodDefinition = method.GetMethodDefinition();
             if (methodDefinition != method)
             {
-                mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition()).ToString();
+                // Instantiated generic method
+                mangledName = GetMangledMethodName(methodDefinition).ToString();
 
                 var inst = method.Instantiation;
                 string mangledInstantiation = "";
@@ -342,12 +348,26 @@ namespace ILCompiler
             }
             else
             {
-                // Assume that Name is unique for all other methods
-                mangledName = SanitizeName(method.Name);
-            }
+                var typicalMethodDefinition = method.GetTypicalMethodDefinition();
+                if (typicalMethodDefinition != method)
+                {
+                    // Method on an instantiated type
+                    mangledName = GetMangledMethodName(typicalMethodDefinition).ToString();
+                }
+                else if (method is IPrefixMangledMethod)
+                {
+                    var prefixMangledMetod = (IPrefixMangledMethod)method;
+                    mangledName = NestMangledName(prefixMangledMetod.Prefix) + GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString();
+                }
+                else
+                {
+                    // Assume that Name is unique for all other methods
+                    mangledName = SanitizeName(method.Name);
+                }
 
-            if (prependTypeName != null)
-                mangledName = prependTypeName + "__" + mangledName;
+                if (prependTypeName != null)
+                    mangledName = prependTypeName + "__" + mangledName;
+            }
 
             Utf8String utf8MangledName = new Utf8String(mangledName);
 

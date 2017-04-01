@@ -33,6 +33,7 @@ namespace ILCompiler
         protected abstract bool GenerateDebugInfo { get; }
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
+        private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;
 
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -47,14 +48,13 @@ namespace ILCompiler
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            // TODO: hacky static field
-            NodeFactory.NameManglerDoNotUse = _nodeFactory.NameMangler;
-
             var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
 
-            _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType());
+            MetadataType globalModuleGeneratedType = nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType();
+            _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(globalModuleGeneratedType);
+            _assemblyGetExecutingAssemblyMethodThunks = new AssemblyGetExecutingAssemblyMethodThunkCache(globalModuleGeneratedType);
 
             bool? forceLazyPInvokeResolution = null;
             // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
@@ -151,6 +151,18 @@ namespace ILCompiler
                     }
                 }
             }
+            else if (intrinsicOwningType.Name == "Assembly" && intrinsicOwningType.Namespace == "System.Reflection")
+            {
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetExecutingAssembly")
+                {
+                    ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
+                    if (callsiteModule != null)
+                    {
+                        Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
+                        return _assemblyGetExecutingAssemblyMethodThunks.GetHelper((IAssemblyDesc)callsiteModule);
+                    }
+                }
+            }
 
             return intrinsicMethod;
         }
@@ -240,7 +252,8 @@ namespace ILCompiler
 
             public void RootVirtualMethodUse(MethodDesc method, string reason)
             {
-                _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
+                if (!_factory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
+                    _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
             }
         }
     }

@@ -173,7 +173,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
         private static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
 
-        internal static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        public static IntPtr RhHandleAlloc(Object value, GCHandleType type)
         {
             IntPtr h = RhpHandleAlloc(value, type);
             if (h == IntPtr.Zero)
@@ -210,7 +210,7 @@ namespace System.Runtime
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
-        internal static extern void RhHandleFree(IntPtr handle);
+        public static extern void RhHandleFree(IntPtr handle);
 
         // Get object reference from handle.
         [MethodImpl(MethodImplOptions.InternalCall)]

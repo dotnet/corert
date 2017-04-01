@@ -506,6 +506,10 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in fieldDefinitionHandles)
             {
                 var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
+
+                if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
+                    continue;
+
                 MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(fieldDefinition);
                 marshalAsDescriptors[index++] = marshalAsDescriptor;
             }

@@ -10,10 +10,23 @@ namespace Internal.Runtime.CompilerHelpers
 {
     public partial class StartupCodeHelpers
     {
-        // TODO: to support AssemblyLoadContext, we'll want to change this to accept a RuntimeTypeHandle
-        // of the type that owns the entrypoint method, but this is it's own rat's nest. (Reflection analysis needs to
-        // ensure the type is reflectable; the type might also be a <Module> type that is not reflectable with
-        // our current policies, etc.)
+        // The CoreRT implementation is what we want to keep long term.
+        // ProjectN doesn't have access to a convenient always-reflection-enabled type to use.
+        // (We can't use the <Module> type because of IL2IL toolchain limitations.)
+
+#if CORERT
+        private static RuntimeTypeHandle s_entryAssemblyType;
+
+        internal static void InitializeEntryAssembly(RuntimeTypeHandle entryAssemblyType)
+        {
+            s_entryAssemblyType = entryAssemblyType;
+        }
+
+        internal static Assembly GetEntryAssembly()
+        {
+            return Type.GetTypeFromHandle(s_entryAssemblyType).Assembly;
+        }
+#else
         private static string s_entryAssemblyName;
 
         // The only reason why this is public is because the Project N IL2IL toolchain will remove this method
@@ -33,5 +46,6 @@ namespace Internal.Runtime.CompilerHelpers
             }
             return null;
         }
+#endif
     }
 }
