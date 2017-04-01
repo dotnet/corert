@@ -13,6 +13,7 @@
 #include "gcenv.h"
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
+#include "gcheaputilities.h"
 
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
