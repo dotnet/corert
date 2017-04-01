@@ -1462,6 +1462,15 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
     EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
 }
 
+bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
+{
+    // CoreCLR does not have appdomains, so this code path is dead. Other runtimes may
+    // choose to inspect the object being finalized here.
+    // [DESKTOP TODO] Desktop looks for "agile and finalizable" objects and may choose
+    // to move them to a new app domain instead of finalizing them here.
+    return true;
+}
+
 #endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
