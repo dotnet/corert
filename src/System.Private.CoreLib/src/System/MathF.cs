@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    internal static class MathF
+    public static class MathF
     {
         public const float PI = (float)Math.PI;
 
