@@ -6,6 +6,7 @@
 #define _GCHEAPUTILITIES_H_
 
 #include "gcinterface.h"
+#include "handletable.h"
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
@@ -96,5 +97,16 @@ private:
     // This class should never be instantiated.
     GCHeapUtilities() = delete;
 };
+
+// Handle-related utilities.
+
+// Given a handle, returns an OBJECTREF for the object it refers to.
+inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
+{
+    _ASSERTE(handle);
+
+    // Wrap the raw OBJECTREF and return it
+    return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
+}
 
 #endif // _GCHEAPUTILITIES_H_
