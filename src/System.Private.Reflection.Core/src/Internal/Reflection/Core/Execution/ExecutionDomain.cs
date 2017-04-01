@@ -160,7 +160,7 @@ namespace Internal.Reflection.Core.Execution
             }
 #endif
 
-            if (!runtimeNamedMethodInfo.IsGenericMethod)
+            if (!runtimeNamedMethodInfo.IsGenericMethod || genericMethodTypeArgumentHandles == null)
             {
                 return runtimeNamedMethodInfo;
             }

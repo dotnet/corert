@@ -282,7 +282,7 @@ namespace Internal.Runtime.TypeLoader
 
             createdType = parsedMethod.OwningType.RuntimeTypeHandle;
             nameAndSignature = parsedMethod.NameAndSignature;
-            if (parsedMethod.Instantiation.Length > 0)
+            if (!parsedMethod.IsMethodDefinition && parsedMethod.Instantiation.Length > 0)
             {
                 genericMethodTypeArgumentHandles = new RuntimeTypeHandle[parsedMethod.Instantiation.Length];
                 for (int i = 0; i < parsedMethod.Instantiation.Length; ++i)

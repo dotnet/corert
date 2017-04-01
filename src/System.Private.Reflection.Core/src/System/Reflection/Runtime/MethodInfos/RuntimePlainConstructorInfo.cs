@@ -161,7 +161,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
 
-        public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(Array.Empty<Type>());
+        public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(null);
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {
