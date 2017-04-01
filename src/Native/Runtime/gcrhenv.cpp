@@ -205,6 +205,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
     InitializeHeapType(fUseServerGC);
+    g_heap_type = fUseServerGC ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     // Create the GC heap itself.
 #ifdef FEATURE_STANDALONE_GC
@@ -1198,6 +1199,7 @@ void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* 
 void GCProfileWalkHeapWorker(BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw)
 {
     ProfilingScanContext SC(FALSE);
+    unsigned max_generation = GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
 
     // **** Scan roots:  Only scan roots if profiling API wants them or ETW wants them.
     if (fShouldWalkHeapRootsForEtw)
