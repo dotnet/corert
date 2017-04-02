@@ -237,26 +237,14 @@
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
     <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\FormatProvider.cs" />
-    <Compile Include="System\Globalization\CalendarWeekRule.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
-    <Compile Include="System\Globalization\CultureNotFoundException.cs" />
     <Compile Include="System\Globalization\GregorianCalendarHelper.cs" />
-    <Compile Include="System\Globalization\HebrewCalendar.cs" />
-    <Compile Include="System\Globalization\HebrewNumber.cs" />
-    <Compile Include="System\Globalization\HijriCalendar.cs" />
-    <Compile Include="System\Globalization\InternalGlobalizationHelper.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.cs" />
-    <Compile Include="System\Globalization\KoreanCalendar.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\SortKey.cs" />
-    <Compile Include="System\Globalization\SortVersion.cs" />
     <Compile Include="System\Globalization\StringInfo.cs" />
-    <Compile Include="System\Globalization\TaiwanCalendar.cs" />
     <Compile Include="System\Globalization\TextElementEnumerator.cs" />
-    <Compile Include="System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="System\Globalization\FormatProvider.TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\FormatProvider.TimeSpanParse.cs" />
-    <Compile Include="System\Globalization\UmAlQuraCalendar.cs" />
     <Compile Include="System\ICloneable.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
@@ -273,7 +261,6 @@
     <Compile Include="System\IO\PathTooLongException.cs" />
     <Compile Include="System\IO\SeekOrigin.cs" />
     <Compile Include="System\IO\Stream.cs" />
-    <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="System\IO\UnmanagedMemoryStream.cs" />
     <Compile Include="System\Random.cs" />
@@ -295,33 +282,16 @@
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\Environment.EnvironmentVariables.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="System\Globalization\Calendar.cs" />
     <Compile Include="System\Globalization\CalendarData.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="System\Globalization\CompareInfo.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Globalization\CultureTypes.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
-    <Compile Include="System\Globalization\DateTimeStyles.cs" />
-    <Compile Include="System\Globalization\DayLightTime.cs" />
-    <Compile Include="System\Globalization\DigitShapes.cs" />
     <Compile Include="System\Globalization\GregorianCalendar.cs" />
-    <Compile Include="System\Globalization\GregorianCalendarTypes.cs" />
-    <Compile Include="System\Globalization\EastAsianLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\ChineseLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\JapaneseLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\JulianCalendar.cs" />
-    <Compile Include="System\Globalization\KoreanLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\PersianCalendar.cs" />
-    <Compile Include="System\Globalization\CalendricalCalculationsHelper.cs" />
-    <Compile Include="System\Globalization\TaiwanLunisolarCalendar.cs" />
     <Compile Include="System\Globalization\NumberFormatInfo.cs" />
-    <Compile Include="System\Globalization\NumberStyles.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
-    <Compile Include="System\Globalization\TimeSpanStyles.cs" />
-    <Compile Include="System\Globalization\UnicodeCategory.cs" />
     <Compile Include="System\Guid.cs" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
@@ -425,7 +395,6 @@
     <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
     <Compile Include="System\SByte.cs" />
-    <Compile Include="System\Security\SecureString.cs" />
     <Compile Include="System\Security\VerificationException.cs" />
     <Compile Include="System\Single.cs" />
     <Compile Include="System\String.cs" />
@@ -521,14 +490,11 @@
     <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
-    <Compile Include="System\Threading\Tasks\TaskCanceledException.cs" />
     <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
     <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
-    <Compile Include="System\Threading\Tasks\TaskExtensions.cs" />
     <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
-    <Compile Include="System\Threading\Tasks\TaskSchedulerException.cs" />
     <Compile Include="System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
     <Compile Include="System\Threading\ThreadInterruptedException.cs" />
     <Compile Include="System\Threading\ThreadLocal.cs" />
@@ -632,17 +598,11 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="System\Security\SecureString.Windows.cs" />
     <Compile Include="System\Security\SafeBSTRHandle.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\crypt32\Interop.CryptProtectMemory.cs">
-      <Link>Interop\Windows\crypt32\Interop.CryptProtectMemory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\ntdll\Interop.ZeroMemory.cs">
       <Link>Interop\Windows\ntdll\Interop.ZeroMemory.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
-      <Link>Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
@@ -789,38 +749,12 @@
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
     <Compile Include="System\Globalization\CultureData.Unix.cs" />
-    <Compile Include="System\Globalization\LocaleData.Unix.cs" />
     <Compile Include="System\Globalization\TextInfo.Unix.cs" />
     <Compile Include="System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
-    <Compile Include="System\Security\SecureString.Unix.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Calendar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Casing.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Casing.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Collation.cs">
       <Link>Interop\Unix\System.Globalization.Native\Interop.Collation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Idna.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Locale.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Locale.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Utils.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Utils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
