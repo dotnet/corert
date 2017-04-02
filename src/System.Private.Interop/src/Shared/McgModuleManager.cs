@@ -688,7 +688,7 @@ namespace System.Runtime.InteropServices
             // TODO: For Projected value types, IReference<T>.get_Value(out T) should marshal it correctly.
             // TODO: For projected refernce types, IReference<Ojbect> won't do correct marshal for you.
             boxingStub = default(IntPtr); 
-            if (DynamicInteropBoxingHelpers.Boxing(typeHandle, out boxingWrapperType, out boxingPropertyType))
+            if (McgModuleManager.UseDynamicInterop && DynamicInteropBoxingHelpers.Boxing(typeHandle, out boxingWrapperType, out boxingPropertyType))
                 return true;
 #endif
 
