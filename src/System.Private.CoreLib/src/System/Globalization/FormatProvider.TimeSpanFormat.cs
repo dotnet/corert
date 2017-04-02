@@ -74,7 +74,7 @@ namespace System.Globalization
             // 
             private static String FormatStandard(TimeSpan value, bool isInvariant, String format, Pattern pattern)
             {
-                StringBuilder sb = StringBuilderCache.Acquire(InternalGloablizationHelper.StringBuilderDefaultCapacity);
+                StringBuilder sb = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
                 int day = (int)(value.Ticks / TimeSpan.TicksPerDay);
                 long time = value.Ticks % TimeSpan.TicksPerDay;
 
@@ -177,7 +177,7 @@ namespace System.Globalization
                 long tmp = 0;
                 int i = 0;
                 int tokenLen;
-                StringBuilder result = StringBuilderCache.Acquire(InternalGloablizationHelper.StringBuilderDefaultCapacity);
+                StringBuilder result = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
 
                 while (i < format.Length)
                 {
@@ -393,7 +393,7 @@ namespace System.Globalization
                     ss = 0;
                     ff = 0;
 
-                    StringBuilder sb = StringBuilderCache.Acquire(InternalGloablizationHelper.StringBuilderDefaultCapacity);
+                    StringBuilder sb = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
                     bool inQuote = false;
                     char quote = '\'';
                     int field = 0;
