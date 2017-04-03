@@ -604,7 +604,9 @@ inline DynamicModule * EEType::get_DynamicModule()
         // need a rare flag to indicate presence of sealed virtuals
         fHasSealedVirtuals ||
         // Is this an abstract class?
-        (!pMT->IsInterface() && pMT->GetClass()->IsAbstract()));
+        (!pMT->IsInterface() && pMT->GetClass()->IsAbstract()) ||
+        // Is this a ByRefLike structure?
+        pMT->IsByRefLike());
 }
 #endif
 
