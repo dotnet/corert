@@ -524,6 +524,7 @@
     <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.cs" />
+    <Compile Include="System\TypeLoadException.CoreRT.cs" />
     <Compile Include="System\UInt16.cs" />
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
