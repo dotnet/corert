@@ -2,19 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: Platform independent integer
-**
-** 
-===========================================================*/
-
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Security;
 
 namespace System
 {
@@ -22,7 +13,8 @@ namespace System
     // The IntPtr type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type void *
 
-    public struct IntPtr : IEquatable<IntPtr>
+    [Serializable]
+    public struct IntPtr : IEquatable<IntPtr>, ISerializable
     {
         // WARNING: We allow diagnostic tools to directly inspect this member (_value). 
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
@@ -61,6 +53,28 @@ namespace System
         public unsafe IntPtr(void* value)
         {
             _value = value;
+        }
+
+        private unsafe IntPtr(SerializationInfo info, StreamingContext context)
+        {
+            long l = info.GetInt64("value");
+
+            if (Size == 4 && (l > int.MaxValue || l < int.MinValue))
+                throw new ArgumentException(SR.Serialization_InvalidPtrValue);
+
+            _value = (void*)l;
+        }
+
+        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+
+#if BIT64
+            info.AddValue("value", (long)(_value));
+#else // !BIT64 (32)
+            info.AddValue("value", (long)((int)_value));
+#endif
         }
 
         [CLSCompliant(false)]

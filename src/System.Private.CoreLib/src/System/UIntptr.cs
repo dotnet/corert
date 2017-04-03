@@ -2,27 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: Platform independent integer
-**
-** 
-===========================================================*/
-
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Security;
 
 namespace System
 {
     // CONTRACT with Runtime
     // The UIntPtr type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type void *
+    [Serializable]
     [CLSCompliant(false)]
-    public struct UIntPtr : IEquatable<UIntPtr>
+    public struct UIntPtr : IEquatable<UIntPtr>, ISerializable
     {
         unsafe private void* _value;
 
@@ -52,6 +44,24 @@ namespace System
         public unsafe UIntPtr(void* value)
         {
             _value = value;
+        }
+
+        private unsafe UIntPtr(SerializationInfo info, StreamingContext context)
+        {
+            ulong l = info.GetUInt64("value");
+
+            if (Size == 4 && l > uint.MaxValue)
+                throw new ArgumentException(SR.Serialization_InvalidPtrValue);
+
+            _value = (void*)l;
+        }
+
+        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+
+            info.AddValue("value", (ulong)_value);
         }
 
         [Intrinsic]
