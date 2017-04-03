@@ -76,9 +76,20 @@ namespace ILCompiler.DependencyAnalysis
                     // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
                     // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
                     // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                    // NOTE: we need to also do this for generic interfaces on arrays because they have a weird casting rule
-                    // that doesn't require the implemented interface to be variant to consider it castable.
-                    if (implementedInterface.HasVariance || (_type.IsArray && implementedInterface.HasInstantiation))
+                    bool allInterfaceMethodsAreImplicitlyUsed = implementedInterface.HasVariance;
+                    if (!allInterfaceMethodsAreImplicitlyUsed && _type.IsArray && implementedInterface.HasInstantiation)
+                    {
+                        // NOTE: we need to also do this for generic interfaces on arrays because they have a weird casting rule
+                        // that doesn't require the implemented interface to be variant to consider it castable.
+                        // For value types, we only need this when the array is castable by size (int[] and ICollection<uint>),
+                        // or it's a reference type (Derived[] and ICollection<Base>).
+                        TypeDesc elementType = ((ArrayType)_type).ElementType;
+                        allInterfaceMethodsAreImplicitlyUsed =
+                            CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
+                            (elementType.IsDefType && !elementType.IsValueType);
+                    }
+
+                    if (allInterfaceMethodsAreImplicitlyUsed)
                     {
                         foreach (var interfaceMethod in implementedInterface.GetAllMethods())
                         {
