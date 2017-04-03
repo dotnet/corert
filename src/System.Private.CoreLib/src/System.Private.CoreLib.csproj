@@ -298,7 +298,7 @@
     <Compile Include="System\Int16.cs" />
     <Compile Include="System\Int32.cs" />
     <Compile Include="System\Int64.cs" />
-    <Compile Include="System\Intptr.cs" />
+    <Compile Include="System\IntPtr.cs" />
     <Compile Include="System\Math.cs" />
     <Compile Include="System\MathF.cs" />
     <Compile Include="System\MissingFieldException.cs" />
@@ -528,7 +528,7 @@
     <Compile Include="System\UInt16.cs" />
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
-    <Compile Include="System\UIntptr.cs" />
+    <Compile Include="System\UIntPtr.cs" />
     <Compile Include="System\ValueTuple.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />

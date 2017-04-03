@@ -2338,4 +2338,7 @@
   <data name="PlatformNotSupported_SecureBinarySerialization" xml:space="preserve">
     <value>Secure binary serialization is not supported on this platform.</value>
   </data>
+  <data name="Serialization_InvalidPtrValue" xml:space="preserve">
+    <value>An IntPtr or UIntPtr with an eight byte value cannot be deserialized on a machine with a four byte word size.</value>
+  </data>
 </root>
