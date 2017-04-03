@@ -538,7 +538,7 @@ namespace ILCompiler
 
             if (HasExport && GetTlsIndexOrdinal(out ordinal))
             {
-                return ordinal.ToString();
+                return OrdinalPrefix + ordinal;
             }
             else
             {
