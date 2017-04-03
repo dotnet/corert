@@ -1251,6 +1251,143 @@ namespace System
             #endregion
 
             //**********************************************************************
+            // VarCyFromDec - Convert Currency to Decimal (similar to OleAut32 api.)
+            //**********************************************************************
+            internal static void VarCyFromDec(ref Decimal pdecIn, out long pcyOut)
+            {
+                if (!Decimal.IsValid(pdecIn._flags))
+                    throw new OverflowException(SR.Overflow_Currency);
+
+                Split64 sdlTmp = default(Split64);
+
+                int scale = pdecIn.Scale - 4; // the power of 10 to divide by
+                if (scale == 0)
+                {
+                    if (pdecIn.High != 0 ||
+                        (pdecIn.Mid >= 0x80000000U &&
+                        (pdecIn.Mid != 0x80000000U || pdecIn.Low != 0 || !pdecIn.Sign)))
+                        throw new OverflowException(SR.Overflow_Currency);
+
+                    sdlTmp.Low32 = pdecIn.Low;
+                    sdlTmp.High32 = pdecIn.Mid;
+
+                    if (pdecIn.Sign)
+                        pcyOut = -(long)sdlTmp.int64;
+                    else
+                        pcyOut = (long)sdlTmp.int64;
+                    return;
+                }
+
+                // Need to scale to get 4 decimal places.  -4 <= scale <= 24.
+                //
+                if (scale < 0)
+                {
+                    Split64 sdlTmp1 = default(Split64);
+                    sdlTmp1.int64 = UInt32x32To64(s_powers10[-scale], pdecIn.Mid);
+                    sdlTmp.int64 = UInt32x32To64(s_powers10[-scale], pdecIn.Low);
+                    sdlTmp.High32 += sdlTmp1.Low32;
+                    if (pdecIn.High != 0 || sdlTmp1.High32 != 0 || sdlTmp1.Low32 > sdlTmp.High32)
+                        throw new OverflowException(SR.Overflow_Currency);
+                }
+                else if (scale < 10)
+                {
+                    // DivMod64by32 returns the quotient in Lo, the remainder in Hi.
+                    //
+                    uint pwr = s_powers10[scale];
+                    if (pdecIn.High >= pwr)
+                        throw new OverflowException(SR.Overflow_Currency);
+
+                    Split64 sdlTmp1 = default(Split64);
+                    sdlTmp1.Low32 = pdecIn.Mid;
+                    sdlTmp1.High32 = pdecIn.High;
+                    sdlTmp1.int64 = DivMod64by32(sdlTmp1.int64, pwr);
+                    sdlTmp.High32 = sdlTmp1.Low32;   // quotient to high half of result
+                    sdlTmp1.Low32 = pdecIn.Low;      // extended remainder
+                    sdlTmp1.int64 = DivMod64by32(sdlTmp1.int64, pwr);
+                    sdlTmp.Low32 = sdlTmp1.Low32;    // quotient to low half of result
+
+                    // Round result based on remainder in sdlTmp1.Hi.
+                    //
+                    pwr >>= 1;  // compare to power/2 (power always even)
+                    if (sdlTmp1.High32 > pwr || (sdlTmp1.High32 == pwr && ((sdlTmp.Low32 & 1) != 0)))
+                        sdlTmp.int64++;
+                }
+                else
+                {
+                    // We have a power of 10 in the range 10 - 24.  These powers do
+                    // not fit in 32 bits.  We'll handle this by scaling 2 or 3 times,
+                    // first by 10^10, then by the remaining amount (or 10^9, then
+                    // the last bit).
+                    //
+                    // To scale by 10^10, we'll actually divide by 10^10/4, which fits
+                    // in 32 bits.  The second scaling is multiplied by four
+                    // to account for it, just barely assured of fitting in 32 bits
+                    // (4E9 < 2^32).  Note that the upper third of the quotient is
+                    // either zero or one, so we skip the divide step to calculate it.  
+                    // (Max 4E9 divided by 2.5E9.)
+                    //
+                    // DivMod64by32 returns the quotient in Lo, the remainder in Hi.
+                    //
+
+                    const uint TenToTenDiv4 = 2500000000U;
+
+                    Split64 sdlTmp1 = default(Split64);
+                    if (pdecIn.High >= TenToTenDiv4)
+                    {
+                        sdlTmp.High32 = 1;                // upper 1st quotient
+                        sdlTmp1.High32 = pdecIn.High - TenToTenDiv4;  // remainder
+                    }
+                    else
+                    {
+                        sdlTmp.High32 = 0;                // upper 1st quotient
+                        sdlTmp1.High32 = pdecIn.High;     // remainder
+                    }
+
+                    sdlTmp1.Low32 = pdecIn.Mid;           // extended remainder
+                    sdlTmp1.int64 = DivMod64by32(sdlTmp1.int64, TenToTenDiv4);
+                    sdlTmp.Low32 = sdlTmp1.Low32;         // middle 1st quotient
+
+                    sdlTmp1.Low32 = pdecIn.Low;           // extended remainder
+                    sdlTmp1.int64 = DivMod64by32(sdlTmp1.int64, TenToTenDiv4);
+
+                    uint pwr = s_powers10[Math.Min(scale - 10, 9)] << 2;
+                    sdlTmp.int64 = DivMod64by32(sdlTmp.int64, pwr);
+                    uint savedTmpLow32 = sdlTmp.Low32;    // upper 2nd quotient
+
+                    sdlTmp.Low32 = sdlTmp1.Low32;         // extended remainder
+                    sdlTmp.int64 = DivMod64by32(sdlTmp.int64, pwr);
+                    sdlTmp1.Low32 = sdlTmp.High32;        // save final remainder
+                    sdlTmp.High32 = savedTmpLow32;        // position high result
+
+                    if (scale >= 20)
+                    {
+                        pwr = s_powers10[scale - 19];
+                        sdlTmp.int64 = DivMod64by32(sdlTmp.int64, pwr);
+                        sdlTmp1.High32 |= sdlTmp1.Low32;  // combine sticky bits
+                        sdlTmp1.Low32 = sdlTmp.High32;    // final remainder
+                        sdlTmp.High32 = 0;                // guaranteed result fits in 32 bits
+                    }
+
+                    // Round result based on remainder in sdlTmp1.Lo.  sdlTmp1.Hi is
+                    // the remainder from the first division(s), representing sticky bits.
+                    // Current result is in sdlTmp.
+
+                    pwr >>= 1;  // compare to power/2 (power always even)
+                    if (sdlTmp1.Low32 > pwr || (sdlTmp1.Low32 == pwr && (((sdlTmp.Low32 & 1) != 0) || sdlTmp1.High32 != 0)))
+                        sdlTmp.int64++;
+                }
+
+                if (sdlTmp.High32 >= 0x80000000U &&
+                   (sdlTmp.int64 != 0x8000000000000000LU || !pdecIn.Sign))
+                    throw new OverflowException(SR.Overflow_Currency);
+
+                if (pdecIn.Sign)
+                    sdlTmp.int64 = (ulong)(-(long)sdlTmp.int64);
+
+                pcyOut = (long)sdlTmp.int64;
+            }
+
+            //**********************************************************************
             // VarDecCmp - Decimal Compare updated to return values similar to ICompareTo
             //**********************************************************************
             internal static int VarDecCmp(ref Decimal pdecL, ref Decimal pdecR)

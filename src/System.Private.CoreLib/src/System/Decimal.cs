@@ -88,6 +88,8 @@ namespace System
         // this constant is -79,228,162,514,264,337,593,543,950,335.
         public const Decimal MinValue = -79228162514264337593543950335m;
 
+        private const int CurrencyScale = 4; // Divide the "Int64" representation by 1E4 to get the "true" value of the Currency.
+
         // The lo, mid, hi, and flags fields contain the representation of the
         // Decimal value. The lo, mid, and hi fields contain the 96-bit integer
         // part of the Decimal. Bits 0-15 (the lower word) of the flags field are
@@ -191,6 +193,56 @@ namespace System
             DecCalc.VarDecFromR8(value, out this);
         }
 
+        //
+        // Decimal <==> Currency conversion.
+        //
+        // A Currency represents a positive or negative decimal value with 4 digits past the decimal point. The actual Int64 representation used by these methods
+        // is the currency value multiplied by 10,000. For example, a currency value of $12.99 would be represented by the Int64 value 129,900.
+        //
+
+        public static Decimal FromOACurrency(long cy)
+        {
+            Decimal d = default(Decimal);
+
+            ulong absoluteCy; // has to be ulong to accomodate the case where cy == long.MinValue.
+            if (cy < 0)
+            {
+                d.Sign = true;
+                absoluteCy = (ulong)(-cy);
+            }
+            else
+            {
+                absoluteCy = (ulong)cy;
+            }
+
+            // In most cases, FromOACurrency() produces a Decimal with Scale set to 4. Unless, that is, some of the trailing digits past the decimal point are zero,
+            // in which case, for compatibility with .Net, we reduce the Scale by the number of zeros. While the result is still numerically equivalent, the scale does
+            // affect the ToString() value. In particular, it prevents a converted currency value of $12.95 from printing uglily as "12.9500".
+            int scale = CurrencyScale;
+            if (absoluteCy != 0)  // For compatibility, a currency of 0 emits the Decimal "0.0000" (scale set to 4).
+            {
+                while (scale != 0 && ((absoluteCy % 10) == 0))
+                {
+                    scale--;
+                    absoluteCy /= 10;
+                }
+            }
+
+            // No need to set d.Hi32 - a currency will never go high enough for it to be anything other than zero.
+            d.Low64 = absoluteCy;
+            d.Scale = scale;
+            return d;
+        }
+
+        public static long ToOACurrency(Decimal value)
+        {
+            long cy;
+            DecCalc.VarCyFromDec(ref value, out cy);
+            return cy;
+        }
+
+        private static bool IsValid(uint flags) => (flags & ~(SignMask | ScaleMask)) == 0 && ((flags & ScaleMask) <= (28 << 16));
+
         // Constructs a Decimal from an integer array containing a binary
         // representation. The bits argument must be a non-null integer
         // array with four elements. bits[0], bits[1], and
@@ -227,7 +279,7 @@ namespace System
             if (bits.Length == 4)
             {
                 uint f = (uint)bits[3];
-                if ((f & ~(SignMask | ScaleMask)) == 0 && (f & ScaleMask) <= (28 << 16))
+                if (IsValid(f))
                 {
                     _lo = (uint)bits[0];
                     _mid = (uint)bits[1];
