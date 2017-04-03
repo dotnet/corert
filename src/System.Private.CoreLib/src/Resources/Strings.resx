@@ -2335,4 +2335,7 @@
   <data name="Overflow_Currency" xml:space="preserve">
     <value>Value was either too large or too small for a Currency.</value>
   </data>
+  <data name="PlatformNotSupported_SecureBinarySerialization" xml:space="preserve">
+    <value>Secure binary serialization is not supported on this platform.</value>
+  </data>
 </root>
