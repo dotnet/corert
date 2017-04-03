@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitInt(0);
 
             foreach (var typeArg in _details.Instantiation)
-                builder.EmitPointerReloc(factory.NecessaryTypeSymbol(typeArg));
+                builder.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(typeArg));
 
             if (hasVariance)
             {

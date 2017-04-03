@@ -11,21 +11,7 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 
-#if CORERT
 namespace System
-#else
-// Add a fake TypedReference to keep Project X running with CoreRT's type system that needs this now.
-namespace System
-{
-    [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.DependencyReductionRoot] // TODO: proper fix is to put this in the ILToolchain contract
-    internal struct TypedReference
-    {
-    }
-}
-
-namespace System.Reflection  //@TODO: Intentionally placing TypedReference in the wrong namespace to work around NUTC's inability to handle ELEMENT_TYPE_TYPEDBYREF.
-#endif
 {
     [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]

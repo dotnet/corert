@@ -99,10 +99,10 @@ namespace Internal.Runtime.TypeLoader
             return ((TableElement*)_elements)[index];
 #else
             uint rva = GetRvaFromIndex(index);
-            if ((rva & 0x80000000) != 0)
+            if ((rva & IndirectionConstants.RVAPointsToIndirection) != 0)
             {
                 // indirect through IAT
-                return *(IntPtr*)(_moduleHandle.ConvertRVAToPointer(rva & ~0x80000000));
+                return *(IntPtr*)(_moduleHandle.ConvertRVAToPointer(rva & ~IndirectionConstants.RVAPointsToIndirection));
             }
             else
             {

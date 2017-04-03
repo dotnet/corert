@@ -36,12 +36,12 @@ namespace Internal.Runtime
         {
             get
             {
-                if ((unchecked((uint)_interfaceType._pInterfaceEEType) & 1u) != 0)
+                if ((unchecked((uint)_interfaceType._pInterfaceEEType) & IndirectionConstants.IndirectionCellPointer) != 0)
                 {
 #if BIT64
-                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) & ~1ul);
+                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
 #else
-                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) & ~1u);
+                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
 #endif
                     return *ppInterfaceEETypeViaIAT;
                 }
@@ -1429,9 +1429,9 @@ namespace Internal.Runtime
         {
             get
             {
-                if (((int)_value & 1) == 0)
+                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
                     return (EEType*)_value;
-                return *(EEType**)(_value - 1);
+                return *(EEType**)(_value - IndirectionConstants.IndirectionCellPointer);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set

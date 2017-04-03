@@ -9,7 +9,7 @@ namespace System.Threading
     //
     // WinRT-specific implementation of ThreadPool
     //
-    internal static partial class ThreadPool
+    public static partial class ThreadPool
     {
         private static volatile bool s_dispatchCallbackSet;
 
