@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+
+using MethodBase = System.Reflection.MethodBase;
 
 using Internal.Diagnostics;
-using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -70,6 +66,8 @@ namespace System
             }
         }
 
+        public new Type GetType() => base.GetType();
+
         public virtual IDictionary Data
         {
             get
@@ -79,6 +77,16 @@ namespace System
 
                 return _data;
             }
+        }
+
+        // TargetSite is not supported on CoreRT. Because it's likely use is diagnostic logging, returning null (a permitted return value)
+        // seems more useful than throwing a PlatformNotSupportedException here.
+        public MethodBase TargetSite => null;
+
+        protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
+        {
+            add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
+            remove { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
         }
 
         #region Interop Helpers

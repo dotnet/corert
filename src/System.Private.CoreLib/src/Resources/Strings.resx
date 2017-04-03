@@ -2332,4 +2332,13 @@
   <data name="Arg_TypeUnloadedException" xml:space="preserve">
     <value>Type had been unloaded.</value>
   </data>
+  <data name="Overflow_Currency" xml:space="preserve">
+    <value>Value was either too large or too small for a Currency.</value>
+  </data>
+  <data name="PlatformNotSupported_SecureBinarySerialization" xml:space="preserve">
+    <value>Secure binary serialization is not supported on this platform.</value>
+  </data>
+  <data name="Serialization_InvalidPtrValue" xml:space="preserve">
+    <value>An IntPtr or UIntPtr with an eight byte value cannot be deserialized on a machine with a four byte word size.</value>
+  </data>
 </root>

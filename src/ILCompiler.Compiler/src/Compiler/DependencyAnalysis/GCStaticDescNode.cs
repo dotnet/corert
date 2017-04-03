@@ -47,11 +47,51 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
         
+        private GCStaticDescRegionNode Region(NodeFactory factory)
+        {
+            UtcNodeFactory utcNodeFactory = (UtcNodeFactory)factory;
+
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                if (_isThreadStatic)
+                {
+                    return utcNodeFactory.CanonicalGCStaticDescRegion;
+                }
+                else
+                {
+                    return utcNodeFactory.CanonicalThreadStaticGCDescRegion;
+                }
+            }
+            else
+            {
+                if (_isThreadStatic)
+                {
+                    return utcNodeFactory.ThreadStaticGCDescRegion;
+                }
+                else
+                {
+                    return utcNodeFactory.GCStaticDescRegion;
+                }
+            }
+        }
+
+        private ISymbolNode GCStaticsSymbol(NodeFactory factory)
+        {
+            UtcNodeFactory utcNodeFactory = (UtcNodeFactory)factory;
+
+            if (_isThreadStatic)
+            {
+                return utcNodeFactory.TypeThreadStaticsSymbol(_type);
+            }
+            else
+            {
+                return utcNodeFactory.TypeGCStaticsSymbol(_type);
+            }
+        }
+
         protected override void OnMarked(NodeFactory factory)
         {
-            UtcNodeFactory hostedFactory = factory as UtcNodeFactory;
-            Debug.Assert(hostedFactory != null);
-            hostedFactory.GCStaticDescRegion.AddEmbeddedObject(this);
+            Region(factory).AddEmbeddedObject(this);
         }
 
         public override bool StaticDependenciesAreComputed
@@ -64,13 +104,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            UtcNodeFactory hostedFactory = factory as UtcNodeFactory;
-            Debug.Assert(hostedFactory != null);
             bool refersToGCStaticsSymbol = !_type.IsCanonicalSubtype(CanonicalFormKind.Any);
             DependencyListEntry[] result = new DependencyListEntry[refersToGCStaticsSymbol ? 2 : 1];           
-            result[0] = new DependencyListEntry(hostedFactory.GCStaticDescRegion, "GCStaticDesc Region");
+            result[0] = new DependencyListEntry(Region(factory), "GCStaticDesc Region");
             if (refersToGCStaticsSymbol)
-                result[1] = new DependencyListEntry(hostedFactory.TypeGCStaticsSymbol(_type), "GC Static Base Symbol");
+                result[1] = new DependencyListEntry(GCStaticsSymbol(factory), "GC Static Base Symbol");
             return result;
         }
 

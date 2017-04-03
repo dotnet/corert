@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using Internal.Runtime;
 
 namespace Internal.Runtime.CompilerServices
 {
@@ -23,9 +24,9 @@ namespace Internal.Runtime.CompilerServices
                 // Update managed debugger too whenever this is changed.
                 // See CordbObjectValue::WalkPtrAndTypeData in debug\dbi\values.cpp
 
-                if (((_value.ToInt64()) & 0x1) != 0)
+                if (((_value.ToInt64()) & IndirectionConstants.IndirectionCellPointer) != 0)
                 {
-                    return *(RuntimeTypeHandle*)(_value.ToInt64() - 0x1);
+                    return *(RuntimeTypeHandle*)(_value.ToInt64() - IndirectionConstants.IndirectionCellPointer);
                 }
                 else
                 {

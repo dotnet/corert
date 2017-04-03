@@ -10,7 +10,7 @@ namespace System.Threading
     //
     // Unix-specific implementation of ThreadPool
     //
-    internal static partial class ThreadPool
+    public static partial class ThreadPool
     {
         // TODO: this is a very primitive (temporary) implementation of Thread Pool to allow Tasks to be
         // used on Unix. All of this code must be replaced with proper implementation.

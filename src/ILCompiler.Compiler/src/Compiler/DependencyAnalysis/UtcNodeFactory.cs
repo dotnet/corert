@@ -131,7 +131,9 @@ namespace ILCompiler
             graph.AddRoot(ThreadStaticsIndex, "Thread statics index is always generated");
             graph.AddRoot(ThreadStaticsStartOffset, "Thread statics start offset is always generated");
             graph.AddRoot(TLSDirectory, "TLS Directory is always generated");
-            
+            graph.AddRoot(CanonicalGCStaticDescRegion, "Canonical GC StaticsRegion is always generated");
+            graph.AddRoot(CanonicalThreadStaticGCDescRegion, "Canonical Thread Statics Region is always generated");
+
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
@@ -197,6 +199,14 @@ namespace ILCompiler
 
             return new ShadowConcreteMethodNode(methodKey.Method, methodCodeNode);
         }
+
+        public GCStaticDescRegionNode CanonicalGCStaticDescRegion = new GCStaticDescRegionNode(
+            CompilationUnitPrefix + "__CanonicalGCStaticDescStart",
+            CompilationUnitPrefix + "__CanonicalGCStaticDescEnd");
+
+        public GCStaticDescRegionNode CanonicalThreadStaticGCDescRegion = new GCStaticDescRegionNode(
+            CompilationUnitPrefix + "__CanonicalThreadStaticGCDescStart",
+            CompilationUnitPrefix + "__CanonicalThreadStaticGCDescEnd");
 
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(
             CompilationUnitPrefix + "__GCStaticDescStart", 
