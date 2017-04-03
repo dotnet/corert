@@ -450,7 +450,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var itf in _type.RuntimeInterfaces)
             {
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(itf));
+                objData.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(itf));
             }
         }
 
@@ -485,7 +485,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.HasInstantiation && !_type.IsTypeDefinition)
             {
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
+                objData.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
 
                 GenericCompositionDetails details;
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
@@ -528,6 +528,12 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsNullable)
             {
                 flags |= (uint)EETypeRareFlags.IsNullableFlag;
+
+                // If the nullable type is not part of this compilation group, and
+                // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
+                // that it should indirect through the import address table
+                if (factory.NecessaryTypeSymbol(_type.Instantiation[0]).RepresentsIndirectionCell)
+                    flags |= (uint)EETypeRareFlags.NullableTypeViaIATFlag;
             }
 
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
