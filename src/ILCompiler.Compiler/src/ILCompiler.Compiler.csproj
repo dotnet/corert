@@ -95,6 +95,7 @@
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ImportedGenericDictionaryNode.cs" />
     <Compile Include="Compiler\EmptyMetadataManager.cs" />
     <Compile Include="Compiler\ILStreamReader.cs" />
     <Compile Include="Compiler\INonEmittableType.cs" />
@@ -115,7 +116,6 @@
     <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ImportedMethodGenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeGVMEntriesNode.cs" />
