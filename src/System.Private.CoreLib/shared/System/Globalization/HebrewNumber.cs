@@ -370,7 +370,6 @@ namespace System.Globalization
         // Count of valid HebrewToken, column count in the NumberPasingState array
         private const int HebrewTokenCount = 10;
 
-
         ////////////////////////////////////////////////////////////////////////
         //  
         //  Actions:

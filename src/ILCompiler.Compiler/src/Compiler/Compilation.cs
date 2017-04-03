@@ -34,6 +34,7 @@ namespace ILCompiler
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
         private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;
+        private readonly MethodBaseGetCurrentMethodThunkCache _methodBaseGetCurrentMethodThunks;
 
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -55,6 +56,7 @@ namespace ILCompiler
             MetadataType globalModuleGeneratedType = nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType();
             _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(globalModuleGeneratedType);
             _assemblyGetExecutingAssemblyMethodThunks = new AssemblyGetExecutingAssemblyMethodThunkCache(globalModuleGeneratedType);
+            _methodBaseGetCurrentMethodThunks = new MethodBaseGetCurrentMethodThunkCache();
 
             bool? forceLazyPInvokeResolution = null;
             // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
@@ -161,6 +163,13 @@ namespace ILCompiler
                         Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
                         return _assemblyGetExecutingAssemblyMethodThunks.GetHelper((IAssemblyDesc)callsiteModule);
                     }
+                }
+            }
+            else if (intrinsicOwningType.Name == "MethodBase" && intrinsicOwningType.Namespace == "System.Reflection")
+            {
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetCurrentMethod")
+                {
+                    return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
                 }
             }
 

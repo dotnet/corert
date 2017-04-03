@@ -39,18 +39,26 @@ namespace Internal.Runtime.CompilerHelpers
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         public static MethodBase GetCurrentMethodNonGeneric(RuntimeMethodHandle methodHandle)
         {
+#if CORERT
+            return MethodBase.GetMethodFromHandle(methodHandle);
+#else
             // The compiler should ideally provide us with a RuntimeMethodHandle for the uninstantiated thing,
-            // but the file format cannot express a RuntimeMethodHandle for a generic definition of a generic method.
+            // but the Project N toolchain cannot express a RuntimeMethodHandle for a generic definition of a generic method.
             return MethodBase.GetMethodFromHandle(methodHandle).MetadataDefinitionMethod;
+#endif
         }
 
         // This supports MethodBase.GetCurrentMethod() intrinsic expansion in the compiler
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         public static MethodBase GetCurrentMethodGeneric(RuntimeMethodHandle methodHandle, RuntimeTypeHandle typeHandle)
         {
+#if CORERT
+            return MethodBase.GetMethodFromHandle(methodHandle, typeHandle);
+#else
             // The compiler should ideally provide us with a RuntimeMethodHandle for the uninstantiated thing,
-            // but the file format cannot express a RuntimeMethodHandle for a generic definition of a generic method.
+            // but the Project N toolchain cannot express a RuntimeMethodHandle for a generic definition of a generic method.
             return MethodBase.GetMethodFromHandle(methodHandle, typeHandle).MetadataDefinitionMethod;
+#endif
         }
     }
 }

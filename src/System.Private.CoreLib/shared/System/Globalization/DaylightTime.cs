@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Globalization
 {
     // This class represents a starting/ending time for a period of daylight saving time.
-
     [Serializable]
     public class DaylightTime
     {

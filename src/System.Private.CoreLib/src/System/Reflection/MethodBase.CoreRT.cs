@@ -11,7 +11,7 @@ namespace System.Reflection
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle);
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle, declaringType);
 
-        // This is actually an ILC intrinsic.
+        [System.Runtime.CompilerServices.Intrinsic]
         public static MethodBase GetCurrentMethod() { throw new NotImplementedException(); }
 
         // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
