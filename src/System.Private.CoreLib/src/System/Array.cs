@@ -359,9 +359,9 @@ namespace System
             EETypePtr sourceElementEEType = sourceArray.ElementEEType;
             EETypePtr destinationElementEEType = destinationArray.ElementEEType;
 
-            if (!(destinationElementEEType.IsValueType))
+            if (!destinationElementEEType.IsValueType && !destinationElementEEType.IsPointer)
             {
-                if (!(sourceElementEEType.IsValueType))
+                if (!sourceElementEEType.IsValueType && !sourceElementEEType.IsPointer)
                 {
                     CopyImplGcRefArray((Object[])sourceArray, sourceIndex, (Object[])destinationArray, destinationIndex, length, reliable);
                 }
@@ -387,6 +387,14 @@ namespace System
                         CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                     }
                 }
+                else if (sourceElementEEType.IsPointer && destinationElementEEType.IsPointer)
+                {
+                    // CLR compat note: CLR only allows Array.Copy between pointee types that would be assignable
+                    // to using array covariance rules (so int*[] can be copied to uint*[], but not to float*[]).
+                    // This is rather weird since e.g. we don't allow casting int*[] to uint*[] otherwise.
+                    // Instead of trying to replicate the behavior, we're choosing to be simply more permissive here.
+                    CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                }
                 else if (IsSourceElementABaseClassOrInterfaceOfDestinationValueType(sourceElementEEType, destinationElementEEType))
                 {
                     CopyImplReferenceArrayToValueTypeArray((Object[])sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
@@ -402,7 +410,7 @@ namespace System
 
         private static bool IsSourceElementABaseClassOrInterfaceOfDestinationValueType(EETypePtr sourceElementEEType, EETypePtr destinationElementEEType)
         {
-            if (sourceElementEEType.IsValueType)
+            if (sourceElementEEType.IsValueType || sourceElementEEType.IsPointer)
                 return false;
 
             // It may look like we're passing the arguments to AreTypesAssignable in the wrong order but we're not. The source array is an interface or Object array, the destination
@@ -590,8 +598,10 @@ namespace System
         //
         internal static unsafe void CopyImplValueTypeArrayNoInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            Debug.Assert(sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.HasPointers);
-            Debug.Assert(destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.HasPointers);
+            Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.HasPointers) ||
+                sourceArray.ElementEEType.IsPointer);
+            Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.HasPointers) ||
+                destinationArray.ElementEEType.IsPointer);
 
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
             nuint elementSize = sourceArray.ElementSize;
@@ -2513,6 +2523,9 @@ namespace System
             if ((uint)index >= (uint)Length)
                 throw new IndexOutOfRangeException();
 
+            if (ElementEEType.IsPointer)
+                throw new NotSupportedException(SR.NotSupported_Type);
+
             return GetValueWithFlattenedIndex_NoErrorCheck(index);
         }
 
@@ -2579,6 +2592,9 @@ namespace System
             if ((uint)flattenedIndex >= (uint)Length)
                 throw new IndexOutOfRangeException();
 
+            if (ElementEEType.IsPointer)
+                throw new NotSupportedException(SR.NotSupported_Type);
+
             return GetValueWithFlattenedIndex_NoErrorCheck(flattenedIndex);
         }
 
@@ -2593,6 +2609,7 @@ namespace System
             }
             else
             {
+                Debug.Assert(!pElementEEType.IsPointer);
                 return Unsafe.As<byte, object>(ref element);
             }
         }
@@ -2623,6 +2640,10 @@ namespace System
 
                 ref byte element = ref Unsafe.AddByteOffset(ref GetRawArrayData(), (nuint)index * ElementSize);
                 RuntimeImports.RhUnbox(value, ref element, pElementEEType);
+            }
+            else if (pElementEEType.IsPointer)
+            {
+                throw new NotSupportedException(SR.NotSupported_Type);
             }
             else
             {
@@ -2771,6 +2792,10 @@ namespace System
 
                 RuntimeImports.RhUnbox(value, ref element, pElementEEType);
             }
+            else if (pElementEEType.IsPointer)
+            {
+                throw new NotSupportedException(SR.NotSupported_Type);
+            }
             else
             {
                 try
@@ -2820,6 +2845,9 @@ namespace System
                 if (ElementEEType.IsValueType && !ElementEEType.HasPointers)
                     return true;
 
+                if (ElementEEType.IsPointer)
+                    return true;
+
                 return false;
             }
         }
@@ -2853,6 +2881,7 @@ namespace System
                 {
                     if (_index < 0) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_index >= _endIndex) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                    if (_array.ElementEEType.IsPointer) throw new NotSupportedException(SR.NotSupported_Type);
                     return _array.GetValueWithFlattenedIndex_NoErrorCheck(_index);
                 }
             }
