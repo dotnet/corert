@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class TypeGenericDictionaryNode : GenericDictionaryNode
+    public sealed class TypeGenericDictionaryNode : GenericDictionaryNode
     {
         private TypeDesc _owningType;
 
@@ -90,6 +90,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override TypeSystemContext Context => _owningType.Context;
 
         public TypeDesc OwningType => _owningType;
+
+        public static string GetMangledName(NameMangler nameMangler, TypeDesc owningType)
+        {
+            return MangledNamePrefix + nameMangler.GetMangledTypeName(owningType);
+        }
 
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {

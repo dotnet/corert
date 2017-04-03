@@ -18,4 +18,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool RepresentsIndirectionCell => true;
     }
+
+    public sealed class ImportedTypeGenericDictionaryNode : ExternSymbolNode
+    {
+        private TypeDesc _owningType;
+
+        public ImportedTypeGenericDictionaryNode(NodeFactory factory, TypeDesc owningType)
+            : base("__imp_" + TypeGenericDictionaryNode.GetMangledName(factory.NameMangler, owningType))
+        {
+            _owningType = owningType;
+        }
+
+        public override bool RepresentsIndirectionCell => true;
+    }
 }
