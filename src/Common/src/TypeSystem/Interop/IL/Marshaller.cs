@@ -9,7 +9,6 @@ using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 using ILLocalVariable = Internal.IL.Stubs.ILLocalVariable;
 
-
 namespace Internal.TypeSystem.Interop
 {
     enum MarshallerKind
@@ -704,7 +703,7 @@ namespace Internal.TypeSystem.Interop
                     PropagateToByRefArg(_ilCodeStreams.UnmarshallingCodestream, _managedHome);
                 }
             }
-            EmitCleanupManagedToNative(_ilCodeStreams.UnmarshallingCodestream);
+            EmitCleanupManaged(_ilCodeStreams.UnmarshallingCodestream);
         }
 
         /// <summary>
@@ -747,7 +746,7 @@ namespace Internal.TypeSystem.Interop
             StoreManagedValue(codeStream);
         }
 
-        protected virtual void EmitCleanupManagedToNative(ILCodeStream codeStream)
+        protected virtual void EmitCleanupManaged(ILCodeStream codeStream)
         {
         }
 
@@ -1174,11 +1173,11 @@ namespace Internal.TypeSystem.Interop
             StoreManagedValue(codeStream);
         }
 
-        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             Marshaller elementMarshaller = GetElementMarshaller(MarshalDirection.Forward);
 
-            // generate cleanuo code only if it is necessary
+            // generate cleanup code only if it is necessary
             if (elementMarshaller.CleanupRequired)
             {
                 //
@@ -1295,10 +1294,10 @@ namespace Internal.TypeSystem.Interop
                 base.TransformNativeToManaged(codeStream);
         }
 
-        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             if (IsManagedByRef && !In)
-                base.EmitCleanupManagedToNative(codeStream);
+                base.EmitCleanupManaged(codeStream);
         }
     }
 
@@ -1327,40 +1326,96 @@ namespace Internal.TypeSystem.Interop
 
     class UnicodeStringMarshaller : Marshaller
     {
+        private bool ShouldBePinned
+        {
+            get
+            {
+                return MarshalDirection == MarshalDirection.Forward 
+                    && MarshallerType != MarshallerType.Field
+                    && !IsManagedByRef
+                    && In
+                    && !Out;
+            }
+        }
+
+        internal override bool CleanupRequired
+        {
+            get
+            {
+                return !ShouldBePinned; //cleanup is only required when it is not pinned
+            }
+        }
+
+        internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
+        {
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+        }
+
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            //
-            // Unicode marshalling. Pin the string and push a pointer to the first character on the stack.
-            //
-            TypeDesc stringType = Context.GetWellKnownType(WellKnownType.String);
+            if (ShouldBePinned)
+            {
+                //
+                // Pin the string and push a pointer to the first character on the stack.
+                //
+                TypeDesc stringType = Context.GetWellKnownType(WellKnownType.String);
 
-            ILLocalVariable vPinnedString = emitter.NewLocal(stringType, true);
-            ILCodeLabel lNullString = emitter.NewCodeLabel();
+                ILLocalVariable vPinnedString = emitter.NewLocal(stringType, true);
+                ILCodeLabel lNullString = emitter.NewCodeLabel();
 
-            LoadManagedValue(codeStream);
-            codeStream.EmitStLoc(vPinnedString);
-            codeStream.EmitLdLoc(vPinnedString);
+                LoadManagedValue(codeStream);
+                codeStream.EmitStLoc(vPinnedString);
+                codeStream.EmitLdLoc(vPinnedString);
 
-            codeStream.Emit(ILOpcode.conv_i);
-            codeStream.Emit(ILOpcode.dup);
+                codeStream.Emit(ILOpcode.conv_i);
+                codeStream.Emit(ILOpcode.dup);
 
-            // Marshalling a null string?
-            codeStream.Emit(ILOpcode.brfalse, lNullString);
+                // Marshalling a null string?
+                codeStream.Emit(ILOpcode.brfalse, lNullString);
 
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                Context.SystemModule.
-                    GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers").
-                        GetKnownMethod("get_OffsetToStringData", null)));
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    Context.SystemModule.
+                        GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers").
+                            GetKnownMethod("get_OffsetToStringData", null)));
 
-            codeStream.Emit(ILOpcode.add);
+                codeStream.Emit(ILOpcode.add);
 
-            codeStream.EmitLabel(lNullString);
-            StoreNativeValue(codeStream);
+                codeStream.EmitLabel(lNullString);
+                StoreNativeValue(codeStream);
+            }
+            else
+            {
+                var helper = Context.GetHelperEntryPoint("InteropHelpers", "StringToUnicodeBuffer");
+                LoadManagedValue(codeStream);
+
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+
+                StoreNativeValue(codeStream);
+            }
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "UnicodeBufferToString");
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+            StoreManagedValue(codeStream);
+        }
+
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
+        {
+            if (CleanupRequired)
+            {
+                LoadNativeValue(codeStream);
+                codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                                    Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+            }
         }
     }
-
 
     class AnsiStringMarshaller : Marshaller
     {
@@ -1393,7 +1448,7 @@ namespace Internal.TypeSystem.Interop
             StoreNativeValue(codeStream);
         }
 
-        protected override void AllocAndTransformNativeToManaged(ILCodeStream codeStream)
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
             var ansiToString = Context.GetHelperEntryPoint("InteropHelpers", "AnsiStringToString");
@@ -1402,7 +1457,7 @@ namespace Internal.TypeSystem.Interop
             StoreManagedValue(codeStream);
         }
 
-        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
@@ -1568,7 +1623,7 @@ namespace Internal.TypeSystem.Interop
                 InteropStateManager.GetStructMarshallingNativeToManagedThunk(ManagedType)));
         }
 
-        protected override void EmitCleanupManagedToNative(ILCodeStream codeStream)
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             // Only do cleanup if it is IN
             if (!In)
