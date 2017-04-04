@@ -155,7 +155,7 @@ namespace Internal.Reflection.Tracing
                 {
                     int rank = runtimeType.GetArrayRank();
                     if (rank == 1)
-                        suffix = "[" + (runtimeType.IsMultiDimensionalArray ? "*" : "") + "]";
+                        suffix = "[" + (runtimeType.IsVariableBoundArray ? "*" : "") + "]";
                     else
                         suffix = "[" + new String(',', rank - 1) + "]";
                 }
