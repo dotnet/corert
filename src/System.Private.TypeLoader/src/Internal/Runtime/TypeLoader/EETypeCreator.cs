@@ -1058,6 +1058,13 @@ namespace Internal.Runtime.TypeLoader
                 requireVtableSlotMapping = true;
                 pTemplateEEType = null;
             }
+#if !PROJECTN
+            else if (type.IsSzArray && ((ArrayType)type).ElementType.IsPointer)
+            {
+                pTemplateEEType = typeof(void*[]).TypeHandle.ToEETypePtr();
+                requireVtableSlotMapping = false;
+            }
+#endif
             else if (type.IsMdArray)
             {
                 pTemplateEEType = typeof(object[,]).TypeHandle.ToEETypePtr();

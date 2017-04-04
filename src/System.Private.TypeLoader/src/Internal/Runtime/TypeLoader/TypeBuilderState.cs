@@ -382,9 +382,10 @@ namespace Internal.Runtime.TypeLoader
                         }
                     }
                 }
-                else if (TypeBeingBuilt.IsMdArray)
+                else if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
                 {
-                    // MDArray types have the same vtable as the System.Array type they "derive" from.
+                    // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
+                    // They do not implement the generic interfaces that make this interesting for normal arrays.
                     unsafe
                     {
                         return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
@@ -855,7 +856,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 ArrayType typeAsArrayType = TypeBeingBuilt as ArrayType;
                 if (typeAsArrayType != null)
-                    return !typeAsArrayType.ParameterType.IsValueType && !typeAsArrayType.IsPointer;
+                    return !typeAsArrayType.ParameterType.IsValueType && !typeAsArrayType.ParameterType.IsPointer;
                 else
                     return false;
             }
