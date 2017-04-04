@@ -403,6 +403,7 @@
     <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\String.Searching.cs" />
     <Compile Include="System\Array.cs" />
+    <Compile Include="System\Array.CoreRT.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Delegate.DefaultParameters.cs" />
