@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 
-using ILCompiler.DependencyAnalysisFramework;
-
 using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
@@ -277,8 +275,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags |= (UInt16)EETypeFlags.RelatedTypeViaIATFlag;
             }
-
-            // Todo: Generic Type Definition EETypes
 
             if (HasOptionalFields)
             {
@@ -740,9 +736,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (parameterizedType.IsArray)
                 {
-                    if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    if (parameterType.IsFunctionPointer)
                     {
-                        // Arrays of pointers and function pointers are not currently supported
+                        // Arrays of function pointers are not currently supported
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
