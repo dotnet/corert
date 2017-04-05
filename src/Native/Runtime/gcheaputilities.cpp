@@ -5,6 +5,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);

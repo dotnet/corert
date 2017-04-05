@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 #include "profheapwalkhelper.h"
 
 #ifdef FEATURE_STANDALONE_GC
@@ -242,7 +243,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
         return false;
 
     // Initialize HandleTable.
-    if (!GCHeapUtilities::GetGCHandleTable()->Initialize())
+    if (!GCHandleTableUtilities::GetGCHandleTable()->Initialize())
         return false;
 
     return true;
@@ -948,7 +949,7 @@ void RedhawkGCInterface::DestroyTypedHandle(void * handle)
 
 void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
 {
-    return (void*)GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], (Object*)pObject, type);
+    return (void*)GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], (Object*)pObject, type);
 }
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
