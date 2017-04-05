@@ -195,10 +195,9 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            // Returned type has to have a valid type handle value, unless it's a byref type
-            // (byref types don't have any associated EETypes in the runtime)
-            Debug.Assert(!type.RuntimeTypeHandle.IsNull() || (type is ByRefType));
-            return !type.RuntimeTypeHandle.IsNull() || (type is ByRefType);
+            // Returned type has to have a valid type handle value
+            Debug.Assert(!type.RuntimeTypeHandle.IsNull());
+            return !type.RuntimeTypeHandle.IsNull();
         }
 
         private TypeDesc GetConstructedTypeFromParserAndNativeLayoutContext(ref NativeParser parser, NativeLayoutInfoLoadContext nativeLayoutContext)
