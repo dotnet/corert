@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var item in _items)
             {
                 // Skip empty entries
-                if (item.Node.ShouldSkipEmittingObjectNode(factory))
+                if (!relocsOnly && item.Node.ShouldSkipEmittingObjectNode(factory))
                     continue;
 
                 builder.EmitInt((int)item.Id);

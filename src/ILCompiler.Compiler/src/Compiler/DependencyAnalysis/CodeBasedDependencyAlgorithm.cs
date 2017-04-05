@@ -32,7 +32,10 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(method);
                     MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (invokeStub != canonInvokeStub)
-                        dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    {
+                        dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
+                        factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
+                    }
                     else
                         dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
                 }
