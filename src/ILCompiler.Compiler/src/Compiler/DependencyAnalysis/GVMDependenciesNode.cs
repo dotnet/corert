@@ -44,14 +44,17 @@ namespace ILCompiler.DependencyAnalysis
             // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
             if (context.MetadataManager.IsReflectionInvokable(_method) && _method.IsAbstract)
             {
-                List<DependencyListEntry> dependencies = new List<DependencyListEntry>();
+                DependencyList dependencies = new DependencyList();
 
                 if (context.MetadataManager.HasReflectionInvokeStubForInvokableMethod(_method) && !_method.IsCanonicalMethod(CanonicalFormKind.Any))
                 {
                     MethodDesc invokeStub = context.MetadataManager.GetReflectionInvokeStub(_method);
                     MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (invokeStub != canonInvokeStub)
-                        dependencies.Add(new DependencyListEntry(context.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    {
+                        dependencies.Add(new DependencyListEntry(context.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
+                        context.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, context, canonInvokeStub);
+                    }
                     else
                         dependencies.Add(new DependencyListEntry(context.MethodEntrypoint(invokeStub), "Reflection invoke"));
                 }

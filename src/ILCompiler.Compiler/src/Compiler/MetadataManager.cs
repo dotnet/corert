@@ -46,6 +46,7 @@ namespace ILCompiler
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
+        internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
 
         public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
@@ -87,6 +88,9 @@ namespace ILCompiler
             var cctorContextMapNode = new ClassConstructorContextMap(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
 
+            DynamicInvokeTemplateData = new DynamicInvokeTemplateDataNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DynamicInvokeTemplateData), DynamicInvokeTemplateData, DynamicInvokeTemplateData, DynamicInvokeTemplateData.EndSymbol);
+            
             var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
 

@@ -98,6 +98,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             CreateInstantiatedSignature = 1,
             SaveEntryPoint = 2,
+            /// <summary>
+            /// IsUnboxingStub is not set for template methods (all template lookups performed at runtime are done with this flag not set,
+            /// since it can't always be conveniently computed for a concrete method before looking up its template).
+            /// </summary>
+            DisableUnboxingStub = 4
         }
 
         protected readonly MethodDesc _method;
@@ -221,7 +226,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
         {
-            unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
+            unboxingStub = (_flags & MethodEntryFlags.DisableUnboxingStub) != 0 ? false : _method.OwningType.IsValueType && !_method.Signature.IsStatic;
             IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
 
             return methodEntryPointNode;
@@ -667,7 +672,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateMethodSignatureVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutTemplateMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | MethodEntryFlags.SaveEntryPoint)
+            : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | MethodEntryFlags.SaveEntryPoint | MethodEntryFlags.DisableUnboxingStub)
         {
         }
 

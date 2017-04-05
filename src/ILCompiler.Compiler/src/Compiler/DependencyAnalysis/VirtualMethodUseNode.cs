@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            List<DependencyListEntry> dependencies = new List<DependencyListEntry>();
+            DependencyList dependencies = new DependencyList();
 
             // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
             // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
@@ -72,7 +72,10 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(_decl);
                     MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (invokeStub != canonInvokeStub)
-                        dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    {
+                        dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
+                        factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
+                    }
                     else
                         dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
                 }
