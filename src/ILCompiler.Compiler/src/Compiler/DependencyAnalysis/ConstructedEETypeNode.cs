@@ -157,39 +157,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
-            // Dependencies of the StaticsInfoHashTable and the ReflectionFieldAccessMap
-            if (_type is MetadataType)
-            {
-                MetadataType metadataType = (MetadataType)_type;
-
-                // NOTE: The StaticsInfoHashtable entries need to reference the gc and non-gc static nodes through an indirection cell.
-                // The StaticsInfoHashtable entries only exist for static fields on generic types.
-
-                if (metadataType.GCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode gcStatics = factory.TypeGCStaticsSymbol(metadataType);
-                    dependencyList.Add(_type.HasInstantiation ? factory.Indirection(gcStatics) : gcStatics, "GC statics indirection for StaticsInfoHashtable");
-                }
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode nonGCStatic = factory.TypeNonGCStaticsSymbol(metadataType);
-                    if (_type.HasInstantiation)
-                    {
-                        // The entry in the StaticsInfoHashtable points at the begining of the static fields data, so we need to add
-                        // the cctor context offset to the indirection cell.
-
-                        int cctorOffset = 0;
-                        if (factory.TypeSystemContext.HasLazyStaticConstructor(metadataType))
-                            cctorOffset += NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, metadataType);
-
-                        nonGCStatic = factory.Indirection(nonGCStatic, cctorOffset);
-                    }
-                    dependencyList.Add(nonGCStatic, "Non-GC statics indirection for StaticsInfoHashtable");
-                }
-
-                // TODO: TLS dependencies
-            }
-
             return dependencyList;
         }
 
