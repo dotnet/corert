@@ -1471,6 +1471,11 @@ bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* 
     return true;
 }
 
+bool GCToEEInterface::EagerFinalized(Object* obj)
+{
+    return false;
+}
+
 #endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
