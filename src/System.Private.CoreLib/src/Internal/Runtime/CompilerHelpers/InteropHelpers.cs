@@ -119,6 +119,29 @@ namespace Internal.Runtime.CompilerHelpers
             return result;
         }
 
+        internal static unsafe char* StringToUnicodeBuffer(String str)
+        {
+            if (str == null)
+                return null;
+
+            int stringLength = str.Length;
+
+            char* buffer = (char*)PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(sizeof(char) * (stringLength+1))).ToPointer();
+
+            fixed (char* pStr = str)
+            {
+                int size = stringLength * sizeof(char);
+                Buffer.MemoryCopy(pStr, buffer, size, size);
+                *(buffer + stringLength) = '\0';
+            }
+            return buffer;
+        }
+
+        public static unsafe string UnicodeBufferToString(char* buffer)
+        {
+            return new String(buffer);
+        }
+
         internal static char[] GetEmptyStringBuilderBuffer(StringBuilder sb)
         {
             // CORERT-TODO: Reuse buffer from string builder where possible?

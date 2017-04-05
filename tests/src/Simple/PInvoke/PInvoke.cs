@@ -36,8 +36,26 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiString(string str);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringOut(out string str);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringRef(ref string str);
+
+        [DllImport("*", EntryPoint = "VerifyAnsiStringRef", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringInRef([In]ref string str);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern int VerifyUnicodeString(string str);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern int VerifyUnicodeStringOut(out string str);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern int VerifyUnicodeStringRef(ref string str);
+
+        [DllImport("*", EntryPoint = "VerifyUnicodeStringRef", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern int VerifyUnicodeStringInRef([In]ref string str);
 
         [DllImport("*", CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string[] str);
@@ -226,6 +244,24 @@ namespace PInvokeTests
             Console.WriteLine("Testing marshalling string");
             ThrowIfNotEquals(1, VerifyAnsiString("Hello World"), "Ansi String marshalling failed.");
             ThrowIfNotEquals(1, VerifyUnicodeString("Hello World"), "Unicode String marshalling failed.");
+            string s;
+            ThrowIfNotEquals(1, VerifyAnsiStringOut(out s), "Out Ansi String marshalling failed");
+            ThrowIfNotEquals("Hello World", s, "Out Ansi String marshalling failed");
+
+            VerifyAnsiStringInRef(ref s);
+            ThrowIfNotEquals("Hello World", s, "In Ref ansi String marshalling failed");
+
+            VerifyAnsiStringRef(ref s);
+            ThrowIfNotEquals("Hello World!", s, "Ref ansi String marshalling failed");
+
+            ThrowIfNotEquals(1, VerifyUnicodeStringOut(out s), "Out Unicode String marshalling failed");
+            ThrowIfNotEquals("Hello World", s, "Out Unicode String marshalling failed");
+
+            VerifyUnicodeStringInRef(ref s);
+            ThrowIfNotEquals("Hello World", s, "In Ref Unicode String marshalling failed");
+
+            VerifyUnicodeStringRef(ref s);
+            ThrowIfNotEquals("Hello World!", s, "Ref Unicode String marshalling failed");
         }
 
         private static void TestStringBuilder()
