@@ -11,6 +11,7 @@ using System.Text;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -31,7 +32,7 @@ namespace ILCompiler
             set { _compilationUnitPrefix = SanitizeNameWithHash(value); }
             get
             {
-                System.Diagnostics.Debug.Assert(_compilationUnitPrefix != null);
+                Debug.Assert(_compilationUnitPrefix != null);
                 return _compilationUnitPrefix;
             }
         }
@@ -257,10 +258,13 @@ namespace ILCompiler
                         }
                         mangledName += NestMangledName(mangledInstantiation);
                     }
+                    else if (type is IPrefixMangledMethod)
+                    {
+                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type);
+                    }
                     else if (type is IPrefixMangledType)
                     {
-                        var prefixMangledType = (IPrefixMangledType)type;
-                        mangledName = NestMangledName(prefixMangledType.Prefix) + GetMangledTypeName(prefixMangledType.BaseType);
+                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type);
                     }
                     else
                     {
@@ -288,6 +292,32 @@ namespace ILCompiler
                 return mangledName;
 
             return ComputeMangledMethodName(method);
+        }
+
+        private string GetPrefixMangledTypeName(IPrefixMangledType prefixMangledType)
+        {
+            Debug.Assert(prefixMangledType != null);
+
+            string mangledName = NestMangledName(prefixMangledType.Prefix) + GetMangledTypeName(prefixMangledType.BaseType);
+
+            if (_mangleForCplusPlus)
+            {
+                mangledName = mangledName.Replace("::", "_");
+            }
+            return mangledName;            
+        }
+
+        private string GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMetod)
+        {
+            Debug.Assert(prefixMangledMetod != null);
+
+            string mangledName = NestMangledName(prefixMangledMetod.Prefix) + GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString();
+
+            if (_mangleForCplusPlus)
+            {
+                mangledName = mangledName.Replace("::", "_");
+            }
+            return mangledName;
         }
 
         private Utf8String ComputeMangledMethodName(MethodDesc method)
@@ -356,8 +386,11 @@ namespace ILCompiler
                 }
                 else if (method is IPrefixMangledMethod)
                 {
-                    var prefixMangledMetod = (IPrefixMangledMethod)method;
-                    mangledName = NestMangledName(prefixMangledMetod.Prefix) + GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString();
+                    mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)method);
+                }
+                else if (method is IPrefixMangledType)
+                {
+                    mangledName = GetPrefixMangledTypeName((IPrefixMangledType)method);
                 }
                 else
                 {
