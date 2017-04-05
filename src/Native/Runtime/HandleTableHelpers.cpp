@@ -13,12 +13,12 @@
 #include "gcenv.h"
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
-#include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
 {
-    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
 }
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocDependent, (Object *pPrimary, Object *pSecondary))
