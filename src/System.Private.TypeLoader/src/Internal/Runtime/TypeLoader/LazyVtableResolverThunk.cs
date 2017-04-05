@@ -14,6 +14,8 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.Runtime.CallConverter;
 
+using ArgIterator = Internal.Runtime.CallConverter.ArgIterator;
+
 namespace Internal.Runtime.TypeLoader
 {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
