@@ -105,7 +105,7 @@ namespace System
                 _offset = offset;
             }
 
-            public ref byte Value => ref Unsafe.Add<byte>(ref Unsafe.As<IntPtr, byte>(ref _target.m_pEEType), _offset);
+            public ref byte Value => ref Unsafe.Add<byte>(ref _target.GetRawData(), _offset);
 
             private readonly object _target;
             private readonly int _offset;
