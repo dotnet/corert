@@ -18,7 +18,7 @@
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
 {
-    return CreateTypedHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
 }
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocDependent, (Object *pPrimary, Object *pSecondary))
