@@ -26,6 +26,8 @@
             <NetCoreAppPackageVersion>2.0.0-beta-001663-00</NetCoreAppPackageVersion>
 
             <JitPackageVersion>2.0.0-preview1-25204-02</JitPackageVersion>
+            <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx.10.12-x64</JitNuPkgRid>
+            <JitNuPkgRid Condition="'$(JitNuPkgRid)'==''">$(NuPkgRid)</JitNuPkgRid>
 
             <MicrosoftNetCoreNativePackageVersion>2.0.0-beta-25021-03</MicrosoftNetCoreNativePackageVersion>
 
@@ -58,7 +60,7 @@
             <ILCompilerRepackageJitFiles Include="libclrjit.so" Condition="'$(OSGroup)'=='Linux'" />
             <ILCompilerRepackageJitFiles Include="libclrjit.dylib" Condition="'$(OSGroup)'=='OSX'" />
             <ILCompilerBinPlace Include="@(ILCompilerRepackageJitFiles)">
-                <Text><![CDATA[        <file src="packages/runtime.$(NuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(NuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
+                <Text><![CDATA[        <file src="packages/runtime.$(JitNuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(JitNuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <!-- Repackage the ObjectWriter dynamic library to workaround missing Ubuntu 16.04 build -->
