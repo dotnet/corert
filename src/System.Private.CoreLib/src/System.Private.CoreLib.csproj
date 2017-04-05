@@ -205,6 +205,7 @@
     <Compile Include="System\AggregateException.cs" />
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
+    <Compile Include="System\ArgIterator.cs" />
     <Compile Include="System\ArgumentException.cs" />
     <Compile Include="System\ArgumentOutOfRangeException.cs" />
     <Compile Include="System\ArraySegment.cs" />
@@ -315,6 +316,7 @@
     <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\Progress.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
+    <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
@@ -377,6 +379,7 @@
     <Compile Include="System\Runtime\InteropServices\UnmanagedType.cs" />
     <Compile Include="System\Runtime\InteropServices\VarEnum.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
+    <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <Compile Include="System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
     <Compile Include="System\SerializableAttribute.cs" />

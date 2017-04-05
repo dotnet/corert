@@ -38,7 +38,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            builder.EmitPointerReloc(GetTarget(factory, typeInstantiation, methodInstantiation, dictionary));
+            ISymbolNode target = GetTarget(factory, typeInstantiation, methodInstantiation, dictionary);
+            if (LookupResultReferenceType(factory) == GenericLookupResultReferenceType.ConditionalIndirect)
+            {
+                builder.EmitPointerRelocOrIndirectionReference(target);
+            }
+            else
+            {
+                builder.EmitPointerReloc(target);
+            }
         }
 
         public virtual GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
@@ -72,18 +80,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // We are getting a constructed type symbol because this might be something passed to newobj.
             TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
-            IEETypeNode typeNode = factory.ConstructedTypeSymbol(instantiatedType);
-
-            if (typeNode.RepresentsIndirectionCell)
-            {
-                // Imported eetype needs another indirection. Setting the lowest bit to indicate that.
-                Debug.Assert(LookupResultReferenceType(factory) == GenericLookupResultReferenceType.ConditionalIndirect);
-                return factory.Indirection(typeNode, 1);
-            }
-            else
-            {
-                return typeNode;
-            }
+            return factory.ConstructedTypeSymbol(instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -135,18 +132,7 @@ namespace ILCompiler.DependencyAnalysis
                 instantiatedType = instantiatedType.Instantiation[0];
 
             // We are getting a constructed type symbol because this might be something passed to newobj.
-            IEETypeNode typeNode = factory.ConstructedTypeSymbol(instantiatedType);
-
-            if (typeNode.RepresentsIndirectionCell)
-            {
-                // Imported eetype needs another indirection. Setting the lowest bit to indicate that.
-                Debug.Assert(LookupResultReferenceType(factory) == GenericLookupResultReferenceType.ConditionalIndirect);
-                return factory.Indirection(typeNode, 1);
-            }
-            else
-            {
-                return typeNode;
-            }
+            return factory.ConstructedTypeSymbol(instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -351,17 +337,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
-            ISymbolNode methodDictionaryNode = factory.MethodGenericDictionary(instantiatedMethod);
-            if (methodDictionaryNode.RepresentsIndirectionCell)
-            {
-                // Imported method dictionary needs another indirection. Setting the lowest bit to indicate that.
-                Debug.Assert(LookupResultReferenceType(factory) == GenericLookupResultReferenceType.ConditionalIndirect);
-                return factory.Indirection(methodDictionaryNode, 1);
-            }
-            else
-            {
-                return methodDictionaryNode;
-            }
+            return factory.MethodGenericDictionary(instantiatedMethod);
         }
 
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)

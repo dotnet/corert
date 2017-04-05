@@ -67,7 +67,8 @@ namespace Internal.TypeSystem.Ecma
                     wkt = WellKnownType.Void;
                     break;
                 case PrimitiveTypeCode.TypedReference:
-                    throw new NotSupportedException();
+                    wkt = WellKnownType.TypedReference;
+                    break;
                 default:
                     throw new BadImageFormatException();
             }

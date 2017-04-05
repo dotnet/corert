@@ -361,7 +361,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Left unsealed as array types must override.
         //
-        public override bool IsMultiDimensionalArray
+        public override bool IsVariableBoundArray
         {
             get
             {

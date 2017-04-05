@@ -16,8 +16,6 @@ namespace System
     {
         public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
 
-        public virtual bool IsMultiDimensionalArray { get { throw NotImplemented.ByDesign; } }
-
         [Intrinsic]
         public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(handle);
 

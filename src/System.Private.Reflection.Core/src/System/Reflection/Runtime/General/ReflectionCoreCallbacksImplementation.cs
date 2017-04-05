@@ -353,7 +353,7 @@ namespace System.Reflection.Runtime.General
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError);
 
-            offset = RuntimeAugments.ObjectHeaderSize;
+            offset = 0;
             Type targetType = target.GetType();
             for (int i = 0; i < flds.Length; i++)
             {

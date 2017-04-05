@@ -376,9 +376,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _typeGenericDictionaries = new NodeCache<TypeDesc, GenericDictionaryNode>(type =>
+            _typeGenericDictionaries = new NodeCache<TypeDesc, ISymbolNode>(type =>
             {
-                return new TypeGenericDictionaryNode(type);
+                if (CompilationModuleGroup.ContainsType(type))
+                {
+                    return new TypeGenericDictionaryNode(type);
+                }
+                else
+                {
+                    return new ImportedTypeGenericDictionaryNode(this, type);
+                }
             });
 
             _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(methodOrType =>
@@ -585,8 +592,8 @@ namespace ILCompiler.DependencyAnalysis
             return _methodGenericDictionaries.GetOrAdd(method);
         }
 
-        private NodeCache<TypeDesc, GenericDictionaryNode> _typeGenericDictionaries;
-        public GenericDictionaryNode TypeGenericDictionary(TypeDesc type)
+        private NodeCache<TypeDesc, ISymbolNode> _typeGenericDictionaries;
+        public ISymbolNode TypeGenericDictionary(TypeDesc type)
         {
             return _typeGenericDictionaries.GetOrAdd(type);
         }
