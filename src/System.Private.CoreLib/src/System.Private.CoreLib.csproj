@@ -379,6 +379,7 @@
     <Compile Include="System\Runtime\InteropServices\UnmanagedType.cs" />
     <Compile Include="System\Runtime\InteropServices\VarEnum.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
+    <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <Compile Include="System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
     <Compile Include="System\SerializableAttribute.cs" />
