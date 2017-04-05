@@ -2,26 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-using System;
 using System.Reflection;
-using System.Diagnostics.Contracts;
-using System.IO;
-using System.Runtime.Versioning;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Threading;
+using Internal.Reflection.Augments;
 
 // This type is just stubbed out to be harmonious with CoreCLR
 namespace System.Runtime.Loader
 {
     public abstract class AssemblyLoadContext
     {
-        public static Assembly[] GetLoadedAssemblies()
-        {
-            throw new NotImplementedException();
-        }
+        public static Assembly[] GetLoadedAssemblies() => ReflectionAugments.ReflectionCoreCallbacks.GetLoadedAssemblies(); 
 
         // These events are never called
         public static event AssemblyLoadEventHandler AssemblyLoad;

@@ -78,6 +78,7 @@ namespace Internal.Reflection.Execution
 
         partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
         partial void BindEcmaAssemblyName(AssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref bool resultBoolean);
+        partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
 
         public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
         {
@@ -150,6 +151,25 @@ namespace Internal.Reflection.Execution
             }
 
             return true;
+        }
+
+        public sealed override IList<AssemblyBindResult> GetLoadedAssemblies()
+        {
+            List<AssemblyBindResult> loadedAssemblies = new List<AssemblyBindResult>(ScopeGroups.Length);
+            foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> group in ScopeGroups)
+            {
+                ScopeDefinitionGroup scopeDefinitionGroup = group.Value;
+
+                AssemblyBindResult result = default(AssemblyBindResult);
+                result.Reader = scopeDefinitionGroup.CanonicalScope.Reader;
+                result.ScopeDefinitionHandle = scopeDefinitionGroup.CanonicalScope.Handle;
+                result.OverflowScopes = scopeDefinitionGroup.OverflowScopes;
+                loadedAssemblies.Add(result);
+            }
+
+            InsertEcmaLoadedAssemblies(loadedAssemblies);
+
+            return loadedAssemblies;
         }
 
         //
