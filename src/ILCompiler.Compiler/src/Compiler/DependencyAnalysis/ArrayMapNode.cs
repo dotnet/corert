@@ -58,7 +58,8 @@ namespace ILCompiler.DependencyAnalysis
                 if (!factory.MetadataManager.TypeGeneratesEEType(arrayType))
                     continue;
 
-                // TODO: This should only be emitted for arrays of value types. The type loader builds everything else.
+                if (!arrayType.ElementType.IsValueType)
+                    continue;
 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
                 IEETypeNode arrayTypeSymbol = factory.NecessaryTypeSymbol(arrayType);
