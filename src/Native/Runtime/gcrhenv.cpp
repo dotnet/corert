@@ -1471,6 +1471,11 @@ bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* 
     return true;
 }
 
+bool GCToEEInterface::ForceFullGCToBeBlocking()
+{
+    return false;
+}
+
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     return false;
