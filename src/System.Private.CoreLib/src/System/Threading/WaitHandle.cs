@@ -144,14 +144,18 @@ namespace System.Threading
         /// property is publically modifiable, this makes sure that we add and release refs one the same set of safe wait
         /// handles to keep them alive during a multi-wait operation.
         /// </summary>
-        private static SafeWaitHandle[] ObtainSafeWaitHandles(RuntimeThread currentThread, WaitHandle[] waitHandles)
+        private static SafeWaitHandle[] ObtainSafeWaitHandles(
+            RuntimeThread currentThread,
+            WaitHandle[] waitHandles,
+            out SafeWaitHandle[] rentedSafeWaitHandles)
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(waitHandles != null);
             Debug.Assert(waitHandles.Length > 0);
             Debug.Assert(waitHandles.Length <= MaxWaitHandles);
 
-            SafeWaitHandle[] safeWaitHandles = currentThread.GetWaitedSafeWaitHandleArray(waitHandles.Length);
+            rentedSafeWaitHandles = currentThread.RentWaitedSafeWaitHandleArray(waitHandles.Length);
+            SafeWaitHandle[] safeWaitHandles = rentedSafeWaitHandles ?? new SafeWaitHandle[waitHandles.Length];
             bool success = false;
             try
             {
@@ -187,6 +191,12 @@ namespace System.Threading
                             break;
                         }
                         safeWaitHandle.DangerousRelease();
+                        safeWaitHandles[i] = null;
+                    }
+
+                    if (rentedSafeWaitHandles != null)
+                    {
+                        currentThread.ReturnWaitedSafeWaitHandleArray(rentedSafeWaitHandles);
                     }
                 }
             }
@@ -224,7 +234,8 @@ namespace System.Threading
             Contract.EndContractBlock();
 
             RuntimeThread currentThread = RuntimeThread.CurrentThread;
-            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles);
+            SafeWaitHandle[] rentedSafeWaitHandles;
+            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles, out rentedSafeWaitHandles);
             try
             {
                 return WaitAllCore(currentThread, safeWaitHandles, waitHandles, millisecondsTimeout);
@@ -235,6 +246,11 @@ namespace System.Threading
                 {
                     safeWaitHandles[i].DangerousRelease();
                     safeWaitHandles[i] = null;
+                }
+
+                if (rentedSafeWaitHandles != null)
+                {
+                    currentThread.ReturnWaitedSafeWaitHandleArray(rentedSafeWaitHandles);
                 }
             }
         }
@@ -276,7 +292,8 @@ namespace System.Threading
             Contract.EndContractBlock();
 
             RuntimeThread currentThread = RuntimeThread.CurrentThread;
-            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles);
+            SafeWaitHandle[] rentedSafeWaitHandles;
+            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles, out rentedSafeWaitHandles);
             try
             {
                 return WaitAnyCore(currentThread, safeWaitHandles, waitHandles, millisecondsTimeout);
@@ -287,6 +304,11 @@ namespace System.Threading
                 {
                     safeWaitHandles[i].DangerousRelease();
                     safeWaitHandles[i] = null;
+                }
+
+                if (rentedSafeWaitHandles != null)
+                {
+                    currentThread.ReturnWaitedSafeWaitHandleArray(rentedSafeWaitHandles);
                 }
             }
         }
