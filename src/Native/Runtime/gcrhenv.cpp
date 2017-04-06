@@ -72,6 +72,7 @@
 
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
+#include "DebuggerHook.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -920,6 +921,8 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
 void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
 {
+    DebuggerHook::OnBeforeGcCollection();
+    
     // Invoke any registered callouts for the start of the collection.
     RestrictedCallouts::InvokeGcCallouts(GCRC_StartCollection, condemned);
 }

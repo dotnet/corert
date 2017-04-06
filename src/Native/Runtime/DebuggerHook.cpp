@@ -11,6 +11,8 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
 #ifndef DACCESS_COMPILE
 
+/* static */ DebuggerProtectedBufferList* DebuggerHook::s_debuggerProtectedBuffers = nullptr;
+
 // TODO: Tab to space, overall, just to make sure I will actually do it :)
 // TODO: This structure needs to match with DBI
 struct FuncEvalParameterCommand
@@ -54,6 +56,8 @@ struct GcProtectionRequest
             {
                 // If the request requires extra memory, allocate for it
                 requests[i].address = (uint64_t)new (nothrow) uint8_t[requests[i].size];
+
+                // The debugger will handle the case when address is nullptr (we have to break our promise)
             }
         }
 
@@ -66,7 +70,19 @@ struct GcProtectionRequest
         {
             if (requests[i].type == 1)
             {
-                // What shall I do?
+                // TODO: Release them when there should be gone
+                DebuggerProtectedBufferList* tail = DebuggerHook::s_debuggerProtectedBuffers;
+                s_debuggerProtectedBuffers = new (std::nothrow) DebuggerProtectedBufferList();
+                if (s_debuggerProtectedBuffers == nullptr)
+                {
+                    // TODO: We cannot handle the debugger request to protect a buffer (we have to break our promise)
+                }
+                else
+                {
+                    s_debuggerProtectedBuffers->address = requests[i].address;
+                    s_debuggerProtectedBuffers->size = requests[i].size;
+                    s_debuggerProtectedBuffers->next = tail;
+                }
             }
         }
 

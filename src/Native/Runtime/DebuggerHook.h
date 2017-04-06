@@ -17,10 +17,18 @@
 
 #ifndef DACCESS_COMPILE
 
+struct DebuggerProtectedBufferList
+{
+    UInt64 address;
+    UInt16 size;
+    struct DebuggerProtectedBufferList* next;
+};
+
 class DebuggerHook
 {
 public:
-	static void OnBeforeGcCollection();
+    static void OnBeforeGcCollection();
+    static DebuggerProtectedBufferList* s_debuggerProtectedBuffers;
 };
 
 #endif //!DACCESS_COMPILE
