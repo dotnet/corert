@@ -1058,15 +1058,12 @@ namespace Internal.Runtime.TypeLoader
                 requireVtableSlotMapping = true;
                 pTemplateEEType = null;
             }
-#if !PROJECTN
-            else if (type.IsSzArray && ((ArrayType)type).ElementType.IsPointer)
+            else if (type.IsMdArray || (type.IsSzArray && ((ArrayType)type).ElementType.IsPointer))
             {
-                pTemplateEEType = typeof(void*[]).TypeHandle.ToEETypePtr();
-                requireVtableSlotMapping = false;
-            }
-#endif
-            else if (type.IsMdArray)
-            {
+                // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and
+                // we don't need to do much for them in terms of type building. We can pretty much just take
+                // the EEType for any of those, massage the bits that matter (GCDesc, element type,
+                // component size,...) to be of the right shape and we're done.
                 pTemplateEEType = typeof(object[,]).TypeHandle.ToEETypePtr();
                 requireVtableSlotMapping = false;
             }
