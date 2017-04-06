@@ -943,6 +943,7 @@ namespace Internal.TypeSystem.Interop
                 _elementMarshaller = CreateMarshaller(ElementMarshallerKind);
                 _elementMarshaller.MarshallerKind = ElementMarshallerKind;
                 _elementMarshaller.MarshallerType = MarshallerType.Element;
+                _elementMarshaller.InteropStateManager = InteropStateManager;
                 _elementMarshaller.Return = Return;
                 _elementMarshaller.Context = Context;
                 _elementMarshaller.ManagedType = ((ArrayType)ManagedType).ElementType;
@@ -1051,10 +1052,7 @@ namespace Internal.TypeSystem.Interop
             EmitElementCount(codeStream, MarshalDirection.Forward);
 
             TypeDesc nativeElementType = ((PointerType)NativeType).ParameterType;
-            if (nativeElementType.IsPrimitive)
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
-            else
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
+            codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
 
             codeStream.Emit(ILOpcode.mul_ovf);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
@@ -1093,10 +1091,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitStLoc(vLength);
 
             TypeDesc nativeElementType = ((PointerType)NativeType).ParameterType;
-            if (nativeElementType.IsPrimitive)
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
-            else
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
+            codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
 
             codeStream.EmitStLoc(vSizeOf);
 
@@ -1153,11 +1148,7 @@ namespace Internal.TypeSystem.Interop
             EmitElementCount(codeStream, MarshalDirection.Reverse);
 
             codeStream.EmitStLoc(vLength);
-
-            if (nativeElementType.IsPrimitive)
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
-            else
-                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
+            codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
 
             codeStream.EmitStLoc(vSizeOf);
 
@@ -1235,13 +1226,9 @@ namespace Internal.TypeSystem.Interop
 
                 ArrayType arrayType = (ArrayType)ManagedType;
 
-                var elementType = arrayType.ElementType;
-
+                var nativeElementType = ((PointerType)NativeType).ParameterType;
                 // calculate sizeof(array[i])
-                if (elementType.IsPrimitive)
-                    codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
-                else
-                    codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(nativeElementType));
 
                 codeStream.EmitStLoc(vSizeOf);
 
@@ -1262,7 +1249,7 @@ namespace Internal.TypeSystem.Interop
 
                 codeStream.EmitLabel(lLoopHeader);
                 codeStream.EmitLdLoc(vNativeTemp);
-                codeStream.EmitLdInd(elementType);
+                codeStream.EmitLdInd(nativeElementType);
                 // generate cleanup code for this element
                 elementMarshaller.EmitElementCleanup(codeStream, emitter);
 

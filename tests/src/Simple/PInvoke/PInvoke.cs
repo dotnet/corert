@@ -110,6 +110,9 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest_Nested(NestedStruct ns);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest_Array(SequentialStruct []ns, int length);
+
         [StructLayout(LayoutKind.Sequential, CharSet= CharSet.Ansi, Pack = 4)]
         public unsafe struct InlineArrayStruct
         {
@@ -438,6 +441,16 @@ namespace PInvokeTests
             ns.f1 = 100;
             ns.f2 = es;
             ThrowIfNotEquals(true, StructTest_Nested(ns), "Struct marshalling scenario5 failed.");
+
+            SequentialStruct[] ssa = new SequentialStruct[3];
+            for (int i = 0; i < 3; i++)
+            {
+                ssa[i].f1 = 0;
+                ssa[i].f1 = i;
+                ssa[i].f2 = i*i;
+                ssa[i].f3 = i.ToString(); 
+            }
+            ThrowIfNotEquals(true, StructTest_Array(ssa, ssa.Length), "Array of struct marshalling failed");
 
             InlineArrayStruct ias = new InlineArrayStruct();
             ias.inlineArray = new short[128];
