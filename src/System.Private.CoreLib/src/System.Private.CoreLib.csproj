@@ -252,7 +252,7 @@
     <Compile Include="System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
     <Compile Include="System\IO\FileAccess.cs" />
-    <Compile Include="System\IO\FileLoadException.cs" />
+    <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\FileMode.cs" />
     <Compile Include="System\IO\FileNotFoundException.cs" />
     <Compile Include="System\IO\FileShare.cs" />

@@ -1176,6 +1176,9 @@
   <data name="IO_FileLoad" xml:space="preserve">
     <value>Could not load the specified file.</value>
   </data>
+  <data name="IO_FileLoad_FileName" xml:space="preserve">
+    <value>Could not load the file '{0}'.</value>
+  </data>
   <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
     <value>Could not find a part of the path.</value>
   </data>
