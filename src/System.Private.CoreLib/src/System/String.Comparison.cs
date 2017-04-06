@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -996,6 +997,9 @@ namespace System
         // they will return the same hash code.
         public override int GetHashCode()
         {
+#if FEATURE_RANDOMIZED_STRING_HASHING
+            return (int)Marvin.ComputeStringHash(ref Unsafe.As<char, byte>(ref _firstChar), (uint)(_stringLength * 2), Marvin.DefaultSeed);
+#else
             unsafe
             {
                 fixed (char* src = &_firstChar)
@@ -1038,6 +1042,7 @@ namespace System
                     return hash1 + (hash2 * 1566083941);
                 }
             }
+#endif // FEATURE_RANDOMIZED_STRING_HASHING
         }
 
         // Determines whether a specified string is a prefix of the current instance
