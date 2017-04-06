@@ -289,35 +289,69 @@ namespace Internal.TypeSystem.Ecma
             return arguments;
         }
 
-        public MarshalAsDescriptor ParseMarshalAsDescriptor(bool isParameter)
+        public MarshalAsDescriptor ParseMarshalAsDescriptor()
         {
             Debug.Assert(_reader.RemainingBytes != 0);
 
             NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
             NativeTypeKind arraySubType = NativeTypeKind.Invalid;
-            uint? paramNum = null , numElem = null;
-            
-            if (type == NativeTypeKind.Array)
+            uint? paramNum = null, numElem = null;
+
+            switch (type)
             {
-                if (_reader.RemainingBytes != 0)
-                {
-                   arraySubType = (NativeTypeKind)_reader.ReadByte();
-                }
+                case NativeTypeKind.Array:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            arraySubType = (NativeTypeKind)_reader.ReadByte();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            paramNum = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            int flag = _reader.ReadCompressedInteger();
+                            if (flag == 0)
+                            {
+                                paramNum = null; //paramNum is just a place holder so that numElem can be present
+                            }
+                        }
+
+                    }
+                    break;
+                case NativeTypeKind.ByValArray:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            arraySubType = (NativeTypeKind)_reader.ReadByte();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.ByValTStr:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
 
-            if (isParameter)
-            {
-                if (_reader.RemainingBytes != 0)
-                {
-                    paramNum = (uint)_reader.ReadCompressedInteger();
-                }
-            }
-
-            if (_reader.RemainingBytes != 0)
-            {
-                numElem = (uint)_reader.ReadCompressedInteger();
-            }
-            
             Debug.Assert(_reader.RemainingBytes == 0);
 
             return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem);
