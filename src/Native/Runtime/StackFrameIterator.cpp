@@ -19,6 +19,7 @@
 #include "Crst.h"
 #include "RWLock.h"
 #include "event.h"
+#include "thread.inl"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "stressLog.h"

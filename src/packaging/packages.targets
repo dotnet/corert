@@ -129,6 +129,7 @@
             <ILCompilerAnyFrameworkFiles Include="System.Collections.NonGeneric" />
             <ILCompilerAnyFrameworkFiles Include="System.Console" />
             <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.Tools" />
+            <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.Tracing" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization.Calendars" />
             <ILCompilerAnyFrameworkFiles Include="System.IO" />
@@ -164,8 +165,6 @@
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'!='Windows_NT'"/>
 
             <!-- End: Libraries with netcoreapp1.2corert configuration -->
-
-            <ILCompilerFrameworkFiles Include="runtime.aot.System.Diagnostics.Tracing/$(CoreFxPackageVersion)/runtimes/aot/lib/netcore50/System.Diagnostics.Tracing.dll" />
 
             <ILCompilerFrameworkFiles Include="System.Threading/$(CoreFxPackageVersion)/lib/netstandard1.7/System.Threading.dll" />
 

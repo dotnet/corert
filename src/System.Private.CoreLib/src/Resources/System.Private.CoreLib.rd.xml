@@ -94,6 +94,22 @@
           </Method>
         </Type>
       </Namespace>
+      <Namespace Name="System.Diagnostics.Tracing">
+        <Type Name="EventSourceAttribute" Dynamic="Required All">
+          <AttributeImplies Serialize="Required Public"/>
+        </Type>
+        <Type Name="EventDataAttribute" Dynamic="Required All">
+          <AttributeImplies Serialize="Required Public"/>
+        </Type>
+        <Type Name="EventAttribute" Dynamic="Required All"/>
+        <Type Name="EventSource">
+          <Method Name="Write{T}">
+            <GenericParameter Name="T" Serialize="Required Public"/>
+          </Method>
+          <Subtypes Dynamic="Required Public"/>
+        </Type>
+        <Type Name="PropertyValue.ReferenceTypeHelper{System.Object}" Dynamic="Required Public"/>
+      </Namespace>
     </Assembly>
     
     <!-- ResourceManager lights up WindowsRuntimeResourceManager with reflection -->
