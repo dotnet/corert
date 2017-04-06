@@ -233,6 +233,12 @@ namespace System.IO
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
+        [Obsolete("CreateWaitHandle will be removed eventually.  Please use \"new ManualResetEvent(false)\" instead.")]
+        protected virtual WaitHandle CreateWaitHandle()
+        {
+            return new ManualResetEvent(initialState: false);
+        }
+
         public Task<int> ReadAsync(Byte[] buffer, int offset, int count)
         {
             return ReadAsync(buffer, offset, count, CancellationToken.None);
@@ -364,6 +370,22 @@ namespace System.IO
             Write(oneByteArray, 0, 1);
         }
 
+        public static Stream Synchronized(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            if (stream is SyncStream)
+                return stream;
+
+            return new SyncStream(stream);
+        }
+
+        [Obsolete("Do not call or override this method.")]
+        protected virtual void ObjectInvariant()
+        {
+        }
+
         private sealed class NullStream : Stream
         {
             internal NullStream() { }
@@ -486,6 +508,234 @@ namespace System.IO
 
             public override void SetLength(long length)
             {
+            }
+        }
+
+        // SyncStream is a wrapper around a stream that takes 
+        // a lock for every operation making it thread safe.
+        [Serializable]
+        private sealed class SyncStream : Stream, IDisposable
+        {
+            private Stream _stream;
+
+            internal SyncStream(Stream stream)
+            {
+                if (stream == null)
+                    throw new ArgumentNullException(nameof(stream));
+
+                _stream = stream;
+            }
+
+            public override bool CanRead
+            {
+                [Pure]
+                get { return _stream.CanRead; }
+            }
+
+            public override bool CanWrite
+            {
+                [Pure]
+                get { return _stream.CanWrite; }
+            }
+
+            public override bool CanSeek
+            {
+                [Pure]
+                get { return _stream.CanSeek; }
+            }
+
+            public override bool CanTimeout
+            {
+                [Pure]
+                get
+                {
+                    return _stream.CanTimeout;
+                }
+            }
+
+            public override long Length
+            {
+                get
+                {
+                    lock (_stream)
+                    {
+                        return _stream.Length;
+                    }
+                }
+            }
+
+            public override long Position
+            {
+                get
+                {
+                    lock (_stream)
+                    {
+                        return _stream.Position;
+                    }
+                }
+                set
+                {
+                    lock (_stream)
+                    {
+                        _stream.Position = value;
+                    }
+                }
+            }
+
+            public override int ReadTimeout
+            {
+                get
+                {
+                    return _stream.ReadTimeout;
+                }
+                set
+                {
+                    _stream.ReadTimeout = value;
+                }
+            }
+
+            public override int WriteTimeout
+            {
+                get
+                {
+                    return _stream.WriteTimeout;
+                }
+                set
+                {
+                    _stream.WriteTimeout = value;
+                }
+            }
+
+            // In the off chance that some wrapped stream has different 
+            // semantics for Close vs. Dispose, let's preserve that.
+            public override void Close()
+            {
+                lock (_stream)
+                {
+                    try
+                    {
+                        _stream.Close();
+                    }
+                    finally
+                    {
+                        base.Dispose(true);
+                    }
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                lock (_stream)
+                {
+                    try
+                    {
+                        // Explicitly pick up a potentially methodimpl'ed Dispose
+                        if (disposing)
+                            ((IDisposable)_stream).Dispose();
+                    }
+                    finally
+                    {
+                        base.Dispose(disposing);
+                    }
+                }
+            }
+
+            public override void Flush()
+            {
+                lock (_stream)
+                    _stream.Flush();
+            }
+
+            public override int Read(byte[] bytes, int offset, int count)
+            {
+                lock (_stream)
+                    return _stream.Read(bytes, offset, count);
+            }
+
+            public override int ReadByte()
+            {
+                lock (_stream)
+                    return _stream.ReadByte();
+            }
+
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
+            {
+                throw new NotImplementedException();
+                //bool overridesBeginRead = _stream.HasOverriddenBeginEndRead();
+
+                //lock (_stream)
+                //{
+                //    // If the Stream does have its own BeginRead implementation, then we must use that override.
+                //    // If it doesn't, then we'll use the base implementation, but we'll make sure that the logic
+                //    // which ensures only one asynchronous operation does so with an asynchronous wait rather
+                //    // than a synchronous wait.  A synchronous wait will result in a deadlock condition, because
+                //    // the EndXx method for the outstanding async operation won't be able to acquire the lock on
+                //    // _stream due to this call blocked while holding the lock.
+                //    return overridesBeginRead ?
+                //        _stream.BeginRead(buffer, offset, count, callback, state) :
+                //        _stream.BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
+                //}
+            }
+
+            public override int EndRead(IAsyncResult asyncResult)
+            {
+                if (asyncResult == null)
+                    throw new ArgumentNullException(nameof(asyncResult));
+
+                lock (_stream)
+                    return _stream.EndRead(asyncResult);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                lock (_stream)
+                    return _stream.Seek(offset, origin);
+            }
+
+            public override void SetLength(long length)
+            {
+                lock (_stream)
+                    _stream.SetLength(length);
+            }
+
+            public override void Write(byte[] bytes, int offset, int count)
+            {
+                lock (_stream)
+                    _stream.Write(bytes, offset, count);
+            }
+
+            public override void WriteByte(byte b)
+            {
+                lock (_stream)
+                    _stream.WriteByte(b);
+            }
+
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
+            {
+                throw new NotImplementedException();
+                //bool overridesBeginWrite = _stream.HasOverriddenBeginEndWrite();
+
+                //lock (_stream)
+                //{
+                //    // If the Stream does have its own BeginWrite implementation, then we must use that override.
+                //    // If it doesn't, then we'll use the base implementation, but we'll make sure that the logic
+                //    // which ensures only one asynchronous operation does so with an asynchronous wait rather
+                //    // than a synchronous wait.  A synchronous wait will result in a deadlock condition, because
+                //    // the EndXx method for the outstanding async operation won't be able to acquire the lock on
+                //    // _stream due to this call blocked while holding the lock.
+                //    return overridesBeginWrite ?
+                //        _stream.BeginWrite(buffer, offset, count, callback, state) :
+                //        _stream.BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
+                //}
+            }
+
+            public override void EndWrite(IAsyncResult asyncResult)
+            {
+                if (asyncResult == null)
+                    throw new ArgumentNullException(nameof(asyncResult));
+
+                lock (_stream)
+                    _stream.EndWrite(asyncResult);
             }
         }
     }
