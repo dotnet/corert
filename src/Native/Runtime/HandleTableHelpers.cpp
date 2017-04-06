@@ -23,7 +23,7 @@ COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocDependent, (Object *pPrimary, Object *pSecondary))
 {
-    return CreateDependentHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pPrimary, pSecondary);
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateDependentHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pPrimary, pSecondary);
 }
 
 COOP_PINVOKE_HELPER(void, RhHandleFree, (OBJECTHANDLE handle))
