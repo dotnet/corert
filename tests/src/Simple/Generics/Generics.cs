@@ -1357,29 +1357,38 @@ class Program
         public class DynamicBase<T>
         {
             public T _t;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public DynamicBase() {}
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public int SimpleMethod()
             {
                 return 123;
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public int MethodWithTInSig(T t)
             {
                 _t = t;
                 return 234;
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public virtual string VirtualMethod(T t)
             {
                 _t = t;
                 return "DynamicBase<T>.VirtualMethod";
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public string GenericMethod<U>(T t, U u)
             {
                 _t = t;
                 return typeof(U).ToString() + u.ToString();
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public virtual string GenericVirtualMethod<U>(T t, U u)
             {
                 _t = t;
@@ -1389,12 +1398,17 @@ class Program
 
         public class DynamicDerived<T> : DynamicBase<T>
         {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public DynamicDerived() {}
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public override string VirtualMethod(T t)
             {
                 _t = t;
                 return "DynamicDerived<T>.VirtualMethod";
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public override string GenericVirtualMethod<U>(T t, U u)
             {
                 _t = t;
