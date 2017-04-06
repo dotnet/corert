@@ -281,7 +281,7 @@ class Program
             public string MakeGenString<U>()
             {
                 // Use a constructed type that is not used elsewhere
-                return typeof(T[,,]).GetElementType().Name + ", " + 
+                return typeof(T[,,]).GetElementType().Name + ", " +
                     typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
             }
         }
@@ -1039,13 +1039,13 @@ class Program
     {
         class Gen1<T>
         {
-            public Gen1(T t) {}
+            public Gen1(T t) { }
         }
 
         public static void Run()
         {
             Gen1<object[]>[] g1 = new Gen1<object[]>[1];
-            g1[0] = new Gen1<object[]>(new object[] {new object[1]});
+            g1[0] = new Gen1<object[]>(new object[] { new object[1] });
 
             Gen1<object[][]> g2 = new Gen1<object[][]>(new object[1][]);
         }
@@ -1353,6 +1353,22 @@ class Program
             public object m_objectField;
         }
 
+        class UnconstructedTypeWithGCStatics
+        {
+#pragma warning disable 169
+            static string s_gcField;
+#pragma warning restore
+        }
+
+        class UnconstructedTypeWithNonGCStatics
+        {
+#pragma warning disable 169
+            static float s_nonGcField;
+#pragma warning restore
+        }
+
+        class UnconstructedTypeInstantiator<T> { }
+
         public static int s_FooClassTypeCctorCount = 0;
         public static int s_FooStructTypeCctorCount = 0;
         public static int s_BarCctorCount = 0;
@@ -1627,11 +1643,20 @@ class Program
             }
         }
 
+        private static void TestUnconstructedTypes()
+        {
+            // Testing for compilation failures due to references to unused static bases
+            // See: https://github.com/dotnet/corert/issues/3211
+            var a = typeof(UnconstructedTypeInstantiator<UnconstructedTypeWithGCStatics>).ToString();
+            var b = typeof(UnconstructedTypeInstantiator<UnconstructedTypeWithNonGCStatics>).ToString();
+        }
+
         public static void Run()
         {
             TestStaticFields();
             TestInstanceFields();
             TestDynamicStaticFields();
+            TestUnconstructedTypes();
 
             if (s_NumErrors != 0)
                 throw new Exception(s_NumErrors + " errors!");
