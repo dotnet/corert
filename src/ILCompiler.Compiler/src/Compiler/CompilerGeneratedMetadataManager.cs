@@ -84,6 +84,20 @@ namespace ILCompiler
             return _metadataPolicy.IsBlocked(type);
         }
 
+        public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
+        {
+            // Until cross module references are understood, and reported by ComputeMetadata
+            // return false here.
+            return false;
+        }
+
+        public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
+        {
+            // Until cross module references are understood, and reported by ComputeMetadata
+            // return false here.
+            return false;
+        }
+
         protected override void ComputeMetadata(NodeFactory factory,
                                                 out byte[] metadataBlob, 
                                                 out List<MetadataMapping<MetadataType>> typeMappings,

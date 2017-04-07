@@ -82,8 +82,8 @@ namespace ILCompiler.DependencyAnalysis
                     flags = FieldTableFlags.Instance | FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
 
-                // TODO: support emitting field info without a handle for generics in multifile
-                flags |= FieldTableFlags.HasMetadataHandle;
+                if (fieldMapping.MetadataHandle != 0)
+                    flags |= FieldTableFlags.HasMetadataHandle;
 
                 if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                     flags |= FieldTableFlags.IsUniversalCanonicalEntry;
@@ -105,7 +105,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    // No metadata handle means we need to store name
+                    vertex = writer.GetTuple(vertex,
+                        writer.GetStringConstant(field.Name));
                 }
 
                 if ((flags & FieldTableFlags.IsUniversalCanonicalEntry) != 0)

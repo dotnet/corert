@@ -18,7 +18,6 @@ class TypeManager
     UInt8*                      m_pStaticsGCDataSection;
     UInt8*                      m_pThreadStaticsDataSection;
     UInt32*                     m_pTlsIndex;  // Pointer to TLS index if this module uses thread statics 
-    UInt32                      m_managedTlsStartOffset; // Start offset for managed TLS data
 
     TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader);
 

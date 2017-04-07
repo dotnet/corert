@@ -53,14 +53,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                if (_isThreadStatic)
-                {
-                    return utcNodeFactory.CanonicalGCStaticDescRegion;
-                }
-                else
-                {
-                    return utcNodeFactory.CanonicalThreadStaticGCDescRegion;
-                }
+                return null;
             }
             else
             {
@@ -91,7 +84,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory factory)
         {
-            Region(factory).AddEmbeddedObject(this);
+            GCStaticDescRegionNode region = Region(factory);
+            if (region != null)
+                region.AddEmbeddedObject(this);
         }
 
         public override bool StaticDependenciesAreComputed
@@ -100,15 +95,24 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return true;
             }
-        }               
+        }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            bool refersToGCStaticsSymbol = !_type.IsCanonicalSubtype(CanonicalFormKind.Any);
-            DependencyListEntry[] result = new DependencyListEntry[refersToGCStaticsSymbol ? 2 : 1];           
-            result[0] = new DependencyListEntry(Region(factory), "GCStaticDesc Region");
-            if (refersToGCStaticsSymbol)
+            DependencyListEntry[] result;
+            if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                result = new DependencyListEntry[2];
+                result[0] = new DependencyListEntry(Region(factory), "GCStaticDesc Region");
                 result[1] = new DependencyListEntry(GCStaticsSymbol(factory), "GC Static Base Symbol");
+            }
+            else
+            {
+                Debug.Assert(Region(factory) == null);
+                result = new DependencyListEntry[1];
+                result[0] = new DependencyListEntry(((UtcNodeFactory)factory).StandaloneGCStaticDescRegion(this), "Standalone GCStaticDesc holder");
+            }
+
             return result;
         }
 
@@ -134,18 +138,20 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (i == _gcMap.Size - 1 || !_gcMap[i + 1])
                 {
-                    // The cell ends the current series
-                    builder.EmitInt(gcFieldCount);
-
                     if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
-                        builder.EmitInt(0);
+                        // The cell ends the current series
+                        builder.EmitInt(gcFieldCount * factory.Target.PointerSize);
+                        builder.EmitInt(startIndex * factory.Target.PointerSize);
                     }
                     else
                     {
+                        // The cell ends the current series
+                        builder.EmitInt(gcFieldCount);
+
                         if (_isThreadStatic)
                         {
-                            builder.EmitReloc((factory as UtcNodeFactory).TlsStart, RelocType.IMAGE_REL_SECREL, startIndex * factory.Target.PointerSize);
+                            builder.EmitReloc(factory.TypeThreadStaticsSymbol(_type), RelocType.IMAGE_REL_SECREL, startIndex * factory.Target.PointerSize);
                         }
                         else
                         {
@@ -187,6 +193,40 @@ namespace ILCompiler.DependencyAnalysis
                 node.EncodeData(ref builder, factory, relocsOnly);
                 builder.AddSymbol(node);
             }
+        }
+    }
+
+    public class StandaloneGCStaticDescRegionNode : ObjectNode
+    {
+        GCStaticDescNode _standaloneGCStaticDesc;
+
+        public StandaloneGCStaticDescRegionNode(GCStaticDescNode standaloneGCStaticDesc)
+        {
+            _standaloneGCStaticDesc = standaloneGCStaticDesc;
+        }
+
+        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+
+        public override bool IsShareable => true;
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        {
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialPointerAlignment();
+
+            builder.AddSymbol(_standaloneGCStaticDesc);
+            _standaloneGCStaticDesc.Offset = 0;
+            builder.EmitInt(_standaloneGCStaticDesc.NumSeries);
+            _standaloneGCStaticDesc.EncodeData(ref builder, factory, relocsOnly);
+
+            return builder.ToObjectData();
+        }
+
+        protected override string GetName(NodeFactory context)
+        {
+            return "Standalone" + _standaloneGCStaticDesc.GetMangledName(context.NameMangler);
         }
     }
 }
