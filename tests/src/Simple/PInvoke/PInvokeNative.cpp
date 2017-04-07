@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef Windows_NT
 #include <windows.h>
 #define DLL_EXPORT extern "C" __declspec(dllexport)
@@ -16,6 +17,11 @@
 #if !defined(__stdcall)
 #define __stdcall
 #endif
+
+#if (_MSC_VER >= 1400)         // Check MSC version
+#pragma warning(push)
+#pragma warning(disable: 4996) // Disable deprecation
+#endif 
 
 void* MemAlloc(long bytes)
 {
@@ -112,22 +118,7 @@ DLL_EXPORT bool __stdcall GetNextChar(short *value)
 
 int CompareAnsiString(const char *val, const char * expected)
 {
-    if (val == NULL && expected == NULL)
-        return 1;
-
-    if (val == NULL || expected == NULL)
-        return 0;
-
-    const char *p = expected;
-    const char *q = val;
-
-    while (*p  && *q && *p == *q)
-    {
-        p++;
-        q++;
-    }
-
-    return *p == 0 && *q == 0;
+    return strcmp(val, expected) == 0 ? 1 : 0;
 }
 
 int CompareUnicodeString(const unsigned short *val, const unsigned short *expected)
@@ -411,6 +402,31 @@ DLL_EXPORT void __stdcall StructTest_ByOut(NativeSequentialStruct *nss)
     nss->str = p;
 }
 
+DLL_EXPORT bool __stdcall StructTest_Array(NativeSequentialStruct *nss, int length)
+{
+    if (nss == NULL)
+        return false;
+    
+    char expected[16];
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (nss[i].s != 0)
+            return false;
+        if (nss[i].a != i)
+            return false;
+        if (nss[i].b != i*i)
+            return false;
+        sprintf(expected, "%d", i);
+
+        if (CompareAnsiString(expected, nss[i].str) == 0)
+            return false;
+    }
+    return true;
+}
+
+
+
 typedef struct {
     int a;
     int b;
@@ -488,3 +504,6 @@ DLL_EXPORT bool __stdcall StructTest_Nested(NativeNestedStruct nns)
     return StructTest_Explicit(nns.nes);
 }
 
+#if (_MSC_VER >= 1400)         // Check MSC version
+#pragma warning(pop)           // Renable previous depreciations
+#endif
