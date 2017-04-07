@@ -236,6 +236,25 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
+        /// <summary>
+        /// Returns a *freshly allocated* array of loaded Assemblies.
+        /// </summary>
+        internal static Assembly[] GetLoadedAssemblies()
+        {
+            // Important: The result of this method is the return value of the AppDomain.GetAssemblies() api so
+            // so it must return a freshly allocated array on each call.
+
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            IList<AssemblyBindResult> bindResults = binder.GetLoadedAssemblies();
+            Assembly[] results = new Assembly[bindResults.Count];
+            for (int i = 0; i < bindResults.Count; i++)
+            {
+                Assembly assembly = GetRuntimeAssembly(bindResults[i]);
+                results[i] = assembly;
+            }
+            return results;
+        }
+
         private volatile CaseSensitiveTypeCache _lazyCaseSensitiveTypeTable;
 
         private sealed class CaseSensitiveTypeCache : ConcurrentUnifier<string, RuntimeTypeInfo>

@@ -381,5 +381,7 @@ namespace System.Reflection.Runtime.General
 
             type = targetType;
         }
+
+        public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssembly.GetLoadedAssemblies();
     }
 }

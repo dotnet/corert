@@ -129,7 +129,6 @@ namespace ILCompiler.DependencyAnalysis
                             factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific), useUnboxingStub))));
                 }
 
-                // TODO: data to generate the generic dictionary with the type loader
                 if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 {
                     MethodDesc invokeStubMethod = factory.MetadataManager.GetReflectionInvokeStub(method);
@@ -137,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (invokeStubMethod != canonInvokeStubMethod)
                     {
                         vertex = writer.GetTuple(vertex,
-                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.FatFunctionPointer(invokeStubMethod), FatFunctionPointerConstants.Offset) << 1));
+                            writer.GetUnsignedConstant(((uint)factory.MetadataManager.DynamicInvokeTemplateData.GetIdForMethod(canonInvokeStubMethod) << 1) | 1));
                     }
                     else
                     {

@@ -359,11 +359,6 @@ namespace ILCompiler
             if (reflectionInvokeStub == null)
                 return false;
 
-            // TODO: Generate DynamicInvokeTemplateMap. For now, force all canonical stubs to go through the 
-            // calling convention converter interpreter path.
-            if (reflectionInvokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific) != reflectionInvokeStub)
-                return false;
-
             return true;
         }
 

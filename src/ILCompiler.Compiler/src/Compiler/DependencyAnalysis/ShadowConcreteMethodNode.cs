@@ -55,8 +55,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = new DependencyList();
+
             // Make sure the canonical body gets generated
-            yield return new DependencyListEntry(CanonicalMethodNode, "Canonical body");
+            dependencies.Add(new DependencyListEntry(CanonicalMethodNode, "Canonical body"));
 
             // Instantiate the runtime determined dependencies of the canonical method body
             // with the concrete instantiation of the method to get concrete dependencies.
@@ -71,10 +73,7 @@ namespace ILCompiler.DependencyAnalysis
                     var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
                     if (runtimeDep != null)
                     {
-                        foreach (var d in runtimeDep.InstantiateDependencies(factory, typeInst, methodInst))
-                        {
-                            yield return d;
-                        }
+                        dependencies.AddRange(runtimeDep.InstantiateDependencies(factory, typeInst, methodInst));
                     }
                 }
             }
@@ -91,20 +90,25 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
                     MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (invokeStub != canonInvokeStub)
-                        yield return new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke");
+                    {
+                        dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
+                        factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
+                    }
                     else
-                        yield return new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
                 }
             }
 
             if (Method.HasInstantiation)
             {
                 if (Method.IsVirtual)
-                    yield return new DependencyListEntry(factory.GVMDependencies(Method), "GVM Dependencies Support for method dictionary");
+                    dependencies.Add(new DependencyListEntry(factory.GVMDependencies(Method), "GVM Dependencies Support for method dictionary"));
 
                 // Dictionary dependency
-                yield return new DependencyListEntry(factory.MethodGenericDictionary(Method), "Method dictionary");
+                dependencies.Add(new DependencyListEntry(factory.MethodGenericDictionary(Method), "Method dictionary"));
             }
+
+            return dependencies;
         }
 
         protected override string GetName(NodeFactory factory) => $"{Method.ToString()} backed by {CanonicalMethodNode.GetMangledName(factory.NameMangler)}";

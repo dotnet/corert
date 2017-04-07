@@ -21,10 +21,11 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <UseSyncTable>true</UseSyncTable>
-    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
+    <DefineConstants>EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TargetsWindows)'=='true'">FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureCominterop>false</FeatureCominterop>
@@ -252,7 +253,7 @@
     <Compile Include="System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
     <Compile Include="System\IO\FileAccess.cs" />
-    <Compile Include="System\IO\FileLoadException.cs" />
+    <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\FileMode.cs" />
     <Compile Include="System\IO\FileNotFoundException.cs" />
     <Compile Include="System\IO\FileShare.cs" />
@@ -278,6 +279,8 @@
     <Compile Include="System\Diagnostics\StackFrame.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
+    <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
@@ -300,6 +303,7 @@
     <Compile Include="System\Int32.cs" />
     <Compile Include="System\Int64.cs" />
     <Compile Include="System\IntPtr.cs" />
+    <Compile Include="System\Marvin.cs" />
     <Compile Include="System\Math.cs" />
     <Compile Include="System\MathF.cs" />
     <Compile Include="System\MissingFieldException.cs" />
@@ -545,6 +549,7 @@
     <Compile Include="System\Runtime\InteropServices\CallingConvention.cs" />
     <Compile Include="System\Runtime\InteropServices\CharSet.cs" />
     <Compile Include="System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\LayoutKind.cs" />
     <Compile Include="System\Runtime\InteropServices\OutAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttribute.cs" />

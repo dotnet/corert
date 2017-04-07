@@ -706,11 +706,11 @@ class Program
             }
 
             // Uncomment when we have the type loader to buld invoke stub dictionaries.
-            /*{
+            {
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(object));
                 if ((bool)mi.Invoke(o, new object[] { 123, new object() }))
                     s_NumErrors++;
-            }*/
+            }
 
             // VirtualInvokeMap testing
             {
@@ -1353,6 +1353,68 @@ class Program
             public object m_objectField;
         }
 
+        public class DynamicBase<T>
+        {
+            public T _t;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public DynamicBase() {}
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public int SimpleMethod()
+            {
+                return 123;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public int MethodWithTInSig(T t)
+            {
+                _t = t;
+                return 234;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual string VirtualMethod(T t)
+            {
+                _t = t;
+                return "DynamicBase<T>.VirtualMethod";
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public string GenericMethod<U>(T t, U u)
+            {
+                _t = t;
+                return typeof(U).ToString() + u.ToString();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual string GenericVirtualMethod<U>(T t, U u)
+            {
+                _t = t;
+                return "DynamicBase" + typeof(U).ToString() + u.ToString();
+            }
+        }
+
+        public class DynamicDerived<T> : DynamicBase<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public DynamicDerived() {}
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public override string VirtualMethod(T t)
+            {
+                _t = t;
+                return "DynamicDerived<T>.VirtualMethod";
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public override string GenericVirtualMethod<U>(T t, U u)
+            {
+                _t = t;
+                return "DynamicDerived" + typeof(U).ToString() + u.ToString();
+            }
+        }
+
         class UnconstructedTypeWithGCStatics
         {
 #pragma warning disable 169
@@ -1427,6 +1489,77 @@ class Program
             fi2.SetValue(null, "ytrewq");
             Verify("qwerty", (string)fi.GetValue(null));
             Verify("ytrewq", (string)fi2.GetValue(null));
+        }
+
+        private static void TestDynamicInvokeStubs()
+        {
+            Console.WriteLine("Testing dynamic invoke stubs...");
+            // Root required methods / types statically instantiated over some unrelated type
+            DynamicBase<Program> heh = new DynamicBase<Program>();
+            heh.MethodWithTInSig(new Program());
+            heh.SimpleMethod();
+            heh.VirtualMethod(new Program());
+            heh.GenericMethod(new Program(), "hello");
+            heh.GenericVirtualMethod(new Program(), "hello");
+
+            DynamicDerived<Program> heh2 = new DynamicDerived<Program>();
+            heh2.VirtualMethod(new Program());
+            heh2.GenericVirtualMethod(new Program(), "ayy");
+
+            // Simple method invocation
+            var dynamicBaseOfString = typeof(DynamicBase<>).MakeGenericType(typeof(string));
+            object obj = Activator.CreateInstance(dynamicBaseOfString);
+            {
+                var simpleMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("SimpleMethod");
+                int result = (int)simpleMethod.Invoke(obj, null);
+                Verify((int)123, result);
+            }
+
+            // Method with T in the signature
+            {
+                var methodWithTInSig = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("MethodWithTInSig");
+                int result = (int)methodWithTInSig.Invoke(obj, new[] { "fad" });
+                Verify((int)234, result);
+            }
+
+            // Test virtual method invocation
+            {
+                var virtualMethodDynamicBase = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("VirtualMethod");
+                string result = (string)virtualMethodDynamicBase.Invoke(obj, new[] { "fad" });
+                Verify("DynamicBase<T>.VirtualMethod", result);
+            }
+
+            {
+                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(typeof(string));
+                object dynamicDerivedObj = Activator.CreateInstance(dynamicDerivedOfString);
+                var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("VirtualMethod");
+                string result = (string)virtualMethodDynamicDerived.Invoke(dynamicDerivedObj, new[] { "fad" });
+                Verify("DynamicDerived<T>.VirtualMethod", result);
+            }
+
+            // Test generic method invocation
+            {
+                var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericMethod").MakeGenericMethod(new[] { typeof(string) });
+                string result = (string)genericMethod.Invoke(obj, new[] { "hey", "hello" });
+
+                Verify("System.Stringhello", result);
+            }
+
+            // Test GVM invocation
+            {
+                var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod");
+                genericMethod = genericMethod.MakeGenericMethod(new[] { typeof(string) });
+                string result = (string)genericMethod.Invoke(obj, new[] { "hey", "hello" });
+                Verify("DynamicBaseSystem.Stringhello", result);
+            }
+
+            {
+                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(typeof(string));
+                object dynamicDerivedObj = Activator.CreateInstance(dynamicDerivedOfString);
+                var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod").MakeGenericMethod(new[] { typeof(string) });
+                string result = (string)virtualMethodDynamicDerived.Invoke(dynamicDerivedObj, new[] { "hey", "fad" });
+                Verify("DynamicDerivedSystem.Stringfad", result);
+            }
         }
 
         private static void TestStaticFields()
@@ -1656,6 +1789,7 @@ class Program
             TestStaticFields();
             TestInstanceFields();
             TestDynamicStaticFields();
+            TestDynamicInvokeStubs();
             TestUnconstructedTypes();
 
             if (s_NumErrors != 0)

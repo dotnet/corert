@@ -1503,7 +1503,7 @@ namespace Internal.Runtime.TypeLoader
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
                 ParameterizedType typeAsParameterizedType = _typesThatNeedTypeHandles[i] as ParameterizedType;
-                if (typeAsParameterizedType == null || typeAsParameterizedType is ByRefType)
+                if (typeAsParameterizedType == null)
                     continue;
 
                 if (typeAsParameterizedType.IsSzArray)
@@ -1554,7 +1554,7 @@ namespace Internal.Runtime.TypeLoader
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
                 ParameterizedType typeAsParameterizedType = _typesThatNeedTypeHandles[i] as ParameterizedType;
-                if (typeAsParameterizedType == null || typeAsParameterizedType is ByRefType)
+                if (typeAsParameterizedType == null)
                     continue;
 
                 Debug.Assert(!typeAsParameterizedType.RuntimeTypeHandle.IsNull());

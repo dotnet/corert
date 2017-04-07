@@ -203,6 +203,11 @@ namespace System.Runtime.InteropServices
             PInvokeMarshal.FreeCoTaskMem(ptr);
         }
 
+        public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
+        { 
+           InteropExtensions.CopyToManaged(source, destination, startIndex, length); 
+        }
+
 #if PLATFORM_UNIX
         public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {

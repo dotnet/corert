@@ -58,17 +58,8 @@ namespace System.Reflection.Runtime.Assemblies
                     throw new BadImageFormatException();
             }
 
-            RuntimeAssembly result = null;
-
-            GetNativeFormatRuntimeAssembly(bindResult, ref result);
-            if (result != null)
-                return result;
-
-            GetEcmaRuntimeAssembly(bindResult, ref result);
-            if (result != null)
-                return result;
-            else
-                throw new PlatformNotSupportedException();
+            RuntimeAssembly result = GetRuntimeAssembly(bindResult);
+            return result;
         }
 
         /// <summary>
@@ -99,23 +90,29 @@ namespace System.Reflection.Runtime.Assemblies
                     Exception exception;
                     if (!binder.Bind(convertedAssemblyRefName, out bindResult, out exception))
                         return null;
-                    RuntimeAssembly result = null;
 
-                    GetNativeFormatRuntimeAssembly(bindResult, ref result);
-                    if (result != null)
-                        return result;
-
-                    GetEcmaRuntimeAssembly(bindResult, ref result);
-                    if (result != null)
-                        return result;
-
-                    return null;
+                    return GetRuntimeAssembly(bindResult);
                 }
         );
 
+        private static RuntimeAssembly GetRuntimeAssembly(AssemblyBindResult bindResult)
+        {
+            RuntimeAssembly result = null;
+
+            GetNativeFormatRuntimeAssembly(bindResult, ref result);
+            if (result != null)
+                return result;
+
+            GetEcmaRuntimeAssembly(bindResult, ref result);
+            if (result != null)
+                return result;
+
+            throw new PlatformNotSupportedException();
+        }
+
         // Use C# partial method feature to avoid complex #if logic, whichever code files are included will drive behavior
-       static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
-       static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
+        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
+        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
     }
 }
 
