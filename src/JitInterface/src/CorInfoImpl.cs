@@ -1420,14 +1420,15 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
         {
             MethodDesc method = HandleToObject(pTargetMethod.hMethod);
             TypeDesc type = HandleToObject(delegateType);
 
             DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method);
 
-            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+            pLookup.lookupKind.needsRuntimeLookup = false;
+            pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)
