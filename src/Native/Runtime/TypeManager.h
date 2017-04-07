@@ -18,15 +18,18 @@ class TypeManager
     UInt8*                      m_pStaticsGCDataSection;
     UInt8*                      m_pThreadStaticsDataSection;
     UInt32*                     m_pTlsIndex;  // Pointer to TLS index if this module uses thread statics 
+    void**                      m_pClasslibFunctions;
+    UInt32                      m_nClasslibFunctions;
 
-    TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader);
+    TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pClasslibFunctions, UInt32 nClasslibFunctions);
 
 public:
-    static TypeManager * Create(HANDLE osModule, void * pModuleHeader);
+    static TypeManager * Create(HANDLE osModule, void * pModuleHeader, void** pClasslibFunctions, UInt32 nClasslibFunctions);
     void * GetModuleSection(ReadyToRunSectionType sectionId, int * length);
     DispatchMap ** GetDispatchMapLookupTable();
     void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData);
     HANDLE GetOsModuleHandle();
+    void* GetClasslibFunction(ClasslibFunctionId functionId);
 
 private:
     

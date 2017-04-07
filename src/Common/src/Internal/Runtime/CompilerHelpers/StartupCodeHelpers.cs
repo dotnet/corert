@@ -25,10 +25,10 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
-        internal static void InitializeModules(IntPtr osModule, IntPtr moduleHeaders, int count)
+        internal static unsafe void InitializeModules(IntPtr osModule, IntPtr moduleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             RuntimeImports.RhpRegisterOsModule(osModule);
-            TypeManagerHandle[] modules = CreateTypeManagers(osModule, moduleHeaders, count);
+            TypeManagerHandle[] modules = CreateTypeManagers(osModule, moduleHeaders, count, pClasslibFunctions, nClasslibFunctions);
 
             for (int i = 0; i < modules.Length; i++)
             {
@@ -48,7 +48,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr moduleHeaders, int count)
+        private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr moduleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             // Count the number of modules so we can allocate an array to hold the TypeManager objects.
             // At this stage of startup, complex collection classes will not work.
@@ -67,7 +67,7 @@ namespace Internal.Runtime.CompilerHelpers
             for (int i = 0; i < count; i++)
             {
                 if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, ((IntPtr*)moduleHeaders)[i]);
+                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, ((IntPtr*)moduleHeaders)[i], pClasslibFunctions, nClasslibFunctions);
             }
 
             return modules;
