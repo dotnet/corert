@@ -607,10 +607,14 @@
     <Compile Include="System\DateTime.Windows.CoreRT.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
+    <Compile Include="System\Runtime\MemoryFailPoint.cs" />
     <Compile Include="System\Security\SecureString.Windows.cs" />
     <Compile Include="System\Security\SafeBSTRHandle.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\ntdll\Interop.ZeroMemory.cs">
       <Link>Interop\Windows\ntdll\Interop.ZeroMemory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.Memory.cs">
+      <Link>Interop\Windows\kernel32\Interop.Memory.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>

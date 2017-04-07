@@ -197,3 +197,11 @@ COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCComplete, (Int32 millisecondsTimeout))
     int timeout = millisecondsTimeout == -1 ? INFINITE : millisecondsTimeout;
     return GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(millisecondsTimeout);
 }
+
+COOP_PINVOKE_HELPER(Int64, RhGetGCSegmentSize, ())
+{
+    size_t first = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(Boolean_true);
+    size_t second = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(Boolean_false);
+
+    return (first > second) ? first : second;
+}

@@ -1065,6 +1065,15 @@
   <data name="Format_BadTimeSpan" xml:space="preserve">
     <value>String was not recognized as a valid TimeSpan.</value>
   </data>
+  <data name="InsufficientMemory_MemFailPoint" xml:space="preserve">
+    <value>Insufficient available memory to meet the expected demands of an operation at this time.  Please try again later.</value>
+  </data>
+  <data name="InsufficientMemory_MemFailPoint_TooBig" xml:space="preserve">
+    <value>Insufficient memory to meet the expected demands of an operation, and this system is likely to never satisfy this request.  If this is a 32 bit system, consider booting in 3 GB mode.</value>
+  </data>
+  <data name="InsufficientMemory_MemFailPoint_VAFrag" xml:space="preserve">
+    <value>Insufficient available memory to meet the expected demands of an operation at this time, possibly due to virtual address space fragmentation.  Please try again later.</value>
+  </data>
   <data name="InvalidCast_CannotCastNullToValueType" xml:space="preserve">
     <value>Null object cannot be converted to a value type.</value>
   </data>
