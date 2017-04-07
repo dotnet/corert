@@ -135,7 +135,7 @@ namespace System.Text
                                 pBytes + byteIndex, byteCount, flush);
         }
 
-        internal unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
+        public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             // Validate parameters
             if (chars == null || bytes == null)
