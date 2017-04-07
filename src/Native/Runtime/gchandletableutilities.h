@@ -149,6 +149,135 @@ inline OBJECTHANDLE CreateVariableHandle(HHANDLETABLE table, OBJECTREF object, u
                                                                                  (void*)((uintptr_t)type));
 }
 
+// Handle destruction convenience functions
+
+inline void DestroyHandle(OBJECTHANDLE handle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_DEFAULT);
+}
+
+inline void DestroyWeakHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_WEAK_DEFAULT);
+}
+
+inline void DestroyShortWeakHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_WEAK_SHORT);
+}
+
+inline void DestroyLongWeakHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_WEAK_LONG);
+}
+
+inline void DestroyStrongHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_STRONG);
+}
+
+inline void DestroyPinningHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_PINNED);
+}
+
+inline void DestroyAsyncPinningHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_ASYNCPINNED);
+}
+
+inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_REFCOUNTED);
+}
+
+inline void DestroyDependentHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_DEPENDENT);
+}
+
+inline void  DestroyVariableHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_VARIABLE);
+}
+
+inline void DestroyGlobalHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_DEFAULT);
+}
+
+inline void DestroyGlobalWeakHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_WEAK_DEFAULT);
+}
+
+inline void DestroyGlobalShortWeakHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_WEAK_SHORT);
+}
+
+inline void DestroyGlobalLongWeakHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_WEAK_LONG);
+}
+
+inline void DestroyGlobalStrongHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_STRONG);
+}
+
+inline void DestroyGlobalPinningHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_PINNED);
+}
+
+inline void DestroyGlobalRefcountedHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_REFCOUNTED);
+}
+
+inline void DestroyTypedHandle(OBJECTHANDLE handle)
+{
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfUnknownType(handle);
+}
+
+#ifdef FEATURE_COMINTEROP
+inline void DestroyWinRTWeakHandle(OBJECTHANDLE handle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    // Release the WinRT weak reference if we have one. We're assuming that this will not reenter the
+    // runtime, since if we are pointing at a managed object, we should not be using HNDTYPE_WEAK_WINRT
+    // but rather HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
+    void* pExtraInfo = GCHandleTableUtilities::GetGCHandleTable()->GetExtraInfoFromHandle(handle);
+    IWeakReference* pWinRTWeakReference = reinterpret_cast<IWeakReference*>(pExtraInfo);
+    if (pWinRTWeakReference != nullptr)
+    {
+        pWinRTWeakReference->Release();
+    }
+
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfType(handle, HNDTYPE_WEAK_WINRT);
+}
+#endif
+
 #endif // !DACCESS_COMPILE
 
 #endif // _GCHANDLETABLEUTILITIES_H_
