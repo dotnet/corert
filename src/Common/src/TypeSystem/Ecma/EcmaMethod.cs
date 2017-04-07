@@ -462,7 +462,7 @@ namespace Internal.TypeSystem.Ecma
                 MetadataReader metadataReader = MetadataReader;
                 BlobReader marshalAsReader = metadataReader.GetBlobReader(parameter.GetMarshallingDescriptor());
                 EcmaSignatureParser parser = new EcmaSignatureParser(Module, marshalAsReader);
-                MarshalAsDescriptor marshalAs = parser.ParseMarshalAsDescriptor(isParameter:true);
+                MarshalAsDescriptor marshalAs = parser.ParseMarshalAsDescriptor();
                 Debug.Assert(marshalAs != null);
                 return marshalAs;
             }

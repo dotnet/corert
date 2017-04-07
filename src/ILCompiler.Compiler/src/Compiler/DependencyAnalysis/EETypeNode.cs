@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 
-using ILCompiler.DependencyAnalysisFramework;
-
 using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
@@ -154,6 +152,59 @@ namespace ILCompiler.DependencyAnalysis
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
+            // Dependencies of the StaticsInfoHashTable and the ReflectionFieldAccessMap
+            if (_type is MetadataType && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                MetadataType metadataType = (MetadataType)_type;
+
+                // NOTE: The StaticsInfoHashtable entries need to reference the gc and non-gc static nodes through an indirection cell.
+                // The StaticsInfoHashtable entries only exist for static fields on generic types.
+
+                if (metadataType.GCStaticFieldSize.AsInt > 0)
+                {
+                    ISymbolNode gcStatics = factory.TypeGCStaticsSymbol(metadataType);
+                    if (_type.HasInstantiation)
+                    {
+                        dependencies.Add(factory.Indirection(gcStatics), "GC statics indirection for StaticsInfoHashtable");
+                    }
+                    else
+                    {
+                        // TODO: https://github.com/dotnet/corert/issues/3224
+                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
+                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
+                        // we even start the compilation process (with the static bases being compilation roots like any other).
+                        dependencies.Add(gcStatics, "GC statics for ReflectionFieldMap entry");
+                    }
+                }
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                {
+                    ISymbolNode nonGCStatic = factory.TypeNonGCStaticsSymbol(metadataType);
+                    if (_type.HasInstantiation)
+                    {
+                        // The entry in the StaticsInfoHashtable points at the begining of the static fields data, so we need to add
+                        // the cctor context offset to the indirection cell.
+
+                        int cctorOffset = 0;
+                        if (factory.TypeSystemContext.HasLazyStaticConstructor(metadataType))
+                            cctorOffset += NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, metadataType);
+
+                        nonGCStatic = factory.Indirection(nonGCStatic, cctorOffset);
+
+                        dependencies.Add(nonGCStatic, "Non-GC statics indirection for StaticsInfoHashtable");
+                    }
+                    else
+                    {
+                        // TODO: https://github.com/dotnet/corert/issues/3224
+                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
+                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
+                        // we even start the compilation process (with the static bases being compilation roots like any other).
+                        dependencies.Add(nonGCStatic, "Non-GC statics for ReflectionFieldMap entry");
+                    }
+                }
+
+                // TODO: TLS dependencies
+            }
+
             return dependencies;
         }
 
@@ -277,8 +328,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags |= (UInt16)EETypeFlags.RelatedTypeViaIATFlag;
             }
-
-            // Todo: Generic Type Definition EETypes
 
             if (HasOptionalFields)
             {
@@ -740,9 +789,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (parameterizedType.IsArray)
                 {
-                    if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    if (parameterType.IsFunctionPointer)
                     {
-                        // Arrays of pointers and function pointers are not currently supported
+                        // Arrays of function pointers are not currently supported
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 

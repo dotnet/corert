@@ -80,6 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
+                // TODO: https://github.com/dotnet/corert/issues/3224
                 // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
                 // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
                 // we even start the compilation process (with the invocation stubs being compilation roots like any other).

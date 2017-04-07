@@ -76,9 +76,35 @@ namespace ILCompiler.DependencyAnalysis
                     // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
                     // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
                     // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                    // NOTE: we need to also do this for generic interfaces on arrays because they have a weird casting rule
-                    // that doesn't require the implemented interface to be variant to consider it castable.
-                    if (implementedInterface.HasVariance || (_type.IsArray && implementedInterface.HasInstantiation))
+                    bool allInterfaceMethodsAreImplicitlyUsed = false;
+                    if (implementedInterface.HasVariance)
+                    {
+                        TypeDesc interfaceDefinition = implementedInterface.GetTypeDefinition();
+                        for (int i = 0; i < interfaceDefinition.Instantiation.Length; i++)
+                        {
+                            if (((GenericParameterDesc)interfaceDefinition.Instantiation[i]).Variance != 0 &&
+                                !implementedInterface.Instantiation[i].IsValueType)
+                            {
+                                allInterfaceMethodsAreImplicitlyUsed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!allInterfaceMethodsAreImplicitlyUsed && 
+                        (_type.IsArray || _type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType) &&
+                        implementedInterface.HasInstantiation)
+                    {
+                        // NOTE: we need to also do this for generic interfaces on arrays because they have a weird casting rule
+                        // that doesn't require the implemented interface to be variant to consider it castable.
+                        // For value types, we only need this when the array is castable by size (int[] and ICollection<uint>),
+                        // or it's a reference type (Derived[] and ICollection<Base>).
+                        TypeDesc elementType = _type.IsArray ? ((ArrayType)_type).ElementType : _type.Instantiation[0];
+                        allInterfaceMethodsAreImplicitlyUsed =
+                            CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
+                            (elementType.IsDefType && !elementType.IsValueType);
+                    }
+
+                    if (allInterfaceMethodsAreImplicitlyUsed)
                     {
                         foreach (var interfaceMethod in implementedInterface.GetAllMethods())
                         {
@@ -129,39 +155,6 @@ namespace ILCompiler.DependencyAnalysis
                 // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
                 // We need to make sure this is possible.
                 dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
-            }
-
-            // Dependencies of the StaticsInfoHashTable and the ReflectionFieldAccessMap
-            if (_type is MetadataType)
-            {
-                MetadataType metadataType = (MetadataType)_type;
-
-                // NOTE: The StaticsInfoHashtable entries need to reference the gc and non-gc static nodes through an indirection cell.
-                // The StaticsInfoHashtable entries only exist for static fields on generic types.
-
-                if (metadataType.GCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode gcStatics = factory.TypeGCStaticsSymbol(metadataType);
-                    dependencyList.Add(_type.HasInstantiation ? factory.Indirection(gcStatics) : gcStatics, "GC statics indirection for StaticsInfoHashtable");
-                }
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode nonGCStatic = factory.TypeNonGCStaticsSymbol(metadataType);
-                    if (_type.HasInstantiation)
-                    {
-                        // The entry in the StaticsInfoHashtable points at the begining of the static fields data, so we need to add
-                        // the cctor context offset to the indirection cell.
-
-                        int cctorOffset = 0;
-                        if (factory.TypeSystemContext.HasLazyStaticConstructor(metadataType))
-                            cctorOffset += NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, metadataType);
-
-                        nonGCStatic = factory.Indirection(nonGCStatic, cctorOffset);
-                    }
-                    dependencyList.Add(nonGCStatic, "Non-GC statics indirection for StaticsInfoHashtable");
-                }
-
-                // TODO: TLS dependencies
             }
 
             return dependencyList;

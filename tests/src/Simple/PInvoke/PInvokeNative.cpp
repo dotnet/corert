@@ -17,6 +17,24 @@
 #define __stdcall
 #endif
 
+void* MemAlloc(long bytes)
+{
+#ifdef Windows_NT
+    return (unsigned char *)CoTaskMemAlloc(bytes);
+#else
+    return (unsigned char *)malloc(bytes);
+#endif
+}
+
+void MemFree(void *p)
+{
+#ifdef Windows_NT
+    CoTaskMemFree(p);
+#else
+    free(p);
+#endif
+}
+
 DLL_EXPORT int __stdcall Square(int intValue)
 {
     return intValue * intValue;
@@ -94,7 +112,10 @@ DLL_EXPORT bool __stdcall GetNextChar(short *value)
 
 int CompareAnsiString(const char *val, const char * expected)
 {
-    if (val == NULL)
+    if (val == NULL && expected == NULL)
+        return 1;
+
+    if (val == NULL || expected == NULL)
         return 0;
 
     const char *p = expected;
@@ -109,12 +130,69 @@ int CompareAnsiString(const char *val, const char * expected)
     return *p == 0 && *q == 0;
 }
 
+int CompareUnicodeString(const unsigned short *val, const unsigned short *expected)
+{
+    if (val == NULL && expected == NULL)
+        return 1;
+
+    if (val == NULL || expected == NULL)
+        return 0;
+    const unsigned short *p = val;
+    const unsigned short *q = expected;
+    
+    while (*p  && *q && *p == *q)
+    {
+        p++;
+        q++;
+    }
+    return *p == 0 && *q == 0;
+}
+
 DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
 {
     if (val == NULL)
         return 0;
 
     return CompareAnsiString(val, "Hello World");
+}
+
+void CopyAnsiString(char *dst, char *src)
+{
+    if (src == NULL || dst == NULL)
+        return;
+
+    char *p = dst, *q = src;
+    while (*q)
+    {
+        *p++ = *q++;
+    }
+    *p = '\0';
+}
+
+DLL_EXPORT int __stdcall VerifyAnsiStringOut(char **val)
+{
+    if (val == NULL)
+        return 0;
+
+    *val = (char*)MemAlloc(sizeof(char) * 12);
+    CopyAnsiString(*val, "Hello World");
+    return 1;
+}
+
+DLL_EXPORT int __stdcall VerifyAnsiStringRef(char **val)
+{
+    if (val == NULL)
+        return 0;
+
+    if (!CompareAnsiString(*val, "Hello World"))
+    {
+        MemFree(*val);
+        return 0;
+    }
+
+    *val = (char*)MemAlloc(sizeof(char) * 13);
+    CopyAnsiString(*val, "Hello World!");
+    return 1;
 }
 
 DLL_EXPORT int __stdcall VerifyAnsiStringArray(char **val)
@@ -155,25 +233,52 @@ DLL_EXPORT int __stdcall VerifyUnicodeString(unsigned short *val)
         return 0;
 
     unsigned short expected[] = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0};
-    unsigned short *p = expected;
-    unsigned short *q = val;
 
-    while (*p  && *q && *p == *q)
-    {
-        p++;
-        q++;
-    }
-
-    return *p == 0  &&  *q == 0;
+    return CompareUnicodeString(val, expected);
 }
+
+DLL_EXPORT int __stdcall VerifyUnicodeStringOut(unsigned short **val)
+{
+    if (val == NULL)
+        return 0;
+    unsigned short *p = (unsigned short *)MemAlloc(sizeof(unsigned short) * 12);
+    unsigned short expected[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0 };
+    for (int i = 0; i < 12; i++)
+        p[i] = expected[i];
+    
+    *val = p;
+    return 1;
+}
+
+DLL_EXPORT int __stdcall VerifyUnicodeStringRef(unsigned short **val)
+{
+    if (val == NULL)
+        return 0;
+
+    unsigned short expected[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0};
+    unsigned short *p = expected;
+    unsigned short *q = *val;
+
+    if (!CompareUnicodeString(p, q))
+        return 0;
+    
+    MemFree(*val);
+
+    p = (unsigned short*)MemAlloc(sizeof(unsigned short) * 13);
+    int i;
+    for (i = 0; i < 11; i++)
+        p[i] = expected[i];
+    p[i++] = '!';
+    p[i] = '\0';
+    *val = p;
+    return 1;
+}
+
 DLL_EXPORT bool __stdcall VerifySizeParamIndex(unsigned char ** arrByte, unsigned char *arrSize)
 {
     *arrSize = 10;
-#ifdef Windows_NT
-    *arrByte = (unsigned char *)CoTaskMemAlloc(sizeof(unsigned char) * (*arrSize));
-#else
-    *arrByte = (unsigned char *)malloc(sizeof(unsigned char) * (*arrSize));
-#endif
+    *arrByte = (unsigned char *)MemAlloc(sizeof(unsigned char) * (*arrSize));
+
     if (*arrByte == NULL)
         return false;
 
@@ -296,11 +401,7 @@ DLL_EXPORT void __stdcall StructTest_ByOut(NativeSequentialStruct *nss)
 
     int arrSize = 7;
     char *p;
-#ifdef Windows_NT
-    p = (char *)CoTaskMemAlloc(sizeof(char) * arrSize);
-#else
-    p = (char *)malloc(sizeof(char) * arrSize);
-#endif
+    p = (char *)MemAlloc(sizeof(char) * arrSize);
 
     for (int i = 0; i < arrSize; i++)
     {
