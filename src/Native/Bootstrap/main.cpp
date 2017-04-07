@@ -211,7 +211,7 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 }
 extern "C" void CCWAddRef()
 {
-	throw "CCWAddRef";
+    throw "CCWAddRef";
 }
 
 void* RtRHeaderWrapper();
@@ -266,7 +266,7 @@ static const pfn c_classlibFunctions[] = {
 
 #endif // !CPPCODEGEN
 
-extern "C" void InitializeModules(void* osModule, void ** modules, int count);
+extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
@@ -308,9 +308,9 @@ int main(int argc, char* argv[])
 #endif
 
 #ifndef CPPCODEGEN
-    InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)));
+    InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #else // !CPPCODEGEN
-    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2);
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
 #endif // !CPPCODEGEN
 
     int retval;

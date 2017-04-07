@@ -163,6 +163,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpShutdown")]
         internal static extern void RhpShutdown();
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetGCSegmentSize")]
+        internal static extern ulong RhGetGCSegmentSize();
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
@@ -468,7 +472,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCreateTypeManager")]
-        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader);
+        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpRegisterOsModule")]
@@ -640,10 +644,10 @@ namespace System.Runtime
         // simply let it be pulled off the stack.
         internal struct ConservativelyReportedRegionDesc
         {
-            private IntPtr ptr1;
-            private IntPtr ptr2;
-            private IntPtr ptr3;
-            private IntPtr ptr4;
+            private IntPtr _ptr1;
+            private IntPtr _ptr2;
+            private IntPtr _ptr3;
+            private IntPtr _ptr4;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

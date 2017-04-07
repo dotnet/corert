@@ -224,10 +224,15 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType, ref DispatchCellInfo newCellInfo);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunction")]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
+        internal extern static unsafe void* RhpGetClasslibFunctionFromCodeAddress(IntPtr address, EH.ClassLibFunctionId id);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromEEtype")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static unsafe void* RhpGetClasslibFunctionFromEEtype(IntPtr pEEType, EH.ClassLibFunctionId id);
 
         //
         // StackFrameIterator

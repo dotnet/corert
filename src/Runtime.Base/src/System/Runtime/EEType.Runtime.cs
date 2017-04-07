@@ -50,7 +50,7 @@ namespace Internal.Runtime
                 return RelatedParameterType->GetClasslibException(id);
             }
 
-            return EH.GetClasslibException(id, GetAssociatedModuleAddress());
+            return EH.GetClasslibExceptionFromEEType(id, GetAssociatedModuleAddress());
 #endif
         }
 

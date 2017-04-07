@@ -12,7 +12,7 @@ namespace System.Reflection
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle, declaringType);
 
         [System.Runtime.CompilerServices.Intrinsic]
-        public static MethodBase GetCurrentMethod() { throw new NotImplementedException(); }
+        public static MethodBase GetCurrentMethod() { throw NotImplemented.ByDesign; } //Implemented by toolchain.
 
         // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
         public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();

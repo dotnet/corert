@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// to the TypeManager that contains the native layout info blob of interest, and the second item
     /// is an offset into that native layout info blob
     /// </summary>
-    class NativeLayoutSignatureNode : ObjectNode, ISymbolNode
+    public class NativeLayoutSignatureNode : ObjectNode, ISymbolNode
     {
         private TypeSystemEntity _identity;
         private Utf8String _identityPrefix;

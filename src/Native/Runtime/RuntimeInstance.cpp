@@ -429,9 +429,9 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
     return true;
 }
 
-COOP_PINVOKE_HELPER(TypeManagerHandle, RhpCreateTypeManager, (HANDLE osModule, void* pModuleHeader))
+COOP_PINVOKE_HELPER(TypeManagerHandle, RhpCreateTypeManager, (HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions))
 {
-    TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader);
+    TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
     GetRuntimeInstance()->RegisterTypeManager(typeManager);
     return TypeManagerHandle::Create(typeManager);
 }

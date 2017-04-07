@@ -386,7 +386,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             private NodeCache<NativeLayoutSignatureKey, NativeLayoutSignatureNode> _nativeLayoutSignatureNodes;
-            internal NativeLayoutSignatureNode NativeLayoutSignature(NativeLayoutSavedVertexNode signature, Utf8String identityPrefix, TypeSystemEntity identity)
+            public NativeLayoutSignatureNode NativeLayoutSignature(NativeLayoutSavedVertexNode signature, Utf8String identityPrefix, TypeSystemEntity identity)
             {
                 return _nativeLayoutSignatureNodes.GetOrAdd(new NativeLayoutSignatureKey(signature, identityPrefix, identity));
             }
