@@ -290,6 +290,18 @@ namespace ILCompiler
         public abstract bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method);
 
         /// <summary>
+        /// Given that a method is invokable, if it is inserted into the reflection invoke table
+        /// will it use a method token to be referenced, or not?
+        /// </summary>
+        public abstract bool WillUseMetadataTokenToReferenceMethod(MethodDesc method);
+
+        /// <summary>
+        /// Given that a method is invokable, if it is inserted into the reflection invoke table
+        /// will it use a field token to be referenced, or not?
+        /// </summary>
+        public abstract bool WillUseMetadataTokenToReferenceField(FieldDesc field);
+
+        /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
         public abstract MethodDesc GetReflectionInvokeStub(MethodDesc method);

@@ -110,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         delta = (int)((uint)delta | IndirectionConstants.RVAPointsToIndirection);
                     }
-                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, symbolAndDelta.Delta);
+                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta);
                 }
             }
 

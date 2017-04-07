@@ -53,6 +53,20 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.OwningType.IsValueType && !method.Signature.IsStatic && !skipUnboxingStubDependency)
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub"));
 
+                // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
+                // Use a name/sig reference instead.
+                if (!factory.MetadataManager.WillUseMetadataTokenToReferenceMethod(method))
+                {
+                    dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
+                        "Non metadata-local method reference"));
+                }
+
+                if (method.HasInstantiation && method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                {
+                    dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method)),
+                        "UniversalCanon signature of method"));
+                }
+
                 dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, method));
             }
 
